@@ -17,10 +17,10 @@ interface Violation {
 }
 
 const classColors: Record<string, string> = {
-  C: 'text-red-400',
-  B: 'text-orange-400',
-  A: 'text-yellow-400',
-  I: 'text-blue-400',
+  C: 'text-red-200',
+  B: 'text-orange-200',
+  A: 'text-yellow-200',
+  I: 'text-white',
 };
 
 const classLabels: Record<string, string> = {
@@ -60,7 +60,7 @@ function TickerItem({ v }: { v: Violation }) {
 
   if (url) {
     return (
-      <Link href={url} className="hover:text-blue-300 transition-colors">
+      <Link href={url} className="hover:text-white/80 transition-colors">
         {content}
       </Link>
     );
@@ -84,15 +84,15 @@ export function ViolationTicker() {
 
   if (loading) {
     return (
-      <div className="bg-slate-900 border-y border-slate-700/50 py-3 overflow-hidden">
+      <div className="bg-[#3B82F6] border-y border-blue-400/30 py-3 overflow-hidden">
         <div className="flex items-center gap-3 px-4">
-          <span className="flex items-center gap-1.5 text-xs font-semibold text-red-400 uppercase tracking-wider flex-shrink-0">
+          <span className="flex items-center gap-1.5 text-xs font-semibold text-white uppercase tracking-wider flex-shrink-0">
             <AlertTriangle className="w-3.5 h-3.5" />
             Live
           </span>
           <div className="flex gap-8">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-4 bg-slate-700/50 rounded animate-pulse" style={{ width: `${200 + i * 40}px` }} />
+              <div key={i} className="h-4 bg-white/20 rounded animate-pulse" style={{ width: `${200 + i * 40}px` }} />
             ))}
           </div>
         </div>
@@ -103,14 +103,14 @@ export function ViolationTicker() {
   if (violations.length === 0) return null;
 
   return (
-    <div className="bg-slate-900 border-y border-slate-700/50 py-3 overflow-hidden group">
+    <div className="bg-[#3B82F6] border-y border-blue-400/30 py-3 overflow-hidden group">
       <div className="flex items-center">
-        <div className="flex items-center gap-1.5 text-xs font-semibold text-red-400 uppercase tracking-wider flex-shrink-0 pl-4 pr-4 z-10 bg-slate-900">
+        <div className="flex items-center gap-1.5 text-xs font-semibold text-white uppercase tracking-wider flex-shrink-0 pl-4 pr-4 z-10 bg-[#3B82F6]">
           <AlertTriangle className="w-3.5 h-3.5" />
           Live
         </div>
         <div className="overflow-hidden flex-1">
-          <div className="flex gap-8 text-sm ticker-scroll">
+          <div className="flex gap-8 text-sm text-white ticker-scroll">
             {violations.map((v) => (
               <TickerItem key={`a-${v.id}`} v={v} />
             ))}
