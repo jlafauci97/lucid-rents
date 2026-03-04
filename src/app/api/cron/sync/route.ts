@@ -137,9 +137,9 @@ async function getLastSyncDate(
     return toSodaDate(data.completed_at);
   }
 
-  // Default: 30 days ago
+  // Default: 7 days ago (keeps initial sync small enough for 60s limit)
   const d = new Date();
-  d.setDate(d.getDate() - 30);
+  d.setDate(d.getDate() - 7);
   return toSodaDate(d.toISOString());
 }
 
@@ -782,9 +782,9 @@ async function syncNYPDComplaints(supabase: ReturnType<typeof getSupabaseAdmin>)
   if (lastSyncData?.completed_at) {
     lastSync = toSodaDate(lastSyncData.completed_at);
   } else {
-    // First sync: go back 1 year to capture available data
+    // First sync: go back 7 days (keeps within 60s function limit)
     const d = new Date();
-    d.setFullYear(d.getFullYear() - 1);
+    d.setDate(d.getDate() - 7);
     lastSync = toSodaDate(d.toISOString());
   }
 
