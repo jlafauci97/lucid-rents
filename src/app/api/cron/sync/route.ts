@@ -689,9 +689,13 @@ async function syncDOBViolations(supabase: ReturnType<typeof getSupabaseAdmin>):
         .filter((r) => r.isn_dob_bis_viol) // Fixed: API field has trailing L
         .map((r) => {
           // Construct BBL from boro/block/lot (DOB doesn't have a bbl field)
+          // Standard NYC BBL = boro(1) + block(5) + lot(4) = 10 digits
+          // DOB API returns lot as 5 digits; we take last 4 to match buildings table
           let bbl: string | null = null;
           if (r.boro && r.block && r.lot) {
-            bbl = `${r.boro}${r.block.padStart(5, "0")}${r.lot.padStart(4, "0")}`;
+            const block = r.block.padStart(5, "0").slice(-5);
+            const lot = r.lot.padStart(4, "0").slice(-4);
+            bbl = `${r.boro}${block}${lot}`;
           }
 
           return {
