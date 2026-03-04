@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { MapPin, Building2, Calendar, Users, AlertTriangle, ArrowLeftRight } from "lucide-react";
+import { MapPin, Building2, Calendar, Users, AlertTriangle, ArrowLeftRight, ShieldCheck } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { LetterGrade } from "@/components/ui/LetterGrade";
@@ -66,6 +66,12 @@ export function BuildingCard({ building }: BuildingCardProps) {
                   <Badge variant="danger">
                     <AlertTriangle className="w-3 h-3 mr-1" />
                     {building.violation_count} violation{building.violation_count !== 1 ? "s" : ""}
+                  </Badge>
+                )}
+                {building.is_rent_stabilized && (
+                  <Badge variant="success">
+                    <ShieldCheck className="w-3 h-3 mr-1" />
+                    Rent Stabilized
                   </Badge>
                 )}
               </div>

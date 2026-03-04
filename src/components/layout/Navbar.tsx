@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Search, PenSquare, Menu, X, User, LogOut, AlertTriangle, Users, Bell, ArrowLeftRight, Radio, Siren, Map } from "lucide-react";
+import { Search, PenSquare, Menu, X, User, LogOut, AlertTriangle, Users, Bell, ArrowLeftRight, Radio, Siren, Map, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 
 export async function Navbar() {
@@ -51,6 +51,13 @@ export async function Navbar() {
               >
                 <Siren className="w-4 h-4" />
                 Crime
+              </Link>
+              <Link
+                href="/rent-stabilization"
+                className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors"
+              >
+                <ShieldCheck className="w-4 h-4" />
+                Rent Stabilized
               </Link>
               <Link
                 href="/map"

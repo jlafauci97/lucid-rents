@@ -2,32 +2,47 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { AlertTriangle, Shield } from 'lucide-react';
+import { AlertTriangle, Shield, MessageSquare, Star, Scale, HardHat, Siren } from 'lucide-react';
 import { BOROUGH_SLUGS } from '@/lib/seo';
+import type { ActivityItem } from '@/app/api/activity/route';
 
-interface Violation {
-  id: string;
-  violationClass: string;
-  description: string;
-  date: string;
-  address: string;
-  borough: string;
-  slug: string | null;
-  boroughSlug: string;
-}
-
-const classColors: Record<string, string> = {
-  C: 'text-red-200',
-  B: 'text-orange-200',
-  A: 'text-yellow-200',
-  I: 'text-white',
+/** Icon color on the blue ticker background — lighter variants for readability */
+const typeIconColors: Record<ActivityItem['type'], string> = {
+  violation: 'text-red-200',
+  complaint: 'text-amber-200',
+  review: 'text-white',
+  litigation: 'text-purple-200',
+  dob_violation: 'text-sky-200',
+  crime: 'text-red-300',
 };
 
-const classLabels: Record<string, string> = {
-  C: 'Immediately Hazardous',
-  B: 'Hazardous',
-  A: 'Non-Hazardous',
-  I: 'Info',
+function TypeIcon({ type }: { type: ActivityItem['type'] }) {
+  const color = typeIconColors[type] || 'text-white/70';
+  const cls = `w-3.5 h-3.5 flex-shrink-0 ${color}`;
+
+  switch (type) {
+    case 'violation':
+      return <Shield className={cls} />;
+    case 'complaint':
+      return <MessageSquare className={cls} />;
+    case 'review':
+      return <Star className={cls} />;
+    case 'litigation':
+      return <Scale className={cls} />;
+    case 'dob_violation':
+      return <HardHat className={cls} />;
+    case 'crime':
+      return <Siren className={cls} />;
+  }
+}
+
+const typeLabels: Record<ActivityItem['type'], string> = {
+  violation: 'HPD Violation',
+  complaint: 'Complaint',
+  review: 'Review',
+  litigation: 'Litigation',
+  dob_violation: 'DOB Violation',
+  crime: 'Crime',
 };
 
 function formatDate(dateStr: string): string {
@@ -35,26 +50,34 @@ function formatDate(dateStr: string): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-function buildUrl(v: Violation): string | null {
-  if (!v.slug) return null;
-  const boroughSlug = BOROUGH_SLUGS[v.boroughSlug] || v.boroughSlug.toLowerCase().replace(/\s+/g, '-');
-  return `/building/${boroughSlug}/${v.slug}`;
+function buildItemUrl(item: ActivityItem): string | null {
+  if (item.type === 'crime' && item.zipCode) {
+    return `/crime/${item.zipCode}`;
+  }
+  if (item.buildingSlug && item.borough) {
+    const boroughSlug = BOROUGH_SLUGS[item.borough] || item.borough.toLowerCase().replace(/\s+/g, '-');
+    return `/building/${boroughSlug}/${item.buildingSlug}`;
+  }
+  if (item.buildingId) {
+    return `/building/${item.buildingId}`;
+  }
+  return null;
 }
 
-function TickerItem({ v }: { v: Violation }) {
-  const url = buildUrl(v);
+function TickerItem({ item }: { item: ActivityItem }) {
+  const url = buildItemUrl(item);
   const content = (
     <span className="inline-flex items-center gap-2 whitespace-nowrap">
-      <Shield
-        className={`w-3.5 h-3.5 flex-shrink-0 ${classColors[v.violationClass] || 'text-gray-400'}`}
-        title={classLabels[v.violationClass] || v.violationClass}
-      />
+      <TypeIcon type={item.type} />
+      <span className="text-white/50 text-xs font-medium uppercase tracking-wide">
+        {typeLabels[item.type]}
+      </span>
       <span className="font-medium text-white/90">
-        {v.address}{v.borough ? `, ${v.borough}` : ''}
+        {item.buildingAddress}{item.borough ? `, ${item.borough}` : ''}
       </span>
       <span className="text-white/50 mx-1">&mdash;</span>
-      <span className="text-white/70">{v.description}</span>
-      <span className="text-white/40 text-xs">{formatDate(v.date)}</span>
+      <span className="text-white/70">{item.description}</span>
+      <span className="text-white/40 text-xs">{formatDate(item.date)}</span>
     </span>
   );
 
@@ -69,14 +92,14 @@ function TickerItem({ v }: { v: Violation }) {
 }
 
 export function ViolationTicker() {
-  const [violations, setViolations] = useState<Violation[]>([]);
+  const [items, setItems] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/violations/recent')
+    fetch('/api/activity?limit=30')
       .then((res) => res.json())
       .then((data) => {
-        if (data.violations) setViolations(data.violations);
+        if (data.items) setItems(data.items);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -100,7 +123,10 @@ export function ViolationTicker() {
     );
   }
 
-  if (violations.length === 0) return null;
+  if (items.length === 0) return null;
+
+  // Scale animation duration by item count for consistent speed
+  const duration = items.length * 18;
 
   return (
     <div className="bg-[#3B82F6] border-y border-blue-400/30 py-3 overflow-hidden group">
@@ -111,11 +137,11 @@ export function ViolationTicker() {
         </div>
         <div className="overflow-hidden flex-1">
           <div className="flex gap-8 text-sm text-white ticker-scroll">
-            {violations.map((v) => (
-              <TickerItem key={`a-${v.id}`} v={v} />
+            {items.map((item) => (
+              <TickerItem key={`a-${item.type}-${item.id}`} item={item} />
             ))}
-            {violations.map((v) => (
-              <TickerItem key={`b-${v.id}`} v={v} />
+            {items.map((item) => (
+              <TickerItem key={`b-${item.type}-${item.id}`} item={item} />
             ))}
           </div>
         </div>
@@ -123,7 +149,7 @@ export function ViolationTicker() {
 
       <style jsx>{`
         .ticker-scroll {
-          animation: ticker 528s linear infinite;
+          animation: ticker ${duration}s linear infinite;
           width: max-content;
         }
         .group:hover .ticker-scroll {

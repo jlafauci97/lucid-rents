@@ -31,6 +31,9 @@ export interface Building {
   litigation_count: number;
   dob_violation_count: number;
   crime_count: number;
+  is_rent_stabilized: boolean;
+  stabilized_units: number | null;
+  stabilized_year: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -217,6 +220,18 @@ export interface BuildingScore {
   public_data_score: number | null;
   combined_score: number | null;
   updated_at: string;
+}
+
+export interface RentStabilization {
+  id: string;
+  building_id: string | null;
+  bbl: string;
+  year: number;
+  units_stabilized: number | null;
+  units_total: number | null;
+  est_units_stabilized: number | null;
+  diff_units_stabilized: number | null;
+  imported_at: string;
 }
 
 export interface SearchResult {

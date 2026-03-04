@@ -1,4 +1,4 @@
-import { MapPin, Building2, Calendar, Layers, Users } from "lucide-react";
+import { MapPin, Building2, Calendar, Layers, Users, ShieldCheck } from "lucide-react";
 import { ScoreGauge } from "@/components/ui/ScoreGauge";
 import { LetterGrade } from "@/components/ui/LetterGrade";
 import { Badge } from "@/components/ui/Badge";
@@ -66,6 +66,12 @@ export function BuildingHeader({ building }: BuildingHeaderProps) {
               {building.complaint_count > 0 && (
                 <Badge variant="warning">
                   {building.complaint_count} complaint{building.complaint_count !== 1 ? "s" : ""}
+                </Badge>
+              )}
+              {building.is_rent_stabilized && (
+                <Badge variant="success">
+                  <ShieldCheck className="w-3 h-3 mr-1" />
+                  Rent Stabilized
                 </Badge>
               )}
               {building.owner_name && (

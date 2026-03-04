@@ -10,6 +10,7 @@ import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { MonitorButton } from "@/components/building/MonitorButton";
 import { NearbyCrimeSummary } from "@/components/crime/NearbyCrimeSummary";
+import { RentStabilizationCard } from "@/components/building/RentStabilizationCard";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { SLUG_TO_BOROUGH, buildingUrl, canonicalUrl, buildingJsonLd, landlordUrl } from "@/lib/seo";
@@ -295,6 +296,14 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
                 </dl>
               </CardContent>
             </Card>
+
+            {/* Rent Stabilization */}
+            <RentStabilizationCard
+              isStabilized={building.is_rent_stabilized}
+              stabilizedUnits={building.stabilized_units}
+              totalUnits={building.residential_units}
+              stabilizedYear={building.stabilized_year}
+            />
 
             {/* Neighborhood Crime */}
             {building.zip_code && (
