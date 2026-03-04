@@ -2,6 +2,7 @@ import { SearchBar } from "@/components/search/SearchBar";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { LiveStats } from "@/components/home/LiveStats";
 import { NearbyBuildings } from "@/components/home/NearbyBuildings";
+import { ViolationTicker } from "@/components/home/ViolationTicker";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { FileSearch, Users, Shield } from "lucide-react";
@@ -49,6 +50,9 @@ export default function HomePage() {
           </p>
         </div>
       </section>
+
+      {/* Violation Ticker */}
+      <ViolationTicker />
 
       {/* Stats */}
       <section className="border-b border-[#e2e8f0]">
