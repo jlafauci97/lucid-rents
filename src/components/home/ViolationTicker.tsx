@@ -123,7 +123,7 @@ export function ViolationTicker() {
 
       <style jsx>{`
         .ticker-scroll {
-          animation: ticker 120s linear infinite;
+          animation: ticker 240s linear infinite;
           width: max-content;
         }
         @keyframes ticker {
