@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Shield } from 'lucide-react';
 import { BOROUGH_SLUGS } from '@/lib/seo';
 
 interface Violation {
@@ -17,10 +17,10 @@ interface Violation {
 }
 
 const classColors: Record<string, string> = {
-  C: 'bg-red-500',
-  B: 'bg-orange-400',
-  A: 'bg-yellow-400',
-  I: 'bg-blue-400',
+  C: 'text-red-400',
+  B: 'text-orange-400',
+  A: 'text-yellow-400',
+  I: 'text-blue-400',
 };
 
 const classLabels: Record<string, string> = {
@@ -45,8 +45,8 @@ function TickerItem({ v }: { v: Violation }) {
   const url = buildUrl(v);
   const content = (
     <span className="inline-flex items-center gap-2 whitespace-nowrap">
-      <span
-        className={`w-2 h-2 rounded-full flex-shrink-0 ${classColors[v.violationClass] || 'bg-gray-400'}`}
+      <Shield
+        className={`w-3.5 h-3.5 flex-shrink-0 ${classColors[v.violationClass] || 'text-gray-400'}`}
         title={classLabels[v.violationClass] || v.violationClass}
       />
       <span className="font-medium text-white/90">
