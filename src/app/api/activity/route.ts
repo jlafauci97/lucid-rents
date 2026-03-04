@@ -25,6 +25,12 @@ export async function GET(request: Request) {
     const supabase = await createClient();
     const perSource = Math.ceil(limit / 6);
 
+    // Date cutoff: only fetch recent records to avoid full table scans on
+    // tables with millions of rows (DOB: 2.2M, HPD: 800K, 311: 800K, NYPD: 475K)
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 90);
+    const cutoffDate = cutoff.toISOString();
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const promises: PromiseLike<any>[] = [];
 
@@ -35,6 +41,7 @@ export async function GET(request: Request) {
           .from("reviews")
           .select("id, title, overall_rating, created_at, building_id, buildings(full_address, borough, slug)")
           .not("building_id", "is", null)
+          .gte("created_at", cutoffDate)
           .order("created_at", { ascending: false })
           .limit(filter === "all" ? perSource : limit)
       );
@@ -48,6 +55,7 @@ export async function GET(request: Request) {
           .from("hpd_violations")
           .select("id, class, nov_description, inspection_date, building_id, buildings(full_address, borough, slug)")
           .not("building_id", "is", null)
+          .gte("inspection_date", cutoffDate.slice(0, 10))
           .order("inspection_date", { ascending: false })
           .limit(filter === "all" ? perSource : limit)
       );
@@ -61,6 +69,7 @@ export async function GET(request: Request) {
           .from("complaints_311")
           .select("id, complaint_type, descriptor, created_date, building_id, buildings(full_address, borough, slug)")
           .not("building_id", "is", null)
+          .gte("created_date", cutoffDate)
           .order("created_date", { ascending: false })
           .limit(filter === "all" ? perSource : limit)
       );
@@ -75,6 +84,7 @@ export async function GET(request: Request) {
           .select("id, case_type, case_status, respondent, case_open_date, building_id, buildings(full_address, borough, slug)")
           .not("building_id", "is", null)
           .not("case_open_date", "is", null)
+          .gte("case_open_date", cutoffDate.slice(0, 10))
           .order("case_open_date", { ascending: false })
           .limit(filter === "all" ? perSource : limit)
       );
@@ -89,6 +99,7 @@ export async function GET(request: Request) {
           .select("id, violation_type, description, issue_date, building_id, buildings(full_address, borough, slug)")
           .not("building_id", "is", null)
           .not("issue_date", "is", null)
+          .gte("issue_date", cutoffDate.slice(0, 10))
           .order("issue_date", { ascending: false })
           .limit(filter === "all" ? perSource : limit)
       );
@@ -103,6 +114,7 @@ export async function GET(request: Request) {
           .select("id, offense_description, pd_description, crime_category, law_category, cmplnt_date, borough, zip_code")
           .in("crime_category", ["violent", "property"])
           .not("cmplnt_date", "is", null)
+          .gte("cmplnt_date", cutoffDate.slice(0, 10))
           .order("cmplnt_date", { ascending: false })
           .limit(filter === "all" ? perSource : limit)
       );
