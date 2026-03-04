@@ -110,7 +110,7 @@ export function ViolationTicker() {
           Live
         </div>
         <div className="overflow-hidden flex-1">
-          <div className="flex gap-8 text-sm ticker-scroll group-hover:[animation-play-state:paused]">
+          <div className="flex gap-8 text-sm ticker-scroll">
             {violations.map((v) => (
               <TickerItem key={`a-${v.id}`} v={v} />
             ))}
@@ -123,8 +123,11 @@ export function ViolationTicker() {
 
       <style jsx>{`
         .ticker-scroll {
-          animation: ticker 480s linear infinite;
+          animation: ticker 528s linear infinite;
           width: max-content;
+        }
+        .group:hover .ticker-scroll {
+          animation-play-state: paused;
         }
         @keyframes ticker {
           0% { transform: translateX(0); }
