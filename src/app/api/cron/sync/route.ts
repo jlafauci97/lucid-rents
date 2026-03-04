@@ -961,7 +961,23 @@ async function updateBuildingCounts(
 }
 
 // ---------------------------------------------------------------------------
+// Max duration for Vercel serverless functions (Hobby=60s)
+// ---------------------------------------------------------------------------
+export const maxDuration = 60;
+
+// Source registry — maps query param to sync function
+const SOURCES: Record<string, (supabase: ReturnType<typeof getSupabaseAdmin>) => Promise<SyncResult>> = {
+  hpd: syncHPDViolations,
+  complaints: sync311Complaints,
+  litigations: syncHPDLitigations,
+  dob: syncDOBViolations,
+  nypd: syncNYPDComplaints,
+};
+
+// ---------------------------------------------------------------------------
 // GET handler -- works as both Vercel cron and manual trigger
+// Use ?source=hpd|complaints|litigations|dob|nypd to sync one source at a time.
+// Omit source param to run all (may timeout on Hobby plan).
 // ---------------------------------------------------------------------------
 export async function GET(req: NextRequest) {
   // ---- Auth check ----
@@ -974,22 +990,35 @@ export async function GET(req: NextRequest) {
   }
 
   const startTime = Date.now();
+  const { searchParams } = new URL(req.url);
+  const sourceParam = searchParams.get("source");
 
   try {
     const supabase = getSupabaseAdmin();
 
-    // Run all syncs
-    const [hpdResult, complaintsResult, litigationsResult, dobResult, nypdResult] = await Promise.all([
-      syncHPDViolations(supabase),
-      sync311Complaints(supabase),
-      syncHPDLitigations(supabase),
-      syncDOBViolations(supabase),
-      syncNYPDComplaints(supabase),
-    ]);
+    // Determine which sources to sync
+    let sourcesToRun: [string, (supabase: ReturnType<typeof getSupabaseAdmin>) => Promise<SyncResult>][];
 
-    // Collect all affected building IDs from all syncs
+    if (sourceParam) {
+      const fn = SOURCES[sourceParam];
+      if (!fn) {
+        return NextResponse.json(
+          { error: `Unknown source: ${sourceParam}. Valid: ${Object.keys(SOURCES).join(", ")}` },
+          { status: 400 }
+        );
+      }
+      sourcesToRun = [[sourceParam, fn]];
+    } else {
+      sourcesToRun = Object.entries(SOURCES);
+    }
+
+    // Run selected syncs (sequentially when running all to avoid timeout)
+    const results: Record<string, SyncResult> = {};
     const allAffectedIds = new Set<string>();
-    for (const result of [hpdResult, complaintsResult, litigationsResult, dobResult, nypdResult]) {
+
+    for (const [name, syncFn] of sourcesToRun) {
+      const result = await syncFn(supabase);
+      results[name] = result;
       for (const id of result.affectedBuildingIds) {
         allAffectedIds.add(id);
       }
@@ -1023,38 +1052,25 @@ export async function GET(req: NextRequest) {
 
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 
-    return NextResponse.json({
+    // Build response
+    const response: Record<string, unknown> = {
       success: true,
+      source: sourceParam || "all",
       duration_seconds: parseFloat(elapsed),
       buildings_updated: allAffectedIds.size,
-      hpd_violations: {
-        records_added: hpdResult.totalAdded,
-        records_linked: hpdResult.totalLinked,
-        errors: hpdResult.errors,
-      },
-      complaints_311: {
-        records_added: complaintsResult.totalAdded,
-        records_linked: complaintsResult.totalLinked,
-        errors: complaintsResult.errors,
-      },
-      hpd_litigations: {
-        records_added: litigationsResult.totalAdded,
-        records_linked: litigationsResult.totalLinked,
-        errors: litigationsResult.errors,
-      },
-      dob_violations: {
-        records_added: dobResult.totalAdded,
-        records_linked: dobResult.totalLinked,
-        errors: dobResult.errors,
-      },
-      nypd_complaints: {
-        records_added: nypdResult.totalAdded,
-        records_linked: nypdResult.totalLinked,
-        errors: nypdResult.errors,
-      },
       slugs_backfilled: slugsBackfilled,
       building_count_errors: countErrors,
-    });
+    };
+
+    for (const [name, result] of Object.entries(results)) {
+      response[name] = {
+        records_added: result.totalAdded,
+        records_linked: result.totalLinked,
+        errors: result.errors,
+      };
+    }
+
+    return NextResponse.json(response);
   } catch (err) {
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
     console.error("Cron sync error:", err);

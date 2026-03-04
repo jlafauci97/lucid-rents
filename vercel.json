@@ -1,0 +1,28 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/sync?source=hpd",
+      "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/api/cron/sync?source=complaints",
+      "schedule": "10 5 * * *"
+    },
+    {
+      "path": "/api/cron/sync?source=litigations",
+      "schedule": "20 5 * * *"
+    },
+    {
+      "path": "/api/cron/sync?source=dob",
+      "schedule": "30 5 * * *"
+    },
+    {
+      "path": "/api/cron/sync?source=nypd",
+      "schedule": "40 5 * * *"
+    },
+    {
+      "path": "/api/cron/sync-rent-stabilization",
+      "schedule": "0 7 1 * *"
+    }
+  ]
+}

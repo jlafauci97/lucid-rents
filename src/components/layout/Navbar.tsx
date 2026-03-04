@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { Search, PenSquare, Menu, X, User, LogOut, AlertTriangle, Users, Bell, ArrowLeftRight, Radio, Siren, Map, ShieldCheck } from "lucide-react";
+import { Search, PenSquare, User, LogOut, AlertTriangle, Users, Bell, Radio, Siren, Map } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { NavDropdown } from "./NavDropdown";
 
 export async function Navbar() {
   const supabase = await createClient();
@@ -39,25 +40,11 @@ export async function Navbar() {
                 Landlords
               </Link>
               <Link
-                href="/compare"
-                className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors"
-              >
-                <ArrowLeftRight className="w-4 h-4" />
-                Compare
-              </Link>
-              <Link
                 href="/crime"
                 className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors"
               >
                 <Siren className="w-4 h-4" />
                 Crime
-              </Link>
-              <Link
-                href="/rent-stabilization"
-                className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors"
-              >
-                <ShieldCheck className="w-4 h-4" />
-                Rent Stabilized
               </Link>
               <Link
                 href="/map"
@@ -73,6 +60,7 @@ export async function Navbar() {
                 <Radio className="w-4 h-4" />
                 Feed
               </Link>
+              <NavDropdown />
               <Link
                 href="/review/new"
                 className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors"
