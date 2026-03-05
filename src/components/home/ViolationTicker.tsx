@@ -18,7 +18,7 @@ const typeIconColors: Record<ActivityItem['type'], string> = {
 
 function TypeIcon({ type }: { type: ActivityItem['type'] }) {
   const color = typeIconColors[type] || 'text-white/70';
-  const cls = `w-3.5 h-3.5 flex-shrink-0 ${color}`;
+  const cls = `w-5 h-5 flex-shrink-0 ${color}`;
 
   switch (type) {
     case 'violation':
@@ -110,7 +110,7 @@ export function ViolationTicker() {
       <div className="bg-[#3B82F6] border-y border-blue-400/30 py-3 overflow-hidden">
         <div className="flex items-center gap-3 px-4">
           <span className="flex items-center gap-1.5 text-xs font-semibold text-white uppercase tracking-wider flex-shrink-0">
-            <AlertTriangle className="w-3.5 h-3.5" />
+            <AlertTriangle className="w-4 h-4" />
             Live
           </span>
           <div className="flex gap-8">
@@ -129,14 +129,20 @@ export function ViolationTicker() {
   const duration = items.length * 18;
 
   return (
-    <div className="bg-[#3B82F6] border-y border-blue-400/30 py-3 overflow-hidden group">
+    <div className="bg-[#3B82F6] border-y border-blue-400/30 py-3 overflow-hidden group/ticker">
       <div className="flex items-center">
         <div className="flex items-center gap-1.5 text-xs font-semibold text-white uppercase tracking-wider flex-shrink-0 pl-4 pr-4 z-10 bg-[#3B82F6]">
-          <AlertTriangle className="w-3.5 h-3.5" />
+          <AlertTriangle className="w-4 h-4" />
           Live
         </div>
         <div className="overflow-hidden flex-1">
-          <div className="flex gap-8 text-sm text-white ticker-scroll">
+          <div
+            className="flex gap-8 text-sm text-white group-hover/ticker:[animation-play-state:paused]"
+            style={{
+              animation: `ticker ${duration}s linear infinite`,
+              width: 'max-content',
+            }}
+          >
             {items.map((item) => (
               <TickerItem key={`a-${item.type}-${item.id}`} item={item} />
             ))}
@@ -146,20 +152,6 @@ export function ViolationTicker() {
           </div>
         </div>
       </div>
-
-      <style jsx>{`
-        .ticker-scroll {
-          animation: ticker ${duration}s linear infinite;
-          width: max-content;
-        }
-        .group:hover .ticker-scroll {
-          animation-play-state: paused;
-        }
-        @keyframes ticker {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-      `}</style>
     </div>
   );
 }
