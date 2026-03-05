@@ -468,7 +468,7 @@ async function sync311Complaints(supabase: ReturnType<typeof getSupabaseAdmin>):
       }
     }
 
-    // Linking: match by address (scoped to this sync run)
+    // Linking: match by address (scoped to this sync run, limited to avoid timeout)
     try {
       const { data: unlinked } = await supabase
         .from("complaints_311")
@@ -476,7 +476,7 @@ async function sync311Complaints(supabase: ReturnType<typeof getSupabaseAdmin>):
         .is("building_id", null)
         .not("incident_address", "is", null)
         .gte("imported_at", syncStartTime)
-        .limit(50000);
+        .limit(2000);
 
       if (unlinked && unlinked.length > 0) {
         const addressMap = new Map<string, string[]>();
@@ -489,7 +489,14 @@ async function sync311Complaints(supabase: ReturnType<typeof getSupabaseAdmin>):
           addressMap.get(addr)!.push(c.id);
         }
 
+        // Limit address lookups to avoid timeout (each does an ilike query)
+        let lookupCount = 0;
+        const MAX_LOOKUPS = 200;
+
         for (const [address, complaintIds] of addressMap) {
+          if (lookupCount >= MAX_LOOKUPS) break;
+          lookupCount++;
+
           const { data: matchedBuildings } = await supabase
             .from("buildings")
             .select("id")
