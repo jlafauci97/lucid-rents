@@ -348,7 +348,6 @@ async function syncHPDViolations(supabase: ReturnType<typeof getSupabaseAdmin>):
           house_number: r.housenumber || null,
           street_name: r.streetname || null,
           apartment: r.apartment || null,
-          raw_data: r,
           imported_at: new Date().toISOString(),
         }));
 
@@ -455,7 +454,6 @@ async function sync311Complaints(supabase: ReturnType<typeof getSupabaseAdmin>):
           incident_address: r.incident_address || null,
           latitude: r.latitude ? parseFloat(r.latitude) : null,
           longitude: r.longitude ? parseFloat(r.longitude) : null,
-          raw_data: r,
           imported_at: new Date().toISOString(),
         }));
 
@@ -601,7 +599,6 @@ async function syncHPDLitigations(supabase: ReturnType<typeof getSupabaseAdmin>)
           house_number: r.housenumber || null,
           street_name: r.streetname || null,
           zip: r.zip || null,
-          raw_data: r,
           imported_at: new Date().toISOString(),
         }));
 
@@ -721,8 +718,7 @@ async function syncDOBViolations(supabase: ReturnType<typeof getSupabaseAdmin>):
             borough: r.boro ? BOROUGH_MAP[r.boro] || null : null,
             house_number: r.house_number || null,
             street_name: r.street || null,
-            raw_data: r,
-            imported_at: new Date().toISOString(),
+              imported_at: new Date().toISOString(),
           };
         });
 
@@ -853,7 +849,6 @@ async function syncNYPDComplaints(supabase: ReturnType<typeof getSupabaseAdmin>)
           latitude: r.latitude ? parseFloat(r.latitude) : null,
           longitude: r.longitude ? parseFloat(r.longitude) : null,
           zip_code: null, // Derived from lat/lon after upsert via nyc_zip_centroids
-          raw_data: r,
           imported_at: new Date().toISOString(),
         }));
 
