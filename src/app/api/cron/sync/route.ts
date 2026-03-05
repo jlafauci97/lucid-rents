@@ -139,8 +139,10 @@ async function getLastSyncDate(
     // Subtract 3 days from last sync time to account for data publishing lag.
     // NYC Open Data may update records a few days after the date they occurred.
     // The upsert with onConflict ensures re-fetched records don't create duplicates.
+    // Truncate to start-of-day since SODA dates are at midnight (T00:00:00).
     const syncDate = new Date(data.completed_at);
     syncDate.setDate(syncDate.getDate() - 3);
+    syncDate.setUTCHours(0, 0, 0, 0);
     return toSodaDate(syncDate.toISOString());
   }
 
@@ -794,6 +796,7 @@ async function syncNYPDComplaints(supabase: ReturnType<typeof getSupabaseAdmin>)
     // Subtract 3 days for data publishing lag (same as getLastSyncDate)
     const syncDate = new Date(lastSyncData.completed_at);
     syncDate.setDate(syncDate.getDate() - 3);
+    syncDate.setUTCHours(0, 0, 0, 0);
     lastSync = toSodaDate(syncDate.toISOString());
   } else {
     // First sync: go back 7 days (keeps within 60s function limit)
