@@ -119,7 +119,9 @@ function toSodaDate(isoString: string): string {
   return isoString.replace("Z", "").replace(/\+00:00$/, "");
 }
 
-/** Get the last successful sync date for a given sync type. */
+/** Get the last successful sync date for a given sync type.
+ *  Subtracts a 3-day safety overlap to catch delayed data updates on
+ *  NYC Open Data. The upsert (onConflict) ensures no duplicates. */
 async function getLastSyncDate(
   supabase: ReturnType<typeof getSupabaseAdmin>,
   syncType: string
@@ -134,7 +136,12 @@ async function getLastSyncDate(
     .single();
 
   if (data?.completed_at) {
-    return toSodaDate(data.completed_at);
+    // Subtract 3 days from last sync time to account for data publishing lag.
+    // NYC Open Data may update records a few days after the date they occurred.
+    // The upsert with onConflict ensures re-fetched records don't create duplicates.
+    const syncDate = new Date(data.completed_at);
+    syncDate.setDate(syncDate.getDate() - 3);
+    return toSodaDate(syncDate.toISOString());
   }
 
   // Default: 7 days ago (keeps initial sync small enough for 60s limit)
@@ -784,7 +791,10 @@ async function syncNYPDComplaints(supabase: ReturnType<typeof getSupabaseAdmin>)
 
   let lastSync: string;
   if (lastSyncData?.completed_at) {
-    lastSync = toSodaDate(lastSyncData.completed_at);
+    // Subtract 3 days for data publishing lag (same as getLastSyncDate)
+    const syncDate = new Date(lastSyncData.completed_at);
+    syncDate.setDate(syncDate.getDate() - 3);
+    lastSync = toSodaDate(syncDate.toISOString());
   } else {
     // First sync: go back 7 days (keeps within 60s function limit)
     const d = new Date();
