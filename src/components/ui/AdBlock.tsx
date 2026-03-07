@@ -21,6 +21,14 @@ const formatStyles: Record<string, React.CSSProperties> = {
   auto: { display: 'block' },
 };
 
+// Map ad format to real AdSense ad unit slot IDs
+const SLOT_IDS: Record<string, string> = {
+  horizontal: '1911276917',
+  rectangle: '5523218861',
+  vertical: '2437890529',
+  auto: '1911276917',
+};
+
 export function AdBlock({ adSlot, adFormat = 'auto', className = '' }: AdBlockProps) {
   const adRef = useRef<HTMLModElement>(null);
   const pushed = useRef(false);
@@ -35,6 +43,8 @@ export function AdBlock({ adSlot, adFormat = 'auto', className = '' }: AdBlockPr
     }
   }, []);
 
+  const slotId = SLOT_IDS[adFormat] || SLOT_IDS.auto;
+
   return (
     <div className={`text-center my-6 ${className}`}>
       <span className="text-xs text-slate-400 block mb-1">Advertisement</span>
@@ -43,7 +53,7 @@ export function AdBlock({ adSlot, adFormat = 'auto', className = '' }: AdBlockPr
         className="adsbygoogle"
         style={formatStyles[adFormat]}
         data-ad-client="ca-pub-2908534121884582"
-        data-ad-slot={adSlot}
+        data-ad-slot={slotId}
         data-ad-format={adFormat === 'auto' ? 'auto' : undefined}
         data-full-width-responsive={adFormat === 'auto' || adFormat === 'horizontal' ? 'true' : undefined}
       />
