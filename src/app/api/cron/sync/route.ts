@@ -32,6 +32,8 @@ const BOROUGH_MAP: Record<string, string> = {
 
 const PAGE_SIZE = 5000;
 const BATCH_SIZE = 500;
+const MAX_PAGES = 4; // Safety limit: max API pages per sync (prevents 60s timeout)
+const STALE_SYNC_MINUTES = 5; // Mark "running" syncs older than this as "failed"
 
 const COMPLAINT_TYPES = [
   "HEAT/HOT WATER",
@@ -146,9 +148,9 @@ async function getLastSyncDate(
     return toSodaDate(syncDate.toISOString());
   }
 
-  // Default: 7 days ago (keeps initial sync small enough for 60s limit)
+  // Default: 3 days ago (keeps initial sync small enough for 60s limit)
   const d = new Date();
-  d.setDate(d.getDate() - 7);
+  d.setDate(d.getDate() - 3);
   return toSodaDate(d.toISOString());
 }
 
@@ -167,6 +169,27 @@ async function createSyncLog(
     throw new Error(`Failed to create sync_log: ${error?.message}`);
   }
   return data.id;
+}
+
+/** Mark stale "running" sync_log entries as "failed" to prevent zombie accumulation.
+ *  This handles the case where a previous sync was killed by Vercel's 60s timeout
+ *  before it could finalize the log entry. */
+async function cleanupStaleSyncs(
+  supabase: ReturnType<typeof getSupabaseAdmin>
+): Promise<number> {
+  const cutoff = new Date(Date.now() - STALE_SYNC_MINUTES * 60 * 1000).toISOString();
+  const { data } = await supabase
+    .from("sync_log")
+    .update({
+      status: "failed",
+      completed_at: new Date().toISOString(),
+      errors: ["Automatically marked as failed: exceeded stale timeout"],
+    })
+    .eq("status", "running")
+    .lt("started_at", cutoff)
+    .select("id");
+
+  return data?.length ?? 0;
 }
 
 /** Finalize a sync_log entry. */
@@ -305,6 +328,7 @@ async function syncHPDViolations(supabase: ReturnType<typeof getSupabaseAdmin>):
   try {
     let offset = 0;
     let hasMore = true;
+    let pagesFetched = 0;
 
     while (hasMore) {
       const url = buildSodaUrl(
@@ -355,7 +379,8 @@ async function syncHPDViolations(supabase: ReturnType<typeof getSupabaseAdmin>):
         totalAdded += await batchUpsert(supabase, "hpd_violations", rows, "violation_id", errors, "HPD");
       }
 
-      if (records.length < PAGE_SIZE) {
+      pagesFetched++;
+      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
         hasMore = false;
       } else {
         offset += PAGE_SIZE;
@@ -413,6 +438,7 @@ async function sync311Complaints(supabase: ReturnType<typeof getSupabaseAdmin>):
   try {
     let offset = 0;
     let hasMore = true;
+    let pagesFetched = 0;
 
     const typesIn = COMPLAINT_TYPES.map((t) => `'${t}'`).join(",");
 
@@ -461,7 +487,8 @@ async function sync311Complaints(supabase: ReturnType<typeof getSupabaseAdmin>):
         totalAdded += await batchUpsert(supabase, "complaints_311", rows, "unique_key", errors, "311");
       }
 
-      if (records.length < PAGE_SIZE) {
+      pagesFetched++;
+      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
         hasMore = false;
       } else {
         offset += PAGE_SIZE;
@@ -491,7 +518,7 @@ async function sync311Complaints(supabase: ReturnType<typeof getSupabaseAdmin>):
 
         // Limit address lookups to avoid timeout (each does an ilike query)
         let lookupCount = 0;
-        const MAX_LOOKUPS = 200;
+        const MAX_LOOKUPS = 50;
 
         for (const [address, complaintIds] of addressMap) {
           if (lookupCount >= MAX_LOOKUPS) break;
@@ -566,6 +593,7 @@ async function syncHPDLitigations(supabase: ReturnType<typeof getSupabaseAdmin>)
   try {
     let offset = 0;
     let hasMore = true;
+    let pagesFetched = 0;
 
     while (hasMore) {
       const url = buildSodaUrl(
@@ -613,7 +641,8 @@ async function syncHPDLitigations(supabase: ReturnType<typeof getSupabaseAdmin>)
         totalAdded += await batchUpsert(supabase, "hpd_litigations", rows, "litigation_id", errors, "HPD Litigations");
       }
 
-      if (records.length < PAGE_SIZE) {
+      pagesFetched++;
+      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
         hasMore = false;
       } else {
         offset += PAGE_SIZE;
@@ -674,6 +703,7 @@ async function syncDOBViolations(supabase: ReturnType<typeof getSupabaseAdmin>):
   try {
     let offset = 0;
     let hasMore = true;
+    let pagesFetched = 0;
 
     while (hasMore) {
       const url = buildSodaUrl(
@@ -733,7 +763,8 @@ async function syncDOBViolations(supabase: ReturnType<typeof getSupabaseAdmin>):
         totalAdded += await batchUpsert(supabase, "dob_violations", rows, "isn_dob_bis_vio", errors, "DOB Violations");
       }
 
-      if (records.length < PAGE_SIZE) {
+      pagesFetched++;
+      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
         hasMore = false;
       } else {
         offset += PAGE_SIZE;
@@ -802,9 +833,9 @@ async function syncNYPDComplaints(supabase: ReturnType<typeof getSupabaseAdmin>)
     syncDate.setUTCHours(0, 0, 0, 0);
     lastSync = toSodaDate(syncDate.toISOString());
   } else {
-    // First sync: go back 7 days (keeps within 60s function limit)
+    // First sync: go back 3 days (keeps within 60s function limit)
     const d = new Date();
-    d.setDate(d.getDate() - 7);
+    d.setDate(d.getDate() - 3);
     lastSync = toSodaDate(d.toISOString());
   }
 
@@ -818,6 +849,7 @@ async function syncNYPDComplaints(supabase: ReturnType<typeof getSupabaseAdmin>)
   try {
     let offset = 0;
     let hasMore = true;
+    let pagesFetched = 0;
 
     while (hasMore) {
       const url = buildSodaUrl(
@@ -863,7 +895,8 @@ async function syncNYPDComplaints(supabase: ReturnType<typeof getSupabaseAdmin>)
         totalAdded += await batchUpsert(supabase, "nypd_complaints", rows, "cmplnt_num", errors, "NYPD");
       }
 
-      if (records.length < PAGE_SIZE) {
+      pagesFetched++;
+      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
         hasMore = false;
       } else {
         offset += PAGE_SIZE;
@@ -1015,6 +1048,9 @@ export async function GET(req: NextRequest) {
   try {
     const supabase = getSupabaseAdmin();
 
+    // Clean up any zombie "running" sync_log entries from previous timeouts
+    const staleCleaned = await cleanupStaleSyncs(supabase);
+
     // Determine which sources to sync
     let sourcesToRun: [string, (supabase: ReturnType<typeof getSupabaseAdmin>) => Promise<SyncResult>][];
 
@@ -1076,6 +1112,7 @@ export async function GET(req: NextRequest) {
       success: true,
       source: sourceParam || "all",
       duration_seconds: parseFloat(elapsed),
+      stale_syncs_cleaned: staleCleaned,
       buildings_updated: allAffectedIds.size,
       slugs_backfilled: slugsBackfilled,
       building_count_errors: countErrors,
