@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Search, PenSquare, User, LogOut, AlertTriangle, Users, Bell, Radio, Siren, Map } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { NavDropdown } from "./NavDropdown";
+import { MobileMenu } from "./MobileMenu";
 
 export async function Navbar() {
   const supabase = await createClient();
@@ -114,15 +115,7 @@ export async function Navbar() {
               </div>
             )}
           </div>
-          {/* Mobile menu button - will be enhanced with client component later */}
-          <div className="md:hidden">
-            <Link
-              href="/search"
-              className="text-gray-300 hover:text-white p-2"
-            >
-              <Search className="w-5 h-5" />
-            </Link>
-          </div>
+          <MobileMenu isLoggedIn={!!user} />
         </div>
       </div>
     </nav>
