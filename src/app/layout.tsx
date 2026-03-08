@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+
+const GA_MEASUREMENT_ID = "G-FS7Q3PF982";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -53,6 +56,18 @@ export default function RootLayout({
           crossOrigin="anonymous"
         />
       </head>
+      <Script
+        src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+        strategy="afterInteractive"
+      />
+      <Script id="google-analytics" strategy="afterInteractive">
+        {`
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', '${GA_MEASUREMENT_ID}');
+        `}
+      </Script>
       <body
         className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}
       >
