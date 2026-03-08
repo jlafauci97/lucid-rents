@@ -38,10 +38,11 @@ export default async function sitemap({
 }: {
   id: number;
 }): Promise<MetadataRoute.Sitemap> {
-  if (id === 0) {
+  const numId = Number(id);
+  if (numId === 0) {
     return generateStaticSitemap();
   }
-  return generateBuildingSitemap(id - 1);
+  return generateBuildingSitemap(numId - 1);
 }
 
 async function generateStaticSitemap(): Promise<MetadataRoute.Sitemap> {
