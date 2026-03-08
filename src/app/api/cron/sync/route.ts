@@ -426,14 +426,18 @@ interface Complaint311RawRecord {
 }
 
 async function sync311Complaints(supabase: ReturnType<typeof getSupabaseAdmin>): Promise<SyncResult> {
+  const fnStart = Date.now();
   const lastSync = await getLastSyncDate(supabase, "complaints_311");
   const logId = await createSyncLog(supabase, "complaints_311");
-  const syncStartTime = new Date().toISOString();
 
   let totalAdded = 0;
   let totalLinked = 0;
   const errors: string[] = [];
   const affectedBuildingIds = new Set<string>();
+
+  // 311 uses a smaller page size + $select to stay within 60s Vercel timeout
+  const COMPLAINTS_PAGE_SIZE = 2000;
+  const COMPLAINTS_SELECT = "unique_key,complaint_type,descriptor,agency,status,created_date,closed_date,resolution_description,borough,incident_address,latitude,longitude";
 
   try {
     let offset = 0;
@@ -450,10 +454,10 @@ async function sync311Complaints(supabase: ReturnType<typeof getSupabaseAdmin>):
       const url = buildSodaUrl(
         "erm2-nwe9",
         `created_date > '${lastSync}' AND complaint_type IN (${typesIn})`,
-        PAGE_SIZE,
+        COMPLAINTS_PAGE_SIZE,
         offset,
         "created_date ASC"
-      );
+      ) + `&$select=${encodeURIComponent(COMPLAINTS_SELECT)}`;
 
       const res = await fetch(url);
       if (!res.ok) {
@@ -503,50 +507,64 @@ async function sync311Complaints(supabase: ReturnType<typeof getSupabaseAdmin>):
       }
 
       pagesFetched++;
-      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
+      if (records.length < COMPLAINTS_PAGE_SIZE || pagesFetched >= MAX_PAGES) {
         hasMore = false;
       } else {
-        offset += PAGE_SIZE;
+        offset += COMPLAINTS_PAGE_SIZE;
+      }
+
+      // Time budget: stop fetching if >35s elapsed (leave time for linking + finalization)
+      if (Date.now() - fnStart > 35_000) {
+        errors.push(`311 stopped fetching after ${pagesFetched} pages (time budget)`);
+        hasMore = false;
       }
     }
 
     // Linking: match by address using in-memory data (avoids slow imported_at query)
-    try {
-      let lookupCount = 0;
-      const MAX_LOOKUPS = 50;
+    // Skip if running low on time (>45s elapsed)
+    const elapsedMs = Date.now() - fnStart;
+    if (elapsedMs < 45_000 && addressToKeys.size > 0) {
+      try {
+        let lookupCount = 0;
+        const MAX_LOOKUPS = 30;
 
-      for (const [address, uniqueKeys] of addressToKeys) {
-        if (lookupCount >= MAX_LOOKUPS) break;
-        lookupCount++;
+        for (const [address, uniqueKeys] of addressToKeys) {
+          if (lookupCount >= MAX_LOOKUPS) break;
+          // Stop linking if running low on time
+          if (Date.now() - fnStart > 50_000) break;
+          lookupCount++;
 
-        const { data: matchedBuildings } = await supabase
-          .from("buildings")
-          .select("id")
-          .ilike("full_address", `%${address}%`)
-          .limit(1);
+          const { data: matchedBuildings } = await supabase
+            .from("buildings")
+            .select("id")
+            .ilike("full_address", `%${address}%`)
+            .limit(1);
 
-        if (matchedBuildings && matchedBuildings.length > 0) {
-          const buildingId = matchedBuildings[0].id;
+          if (matchedBuildings && matchedBuildings.length > 0) {
+            const buildingId = matchedBuildings[0].id;
 
-          // Update in batches of 500 to avoid URL length limits
-          for (let i = 0; i < uniqueKeys.length; i += 500) {
-            const keyBatch = uniqueKeys.slice(i, i + 500);
-            const { error: linkError } = await supabase
-              .from("complaints_311")
-              .update({ building_id: buildingId })
-              .in("unique_key", keyBatch);
+            // Update in batches of 500 to avoid URL length limits
+            for (let i = 0; i < uniqueKeys.length; i += 500) {
+              const keyBatch = uniqueKeys.slice(i, i + 500);
+              const { error: linkError } = await supabase
+                .from("complaints_311")
+                .update({ building_id: buildingId })
+                .in("unique_key", keyBatch);
 
-            if (!linkError) {
-              totalLinked += keyBatch.length;
-            } else {
-              errors.push(`311 link error (${address}): ${linkError.message}`);
+              if (!linkError) {
+                totalLinked += keyBatch.length;
+              } else {
+                errors.push(`311 link error (${address}): ${linkError.message}`);
+              }
             }
+            affectedBuildingIds.add(buildingId);
           }
-          affectedBuildingIds.add(buildingId);
         }
+      } catch (linkErr) {
+        errors.push(`311 linking phase error: ${String(linkErr)}`);
       }
-    } catch (linkErr) {
-      errors.push(`311 linking phase error: ${String(linkErr)}`);
+    } else if (elapsedMs >= 45_000) {
+      errors.push(`311 skipped linking (time budget: ${(elapsedMs / 1000).toFixed(1)}s elapsed)`);
     }
 
     await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
@@ -1078,30 +1096,38 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Update aggregate counts only for affected buildings
-    const countErrors = await updateBuildingCounts(supabase, allAffectedIds);
+    // Update aggregate counts only for affected buildings (skip if running low on time)
+    let countErrors: string[] = [];
+    const elapsedAfterSync = (Date.now() - startTime) / 1000;
+    if (elapsedAfterSync < 50) {
+      countErrors = await updateBuildingCounts(supabase, allAffectedIds);
+    } else if (allAffectedIds.size > 0) {
+      countErrors.push(`Skipped building count update (${elapsedAfterSync.toFixed(1)}s elapsed, ${allAffectedIds.size} buildings)`);
+    }
 
-    // Backfill slugs for any buildings missing them
+    // Backfill slugs for any buildings missing them (skip if running low on time)
     let slugsBackfilled = 0;
-    try {
-      const { data: noSlugs } = await supabase
-        .from("buildings")
-        .select("id, full_address")
-        .is("slug", null)
-        .limit(5000);
+    if ((Date.now() - startTime) / 1000 < 55) {
+      try {
+        const { data: noSlugs } = await supabase
+          .from("buildings")
+          .select("id, full_address")
+          .is("slug", null)
+          .limit(500);
 
-      if (noSlugs && noSlugs.length > 0) {
-        for (const b of noSlugs) {
-          const slug = generateBuildingSlug(b.full_address);
-          await supabase
-            .from("buildings")
-            .update({ slug })
-            .eq("id", b.id);
+        if (noSlugs && noSlugs.length > 0) {
+          for (const b of noSlugs) {
+            const slug = generateBuildingSlug(b.full_address);
+            await supabase
+              .from("buildings")
+              .update({ slug })
+              .eq("id", b.id);
+          }
+          slugsBackfilled = noSlugs.length;
         }
-        slugsBackfilled = noSlugs.length;
+      } catch (slugErr) {
+        countErrors.push(`Slug backfill error: ${String(slugErr)}`);
       }
-    } catch (slugErr) {
-      countErrors.push(`Slug backfill error: ${String(slugErr)}`);
     }
 
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
