@@ -442,6 +442,10 @@ async function sync311Complaints(supabase: ReturnType<typeof getSupabaseAdmin>):
 
     const typesIn = COMPLAINT_TYPES.map((t) => `'${t}'`).join(",");
 
+    // Collect address → unique_keys mapping in memory during fetch
+    // to avoid re-querying the complaints_311 table (no imported_at index)
+    const addressToKeys = new Map<string, string[]>();
+
     while (hasMore) {
       const url = buildSodaUrl(
         "erm2-nwe9",
@@ -483,6 +487,17 @@ async function sync311Complaints(supabase: ReturnType<typeof getSupabaseAdmin>):
           imported_at: new Date().toISOString(),
         }));
 
+      // Build address → unique_keys map for linking (avoids slow imported_at queries)
+      for (const row of rows) {
+        if (row.incident_address) {
+          const addr = (row.incident_address as string).trim();
+          if (!addressToKeys.has(addr)) {
+            addressToKeys.set(addr, []);
+          }
+          addressToKeys.get(addr)!.push(row.unique_key as string);
+        }
+      }
+
       if (rows.length > 0) {
         totalAdded += await batchUpsert(supabase, "complaints_311", rows, "unique_key", errors, "311");
       }
@@ -495,55 +510,39 @@ async function sync311Complaints(supabase: ReturnType<typeof getSupabaseAdmin>):
       }
     }
 
-    // Linking: match by address (scoped to this sync run, limited to avoid timeout)
+    // Linking: match by address using in-memory data (avoids slow imported_at query)
     try {
-      const { data: unlinked } = await supabase
-        .from("complaints_311")
-        .select("id, incident_address, borough")
-        .is("building_id", null)
-        .not("incident_address", "is", null)
-        .gte("imported_at", syncStartTime)
-        .limit(2000);
+      let lookupCount = 0;
+      const MAX_LOOKUPS = 50;
 
-      if (unlinked && unlinked.length > 0) {
-        const addressMap = new Map<string, string[]>();
-        for (const c of unlinked) {
-          if (!c.incident_address) continue;
-          const addr = c.incident_address.trim();
-          if (!addressMap.has(addr)) {
-            addressMap.set(addr, []);
-          }
-          addressMap.get(addr)!.push(c.id);
-        }
+      for (const [address, uniqueKeys] of addressToKeys) {
+        if (lookupCount >= MAX_LOOKUPS) break;
+        lookupCount++;
 
-        // Limit address lookups to avoid timeout (each does an ilike query)
-        let lookupCount = 0;
-        const MAX_LOOKUPS = 50;
+        const { data: matchedBuildings } = await supabase
+          .from("buildings")
+          .select("id")
+          .ilike("full_address", `%${address}%`)
+          .limit(1);
 
-        for (const [address, complaintIds] of addressMap) {
-          if (lookupCount >= MAX_LOOKUPS) break;
-          lookupCount++;
+        if (matchedBuildings && matchedBuildings.length > 0) {
+          const buildingId = matchedBuildings[0].id;
 
-          const { data: matchedBuildings } = await supabase
-            .from("buildings")
-            .select("id")
-            .ilike("full_address", `%${address}%`)
-            .limit(1);
-
-          if (matchedBuildings && matchedBuildings.length > 0) {
-            const buildingId = matchedBuildings[0].id;
+          // Update in batches of 500 to avoid URL length limits
+          for (let i = 0; i < uniqueKeys.length; i += 500) {
+            const keyBatch = uniqueKeys.slice(i, i + 500);
             const { error: linkError } = await supabase
               .from("complaints_311")
               .update({ building_id: buildingId })
-              .in("id", complaintIds);
+              .in("unique_key", keyBatch);
 
             if (!linkError) {
-              totalLinked += complaintIds.length;
-              affectedBuildingIds.add(buildingId);
+              totalLinked += keyBatch.length;
             } else {
               errors.push(`311 link error (${address}): ${linkError.message}`);
             }
           }
+          affectedBuildingIds.add(buildingId);
         }
       }
     } catch (linkErr) {
