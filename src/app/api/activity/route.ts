@@ -31,6 +31,12 @@ export async function GET(request: Request) {
     cutoff.setDate(cutoff.getDate() - 90);
     const cutoffDate = cutoff.toISOString();
 
+    // Upper bound: filter out records with bad future dates (e.g. 2030 litigations)
+    const today = new Date();
+    today.setDate(today.getDate() + 1); // allow today + 1 day buffer for timezone differences
+    const maxDate = today.toISOString();
+    const maxDateShort = maxDate.slice(0, 10);
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const promises: PromiseLike<any>[] = [];
 
@@ -42,6 +48,7 @@ export async function GET(request: Request) {
           .select("id, title, overall_rating, created_at, building_id, buildings(full_address, borough, slug)")
           .not("building_id", "is", null)
           .gte("created_at", cutoffDate)
+          .lte("created_at", maxDate)
           .order("created_at", { ascending: false })
           .limit(filter === "all" ? perSource : limit)
       );
@@ -56,6 +63,7 @@ export async function GET(request: Request) {
           .select("id, class, nov_description, inspection_date, building_id, buildings(full_address, borough, slug)")
           .not("building_id", "is", null)
           .gte("inspection_date", cutoffDate.slice(0, 10))
+          .lte("inspection_date", maxDateShort)
           .order("inspection_date", { ascending: false })
           .limit(filter === "all" ? perSource : limit)
       );
@@ -70,6 +78,7 @@ export async function GET(request: Request) {
           .select("id, complaint_type, descriptor, created_date, building_id, buildings(full_address, borough, slug)")
           .not("building_id", "is", null)
           .gte("created_date", cutoffDate)
+          .lte("created_date", maxDate)
           .order("created_date", { ascending: false })
           .limit(filter === "all" ? perSource : limit)
       );
@@ -85,6 +94,7 @@ export async function GET(request: Request) {
           .not("building_id", "is", null)
           .not("case_open_date", "is", null)
           .gte("case_open_date", cutoffDate.slice(0, 10))
+          .lte("case_open_date", maxDateShort)
           .order("case_open_date", { ascending: false })
           .limit(filter === "all" ? perSource : limit)
       );
@@ -100,6 +110,7 @@ export async function GET(request: Request) {
           .not("building_id", "is", null)
           .not("issue_date", "is", null)
           .gte("issue_date", cutoffDate.slice(0, 10))
+          .lte("issue_date", maxDateShort)
           .order("issue_date", { ascending: false })
           .limit(filter === "all" ? perSource : limit)
       );
@@ -115,6 +126,7 @@ export async function GET(request: Request) {
           .in("crime_category", ["violent", "property"])
           .not("cmplnt_date", "is", null)
           .gte("cmplnt_date", cutoffDate.slice(0, 10))
+          .lte("cmplnt_date", maxDateShort)
           .order("cmplnt_date", { ascending: false })
           .limit(filter === "all" ? perSource : limit)
       );
