@@ -88,14 +88,17 @@ function parseDate(raw: string | undefined | null): string | null {
   return normalized;
 }
 
-/** Upsert rows in batches to avoid payload size limits. */
+/** Upsert rows in batches to avoid payload size limits.
+ *  Use ignoreDuplicates=true for high-volume tables where existing records
+ *  don't need updating (ON CONFLICT DO NOTHING — much faster). */
 async function batchUpsert(
   supabase: ReturnType<typeof getSupabaseAdmin>,
   table: string,
   rows: Record<string, unknown>[],
   onConflict: string,
   errors: string[],
-  label: string
+  label: string,
+  ignoreDuplicates = false
 ): Promise<number> {
   let totalCount = 0;
 
@@ -103,7 +106,7 @@ async function batchUpsert(
     const batch = rows.slice(i, i + BATCH_SIZE);
     const { error: upsertError, count } = await supabase
       .from(table)
-      .upsert(batch, { onConflict, ignoreDuplicates: false, count: "exact" });
+      .upsert(batch, { onConflict, ignoreDuplicates, count: "exact" });
 
     if (upsertError) {
       errors.push(`${label} upsert error (batch ${i}): ${upsertError.message}`);
@@ -427,7 +430,28 @@ interface Complaint311RawRecord {
 
 async function sync311Complaints(supabase: ReturnType<typeof getSupabaseAdmin>): Promise<SyncResult> {
   const fnStart = Date.now();
-  const lastSync = await getLastSyncDate(supabase, "complaints_311");
+
+  // 311 uses a 1-day overlap instead of the default 3-day (high volume table)
+  const { data: lastSyncData } = await supabase
+    .from("sync_log")
+    .select("completed_at")
+    .eq("sync_type", "complaints_311")
+    .eq("status", "completed")
+    .order("completed_at", { ascending: false })
+    .limit(1)
+    .single();
+
+  let lastSync: string;
+  if (lastSyncData?.completed_at) {
+    const syncDate = new Date(lastSyncData.completed_at);
+    syncDate.setDate(syncDate.getDate() - 1); // 1-day overlap (not 3)
+    syncDate.setUTCHours(0, 0, 0, 0);
+    lastSync = toSodaDate(syncDate.toISOString());
+  } else {
+    const d = new Date();
+    d.setDate(d.getDate() - 1); // First sync: 1 day ago
+    lastSync = toSodaDate(d.toISOString());
+  }
   const logId = await createSyncLog(supabase, "complaints_311");
 
   let totalAdded = 0;
@@ -503,7 +527,7 @@ async function sync311Complaints(supabase: ReturnType<typeof getSupabaseAdmin>):
       }
 
       if (rows.length > 0) {
-        totalAdded += await batchUpsert(supabase, "complaints_311", rows, "unique_key", errors, "311");
+        totalAdded += await batchUpsert(supabase, "complaints_311", rows, "unique_key", errors, "311", true);
       }
 
       pagesFetched++;
