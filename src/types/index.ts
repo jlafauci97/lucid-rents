@@ -33,7 +33,6 @@ export interface Building {
   crime_count: number;
   bedbug_report_count: number;
   eviction_count: number;
-  lead_violation_count: number;
   is_rent_stabilized: boolean;
   stabilized_units: number | null;
   stabilized_year: number | null;
@@ -277,28 +276,6 @@ export interface Eviction {
   imported_at: string;
 }
 
-export interface HpdLeadViolation {
-  id: string;
-  building_id: string | null;
-  bbl: string | null;
-  bin: string | null;
-  violation_id: string;
-  order_number: string | null;
-  nov_description: string | null;
-  violation_status: string | null;
-  current_status: string | null;
-  inspection_date: string | null;
-  nov_issued_date: string | null;
-  original_correct_by_date: string | null;
-  current_status_date: string | null;
-  borough: string | null;
-  house_number: string | null;
-  street_name: string | null;
-  zip: string | null;
-  apartment: string | null;
-  story: string | null;
-  imported_at: string;
-}
 
 export interface SearchResult {
   buildings: Building[];
