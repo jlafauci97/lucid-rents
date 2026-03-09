@@ -1,6 +1,6 @@
 import { TrendingUp, Shield, BarChart3, BookOpen, Newspaper } from "lucide-react";
 
-const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
   TrendingUp,
   Shield,
   BarChart3,
