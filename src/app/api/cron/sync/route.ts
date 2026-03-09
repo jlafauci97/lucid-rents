@@ -151,9 +151,11 @@ async function getLastSyncDate(
     return toSodaDate(syncDate.toISOString());
   }
 
-  // Default: 2 years ago for initial sync to get meaningful historical data
+  // Default: 90 days ago for initial sync. Run multiple times to backfill further.
+  // Each run processes up to MAX_PAGES * PAGE_SIZE records, then the next run
+  // picks up from the last sync_log entry (with 3-day overlap for safety).
   const d = new Date();
-  d.setFullYear(d.getFullYear() - 2);
+  d.setDate(d.getDate() - 90);
   return toSodaDate(d.toISOString());
 }
 
