@@ -90,13 +90,6 @@ export const NEWS_SOURCES: NewsSource[] = [
     defaultCategory: "rental-market",
     alwaysRelevant: true,
   },
-  {
-    name: "Habitat Magazine",
-    slug: "habitat-magazine",
-    feedUrl: "https://www.habitatmag.com/feed/",
-    defaultCategory: "tenant-rights",
-    alwaysRelevant: true,
-  },
 ];
 
 /**
