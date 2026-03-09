@@ -110,6 +110,11 @@ export default async function ScaffoldingPage() {
             they&apos;ve been up, which neighborhoods have the most, and when
             permits expire. Data from NYC DOB permits.
           </p>
+          <p className="text-[#94a3b8] text-xs mt-2 max-w-3xl">
+            Sidewalk shed permits must be renewed every 3 months. Sheds that
+            remain up for years reflect repeated renewals — not a single
+            long-term permit.
+          </p>
         </div>
 
         {/* Summary stats */}

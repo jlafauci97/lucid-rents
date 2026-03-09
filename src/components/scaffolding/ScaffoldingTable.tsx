@@ -4,16 +4,16 @@ import { useState, useMemo } from "react";
 import { ArrowUpDown } from "lucide-react";
 
 interface ShedRow {
-  work_permit: string;
   house_no: string;
   street_name: string;
   borough: string;
   zip_code: string;
-  issued_date: string;
-  expired_date: string | null;
-  days_up: number;
+  permit_count: number;
+  first_issued: string;
+  latest_issued: string;
+  total_days: number;
+  active_permits: number;
   owner_business_name: string | null;
-  permittee_business_name: string | null;
 }
 
 const BOROUGHS = ["Manhattan", "Brooklyn", "Queens", "Bronx", "Staten Island"];
@@ -40,14 +40,9 @@ function formatDuration(days: number): string {
   return `${days}d`;
 }
 
-function isExpired(expiredDate: string | null): boolean {
-  if (!expiredDate) return false;
-  return new Date(expiredDate) < new Date();
-}
-
 export function ScaffoldingTable({ data }: { data: ShedRow[] }) {
   const [borough, setBorough] = useState("");
-  const [sortBy, setSortBy] = useState<"days_up" | "issued_date">("days_up");
+  const [sortBy, setSortBy] = useState<"total_days" | "permit_count" | "first_issued">("total_days");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   const filtered = useMemo(() => {
@@ -56,18 +51,21 @@ export function ScaffoldingTable({ data }: { data: ShedRow[] }) {
       : data;
 
     rows = [...rows].sort((a, b) => {
-      if (sortBy === "days_up") {
-        return sortDir === "desc" ? b.days_up - a.days_up : a.days_up - b.days_up;
+      if (sortBy === "total_days") {
+        return sortDir === "desc" ? b.total_days - a.total_days : a.total_days - b.total_days;
       }
-      const aDate = new Date(a.issued_date).getTime();
-      const bDate = new Date(b.issued_date).getTime();
+      if (sortBy === "permit_count") {
+        return sortDir === "desc" ? b.permit_count - a.permit_count : a.permit_count - b.permit_count;
+      }
+      const aDate = new Date(a.first_issued).getTime();
+      const bDate = new Date(b.first_issued).getTime();
       return sortDir === "desc" ? bDate - aDate : aDate - bDate;
     });
 
     return rows;
   }, [data, borough, sortBy, sortDir]);
 
-  function toggleSort(col: "days_up" | "issued_date") {
+  function toggleSort(col: "total_days" | "permit_count" | "first_issued") {
     if (sortBy === col) {
       setSortDir((d) => (d === "desc" ? "asc" : "desc"));
     } else {
@@ -126,22 +124,27 @@ export function ScaffoldingTable({ data }: { data: ShedRow[] }) {
               </th>
               <th className="text-right px-4 py-3 text-xs font-semibold text-[#F59E0B] uppercase tracking-wide">
                 <button
-                  onClick={() => toggleSort("days_up")}
+                  onClick={() => toggleSort("total_days")}
                   className="inline-flex items-center gap-1 hover:text-[#0F1D2E] ml-auto"
                 >
-                  Duration <ArrowUpDown className="w-3 h-3" />
+                  Total Time <ArrowUpDown className="w-3 h-3" />
+                </button>
+              </th>
+              <th className="text-right px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide">
+                <button
+                  onClick={() => toggleSort("permit_count")}
+                  className="inline-flex items-center gap-1 hover:text-[#0F1D2E] ml-auto"
+                >
+                  Renewals <ArrowUpDown className="w-3 h-3" />
                 </button>
               </th>
               <th className="text-right px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide hidden md:table-cell">
                 <button
-                  onClick={() => toggleSort("issued_date")}
+                  onClick={() => toggleSort("first_issued")}
                   className="inline-flex items-center gap-1 hover:text-[#0F1D2E] ml-auto"
                 >
-                  Issued <ArrowUpDown className="w-3 h-3" />
+                  First Permit <ArrowUpDown className="w-3 h-3" />
                 </button>
-              </th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide hidden lg:table-cell">
-                Expires
               </th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide hidden xl:table-cell">
                 Owner
@@ -149,8 +152,8 @@ export function ScaffoldingTable({ data }: { data: ShedRow[] }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-[#e2e8f0]">
-            {filtered.map((row) => (
-              <tr key={row.work_permit} className="hover:bg-[#f8fafc] transition-colors">
+            {filtered.map((row, i) => (
+              <tr key={`${row.house_no}-${row.street_name}-${row.borough}-${i}`} className="hover:bg-[#f8fafc] transition-colors">
                 <td className="px-4 py-3 text-sm font-semibold text-[#0F1D2E]">
                   {row.house_no} {row.street_name}
                 </td>
@@ -158,31 +161,24 @@ export function ScaffoldingTable({ data }: { data: ShedRow[] }) {
                   {normalizeBorough(row.borough)}
                 </td>
                 <td className="px-4 py-3 text-sm font-semibold text-right">
-                  <span className={row.days_up > 365 ? "text-red-600" : row.days_up > 180 ? "text-[#F59E0B]" : "text-[#0F1D2E]"}>
-                    {formatDuration(row.days_up)}
+                  <span className={row.total_days > 1825 ? "text-red-600" : row.total_days > 365 ? "text-[#F59E0B]" : "text-[#0F1D2E]"}>
+                    {formatDuration(row.total_days)}
+                  </span>
+                </td>
+                <td className="px-4 py-3 text-sm text-right">
+                  <span className={`inline-flex items-center gap-1 ${row.permit_count > 5 ? "text-red-600 font-semibold" : "text-[#334155]"}`}>
+                    {row.permit_count}x
                   </span>
                 </td>
                 <td className="px-4 py-3 text-sm text-[#334155] text-right hidden md:table-cell">
-                  {new Date(row.issued_date).toLocaleDateString("en-US", {
+                  {new Date(row.first_issued).toLocaleDateString("en-US", {
                     month: "short",
                     day: "numeric",
                     year: "numeric",
                   })}
                 </td>
-                <td className={`px-4 py-3 text-sm text-right hidden lg:table-cell ${
-                  isExpired(row.expired_date) ? "text-red-600 font-semibold" : "text-[#334155]"
-                }`}>
-                  {row.expired_date
-                    ? new Date(row.expired_date).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })
-                    : "—"}
-                  {isExpired(row.expired_date) && " (expired)"}
-                </td>
                 <td className="px-4 py-3 text-sm text-[#334155] hidden xl:table-cell max-w-[200px] truncate">
-                  {row.owner_business_name || "—"}
+                  {row.owner_business_name || "\u2014"}
                 </td>
               </tr>
             ))}
@@ -191,7 +187,7 @@ export function ScaffoldingTable({ data }: { data: ShedRow[] }) {
       </div>
 
       <p className="text-xs text-[#94a3b8] mt-3">
-        {filtered.length} sheds shown. Data: NYC DOB Permits.
+        {filtered.length} addresses shown. Renewals = total permits issued at address. Data: NYC DOB Permits.
       </p>
     </div>
   );
