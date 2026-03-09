@@ -1355,6 +1355,138 @@ async function syncEvictions(supabase: ReturnType<typeof getSupabaseAdmin>): Pro
 }
 
 // ---------------------------------------------------------------------------
+// Sidewalk Sheds sync
+// ---------------------------------------------------------------------------
+
+const BOROUGH_TO_CODE: Record<string, string> = {
+  MANHATTAN: "1",
+  BRONX: "2",
+  BROOKLYN: "3",
+  QUEENS: "4",
+  "STATEN ISLAND": "5",
+};
+
+interface ShedRawRecord {
+  work_permit?: string;
+  house_no?: string;
+  street_name?: string;
+  borough?: string;
+  zip_code?: string;
+  bin__?: string;
+  block?: string;
+  lot?: string;
+  permit_status?: string;
+  filing_reason?: string;
+  issued_date?: string;
+  approved_date?: string;
+  expired_date?: string;
+  job_description?: string;
+  estimated_job_costs?: string;
+  owner_s_business_name?: string;
+  permittee_s_business_name?: string;
+  [key: string]: unknown;
+}
+
+async function syncSidewalkSheds(supabase: ReturnType<typeof getSupabaseAdmin>): Promise<SyncResult> {
+  const lastSync = await getLastSyncDate(supabase, "sidewalk_sheds");
+  const logId = await createSyncLog(supabase, "sidewalk_sheds");
+  const syncStartTime = new Date().toISOString();
+
+  let totalAdded = 0;
+  let totalLinked = 0;
+  const errors: string[] = [];
+  const affectedBuildingIds = new Set<string>();
+
+  try {
+    let offset = 0;
+    let hasMore = true;
+    let pagesFetched = 0;
+
+    while (hasMore) {
+      const url = buildSodaUrl(
+        "rbx6-tga4",
+        `work_type='Sidewalk Shed' AND issued_date > '${lastSync}'`,
+        PAGE_SIZE,
+        offset,
+        "issued_date ASC"
+      );
+
+      const res = await fetch(url);
+      if (!res.ok) {
+        const errText = await res.text();
+        errors.push(`Sheds API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
+        break;
+      }
+
+      const records: ShedRawRecord[] = await res.json();
+
+      if (records.length === 0) {
+        hasMore = false;
+        break;
+      }
+
+      const rows = records
+        .filter((r) => r.work_permit)
+        .map((r) => {
+          // Construct BBL from borough + block + lot
+          const boroCode = r.borough ? BOROUGH_TO_CODE[r.borough.toUpperCase()] : null;
+          const block = r.block ? r.block.padStart(5, "0") : null;
+          const lot = r.lot ? r.lot.padStart(4, "0").slice(-4) : null;
+          const bbl = boroCode && block && lot ? `${boroCode}${block}${lot}` : null;
+
+          return {
+            work_permit: String(r.work_permit),
+            house_no: r.house_no || null,
+            street_name: r.street_name || null,
+            borough: r.borough || null,
+            zip_code: r.zip_code || null,
+            bin: r.bin__ || null,
+            block: r.block || null,
+            lot: r.lot || null,
+            bbl,
+            permit_status: r.permit_status || null,
+            filing_reason: r.filing_reason || null,
+            issued_date: parseDate(r.issued_date),
+            expired_date: parseDate(r.expired_date),
+            job_description: r.job_description || null,
+            estimated_job_costs: r.estimated_job_costs ? parseFloat(r.estimated_job_costs) || null : null,
+            owner_business_name: r.owner_s_business_name || null,
+            permittee_business_name: r.permittee_s_business_name || null,
+            imported_at: new Date().toISOString(),
+          };
+        });
+
+      if (rows.length > 0) {
+        totalAdded += await batchUpsert(supabase, "sidewalk_sheds", rows, "work_permit", errors, "Sheds");
+      }
+
+      pagesFetched++;
+      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
+        hasMore = false;
+      } else {
+        offset += PAGE_SIZE;
+      }
+    }
+
+    // Linking: match by BBL
+    try {
+      const linkResult = await linkByBbl(supabase, "sidewalk_sheds", syncStartTime, errors, "Sheds");
+      totalLinked = linkResult.linked;
+      for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
+    } catch (linkErr) {
+      errors.push(`Sheds linking phase error: ${String(linkErr)}`);
+    }
+
+    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
+  } catch (err) {
+    errors.push(`Sheds fatal error: ${String(err)}`);
+    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
+  }
+
+  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+}
+
+// ---------------------------------------------------------------------------
 // Update building counts — only for affected buildings
 // ---------------------------------------------------------------------------
 async function updateBuildingCounts(
@@ -1374,6 +1506,7 @@ async function updateBuildingCounts(
     { table: "dob_violations", column: "dob_violation_count" },
     { table: "bedbug_reports", column: "bedbug_report_count" },
     { table: "evictions", column: "eviction_count" },
+    { table: "sidewalk_sheds", column: "sidewalk_shed_count" },
   ];
 
   for (const { table, column } of countTasks) {
@@ -1411,6 +1544,7 @@ const SOURCES: Record<string, (supabase: ReturnType<typeof getSupabaseAdmin>) =>
   nypd: syncNYPDComplaints,
   bedbugs: syncBedBugReports,
   evictions: syncEvictions,
+  sheds: syncSidewalkSheds,
 };
 
 // ---------------------------------------------------------------------------

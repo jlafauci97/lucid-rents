@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   ArrowLeftRight,
   BarChart3,
+  Construction,
   User,
   Bell,
   LogOut,
@@ -36,6 +37,7 @@ const navLinks = [
   { href: "/rent-stabilization", icon: ShieldCheck, label: "Rent Stabilization" },
   { href: "/compare", icon: ArrowLeftRight, label: "Compare Buildings" },
   { href: "/rent-data", icon: BarChart3, label: "Rent Data" },
+  { href: "/scaffolding", icon: Construction, label: "Scaffolding" },
   { href: "/review/new", icon: PenSquare, label: "Submit Review" },
 ];
 

@@ -43,6 +43,10 @@
     {
       "path": "/api/cron/sync-zillow-rents",
       "schedule": "30 7 1 * *"
+    },
+    {
+      "path": "/api/cron/sync?source=sheds",
+      "schedule": "20 6 * * *"
     }
   ]
 }
