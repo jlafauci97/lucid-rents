@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Search, PenSquare, User, LogOut, AlertTriangle, Users, Bell, Radio, Siren, Map } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
@@ -15,8 +16,15 @@ export async function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-8">
-            <Link href="/" className="text-xl font-bold tracking-tight">
-              <span className="text-[#3B82F6]">Lucid</span> Rents
+            <Link href="/" className="flex-shrink-0">
+              <Image
+                src="/lucid-rents-logo.png"
+                alt="Lucid Rents"
+                width={140}
+                height={48}
+                className="h-10 w-auto"
+                priority
+              />
             </Link>
             <div className="hidden md:flex items-center gap-6">
               <Link
