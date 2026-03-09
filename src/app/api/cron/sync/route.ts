@@ -32,7 +32,7 @@ const BOROUGH_MAP: Record<string, string> = {
 
 const PAGE_SIZE = 5000;
 const BATCH_SIZE = 500;
-const MAX_PAGES = 4; // Safety limit: max API pages per sync (prevents 60s timeout)
+const MAX_PAGES = 2; // Safety limit: max API pages per sync (prevents 60s timeout)
 const STALE_SYNC_MINUTES = 5; // Mark "running" syncs older than this as "failed"
 
 const COMPLAINT_TYPES = [
@@ -1386,7 +1386,6 @@ async function updateBuildingCounts(
     { table: "dob_violations", column: "dob_violation_count" },
     { table: "bedbug_reports", column: "bedbug_report_count" },
     { table: "evictions", column: "eviction_count" },
-    { table: "hpd_lead_violations", column: "lead_violation_count" },
   ];
 
   for (const { table, column } of countTasks) {
@@ -1424,7 +1423,6 @@ const SOURCES: Record<string, (supabase: ReturnType<typeof getSupabaseAdmin>) =>
   nypd: syncNYPDComplaints,
   bedbugs: syncBedBugReports,
   evictions: syncEvictions,
-  lead: syncHPDLeadViolations,
 };
 
 // ---------------------------------------------------------------------------

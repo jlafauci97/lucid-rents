@@ -17,7 +17,7 @@ import { SLUG_TO_BOROUGH, buildingUrl, canonicalUrl, buildingJsonLd, landlordUrl
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { PenSquare } from "lucide-react";
-import type { Building, HpdViolation, Complaint311, HpdLitigation, DobViolation, BedBugReport, Eviction, HpdLeadViolation, ReviewWithDetails } from "@/types";
+import type { Building, HpdViolation, Complaint311, HpdLitigation, DobViolation, BedBugReport, Eviction, ReviewWithDetails } from "@/types";
 import type { Metadata } from "next";
 
 export const revalidate = 86400; // 24h ISR
@@ -58,7 +58,6 @@ export async function generateMetadata({
   ];
   if (building.bedbug_report_count > 0) descParts.push(`${building.bedbug_report_count} bedbug reports`);
   if (building.eviction_count > 0) descParts.push(`${building.eviction_count} evictions`);
-  if (building.lead_violation_count > 0) descParts.push(`${building.lead_violation_count} lead violations`);
   const description = `View ${descParts.join(", ")}, and tenant reviews for ${building.full_address} in ${building.borough}, NYC.`;
   const url = canonicalUrl(buildingUrl(building));
 
@@ -91,8 +90,8 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
   const supabase = await createClient();
   const buildingId = building.id;
 
-  // Fetch violations, complaints, litigations, DOB violations, bedbugs, evictions, lead paint, reviews, and units in parallel
-  const [violationsRes, complaintsRes, litigationsRes, dobViolationsRes, bedbugsRes, evictionsRes, leadRes, reviewsRes, unitsRes, violationSummaryRes] = await Promise.all([
+  // Fetch violations, complaints, litigations, DOB violations, bedbugs, evictions, reviews, and units in parallel
+  const [violationsRes, complaintsRes, litigationsRes, dobViolationsRes, bedbugsRes, evictionsRes, reviewsRes, unitsRes, violationSummaryRes] = await Promise.all([
     supabase
       .from("hpd_violations")
       .select("*")
@@ -130,12 +129,6 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
       .order("executed_date", { ascending: false })
       .limit(20),
     supabase
-      .from("hpd_lead_violations")
-      .select("*")
-      .eq("building_id", buildingId)
-      .order("nov_issued_date", { ascending: false })
-      .limit(20),
-    supabase
       .from("reviews")
       .select(
         `*, profile:profiles(id, display_name, avatar_url), category_ratings:review_category_ratings(*, category:review_categories(slug, name, icon)), unit:units(unit_number)`
@@ -161,7 +154,6 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
   const dobViolations = (dobViolationsRes.data || []) as DobViolation[];
   const bedbugs = (bedbugsRes.data || []) as BedBugReport[];
   const evictions = (evictionsRes.data || []) as Eviction[];
-  const leadViolations = (leadRes.data || []) as HpdLeadViolation[];
   const reviews = (reviewsRes.data || []) as unknown as ReviewWithDetails[];
   const units = unitsRes.data || [];
   const violationSummaries = violationSummaryRes.data || [];
@@ -252,7 +244,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
             <AdBlock adSlot="BUILDING_MID_2" adFormat="horizontal" />
 
             {/* Violations & Complaints Tabs */}
-            <IssuesTabs violations={violations} complaints={complaints} litigations={litigations} dobViolations={dobViolations} bedbugs={bedbugs} evictions={evictions} leadViolations={leadViolations} />
+            <IssuesTabs violations={violations} complaints={complaints} litigations={litigations} dobViolations={dobViolations} bedbugs={bedbugs} evictions={evictions} />
           </div>
 
           {/* Sidebar */}

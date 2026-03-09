@@ -1,17 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { AlertTriangle, MessageSquare, Scale, HardHat, Bug, DoorOpen, Paintbrush } from "lucide-react";
+import { AlertTriangle, MessageSquare, Scale, HardHat, Bug, DoorOpen } from "lucide-react";
 import { ViolationTimeline } from "./ViolationTimeline";
 import { ComplaintTimeline } from "./ComplaintTimeline";
 import { LitigationTimeline } from "./LitigationTimeline";
 import { DobViolationTimeline } from "./DobViolationTimeline";
 import { BedBugTimeline } from "./BedBugTimeline";
 import { EvictionTimeline } from "./EvictionTimeline";
-import { LeadViolationTimeline } from "./LeadViolationTimeline";
-import type { HpdViolation, Complaint311, HpdLitigation, DobViolation, BedBugReport, Eviction, HpdLeadViolation } from "@/types";
+import type { HpdViolation, Complaint311, HpdLitigation, DobViolation, BedBugReport, Eviction } from "@/types";
 
-type TabKey = "violations" | "complaints" | "litigations" | "dob" | "bedbugs" | "evictions" | "lead";
+type TabKey = "violations" | "complaints" | "litigations" | "dob" | "bedbugs" | "evictions";
 
 interface IssuesTabsProps {
   violations: HpdViolation[];
@@ -20,7 +19,6 @@ interface IssuesTabsProps {
   dobViolations: DobViolation[];
   bedbugs: BedBugReport[];
   evictions: Eviction[];
-  leadViolations: HpdLeadViolation[];
 }
 
 const tabs: { key: TabKey; label: string; icon: typeof AlertTriangle; activeBg: string; activeText: string }[] = [
@@ -30,10 +28,9 @@ const tabs: { key: TabKey; label: string; icon: typeof AlertTriangle; activeBg: 
   { key: "dob", label: "DOB Violations", icon: HardHat, activeBg: "bg-blue-50 ring-1 ring-[#3B82F6]", activeText: "text-[#3B82F6]" },
   { key: "bedbugs", label: "Bedbugs", icon: Bug, activeBg: "bg-purple-50 ring-1 ring-[#9333EA]", activeText: "text-[#9333EA]" },
   { key: "evictions", label: "Evictions", icon: DoorOpen, activeBg: "bg-pink-50 ring-1 ring-[#EC4899]", activeText: "text-[#EC4899]" },
-  { key: "lead", label: "Lead Paint", icon: Paintbrush, activeBg: "bg-teal-50 ring-1 ring-[#14B8A6]", activeText: "text-[#14B8A6]" },
 ];
 
-export function IssuesTabs({ violations, complaints, litigations, dobViolations, bedbugs, evictions, leadViolations }: IssuesTabsProps) {
+export function IssuesTabs({ violations, complaints, litigations, dobViolations, bedbugs, evictions }: IssuesTabsProps) {
   const [activeTab, setActiveTab] = useState<TabKey>("violations");
 
   const counts: Record<TabKey, number> = {
@@ -43,7 +40,6 @@ export function IssuesTabs({ violations, complaints, litigations, dobViolations,
     dob: dobViolations.length,
     bedbugs: bedbugs.length,
     evictions: evictions.length,
-    lead: leadViolations.length,
   };
 
   return (
@@ -77,7 +73,6 @@ export function IssuesTabs({ violations, complaints, litigations, dobViolations,
       {activeTab === "dob" && <DobViolationTimeline violations={dobViolations} />}
       {activeTab === "bedbugs" && <BedBugTimeline reports={bedbugs} />}
       {activeTab === "evictions" && <EvictionTimeline evictions={evictions} />}
-      {activeTab === "lead" && <LeadViolationTimeline violations={leadViolations} />}
     </section>
   );
 }

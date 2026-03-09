@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { AlertTriangle, Shield, MessageSquare, Star, Scale, HardHat, Siren, Bug, DoorOpen, Paintbrush } from 'lucide-react';
+import { AlertTriangle, Shield, MessageSquare, Star, Scale, HardHat, Siren, Bug, DoorOpen } from 'lucide-react';
 import { BOROUGH_SLUGS } from '@/lib/seo';
 import type { ActivityItem } from '@/app/api/activity/route';
 
@@ -16,7 +16,6 @@ const typeIconColors: Record<ActivityItem['type'], string> = {
   crime: 'text-red-300',
   bedbug: 'text-purple-300',
   eviction: 'text-pink-200',
-  lead_paint: 'text-teal-200',
 };
 
 function TypeIcon({ type }: { type: ActivityItem['type'] }) {
@@ -40,8 +39,6 @@ function TypeIcon({ type }: { type: ActivityItem['type'] }) {
       return <Bug className={cls} />;
     case 'eviction':
       return <DoorOpen className={cls} />;
-    case 'lead_paint':
-      return <Paintbrush className={cls} />;
   }
 }
 
@@ -54,7 +51,6 @@ const typeLabels: Record<ActivityItem['type'], string> = {
   crime: 'Crime',
   bedbug: 'Bedbug Report',
   eviction: 'Eviction',
-  lead_paint: 'Lead Paint',
 };
 
 function formatDate(dateStr: string): string {

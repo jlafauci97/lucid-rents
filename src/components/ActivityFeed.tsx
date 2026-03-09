@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Shield, MessageSquare, Star, Scale, HardHat, Siren, Bug, DoorOpen, Paintbrush } from "lucide-react";
+import { Shield, MessageSquare, Star, Scale, HardHat, Siren, Bug, DoorOpen } from "lucide-react";
 import Link from "next/link";
 import type { ActivityItem } from "@/app/api/activity/route";
 import { buildingUrl } from "@/lib/seo";
@@ -76,12 +76,6 @@ function ActivityIcon({ type }: { type: ActivityItem["type"] }) {
           <DoorOpen className="w-[18px] h-[18px] text-[#EC4899]" />
         </div>
       );
-    case "lead_paint":
-      return (
-        <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-teal-50 flex items-center justify-center">
-          <Paintbrush className="w-[18px] h-[18px] text-[#14B8A6]" />
-        </div>
-      );
   }
 }
 
@@ -103,8 +97,6 @@ function typeLabel(type: ActivityItem["type"]): string {
       return "Bedbug Report";
     case "eviction":
       return "Eviction";
-    case "lead_paint":
-      return "Lead Paint";
   }
 }
 
@@ -126,8 +118,6 @@ function typeBadgeClasses(type: ActivityItem["type"]): string {
       return "bg-purple-50 text-[#9333EA]";
     case "eviction":
       return "bg-pink-50 text-[#EC4899]";
-    case "lead_paint":
-      return "bg-teal-50 text-[#14B8A6]";
   }
 }
 
