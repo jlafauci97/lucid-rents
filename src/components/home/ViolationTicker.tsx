@@ -18,7 +18,7 @@ const typeIconColors: Record<ActivityItem['type'], string> = {
 
 function TypeIcon({ type }: { type: ActivityItem['type'] }) {
   const color = typeIconColors[type] || 'text-white/70';
-  const cls = `w-5 h-5 flex-shrink-0 ${color}`;
+  const cls = `w-10 h-10 flex-shrink-0 ${color}`;
 
   switch (type) {
     case 'violation':
