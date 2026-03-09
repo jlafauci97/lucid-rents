@@ -68,6 +68,21 @@ export function BuildingHeader({ building }: BuildingHeaderProps) {
                   {building.complaint_count} complaint{building.complaint_count !== 1 ? "s" : ""}
                 </Badge>
               )}
+              {building.bedbug_report_count > 0 && (
+                <Badge variant="danger">
+                  {building.bedbug_report_count} bedbug report{building.bedbug_report_count !== 1 ? "s" : ""}
+                </Badge>
+              )}
+              {building.eviction_count > 0 && (
+                <Badge variant="danger">
+                  {building.eviction_count} eviction{building.eviction_count !== 1 ? "s" : ""}
+                </Badge>
+              )}
+              {building.lead_violation_count > 0 && (
+                <Badge variant="danger">
+                  {building.lead_violation_count} lead violation{building.lead_violation_count !== 1 ? "s" : ""}
+                </Badge>
+              )}
               {building.is_rent_stabilized && (
                 <Badge variant="success">
                   <ShieldCheck className="w-3 h-3 mr-1" />

@@ -31,6 +31,9 @@ export interface Building {
   litigation_count: number;
   dob_violation_count: number;
   crime_count: number;
+  bedbug_report_count: number;
+  eviction_count: number;
+  lead_violation_count: number;
   is_rent_stabilized: boolean;
   stabilized_units: number | null;
   stabilized_year: number | null;
@@ -231,6 +234,69 @@ export interface RentStabilization {
   units_total: number | null;
   est_units_stabilized: number | null;
   diff_units_stabilized: number | null;
+  imported_at: string;
+}
+
+export interface BedBugReport {
+  id: string;
+  building_id: string | null;
+  bbl: string | null;
+  bin: string | null;
+  registration_id: string | null;
+  house_number: string | null;
+  street_name: string | null;
+  borough: string | null;
+  postcode: string | null;
+  infested_dwelling_unit_count: number | null;
+  eradicated_unit_count: number | null;
+  reinfested_unit_count: number | null;
+  total_dwelling_units: number | null;
+  filing_date: string | null;
+  filing_period_start_date: string | null;
+  filing_period_end_date: string | null;
+  imported_at: string;
+}
+
+export interface Eviction {
+  id: string;
+  building_id: string | null;
+  bbl: string | null;
+  bin: string | null;
+  court_index_number: string;
+  docket_number: string | null;
+  eviction_address: string | null;
+  eviction_apt_num: string | null;
+  eviction_zip: string | null;
+  borough: string | null;
+  executed_date: string | null;
+  residential_commercial: string | null;
+  eviction_possession: string | null;
+  ejectment: string | null;
+  marshal_first_name: string | null;
+  marshal_last_name: string | null;
+  imported_at: string;
+}
+
+export interface HpdLeadViolation {
+  id: string;
+  building_id: string | null;
+  bbl: string | null;
+  bin: string | null;
+  violation_id: string;
+  order_number: string | null;
+  nov_description: string | null;
+  violation_status: string | null;
+  current_status: string | null;
+  inspection_date: string | null;
+  nov_issued_date: string | null;
+  original_correct_by_date: string | null;
+  current_status_date: string | null;
+  borough: string | null;
+  house_number: string | null;
+  street_name: string | null;
+  zip: string | null;
+  apartment: string | null;
+  story: string | null;
   imported_at: string;
 }
 

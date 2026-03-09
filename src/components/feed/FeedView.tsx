@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Shield, MessageSquare, Star, MapPin, ExternalLink, RefreshCw, ChevronRight, Scale, HardHat, Siren } from "lucide-react";
+import { Shield, MessageSquare, Star, MapPin, ExternalLink, RefreshCw, ChevronRight, Scale, HardHat, Siren, Bug, DoorOpen, Paintbrush } from "lucide-react";
 import Link from "next/link";
 import type { ActivityItem } from "@/app/api/activity/route";
 import { buildingUrl } from "@/lib/seo";
 
-type FilterType = "all" | "violations" | "complaints" | "reviews" | "litigations" | "dob_violations" | "crime";
+type FilterType = "all" | "violations" | "complaints" | "reviews" | "litigations" | "dob_violations" | "crime" | "bedbugs" | "evictions" | "lead_paint";
 
 const filters: { key: FilterType; label: string }[] = [
   { key: "all", label: "All" },
@@ -15,6 +15,9 @@ const filters: { key: FilterType; label: string }[] = [
   { key: "complaints", label: "311" },
   { key: "litigations", label: "Litigations" },
   { key: "crime", label: "Crime" },
+  { key: "bedbugs", label: "Bedbugs" },
+  { key: "evictions", label: "Evictions" },
+  { key: "lead_paint", label: "Lead Paint" },
   { key: "reviews", label: "Reviews" },
 ];
 
@@ -73,6 +76,24 @@ function FeedItemIcon({ type }: { type: ActivityItem["type"] }) {
           <Siren className="w-5 h-5 text-[#DC2626]" />
         </div>
       );
+    case "bedbug":
+      return (
+        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+          <Bug className="w-5 h-5 text-[#9333EA]" />
+        </div>
+      );
+    case "eviction":
+      return (
+        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center">
+          <DoorOpen className="w-5 h-5 text-[#EC4899]" />
+        </div>
+      );
+    case "lead_paint":
+      return (
+        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center">
+          <Paintbrush className="w-5 h-5 text-[#14B8A6]" />
+        </div>
+      );
   }
 }
 
@@ -84,6 +105,9 @@ function sourceLabel(type: ActivityItem["type"]): string {
     case "litigation": return "HPD Litigation";
     case "dob_violation": return "DOB Violation";
     case "crime": return "NYPD Crime";
+    case "bedbug": return "Bedbug Report";
+    case "eviction": return "Eviction";
+    case "lead_paint": return "Lead Paint";
   }
 }
 
@@ -95,6 +119,9 @@ function sourceColor(type: ActivityItem["type"]): string {
     case "litigation": return "text-[#8B5CF6]";
     case "dob_violation": return "text-[#0EA5E9]";
     case "crime": return "text-[#DC2626]";
+    case "bedbug": return "text-[#9333EA]";
+    case "eviction": return "text-[#EC4899]";
+    case "lead_paint": return "text-[#14B8A6]";
   }
 }
 

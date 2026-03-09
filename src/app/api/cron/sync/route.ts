@@ -1013,6 +1013,361 @@ async function syncNYPDComplaints(supabase: ReturnType<typeof getSupabaseAdmin>)
 }
 
 // ---------------------------------------------------------------------------
+// Bedbug Reports sync
+// ---------------------------------------------------------------------------
+
+interface BedBugRawRecord {
+  buildingid?: string;
+  boroid?: string;
+  block?: string;
+  lot?: string;
+  bbl?: string;
+  bin?: string;
+  registrationid?: string;
+  housenumber?: string;
+  streetname?: string;
+  borough?: string;
+  postcode?: string;
+  infesteddwellingunitcount?: string;
+  eradicatedunitcount?: string;
+  reinfestedunitcount?: string;
+  totaldwellingunits?: string;
+  filingdate?: string;
+  filingperiodstartdate?: string;
+  filingperiodenddate?: string;
+  [key: string]: unknown;
+}
+
+async function syncBedBugReports(supabase: ReturnType<typeof getSupabaseAdmin>): Promise<SyncResult> {
+  const lastSync = await getLastSyncDate(supabase, "bedbug_reports");
+  const logId = await createSyncLog(supabase, "bedbug_reports");
+  const syncStartTime = new Date().toISOString();
+
+  let totalAdded = 0;
+  let totalLinked = 0;
+  const errors: string[] = [];
+  const affectedBuildingIds = new Set<string>();
+
+  try {
+    let offset = 0;
+    let hasMore = true;
+    let pagesFetched = 0;
+
+    while (hasMore) {
+      const url = buildSodaUrl(
+        "wz6d-d3jb",
+        `filing_date > '${lastSync}'`,
+        PAGE_SIZE,
+        offset,
+        "filing_date ASC"
+      );
+
+      const res = await fetch(url);
+      if (!res.ok) {
+        const errText = await res.text();
+        errors.push(`Bedbug API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
+        break;
+      }
+
+      const records: BedBugRawRecord[] = await res.json();
+
+      if (records.length === 0) {
+        hasMore = false;
+        break;
+      }
+
+      const rows = records
+        .filter((r) => r.bbl && r.filingperiodstartdate)
+        .map((r) => ({
+          bbl: r.bbl || null,
+          bin: r.bin || null,
+          registration_id: r.registrationid || null,
+          house_number: r.housenumber || null,
+          street_name: r.streetname || null,
+          borough: r.borough || null,
+          postcode: r.postcode || null,
+          infested_dwelling_unit_count: r.infesteddwellingunitcount ? parseInt(r.infesteddwellingunitcount) || null : null,
+          eradicated_unit_count: r.eradicatedunitcount ? parseInt(r.eradicatedunitcount) || null : null,
+          reinfested_unit_count: r.reinfestedunitcount ? parseInt(r.reinfestedunitcount) || null : null,
+          total_dwelling_units: r.totaldwellingunits ? parseInt(r.totaldwellingunits) || null : null,
+          filing_date: r.filingdate ? r.filingdate.slice(0, 10) : null,
+          filing_period_start_date: r.filingperiodstartdate ? r.filingperiodstartdate.slice(0, 10) : null,
+          filing_period_end_date: r.filingperiodenddate ? r.filingperiodenddate.slice(0, 10) : null,
+          imported_at: new Date().toISOString(),
+        }));
+
+      if (rows.length > 0) {
+        totalAdded += await batchUpsert(supabase, "bedbug_reports", rows, "bbl,filing_period_start_date", errors, "Bedbugs", true);
+      }
+
+      pagesFetched++;
+      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
+        hasMore = false;
+      } else {
+        offset += PAGE_SIZE;
+      }
+    }
+
+    // Linking: match by BBL
+    try {
+      const linkResult = await linkByBbl(supabase, "bedbug_reports", syncStartTime, errors, "Bedbugs");
+      totalLinked = linkResult.linked;
+      for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
+    } catch (linkErr) {
+      errors.push(`Bedbugs linking phase error: ${String(linkErr)}`);
+    }
+
+    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
+  } catch (err) {
+    errors.push(`Bedbugs fatal error: ${String(err)}`);
+    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
+  }
+
+  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+}
+
+// ---------------------------------------------------------------------------
+// Evictions sync
+// ---------------------------------------------------------------------------
+
+interface EvictionRawRecord {
+  court_index_number?: string;
+  docket_number?: string;
+  eviction_address?: string;
+  executed_date?: string;
+  eviction_apt_num?: string;
+  eviction_zip?: string;
+  borough?: string;
+  residential_commercial?: string;
+  eviction_possession?: string;
+  ejectment?: string;
+  marshal_first_name?: string;
+  marshal_last_name?: string;
+  bbl?: string;
+  bin?: string;
+  latitude?: string;
+  longitude?: string;
+  [key: string]: unknown;
+}
+
+async function syncEvictions(supabase: ReturnType<typeof getSupabaseAdmin>): Promise<SyncResult> {
+  const lastSync = await getLastSyncDate(supabase, "evictions");
+  const logId = await createSyncLog(supabase, "evictions");
+  const syncStartTime = new Date().toISOString();
+
+  let totalAdded = 0;
+  let totalLinked = 0;
+  const errors: string[] = [];
+  const affectedBuildingIds = new Set<string>();
+
+  try {
+    let offset = 0;
+    let hasMore = true;
+    let pagesFetched = 0;
+
+    while (hasMore) {
+      const url = buildSodaUrl(
+        "6z8x-wfk4",
+        `executed_date > '${lastSync}'`,
+        PAGE_SIZE,
+        offset,
+        "executed_date ASC"
+      );
+
+      const res = await fetch(url);
+      if (!res.ok) {
+        const errText = await res.text();
+        errors.push(`Evictions API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
+        break;
+      }
+
+      const records: EvictionRawRecord[] = await res.json();
+
+      if (records.length === 0) {
+        hasMore = false;
+        break;
+      }
+
+      const rows = records
+        .filter((r) => r.court_index_number)
+        .map((r) => ({
+          court_index_number: String(r.court_index_number),
+          docket_number: r.docket_number || null,
+          eviction_address: r.eviction_address || null,
+          eviction_apt_num: r.eviction_apt_num || null,
+          eviction_zip: r.eviction_zip || null,
+          borough: r.borough || null,
+          bbl: r.bbl || null,
+          bin: r.bin || null,
+          executed_date: r.executed_date ? r.executed_date.slice(0, 10) : null,
+          residential_commercial: r.residential_commercial || null,
+          eviction_possession: r.eviction_possession || null,
+          ejectment: r.ejectment || null,
+          marshal_first_name: r.marshal_first_name || null,
+          marshal_last_name: r.marshal_last_name || null,
+          imported_at: new Date().toISOString(),
+        }));
+
+      if (rows.length > 0) {
+        totalAdded += await batchUpsert(supabase, "evictions", rows, "court_index_number", errors, "Evictions", true);
+      }
+
+      pagesFetched++;
+      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
+        hasMore = false;
+      } else {
+        offset += PAGE_SIZE;
+      }
+    }
+
+    // Linking: match by BBL
+    try {
+      const linkResult = await linkByBbl(supabase, "evictions", syncStartTime, errors, "Evictions");
+      totalLinked = linkResult.linked;
+      for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
+    } catch (linkErr) {
+      errors.push(`Evictions linking phase error: ${String(linkErr)}`);
+    }
+
+    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
+  } catch (err) {
+    errors.push(`Evictions fatal error: ${String(err)}`);
+    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
+  }
+
+  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+}
+
+// ---------------------------------------------------------------------------
+// HPD Lead Paint Violations sync
+// ---------------------------------------------------------------------------
+
+interface HPDLeadRawRecord {
+  violationid?: string;
+  boroid?: string;
+  block?: string;
+  lot?: string;
+  bbl?: string;
+  bin?: string;
+  ordernumber?: string;
+  novdescription?: string;
+  violationstatus?: string;
+  currentstatus?: string;
+  inspectiondate?: string;
+  novissueddate?: string;
+  originalcorrectbydate?: string;
+  currentstatusdate?: string;
+  borough?: string;
+  housenumber?: string;
+  streetname?: string;
+  zip?: string;
+  apartment?: string;
+  story?: string;
+  [key: string]: unknown;
+}
+
+async function syncHPDLeadViolations(supabase: ReturnType<typeof getSupabaseAdmin>): Promise<SyncResult> {
+  const lastSync = await getLastSyncDate(supabase, "hpd_lead_violations");
+  const logId = await createSyncLog(supabase, "hpd_lead_violations");
+  const syncStartTime = new Date().toISOString();
+
+  let totalAdded = 0;
+  let totalLinked = 0;
+  const errors: string[] = [];
+  const affectedBuildingIds = new Set<string>();
+
+  try {
+    let offset = 0;
+    let hasMore = true;
+    let pagesFetched = 0;
+
+    while (hasMore) {
+      const url = buildSodaUrl(
+        "au8t-hgv2",
+        `novissueddate > '${lastSync}'`,
+        PAGE_SIZE,
+        offset,
+        "novissueddate ASC"
+      );
+
+      const res = await fetch(url);
+      if (!res.ok) {
+        const errText = await res.text();
+        errors.push(`HPD Lead API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
+        break;
+      }
+
+      const records: HPDLeadRawRecord[] = await res.json();
+
+      if (records.length === 0) {
+        hasMore = false;
+        break;
+      }
+
+      const rows = records
+        .filter((r) => r.violationid)
+        .map((r) => {
+          // Construct BBL from boroid/block/lot if no direct bbl field
+          let bbl: string | null = r.bbl || null;
+          if (!bbl && r.boroid && r.block && r.lot) {
+            const block = r.block.padStart(5, "0").slice(-5);
+            const lot = r.lot.padStart(4, "0").slice(-4);
+            bbl = `${r.boroid}${block}${lot}`;
+          }
+
+          return {
+            violation_id: String(r.violationid),
+            bbl,
+            bin: r.bin || null,
+            order_number: r.ordernumber || null,
+            nov_description: r.novdescription || null,
+            violation_status: r.violationstatus || null,
+            current_status: r.currentstatus || null,
+            inspection_date: r.inspectiondate ? r.inspectiondate.slice(0, 10) : null,
+            nov_issued_date: r.novissueddate ? r.novissueddate.slice(0, 10) : null,
+            original_correct_by_date: r.originalcorrectbydate ? r.originalcorrectbydate.slice(0, 10) : null,
+            current_status_date: r.currentstatusdate ? r.currentstatusdate.slice(0, 10) : null,
+            borough: r.boroid ? BOROUGH_MAP[r.boroid] || null : null,
+            house_number: r.housenumber || null,
+            street_name: r.streetname || null,
+            zip: r.zip || null,
+            apartment: r.apartment || null,
+            story: r.story || null,
+            imported_at: new Date().toISOString(),
+          };
+        });
+
+      if (rows.length > 0) {
+        totalAdded += await batchUpsert(supabase, "hpd_lead_violations", rows, "violation_id", errors, "HPD Lead");
+      }
+
+      pagesFetched++;
+      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
+        hasMore = false;
+      } else {
+        offset += PAGE_SIZE;
+      }
+    }
+
+    // Linking: match by BBL
+    try {
+      const linkResult = await linkByBbl(supabase, "hpd_lead_violations", syncStartTime, errors, "HPD Lead");
+      totalLinked = linkResult.linked;
+      for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
+    } catch (linkErr) {
+      errors.push(`HPD Lead linking phase error: ${String(linkErr)}`);
+    }
+
+    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
+  } catch (err) {
+    errors.push(`HPD Lead fatal error: ${String(err)}`);
+    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
+  }
+
+  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+}
+
+// ---------------------------------------------------------------------------
 // Update building counts — only for affected buildings
 // ---------------------------------------------------------------------------
 async function updateBuildingCounts(
@@ -1030,6 +1385,9 @@ async function updateBuildingCounts(
     { table: "complaints_311", column: "complaint_count" },
     { table: "hpd_litigations", column: "litigation_count" },
     { table: "dob_violations", column: "dob_violation_count" },
+    { table: "bedbug_reports", column: "bedbug_report_count" },
+    { table: "evictions", column: "eviction_count" },
+    { table: "hpd_lead_violations", column: "lead_violation_count" },
   ];
 
   for (const { table, column } of countTasks) {
@@ -1065,11 +1423,14 @@ const SOURCES: Record<string, (supabase: ReturnType<typeof getSupabaseAdmin>) =>
   litigations: syncHPDLitigations,
   dob: syncDOBViolations,
   nypd: syncNYPDComplaints,
+  bedbugs: syncBedBugReports,
+  evictions: syncEvictions,
+  lead: syncHPDLeadViolations,
 };
 
 // ---------------------------------------------------------------------------
 // GET handler -- works as both Vercel cron and manual trigger
-// Use ?source=hpd|complaints|litigations|dob|nypd to sync one source at a time.
+// Use ?source=hpd|complaints|litigations|dob|nypd|bedbugs|evictions|lead to sync one source at a time.
 // Omit source param to run all (may timeout on Hobby plan).
 // ---------------------------------------------------------------------------
 export async function GET(req: NextRequest) {

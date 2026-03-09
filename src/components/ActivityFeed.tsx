@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Shield, MessageSquare, Star, Scale, HardHat, Siren } from "lucide-react";
+import { Shield, MessageSquare, Star, Scale, HardHat, Siren, Bug, DoorOpen, Paintbrush } from "lucide-react";
 import Link from "next/link";
 import type { ActivityItem } from "@/app/api/activity/route";
 import { buildingUrl } from "@/lib/seo";
@@ -64,6 +64,24 @@ function ActivityIcon({ type }: { type: ActivityItem["type"] }) {
           <Siren className="w-[18px] h-[18px] text-[#DC2626]" />
         </div>
       );
+    case "bedbug":
+      return (
+        <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-purple-50 flex items-center justify-center">
+          <Bug className="w-[18px] h-[18px] text-[#9333EA]" />
+        </div>
+      );
+    case "eviction":
+      return (
+        <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-pink-50 flex items-center justify-center">
+          <DoorOpen className="w-[18px] h-[18px] text-[#EC4899]" />
+        </div>
+      );
+    case "lead_paint":
+      return (
+        <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-teal-50 flex items-center justify-center">
+          <Paintbrush className="w-[18px] h-[18px] text-[#14B8A6]" />
+        </div>
+      );
   }
 }
 
@@ -81,6 +99,12 @@ function typeLabel(type: ActivityItem["type"]): string {
       return "DOB Violation";
     case "crime":
       return "Crime";
+    case "bedbug":
+      return "Bedbug Report";
+    case "eviction":
+      return "Eviction";
+    case "lead_paint":
+      return "Lead Paint";
   }
 }
 
@@ -98,6 +122,12 @@ function typeBadgeClasses(type: ActivityItem["type"]): string {
       return "bg-sky-50 text-[#0EA5E9]";
     case "crime":
       return "bg-red-50 text-[#DC2626]";
+    case "bedbug":
+      return "bg-purple-50 text-[#9333EA]";
+    case "eviction":
+      return "bg-pink-50 text-[#EC4899]";
+    case "lead_paint":
+      return "bg-teal-50 text-[#14B8A6]";
   }
 }
 

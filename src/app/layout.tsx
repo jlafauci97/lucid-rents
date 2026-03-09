@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     template: "%s | Lucid Rents",
   },
   description:
-    "Discover the truth about NYC apartments. Search building violations, read real tenant reviews, and uncover hidden issues before signing your lease.",
+    "Discover the truth about NYC apartments. Search building violations, bedbug reports, evictions, lead paint violations, read real tenant reviews, and uncover hidden issues before signing your lease.",
   keywords: [
     "NYC apartments",
     "apartment reviews",
@@ -32,6 +32,9 @@ export const metadata: Metadata = {
     "building violations",
     "NYC rentals",
     "apartment search",
+    "bedbug reports NYC",
+    "NYC evictions",
+    "lead paint violations NYC",
   ],
   openGraph: {
     type: "website",

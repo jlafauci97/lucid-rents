@@ -21,6 +21,18 @@
       "schedule": "40 5 * * *"
     },
     {
+      "path": "/api/cron/sync?source=bedbugs",
+      "schedule": "50 5 * * *"
+    },
+    {
+      "path": "/api/cron/sync?source=evictions",
+      "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/sync?source=lead",
+      "schedule": "10 6 * * *"
+    },
+    {
       "path": "/api/cron/sync-rent-stabilization",
       "schedule": "0 7 1 * *"
     }

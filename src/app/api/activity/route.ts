@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 export interface ActivityItem {
-  type: "review" | "violation" | "complaint" | "litigation" | "dob_violation" | "crime";
+  type: "review" | "violation" | "complaint" | "litigation" | "dob_violation" | "crime" | "bedbug" | "eviction" | "lead_paint";
   id: string;
   description: string;
   date: string;
@@ -23,7 +23,7 @@ export async function GET(request: Request) {
     const filter = searchParams.get("filter") || "all";
 
     const supabase = await createClient();
-    const perSource = Math.ceil(limit / 6);
+    const perSource = Math.ceil(limit / 9);
 
     // Date cutoff: only fetch recent records to avoid full table scans on
     // tables with millions of rows (DOB: 2.2M, HPD: 800K, 311: 800K, NYPD: 475K)
@@ -134,7 +134,58 @@ export async function GET(request: Request) {
       promises.push(Promise.resolve({ data: null }));
     }
 
-    const [reviewsResult, violationsResult, complaintsResult, litigationsResult, dobResult, crimeResult] = await Promise.all(promises) as [
+    if (filter === "all" || filter === "bedbugs") {
+      promises.push(
+        supabase
+          .from("bedbug_reports")
+          .select("id, infested_dwelling_unit_count, filing_date, building_id, buildings(full_address, borough, slug)")
+          .not("building_id", "is", null)
+          .not("filing_date", "is", null)
+          .gte("filing_date", cutoffDate.slice(0, 10))
+          .lte("filing_date", maxDateShort)
+          .order("filing_date", { ascending: false })
+          .limit(filter === "all" ? perSource : limit)
+      );
+    } else {
+      promises.push(Promise.resolve({ data: null }));
+    }
+
+    if (filter === "all" || filter === "evictions") {
+      promises.push(
+        supabase
+          .from("evictions")
+          .select("id, eviction_address, executed_date, borough, building_id, buildings(full_address, borough, slug)")
+          .not("building_id", "is", null)
+          .not("executed_date", "is", null)
+          .gte("executed_date", cutoffDate.slice(0, 10))
+          .lte("executed_date", maxDateShort)
+          .order("executed_date", { ascending: false })
+          .limit(filter === "all" ? perSource : limit)
+      );
+    } else {
+      promises.push(Promise.resolve({ data: null }));
+    }
+
+    if (filter === "all" || filter === "lead_paint") {
+      promises.push(
+        supabase
+          .from("hpd_lead_violations")
+          .select("id, nov_description, violation_status, nov_issued_date, building_id, buildings(full_address, borough, slug)")
+          .not("building_id", "is", null)
+          .not("nov_issued_date", "is", null)
+          .gte("nov_issued_date", cutoffDate.slice(0, 10))
+          .lte("nov_issued_date", maxDateShort)
+          .order("nov_issued_date", { ascending: false })
+          .limit(filter === "all" ? perSource : limit)
+      );
+    } else {
+      promises.push(Promise.resolve({ data: null }));
+    }
+
+    const [reviewsResult, violationsResult, complaintsResult, litigationsResult, dobResult, crimeResult, bedbugResult, evictionResult, leadResult] = await Promise.all(promises) as [
+      { data: unknown[] | null },
+      { data: unknown[] | null },
+      { data: unknown[] | null },
       { data: unknown[] | null },
       { data: unknown[] | null },
       { data: unknown[] | null },
@@ -267,6 +318,65 @@ export async function GET(request: Request) {
           borough: (cr.borough as string) || "",
           crimeCategory: cr.crime_category as string,
           zipCode: cr.zip_code as string,
+        });
+      }
+    }
+
+    // Normalize bedbug reports
+    if (bedbugResult.data) {
+      for (const b of bedbugResult.data as Record<string, unknown>[]) {
+        const building = b.buildings as { full_address: string; borough: string; slug: string } | null;
+        if (!building) continue;
+        const count = b.infested_dwelling_unit_count as number | null;
+        const desc = count ? `Bedbug infestation reported (${count} unit${count !== 1 ? "s" : ""})` : "Bedbug report filed";
+        items.push({
+          type: "bedbug",
+          id: String(b.id),
+          description: desc,
+          date: b.filing_date as string,
+          buildingId: b.building_id as string,
+          buildingAddress: building.full_address,
+          borough: building.borough,
+          buildingSlug: building.slug,
+        });
+      }
+    }
+
+    // Normalize evictions
+    if (evictionResult.data) {
+      for (const e of evictionResult.data as Record<string, unknown>[]) {
+        const building = e.buildings as { full_address: string; borough: string; slug: string } | null;
+        if (!building) continue;
+        items.push({
+          type: "eviction",
+          id: String(e.id),
+          description: "Eviction executed",
+          date: e.executed_date as string,
+          buildingId: e.building_id as string,
+          buildingAddress: building.full_address,
+          borough: building.borough,
+          buildingSlug: building.slug,
+        });
+      }
+    }
+
+    // Normalize HPD lead paint violations
+    if (leadResult.data) {
+      for (const l of leadResult.data as Record<string, unknown>[]) {
+        const building = l.buildings as { full_address: string; borough: string; slug: string } | null;
+        if (!building) continue;
+        const desc = l.nov_description
+          ? `Lead paint: ${l.nov_description}`
+          : "Lead paint violation issued";
+        items.push({
+          type: "lead_paint",
+          id: String(l.id),
+          description: (desc as string).length > 160 ? (desc as string).slice(0, 157) + "..." : desc as string,
+          date: l.nov_issued_date as string,
+          buildingId: l.building_id as string,
+          buildingAddress: building.full_address,
+          borough: building.borough,
+          buildingSlug: building.slug,
         });
       }
     }
