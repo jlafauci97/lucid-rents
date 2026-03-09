@@ -52,13 +52,6 @@ export const NEWS_CATEGORIES: Record<
 
 export const NEWS_SOURCES: NewsSource[] = [
   {
-    name: "The Real Deal",
-    slug: "the-real-deal",
-    feedUrl: "https://therealdeal.com/new-york/feed/",
-    defaultCategory: "rental-market",
-    alwaysRelevant: true,
-  },
-  {
     name: "Gothamist",
     slug: "gothamist",
     feedUrl: "https://gothamist.com/feed",
@@ -71,17 +64,38 @@ export const NEWS_SOURCES: NewsSource[] = [
     defaultCategory: "general",
   },
   {
-    name: "Brick Underground",
-    slug: "brick-underground",
-    feedUrl: "https://www.brickunderground.com/rss.xml",
-    defaultCategory: "guides",
+    name: "City Limits",
+    slug: "city-limits",
+    feedUrl: "https://citylimits.org/feed/",
+    defaultCategory: "tenant-rights",
+  },
+  {
+    name: "StreetEasy",
+    slug: "streeteasy",
+    feedUrl: "https://streeteasy.com/blog/feed/",
+    defaultCategory: "rental-market",
     alwaysRelevant: true,
   },
   {
-    name: "Curbed NY",
-    slug: "curbed-ny",
-    feedUrl: "https://www.curbed.com/rss/index.xml",
+    name: "Brownstoner",
+    slug: "brownstoner",
+    feedUrl: "https://www.brownstoner.com/feed/",
     defaultCategory: "rental-market",
+    alwaysRelevant: true,
+  },
+  {
+    name: "6sqft",
+    slug: "6sqft",
+    feedUrl: "https://www.6sqft.com/feed/",
+    defaultCategory: "rental-market",
+    alwaysRelevant: true,
+  },
+  {
+    name: "Habitat Magazine",
+    slug: "habitat-magazine",
+    feedUrl: "https://www.habitatmag.com/feed/",
+    defaultCategory: "tenant-rights",
+    alwaysRelevant: true,
   },
 ];
 
