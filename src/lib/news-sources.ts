@@ -52,7 +52,7 @@ export const NEWS_SOURCES: NewsSource[] = [
   {
     name: "The Real Deal",
     slug: "the-real-deal",
-    feedUrl: "https://therealdeal.com/feed/",
+    feedUrl: "https://therealdeal.com/new-york/feed/",
     defaultCategory: "rental-market",
   },
   {
