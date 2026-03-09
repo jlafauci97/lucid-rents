@@ -17,11 +17,13 @@ export async function Navbar() {
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-8">
             <Link href="/" className="flex-shrink-0">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/lucid-rents-logo.svg"
+              <Image
+                src="/lucid-rents-logo.png"
                 alt="Lucid Rents"
+                width={200}
+                height={64}
                 className="h-14 w-auto"
+                priority
               />
             </Link>
             <div className="hidden md:flex items-center gap-6">
