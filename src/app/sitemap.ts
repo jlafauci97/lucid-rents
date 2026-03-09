@@ -67,6 +67,7 @@ async function generateStaticSitemap(): Promise<MetadataRoute.Sitemap> {
     "/map",
     "/search",
     "/news",
+    "/rent-data",
   ];
   for (const page of staticPages) {
     entries.push({

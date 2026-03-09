@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { ChevronDown, ArrowLeftRight, ShieldCheck, Wrench } from "lucide-react";
+import { ChevronDown, ArrowLeftRight, ShieldCheck, Wrench, BarChart3 } from "lucide-react";
 
 const tools = [
   {
@@ -16,6 +16,12 @@ const tools = [
     icon: ArrowLeftRight,
     label: "Compare Buildings",
     description: "Side-by-side building comparison",
+  },
+  {
+    href: "/rent-data",
+    icon: BarChart3,
+    label: "NYC Rent Data",
+    description: "Rent trends, prices & market data by area",
   },
 ];
 

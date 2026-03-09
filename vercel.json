@@ -39,6 +39,10 @@
     {
       "path": "/api/cron/sync-news",
       "schedule": "0 18 * * *"
+    },
+    {
+      "path": "/api/cron/sync-zillow-rents",
+      "schedule": "30 7 1 * *"
     }
   ]
 }
