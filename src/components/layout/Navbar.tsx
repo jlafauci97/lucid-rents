@@ -22,7 +22,7 @@ export async function Navbar() {
                 alt="Lucid Rents"
                 width={200}
                 height={64}
-                className="h-14 w-auto"
+                className="h-[84px] w-auto"
                 priority
               />
             </Link>
