@@ -50,7 +50,7 @@ export default function HomePage() {
           <div className="max-w-2xl mx-auto">
             <SearchBar size="hero" placeholder="Enter any NYC address, zip code, or neighborhood..." />
           </div>
-          <p className="text-sm text-gray-400 mt-4">
+          <p className="text-sm text-[#0F1D2E] mt-4">
             Try &ldquo;123 Main Street Brooklyn&rdquo; or &ldquo;10001&rdquo;
           </p>
         </div>
