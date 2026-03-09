@@ -17,6 +17,7 @@ import {
   ArrowLeftRight,
   BarChart3,
   Construction,
+  ClipboardList,
   User,
   Bell,
   LogOut,
@@ -38,6 +39,7 @@ const navLinks = [
   { href: "/compare", icon: ArrowLeftRight, label: "Compare Buildings" },
   { href: "/rent-data", icon: BarChart3, label: "Rent Data" },
   { href: "/scaffolding", icon: Construction, label: "Scaffolding" },
+  { href: "/permits", icon: ClipboardList, label: "Permits" },
   { href: "/review/new", icon: PenSquare, label: "Submit Review" },
 ];
 

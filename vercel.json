@@ -47,6 +47,10 @@
     {
       "path": "/api/cron/sync?source=sheds",
       "schedule": "20 6 * * *"
+    },
+    {
+      "path": "/api/cron/sync?source=permits",
+      "schedule": "30 6 * * *"
     }
   ]
 }

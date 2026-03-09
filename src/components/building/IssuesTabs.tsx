@@ -1,16 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { AlertTriangle, MessageSquare, Scale, HardHat, Bug, DoorOpen } from "lucide-react";
+import { AlertTriangle, MessageSquare, Scale, HardHat, Bug, DoorOpen, ClipboardList } from "lucide-react";
 import { ViolationTimeline } from "./ViolationTimeline";
 import { ComplaintTimeline } from "./ComplaintTimeline";
 import { LitigationTimeline } from "./LitigationTimeline";
 import { DobViolationTimeline } from "./DobViolationTimeline";
 import { BedBugTimeline } from "./BedBugTimeline";
 import { EvictionTimeline } from "./EvictionTimeline";
-import type { HpdViolation, Complaint311, HpdLitigation, DobViolation, BedBugReport, Eviction } from "@/types";
+import { PermitTimeline } from "./PermitTimeline";
+import type { HpdViolation, Complaint311, HpdLitigation, DobViolation, BedBugReport, Eviction, DobPermit } from "@/types";
 
-type TabKey = "violations" | "complaints" | "litigations" | "dob" | "bedbugs" | "evictions";
+type TabKey = "violations" | "complaints" | "litigations" | "dob" | "bedbugs" | "evictions" | "permits";
 
 interface IssuesTabsProps {
   violations: HpdViolation[];
@@ -19,6 +20,7 @@ interface IssuesTabsProps {
   dobViolations: DobViolation[];
   bedbugs: BedBugReport[];
   evictions: Eviction[];
+  permits: DobPermit[];
 }
 
 const tabs: { key: TabKey; label: string; icon: typeof AlertTriangle; activeBg: string; activeText: string }[] = [
@@ -28,9 +30,10 @@ const tabs: { key: TabKey; label: string; icon: typeof AlertTriangle; activeBg: 
   { key: "dob", label: "DOB Violations", icon: HardHat, activeBg: "bg-blue-50 ring-1 ring-[#3B82F6]", activeText: "text-[#3B82F6]" },
   { key: "bedbugs", label: "Bedbugs", icon: Bug, activeBg: "bg-purple-50 ring-1 ring-[#9333EA]", activeText: "text-[#9333EA]" },
   { key: "evictions", label: "Evictions", icon: DoorOpen, activeBg: "bg-pink-50 ring-1 ring-[#EC4899]", activeText: "text-[#EC4899]" },
+  { key: "permits", label: "Permits", icon: ClipboardList, activeBg: "bg-teal-50 ring-1 ring-[#0D9488]", activeText: "text-[#0D9488]" },
 ];
 
-export function IssuesTabs({ violations, complaints, litigations, dobViolations, bedbugs, evictions }: IssuesTabsProps) {
+export function IssuesTabs({ violations, complaints, litigations, dobViolations, bedbugs, evictions, permits }: IssuesTabsProps) {
   const [activeTab, setActiveTab] = useState<TabKey>("violations");
 
   const counts: Record<TabKey, number> = {
@@ -40,6 +43,7 @@ export function IssuesTabs({ violations, complaints, litigations, dobViolations,
     dob: dobViolations.length,
     bedbugs: bedbugs.length,
     evictions: evictions.length,
+    permits: permits.length,
   };
 
   return (
@@ -73,6 +77,7 @@ export function IssuesTabs({ violations, complaints, litigations, dobViolations,
       {activeTab === "dob" && <DobViolationTimeline violations={dobViolations} />}
       {activeTab === "bedbugs" && <BedBugTimeline reports={bedbugs} />}
       {activeTab === "evictions" && <EvictionTimeline evictions={evictions} />}
+      {activeTab === "permits" && <PermitTimeline permits={permits} />}
     </section>
   );
 }

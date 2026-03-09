@@ -17,7 +17,7 @@ import { SLUG_TO_BOROUGH, buildingUrl, canonicalUrl, buildingJsonLd, landlordUrl
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { PenSquare } from "lucide-react";
-import type { Building, HpdViolation, Complaint311, HpdLitigation, DobViolation, BedBugReport, Eviction, ReviewWithDetails } from "@/types";
+import type { Building, HpdViolation, Complaint311, HpdLitigation, DobViolation, BedBugReport, Eviction, DobPermit, ReviewWithDetails } from "@/types";
 import type { Metadata } from "next";
 
 export const revalidate = 86400; // 24h ISR
@@ -91,7 +91,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
   const buildingId = building.id;
 
   // Fetch violations, complaints, litigations, DOB violations, bedbugs, evictions, reviews, and units in parallel
-  const [violationsRes, complaintsRes, litigationsRes, dobViolationsRes, bedbugsRes, evictionsRes, reviewsRes, unitsRes, violationSummaryRes] = await Promise.all([
+  const [violationsRes, complaintsRes, litigationsRes, dobViolationsRes, bedbugsRes, evictionsRes, permitsRes, reviewsRes, unitsRes, violationSummaryRes] = await Promise.all([
     supabase
       .from("hpd_violations")
       .select("*")
@@ -129,6 +129,12 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
       .order("executed_date", { ascending: false })
       .limit(20),
     supabase
+      .from("dob_permits")
+      .select("*")
+      .eq("building_id", buildingId)
+      .order("issued_date", { ascending: false })
+      .limit(20),
+    supabase
       .from("reviews")
       .select(
         `*, profile:profiles(id, display_name, avatar_url), category_ratings:review_category_ratings(*, category:review_categories(slug, name, icon)), unit:units(unit_number)`
@@ -154,6 +160,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
   const dobViolations = (dobViolationsRes.data || []) as DobViolation[];
   const bedbugs = (bedbugsRes.data || []) as BedBugReport[];
   const evictions = (evictionsRes.data || []) as Eviction[];
+  const permits = (permitsRes.data || []) as DobPermit[];
   const reviews = (reviewsRes.data || []) as unknown as ReviewWithDetails[];
   const units = unitsRes.data || [];
   const violationSummaries = violationSummaryRes.data || [];
@@ -244,7 +251,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
             <AdBlock adSlot="BUILDING_MID_2" adFormat="horizontal" />
 
             {/* Violations & Complaints Tabs */}
-            <IssuesTabs violations={violations} complaints={complaints} litigations={litigations} dobViolations={dobViolations} bedbugs={bedbugs} evictions={evictions} />
+            <IssuesTabs violations={violations} complaints={complaints} litigations={litigations} dobViolations={dobViolations} bedbugs={bedbugs} evictions={evictions} permits={permits} />
           </div>
 
           {/* Sidebar */}

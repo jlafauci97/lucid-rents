@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { ChevronDown, ArrowLeftRight, ShieldCheck, Wrench, BarChart3, Construction } from "lucide-react";
+import { ChevronDown, ArrowLeftRight, ShieldCheck, Wrench, BarChart3, Construction, ClipboardList } from "lucide-react";
 
 const tools = [
   {
@@ -28,6 +28,12 @@ const tools = [
     icon: Construction,
     label: "Scaffolding Tracker",
     description: "Active sidewalk sheds & scaffolding by area",
+  },
+  {
+    href: "/permits",
+    icon: ClipboardList,
+    label: "Permits Tracker",
+    description: "Active DOB building permits by area",
   },
 ];
 

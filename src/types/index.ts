@@ -33,6 +33,7 @@ export interface Building {
   crime_count: number;
   bedbug_report_count: number;
   eviction_count: number;
+  permit_count: number;
   is_rent_stabilized: boolean;
   stabilized_units: number | null;
   stabilized_year: number | null;
@@ -276,6 +277,32 @@ export interface Eviction {
   imported_at: string;
 }
 
+
+export interface DobPermit {
+  id: string;
+  building_id: string | null;
+  bbl: string | null;
+  bin: string | null;
+  work_permit: string;
+  house_no: string | null;
+  street_name: string | null;
+  borough: string | null;
+  zip_code: string | null;
+  block: string | null;
+  lot: string | null;
+  work_type: string | null;
+  permit_status: string | null;
+  filing_reason: string | null;
+  issued_date: string | null;
+  expired_date: string | null;
+  job_description: string | null;
+  estimated_job_costs: number | null;
+  owner_business_name: string | null;
+  permittee_business_name: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  imported_at: string;
+}
 
 export interface NewsArticle {
   id: string;
