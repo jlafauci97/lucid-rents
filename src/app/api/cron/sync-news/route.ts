@@ -5,6 +5,7 @@ import {
   NEWS_SOURCES,
   categorizeArticle,
   generateArticleSlug,
+  isHousingRelevant,
 } from "@/lib/news-sources";
 
 const supabase = createClient(
@@ -26,7 +27,13 @@ export async function GET() {
     try {
       const feed = await parser.parseURL(source.feedUrl);
       const articles = (feed.items || [])
-        .filter((item) => item.title && item.link)
+        .filter((item) => {
+          if (!item.title || !item.link) return false;
+          const excerpt = (item.contentSnippet || item.content || "")
+            .replace(/<[^>]+>/g, "")
+            .trim();
+          return isHousingRelevant(item.title, excerpt);
+        })
         .map((item) => {
           const guid = item.guid || item.link!;
           const publishedAt =

@@ -32,30 +32,43 @@ export function NewsCard({ article }: { article: NewsArticle }) {
 
   return (
     <article className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm hover:shadow-md transition-shadow overflow-hidden">
-      <Link href={`/news/${article.slug}`} className="block p-4 sm:p-5">
-        <div className="flex items-center gap-2 mb-2">
-          <span
-            className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full ${categoryColor}`}
-          >
-            {categoryMeta?.label || article.category}
-          </span>
-          <span className="text-xs text-[#94a3b8]">{article.source_name}</span>
+      <Link href={`/news/${article.slug}`} className="flex gap-0 sm:gap-4 p-4 sm:p-5">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-2">
+            <span
+              className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full ${categoryColor}`}
+            >
+              {categoryMeta?.label || article.category}
+            </span>
+            <span className="text-xs text-[#94a3b8]">{article.source_name}</span>
+          </div>
+          <h3 className="text-base font-bold text-[#0F1D2E] leading-snug mb-2 line-clamp-2">
+            {article.title}
+          </h3>
+          {article.excerpt && (
+            <p className="text-sm text-[#64748b] leading-relaxed line-clamp-2 mb-3">
+              {article.excerpt}
+            </p>
+          )}
+          <div className="flex items-center gap-3 text-xs text-[#94a3b8]">
+            <span className="flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              {timeAgo(article.published_at)}
+            </span>
+            {article.author && <span>by {article.author}</span>}
+          </div>
         </div>
-        <h3 className="text-base font-bold text-[#0F1D2E] leading-snug mb-2 group-hover:text-[#3B82F6] transition-colors line-clamp-2">
-          {article.title}
-        </h3>
-        {article.excerpt && (
-          <p className="text-sm text-[#64748b] leading-relaxed line-clamp-3 mb-3">
-            {article.excerpt}
-          </p>
+        {article.image_url && (
+          <div className="hidden sm:block flex-shrink-0 w-[140px] h-[100px] rounded-lg overflow-hidden bg-[#f1f5f9]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={article.image_url}
+              alt=""
+              className="w-full h-full object-cover"
+              loading="lazy"
+            />
+          </div>
         )}
-        <div className="flex items-center gap-3 text-xs text-[#94a3b8]">
-          <span className="flex items-center gap-1">
-            <Clock className="w-3 h-3" />
-            {timeAgo(article.published_at)}
-          </span>
-          {article.author && <span>by {article.author}</span>}
-        </div>
       </Link>
     </article>
   );

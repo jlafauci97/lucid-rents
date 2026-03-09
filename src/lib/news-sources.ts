@@ -81,6 +81,63 @@ export const NEWS_SOURCES: NewsSource[] = [
   },
 ];
 
+/**
+ * Keywords that indicate an article is relevant to NYC housing/real estate.
+ * Articles that don't match ANY of these are filtered out entirely.
+ */
+const RELEVANCE_KEYWORDS: string[] = [
+  "rent",
+  "housing",
+  "apartment",
+  "tenant",
+  "landlord",
+  "eviction",
+  "lease",
+  "building",
+  "real estate",
+  "condo",
+  "co-op",
+  "coop",
+  "mortgage",
+  "zoning",
+  "affordable",
+  "hpd",
+  "nycha",
+  "shelter",
+  "homeless",
+  "vacancy",
+  "rezoning",
+  "development",
+  "construction",
+  "property",
+  "broker",
+  "stabiliz",
+  "bedroom",
+  "studio",
+  "sqft",
+  "square feet",
+  "living space",
+  "move-in",
+  "move in",
+  "roommate",
+  "sublease",
+  "sublet",
+  "gentrification",
+  "displacement",
+  "house",
+  "home",
+  "dwelling",
+  "residential",
+];
+
+/**
+ * Check if an article is relevant to NYC housing/real estate.
+ */
+export function isHousingRelevant(title: string, excerpt: string | null): boolean {
+  const text = `${title} ${excerpt || ""}`.toLowerCase();
+  return RELEVANCE_KEYWORDS.some((kw) => text.includes(kw));
+}
+
 const CATEGORY_KEYWORDS: Record<NewsCategory, string[]> = {
   "rental-market": [
     "rent increase",
