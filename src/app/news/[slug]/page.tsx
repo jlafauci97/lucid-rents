@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { canonicalUrl, breadcrumbJsonLd, newsCollectionJsonLd } from "@/lib/seo";
 import { NEWS_CATEGORIES, type NewsCategory } from "@/lib/news-sources";
 import { NewsList } from "@/components/news/NewsList";
+import { CategoryIcon } from "@/components/news/CategoryIcon";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { NewsCard } from "@/components/news/NewsCard";
@@ -128,7 +129,7 @@ async function CategoryView({
 
   const categories = Object.entries(NEWS_CATEGORIES) as [
     NewsCategory,
-    { label: string; description: string },
+    { label: string; description: string; icon: string; color: string },
   ][];
 
   return (
@@ -209,14 +210,22 @@ async function CategoryView({
                   <Link
                     key={slug}
                     href={`/news/${slug}`}
-                    className={`block px-4 py-3 transition-colors ${
+                    className={`flex items-start gap-3 px-4 py-3 transition-colors ${
                       slug === category ? "bg-[#EFF6FF]" : "hover:bg-[#f8fafc]"
                     }`}
                   >
-                    <p className={`text-sm font-medium ${slug === category ? "text-[#3B82F6]" : "text-[#0F1D2E]"}`}>
-                      {catMeta.label}
-                    </p>
-                    <p className="text-xs text-[#94a3b8] mt-0.5">{catMeta.description}</p>
+                    <div
+                      className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
+                      style={{ backgroundColor: `${catMeta.color}15` }}
+                    >
+                      <CategoryIcon icon={catMeta.icon} color={catMeta.color} />
+                    </div>
+                    <div>
+                      <p className={`text-sm font-medium ${slug === category ? "text-[#3B82F6]" : "text-[#0F1D2E]"}`}>
+                        {catMeta.label}
+                      </p>
+                      <p className="text-xs text-[#94a3b8] mt-0.5">{catMeta.description}</p>
+                    </div>
                   </Link>
                 ))}
               </div>

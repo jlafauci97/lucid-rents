@@ -14,27 +14,37 @@ export type NewsCategory =
 
 export const NEWS_CATEGORIES: Record<
   NewsCategory,
-  { label: string; description: string }
+  { label: string; description: string; icon: string; color: string }
 > = {
   "rental-market": {
     label: "Rental Market",
     description: "NYC rental market trends, pricing, and housing supply updates",
+    icon: "TrendingUp",
+    color: "#3B82F6",
   },
   "tenant-rights": {
     label: "Tenant Rights",
     description: "Tenant protections, rent stabilization, and housing court news",
+    icon: "Shield",
+    color: "#8B5CF6",
   },
   "data-insights": {
     label: "Data & Insights",
     description: "Housing data analysis, reports, and research findings",
+    icon: "BarChart3",
+    color: "#10B981",
   },
   guides: {
     label: "Guides",
     description: "Practical tips and guides for NYC renters",
+    icon: "BookOpen",
+    color: "#F59E0B",
   },
   general: {
     label: "General",
     description: "General NYC housing and real estate news",
+    icon: "Newspaper",
+    color: "#64748B",
   },
 };
 

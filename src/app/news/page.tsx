@@ -5,6 +5,7 @@ import { canonicalUrl, breadcrumbJsonLd } from "@/lib/seo";
 import { newsCollectionJsonLd } from "@/lib/seo";
 import { NEWS_CATEGORIES, type NewsCategory } from "@/lib/news-sources";
 import { NewsList } from "@/components/news/NewsList";
+import { CategoryIcon } from "@/components/news/CategoryIcon";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import type { NewsArticle } from "@/types";
@@ -52,7 +53,7 @@ export default async function NewsPage({
 
   const categories = Object.entries(NEWS_CATEGORIES) as [
     NewsCategory,
-    { label: string; description: string },
+    { label: string; description: string; icon: string; color: string },
   ][];
 
   return (
@@ -131,14 +132,22 @@ export default async function NewsPage({
                   <Link
                     key={slug}
                     href={`/news/${slug}`}
-                    className="block px-4 py-3 hover:bg-[#f8fafc] transition-colors"
+                    className="flex items-start gap-3 px-4 py-3 hover:bg-[#f8fafc] transition-colors"
                   >
-                    <p className="text-sm font-medium text-[#0F1D2E]">
-                      {meta.label}
-                    </p>
-                    <p className="text-xs text-[#94a3b8] mt-0.5">
-                      {meta.description}
-                    </p>
+                    <div
+                      className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
+                      style={{ backgroundColor: `${meta.color}15` }}
+                    >
+                      <CategoryIcon icon={meta.icon} color={meta.color} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-[#0F1D2E]">
+                        {meta.label}
+                      </p>
+                      <p className="text-xs text-[#94a3b8] mt-0.5">
+                        {meta.description}
+                      </p>
+                    </div>
                   </Link>
                 ))}
               </div>
