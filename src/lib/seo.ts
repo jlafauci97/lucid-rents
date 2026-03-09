@@ -98,6 +98,22 @@ export function landlordJsonLd(name: string, buildingCount: number) {
   };
 }
 
+export function newsCollectionJsonLd() {
+  return {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: "NYC Housing News",
+    description:
+      "Latest NYC rental market news, tenant rights updates, and housing guides for New York City renters.",
+    url: canonicalUrl("/news"),
+    publisher: {
+      "@type": "Organization",
+      name: "Lucid Rents",
+      url: BASE_URL,
+    },
+  };
+}
+
 export function breadcrumbJsonLd(items: { name: string; url: string }[]) {
   return {
     "@context": "https://schema.org",

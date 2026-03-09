@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { BOROUGH_SLUGS, buildingUrl, landlordSlug } from "@/lib/seo";
+import { NEWS_CATEGORIES } from "@/lib/news-sources";
 
 const BASE_URL = "https://lucidrents.com";
 const BUILDINGS_PER_SITEMAP = 45000;
@@ -65,12 +66,22 @@ async function generateStaticSitemap(): Promise<MetadataRoute.Sitemap> {
     "/rent-stabilization",
     "/map",
     "/search",
+    "/news",
   ];
   for (const page of staticPages) {
     entries.push({
       url: `${BASE_URL}${page}`,
-      changeFrequency: "weekly",
+      changeFrequency: page === "/news" ? "daily" : "weekly",
       priority: 0.8,
+    });
+  }
+
+  // News category pages
+  for (const category of Object.keys(NEWS_CATEGORIES)) {
+    entries.push({
+      url: `${BASE_URL}/news/${category}`,
+      changeFrequency: "daily",
+      priority: 0.7,
     });
   }
 

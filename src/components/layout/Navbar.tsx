@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Search, PenSquare, User, LogOut, AlertTriangle, Users, Bell, Radio, Siren, Map } from "lucide-react";
+import { Search, PenSquare, User, LogOut, AlertTriangle, Users, Bell, Radio, Siren, Map, Newspaper } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { NavDropdown } from "./NavDropdown";
 import { MobileMenu } from "./MobileMenu";
@@ -22,7 +22,7 @@ export async function Navbar() {
                 alt="Lucid Rents"
                 width={200}
                 height={64}
-                className="h-12 w-auto"
+                className="h-[72px] w-auto"
                 priority
               />
             </Link>
@@ -68,6 +68,13 @@ export async function Navbar() {
               >
                 <Radio className="w-4 h-4" />
                 Feed
+              </Link>
+              <Link
+                href="/news"
+                className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors"
+              >
+                <Newspaper className="w-4 h-4" />
+                News
               </Link>
               <NavDropdown />
               <Link

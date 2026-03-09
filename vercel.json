@@ -31,6 +31,14 @@
     {
       "path": "/api/cron/sync-rent-stabilization",
       "schedule": "0 7 1 * *"
+    },
+    {
+      "path": "/api/cron/sync-news",
+      "schedule": "10 6 * * *"
+    },
+    {
+      "path": "/api/cron/sync-news",
+      "schedule": "0 18 * * *"
     }
   ]
 }

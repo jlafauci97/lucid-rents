@@ -277,6 +277,23 @@ export interface Eviction {
 }
 
 
+export interface NewsArticle {
+  id: string;
+  guid: string;
+  slug: string;
+  title: string;
+  excerpt: string | null;
+  url: string;
+  source_name: string;
+  source_slug: string;
+  category: string;
+  image_url: string | null;
+  author: string | null;
+  published_at: string;
+  fetched_at: string;
+  created_at: string;
+}
+
 export interface SearchResult {
   buildings: Building[];
   total: number;
