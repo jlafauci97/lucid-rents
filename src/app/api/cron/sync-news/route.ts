@@ -29,6 +29,7 @@ export async function GET() {
       const articles = (feed.items || [])
         .filter((item) => {
           if (!item.title || !item.link) return false;
+          if (source.alwaysRelevant) return true;
           const excerpt = (item.contentSnippet || item.content || "")
             .replace(/<[^>]+>/g, "")
             .trim();
@@ -112,6 +113,13 @@ function extractImageUrl(item: Record<string, unknown>): string | null {
     | undefined;
   if (enclosure?.url && enclosure.type?.startsWith("image/")) {
     return enclosure.url;
+  }
+
+  // Fall back to first <img> in content HTML
+  const content = item.content as string | undefined;
+  if (content) {
+    const match = content.match(/<img[^>]+src=["']([^"']+)["']/);
+    if (match?.[1]) return match[1];
   }
 
   return null;

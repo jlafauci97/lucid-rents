@@ -3,6 +3,8 @@ export interface NewsSource {
   slug: string;
   feedUrl: string;
   defaultCategory: NewsCategory;
+  /** If true, all articles from this source are considered housing-relevant (skip keyword filter) */
+  alwaysRelevant?: boolean;
 }
 
 export type NewsCategory =
@@ -54,6 +56,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     slug: "the-real-deal",
     feedUrl: "https://therealdeal.com/new-york/feed/",
     defaultCategory: "rental-market",
+    alwaysRelevant: true,
   },
   {
     name: "Gothamist",
@@ -72,6 +75,7 @@ export const NEWS_SOURCES: NewsSource[] = [
     slug: "brick-underground",
     feedUrl: "https://www.brickunderground.com/rss.xml",
     defaultCategory: "guides",
+    alwaysRelevant: true,
   },
   {
     name: "Curbed NY",
@@ -86,48 +90,52 @@ export const NEWS_SOURCES: NewsSource[] = [
  * Articles that don't match ANY of these are filtered out entirely.
  */
 const RELEVANCE_KEYWORDS: string[] = [
-  "rent",
+  "rent ",
+  "renter",
+  "rental",
   "housing",
   "apartment",
   "tenant",
   "landlord",
   "eviction",
   "lease",
-  "building",
   "real estate",
   "condo",
   "co-op",
   "coop",
   "mortgage",
   "zoning",
-  "affordable",
+  "affordable housing",
   "hpd",
   "nycha",
-  "shelter",
-  "homeless",
-  "vacancy",
+  "homeless shelter",
+  "vacancy rate",
   "rezoning",
-  "development",
-  "construction",
-  "property",
+  "housing development",
+  "property tax",
   "broker",
   "stabiliz",
   "bedroom",
-  "studio",
   "sqft",
   "square feet",
-  "living space",
-  "move-in",
-  "move in",
   "roommate",
   "sublease",
   "sublet",
   "gentrification",
   "displacement",
-  "house",
-  "home",
   "dwelling",
   "residential",
+  "townhouse",
+  "penthouse",
+  "rent-stabiliz",
+  "housing court",
+  "building code",
+  "housing policy",
+  "housing market",
+  "home price",
+  "home sale",
+  "homeowner",
+  "homebuyer",
 ];
 
 /**
