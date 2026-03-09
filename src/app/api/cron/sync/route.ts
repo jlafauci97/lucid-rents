@@ -151,9 +151,9 @@ async function getLastSyncDate(
     return toSodaDate(syncDate.toISOString());
   }
 
-  // Default: 3 days ago (keeps initial sync small enough for 60s limit)
+  // Default: 2 years ago for initial sync to get meaningful historical data
   const d = new Date();
-  d.setDate(d.getDate() - 3);
+  d.setFullYear(d.getFullYear() - 2);
   return toSodaDate(d.toISOString());
 }
 
@@ -1017,24 +1017,21 @@ async function syncNYPDComplaints(supabase: ReturnType<typeof getSupabaseAdmin>)
 // ---------------------------------------------------------------------------
 
 interface BedBugRawRecord {
-  buildingid?: string;
-  boroid?: string;
-  block?: string;
-  lot?: string;
+  building_id?: string;
   bbl?: string;
   bin?: string;
-  registrationid?: string;
-  housenumber?: string;
-  streetname?: string;
+  registration_id?: string;
+  house_number?: string;
+  street_name?: string;
   borough?: string;
   postcode?: string;
-  infesteddwellingunitcount?: string;
-  eradicatedunitcount?: string;
-  reinfestedunitcount?: string;
-  totaldwellingunits?: string;
-  filingdate?: string;
-  filingperiodstartdate?: string;
-  filingperiodenddate?: string;
+  infested_dwelling_unit_count?: string;
+  eradicated_unit_count?: string;
+  re_infested_dwelling_unit?: string;
+  of_dwelling_units?: string;
+  filing_date?: string;
+  filing_period_start_date?: string;
+  filling_period_end_date?: string;
   [key: string]: unknown;
 }
 
@@ -1077,22 +1074,22 @@ async function syncBedBugReports(supabase: ReturnType<typeof getSupabaseAdmin>):
       }
 
       const rows = records
-        .filter((r) => r.bbl && r.filingperiodstartdate)
+        .filter((r) => r.bbl && r.filing_period_start_date)
         .map((r) => ({
           bbl: r.bbl || null,
           bin: r.bin || null,
-          registration_id: r.registrationid || null,
-          house_number: r.housenumber || null,
-          street_name: r.streetname || null,
+          registration_id: r.registration_id || null,
+          house_number: r.house_number || null,
+          street_name: r.street_name || null,
           borough: r.borough || null,
           postcode: r.postcode || null,
-          infested_dwelling_unit_count: r.infesteddwellingunitcount ? parseInt(r.infesteddwellingunitcount) || null : null,
-          eradicated_unit_count: r.eradicatedunitcount ? parseInt(r.eradicatedunitcount) || null : null,
-          reinfested_unit_count: r.reinfestedunitcount ? parseInt(r.reinfestedunitcount) || null : null,
-          total_dwelling_units: r.totaldwellingunits ? parseInt(r.totaldwellingunits) || null : null,
-          filing_date: r.filingdate ? r.filingdate.slice(0, 10) : null,
-          filing_period_start_date: r.filingperiodstartdate ? r.filingperiodstartdate.slice(0, 10) : null,
-          filing_period_end_date: r.filingperiodenddate ? r.filingperiodenddate.slice(0, 10) : null,
+          infested_dwelling_unit_count: r.infested_dwelling_unit_count ? parseInt(r.infested_dwelling_unit_count) || null : null,
+          eradicated_unit_count: r.eradicated_unit_count ? parseInt(r.eradicated_unit_count) || null : null,
+          reinfested_unit_count: r.re_infested_dwelling_unit ? parseInt(r.re_infested_dwelling_unit) || null : null,
+          total_dwelling_units: r.of_dwelling_units ? parseInt(r.of_dwelling_units) || null : null,
+          filing_date: r.filing_date ? r.filing_date.slice(0, 10) : null,
+          filing_period_start_date: r.filing_period_start_date ? r.filing_period_start_date.slice(0, 10) : null,
+          filing_period_end_date: r.filling_period_end_date ? r.filling_period_end_date.slice(0, 10) : null,
           imported_at: new Date().toISOString(),
         }));
 
@@ -1138,7 +1135,7 @@ interface EvictionRawRecord {
   eviction_apt_num?: string;
   eviction_zip?: string;
   borough?: string;
-  residential_commercial?: string;
+  residential_commercial_ind?: string;
   eviction_possession?: string;
   ejectment?: string;
   marshal_first_name?: string;
@@ -1200,7 +1197,7 @@ async function syncEvictions(supabase: ReturnType<typeof getSupabaseAdmin>): Pro
           bbl: r.bbl || null,
           bin: r.bin || null,
           executed_date: r.executed_date ? r.executed_date.slice(0, 10) : null,
-          residential_commercial: r.residential_commercial || null,
+          residential_commercial: r.residential_commercial_ind || null,
           eviction_possession: r.eviction_possession || null,
           ejectment: r.ejectment || null,
           marshal_first_name: r.marshal_first_name || null,
