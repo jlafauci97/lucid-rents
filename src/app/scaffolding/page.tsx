@@ -34,7 +34,7 @@ async function fetchRpc(fnName: string) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({}),
-    next: { revalidate: 86400 },
+    cache: "no-store",
   });
   if (!res.ok) return [];
   return res.json();
