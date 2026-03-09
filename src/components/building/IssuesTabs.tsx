@@ -23,14 +23,14 @@ interface IssuesTabsProps {
   leadViolations: HpdLeadViolation[];
 }
 
-const tabs: { key: TabKey; label: string; icon: typeof AlertTriangle; activeColor: string }[] = [
-  { key: "violations", label: "HPD Violations", icon: AlertTriangle, activeColor: "border-[#EF4444] text-[#EF4444]" },
-  { key: "complaints", label: "311 Complaints", icon: MessageSquare, activeColor: "border-[#F59E0B] text-[#F59E0B]" },
-  { key: "litigations", label: "HPD Litigations", icon: Scale, activeColor: "border-[#8B5CF6] text-[#8B5CF6]" },
-  { key: "dob", label: "DOB Violations", icon: HardHat, activeColor: "border-[#3B82F6] text-[#3B82F6]" },
-  { key: "bedbugs", label: "Bedbugs", icon: Bug, activeColor: "border-[#9333EA] text-[#9333EA]" },
-  { key: "evictions", label: "Evictions", icon: DoorOpen, activeColor: "border-[#EC4899] text-[#EC4899]" },
-  { key: "lead", label: "Lead Paint", icon: Paintbrush, activeColor: "border-[#14B8A6] text-[#14B8A6]" },
+const tabs: { key: TabKey; label: string; icon: typeof AlertTriangle; activeBg: string; activeText: string }[] = [
+  { key: "violations", label: "HPD Violations", icon: AlertTriangle, activeBg: "bg-red-50 ring-1 ring-[#EF4444]", activeText: "text-[#EF4444]" },
+  { key: "complaints", label: "311 Complaints", icon: MessageSquare, activeBg: "bg-amber-50 ring-1 ring-[#F59E0B]", activeText: "text-[#F59E0B]" },
+  { key: "litigations", label: "HPD Litigations", icon: Scale, activeBg: "bg-violet-50 ring-1 ring-[#8B5CF6]", activeText: "text-[#8B5CF6]" },
+  { key: "dob", label: "DOB Violations", icon: HardHat, activeBg: "bg-blue-50 ring-1 ring-[#3B82F6]", activeText: "text-[#3B82F6]" },
+  { key: "bedbugs", label: "Bedbugs", icon: Bug, activeBg: "bg-purple-50 ring-1 ring-[#9333EA]", activeText: "text-[#9333EA]" },
+  { key: "evictions", label: "Evictions", icon: DoorOpen, activeBg: "bg-pink-50 ring-1 ring-[#EC4899]", activeText: "text-[#EC4899]" },
+  { key: "lead", label: "Lead Paint", icon: Paintbrush, activeBg: "bg-teal-50 ring-1 ring-[#14B8A6]", activeText: "text-[#14B8A6]" },
 ];
 
 export function IssuesTabs({ violations, complaints, litigations, dobViolations, bedbugs, evictions, leadViolations }: IssuesTabsProps) {
@@ -49,17 +49,18 @@ export function IssuesTabs({ violations, complaints, litigations, dobViolations,
   return (
     <section>
       {/* Tab buttons */}
-      <div className="flex overflow-x-auto border-b border-[#e2e8f0] mb-4">
+      <div className="flex flex-wrap gap-2 mb-4">
         {tabs.map((tab) => {
           const Icon = tab.icon;
+          const isActive = activeTab === tab.key;
           return (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${
-                activeTab === tab.key
-                  ? tab.activeColor
-                  : "border-transparent text-[#64748b] hover:text-[#0F1D2E]"
+              className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                isActive
+                  ? `${tab.activeBg} ${tab.activeText}`
+                  : "bg-gray-100 text-[#64748b] hover:bg-gray-200 hover:text-[#0F1D2E]"
               }`}
             >
               <Icon className="w-4 h-4" />
