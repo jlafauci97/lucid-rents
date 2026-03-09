@@ -43,7 +43,7 @@ export default function HomePage() {
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-4">
             Check Your Address
           </h1>
-          <p className="text-lg sm:text-xl text-gray-300 mb-10 max-w-2xl mx-auto">
+          <p className="text-lg sm:text-xl text-[#0F1D2E] mb-10 max-w-2xl mx-auto">
             See the truth about any NYC building before you sign.
             Violations, complaints, tenant reviews, and crime data — all in one place.
           </p>
