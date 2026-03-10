@@ -82,10 +82,15 @@ export async function GET(request: NextRequest) {
         const { error: updateErr } = await supabase
           .from("buildings")
           .update({ latitude: lat, longitude: lng })
-          .in("id", buildingIds)
-          .is("latitude", null);
+          .in("id", buildingIds);
 
-        if (!updateErr) updated += buildingIds.length;
+        if (updateErr) {
+          return NextResponse.json({
+            error: updateErr.message,
+            debug: { cleanBbl, buildingIds: buildingIds.slice(0, 3), lat, lng },
+          }, { status: 500 });
+        }
+        updated += buildingIds.length;
       }
     } catch {
       // Continue with next chunk on fetch errors
