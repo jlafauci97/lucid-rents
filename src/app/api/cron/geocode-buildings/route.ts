@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export const maxDuration = 60;
 
@@ -14,7 +14,7 @@ const PAGE_SIZE = 5000;
 export async function GET(request: NextRequest) {
   const offset = parseInt(request.nextUrl.searchParams.get("offset") || "0");
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   // Get a batch of buildings missing coordinates that have a BBL
   const { data: buildings, error: fetchErr } = await supabase
