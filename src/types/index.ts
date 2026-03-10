@@ -38,6 +38,8 @@ export interface Building {
   is_rent_stabilized: boolean;
   stabilized_units: number | null;
   stabilized_year: number | null;
+  latitude: number | null;
+  longitude: number | null;
   created_at: string;
   updated_at: string;
 }
