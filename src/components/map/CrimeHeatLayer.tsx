@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { CircleMarker, Popup } from "react-leaflet";
+import { useCity } from "@/lib/city-context";
 
 interface CrimePoint {
   zip: string;
@@ -36,6 +37,7 @@ function getCrimeRadius(total: number): number {
 }
 
 export function CrimeHeatLayer({ borough, visible }: CrimeHeatLayerProps) {
+  const city = useCity();
   const [points, setPoints] = useState<CrimePoint[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -81,7 +83,7 @@ export function CrimeHeatLayer({ borough, visible }: CrimeHeatLayerProps) {
                 <p>QoL: <span className="font-semibold text-[#3B82F6]">{p.qol.toLocaleString()}</span></p>
               </div>
               <Link
-                href={`/crime/${p.zip}`}
+                href={`/${city}/crime/${p.zip}`}
                 className="text-xs text-[#3B82F6] font-medium mt-1 inline-block"
               >
                 View crime data →

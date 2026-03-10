@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Siren, ArrowRight } from "lucide-react";
+import { useCity } from "@/lib/city-context";
 
 interface CrimeSummary {
   total: number;
@@ -17,6 +18,7 @@ interface NearbyCrimeSummaryProps {
 }
 
 export function NearbyCrimeSummary({ zipCode }: NearbyCrimeSummaryProps) {
+  const city = useCity();
   const [summary, setSummary] = useState<CrimeSummary | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -107,7 +109,7 @@ export function NearbyCrimeSummary({ zipCode }: NearbyCrimeSummaryProps) {
         </div>
 
         <Link
-          href={`/crime/${zipCode}`}
+          href={`/${city}/crime/${zipCode}`}
           className="mt-3 flex items-center justify-center gap-1.5 text-sm font-medium text-[#2563EB] hover:text-[#1d4ed8] transition-colors pt-3 border-t border-[#e2e8f0]"
         >
           View full crime report

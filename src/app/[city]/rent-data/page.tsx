@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import { BarChart3 } from "lucide-react";
-import { canonicalUrl } from "@/lib/seo";
+import { canonicalUrl, cityPath } from "@/lib/seo";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { CitywideTrendChart } from "@/components/rent-data/CitywideTrendChart";
@@ -13,12 +13,12 @@ export const metadata: Metadata = {
   title: "NYC Rent Data & Trends | Lucid Rents",
   description:
     "Explore NYC rent prices by neighborhood, borough, and zip code. View median rent trends, borough comparisons, Rent Guidelines Board history, and an interactive rent map.",
-  alternates: { canonical: canonicalUrl("/rent-data") },
+  alternates: { canonical: canonicalUrl(cityPath("/rent-data")) },
   openGraph: {
     title: "NYC Rent Data & Trends",
     description:
       "Median rent prices, borough comparisons, and neighborhood rent maps for New York City. Powered by Zillow ZORI data.",
-    url: canonicalUrl("/rent-data"),
+    url: canonicalUrl(cityPath("/rent-data")),
     siteName: "Lucid Rents",
     type: "website",
     locale: "en_US",
@@ -85,7 +85,7 @@ export default async function RentDataPage() {
               name: "NYC Rent Data & Trends",
               description:
                 "Median rent prices by zip code and borough for New York City, sourced from the Zillow Observed Rent Index (ZORI).",
-              url: "https://lucidrents.com/rent-data",
+              url: canonicalUrl(cityPath("/rent-data")),
               creator: {
                 "@type": "Organization",
                 name: "Lucid Rents",

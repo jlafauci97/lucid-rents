@@ -11,11 +11,11 @@ export const metadata: Metadata = {
   title: "Landlord Directory | Lucid Rents",
   description:
     "Search and explore NYC landlords. View violation counts, complaint histories, and building portfolios for property owners across New York City.",
-  alternates: { canonical: canonicalUrl("/landlords") },
+  alternates: { canonical: canonicalUrl(cityPath("/landlords")) },
   openGraph: {
     title: "NYC Landlord Directory",
     description: "Explore NYC landlords by violations, complaints, and building portfolios.",
-    url: canonicalUrl("/landlords"),
+    url: canonicalUrl(cityPath("/landlords")),
     siteName: "Lucid Rents",
     type: "website",
     locale: "en_US",
@@ -143,7 +143,7 @@ export default async function LandlordsPage({ searchParams }: LandlordsPageProps
       if (!merged[key]) delete merged[key];
     });
     const qs = new URLSearchParams(merged).toString();
-    return `/landlords?${qs}`;
+    return `${cityPath("/landlords")}?${qs}`;
   }
 
   return (
@@ -162,7 +162,7 @@ export default async function LandlordsPage({ searchParams }: LandlordsPageProps
 
       {/* Search bar */}
       <div className="mb-6">
-        <form action="/landlords" method="GET" className="flex gap-3">
+        <form action={cityPath("/landlords")} method="GET" className="flex gap-3">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94a3b8]" />
             <input

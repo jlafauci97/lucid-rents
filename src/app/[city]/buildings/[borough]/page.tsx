@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { BuildingCard } from "@/components/search/BuildingCard";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { SLUG_TO_BOROUGH, BOROUGH_SLUGS, canonicalUrl, buildingUrl } from "@/lib/seo";
+import { SLUG_TO_BOROUGH, BOROUGH_SLUGS, canonicalUrl, buildingUrl, cityPath } from "@/lib/seo";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import type { Building } from "@/types";
@@ -30,7 +30,7 @@ export async function generateMetadata({
 
   const title = `${borough} Buildings | Lucid Rents`;
   const description = `Browse apartment buildings in ${borough}, NYC. View violations, complaints, scores, and tenant reviews.`;
-  const url = canonicalUrl(`/buildings/${boroughSlug}`);
+  const url = canonicalUrl(cityPath(`/buildings/${boroughSlug}`));
 
   return {
     title,
@@ -99,8 +99,8 @@ export default async function BoroughPage({ params, searchParams }: BoroughPageP
       <Breadcrumbs
         items={[
           { label: "Home", href: "/" },
-          { label: "Buildings", href: "/buildings" },
-          { label: borough, href: `/buildings/${boroughSlug}` },
+          { label: "Buildings", href: cityPath("/buildings") },
+          { label: borough, href: cityPath(`/buildings/${boroughSlug}`) },
         ]}
       />
 
@@ -114,7 +114,7 @@ export default async function BoroughPage({ params, searchParams }: BoroughPageP
       {/* Sort controls */}
       <div className="flex gap-2 mb-6">
         <Link
-          href={`/buildings/${boroughSlug}?sort=violations`}
+          href={cityPath(`/buildings/${boroughSlug}?sort=violations`)}
           className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
             sort !== "score"
               ? "bg-[#3B82F6] text-white"
@@ -124,7 +124,7 @@ export default async function BoroughPage({ params, searchParams }: BoroughPageP
           Most Violations
         </Link>
         <Link
-          href={`/buildings/${boroughSlug}?sort=score`}
+          href={cityPath(`/buildings/${boroughSlug}?sort=score`)}
           className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
             sort === "score"
               ? "bg-[#3B82F6] text-white"
@@ -150,7 +150,7 @@ export default async function BoroughPage({ params, searchParams }: BoroughPageP
         <div className="flex justify-center gap-2 mt-8">
           {page > 1 && (
             <Link
-              href={`/buildings/${boroughSlug}?page=${page - 1}${sort ? `&sort=${sort}` : ""}`}
+              href={cityPath(`/buildings/${boroughSlug}?page=${page - 1}${sort ? `&sort=${sort}` : ""}`)}
               className="px-4 py-2 rounded-lg bg-gray-100 text-sm font-medium text-[#0F1D2E] hover:bg-gray-200 transition-colors"
             >
               Previous
@@ -161,7 +161,7 @@ export default async function BoroughPage({ params, searchParams }: BoroughPageP
           </span>
           {page < totalPages && (
             <Link
-              href={`/buildings/${boroughSlug}?page=${page + 1}${sort ? `&sort=${sort}` : ""}`}
+              href={cityPath(`/buildings/${boroughSlug}?page=${page + 1}${sort ? `&sort=${sort}` : ""}`)}
               className="px-4 py-2 rounded-lg bg-gray-100 text-sm font-medium text-[#0F1D2E] hover:bg-gray-200 transition-colors"
             >
               Next

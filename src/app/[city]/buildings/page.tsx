@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Building2, AlertTriangle, MessageSquare } from "lucide-react";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { BOROUGH_SLUGS, canonicalUrl } from "@/lib/seo";
+import { BOROUGH_SLUGS, canonicalUrl, cityPath } from "@/lib/seo";
 import type { Metadata } from "next";
 
 export const revalidate = 3600;
@@ -12,12 +12,12 @@ export const metadata: Metadata = {
   title: "NYC Buildings Directory | Lucid Rents",
   description:
     "Browse apartment buildings across all five NYC boroughs. View violations, complaints, and tenant reviews for buildings in Manhattan, Brooklyn, Queens, Bronx, and Staten Island.",
-  alternates: { canonical: "https://lucidrents.com/buildings" },
+  alternates: { canonical: canonicalUrl(cityPath("/buildings")) },
   openGraph: {
     title: "NYC Buildings Directory | Lucid Rents",
     description:
       "Browse apartment buildings across all five NYC boroughs with violations, complaints, and reviews.",
-    url: "https://lucidrents.com/buildings",
+    url: canonicalUrl(cityPath("/buildings")),
     siteName: "Lucid Rents",
     type: "website",
   },
@@ -82,14 +82,14 @@ export default async function BuildingsIndexPage() {
       "@type": "ListItem",
       position: i + 1,
       name: `${s.borough} Buildings`,
-      url: canonicalUrl(`/buildings/${BOROUGH_SLUGS[s.borough]}`),
+      url: canonicalUrl(cityPath(`/buildings/${BOROUGH_SLUGS[s.borough]}`)),
     })),
   };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <JsonLd data={jsonLd} />
-      <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Buildings", href: "/buildings" }]} />
+      <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Buildings", href: cityPath("/buildings") }]} />
 
       <h1 className="text-3xl font-bold text-[#0F1D2E] mt-6 mb-2">
         NYC Buildings Directory
@@ -100,7 +100,7 @@ export default async function BuildingsIndexPage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {stats.map((s) => (
-          <Link key={s.borough} href={`/buildings/${BOROUGH_SLUGS[s.borough]}`}>
+          <Link key={s.borough} href={cityPath(`/buildings/${BOROUGH_SLUGS[s.borough]}`)}>
             <Card hover>
               <CardContent className="p-6">
                 <h2 className="text-xl font-bold text-[#0F1D2E] mb-4">

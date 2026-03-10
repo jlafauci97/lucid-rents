@@ -18,12 +18,12 @@ export const metadata: Metadata = {
   title: "NYC Housing News | Lucid Rents",
   description:
     "Stay informed with the latest NYC rental market news, tenant rights updates, housing policy changes, and guides for New York City renters.",
-  alternates: { canonical: canonicalUrl("/news") },
+  alternates: { canonical: canonicalUrl(cityPath("/news")) },
   openGraph: {
     title: "NYC Housing News — Lucid Rents",
     description:
       "Latest NYC rental market news, tenant rights updates, and housing guides for New York City renters.",
-    url: canonicalUrl("/news"),
+    url: canonicalUrl(cityPath("/news")),
     siteName: "Lucid Rents",
     type: "website",
     locale: "en_US",

@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import { Construction } from "lucide-react";
-import { canonicalUrl } from "@/lib/seo";
+import { canonicalUrl, cityPath } from "@/lib/seo";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { ScaffoldingMap } from "@/components/scaffolding/ScaffoldingMap";
@@ -11,12 +11,12 @@ export const metadata: Metadata = {
   title: "NYC Scaffolding & Sidewalk Sheds Tracker | Lucid Rents",
   description:
     "Track active sidewalk sheds and scaffolding across NYC. See how long scaffolding has been up, which neighborhoods have the most, and when permits expire.",
-  alternates: { canonical: canonicalUrl("/scaffolding") },
+  alternates: { canonical: canonicalUrl(cityPath("/scaffolding")) },
   openGraph: {
     title: "NYC Scaffolding & Sidewalk Sheds Tracker",
     description:
       "Active sidewalk shed permits, duration, and neighborhood density across New York City. Powered by NYC DOB permit data.",
-    url: canonicalUrl("/scaffolding"),
+    url: canonicalUrl(cityPath("/scaffolding")),
     siteName: "Lucid Rents",
     type: "website",
     locale: "en_US",

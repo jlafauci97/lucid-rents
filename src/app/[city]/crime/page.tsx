@@ -10,11 +10,11 @@ export const metadata: Metadata = {
   title: "Crime by Zip Code | Lucid Rents",
   description:
     "Explore NYPD crime data by zip code across NYC. View violent, property, and quality of life crime breakdowns.",
-  alternates: { canonical: canonicalUrl("/crime") },
+  alternates: { canonical: canonicalUrl(cityPath("/crime")) },
   openGraph: {
     title: "NYC Crime Data by Zip Code",
     description: "NYPD crime data by zip code — violent, property, and quality of life crime breakdowns.",
-    url: canonicalUrl("/crime"),
+    url: canonicalUrl(cityPath("/crime")),
     siteName: "Lucid Rents",
     type: "website",
     locale: "en_US",
@@ -95,7 +95,7 @@ export default async function CrimePage({
 
   function sortUrl(col: string) {
     const newOrder = sortBy === col && order === "desc" ? "asc" : "desc";
-    const base = `/crime?sort=${col}&order=${newOrder}`;
+    const base = `${cityPath("/crime")}?sort=${col}&order=${newOrder}`;
     return borough ? `${base}&borough=${encodeURIComponent(borough)}` : base;
   }
 
@@ -133,7 +133,7 @@ export default async function CrimePage({
         {boroughs.map((b) => (
           <Link
             key={b}
-            href={`/crime?borough=${encodeURIComponent(b)}${sortBy !== "total" ? `&sort=${sortBy}&order=${order}` : ""}`}
+            href={`${cityPath("/crime")}?borough=${encodeURIComponent(b)}${sortBy !== "total" ? `&sort=${sortBy}&order=${order}` : ""}`}
             className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
               borough.toLowerCase() === b.toLowerCase()
                 ? "bg-[#0F1D2E] text-white"
@@ -237,7 +237,7 @@ export default async function CrimePage({
                   >
                     <td className="px-4 py-3">
                       <Link
-                        href={`/crime/${row.zip_code}`}
+                        href={cityPath(`/crime/${row.zip_code}`)}
                         className="text-sm font-semibold text-[#2563EB] hover:text-[#1d4ed8] hover:underline"
                       >
                         {row.zip_code}

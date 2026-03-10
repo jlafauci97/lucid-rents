@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import { ClipboardList } from "lucide-react";
-import { canonicalUrl } from "@/lib/seo";
+import { canonicalUrl, cityPath } from "@/lib/seo";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { PermitMap } from "@/components/permits/PermitMap";
@@ -11,12 +11,12 @@ export const metadata: Metadata = {
   title: "NYC Building Permits Tracker | Lucid Rents",
   description:
     "Track active DOB building permits across NYC. See permit density by neighborhood, work types, costs, and recently issued permits.",
-  alternates: { canonical: canonicalUrl("/permits") },
+  alternates: { canonical: canonicalUrl(cityPath("/permits")) },
   openGraph: {
     title: "NYC Building Permits Tracker",
     description:
       "Active DOB building permits across New York City — work types, costs, and neighborhood density. Powered by NYC DOB permit data.",
-    url: canonicalUrl("/permits"),
+    url: canonicalUrl(cityPath("/permits")),
     siteName: "Lucid Rents",
     type: "website",
     locale: "en_US",

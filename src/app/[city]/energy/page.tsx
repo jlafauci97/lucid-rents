@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import { Zap } from "lucide-react";
-import { canonicalUrl } from "@/lib/seo";
+import { canonicalUrl, cityPath } from "@/lib/seo";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { EnergyMap } from "@/components/energy/EnergyMap";
@@ -11,12 +11,12 @@ export const metadata: Metadata = {
   title: "NYC Building Energy Scores | Lucid Rents",
   description:
     "See ENERGY STAR scores, energy use intensity, and greenhouse gas emissions for NYC multifamily buildings. LL84 benchmarking data.",
-  alternates: { canonical: canonicalUrl("/energy") },
+  alternates: { canonical: canonicalUrl(cityPath("/energy")) },
   openGraph: {
     title: "NYC Building Energy Scores",
     description:
       "ENERGY STAR scores and energy benchmarking data for NYC multifamily buildings. Powered by NYC LL84 benchmarking data.",
-    url: canonicalUrl("/energy"),
+    url: canonicalUrl(cityPath("/energy")),
     siteName: "Lucid Rents",
     type: "website",
     locale: "en_US",

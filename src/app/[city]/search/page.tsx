@@ -7,6 +7,7 @@ import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { createClient } from "@/lib/supabase/server";
 import type { Building } from "@/types";
+import { cityPath } from "@/lib/seo";
 import type { Metadata } from "next";
 
 interface SearchPageProps {
@@ -88,7 +89,7 @@ async function SearchResults({
         <div className="flex justify-center gap-2 mt-8">
           {page > 1 && (
             <a
-              href={`/search?q=${encodeURIComponent(q)}&page=${page - 1}${borough ? `&borough=${borough}` : ""}${zip ? `&zip=${zip}` : ""}`}
+              href={`${cityPath("/search")}?q=${encodeURIComponent(q)}&page=${page - 1}${borough ? `&borough=${borough}` : ""}${zip ? `&zip=${zip}` : ""}`}
               className="px-4 py-2 rounded-lg border border-[#e2e8f0] text-sm hover:bg-gray-50"
             >
               Previous
@@ -99,7 +100,7 @@ async function SearchResults({
           </span>
           {page < totalPages && (
             <a
-              href={`/search?q=${encodeURIComponent(q)}&page=${page + 1}${borough ? `&borough=${borough}` : ""}${zip ? `&zip=${zip}` : ""}`}
+              href={`${cityPath("/search")}?q=${encodeURIComponent(q)}&page=${page + 1}${borough ? `&borough=${borough}` : ""}${zip ? `&zip=${zip}` : ""}`}
               className="px-4 py-2 rounded-lg border border-[#e2e8f0] text-sm hover:bg-gray-50"
             >
               Next

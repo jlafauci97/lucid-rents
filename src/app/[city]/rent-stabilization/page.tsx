@@ -10,12 +10,12 @@ export const metadata: Metadata = {
   title: "NYC Rent Stabilization Checker | Lucid Rents",
   description:
     "Check if your NYC apartment is rent stabilized. Search any address to find rent stabilization status, unit counts, and historical data for buildings in New York City.",
-  alternates: { canonical: canonicalUrl("/rent-stabilization") },
+  alternates: { canonical: canonicalUrl(cityPath("/rent-stabilization")) },
   openGraph: {
     title: "Is My NYC Apartment Rent Stabilized?",
     description:
       "Free rent stabilization lookup tool. Search any NYC address to check rent stabilization status based on DOF tax bill records.",
-    url: canonicalUrl("/rent-stabilization"),
+    url: canonicalUrl(cityPath("/rent-stabilization")),
     siteName: "Lucid Rents",
     type: "website",
     locale: "en_US",

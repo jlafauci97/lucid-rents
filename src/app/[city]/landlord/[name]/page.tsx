@@ -176,7 +176,7 @@ export default async function LandlordDetailPage({
       <Breadcrumbs
         items={[
           { label: "Home", href: "/" },
-          { label: "Landlords", href: "/landlords" },
+          { label: "Landlords", href: cityPath("/landlords") },
           { label: displayName, href: landlordUrl(displayName) },
         ]}
       />

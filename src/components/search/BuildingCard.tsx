@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/Badge";
 import { LetterGrade } from "@/components/ui/LetterGrade";
 import { ScoreGauge } from "@/components/ui/ScoreGauge";
 import { deriveScore } from "@/lib/constants";
-import { buildingUrl } from "@/lib/seo";
+import { buildingUrl, cityPath } from "@/lib/seo";
 import { useCity } from "@/lib/city-context";
 import type { Building } from "@/types";
 
@@ -82,7 +82,7 @@ export function BuildingCard({ building }: BuildingCardProps) {
         </Card>
       </Link>
       <Link
-        href={`/compare?ids=${building.id}`}
+        href={cityPath(`/compare?ids=${building.id}`, city)}
         className="absolute top-4 right-4 p-1.5 rounded-md text-[#94a3b8] hover:text-[#3B82F6] hover:bg-blue-50 transition-colors opacity-0 group-hover:opacity-100 z-10"
         title="Compare this building"
         onClick={(e) => e.stopPropagation()}

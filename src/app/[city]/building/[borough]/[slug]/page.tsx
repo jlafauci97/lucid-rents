@@ -14,7 +14,7 @@ import { RentStabilizationCard } from "@/components/building/RentStabilizationCa
 import { EnergyScoreCard } from "@/components/building/EnergyScoreCard";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { SLUG_TO_BOROUGH, buildingUrl, canonicalUrl, buildingJsonLd, landlordUrl } from "@/lib/seo";
+import { SLUG_TO_BOROUGH, buildingUrl, canonicalUrl, buildingJsonLd, landlordUrl, cityPath } from "@/lib/seo";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { PenSquare } from "lucide-react";
@@ -198,8 +198,8 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
         <Breadcrumbs
           items={[
             { label: "Home", href: "/" },
-            { label: "Buildings", href: "/buildings" },
-            { label: building.borough, href: `/buildings/${boroughSlug}` },
+            { label: "Buildings", href: cityPath("/buildings") },
+            { label: building.borough, href: cityPath(`/buildings/${boroughSlug}`) },
             { label: shortAddress, href: buildingUrl(building) },
           ]}
         />
@@ -219,7 +219,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
                 </h2>
                 <div className="flex items-center gap-2">
                   <MonitorButton buildingId={buildingId} initialMonitored={isMonitored} />
-                  <Link href={`/review/new?building=${buildingId}`}>
+                  <Link href={cityPath(`/review/new?building=${buildingId}`)}>
                     <Button size="sm">
                       <PenSquare className="w-4 h-4 mr-2" />
                       Write Review

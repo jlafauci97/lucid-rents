@@ -10,11 +10,11 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Live Feed | Lucid Rents",
   description: "Real-time feed of violations, complaints, and tenant reviews across NYC buildings.",
-  alternates: { canonical: canonicalUrl("/feed") },
+  alternates: { canonical: canonicalUrl(cityPath("/feed")) },
   openGraph: {
     title: "Live Feed — NYC Building Activity",
     description: "Real-time feed of HPD violations, 311 complaints, and tenant reviews across NYC buildings.",
-    url: canonicalUrl("/feed"),
+    url: canonicalUrl(cityPath("/feed")),
     siteName: "Lucid Rents",
     type: "website",
     locale: "en_US",

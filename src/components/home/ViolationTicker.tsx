@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { AlertTriangle, Shield, MessageSquare, Star, Scale, HardHat, Siren, Bug, DoorOpen } from 'lucide-react';
-import { BOROUGH_SLUGS } from '@/lib/seo';
+import { BOROUGH_SLUGS, cityPath } from '@/lib/seo';
 import type { ActivityItem } from '@/app/api/activity/route';
 
 /** Icon color on the blue ticker background — lighter variants for readability */
@@ -60,14 +60,14 @@ function formatDate(dateStr: string): string {
 
 function buildItemUrl(item: ActivityItem): string | null {
   if (item.type === 'crime' && item.zipCode) {
-    return `/crime/${item.zipCode}`;
+    return cityPath(`/crime/${item.zipCode}`);
   }
   if (item.buildingSlug && item.borough) {
     const boroughSlug = BOROUGH_SLUGS[item.borough] || item.borough.toLowerCase().replace(/\s+/g, '-');
-    return `/building/${boroughSlug}/${item.buildingSlug}`;
+    return cityPath(`/building/${boroughSlug}/${item.buildingSlug}`);
   }
   if (item.buildingId) {
-    return `/building/${item.buildingId}`;
+    return cityPath(`/building/${item.buildingId}`);
   }
   return null;
 }
