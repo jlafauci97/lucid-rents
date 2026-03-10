@@ -4,16 +4,15 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export const maxDuration = 60;
 
 const PLUTO_API = "https://data.cityofnewyork.us/resource/64uk-42ks.json";
-const PAGE_SIZE = 5000;
+const BATCH_SIZE = 200; // buildings per call — keeps within timeout
 
 /**
  * Backfill building coordinates from NYC PLUTO dataset.
  * Matches buildings by BBL to get centroid lat/lng.
- * Call with ?offset=0 (then 5000, 10000, etc.) to page through.
+ * Call repeatedly with ?offset=0, 200, 400, etc. until done=true.
  */
 export async function GET(request: NextRequest) {
   const offset = parseInt(request.nextUrl.searchParams.get("offset") || "0");
-
   const supabase = createAdminClient();
 
   // Get a batch of buildings missing coordinates that have a BBL
@@ -24,7 +23,7 @@ export async function GET(request: NextRequest) {
     .not("bbl", "is", null)
     .neq("bbl", "")
     .order("id", { ascending: true })
-    .range(offset, offset + PAGE_SIZE - 1);
+    .range(offset, offset + BATCH_SIZE - 1);
 
   if (fetchErr) {
     return NextResponse.json({ error: fetchErr.message }, { status: 500 });
@@ -34,8 +33,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ message: "No more buildings to geocode", done: true });
   }
 
-  // Collect unique BBLs and build lookup
-  const bblMap = new Map<string, string[]>(); // bbl -> building ids
+  // Build BBL -> building IDs lookup
+  const bblMap = new Map<string, string[]>();
   for (const b of buildings) {
     const bbl = b.bbl?.trim();
     if (!bbl) continue;
@@ -44,66 +43,63 @@ export async function GET(request: NextRequest) {
   }
 
   const uniqueBbls = Array.from(bblMap.keys());
-  let updated = 0;
-  let plutoFetched = 0;
-
-  // Query PLUTO in chunks (SoQL WHERE bbl IN (...) has limits, so chunk by 200)
-  const chunkSize = 200;
-  for (let i = 0; i < uniqueBbls.length; i += chunkSize) {
-    const chunk = uniqueBbls.slice(i, i + chunkSize);
-    // PLUTO stores BBL as decimal (e.g. "4061730023.00000000")
-    // Our buildings store as integer string (e.g. "4061730023")
-    // Use numeric cast to match
-    const whereClause = chunk.map((b) => `${b}`).join(",");
-    const url = `${PLUTO_API}?$select=bbl,latitude,longitude&$where=bbl in(${whereClause})&$limit=${chunkSize}`;
-
-    try {
-      const res = await fetch(url, {
-        headers: { Accept: "application/json" },
-      });
-      if (!res.ok) continue;
-
-      const plutoData: { bbl: string; latitude: string; longitude: string }[] =
-        await res.json();
-      plutoFetched += plutoData.length;
-
-      // Update buildings for each matched PLUTO record
-      for (const p of plutoData) {
-        const lat = parseFloat(p.latitude);
-        const lng = parseFloat(p.longitude);
-        if (isNaN(lat) || isNaN(lng)) continue;
-        if (lat < 40.4 || lat > 41.0 || lng < -74.3 || lng > -73.6) continue;
-
-        // PLUTO returns "4049950001.00000000", strip decimal part to match our BBL format
-        const cleanBbl = p.bbl.split(".")[0];
-        const buildingIds = bblMap.get(cleanBbl);
-        if (!buildingIds) continue;
-
-        const { error: updateErr } = await supabase
-          .from("buildings")
-          .update({ latitude: lat, longitude: lng })
-          .in("id", buildingIds);
-
-        if (updateErr) {
-          return NextResponse.json({
-            error: updateErr.message,
-            debug: { cleanBbl, buildingIds: buildingIds.slice(0, 3), lat, lng },
-          }, { status: 500 });
-        }
-        updated += buildingIds.length;
-      }
-    } catch {
-      // Continue with next chunk on fetch errors
-    }
+  if (uniqueBbls.length === 0) {
+    return NextResponse.json({ message: "No valid BBLs in batch", nextOffset: offset + BATCH_SIZE });
   }
+
+  // Single PLUTO query for all BBLs in this batch (numeric matching)
+  const whereClause = uniqueBbls.join(",");
+  const plutoUrl = `${PLUTO_API}?$select=bbl,latitude,longitude&$where=bbl in(${whereClause})&$limit=${BATCH_SIZE}`;
+
+  let plutoData: { bbl: string; latitude: string; longitude: string }[] = [];
+  try {
+    const res = await fetch(plutoUrl, { headers: { Accept: "application/json" } });
+    if (!res.ok) {
+      return NextResponse.json({ error: `PLUTO API ${res.status}`, nextOffset: offset + BATCH_SIZE }, { status: 502 });
+    }
+    plutoData = await res.json();
+  } catch (err) {
+    return NextResponse.json({ error: "PLUTO fetch failed", nextOffset: offset + BATCH_SIZE }, { status: 502 });
+  }
+
+  // Batch all updates into one array, then do a single update per building
+  let updated = 0;
+  let errors = 0;
+  const updatePromises: Promise<void>[] = [];
+
+  for (const p of plutoData) {
+    const lat = parseFloat(p.latitude);
+    const lng = parseFloat(p.longitude);
+    if (isNaN(lat) || isNaN(lng)) continue;
+    if (lat < 40.4 || lat > 41.0 || lng < -74.3 || lng > -73.6) continue;
+
+    const cleanBbl = p.bbl.split(".")[0];
+    const buildingIds = bblMap.get(cleanBbl);
+    if (!buildingIds) continue;
+
+    // Run updates in parallel
+    updatePromises.push(
+      supabase
+        .from("buildings")
+        .update({ latitude: lat, longitude: lng })
+        .in("id", buildingIds)
+        .then(({ error }) => {
+          if (error) errors++;
+          else updated += buildingIds.length;
+        })
+    );
+  }
+
+  await Promise.all(updatePromises);
 
   return NextResponse.json({
     ok: true,
     batch: { offset, size: buildings.length },
     uniqueBbls: uniqueBbls.length,
-    plutoMatched: plutoFetched,
+    plutoMatched: plutoData.length,
     updated,
-    nextOffset: offset + PAGE_SIZE,
-    message: `Geocoded ${updated} buildings from PLUTO (batch starting at ${offset})`,
+    errors,
+    nextOffset: offset + BATCH_SIZE,
+    message: `Geocoded ${updated} buildings (batch at offset ${offset})`,
   });
 }
