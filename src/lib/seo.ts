@@ -1,4 +1,5 @@
 import { type City, DEFAULT_CITY } from "./cities";
+import { neighborhoodPageSlug } from "./nyc-neighborhoods";
 
 const BASE_URL = "https://lucidrents.com";
 
@@ -41,6 +42,13 @@ export function landlordUrl(
   city: City = DEFAULT_CITY
 ): string {
   return `/${city}/landlord/${landlordSlug(ownerName)}`;
+}
+
+export function neighborhoodUrl(
+  zipCode: string,
+  city: City = DEFAULT_CITY
+): string {
+  return `/${city}/neighborhood/${neighborhoodPageSlug(zipCode)}`;
 }
 
 export function canonicalUrl(path: string): string {

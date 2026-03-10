@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { BOROUGH_SLUGS, buildingUrl, landlordSlug, cityPath } from "@/lib/seo";
+import { BOROUGH_SLUGS, buildingUrl, landlordSlug, cityPath, neighborhoodUrl } from "@/lib/seo";
 import { NEWS_CATEGORIES } from "@/lib/news-sources";
 
 const BASE_URL = "https://lucidrents.com";
@@ -117,7 +117,7 @@ async function generateStaticSitemap(): Promise<MetadataRoute.Sitemap> {
 
     for (const zip of zipCodes) {
       entries.push({
-        url: `${BASE_URL}${cityPath(`/neighborhood/${zip}`)}`,
+        url: `${BASE_URL}${neighborhoodUrl(zip)}`,
         changeFrequency: "weekly",
         priority: 0.7,
       });

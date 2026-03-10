@@ -3,7 +3,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Siren, ArrowLeft, Building2, MapPin } from "lucide-react";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
-import { buildingUrl, canonicalUrl } from "@/lib/seo";
+import { buildingUrl, canonicalUrl, neighborhoodUrl, cityPath } from "@/lib/seo";
+import { getNeighborhoodName } from "@/lib/nyc-neighborhoods";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { CrimeTrend } from "@/components/crime/CrimeTrend";
@@ -45,14 +46,16 @@ export async function generateMetadata({
   params: Promise<{ zipCode: string }>;
 }): Promise<Metadata> {
   const { zipCode } = await params;
-  const url = canonicalUrl(`/crime/${zipCode}`);
+  const name = getNeighborhoodName(zipCode);
+  const displayName = name ? `${name} (${zipCode})` : zipCode;
+  const url = canonicalUrl(cityPath(`/crime/${zipCode}`));
   return {
-    title: `Crime in ${zipCode} | Lucid Rents`,
-    description: `View crime trends, category breakdowns, and recent incidents for zip code ${zipCode}.`,
+    title: `Crime in ${displayName} | Lucid Rents`,
+    description: `View crime trends, category breakdowns, and recent incidents for ${displayName}.`,
     alternates: { canonical: url },
     openGraph: {
-      title: `Crime Data for ${zipCode}`,
-      description: `Crime trends and recent incidents for NYC zip code ${zipCode}.`,
+      title: `Crime Data for ${displayName}`,
+      description: `Crime trends and recent incidents for ${displayName}, NYC.`,
       url,
       siteName: "Lucid Rents",
       type: "website",
@@ -77,6 +80,8 @@ export default async function CrimeZipPage({
   params: Promise<{ zipCode: string }>;
 }) {
   const { zipCode } = await params;
+  const neighborhoodName = getNeighborhoodName(zipCode);
+  const displayName = neighborhoodName ? `${neighborhoodName} (${zipCode})` : zipCode;
   const supabase = await createClient();
 
   // Fetch summary, recent crimes, and buildings in this zip in parallel
@@ -125,13 +130,21 @@ export default async function CrimeZipPage({
       <JsonLd data={{
         "@context": "https://schema.org",
         "@type": "Place",
-        name: `NYC Zip Code ${zipCode}`,
-        address: { "@type": "PostalAddress", postalCode: zipCode, addressRegion: "NY", addressCountry: "US" },
+        name: neighborhoodName
+          ? `${neighborhoodName}, NYC (${zipCode})`
+          : `NYC Zip Code ${zipCode}`,
+        address: {
+          "@type": "PostalAddress",
+          postalCode: zipCode,
+          ...(neighborhoodName ? { addressLocality: neighborhoodName } : {}),
+          addressRegion: "NY",
+          addressCountry: "US",
+        },
       }} />
       <Breadcrumbs items={[
         { label: "Home", href: "/" },
-        { label: "Crime", href: "/crime" },
-        { label: zipCode, href: `/crime/${zipCode}` },
+        { label: "Crime", href: cityPath("/crime") },
+        { label: neighborhoodName || zipCode, href: cityPath(`/crime/${zipCode}`) },
       ]} />
 
       {/* Header */}
@@ -142,7 +155,7 @@ export default async function CrimeZipPage({
           </div>
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-[#0F1D2E]">
-              Crime in {zipCode}
+              Crime in {displayName}
             </h1>
           </div>
         </div>
@@ -197,13 +210,15 @@ export default async function CrimeZipPage({
 
       {/* Neighborhood Report Card link */}
       <Link
-        href={`/neighborhood/${zipCode}`}
+        href={neighborhoodUrl(zipCode)}
         className="flex items-center gap-3 bg-[#EFF6FF] border border-[#BFDBFE] rounded-xl p-4 mb-8 hover:bg-[#DBEAFE] transition-colors"
       >
         <MapPin className="w-5 h-5 text-[#3B82F6] shrink-0" />
         <div>
-          <p className="text-sm font-semibold text-[#0F1D2E]">Neighborhood Report Card</p>
-          <p className="text-xs text-[#64748b]">See building grades, violations, and landlord info for {zipCode}</p>
+          <p className="text-sm font-semibold text-[#0F1D2E]">
+            {neighborhoodName ? `${neighborhoodName} Report Card` : "Neighborhood Report Card"}
+          </p>
+          <p className="text-xs text-[#64748b]">See building grades, violations, and landlord info for {displayName}</p>
         </div>
       </Link>
 

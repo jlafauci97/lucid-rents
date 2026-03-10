@@ -1,7 +1,8 @@
 import { Metadata } from "next";
 import Link from "next/link";
 import { Siren, ArrowUpDown, MapPin } from "lucide-react";
-import { canonicalUrl, cityPath } from "@/lib/seo";
+import { canonicalUrl, cityPath, neighborhoodUrl } from "@/lib/seo";
+import { getNeighborhoodName } from "@/lib/nyc-neighborhoods";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 
@@ -259,12 +260,12 @@ export default async function CrimePage({
                     </td>
                     <td className="px-4 py-3 hidden lg:table-cell">
                       <Link
-                        href={`/neighborhood/${row.zip_code}`}
+                        href={neighborhoodUrl(row.zip_code)}
                         className="inline-flex items-center gap-1 text-xs text-[#3B82F6] hover:text-[#1d4ed8] font-medium"
                         title="Neighborhood Report Card"
                       >
                         <MapPin className="w-3 h-3" />
-                        Report Card
+                        {getNeighborhoodName(row.zip_code) || "Report Card"}
                       </Link>
                     </td>
                   </tr>

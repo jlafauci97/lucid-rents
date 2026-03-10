@@ -1,9 +1,10 @@
 import { Metadata } from "next";
 import Link from "next/link";
-import { MapPin, Building2, AlertTriangle, MessageSquare, Users, Siren, ArrowLeft } from "lucide-react";
+import { MapPin, Building2, AlertTriangle, MessageSquare, Users, Siren } from "lucide-react";
 import { LetterGrade } from "@/components/ui/LetterGrade";
 import { getLetterGrade, getGradeColor } from "@/lib/constants";
-import { buildingUrl, landlordUrl, canonicalUrl, cityPath } from "@/lib/seo";
+import { buildingUrl, landlordUrl, canonicalUrl, cityPath, neighborhoodUrl } from "@/lib/seo";
+import { getNeighborhoodName, parseNeighborhoodSlug } from "@/lib/nyc-neighborhoods";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { AdSidebar } from "@/components/ui/AdSidebar";
@@ -14,17 +15,20 @@ export const revalidate = 3600;
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ zipCode: string }>;
+  params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
-  const { zipCode } = await params;
-  const url = canonicalUrl(`/neighborhood/${zipCode}`);
+  const { slug } = await params;
+  const zipCode = parseNeighborhoodSlug(slug);
+  const name = getNeighborhoodName(zipCode);
+  const displayName = name ? `${name} (${zipCode})` : zipCode;
+  const url = canonicalUrl(neighborhoodUrl(zipCode));
   return {
-    title: `Neighborhood Report Card: ${zipCode}`,
-    description: `See the neighborhood report card for zip code ${zipCode}. Building grades, crime stats, violation density, and top landlords.`,
+    title: name ? `${name} Report Card (${zipCode})` : `Neighborhood Report Card: ${zipCode}`,
+    description: `See the neighborhood report card for ${displayName}. Building grades, crime stats, violation density, and top landlords.`,
     alternates: { canonical: url },
     openGraph: {
-      title: `Neighborhood Report Card: ${zipCode}`,
-      description: `Building grades, crime stats, and landlord data for NYC zip code ${zipCode}.`,
+      title: name ? `${name} Report Card (${zipCode})` : `Neighborhood Report Card: ${zipCode}`,
+      description: `Building grades, crime stats, and landlord data for ${displayName}, NYC.`,
       url,
       siteName: "Lucid Rents",
       type: "website",
@@ -97,7 +101,6 @@ async function getTopBuildings(zipCode: string) {
 }
 
 function getSubGrade(value: number, thresholds: [number, number, number, number]): number {
-  // Returns a 0-10 score based on thresholds [excellent, good, fair, poor]
   if (value <= thresholds[0]) return 9;
   if (value <= thresholds[1]) return 7;
   if (value <= thresholds[2]) return 5;
@@ -108,9 +111,11 @@ function getSubGrade(value: number, thresholds: [number, number, number, number]
 export default async function NeighborhoodPage({
   params,
 }: {
-  params: Promise<{ zipCode: string }>;
+  params: Promise<{ slug: string }>;
 }) {
-  const { zipCode } = await params;
+  const { slug } = await params;
+  const zipCode = parseNeighborhoodSlug(slug);
+  const neighborhoodName = getNeighborhoodName(zipCode);
 
   const [stats, crime, buildings] = await Promise.all([
     getNeighborhoodStats(zipCode),
@@ -122,10 +127,12 @@ export default async function NeighborhoodPage({
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
         <MapPin className="w-12 h-12 text-[#94a3b8] mx-auto mb-4" />
-        <h1 className="text-2xl font-bold text-[#0F1D2E] mb-2">No Data for {zipCode}</h1>
+        <h1 className="text-2xl font-bold text-[#0F1D2E] mb-2">
+          No Data for {neighborhoodName ? `${neighborhoodName} (${zipCode})` : zipCode}
+        </h1>
         <p className="text-[#64748b]">We don&apos;t have building data for this zip code yet.</p>
         <Link href={cityPath("/crime")} className="text-[#3B82F6] text-sm mt-4 inline-block">
-          Browse all zip codes
+          Browse all neighborhoods
         </Link>
       </div>
     );
@@ -138,7 +145,6 @@ export default async function NeighborhoodPage({
   const violationsPerBuilding = buildingCount > 0 ? totalViolations / buildingCount : 0;
   const complaintsPerBuilding = buildingCount > 0 ? totalComplaints / buildingCount : 0;
 
-  // Sub-grades
   const safetyScore = crime
     ? getSubGrade(crime.violent / Math.max(buildingCount, 1), [0.5, 2, 5, 10])
     : 5;
@@ -164,13 +170,21 @@ export default async function NeighborhoodPage({
       <JsonLd data={{
         "@context": "https://schema.org",
         "@type": "Place",
-        name: `NYC Neighborhood ${zipCode}`,
-        address: { "@type": "PostalAddress", postalCode: zipCode, addressRegion: "NY", addressCountry: "US" },
+        name: neighborhoodName
+          ? `${neighborhoodName}, NYC (${zipCode})`
+          : `NYC Neighborhood ${zipCode}`,
+        address: {
+          "@type": "PostalAddress",
+          postalCode: zipCode,
+          ...(neighborhoodName ? { addressLocality: neighborhoodName } : {}),
+          addressRegion: "NY",
+          addressCountry: "US",
+        },
       }} />
       <Breadcrumbs items={[
         { label: "Home", href: "/" },
-        { label: "Neighborhoods", href: "/crime" },
-        { label: zipCode, href: `/neighborhood/${zipCode}` },
+        { label: "Neighborhoods", href: cityPath("/crime") },
+        { label: neighborhoodName || zipCode, href: neighborhoodUrl(zipCode) },
       ]} />
 
       {/* Header */}
@@ -178,10 +192,12 @@ export default async function NeighborhoodPage({
         <LetterGrade score={overallScore} size="lg" showScore />
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-[#0F1D2E]">
-            Neighborhood Report Card: {zipCode}
+            {neighborhoodName
+              ? `${neighborhoodName} Report Card`
+              : `Neighborhood Report Card: ${zipCode}`}
           </h1>
           <p className="text-[#64748b] mt-1">
-            {borough && `${borough} · `}{buildingCount.toLocaleString()} buildings tracked
+            {neighborhoodName && `${zipCode} · `}{borough && `${borough} · `}{buildingCount.toLocaleString()} buildings tracked
           </p>
         </div>
       </div>
@@ -266,7 +282,7 @@ export default async function NeighborhoodPage({
             </div>
           </div>
           <Link
-            href={`/crime/${zipCode}`}
+            href={cityPath(`/crime/${zipCode}`)}
             className="inline-flex items-center gap-1 text-sm text-[#3B82F6] font-medium mt-4"
           >
             View detailed crime data
