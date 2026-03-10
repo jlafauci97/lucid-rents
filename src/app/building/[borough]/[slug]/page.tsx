@@ -11,13 +11,14 @@ import { Button } from "@/components/ui/Button";
 import { MonitorButton } from "@/components/building/MonitorButton";
 import { NearbyCrimeSummary } from "@/components/crime/NearbyCrimeSummary";
 import { RentStabilizationCard } from "@/components/building/RentStabilizationCard";
+import { EnergyScoreCard } from "@/components/building/EnergyScoreCard";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { SLUG_TO_BOROUGH, buildingUrl, canonicalUrl, buildingJsonLd, landlordUrl } from "@/lib/seo";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { PenSquare } from "lucide-react";
-import type { Building, HpdViolation, Complaint311, HpdLitigation, DobViolation, BedBugReport, Eviction, DobPermit, ReviewWithDetails } from "@/types";
+import type { Building, HpdViolation, Complaint311, HpdLitigation, DobViolation, BedBugReport, Eviction, DobPermit, EnergyBenchmark, ReviewWithDetails } from "@/types";
 import type { Metadata } from "next";
 
 export const revalidate = 86400; // 24h ISR
@@ -91,7 +92,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
   const buildingId = building.id;
 
   // Fetch violations, complaints, litigations, DOB violations, bedbugs, evictions, reviews, and units in parallel
-  const [violationsRes, complaintsRes, litigationsRes, dobViolationsRes, bedbugsRes, evictionsRes, permitsRes, reviewsRes, unitsRes, violationSummaryRes] = await Promise.all([
+  const [violationsRes, complaintsRes, litigationsRes, dobViolationsRes, bedbugsRes, evictionsRes, permitsRes, energyRes, reviewsRes, unitsRes, violationSummaryRes] = await Promise.all([
     supabase
       .from("hpd_violations")
       .select("*")
@@ -135,6 +136,12 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
       .order("issued_date", { ascending: false })
       .limit(20),
     supabase
+      .from("energy_benchmarks")
+      .select("*")
+      .eq("building_id", buildingId)
+      .order("report_year", { ascending: false })
+      .limit(1),
+    supabase
       .from("reviews")
       .select(
         `*, profile:profiles(id, display_name, avatar_url), category_ratings:review_category_ratings(*, category:review_categories(slug, name, icon)), unit:units(unit_number)`
@@ -161,6 +168,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
   const bedbugs = (bedbugsRes.data || []) as BedBugReport[];
   const evictions = (evictionsRes.data || []) as Eviction[];
   const permits = (permitsRes.data || []) as DobPermit[];
+  const energyData = (energyRes.data || []) as EnergyBenchmark[];
   const reviews = (reviewsRes.data || []) as unknown as ReviewWithDetails[];
   const units = unitsRes.data || [];
   const violationSummaries = violationSummaryRes.data || [];
@@ -331,6 +339,9 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
               totalUnits={building.residential_units}
               stabilizedYear={building.stabilized_year}
             />
+
+            {/* Energy Score */}
+            <EnergyScoreCard data={energyData[0] || null} />
 
             {/* Neighborhood Crime */}
             {building.zip_code && (

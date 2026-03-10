@@ -18,6 +18,7 @@ import {
   BarChart3,
   Construction,
   ClipboardList,
+  Zap,
   User,
   Bell,
   LogOut,
@@ -40,6 +41,7 @@ const navLinks = [
   { href: "/rent-data", icon: BarChart3, label: "Rent Data" },
   { href: "/scaffolding", icon: Construction, label: "Scaffolding" },
   { href: "/permits", icon: ClipboardList, label: "Permits" },
+  { href: "/energy", icon: Zap, label: "Energy Scores" },
   { href: "/review/new", icon: PenSquare, label: "Submit Review" },
 ];
 

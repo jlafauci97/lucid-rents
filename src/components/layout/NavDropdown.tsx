@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { ChevronDown, ArrowLeftRight, ShieldCheck, Wrench, BarChart3, Construction, ClipboardList } from "lucide-react";
+import { ChevronDown, ArrowLeftRight, ShieldCheck, Wrench, BarChart3, Construction, ClipboardList, Zap } from "lucide-react";
 
 const tools = [
   {
@@ -34,6 +34,12 @@ const tools = [
     icon: ClipboardList,
     label: "Permits Tracker",
     description: "Active DOB building permits by area",
+  },
+  {
+    href: "/energy",
+    icon: Zap,
+    label: "Energy Scores",
+    description: "Building energy efficiency & emissions data",
   },
 ];
 

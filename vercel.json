@@ -51,6 +51,10 @@
     {
       "path": "/api/cron/sync?source=permits",
       "schedule": "30 6 * * *"
+    },
+    {
+      "path": "/api/cron/sync-energy",
+      "schedule": "0 8 1 * *"
     }
   ]
 }

@@ -34,6 +34,7 @@ export interface Building {
   bedbug_report_count: number;
   eviction_count: number;
   permit_count: number;
+  energy_star_score: number | null;
   is_rent_stabilized: boolean;
   stabilized_units: number | null;
   stabilized_year: number | null;
@@ -277,6 +278,30 @@ export interface Eviction {
   imported_at: string;
 }
 
+
+export interface EnergyBenchmark {
+  id: string;
+  building_id: string | null;
+  bbl: string | null;
+  property_id: string | null;
+  property_name: string | null;
+  property_type: string | null;
+  report_year: number;
+  address: string | null;
+  borough: string | null;
+  zip_code: string | null;
+  energy_star_score: number | null;
+  site_eui: number | null;
+  weather_normalized_eui: number | null;
+  total_ghg_emissions: number | null;
+  electricity_use: number | null;
+  natural_gas_use: number | null;
+  water_use: number | null;
+  year_built: number | null;
+  number_of_buildings: number | null;
+  property_gfa: number | null;
+  imported_at: string;
+}
 
 export interface DobPermit {
   id: string;
