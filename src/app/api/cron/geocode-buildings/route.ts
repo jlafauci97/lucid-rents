@@ -51,7 +51,10 @@ export async function GET(request: NextRequest) {
   const chunkSize = 200;
   for (let i = 0; i < uniqueBbls.length; i += chunkSize) {
     const chunk = uniqueBbls.slice(i, i + chunkSize);
-    const whereClause = chunk.map((b) => `'${b}'`).join(",");
+    // PLUTO stores BBL as decimal (e.g. "4061730023.00000000")
+    // Our buildings store as integer string (e.g. "4061730023")
+    // Use numeric cast to match
+    const whereClause = chunk.map((b) => `${b}`).join(",");
     const url = `${PLUTO_API}?$select=bbl,latitude,longitude&$where=bbl in(${whereClause})&$limit=${chunkSize}`;
 
     try {
@@ -71,7 +74,9 @@ export async function GET(request: NextRequest) {
         if (isNaN(lat) || isNaN(lng)) continue;
         if (lat < 40.4 || lat > 41.0 || lng < -74.3 || lng > -73.6) continue;
 
-        const buildingIds = bblMap.get(p.bbl);
+        // PLUTO returns "4049950001.00000000", strip decimal part to match our BBL format
+        const cleanBbl = p.bbl.split(".")[0];
+        const buildingIds = bblMap.get(cleanBbl);
         if (!buildingIds) continue;
 
         const { error: updateErr } = await supabase
