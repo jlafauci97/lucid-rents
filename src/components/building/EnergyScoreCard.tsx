@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { Zap } from "lucide-react";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
+import { cityPath } from "@/lib/seo";
 import type { EnergyBenchmark } from "@/types";
+import type { City } from "@/lib/cities";
 
 interface EnergyScoreCardProps {
   data: EnergyBenchmark | null;
+  city?: City;
 }
 
 function scoreColor(score: number): { badge: string; text: string } {
@@ -19,7 +22,7 @@ function scoreLabel(score: number): string {
   return "Low Efficiency";
 }
 
-export function EnergyScoreCard({ data }: EnergyScoreCardProps) {
+export function EnergyScoreCard({ data, city }: EnergyScoreCardProps) {
   if (!data || data.energy_star_score == null) return null;
 
   const score = data.energy_star_score;
@@ -67,7 +70,7 @@ export function EnergyScoreCard({ data }: EnergyScoreCardProps) {
             {data.report_year} benchmarking data
           </p>
           <Link
-            href="/energy"
+            href={cityPath("/energy", city)}
             className="text-xs text-[#3B82F6] hover:text-[#2563EB] font-medium transition-colors"
           >
             NYC Energy Scores &rarr;

@@ -13,6 +13,7 @@ import type { Building } from "@/types";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useEffect, useRef } from "react";
 import { buildingUrl } from "@/lib/seo";
+import { useCity } from "@/lib/city-context";
 
 interface CategoryRating {
   category_slug: string;
@@ -30,6 +31,7 @@ const steps = ["Building", "Ratings", "Details", "Review"];
 
 export function ReviewForm({ preselectedBuildingId, categories }: ReviewFormProps) {
   const router = useRouter();
+  const city = useCity();
   const [step, setStep] = useState(preselectedBuildingId ? 1 : 0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -173,7 +175,7 @@ export function ReviewForm({ preselectedBuildingId, categories }: ReviewFormProp
         throw new Error(data.error || "Failed to submit review");
       }
 
-      router.push(buildingUrl(selectedBuilding));
+      router.push(buildingUrl(selectedBuilding, city));
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");

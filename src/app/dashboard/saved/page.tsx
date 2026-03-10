@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { cityPath } from "@/lib/seo";
 import { BuildingCard } from "@/components/search/BuildingCard";
 import { Card, CardContent } from "@/components/ui/Card";
 import type { Building } from "@/types";
@@ -40,7 +41,7 @@ export default async function SavedBuildingsPage() {
             <p className="text-center text-[#64748b] py-8">
               No saved buildings yet.{" "}
               <Link
-                href="/search"
+                href={cityPath("/search")}
                 className="text-[#3B82F6] hover:text-[#2563EB] font-medium"
               >
                 Search for buildings

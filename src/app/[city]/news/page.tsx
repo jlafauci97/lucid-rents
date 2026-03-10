@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
-import { canonicalUrl, breadcrumbJsonLd } from "@/lib/seo";
+import { canonicalUrl, breadcrumbJsonLd, cityPath } from "@/lib/seo";
 import { newsCollectionJsonLd } from "@/lib/seo";
 import { NEWS_CATEGORIES, type NewsCategory } from "@/lib/news-sources";
 import { NewsList } from "@/components/news/NewsList";
@@ -91,7 +91,7 @@ export default async function NewsPage({
         {/* Category pills */}
         <div className="flex flex-wrap gap-2 mb-6">
           <Link
-            href="/news"
+            href={cityPath("/news")}
             className="px-3 py-1.5 text-sm font-medium rounded-full bg-[#0F1D2E] text-white"
           >
             All

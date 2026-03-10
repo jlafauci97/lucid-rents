@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import Link from "next/link";
 import { ShieldCheck, ArrowUpDown } from "lucide-react";
 import { SearchBar } from "@/components/search/SearchBar";
-import { canonicalUrl, buildingUrl } from "@/lib/seo";
+import { canonicalUrl, buildingUrl, cityPath } from "@/lib/seo";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 
@@ -229,7 +229,7 @@ export default async function RentStabilizationPage({
         {/* Borough filter chips */}
         <div className="flex flex-wrap gap-2 mb-6">
           <Link
-            href="/rent-stabilization"
+            href={cityPath("/rent-stabilization")}
             className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
               !borough
                 ? "bg-[#0F1D2E] text-white"

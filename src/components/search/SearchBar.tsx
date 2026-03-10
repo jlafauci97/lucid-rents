@@ -6,7 +6,8 @@ import { Search, MapPin, Loader2 } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
 import { LetterGrade } from "@/components/ui/LetterGrade";
 import { deriveScore } from "@/lib/constants";
-import { buildingUrl } from "@/lib/seo";
+import { buildingUrl, cityPath } from "@/lib/seo";
+import { useCity } from "@/lib/city-context";
 import type { Building } from "@/types";
 
 interface SearchBarProps {
@@ -21,6 +22,7 @@ export function SearchBar({
   initialQuery = "",
 }: SearchBarProps) {
   const router = useRouter();
+  const city = useCity();
   const [query, setQuery] = useState(initialQuery);
   const [results, setResults] = useState<Building[]>([]);
   const [loading, setLoading] = useState(false);
@@ -60,7 +62,7 @@ export function SearchBar({
     e.preventDefault();
     if (query.trim()) {
       setOpen(false);
-      router.push(`/search?q=${encodeURIComponent(query.trim())}`);
+      router.push(cityPath(`/search?q=${encodeURIComponent(query.trim())}`, city));
     }
   }
 
@@ -97,7 +99,7 @@ export function SearchBar({
               type="button"
               onClick={() => {
                 setOpen(false);
-                router.push(buildingUrl(building));
+                router.push(buildingUrl(building, city));
               }}
               className="w-full flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left"
             >
@@ -122,7 +124,7 @@ export function SearchBar({
             type="button"
             onClick={() => {
               setOpen(false);
-              router.push(`/search?q=${encodeURIComponent(query.trim())}`);
+              router.push(cityPath(`/search?q=${encodeURIComponent(query.trim())}`, city));
             }}
             className="w-full px-4 py-3 text-sm text-[#3B82F6] hover:bg-gray-50 font-medium border-t border-[#e2e8f0]"
           >

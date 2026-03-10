@@ -5,6 +5,7 @@ import { NearbyBuildings } from "@/components/home/NearbyBuildings";
 import { ViolationTicker } from "@/components/home/ViolationTicker";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
+import { cityPath } from "@/lib/seo";
 import { FileSearch, Users, Shield } from "lucide-react";
 
 const features = [
@@ -140,7 +141,7 @@ export default function HomePage() {
             on noise, pests, management, and more.
           </p>
           <a
-            href="/review/new"
+            href={cityPath("/review/new")}
             className="inline-flex items-center px-6 py-3 bg-[#3B82F6] hover:bg-[#2563EB] text-white font-semibold rounded-lg transition-colors"
           >
             Submit a Review

@@ -1,3 +1,5 @@
+import { type City, DEFAULT_CITY } from "./cities";
+
 const BASE_URL = "https://lucidrents.com";
 
 export const BOROUGH_SLUGS: Record<string, string> = {
@@ -12,9 +14,18 @@ export const SLUG_TO_BOROUGH: Record<string, string> = Object.fromEntries(
   Object.entries(BOROUGH_SLUGS).map(([name, slug]) => [slug, name])
 );
 
-export function buildingUrl(b: { borough: string; slug: string }): string {
-  const boroughSlug = BOROUGH_SLUGS[b.borough] || b.borough.toLowerCase().replace(/\s+/g, "-");
-  return `/building/${boroughSlug}/${b.slug}`;
+/** Prefix a path with the city slug, e.g. cityPath("/buildings") => "/nyc/buildings" */
+export function cityPath(path: string, city: City = DEFAULT_CITY): string {
+  return `/${city}${path}`;
+}
+
+export function buildingUrl(
+  b: { borough: string; slug: string },
+  city: City = DEFAULT_CITY
+): string {
+  const boroughSlug =
+    BOROUGH_SLUGS[b.borough] || b.borough.toLowerCase().replace(/\s+/g, "-");
+  return `/${city}/building/${boroughSlug}/${b.slug}`;
 }
 
 export function landlordSlug(ownerName: string): string {
@@ -25,8 +36,11 @@ export function landlordSlug(ownerName: string): string {
     .replace(/(^-+|-+$)/g, "");
 }
 
-export function landlordUrl(ownerName: string): string {
-  return `/landlord/${landlordSlug(ownerName)}`;
+export function landlordUrl(
+  ownerName: string,
+  city: City = DEFAULT_CITY
+): string {
+  return `/${city}/landlord/${landlordSlug(ownerName)}`;
 }
 
 export function canonicalUrl(path: string): string {
@@ -105,7 +119,7 @@ export function newsCollectionJsonLd() {
     name: "NYC Housing News",
     description:
       "Latest NYC rental market news, tenant rights updates, and housing guides for New York City renters.",
-    url: canonicalUrl("/news"),
+    url: canonicalUrl(cityPath("/news")),
     publisher: {
       "@type": "Organization",
       name: "Lucid Rents",

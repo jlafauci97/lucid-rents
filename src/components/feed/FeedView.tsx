@@ -4,7 +4,8 @@ import { useEffect, useState, useCallback } from "react";
 import { Shield, MessageSquare, Star, MapPin, ExternalLink, RefreshCw, ChevronRight, Scale, HardHat, Siren, Bug, DoorOpen } from "lucide-react";
 import Link from "next/link";
 import type { ActivityItem } from "@/app/api/activity/route";
-import { buildingUrl } from "@/lib/seo";
+import { buildingUrl, cityPath } from "@/lib/seo";
+import { useCity } from "@/lib/city-context";
 
 type FilterType = "all" | "violations" | "complaints" | "reviews" | "litigations" | "dob_violations" | "crime" | "bedbugs" | "evictions";
 
@@ -154,11 +155,12 @@ function SkeletonCard() {
 }
 
 function FeedCard({ item }: { item: ActivityItem }) {
+  const city = useCity();
   const href = item.type === "crime" && item.zipCode
-    ? `/crime/${item.zipCode}`
+    ? cityPath(`/crime/${item.zipCode}`, city)
     : item.buildingSlug
-      ? buildingUrl({ borough: item.borough, slug: item.buildingSlug })
-      : `/building/${item.buildingId}`;
+      ? buildingUrl({ borough: item.borough, slug: item.buildingSlug }, city)
+      : cityPath(`/building/${item.buildingId}`, city);
 
   return (
     <Link

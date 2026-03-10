@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import Link from "next/link";
 import { Siren, ArrowUpDown, MapPin } from "lucide-react";
-import { canonicalUrl } from "@/lib/seo";
+import { canonicalUrl, cityPath } from "@/lib/seo";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 
@@ -120,7 +120,7 @@ export default async function CrimePage({
       {/* Borough filter */}
       <div className="flex flex-wrap gap-2 mb-6">
         <Link
-          href="/crime"
+          href={cityPath("/crime")}
           className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
             !borough
               ? "bg-[#0F1D2E] text-white"

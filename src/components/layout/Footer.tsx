@@ -1,6 +1,7 @@
 import Link from "next/link";
+import { type City, DEFAULT_CITY } from "@/lib/cities";
 
-export function Footer() {
+export function Footer({ city = DEFAULT_CITY }: { city?: City }) {
   return (
     <footer className="bg-[#0F1D2E] text-gray-400 mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -20,17 +21,17 @@ export function Footer() {
             </h4>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link href="/search" className="hover:text-white transition-colors">
+                <Link href={`/${city}/search`} className="hover:text-white transition-colors">
                   Search Buildings
                 </Link>
               </li>
               <li>
-                <Link href="/review/new" className="hover:text-white transition-colors">
+                <Link href={`/${city}/review/new`} className="hover:text-white transition-colors">
                   Submit a Review
                 </Link>
               </li>
               <li>
-                <Link href="/news" className="hover:text-white transition-colors">
+                <Link href={`/${city}/news`} className="hover:text-white transition-colors">
                   NYC Housing News
                 </Link>
               </li>

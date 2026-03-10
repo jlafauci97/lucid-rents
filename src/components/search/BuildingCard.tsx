@@ -8,6 +8,7 @@ import { LetterGrade } from "@/components/ui/LetterGrade";
 import { ScoreGauge } from "@/components/ui/ScoreGauge";
 import { deriveScore } from "@/lib/constants";
 import { buildingUrl } from "@/lib/seo";
+import { useCity } from "@/lib/city-context";
 import type { Building } from "@/types";
 
 interface BuildingCardProps {
@@ -15,6 +16,7 @@ interface BuildingCardProps {
 }
 
 export function BuildingCard({ building }: BuildingCardProps) {
+  const city = useCity();
   const score = building.overall_score ?? deriveScore(
     building.violation_count || 0,
     building.complaint_count || 0
@@ -22,7 +24,7 @@ export function BuildingCard({ building }: BuildingCardProps) {
 
   return (
     <div className="relative group">
-      <Link href={buildingUrl(building)}>
+      <Link href={buildingUrl(building, city)}>
         <Card hover>
           <CardContent className="flex items-start gap-4">
             <div className="flex items-center gap-2">

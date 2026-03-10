@@ -5,6 +5,7 @@ import { MapPin, Loader2, Navigation } from "lucide-react";
 import Link from "next/link";
 import { LetterGrade } from "@/components/ui/LetterGrade";
 import { buildingUrl } from "@/lib/seo";
+import { useCity } from "@/lib/city-context";
 
 interface NearbyBuilding {
   id: string;
@@ -21,6 +22,7 @@ interface NearbyBuilding {
 }
 
 export function NearbyBuildings() {
+  const city = useCity();
   const [buildings, setBuildings] = useState<NearbyBuilding[]>([]);
   const [loading, setLoading] = useState(false);
   const [requested, setRequested] = useState(false);
@@ -106,7 +108,7 @@ export function NearbyBuildings() {
     <div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {buildings.map((b) => (
-          <Link key={b.id} href={buildingUrl(b)}>
+          <Link key={b.id} href={buildingUrl(b, city)}>
             <div className="bg-white rounded-xl border border-[#e2e8f0] p-4 hover:border-[#3B82F6] hover:shadow-sm transition-all">
               <div className="flex items-start gap-3">
                 <LetterGrade score={b.overall_score} size="sm" />

@@ -2,10 +2,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { Search, PenSquare, User, LogOut, AlertTriangle, Users, Bell, Radio, Siren, Map, Newspaper } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { type City, DEFAULT_CITY } from "@/lib/cities";
 import { NavDropdown } from "./NavDropdown";
 import { MobileMenu } from "./MobileMenu";
 
-export async function Navbar() {
+export async function Navbar({ city = DEFAULT_CITY }: { city?: City }) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -28,57 +29,57 @@ export async function Navbar() {
             </Link>
             <div className="hidden md:flex items-center gap-6">
               <Link
-                href="/search"
+                href={`/${city}/search`}
                 className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors"
               >
                 <Search className="w-4 h-4" />
                 Search
               </Link>
               <Link
-                href="/rankings"
+                href={`/${city}/rankings`}
                 className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors"
               >
                 <AlertTriangle className="w-4 h-4" />
                 Worst Buildings
               </Link>
               <Link
-                href="/landlords"
+                href={`/${city}/landlords`}
                 className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors"
               >
                 <Users className="w-4 h-4" />
                 Landlords
               </Link>
               <Link
-                href="/crime"
+                href={`/${city}/crime`}
                 className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors"
               >
                 <Siren className="w-4 h-4" />
                 Crime
               </Link>
               <Link
-                href="/map"
+                href={`/${city}/map`}
                 className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors"
               >
                 <Map className="w-4 h-4" />
                 Map
               </Link>
               <Link
-                href="/feed"
+                href={`/${city}/feed`}
                 className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors"
               >
                 <Radio className="w-4 h-4" />
                 Feed
               </Link>
               <Link
-                href="/news"
+                href={`/${city}/news`}
                 className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors"
               >
                 <Newspaper className="w-4 h-4" />
                 News
               </Link>
-              <NavDropdown />
+              <NavDropdown city={city} />
               <Link
-                href="/review/new"
+                href={`/${city}/review/new`}
                 className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors"
               >
                 <PenSquare className="w-4 h-4" />
@@ -130,7 +131,7 @@ export async function Navbar() {
               </div>
             )}
           </div>
-          <MobileMenu isLoggedIn={!!user} />
+          <MobileMenu isLoggedIn={!!user} city={city} />
         </div>
       </div>
     </nav>

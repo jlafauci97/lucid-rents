@@ -1,12 +1,15 @@
 import Link from "next/link";
 import { ShieldCheck, ShieldX } from "lucide-react";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
+import { cityPath } from "@/lib/seo";
+import type { City } from "@/lib/cities";
 
 interface RentStabilizationCardProps {
   isStabilized: boolean;
   stabilizedUnits: number | null;
   totalUnits: number | null;
   stabilizedYear: number | null;
+  city?: City;
 }
 
 export function RentStabilizationCard({
@@ -14,6 +17,7 @@ export function RentStabilizationCard({
   stabilizedUnits,
   totalUnits,
   stabilizedYear,
+  city,
 }: RentStabilizationCardProps) {
   // Don't render if we have no data at all
   if (stabilizedYear == null) return null;
@@ -59,7 +63,7 @@ export function RentStabilizationCard({
 
           {/* Link to checker */}
           <Link
-            href="/rent-stabilization"
+            href={cityPath("/rent-stabilization", city)}
             className="text-xs text-[#3B82F6] hover:text-[#2563EB] font-medium transition-colors"
           >
             Rent Stabilization Checker &rarr;

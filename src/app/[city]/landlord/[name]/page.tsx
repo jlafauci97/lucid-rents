@@ -17,7 +17,7 @@ import { LetterGrade } from "@/components/ui/LetterGrade";
 import { LandlordViolationTrend } from "@/components/landlord/LandlordViolationTrend";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { landlordSlug, landlordUrl, landlordJsonLd, canonicalUrl, buildingUrl } from "@/lib/seo";
+import { landlordSlug, landlordUrl, landlordJsonLd, canonicalUrl, buildingUrl, cityPath } from "@/lib/seo";
 import { deriveScore } from "@/lib/constants";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
@@ -183,7 +183,7 @@ export default async function LandlordDetailPage({
 
       {/* Back link */}
       <Link
-        href="/landlords"
+        href={cityPath("/landlords")}
         className="inline-flex items-center gap-1.5 text-sm text-[#3B82F6] hover:text-[#2563EB] font-medium mb-6 mt-4 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />

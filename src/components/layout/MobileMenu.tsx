@@ -23,29 +23,31 @@ import {
   Bell,
   LogOut,
 } from "lucide-react";
+import { type City, DEFAULT_CITY } from "@/lib/cities";
 
 interface MobileMenuProps {
   isLoggedIn: boolean;
+  city?: City;
 }
 
 const navLinks = [
-  { href: "/search", icon: Search, label: "Search" },
-  { href: "/rankings", icon: AlertTriangle, label: "Worst Buildings" },
-  { href: "/landlords", icon: Users, label: "Landlords" },
-  { href: "/crime", icon: Siren, label: "Crime" },
-  { href: "/map", icon: Map, label: "Map" },
-  { href: "/feed", icon: Radio, label: "Feed" },
-  { href: "/news", icon: Newspaper, label: "News" },
-  { href: "/rent-stabilization", icon: ShieldCheck, label: "Rent Stabilization" },
-  { href: "/compare", icon: ArrowLeftRight, label: "Compare Buildings" },
-  { href: "/rent-data", icon: BarChart3, label: "Rent Data" },
-  { href: "/scaffolding", icon: Construction, label: "Scaffolding" },
-  { href: "/permits", icon: ClipboardList, label: "Permits" },
-  { href: "/energy", icon: Zap, label: "Energy Scores" },
-  { href: "/review/new", icon: PenSquare, label: "Submit Review" },
+  { path: "/search", icon: Search, label: "Search" },
+  { path: "/rankings", icon: AlertTriangle, label: "Worst Buildings" },
+  { path: "/landlords", icon: Users, label: "Landlords" },
+  { path: "/crime", icon: Siren, label: "Crime" },
+  { path: "/map", icon: Map, label: "Map" },
+  { path: "/feed", icon: Radio, label: "Feed" },
+  { path: "/news", icon: Newspaper, label: "News" },
+  { path: "/rent-stabilization", icon: ShieldCheck, label: "Rent Stabilization" },
+  { path: "/compare", icon: ArrowLeftRight, label: "Compare Buildings" },
+  { path: "/rent-data", icon: BarChart3, label: "Rent Data" },
+  { path: "/scaffolding", icon: Construction, label: "Scaffolding" },
+  { path: "/permits", icon: ClipboardList, label: "Permits" },
+  { path: "/energy", icon: Zap, label: "Energy Scores" },
+  { path: "/review/new", icon: PenSquare, label: "Submit Review" },
 ];
 
-export function MobileMenu({ isLoggedIn }: MobileMenuProps) {
+export function MobileMenu({ isLoggedIn, city = DEFAULT_CITY }: MobileMenuProps) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -63,8 +65,8 @@ export function MobileMenu({ isLoggedIn }: MobileMenuProps) {
           <div className="px-4 py-3 space-y-1">
             {navLinks.map((link) => (
               <Link
-                key={link.href}
-                href={link.href}
+                key={link.path}
+                href={`/${city}${link.path}`}
                 onClick={() => setOpen(false)}
                 className="flex items-center gap-3 px-3 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
               >

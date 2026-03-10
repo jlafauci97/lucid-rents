@@ -3,7 +3,7 @@ import Link from "next/link";
 import { MapPin, Building2, AlertTriangle, MessageSquare, Users, Siren, ArrowLeft } from "lucide-react";
 import { LetterGrade } from "@/components/ui/LetterGrade";
 import { getLetterGrade, getGradeColor } from "@/lib/constants";
-import { buildingUrl, landlordUrl, canonicalUrl } from "@/lib/seo";
+import { buildingUrl, landlordUrl, canonicalUrl, cityPath } from "@/lib/seo";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { AdSidebar } from "@/components/ui/AdSidebar";
@@ -124,7 +124,7 @@ export default async function NeighborhoodPage({
         <MapPin className="w-12 h-12 text-[#94a3b8] mx-auto mb-4" />
         <h1 className="text-2xl font-bold text-[#0F1D2E] mb-2">No Data for {zipCode}</h1>
         <p className="text-[#64748b]">We don&apos;t have building data for this zip code yet.</p>
-        <Link href="/crime" className="text-[#3B82F6] text-sm mt-4 inline-block">
+        <Link href={cityPath("/crime")} className="text-[#3B82F6] text-sm mt-4 inline-block">
           Browse all zip codes
         </Link>
       </div>

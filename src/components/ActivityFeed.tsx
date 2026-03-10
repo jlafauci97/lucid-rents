@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { Shield, MessageSquare, Star, Scale, HardHat, Siren, Bug, DoorOpen } from "lucide-react";
 import Link from "next/link";
 import type { ActivityItem } from "@/app/api/activity/route";
-import { buildingUrl } from "@/lib/seo";
+import { buildingUrl, cityPath } from "@/lib/seo";
+import { useCity } from "@/lib/city-context";
 
 function timeAgo(dateString: string): string {
   const date = new Date(dateString);
@@ -135,6 +136,7 @@ function SkeletonItem() {
 }
 
 export function ActivityFeed() {
+  const city = useCity();
   const [items, setItems] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -206,7 +208,7 @@ export function ActivityFeed() {
           items.map((item) => (
             <Link
               key={`${item.type}-${item.id}`}
-              href={item.type === "crime" && item.zipCode ? `/crime/${item.zipCode}` : item.buildingSlug ? buildingUrl({ borough: item.borough, slug: item.buildingSlug }) : `/building/${item.buildingId}`}
+              href={item.type === "crime" && item.zipCode ? cityPath(`/crime/${item.zipCode}`, city) : item.buildingSlug ? buildingUrl({ borough: item.borough, slug: item.buildingSlug }, city) : cityPath(`/building/${item.buildingId}`, city)}
               className="block px-5 py-4 hover:bg-[#EFF6FF] transition-colors"
             >
               <div className="flex items-start gap-3">

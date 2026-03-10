@@ -3,47 +3,48 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { ChevronDown, ArrowLeftRight, ShieldCheck, Wrench, BarChart3, Construction, ClipboardList, Zap } from "lucide-react";
+import { type City, DEFAULT_CITY } from "@/lib/cities";
 
 const tools = [
   {
-    href: "/rent-stabilization",
+    path: "/rent-stabilization",
     icon: ShieldCheck,
     label: "Rent Stabilization Checker",
     description: "Check if a building is rent stabilized",
   },
   {
-    href: "/compare",
+    path: "/compare",
     icon: ArrowLeftRight,
     label: "Compare Buildings",
     description: "Side-by-side building comparison",
   },
   {
-    href: "/rent-data",
+    path: "/rent-data",
     icon: BarChart3,
     label: "NYC Rent Data",
     description: "Rent trends, prices & market data by area",
   },
   {
-    href: "/scaffolding",
+    path: "/scaffolding",
     icon: Construction,
     label: "Scaffolding Tracker",
     description: "Active sidewalk sheds & scaffolding by area",
   },
   {
-    href: "/permits",
+    path: "/permits",
     icon: ClipboardList,
     label: "Permits Tracker",
     description: "Active DOB building permits by area",
   },
   {
-    href: "/energy",
+    path: "/energy",
     icon: Zap,
     label: "Energy Scores",
     description: "Building energy efficiency & emissions data",
   },
 ];
 
-export function NavDropdown() {
+export function NavDropdown({ city = DEFAULT_CITY }: { city?: City }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -72,8 +73,8 @@ export function NavDropdown() {
         <div className="absolute top-full left-0 mt-2 w-64 bg-[#1A2B3D] border border-white/10 rounded-lg shadow-xl overflow-hidden z-50">
           {tools.map((tool) => (
             <Link
-              key={tool.href}
-              href={tool.href}
+              key={tool.path}
+              href={`/${city}${tool.path}`}
               onClick={() => setOpen(false)}
               className="flex items-start gap-3 px-4 py-3 hover:bg-white/5 transition-colors"
             >

@@ -2,9 +2,12 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { BOROUGHS } from "@/lib/constants";
+import { cityPath } from "@/lib/seo";
+import { useCity } from "@/lib/city-context";
 
 export function SearchFilters() {
   const router = useRouter();
+  const city = useCity();
   const searchParams = useSearchParams();
   const currentBorough = searchParams.get("borough") || "";
   const currentZip = searchParams.get("zip") || "";
@@ -18,7 +21,7 @@ export function SearchFilters() {
       params.delete(key);
     }
     params.set("page", "1");
-    router.push(`/search?${params.toString()}`);
+    router.push(cityPath(`/search?${params.toString()}`, city));
   }
 
   return (

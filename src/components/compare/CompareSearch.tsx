@@ -4,6 +4,8 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Search, X, Plus, MapPin, Loader2 } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
+import { cityPath } from "@/lib/seo";
+import { useCity } from "@/lib/city-context";
 import type { Building } from "@/types";
 
 interface CompareSearchProps {
@@ -16,6 +18,7 @@ export function CompareSearch({
   selectedBuildings,
 }: CompareSearchProps) {
   const router = useRouter();
+  const city = useCity();
   const searchParams = useSearchParams();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Building[]>([]);
@@ -67,9 +70,9 @@ export function CompareSearch({
   const updateUrl = useCallback(
     (ids: string[]) => {
       if (ids.length === 0) {
-        router.push("/compare");
+        router.push(cityPath("/compare", city));
       } else {
-        router.push(`/compare?ids=${ids.join(",")}`);
+        router.push(cityPath(`/compare?ids=${ids.join(",")}`, city));
       }
     },
     [router]

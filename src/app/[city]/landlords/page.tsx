@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Users, Building2, Search, ChevronLeft, ChevronRight, AlertTriangle, MessageSquare, ArrowRight, Scale, HardHat } from "lucide-react";
 import { LetterGrade } from "@/components/ui/LetterGrade";
 import Link from "next/link";
-import { landlordUrl, canonicalUrl } from "@/lib/seo";
+import { landlordUrl, canonicalUrl, cityPath } from "@/lib/seo";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import type { Metadata } from "next";
@@ -182,7 +182,7 @@ export default async function LandlordsPage({ searchParams }: LandlordsPageProps
           </button>
           {search && (
             <Link
-              href="/landlords"
+              href={cityPath("/landlords")}
               className="px-4 py-2.5 text-sm text-[#64748b] border border-[#e2e8f0] rounded-lg hover:bg-gray-50 transition-colors flex items-center"
             >
               Clear
@@ -415,7 +415,7 @@ export default async function LandlordsPage({ searchParams }: LandlordsPageProps
           </p>
           {search && (
             <Link
-              href="/landlords"
+              href={cityPath("/landlords")}
               className="inline-flex items-center gap-2 mt-4 text-sm text-[#3B82F6] hover:text-[#2563EB] font-medium"
             >
               Clear search and view all

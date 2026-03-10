@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { buildingUrl } from "@/lib/seo";
+import { buildingUrl, cityPath } from "@/lib/seo";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { StarRating } from "@/components/ui/StarRating";
@@ -56,7 +56,7 @@ export default async function DashboardPage() {
             Your apartment insights dashboard
           </p>
         </div>
-        <Link href="/review/new">
+        <Link href={cityPath("/review/new")}>
           <Button>
             <PenSquare className="w-4 h-4 mr-2" />
             Write Review

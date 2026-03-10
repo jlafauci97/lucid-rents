@@ -2,7 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { FeedView } from "@/components/feed/FeedView";
 import { Shield, MessageSquare, Building2, Scale, HardHat, TrendingUp, ChevronRight } from "lucide-react";
-import { buildingUrl, canonicalUrl } from "@/lib/seo";
+import { buildingUrl, canonicalUrl, cityPath } from "@/lib/seo";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import type { Metadata } from "next";
@@ -106,7 +106,7 @@ async function TrendingBuildings() {
         ))}
       </div>
       <Link
-        href="/rankings"
+        href={cityPath("/rankings")}
         className="block px-4 py-3 text-sm text-[#3B82F6] hover:bg-[#EFF6FF] transition-colors font-medium border-t border-[#f1f5f9]"
       >
         View full rankings

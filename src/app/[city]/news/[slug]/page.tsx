@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { ExternalLink, Clock, ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { canonicalUrl, breadcrumbJsonLd, newsCollectionJsonLd } from "@/lib/seo";
+import { canonicalUrl, breadcrumbJsonLd, newsCollectionJsonLd, cityPath } from "@/lib/seo";
 import { NEWS_CATEGORIES, type NewsCategory } from "@/lib/news-sources";
 import { NewsList } from "@/components/news/NewsList";
 import { CategoryIcon } from "@/components/news/CategoryIcon";
@@ -157,7 +157,7 @@ async function CategoryView({
         <nav className="text-sm text-[#94a3b8] mb-4">
           <Link href="/" className="hover:text-[#3B82F6]">Home</Link>
           {" / "}
-          <Link href="/news" className="hover:text-[#3B82F6]">News</Link>
+          <Link href={cityPath("/news")} className="hover:text-[#3B82F6]">News</Link>
           {" / "}
           <span className="text-[#0F1D2E] font-medium">{meta.label}</span>
         </nav>
@@ -169,7 +169,7 @@ async function CategoryView({
 
         <div className="flex flex-wrap gap-2 mb-6">
           <Link
-            href="/news"
+            href={cityPath("/news")}
             className="px-3 py-1.5 text-sm font-medium rounded-full bg-[#f1f5f9] text-[#475569] hover:bg-[#e2e8f0] transition-colors"
           >
             All
@@ -314,7 +314,7 @@ async function ArticleView({ slug }: { slug: string }) {
 
         <div className="flex items-center gap-4 mb-4">
           <Link
-            href="/news"
+            href={cityPath("/news")}
             className="flex items-center gap-1 text-sm text-[#3B82F6] hover:underline"
           >
             <ArrowLeft className="w-4 h-4" />

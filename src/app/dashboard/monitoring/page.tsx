@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { buildingUrl } from "@/lib/seo";
+import { buildingUrl, cityPath } from "@/lib/seo";
 import { Card, CardContent } from "@/components/ui/Card";
 import { ScoreGauge } from "@/components/ui/ScoreGauge";
 import { MonitoredBuildingActions } from "@/components/building/MonitoredBuildingActions";
@@ -95,7 +95,7 @@ export default async function MonitoringPage() {
                 tracking violations and complaints.
               </p>
               <Link
-                href="/search"
+                href={cityPath("/search")}
                 className="text-sm text-[#3B82F6] hover:text-[#2563EB] font-medium"
               >
                 Search for buildings

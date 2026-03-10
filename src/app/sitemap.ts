@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { BOROUGH_SLUGS, buildingUrl, landlordSlug } from "@/lib/seo";
+import { BOROUGH_SLUGS, buildingUrl, landlordSlug, cityPath } from "@/lib/seo";
 import { NEWS_CATEGORIES } from "@/lib/news-sources";
 
 const BASE_URL = "https://lucidrents.com";
@@ -49,14 +49,14 @@ export default async function sitemap({
 async function generateStaticSitemap(): Promise<MetadataRoute.Sitemap> {
   const entries: MetadataRoute.Sitemap = [];
 
-  // Homepage
+  // Homepage (stays at root)
   entries.push({
     url: BASE_URL,
     changeFrequency: "daily",
     priority: 1.0,
   });
 
-  // Static pages
+  // Static city-specific pages
   const staticPages = [
     "/buildings",
     "/landlords",
@@ -74,7 +74,7 @@ async function generateStaticSitemap(): Promise<MetadataRoute.Sitemap> {
   ];
   for (const page of staticPages) {
     entries.push({
-      url: `${BASE_URL}${page}`,
+      url: `${BASE_URL}${cityPath(page)}`,
       changeFrequency: page === "/news" ? "daily" : "weekly",
       priority: 0.8,
     });
@@ -83,7 +83,7 @@ async function generateStaticSitemap(): Promise<MetadataRoute.Sitemap> {
   // News category pages
   for (const category of Object.keys(NEWS_CATEGORIES)) {
     entries.push({
-      url: `${BASE_URL}/news/${category}`,
+      url: `${BASE_URL}${cityPath(`/news/${category}`)}`,
       changeFrequency: "daily",
       priority: 0.7,
     });
@@ -92,7 +92,7 @@ async function generateStaticSitemap(): Promise<MetadataRoute.Sitemap> {
   // Borough directory pages
   for (const slug of Object.values(BOROUGH_SLUGS)) {
     entries.push({
-      url: `${BASE_URL}/buildings/${slug}`,
+      url: `${BASE_URL}${cityPath(`/buildings/${slug}`)}`,
       changeFrequency: "weekly",
       priority: 0.8,
     });
@@ -117,12 +117,12 @@ async function generateStaticSitemap(): Promise<MetadataRoute.Sitemap> {
 
     for (const zip of zipCodes) {
       entries.push({
-        url: `${BASE_URL}/neighborhood/${zip}`,
+        url: `${BASE_URL}${cityPath(`/neighborhood/${zip}`)}`,
         changeFrequency: "weekly",
         priority: 0.7,
       });
       entries.push({
-        url: `${BASE_URL}/crime/${zip}`,
+        url: `${BASE_URL}${cityPath(`/crime/${zip}`)}`,
         changeFrequency: "weekly",
         priority: 0.6,
       });
@@ -145,7 +145,7 @@ async function generateStaticSitemap(): Promise<MetadataRoute.Sitemap> {
     ];
     for (const name of uniqueNames) {
       entries.push({
-        url: `${BASE_URL}/landlord/${landlordSlug(name)}`,
+        url: `${BASE_URL}${cityPath(`/landlord/${landlordSlug(name)}`)}`,
         changeFrequency: "monthly",
         priority: 0.5,
       });

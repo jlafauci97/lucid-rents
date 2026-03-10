@@ -5,6 +5,7 @@ import Link from "next/link";
 import { CircleMarker, Popup } from "react-leaflet";
 import { getLetterGrade, getGradeColor } from "@/lib/constants";
 import { buildingUrl } from "@/lib/seo";
+import { useCity } from "@/lib/city-context";
 
 interface BuildingPoint {
   id: string;
@@ -27,6 +28,7 @@ interface BuildingMapProps {
 }
 
 export function BuildingMap({ borough, minScore, maxScore, visible }: BuildingMapProps) {
+  const city = useCity();
   const [points, setPoints] = useState<BuildingPoint[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -80,7 +82,7 @@ export function BuildingMap({ borough, minScore, maxScore, visible }: BuildingMa
                 {p.violations} violations · {p.reviews} reviews
               </p>
               <Link
-                href={buildingUrl({ borough: p.borough, slug: p.slug })}
+                href={buildingUrl({ borough: p.borough, slug: p.slug }, city)}
                 className="text-xs text-[#3B82F6] font-medium mt-1 inline-block"
               >
                 View details →

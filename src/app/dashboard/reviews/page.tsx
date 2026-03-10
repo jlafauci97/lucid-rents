@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { buildingUrl } from "@/lib/seo";
+import { buildingUrl, cityPath } from "@/lib/seo";
 import { Card, CardContent } from "@/components/ui/Card";
 import { StarRating } from "@/components/ui/StarRating";
 import { Badge } from "@/components/ui/Badge";
@@ -82,7 +82,7 @@ export default async function MyReviewsPage() {
             <p className="text-center text-[#64748b] py-8">
               You haven&apos;t written any reviews yet.{" "}
               <Link
-                href="/review/new"
+                href={cityPath("/review/new")}
                 className="text-[#3B82F6] hover:text-[#2563EB] font-medium"
               >
                 Write your first review
