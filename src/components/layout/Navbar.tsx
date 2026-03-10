@@ -36,7 +36,7 @@ export async function Navbar({ city = DEFAULT_CITY }: { city?: City }) {
                 Search
               </Link>
               <Link
-                href={`/${city}/rankings`}
+                href={`/${city}/worst-rated-buildings`}
                 className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors"
               >
                 <AlertTriangle className="w-4 h-4" />

@@ -32,7 +32,7 @@ interface MobileMenuProps {
 
 const navLinks = [
   { path: "/search", icon: Search, label: "Search" },
-  { path: "/rankings", icon: AlertTriangle, label: "Worst Buildings" },
+  { path: "/worst-rated-buildings", icon: AlertTriangle, label: "Worst Buildings" },
   { path: "/landlords", icon: Users, label: "Landlords" },
   { path: "/crime", icon: Siren, label: "Crime" },
   { path: "/map", icon: Map, label: "Map" },

@@ -60,7 +60,7 @@ async function generateStaticSitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages = [
     "/buildings",
     "/landlords",
-    "/rankings",
+    "/worst-rated-buildings",
     "/feed",
     "/crime",
     "/rent-stabilization",

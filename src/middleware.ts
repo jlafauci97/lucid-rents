@@ -9,7 +9,7 @@ const CITY_ROUTES = new Set([
   "landlords",
   "landlord",
   "search",
-  "rankings",
+  "worst-rated-buildings",
   "crime",
   "map",
   "feed",
@@ -33,6 +33,12 @@ export function middleware(request: NextRequest) {
 
   // 1. Path already starts with a valid city — set header and continue
   if (VALID_CITIES.includes(firstSegment as (typeof VALID_CITIES)[number])) {
+    // Redirect old /rankings URL to /worst-rated-buildings
+    if (segments[2] === "rankings") {
+      const url = request.nextUrl.clone();
+      url.pathname = `/${firstSegment}/worst-rated-buildings${segments.slice(3).length ? "/" + segments.slice(3).join("/") : ""}`;
+      return NextResponse.redirect(url, 301);
+    }
     // Redirect old-format neighborhood URLs: /nyc/neighborhood/10001 -> /nyc/neighborhood/chelsea-10001
     if (segments[2] === "neighborhood" && segments[3] && /^\d{5}$/.test(segments[3])) {
       const newSlug = neighborhoodPageSlug(segments[3]);
@@ -47,7 +53,14 @@ export function middleware(request: NextRequest) {
     return response;
   }
 
-  // 2. Path starts with a known city route prefix but has no city → 301 redirect to /nyc/...
+  // 2. Redirect bare /rankings to /nyc/worst-rated-buildings
+  if (firstSegment === "rankings") {
+    const url = request.nextUrl.clone();
+    url.pathname = `/nyc/worst-rated-buildings`;
+    return NextResponse.redirect(url, 301);
+  }
+
+  // 3. Path starts with a known city route prefix but has no city → 301 redirect to /nyc/...
   if (CITY_ROUTES.has(firstSegment)) {
     const url = request.nextUrl.clone();
     // Single-hop redirect for old neighborhood URLs: /neighborhood/10001 -> /nyc/neighborhood/chelsea-10001
@@ -59,7 +72,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(url, 301);
   }
 
-  // 3. Everything else (homepage, api, auth, dashboard, about, privacy, terms) — pass through
+  // 4. Everything else (homepage, api, auth, dashboard, about, privacy, terms) — pass through
   const response = NextResponse.next();
   response.headers.set("x-city", "nyc");
   return response;

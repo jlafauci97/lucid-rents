@@ -106,7 +106,7 @@ async function TrendingBuildings() {
         ))}
       </div>
       <Link
-        href={cityPath("/rankings")}
+        href={cityPath("/worst-rated-buildings")}
         className="block px-4 py-3 text-sm text-[#3B82F6] hover:bg-[#EFF6FF] transition-colors font-medium border-t border-[#f1f5f9]"
       >
         View full rankings

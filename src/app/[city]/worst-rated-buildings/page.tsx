@@ -10,12 +10,12 @@ export const metadata: Metadata = {
   title: "Worst Rated Buildings in NYC | Lucid Rents",
   description:
     "NYC buildings ranked by HPD violations, 311 complaints, and reported issues. Find the worst-rated buildings in Manhattan, Brooklyn, Queens, Bronx, and Staten Island.",
-  alternates: { canonical: canonicalUrl(cityPath("/rankings")) },
+  alternates: { canonical: canonicalUrl(cityPath("/worst-rated-buildings")) },
   openGraph: {
     title: "Worst Rated Buildings in NYC",
     description:
       "NYC buildings ranked by HPD violations and 311 complaints.",
-    url: canonicalUrl(cityPath("/rankings")),
+    url: canonicalUrl(cityPath("/worst-rated-buildings")),
     siteName: "Lucid Rents",
     type: "website",
     locale: "en_US",
@@ -71,7 +71,7 @@ export default async function RankingsPage({ searchParams }: RankingsPageProps) 
     const base: Record<string, string> = { borough, sort: sortBy, page: String(page) };
     const merged = { ...base, ...overrides };
     const qs = new URLSearchParams(merged).toString();
-    return `${cityPath("/rankings")}?${qs}`;
+    return `${cityPath("/worst-rated-buildings")}?${qs}`;
   }
 
   return (
