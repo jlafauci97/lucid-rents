@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import Link from "next/link";
 import { ArrowUpDown } from "lucide-react";
 
 interface PermitRow {
@@ -17,7 +18,17 @@ interface PermitRow {
   job_description: string | null;
   estimated_job_costs: number | null;
   owner_business_name: string | null;
+  building_slug: string | null;
+  building_borough: string | null;
 }
+
+const BOROUGH_SLUGS: Record<string, string> = {
+  Manhattan: "manhattan",
+  Brooklyn: "brooklyn",
+  Queens: "queens",
+  Bronx: "bronx",
+  "Staten Island": "staten-island",
+};
 
 const BOROUGHS = ["Manhattan", "Brooklyn", "Queens", "Bronx", "Staten Island"];
 
@@ -179,7 +190,16 @@ export function PermitTable({ data }: { data: PermitRow[] }) {
             {filtered.slice(0, 100).map((row) => (
               <tr key={row.work_permit} className="hover:bg-[#f8fafc] transition-colors">
                 <td className="px-4 py-3 text-sm font-semibold text-[#0F1D2E]">
-                  {row.house_no} {row.street_name}
+                  {row.building_slug && row.building_borough ? (
+                    <Link
+                      href={`/building/${BOROUGH_SLUGS[row.building_borough] || row.building_borough.toLowerCase().replace(/\s+/g, "-")}/${row.building_slug}`}
+                      className="text-[#0D9488] hover:text-[#0F766E] hover:underline"
+                    >
+                      {row.house_no} {row.street_name}
+                    </Link>
+                  ) : (
+                    <>{row.house_no} {row.street_name}</>
+                  )}
                 </td>
                 <td className="px-4 py-3 text-sm text-[#334155] hidden sm:table-cell">
                   {row.work_type || "\u2014"}
