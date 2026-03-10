@@ -305,12 +305,13 @@ async function linkByBbl(
   let linked = 0;
   const affectedBuildingIds = new Set<string>();
 
+  // Link ALL unlinked records with BBLs — not just from this sync run.
+  // The previous imported_at filter missed records when upsert updated existing rows.
   const { data: unlinked } = await supabase
     .from(table)
     .select("id, bbl")
     .is("building_id", null)
     .not("bbl", "is", null)
-    .gte("imported_at", syncStartTime)
     .limit(50000);
 
   if (!unlinked || unlinked.length === 0) return { linked, affectedBuildingIds };
