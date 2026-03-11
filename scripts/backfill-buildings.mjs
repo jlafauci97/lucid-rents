@@ -40,10 +40,11 @@ const args = Object.fromEntries(
   })
 );
 const LIMIT = parseInt(args.limit || "500", 10);
-const SOURCE = args.source || "all"; // dob, hpd, 311, all
+const SOURCE = args.source || "all"; // dob, hpd, 311, litigations, evictions, all
 const LINK_ONLY = args["link-only"] === "true";
 const BBL_PREFIX = args["bbl-prefix"] || ""; // e.g. "1" for Manhattan, "3" for Brooklyn
 const CONCURRENCY = parseInt(args.concurrency || "20", 10);
+const BOROUGH_FILTER = args.borough || ""; // e.g. "MANHATTAN", "BROOKLYN" — for 311 parallelization
 
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
@@ -415,12 +416,15 @@ async function link311ByAddress() {
     batch++;
 
     // Get unlinked 311 records with addresses
-    const { data: unlinked, error } = await supabase
+    let q311 = supabase
       .from("complaints_311")
       .select("id, incident_address, borough, latitude, longitude")
       .is("building_id", null)
-      .not("incident_address", "is", null)
-      .limit(FETCH_LIMIT);
+      .not("incident_address", "is", null);
+    if (BOROUGH_FILTER) {
+      q311 = q311.eq("borough", BOROUGH_FILTER.toUpperCase());
+    }
+    const { data: unlinked, error } = await q311.limit(FETCH_LIMIT);
 
     if (error) {
       console.error(`  Error fetching unlinked 311:`, error.message);
@@ -445,24 +449,33 @@ async function link311ByAddress() {
     const uniqueAddrs = [...addrSet.keys()];
     console.log(`  Batch ${batch}: ${unlinked.length} unlinked, ${uniqueAddrs.length} unique addresses`);
 
-    // Look up buildings by full_address (concurrent batches)
+    // Look up buildings by house_number + street_name (concurrent targeted queries)
     const addrToBuilding = new Map();
-    for (let i = 0; i < uniqueAddrs.length; i += CONCURRENCY) {
-      const addrBatch = uniqueAddrs.slice(i, i + CONCURRENCY);
+
+    // Parse each 311 address into house_number + street
+    const parsedAddrs = uniqueAddrs.map((addr) => {
+      const parts = addr.match(/^(\S+)\s+(.+)$/);
+      return { addr, houseNum: parts?.[1] || "", street: parts?.[2] || addr };
+    }).filter((p) => p.houseNum);
+
+    // Concurrent lookups: eq(house_number) + ilike(street_name) is fast (house_number narrows the set)
+    for (let i = 0; i < parsedAddrs.length; i += CONCURRENCY) {
+      const batch = parsedAddrs.slice(i, i + CONCURRENCY);
       const results = await Promise.all(
-        addrBatch.map((addr) => {
-          const pattern = addr.split(" ").filter(Boolean).join("%");
+        batch.map(({ houseNum, street }) => {
+          const streetPattern = street.split(" ").filter(Boolean).join("%");
           return supabase
             .from("buildings")
-            .select("id, full_address")
-            .ilike("full_address", `${pattern},%`)
+            .select("id")
+            .eq("house_number", houseNum)
+            .ilike("street_name", streetPattern)
             .limit(1);
         })
       );
       for (let j = 0; j < results.length; j++) {
         const { data: buildings } = results[j];
         if (buildings?.length > 0) {
-          addrToBuilding.set(addrBatch[j], buildings[0].id);
+          addrToBuilding.set(batch[j].addr, buildings[0].id);
         }
       }
     }
@@ -562,6 +575,164 @@ async function link311ByAddress() {
   return linked;
 }
 
+// ── Step 7: Link evictions by address ──────────────────────────────────────────
+async function linkEvictionsByAddress() {
+  console.log(`\nLinking unlinked evictions by address...`);
+
+  const FETCH_LIMIT = 1000;
+  const MAX_BATCHES = 500;
+  let linked = 0;
+  let created = 0;
+  let batch = 0;
+
+  while (true) {
+    batch++;
+
+    const { data: unlinked, error } = await supabase
+      .from("evictions")
+      .select("id, eviction_address, borough, eviction_zip")
+      .is("building_id", null)
+      .is("bbl", null)
+      .not("eviction_address", "is", null)
+      .limit(FETCH_LIMIT);
+
+    if (error) {
+      console.error(`  Error fetching unlinked evictions:`, error.message);
+      break;
+    }
+    if (!unlinked?.length) {
+      console.log(`  No more unlinked evictions`);
+      break;
+    }
+
+    // Parse eviction_address: strip apartment info (APT, UNIT, FL, #, etc.)
+    const addrSet = new Map();
+    for (const r of unlinked) {
+      let addr = r.eviction_address?.trim().replace(/\s+/g, " ").toUpperCase();
+      if (!addr) continue;
+      // Strip apartment/unit suffixes
+      addr = addr.replace(/\s+(APT|UNIT|FL|FLOOR|#|STE|SUITE|RM|ROOM)\s*.*/i, "").trim();
+      if (!addr) continue;
+      if (!addrSet.has(addr)) {
+        addrSet.set(addr, { ids: [], borough: r.borough, zip: r.eviction_zip });
+      }
+      addrSet.get(addr).ids.push(r.id);
+    }
+
+    const uniqueAddrs = [...addrSet.keys()];
+    console.log(`  Batch ${batch}: ${unlinked.length} unlinked, ${uniqueAddrs.length} unique addresses`);
+
+    // Look up buildings by house_number + street_name
+    const addrToBuilding = new Map();
+    const parsedAddrs = uniqueAddrs.map((addr) => {
+      const parts = addr.match(/^(\S+)\s+(.+)$/);
+      return { addr, houseNum: parts?.[1] || "", street: parts?.[2] || addr };
+    }).filter((p) => p.houseNum);
+
+    for (let i = 0; i < parsedAddrs.length; i += CONCURRENCY) {
+      const batchP = parsedAddrs.slice(i, i + CONCURRENCY);
+      const results = await Promise.all(
+        batchP.map(({ houseNum, street }) => {
+          const streetPattern = street.split(" ").filter(Boolean).join("%");
+          return supabase
+            .from("buildings")
+            .select("id")
+            .eq("house_number", houseNum)
+            .ilike("street_name", streetPattern)
+            .limit(1);
+        })
+      );
+      for (let j = 0; j < results.length; j++) {
+        const { data: buildings } = results[j];
+        if (buildings?.length > 0) {
+          addrToBuilding.set(batchP[j].addr, buildings[0].id);
+        }
+      }
+    }
+
+    // Create buildings for unmatched addresses
+    const unmatched = uniqueAddrs.filter((a) => !addrToBuilding.has(a));
+    if (unmatched.length > 0 && !LINK_ONLY) {
+      let batchCreated = 0;
+      for (let i = 0; i < unmatched.length; i += CONCURRENCY) {
+        const createBatch = unmatched.slice(i, i + CONCURRENCY);
+        const results = await Promise.all(
+          createBatch.map(async (addr) => {
+            const info = addrSet.get(addr);
+            const borough = titleCase(info.borough || "");
+            const parts = addr.match(/^(\S+)\s+(.+)$/);
+            const houseNum = parts?.[1] || "";
+            const street = parts?.[2] || addr;
+            const zip = info.zip || "";
+            const fullAddress = zip ? `${addr}, ${borough}, NY, ${zip}` : `${addr}, ${borough}, NY`;
+            const slug = generateSlug(fullAddress);
+
+            const { error } = await supabase.from("buildings").insert({
+              borough,
+              house_number: houseNum || null,
+              street_name: street,
+              zip_code: zip || null,
+              full_address: fullAddress,
+              slug,
+            });
+            if (error) return { addr, ok: false };
+            const { data: newBldg } = await supabase.from("buildings").select("id").eq("slug", slug).limit(1);
+            if (newBldg?.length > 0) {
+              addrToBuilding.set(addr, newBldg[0].id);
+              return { addr, ok: true };
+            }
+            return { addr, ok: false };
+          })
+        );
+        batchCreated += results.filter((r) => r.ok).length;
+      }
+      created += batchCreated;
+      console.log(`  Created ${batchCreated} new buildings, now ${addrToBuilding.size} matched`);
+    } else {
+      console.log(`  Matched ${addrToBuilding.size} of ${uniqueAddrs.length} addresses`);
+    }
+
+    // Build update list
+    const updates = [];
+    for (const [addr, info] of addrSet) {
+      const buildingId = addrToBuilding.get(addr);
+      if (buildingId) {
+        for (const id of info.ids) {
+          updates.push({ id, building_id: buildingId });
+        }
+      }
+    }
+
+    if (updates.length === 0) {
+      console.log(`  Batch ${batch}: no matchable records`);
+      break;
+    }
+
+    let batchLinked = 0;
+    for (let i = 0; i < updates.length; i += CONCURRENCY) {
+      const updateBatch = updates.slice(i, i + CONCURRENCY);
+      const results = await Promise.all(
+        updateBatch.map((u) =>
+          supabase.from("evictions").update({ building_id: u.building_id }).eq("id", u.id)
+        )
+      );
+      for (const r of results) {
+        if (r.error) console.error(`  Eviction link error: ${r.error.message}`);
+        else batchLinked++;
+      }
+    }
+
+    linked += batchLinked;
+    console.log(`  Batch ${batch}: linked ${batchLinked} (total: ${linked})`);
+
+    if (unlinked.length < FETCH_LIMIT || batch >= MAX_BATCHES) break;
+    await sleep(50);
+  }
+
+  console.log(`  Evictions total: ${linked} linked, ${created} buildings created`);
+  return linked;
+}
+
 // ── Main ─────────────────────────────────────────────────────────────────────
 async function main() {
   const LOOP = args.loop === "true";
@@ -590,6 +761,10 @@ async function main() {
         const bbls = await getUnlinkedBbls("hpd_violations", LIMIT);
         bbls.forEach((b) => allBbls.add(b));
       }
+      if (SOURCE === "all" || SOURCE === "litigations") {
+        const bbls = await getUnlinkedBbls("hpd_litigations", LIMIT);
+        bbls.forEach((b) => allBbls.add(b));
+      }
 
       const uniqueBbls = [...allBbls].slice(0, LIMIT);
       console.log(`\nTotal unique BBLs to process: ${uniqueBbls.length}`);
@@ -613,7 +788,8 @@ async function main() {
     const tables = [];
     if (SOURCE === "all" || SOURCE === "dob") tables.push("dob_violations");
     if (SOURCE === "all" || SOURCE === "hpd") tables.push("hpd_violations");
-    if (SOURCE === "all") tables.push("hpd_litigations", "bedbug_reports", "evictions");
+    if (SOURCE === "all" || SOURCE === "litigations") tables.push("hpd_litigations");
+    if (SOURCE === "all") tables.push("bedbug_reports", "evictions");
 
     for (const table of tables) {
       roundLinked += await linkViolations(table);
@@ -622,6 +798,11 @@ async function main() {
     // Link 311 complaints by address (not BBL)
     if (SOURCE === "all" || SOURCE === "311") {
       roundLinked += await link311ByAddress();
+    }
+
+    // Link evictions without BBL by address
+    if (SOURCE === "all" || SOURCE === "evictions") {
+      roundLinked += await linkEvictionsByAddress();
     }
     totalLinked += roundLinked;
 
@@ -645,6 +826,9 @@ async function main() {
     }
     if (SOURCE === "all" || SOURCE === "311") {
       totalLinked += await link311ByAddress();
+    }
+    if (SOURCE === "all" || SOURCE === "evictions") {
+      totalLinked += await linkEvictionsByAddress();
     }
   }
 
