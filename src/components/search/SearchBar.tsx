@@ -6,7 +6,8 @@ import { Search, MapPin, Loader2 } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
 import { LetterGrade } from "@/components/ui/LetterGrade";
 import { deriveScore } from "@/lib/constants";
-import { buildingUrl, cityPath } from "@/lib/seo";
+import { buildingUrl, cityPath, neighborhoodUrl } from "@/lib/seo";
+import { searchNeighborhoods, type NeighborhoodMatch } from "@/lib/nyc-neighborhoods";
 import { useCity } from "@/lib/city-context";
 import type { Building } from "@/types";
 
@@ -25,6 +26,7 @@ export function SearchBar({
   const city = useCity();
   const [query, setQuery] = useState(initialQuery);
   const [results, setResults] = useState<Building[]>([]);
+  const [neighborhoodResults, setNeighborhoodResults] = useState<NeighborhoodMatch[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -33,12 +35,19 @@ export function SearchBar({
   useEffect(() => {
     if (debouncedQuery.length < 2) {
       setResults([]);
+      setNeighborhoodResults([]);
       setOpen(false);
       return;
     }
 
+    // Client-side neighborhood matching (instant)
+    const neighborhoods = searchNeighborhoods(debouncedQuery, 3);
+    setNeighborhoodResults(neighborhoods);
+    if (neighborhoods.length > 0) setOpen(true);
+
+    // API building search
     setLoading(true);
-    fetch(`/api/search?q=${encodeURIComponent(debouncedQuery)}&limit=6`)
+    fetch(`/api/search?q=${encodeURIComponent(debouncedQuery)}&limit=3`)
       .then((res) => res.json())
       .then((data) => {
         setResults(data.buildings || []);
@@ -67,6 +76,7 @@ export function SearchBar({
   }
 
   const isHero = size === "hero";
+  const hasResults = neighborhoodResults.length > 0 || results.length > 0;
 
   return (
     <div ref={wrapperRef} className="relative w-full">
@@ -79,7 +89,7 @@ export function SearchBar({
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            onFocus={() => results.length > 0 && setOpen(true)}
+            onFocus={() => hasResults && setOpen(true)}
             placeholder={placeholder}
             className={`w-full bg-white text-[#0F1D2E] placeholder-[#94a3b8] border border-[#e2e8f0] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent ${isHero ? "pl-14 pr-6 py-5 text-lg" : "pl-12 pr-4 py-3 text-sm"} shadow-sm`}
           />
@@ -91,35 +101,78 @@ export function SearchBar({
         </div>
       </form>
 
-      {open && results.length > 0 && (
+      {open && hasResults && (
         <div className="absolute z-50 w-full mt-2 bg-white rounded-xl border border-[#e2e8f0] shadow-lg overflow-hidden">
-          {results.map((building) => (
-            <button
-              key={building.id}
-              type="button"
-              onClick={() => {
-                setOpen(false);
-                router.push(buildingUrl(building, city));
-              }}
-              className="w-full flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left"
-            >
-              <MapPin className="w-5 h-5 text-[#94a3b8] mt-0.5 shrink-0" />
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-[#0F1D2E] truncate">
-                  {building.full_address}
-                </p>
-                <p className="text-xs text-[#64748b]">
-                  {building.borough}
-                  {building.zip_code && ` · ${building.zip_code}`}
-                  {building.review_count > 0 &&
-                    ` · ${building.review_count} review${building.review_count !== 1 ? "s" : ""}`}
-                </p>
+          {/* Neighborhood results */}
+          {neighborhoodResults.length > 0 && (
+            <>
+              <div className="px-4 py-1.5 bg-[#f8fafc] border-b border-[#e2e8f0]">
+                <span className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
+                  Neighborhoods
+                </span>
               </div>
-              <div className="ml-auto shrink-0">
-                <LetterGrade score={building.overall_score ?? deriveScore(building.violation_count || 0, building.complaint_count || 0)} size="sm" />
-              </div>
-            </button>
-          ))}
+              {neighborhoodResults.map((n) => (
+                <button
+                  key={n.zipCode}
+                  type="button"
+                  onClick={() => {
+                    setOpen(false);
+                    router.push(neighborhoodUrl(n.zipCode, city));
+                  }}
+                  className="w-full flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left"
+                >
+                  <MapPin className="w-5 h-5 text-[#3B82F6] mt-0.5 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-[#0F1D2E]">
+                      {n.name}
+                    </p>
+                    <p className="text-xs text-[#64748b]">
+                      {n.zipCode} &middot; {n.borough}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </>
+          )}
+          {/* Building results */}
+          {results.length > 0 && (
+            <>
+              {neighborhoodResults.length > 0 && (
+                <div className="px-4 py-1.5 bg-[#f8fafc] border-b border-[#e2e8f0]">
+                  <span className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
+                    Buildings
+                  </span>
+                </div>
+              )}
+              {results.map((building) => (
+                <button
+                  key={building.id}
+                  type="button"
+                  onClick={() => {
+                    setOpen(false);
+                    router.push(buildingUrl(building, city));
+                  }}
+                  className="w-full flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left"
+                >
+                  <MapPin className="w-5 h-5 text-[#94a3b8] mt-0.5 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-[#0F1D2E] truncate">
+                      {building.full_address}
+                    </p>
+                    <p className="text-xs text-[#64748b]">
+                      {building.borough}
+                      {building.zip_code && ` · ${building.zip_code}`}
+                      {building.review_count > 0 &&
+                        ` · ${building.review_count} review${building.review_count !== 1 ? "s" : ""}`}
+                    </p>
+                  </div>
+                  <div className="ml-auto shrink-0">
+                    <LetterGrade score={building.overall_score ?? deriveScore(building.violation_count || 0, building.complaint_count || 0)} size="sm" />
+                  </div>
+                </button>
+              ))}
+            </>
+          )}
           <button
             type="button"
             onClick={() => {

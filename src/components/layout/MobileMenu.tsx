@@ -9,7 +9,7 @@ import {
   AlertTriangle,
   Users,
   Siren,
-  Map,
+
   Radio,
   Newspaper,
   PenSquare,
@@ -35,7 +35,7 @@ const navLinks = [
   { path: "/worst-rated-buildings", icon: AlertTriangle, label: "Worst Buildings" },
   { path: "/landlords", icon: Users, label: "Landlords" },
   { path: "/crime", icon: Siren, label: "Crime" },
-  { path: "/map", icon: Map, label: "Map" },
+
   { path: "/feed", icon: Radio, label: "Feed" },
   { path: "/news", icon: Newspaper, label: "News" },
   { path: "/rent-stabilization", icon: ShieldCheck, label: "Rent Stabilization" },

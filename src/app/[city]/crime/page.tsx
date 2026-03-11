@@ -5,6 +5,7 @@ import { canonicalUrl, cityPath, neighborhoodUrl } from "@/lib/seo";
 import { getNeighborhoodName } from "@/lib/nyc-neighborhoods";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
+import { CrimeMapSection } from "@/components/crime/CrimeMapSection";
 
 export const metadata: Metadata = {
   title: "Crime by Zip Code | Lucid Rents",
@@ -143,6 +144,11 @@ export default async function CrimePage({
             {b}
           </Link>
         ))}
+      </div>
+
+      {/* Interactive Map */}
+      <div className="mb-6">
+        <CrimeMapSection borough={borough} />
       </div>
 
       {/* Summary stats */}

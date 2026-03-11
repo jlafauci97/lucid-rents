@@ -191,6 +191,49 @@ export const NYC_ZIP_NEIGHBORHOODS: Record<string, string> = {
   "10314": "Bulls Head",
 };
 
+/** Zip code -> borough mapping */
+export const NYC_ZIP_BOROUGHS: Record<string, string> = {};
+for (const zip of Object.keys(NYC_ZIP_NEIGHBORHOODS)) {
+  if (zip >= "10001" && zip <= "10282") NYC_ZIP_BOROUGHS[zip] = "Manhattan";
+  else if (zip >= "10301" && zip <= "10314") NYC_ZIP_BOROUGHS[zip] = "Staten Island";
+  else if (zip >= "10451" && zip <= "10475") NYC_ZIP_BOROUGHS[zip] = "Bronx";
+  else if (zip >= "11201" && zip <= "11239") NYC_ZIP_BOROUGHS[zip] = "Brooklyn";
+  else NYC_ZIP_BOROUGHS[zip] = "Queens";
+}
+
+export interface NeighborhoodMatch {
+  zipCode: string;
+  name: string;
+  borough: string;
+}
+
+/** Search neighborhoods by zip prefix or name substring */
+export function searchNeighborhoods(query: string, limit = 3): NeighborhoodMatch[] {
+  const q = query.toLowerCase().trim();
+  if (q.length < 2) return [];
+
+  const results: NeighborhoodMatch[] = [];
+  const isDigits = /^\d+$/.test(q);
+
+  for (const [zip, name] of Object.entries(NYC_ZIP_NEIGHBORHOODS)) {
+    if (results.length >= limit) break;
+
+    const match = isDigits
+      ? zip.startsWith(q)
+      : name.toLowerCase().includes(q);
+
+    if (match) {
+      results.push({
+        zipCode: zip,
+        name,
+        borough: NYC_ZIP_BOROUGHS[zip] || "Unknown",
+      });
+    }
+  }
+
+  return results;
+}
+
 /** Slugify a neighborhood name: "Lower East Side" -> "lower-east-side" */
 export function neighborhoodSlug(name: string): string {
   return name

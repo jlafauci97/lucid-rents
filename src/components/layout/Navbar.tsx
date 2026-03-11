@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Search, PenSquare, User, LogOut, AlertTriangle, Users, Bell, Radio, Siren, Map, Newspaper } from "lucide-react";
+import { Search, PenSquare, User, LogOut, AlertTriangle, Users, Bell, Radio, Siren, Newspaper } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { type City, DEFAULT_CITY } from "@/lib/cities";
 import { NavDropdown } from "./NavDropdown";
@@ -23,7 +23,7 @@ export async function Navbar({ city = DEFAULT_CITY }: { city?: City }) {
                 alt="Lucid Rents"
                 width={200}
                 height={64}
-                className="h-[72px] w-auto"
+                className="h-[88px] w-auto"
                 priority
               />
             </Link>
@@ -55,13 +55,6 @@ export async function Navbar({ city = DEFAULT_CITY }: { city?: City }) {
               >
                 <Siren className="w-4 h-4" />
                 Crime
-              </Link>
-              <Link
-                href={`/${city}/map`}
-                className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors"
-              >
-                <Map className="w-4 h-4" />
-                Map
               </Link>
               <Link
                 href={`/${city}/feed`}
