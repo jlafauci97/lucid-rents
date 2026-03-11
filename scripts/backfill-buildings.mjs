@@ -367,21 +367,29 @@ async function linkViolations(table) {
     }
 
     let batchLinked = 0;
-    // Use individual .update() calls instead of .upsert() to avoid NOT NULL constraint errors
-    // (upsert tries to INSERT which fails on tables with required columns like litigation_id)
-    for (let i = 0; i < updates.length; i += CONCURRENCY) {
-      const batch = updates.slice(i, i + CONCURRENCY);
-      const results = await Promise.all(
-        batch.map((u) =>
-          supabase.from(table).update({ building_id: u.building_id }).eq("id", u.id)
-        )
-      );
-      for (let j = 0; j < results.length; j++) {
-        if (results[j].error) {
-          console.error(`  Link error: ${results[j].error.message}`);
-        } else {
-          batchLinked++;
+    // Tables with NOT NULL constraints (hpd_litigations, evictions) need individual updates
+    // Others can use fast bulk upsert
+    const needsIndividualUpdate = ["hpd_litigations", "evictions"];
+    if (needsIndividualUpdate.includes(table)) {
+      for (let i = 0; i < updates.length; i += CONCURRENCY) {
+        const ubatch = updates.slice(i, i + CONCURRENCY);
+        const results = await Promise.all(
+          ubatch.map((u) =>
+            supabase.from(table).update({ building_id: u.building_id }).eq("id", u.id)
+          )
+        );
+        for (const r of results) {
+          if (r.error) console.error(`  Link error: ${r.error.message}`);
+          else batchLinked++;
         }
+      }
+    } else {
+      // Fast bulk upsert for dob_violations, hpd_violations, bedbug_reports
+      for (let i = 0; i < updates.length; i += 1000) {
+        const chunk = updates.slice(i, i + 1000);
+        const { error } = await supabase.from(table).upsert(chunk, { onConflict: "id" });
+        if (error) console.error(`  Link error: ${error.message}`);
+        else batchLinked += chunk.length;
       }
     }
 
@@ -403,10 +411,13 @@ function titleCase(s) {
   return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
 }
 
+// Persistent cache across batches: address -> building_id
+const addrCache = new Map();
+
 async function link311ByAddress() {
   console.log(`\nLinking unlinked complaints_311 by address...`);
 
-  const FETCH_LIMIT = 1000;
+  const FETCH_LIMIT = 1000; // Supabase max per query
   const MAX_BATCHES = 500;
   let linked = 0;
   let created = 0;
@@ -436,7 +447,7 @@ async function link311ByAddress() {
     }
 
     // Extract unique addresses (normalize whitespace) with borough info
-    const addrSet = new Map(); // normalized_addr -> { ids: [], borough, lat, lng }
+    const addrSet = new Map();
     for (const r of unlinked) {
       const addr = r.incident_address?.trim().replace(/\s+/g, " ").toUpperCase();
       if (!addr) continue;
@@ -447,22 +458,32 @@ async function link311ByAddress() {
     }
 
     const uniqueAddrs = [...addrSet.keys()];
-    console.log(`  Batch ${batch}: ${unlinked.length} unlinked, ${uniqueAddrs.length} unique addresses`);
 
-    // Look up buildings by house_number + street_name (concurrent targeted queries)
+    // Check cache first — skip lookups for already-resolved addresses
     const addrToBuilding = new Map();
+    const needsLookup = [];
+    for (const addr of uniqueAddrs) {
+      if (addrCache.has(addr)) {
+        addrToBuilding.set(addr, addrCache.get(addr));
+      } else {
+        needsLookup.push(addr);
+      }
+    }
 
-    // Parse each 311 address into house_number + street
-    const parsedAddrs = uniqueAddrs.map((addr) => {
+    const cacheHits = uniqueAddrs.length - needsLookup.length;
+    console.log(`  Batch ${batch}: ${unlinked.length} unlinked, ${uniqueAddrs.length} addrs (${cacheHits} cached, ${needsLookup.length} to lookup)`);
+
+    // Parse addresses that need lookup
+    const parsedAddrs = needsLookup.map((addr) => {
       const parts = addr.match(/^(\S+)\s+(.+)$/);
       return { addr, houseNum: parts?.[1] || "", street: parts?.[2] || addr };
     }).filter((p) => p.houseNum);
 
-    // Concurrent lookups: eq(house_number) + ilike(street_name) is fast (house_number narrows the set)
+    // Concurrent lookups for uncached addresses
     for (let i = 0; i < parsedAddrs.length; i += CONCURRENCY) {
-      const batch = parsedAddrs.slice(i, i + CONCURRENCY);
+      const lbatch = parsedAddrs.slice(i, i + CONCURRENCY);
       const results = await Promise.all(
-        batch.map(({ houseNum, street }) => {
+        lbatch.map(({ houseNum, street }) => {
           const streetPattern = street.split(" ").filter(Boolean).join("%");
           return supabase
             .from("buildings")
@@ -475,13 +496,14 @@ async function link311ByAddress() {
       for (let j = 0; j < results.length; j++) {
         const { data: buildings } = results[j];
         if (buildings?.length > 0) {
-          addrToBuilding.set(batch[j].addr, buildings[0].id);
+          addrToBuilding.set(lbatch[j].addr, buildings[0].id);
+          addrCache.set(lbatch[j].addr, buildings[0].id);
         }
       }
     }
 
     // Create buildings for unmatched addresses
-    const unmatched = uniqueAddrs.filter((a) => !addrToBuilding.has(a));
+    const unmatched = needsLookup.filter((a) => !addrToBuilding.has(a));
     if (unmatched.length > 0 && !LINK_ONLY) {
       let batchCreated = 0;
       for (let i = 0; i < unmatched.length; i += CONCURRENCY) {
@@ -490,7 +512,6 @@ async function link311ByAddress() {
           createBatch.map(async (addr) => {
             const info = addrSet.get(addr);
             const borough = titleCase(info.borough || "");
-            // Parse house number and street from incident_address (e.g. "123 MAIN STREET")
             const parts = addr.match(/^(\S+)\s+(.+)$/);
             const houseNum = parts?.[1] || "";
             const street = parts?.[2] || addr;
@@ -505,18 +526,21 @@ async function link311ByAddress() {
               slug,
             });
             if (error) {
-              // Likely duplicate slug — try with lat/lng suffix
-              if (error.message.includes("duplicate")) return { addr, ok: false, dup: true };
+              if (error.message.includes("duplicate")) {
+                // Slug exists — look up the existing building
+                const { data: existing } = await supabase.from("buildings").select("id").eq("slug", slug).limit(1);
+                if (existing?.length > 0) {
+                  addrToBuilding.set(addr, existing[0].id);
+                  addrCache.set(addr, existing[0].id);
+                }
+                return { addr, ok: false, dup: true };
+              }
               return { addr, ok: false };
             }
-            // Fetch the created building ID
-            const { data: newBldg } = await supabase
-              .from("buildings")
-              .select("id")
-              .eq("slug", slug)
-              .limit(1);
+            const { data: newBldg } = await supabase.from("buildings").select("id").eq("slug", slug).limit(1);
             if (newBldg?.length > 0) {
               addrToBuilding.set(addr, newBldg[0].id);
+              addrCache.set(addr, newBldg[0].id);
               return { addr, ok: true };
             }
             return { addr, ok: false };
@@ -526,7 +550,7 @@ async function link311ByAddress() {
       }
       created += batchCreated;
       console.log(`  Created ${batchCreated} new buildings, now ${addrToBuilding.size} matched`);
-    } else {
+    } else if (needsLookup.length > 0) {
       console.log(`  Matched ${addrToBuilding.size} of ${uniqueAddrs.length} addresses`);
     }
 
@@ -546,21 +570,15 @@ async function link311ByAddress() {
       break;
     }
 
-    // Concurrent updates
+    // Bulk upsert (311 supports it — no NOT NULL constraints block it)
     let batchLinked = 0;
-    for (let i = 0; i < updates.length; i += CONCURRENCY) {
-      const updateBatch = updates.slice(i, i + CONCURRENCY);
-      const results = await Promise.all(
-        updateBatch.map((u) =>
-          supabase.from("complaints_311").update({ building_id: u.building_id }).eq("id", u.id)
-        )
-      );
-      for (const r of results) {
-        if (r.error) {
-          console.error(`  311 link error: ${r.error.message}`);
-        } else {
-          batchLinked++;
-        }
+    for (let i = 0; i < updates.length; i += 1000) {
+      const chunk = updates.slice(i, i + 1000);
+      const { error } = await supabase.from("complaints_311").upsert(chunk, { onConflict: "id" });
+      if (error) {
+        console.error(`  311 link error: ${error.message}`);
+      } else {
+        batchLinked += chunk.length;
       }
     }
 
@@ -571,7 +589,7 @@ async function link311ByAddress() {
     await sleep(50);
   }
 
-  console.log(`  311 total: ${linked} linked, ${created} buildings created`);
+  console.log(`  311 total: ${linked} linked, ${created} buildings created (cache: ${addrCache.size} entries)`);
   return linked;
 }
 
