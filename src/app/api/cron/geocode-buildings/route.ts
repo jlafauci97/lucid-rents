@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
   // Batch all updates into one array, then do a single update per building
   let updated = 0;
   let errors = 0;
-  const updatePromises: Promise<void>[] = [];
+  const updatePromises: PromiseLike<void>[] = [];
 
   for (const p of plutoData) {
     const lat = parseFloat(p.latitude);
