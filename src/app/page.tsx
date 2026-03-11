@@ -51,7 +51,7 @@ export default function HomePage() {
             priority
           />
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-1">
-            Check Your Address
+            Check Your Building
           </h1>
           <p className="text-sm sm:text-base text-white/80 mb-4 max-w-2xl mx-auto">
             See the truth about any NYC building before you sign.
