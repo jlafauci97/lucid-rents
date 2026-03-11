@@ -41,13 +41,13 @@ export default function HomePage() {
           style={{ backgroundImage: "url('/nyc-skyline.png')" }}
         />
         <div className="absolute inset-0 bg-[#1e3a5f]/50" />
-        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-24 text-center">
+        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-12 sm:pb-16 text-center">
           <Image
             src="/lucid-rents-logo.png"
             alt="Lucid Rents"
-            width={200}
-            height={133}
-            className="mx-auto mb-6 h-[80px] sm:h-[100px] w-auto drop-shadow-lg"
+            width={300}
+            height={200}
+            className="mx-auto mb-4 h-[120px] sm:h-[150px] w-auto drop-shadow-lg"
             priority
           />
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-4">
