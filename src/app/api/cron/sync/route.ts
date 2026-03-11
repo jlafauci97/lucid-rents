@@ -342,8 +342,8 @@ async function linkByBbl(
   const unmatchedBbls = bblSet.filter((bbl) => !bblToBuilding.has(bbl));
   if (unmatchedBbls.length > 0) {
     let created = 0;
-    // Limit to 50 new buildings per sync to stay within Vercel 60s timeout
-    const toCreate = unmatchedBbls.slice(0, 50);
+    // Limit new buildings per sync to stay within Vercel 60s timeout
+    const toCreate = unmatchedBbls.slice(0, 200);
     for (const bbl of toCreate) {
       try {
         const addr = await getAddressForBbl(supabase, bbl);

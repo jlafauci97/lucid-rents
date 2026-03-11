@@ -1,0 +1,370 @@
+#!/usr/bin/env node
+
+/**
+ * Backfill missing buildings from unlinked violation data.
+ *
+ * Finds all distinct BBLs in dob_violations and hpd_violations that have no
+ * matching building, creates the building via the NYC geocoder, then links
+ * the violations.
+ *
+ * Usage:
+ *   node scripts/backfill-buildings.mjs                 # default batch of 500
+ *   node scripts/backfill-buildings.mjs --limit=2000    # bigger batch
+ *   node scripts/backfill-buildings.mjs --source=dob    # only DOB
+ *   node scripts/backfill-buildings.mjs --source=hpd    # only HPD
+ *   node scripts/backfill-buildings.mjs --link-only      # skip creation, just link
+ */
+
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import { createClient } from "@supabase/supabase-js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const envPath = path.join(__dirname, "..", ".env.local");
+const envText = fs.readFileSync(envPath, "utf8");
+const env = {};
+for (const line of envText.split("\n")) {
+  const m = line.match(/^([^#=]+)=(.*)$/);
+  if (m) env[m[1].trim()] = m[2].trim().replace(/^"|"$/g, "").replace(/\\n/g, "");
+}
+
+const SUPABASE_URL = env.NEXT_PUBLIC_SUPABASE_URL;
+const SERVICE_KEY = env.SUPABASE_SERVICE_ROLE_KEY;
+const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
+
+const args = Object.fromEntries(
+  process.argv.slice(2).filter((a) => a.startsWith("--")).map((a) => {
+    const [k, v] = a.slice(2).split("=");
+    return [k, v || "true"];
+  })
+);
+const LIMIT = parseInt(args.limit || "500", 10);
+const SOURCE = args.source || "all"; // dob, hpd, all
+const LINK_ONLY = args["link-only"] === "true";
+const CONCURRENCY = 15;
+
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+function generateSlug(fullAddress) {
+  return fullAddress
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+// ── Step 1: Find distinct unlinked BBLs ──────────────────────────────────────
+async function getUnlinkedBbls(table, limit) {
+  console.log(`Querying distinct unlinked BBLs from ${table}...`);
+
+  // Get a sample of unlinked records to extract unique BBLs
+  // We fetch more records than the limit to get enough unique BBLs
+  const fetchLimit = Math.min(limit * 20, 100000);
+  const { data, error } = await supabase
+    .from(table)
+    .select("bbl")
+    .is("building_id", null)
+    .not("bbl", "is", null)
+    .limit(fetchLimit);
+
+  if (error) {
+    console.error(`Error querying ${table}:`, error.message);
+    return [];
+  }
+
+  // Extract unique BBLs that are 10 digits (valid format)
+  const bblSet = new Set();
+  for (const row of data) {
+    const bbl = row.bbl?.trim();
+    if (bbl && /^\d+$/.test(bbl)) {
+      // DOB uses 11-digit BBLs (5-digit lot), normalize to 10-digit (4-digit lot)
+      const normalized = bbl.length === 11 ? bbl.substring(0, 10) : bbl;
+      if (normalized.length === 10) {
+        bblSet.add(normalized);
+      }
+    }
+  }
+
+  console.log(`  Found ${bblSet.size} unique valid BBLs from ${data.length} unlinked records`);
+  return [...bblSet];
+}
+
+// ── Step 2: Filter BBLs that already have buildings ──────────────────────────
+async function filterExistingBbls(bbls) {
+  console.log(`Checking which of ${bbls.length} BBLs already have buildings...`);
+
+  const existing = new Set();
+  // Check in batches of 100
+  for (let i = 0; i < bbls.length; i += 100) {
+    const batch = bbls.slice(i, i + 100);
+    const { data, error } = await supabase
+      .from("buildings")
+      .select("bbl")
+      .in("bbl", batch);
+
+    if (error) {
+      console.error("Error checking buildings:", error.message);
+      continue;
+    }
+    for (const row of data) existing.add(row.bbl);
+  }
+
+  const missing = bbls.filter((b) => !existing.has(b));
+  console.log(`  ${existing.size} already exist, ${missing.length} need creation`);
+  return missing;
+}
+
+// ── Step 3: Geocode BBL to get address ───────────────────────────────────────
+async function geocodeBbl(bbl) {
+  // First try to get address from existing violation data
+  const tables = ["hpd_violations", "dob_violations", "bedbug_reports", "evictions"];
+
+  for (const table of tables) {
+    const cols =
+      table === "evictions"
+        ? "eviction_address,borough"
+        : "house_number,street_name,borough,zip_code";
+
+    const { data } = await supabase
+      .from(table)
+      .select(cols)
+      .eq("bbl", bbl)
+      .not(table === "evictions" ? "eviction_address" : "house_number", "is", null)
+      .limit(1);
+
+    if (data?.length > 0) {
+      const row = data[0];
+      if (table === "evictions" && row.eviction_address) {
+        // Parse eviction address
+        const parts = row.eviction_address.split(",");
+        return {
+          house_number: parts[0]?.trim().split(" ")[0] || "",
+          street_name: parts[0]?.trim().split(" ").slice(1).join(" ") || "",
+          borough: row.borough || "Manhattan",
+          zip_code: parts[2]?.trim() || "",
+          full_address: row.eviction_address,
+        };
+      }
+      if (row.house_number && row.street_name) {
+        const borough = row.borough || "Manhattan";
+        const zip = row.zip_code || "";
+        const street = row.street_name.replace(/\s+/g, " ").trim();
+        return {
+          house_number: row.house_number.trim(),
+          street_name: street,
+          borough,
+          zip_code: zip,
+          full_address: `${row.house_number.trim()} ${street}, ${borough}, NY, ${zip}`.replace(/, ,/g, ","),
+        };
+      }
+    }
+  }
+
+  // Fallback: use NYC geocoder with BBL
+  try {
+    const boro = bbl[0];
+    const block = bbl.substring(1, 6);
+    const lot = bbl.substring(6, 10);
+    const resp = await fetch(
+      `https://geosearch.planninglabs.nyc/v2/search?text=${boro}/${block}/${lot}`
+    );
+    if (resp.ok) {
+      const geo = await resp.json();
+      if (geo.features?.length > 0) {
+        const p = geo.features[0].properties;
+        return {
+          house_number: p.housenumber || "",
+          street_name: p.street || "",
+          borough: p.borough || "",
+          zip_code: p.postalcode || "",
+          full_address: `${p.housenumber || ""} ${p.street || ""}, ${p.borough || ""}, NY, ${p.postalcode || ""}`.trim(),
+        };
+      }
+    }
+  } catch {}
+
+  return null;
+}
+
+// ── Step 4: Create buildings ─────────────────────────────────────────────────
+async function createBuildings(bbls) {
+  console.log(`\nCreating ${bbls.length} buildings...\n`);
+  let created = 0;
+  let failed = 0;
+
+  for (let i = 0; i < bbls.length; i++) {
+    const bbl = bbls[i];
+    const addr = await geocodeBbl(bbl);
+
+    if (!addr || !addr.full_address || addr.full_address.length < 5) {
+      failed++;
+      if (i % 50 === 0) process.stdout.write(`  [${i + 1}/${bbls.length}] skipped (no address for ${bbl})\n`);
+      continue;
+    }
+
+    const slug = generateSlug(addr.full_address);
+    const { error } = await supabase.from("buildings").upsert(
+      {
+        bbl,
+        borough: addr.borough,
+        house_number: addr.house_number || null,
+        street_name: addr.street_name,
+        zip_code: addr.zip_code,
+        full_address: addr.full_address,
+        slug,
+      },
+      { onConflict: "bbl" }
+    );
+
+    if (error) {
+      failed++;
+      if (failed <= 5) console.log(`  Error creating ${bbl}: ${error.message}`);
+    } else {
+      created++;
+    }
+
+    if ((i + 1) % 100 === 0) {
+      console.log(`  Progress: ${i + 1}/${bbls.length} (${created} created, ${failed} failed)`);
+    }
+
+    // Small delay to not overwhelm Supabase
+    if ((i + 1) % 20 === 0) await sleep(100);
+  }
+
+  console.log(`\nCreation complete: ${created} created, ${failed} failed`);
+  return created;
+}
+
+// ── Step 5: Link violations to buildings ─────────────────────────────────────
+async function linkViolations(table) {
+  console.log(`\nLinking unlinked ${table} records to buildings...`);
+
+  let linked = 0;
+  let batch = 0;
+
+  while (true) {
+    batch++;
+    // Get a batch of unlinked records with valid BBLs
+    const { data: unlinked, error } = await supabase
+      .from(table)
+      .select("id, bbl")
+      .is("building_id", null)
+      .not("bbl", "is", null)
+      .limit(5000);
+
+    if (error) {
+      console.error(`  Error fetching unlinked ${table}:`, error.message);
+      break;
+    }
+    if (!unlinked?.length) {
+      console.log(`  No more unlinked records in ${table}`);
+      break;
+    }
+
+    // Get unique BBLs (normalize 11-digit to 10-digit) and look up building IDs
+    const rawBbls = [...new Set(unlinked.map((r) => r.bbl).filter(Boolean))];
+    const normalizedBbls = [...new Set(rawBbls.map((b) => (b.length === 11 ? b.substring(0, 10) : b)))];
+    const bblToBuilding = new Map();
+
+    for (let i = 0; i < normalizedBbls.length; i += 100) {
+      const bblBatch = normalizedBbls.slice(i, i + 100);
+      const { data: buildings } = await supabase
+        .from("buildings")
+        .select("id, bbl")
+        .in("bbl", bblBatch);
+
+      if (buildings) {
+        for (const b of buildings) bblToBuilding.set(b.bbl, b.id);
+      }
+    }
+
+    // Update records - match using normalized BBL
+    const updates = unlinked
+      .filter((r) => {
+        const norm = r.bbl?.length === 11 ? r.bbl.substring(0, 10) : r.bbl;
+        return bblToBuilding.has(norm);
+      })
+      .map((r) => {
+        const norm = r.bbl.length === 11 ? r.bbl.substring(0, 10) : r.bbl;
+        return { id: r.id, building_id: bblToBuilding.get(norm) };
+      });
+
+    if (updates.length === 0) {
+      console.log(`  Batch ${batch}: no matchable records (${unlinked.length} unlinked but no buildings found)`);
+      break;
+    }
+
+    // Upsert in chunks of 500
+    for (let i = 0; i < updates.length; i += 500) {
+      const chunk = updates.slice(i, i + 500);
+      const { error: upErr } = await supabase
+        .from(table)
+        .upsert(chunk, { onConflict: "id" });
+
+      if (upErr) {
+        console.error(`  Link error: ${upErr.message}`);
+      } else {
+        linked += chunk.length;
+      }
+    }
+
+    console.log(`  Batch ${batch}: linked ${updates.length} of ${unlinked.length} (total: ${linked})`);
+
+    if (unlinked.length < 5000) break; // last page
+  }
+
+  console.log(`  Total linked in ${table}: ${linked}`);
+  return linked;
+}
+
+// ── Main ─────────────────────────────────────────────────────────────────────
+async function main() {
+  console.log(`Backfill buildings — limit=${LIMIT}, source=${SOURCE}, linkOnly=${LINK_ONLY}\n`);
+
+  if (!LINK_ONLY) {
+    // Collect unlinked BBLs from each source
+    let allBbls = new Set();
+
+    if (SOURCE === "all" || SOURCE === "dob") {
+      const bbls = await getUnlinkedBbls("dob_violations", LIMIT);
+      bbls.forEach((b) => allBbls.add(b));
+    }
+    if (SOURCE === "all" || SOURCE === "hpd") {
+      const bbls = await getUnlinkedBbls("hpd_violations", LIMIT);
+      bbls.forEach((b) => allBbls.add(b));
+    }
+
+    const uniqueBbls = [...allBbls].slice(0, LIMIT);
+    console.log(`\nTotal unique BBLs to process: ${uniqueBbls.length}`);
+
+    // Filter out BBLs that already have buildings
+    const missingBbls = await filterExistingBbls(uniqueBbls);
+
+    if (missingBbls.length > 0) {
+      await createBuildings(missingBbls);
+    } else {
+      console.log("\nAll BBLs already have buildings. Moving to linking...");
+    }
+  }
+
+  // Now link all unlinked violations
+  const tables = [];
+  if (SOURCE === "all" || SOURCE === "dob") tables.push("dob_violations");
+  if (SOURCE === "all" || SOURCE === "hpd") tables.push("hpd_violations");
+  if (SOURCE === "all") tables.push("bedbug_reports", "evictions");
+
+  let totalLinked = 0;
+  for (const table of tables) {
+    totalLinked += await linkViolations(table);
+  }
+
+  console.log(`\nDone! Total violations linked: ${totalLinked}`);
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
