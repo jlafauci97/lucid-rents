@@ -59,6 +59,10 @@
     {
       "path": "/api/cron/sync-transit",
       "schedule": "0 9 1 * *"
+    },
+    {
+      "path": "/api/cron/sync-schools",
+      "schedule": "30 9 1 * *"
     }
   ]
 }

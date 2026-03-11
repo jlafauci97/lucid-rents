@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { MonitorButton } from "@/components/building/MonitorButton";
 import { NearbyCrimeSummary } from "@/components/crime/NearbyCrimeSummary";
 import { NearbyTransit } from "@/components/transit/NearbyTransit";
+import { NearbySchools } from "@/components/schools/NearbySchools";
 import { RentStabilizationCard } from "@/components/building/RentStabilizationCard";
 import { EnergyScoreCard } from "@/components/building/EnergyScoreCard";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
@@ -347,6 +348,14 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
             {/* Nearby Transit */}
             {building.latitude && building.longitude && (
               <NearbyTransit
+                latitude={building.latitude}
+                longitude={building.longitude}
+              />
+            )}
+
+            {/* Nearby Schools & Colleges */}
+            {building.latitude && building.longitude && (
+              <NearbySchools
                 latitude={building.latitude}
                 longitude={building.longitude}
               />
