@@ -40,7 +40,7 @@ const args = Object.fromEntries(
   })
 );
 const LIMIT = parseInt(args.limit || "500", 10);
-const SOURCE = args.source || "all"; // dob, hpd, all
+const SOURCE = args.source || "all"; // dob, hpd, 311, all
 const LINK_ONLY = args["link-only"] === "true";
 const BBL_PREFIX = args["bbl-prefix"] || ""; // e.g. "1" for Manhattan, "3" for Brooklyn
 const CONCURRENCY = parseInt(args.concurrency || "20", 10);
@@ -395,13 +395,20 @@ async function linkViolations(table) {
   return linked;
 }
 
-// ── Step 6: Link 311 complaints by address ────────────────────────────────────
+// ── Step 6: Link 311 complaints by address (+ create buildings) ───────────────
+
+// Capitalize borough name: "MANHATTAN" -> "Manhattan"
+function titleCase(s) {
+  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+}
+
 async function link311ByAddress() {
   console.log(`\nLinking unlinked complaints_311 by address...`);
 
   const FETCH_LIMIT = 1000;
   const MAX_BATCHES = 500;
   let linked = 0;
+  let created = 0;
   let batch = 0;
 
   while (true) {
@@ -410,7 +417,7 @@ async function link311ByAddress() {
     // Get unlinked 311 records with addresses
     const { data: unlinked, error } = await supabase
       .from("complaints_311")
-      .select("id, incident_address, borough")
+      .select("id, incident_address, borough, latitude, longitude")
       .is("building_id", null)
       .not("incident_address", "is", null)
       .limit(FETCH_LIMIT);
@@ -424,13 +431,15 @@ async function link311ByAddress() {
       break;
     }
 
-    // Extract unique addresses
-    const addrSet = new Map(); // normalized_addr -> [record ids]
+    // Extract unique addresses (normalize whitespace) with borough info
+    const addrSet = new Map(); // normalized_addr -> { ids: [], borough, lat, lng }
     for (const r of unlinked) {
-      const addr = r.incident_address?.trim().toUpperCase();
+      const addr = r.incident_address?.trim().replace(/\s+/g, " ").toUpperCase();
       if (!addr) continue;
-      if (!addrSet.has(addr)) addrSet.set(addr, []);
-      addrSet.get(addr).push(r.id);
+      if (!addrSet.has(addr)) {
+        addrSet.set(addr, { ids: [], borough: r.borough, lat: r.latitude, lng: r.longitude });
+      }
+      addrSet.get(addr).ids.push(r.id);
     }
 
     const uniqueAddrs = [...addrSet.keys()];
@@ -441,13 +450,14 @@ async function link311ByAddress() {
     for (let i = 0; i < uniqueAddrs.length; i += CONCURRENCY) {
       const addrBatch = uniqueAddrs.slice(i, i + CONCURRENCY);
       const results = await Promise.all(
-        addrBatch.map((addr) =>
-          supabase
+        addrBatch.map((addr) => {
+          const pattern = addr.split(" ").filter(Boolean).join("%");
+          return supabase
             .from("buildings")
             .select("id, full_address")
-            .ilike("full_address", `${addr}%`)
-            .limit(1)
-        )
+            .ilike("full_address", `${pattern},%`)
+            .limit(1);
+        })
       );
       for (let j = 0; j < results.length; j++) {
         const { data: buildings } = results[j];
@@ -457,14 +467,62 @@ async function link311ByAddress() {
       }
     }
 
-    console.log(`  Matched ${addrToBuilding.size} of ${uniqueAddrs.length} addresses to buildings`);
+    // Create buildings for unmatched addresses
+    const unmatched = uniqueAddrs.filter((a) => !addrToBuilding.has(a));
+    if (unmatched.length > 0 && !LINK_ONLY) {
+      let batchCreated = 0;
+      for (let i = 0; i < unmatched.length; i += CONCURRENCY) {
+        const createBatch = unmatched.slice(i, i + CONCURRENCY);
+        const results = await Promise.all(
+          createBatch.map(async (addr) => {
+            const info = addrSet.get(addr);
+            const borough = titleCase(info.borough || "");
+            // Parse house number and street from incident_address (e.g. "123 MAIN STREET")
+            const parts = addr.match(/^(\S+)\s+(.+)$/);
+            const houseNum = parts?.[1] || "";
+            const street = parts?.[2] || addr;
+            const fullAddress = `${addr}, ${borough}, NY`;
+            const slug = generateSlug(fullAddress);
+
+            const { error } = await supabase.from("buildings").insert({
+              borough,
+              house_number: houseNum || null,
+              street_name: street,
+              full_address: fullAddress,
+              slug,
+            });
+            if (error) {
+              // Likely duplicate slug — try with lat/lng suffix
+              if (error.message.includes("duplicate")) return { addr, ok: false, dup: true };
+              return { addr, ok: false };
+            }
+            // Fetch the created building ID
+            const { data: newBldg } = await supabase
+              .from("buildings")
+              .select("id")
+              .eq("slug", slug)
+              .limit(1);
+            if (newBldg?.length > 0) {
+              addrToBuilding.set(addr, newBldg[0].id);
+              return { addr, ok: true };
+            }
+            return { addr, ok: false };
+          })
+        );
+        batchCreated += results.filter((r) => r.ok).length;
+      }
+      created += batchCreated;
+      console.log(`  Created ${batchCreated} new buildings, now ${addrToBuilding.size} matched`);
+    } else {
+      console.log(`  Matched ${addrToBuilding.size} of ${uniqueAddrs.length} addresses`);
+    }
 
     // Build update list
     const updates = [];
-    for (const [addr, ids] of addrSet) {
+    for (const [addr, info] of addrSet) {
       const buildingId = addrToBuilding.get(addr);
       if (buildingId) {
-        for (const id of ids) {
+        for (const id of info.ids) {
           updates.push({ id, building_id: buildingId });
         }
       }
@@ -500,7 +558,7 @@ async function link311ByAddress() {
     await sleep(50);
   }
 
-  console.log(`  Total linked in complaints_311: ${linked}`);
+  console.log(`  311 total: ${linked} linked, ${created} buildings created`);
   return linked;
 }
 
