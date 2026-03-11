@@ -587,11 +587,22 @@ async function link311ByAddress() {
     let batchLinked = 0;
     for (let i = 0; i < updates.length; i += 1000) {
       const chunk = updates.slice(i, i + 1000);
-      const { error } = await supabase.from("complaints_311").upsert(chunk, { onConflict: "id" });
-      if (error) {
-        console.error(`  311 link error: ${error.message}`);
-      } else {
-        batchLinked += chunk.length;
+      let retries = 0;
+      while (retries < 3) {
+        const { error } = await supabase.from("complaints_311").upsert(chunk, { onConflict: "id" });
+        if (error) {
+          const msg = error.message || "";
+          if (msg.includes("502") || msg.includes("DOCTYPE") || msg.includes("Bad Gateway") || msg.includes("timeout") || msg.includes("terminated") || msg.includes("fetch failed")) {
+            retries++;
+            console.log(`  311 upsert error (retry ${retries}/3): ${msg.substring(0, 80)}`);
+            await sleep(3000 * retries);
+            continue;
+          }
+          console.error(`  311 link error: ${msg.substring(0, 200)}`);
+        } else {
+          batchLinked += chunk.length;
+        }
+        break;
       }
     }
 
