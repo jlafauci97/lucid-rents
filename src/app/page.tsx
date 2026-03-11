@@ -34,7 +34,7 @@ export default function HomePage() {
     <AdSidebar>
     <div>
       {/* Hero */}
-      <section className="relative text-white overflow-hidden">
+      <section className="relative text-white overflow-x-clip">
         <div className="absolute inset-0 bg-[#0F1D2E]" />
         <div
           className="absolute inset-0 bg-center bg-no-repeat bg-cover opacity-60"
