@@ -310,6 +310,12 @@ async function linkViolations(table) {
 
     if (error) {
       console.error(`  Error fetching unlinked ${table}:`, error.message);
+      if (error.message.includes("timeout") || error.message.includes("fetch failed") || error.message.includes("terminated")) {
+        console.log(`  Retrying in 5s...`);
+        await sleep(5000);
+        batch--;
+        continue;
+      }
       break;
     }
     if (!unlinked?.length) {
@@ -439,6 +445,13 @@ async function link311ByAddress() {
 
     if (error) {
       console.error(`  Error fetching unlinked 311:`, error.message);
+      // Retry on transient errors instead of breaking
+      if (error.message.includes("timeout") || error.message.includes("fetch failed") || error.message.includes("terminated")) {
+        console.log(`  Retrying in 5s...`);
+        await sleep(5000);
+        batch--; // retry same batch
+        continue;
+      }
       break;
     }
     if (!unlinked?.length) {
@@ -616,6 +629,12 @@ async function linkEvictionsByAddress() {
 
     if (error) {
       console.error(`  Error fetching unlinked evictions:`, error.message);
+      if (error.message.includes("timeout") || error.message.includes("fetch failed") || error.message.includes("terminated")) {
+        console.log(`  Retrying in 5s...`);
+        await sleep(5000);
+        batch--;
+        continue;
+      }
       break;
     }
     if (!unlinked?.length) {
