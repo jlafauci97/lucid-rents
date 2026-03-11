@@ -252,16 +252,20 @@ async function createBuildings(bbls) {
   return created;
 }
 
-// ── Step 5: Link violations to buildings ─────────────────────────────────────
+// ── Step 5: Link violations to buildings (high-throughput) ────────────────────
 async function linkViolations(table) {
   console.log(`\nLinking unlinked ${table} records to buildings...`);
 
+  const FETCH_LIMIT = 1000; // Supabase max per query
+  const LOOKUP_BATCH = 200;
+  const UPSERT_CHUNK = 1000;
+  const MAX_BATCHES = 500; // safety cap
   let linked = 0;
   let batch = 0;
 
   while (true) {
     batch++;
-    // Get a batch of unlinked records with valid BBLs
+    // Get a large batch of unlinked records with valid BBLs
     let linkQuery = supabase
       .from(table)
       .select("id, bbl")
@@ -272,7 +276,7 @@ async function linkViolations(table) {
       linkQuery = linkQuery.like("bbl", `${BBL_PREFIX}%`);
     }
 
-    const { data: unlinked, error } = await linkQuery.limit(5000);
+    const { data: unlinked, error } = await linkQuery.limit(FETCH_LIMIT);
 
     if (error) {
       console.error(`  Error fetching unlinked ${table}:`, error.message);
@@ -283,22 +287,32 @@ async function linkViolations(table) {
       break;
     }
 
-    // Get unique BBLs (normalize 11-digit to 10-digit) and look up building IDs
+    // Get unique BBLs (normalize 11-digit to 10-digit) and look up building IDs concurrently
     const rawBbls = [...new Set(unlinked.map((r) => r.bbl).filter(Boolean))];
     const normalizedBbls = [...new Set(rawBbls.map((b) => (b.length === 11 ? b.substring(0, 10) : b)))];
     const bblToBuilding = new Map();
 
-    for (let i = 0; i < normalizedBbls.length; i += 100) {
-      const bblBatch = normalizedBbls.slice(i, i + 100);
-      const { data: buildings } = await supabase
-        .from("buildings")
-        .select("id, bbl")
-        .in("bbl", bblBatch);
+    // Concurrent building lookups in batches of CONCURRENCY
+    const lookupBatches = [];
+    for (let i = 0; i < normalizedBbls.length; i += LOOKUP_BATCH) {
+      lookupBatches.push(normalizedBbls.slice(i, i + LOOKUP_BATCH));
+    }
 
-      if (buildings) {
-        for (const b of buildings) bblToBuilding.set(b.bbl, b.id);
+    for (let i = 0; i < lookupBatches.length; i += CONCURRENCY) {
+      const concurrent = lookupBatches.slice(i, i + CONCURRENCY);
+      const results = await Promise.all(
+        concurrent.map((bblBatch) =>
+          supabase.from("buildings").select("id, bbl").in("bbl", bblBatch)
+        )
+      );
+      for (const { data: buildings } of results) {
+        if (buildings) {
+          for (const b of buildings) bblToBuilding.set(b.bbl, b.id);
+        }
       }
     }
+
+    console.log(`  Batch ${batch}: ${unlinked.length} unlinked, ${normalizedBbls.length} unique BBLs, ${bblToBuilding.size} matched buildings`);
 
     // Update records - match using normalized BBL
     const updates = unlinked
@@ -312,27 +326,38 @@ async function linkViolations(table) {
       });
 
     if (updates.length === 0) {
-      console.log(`  Batch ${batch}: no matchable records (${unlinked.length} unlinked but no buildings found)`);
+      console.log(`  Batch ${batch}: no matchable records`);
       break;
     }
 
-    // Upsert in chunks of 500
-    for (let i = 0; i < updates.length; i += 500) {
-      const chunk = updates.slice(i, i + 500);
-      const { error: upErr } = await supabase
-        .from(table)
-        .upsert(chunk, { onConflict: "id" });
+    // Concurrent upserts in chunks
+    const upsertChunks = [];
+    for (let i = 0; i < updates.length; i += UPSERT_CHUNK) {
+      upsertChunks.push(updates.slice(i, i + UPSERT_CHUNK));
+    }
 
-      if (upErr) {
-        console.error(`  Link error: ${upErr.message}`);
-      } else {
-        linked += chunk.length;
+    let batchLinked = 0;
+    for (let i = 0; i < upsertChunks.length; i += CONCURRENCY) {
+      const concurrent = upsertChunks.slice(i, i + CONCURRENCY);
+      const results = await Promise.all(
+        concurrent.map((chunk) =>
+          supabase.from(table).upsert(chunk, { onConflict: "id" })
+        )
+      );
+      for (let j = 0; j < results.length; j++) {
+        if (results[j].error) {
+          console.error(`  Link error: ${results[j].error.message}`);
+        } else {
+          batchLinked += concurrent[j].length;
+        }
       }
     }
 
-    console.log(`  Batch ${batch}: linked ${updates.length} of ${unlinked.length} (total: ${linked})`);
+    linked += batchLinked;
+    console.log(`  Batch ${batch}: linked ${batchLinked} of ${unlinked.length} (total: ${linked})`);
 
-    if (unlinked.length < 5000) break; // last page
+    if (unlinked.length < FETCH_LIMIT || batch >= MAX_BATCHES) break;
+    await sleep(50);
   }
 
   console.log(`  Total linked in ${table}: ${linked}`);
@@ -352,6 +377,9 @@ async function main() {
   do {
     round++;
     if (LOOP) console.log(`\n========== ROUND ${round} ==========\n`);
+
+    let roundCreated = 0;
+    let roundLinked = 0;
 
     if (!LINK_ONLY) {
       let allBbls = new Set();
@@ -376,7 +404,8 @@ async function main() {
       const missingBbls = await filterExistingBbls(uniqueBbls);
 
       if (missingBbls.length > 0) {
-        totalCreated += await createBuildings(missingBbls);
+        roundCreated = await createBuildings(missingBbls);
+        totalCreated += roundCreated;
       } else {
         console.log("\nAll BBLs already have buildings.");
       }
@@ -389,7 +418,14 @@ async function main() {
     if (SOURCE === "all") tables.push("bedbug_reports", "evictions");
 
     for (const table of tables) {
-      totalLinked += await linkViolations(table);
+      roundLinked += await linkViolations(table);
+    }
+    totalLinked += roundLinked;
+
+    // Exit loop if no progress was made this round
+    if (LOOP && roundCreated === 0 && roundLinked === 0) {
+      console.log("\nNo progress this round — all done.");
+      break;
     }
 
   } while (LOOP);
