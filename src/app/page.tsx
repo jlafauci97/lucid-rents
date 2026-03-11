@@ -41,26 +41,26 @@ export default function HomePage() {
           style={{ backgroundImage: "url('/nyc-skyline.png')" }}
         />
         <div className="absolute inset-0 bg-[#0F1D2E]/50" />
-        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-12 sm:pb-16 text-center">
+        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 sm:pt-4 pb-6 sm:pb-8 text-center">
           <Image
             src="/lucid-rents-logo.png"
             alt="Lucid Rents"
             width={300}
             height={200}
-            className="mx-auto mb-4 h-[120px] sm:h-[150px] w-auto drop-shadow-lg"
+            className="mx-auto mb-2 h-[80px] sm:h-[100px] w-auto drop-shadow-lg"
             priority
           />
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-4">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-2">
             Check Your Address
           </h1>
-          <p className="text-lg sm:text-xl text-white/80 mb-10 max-w-2xl mx-auto">
+          <p className="text-base sm:text-lg text-white/80 mb-5 max-w-2xl mx-auto">
             See the truth about any NYC building before you sign.
             Violations, complaints, tenant reviews, and crime data — all in one place.
           </p>
           <div className="max-w-2xl mx-auto">
             <SearchBar size="hero" placeholder="Enter any NYC address, zip code, or neighborhood..." />
           </div>
-          <p className="text-sm text-white/60 mt-4">
+          <p className="text-sm text-white/60 mt-2">
             Try &ldquo;123 Main Street Brooklyn&rdquo; or &ldquo;10001&rdquo;
           </p>
         </div>
