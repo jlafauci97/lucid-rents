@@ -47,13 +47,13 @@ export default function HomePage() {
             alt="Lucid Rents"
             width={300}
             height={200}
-            className="mx-auto mb-2 h-[80px] sm:h-[100px] w-auto drop-shadow-lg"
+            className="mx-auto mb-1 h-[120px] sm:h-[150px] w-auto drop-shadow-lg"
             priority
           />
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-2">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-1">
             Check Your Address
           </h1>
-          <p className="text-base sm:text-lg text-white/80 mb-5 max-w-2xl mx-auto">
+          <p className="text-sm sm:text-base text-white/80 mb-4 max-w-2xl mx-auto">
             See the truth about any NYC building before you sign.
             Violations, complaints, tenant reviews, and crime data — all in one place.
           </p>
