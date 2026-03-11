@@ -170,7 +170,36 @@ async function geocodeBbl(bbl) {
     }
   }
 
-  // Fallback: use NYC geocoder with BBL
+  // Fallback 1: NYC PLUTO API (handles condo lots well)
+  try {
+    const boro = bbl[0];
+    const block = bbl.substring(1, 6);
+    const lot = bbl.substring(6, 10);
+    const plutoUrl = `https://data.cityofnewyork.us/resource/64uk-42ks.json?$where=borocode='${boro}' AND block='${block}' AND lot='${lot}'&$limit=1`;
+    const plutoResp = await fetch(plutoUrl);
+    if (plutoResp.ok) {
+      const plutoData = await plutoResp.json();
+      if (plutoData.length > 0) {
+        const p = plutoData[0];
+        const BORO_NAMES = { "1": "Manhattan", "2": "Bronx", "3": "Brooklyn", "4": "Queens", "5": "Staten Island" };
+        const borough = BORO_NAMES[boro] || "";
+        const addr = p.address?.trim() || "";
+        const zip = p.zipcode || "";
+        if (addr) {
+          const parts = addr.match(/^(\S+)\s+(.+)$/);
+          return {
+            house_number: parts?.[1] || "",
+            street_name: parts?.[2] || addr,
+            borough,
+            zip_code: zip,
+            full_address: `${addr}, ${borough}, NY, ${zip}`.replace(/, ,/g, ","),
+          };
+        }
+      }
+    }
+  } catch {}
+
+  // Fallback 2: NYC GeoSearch
   try {
     const boro = bbl[0];
     const block = bbl.substring(1, 6);
