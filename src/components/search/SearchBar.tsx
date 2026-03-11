@@ -45,9 +45,15 @@ export function SearchBar({
     setNeighborhoodResults(neighborhoods);
     if (neighborhoods.length > 0) setOpen(true);
 
-    // API building search
+    // API building search — if neighborhoods matched, fetch buildings by zip;
+    // otherwise do a normal text search
     setLoading(true);
-    fetch(`/api/search?q=${encodeURIComponent(debouncedQuery)}&limit=3`)
+    const url =
+      neighborhoods.length > 0
+        ? `/api/search?zip=${neighborhoods[0].zipCode}&limit=5`
+        : `/api/search?q=${encodeURIComponent(debouncedQuery)}&limit=5`;
+
+    fetch(url)
       .then((res) => res.json())
       .then((data) => {
         setResults(data.buildings || []);

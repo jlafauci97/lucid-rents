@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const searchSchema = z.object({
-  q: z.string().min(1).max(200),
+  q: z.string().max(200).optional().default(""),
   borough: z
     .enum(["Manhattan", "Brooklyn", "Queens", "Bronx", "Staten Island"])
     .optional(),
@@ -11,6 +11,8 @@ export const searchSchema = z.object({
     .optional(),
   page: z.coerce.number().min(1).default(1),
   limit: z.coerce.number().min(1).max(50).default(20),
+}).refine((data) => data.q || data.zip, {
+  message: "Either q or zip must be provided",
 });
 
 export const categoryRatingSchema = z.object({

@@ -21,10 +21,12 @@ export async function GET(req: NextRequest) {
   let query = supabase
     .from("buildings")
     .select("*", { count: "exact" })
-    .textSearch("search_vector", q, { type: "websearch", config: "english" })
     .range(offset, offset + limit - 1)
     .order("review_count", { ascending: false });
 
+  if (q) {
+    query = query.textSearch("search_vector", q, { type: "websearch", config: "english" });
+  }
   if (borough) {
     query = query.eq("borough", borough);
   }
