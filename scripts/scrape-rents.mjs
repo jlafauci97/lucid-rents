@@ -24,7 +24,7 @@ const envText = fs.readFileSync(envPath, "utf8");
 const env = {};
 for (const line of envText.split("\n")) {
   const m = line.match(/^([^#=]+)=(.*)$/);
-  if (m) env[m[1].trim()] = m[2].trim().replace(/\n$/, "");
+  if (m) env[m[1].trim()] = m[2].trim().replace(/^"|"$/g, "").replace(/\\n/g, "");
 }
 const SUPABASE_URL = env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_KEY = env.SUPABASE_SERVICE_ROLE_KEY;
@@ -187,7 +187,7 @@ async function scrapeStreetEasy(building) {
 
   console.log(`  StreetEasy: ${url}`);
   const html = await fetchWithRetry(url);
-  if (!html) return [];
+  if (!html) return { rents: [], amenities: [] };
 
   const $ = cheerio.load(html);
   const rentData = new Map(); // bedrooms → { prices: [] }
@@ -323,7 +323,7 @@ async function scrapeZillow(building) {
 
   console.log(`  Zillow: ${url}`);
   const html = await fetchWithRetry(url);
-  if (!html) return [];
+  if (!html) return { rents: [], amenities: [] };
 
   const $ = cheerio.load(html);
   const rentData = new Map();
