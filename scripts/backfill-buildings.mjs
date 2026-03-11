@@ -42,7 +42,8 @@ const args = Object.fromEntries(
 const LIMIT = parseInt(args.limit || "500", 10);
 const SOURCE = args.source || "all"; // dob, hpd, all
 const LINK_ONLY = args["link-only"] === "true";
-const CONCURRENCY = 15;
+const BBL_PREFIX = args["bbl-prefix"] || ""; // e.g. "1" for Manhattan, "3" for Brooklyn
+const CONCURRENCY = parseInt(args.concurrency || "20", 10);
 
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
@@ -58,17 +59,23 @@ function generateSlug(fullAddress) {
 
 // ── Step 1: Find distinct unlinked BBLs ──────────────────────────────────────
 async function getUnlinkedBbls(table, limit) {
-  console.log(`Querying distinct unlinked BBLs from ${table}...`);
+  const prefix = BBL_PREFIX ? ` (prefix=${BBL_PREFIX})` : "";
+  console.log(`Querying distinct unlinked BBLs from ${table}${prefix}...`);
 
   // Get a sample of unlinked records to extract unique BBLs
-  // We fetch more records than the limit to get enough unique BBLs
   const fetchLimit = Math.min(limit * 20, 100000);
-  const { data, error } = await supabase
+  let query = supabase
     .from(table)
     .select("bbl")
     .is("building_id", null)
-    .not("bbl", "is", null)
-    .limit(fetchLimit);
+    .not("bbl", "is", null);
+
+  // Filter by BBL prefix (borough) if specified
+  if (BBL_PREFIX) {
+    query = query.like("bbl", `${BBL_PREFIX}%`);
+  }
+
+  const { data, error } = await query.limit(fetchLimit);
 
   if (error) {
     console.error(`Error querying ${table}:`, error.message);
@@ -189,49 +196,56 @@ async function geocodeBbl(bbl) {
   return null;
 }
 
-// ── Step 4: Create buildings ─────────────────────────────────────────────────
+// ── Step 4: Create buildings (concurrent) ────────────────────────────────────
 async function createBuildings(bbls) {
-  console.log(`\nCreating ${bbls.length} buildings...\n`);
+  console.log(`\nCreating ${bbls.length} buildings (concurrency=${CONCURRENCY})...\n`);
   let created = 0;
   let failed = 0;
+  let processed = 0;
 
-  for (let i = 0; i < bbls.length; i++) {
-    const bbl = bbls[i];
-    const addr = await geocodeBbl(bbl);
+  // Process BBLs in concurrent batches
+  for (let i = 0; i < bbls.length; i += CONCURRENCY) {
+    const batch = bbls.slice(i, i + CONCURRENCY);
 
-    if (!addr || !addr.full_address || addr.full_address.length < 5) {
-      failed++;
-      if (i % 50 === 0) process.stdout.write(`  [${i + 1}/${bbls.length}] skipped (no address for ${bbl})\n`);
-      continue;
-    }
-
-    const slug = generateSlug(addr.full_address);
-    const { error } = await supabase.from("buildings").upsert(
-      {
-        bbl,
-        borough: addr.borough,
-        house_number: addr.house_number || null,
-        street_name: addr.street_name,
-        zip_code: addr.zip_code,
-        full_address: addr.full_address,
-        slug,
-      },
-      { onConflict: "bbl" }
+    const results = await Promise.all(
+      batch.map(async (bbl) => {
+        const addr = await geocodeBbl(bbl);
+        if (!addr || !addr.full_address || addr.full_address.length < 5) {
+          return { bbl, ok: false };
+        }
+        const slug = generateSlug(addr.full_address);
+        const { error } = await supabase.from("buildings").upsert(
+          {
+            bbl,
+            borough: addr.borough,
+            house_number: addr.house_number || null,
+            street_name: addr.street_name,
+            zip_code: addr.zip_code,
+            full_address: addr.full_address,
+            slug,
+          },
+          { onConflict: "bbl" }
+        );
+        if (error) {
+          if (failed < 5) console.log(`  Error creating ${bbl}: ${error.message}`);
+          return { bbl, ok: false };
+        }
+        return { bbl, ok: true };
+      })
     );
 
-    if (error) {
-      failed++;
-      if (failed <= 5) console.log(`  Error creating ${bbl}: ${error.message}`);
-    } else {
-      created++;
+    for (const r of results) {
+      if (r.ok) created++;
+      else failed++;
+    }
+    processed += batch.length;
+
+    if (processed % 100 < CONCURRENCY) {
+      console.log(`  Progress: ${processed}/${bbls.length} (${created} created, ${failed} failed)`);
     }
 
-    if ((i + 1) % 100 === 0) {
-      console.log(`  Progress: ${i + 1}/${bbls.length} (${created} created, ${failed} failed)`);
-    }
-
-    // Small delay to not overwhelm Supabase
-    if ((i + 1) % 20 === 0) await sleep(100);
+    // Small delay between batches
+    await sleep(50);
   }
 
   console.log(`\nCreation complete: ${created} created, ${failed} failed`);
@@ -248,12 +262,17 @@ async function linkViolations(table) {
   while (true) {
     batch++;
     // Get a batch of unlinked records with valid BBLs
-    const { data: unlinked, error } = await supabase
+    let linkQuery = supabase
       .from(table)
       .select("id, bbl")
       .is("building_id", null)
-      .not("bbl", "is", null)
-      .limit(5000);
+      .not("bbl", "is", null);
+
+    if (BBL_PREFIX) {
+      linkQuery = linkQuery.like("bbl", `${BBL_PREFIX}%`);
+    }
+
+    const { data: unlinked, error } = await linkQuery.limit(5000);
 
     if (error) {
       console.error(`  Error fetching unlinked ${table}:`, error.message);
@@ -322,46 +341,72 @@ async function linkViolations(table) {
 
 // ── Main ─────────────────────────────────────────────────────────────────────
 async function main() {
-  console.log(`Backfill buildings — limit=${LIMIT}, source=${SOURCE}, linkOnly=${LINK_ONLY}\n`);
+  const LOOP = args.loop === "true";
+  const prefix = BBL_PREFIX ? `, bblPrefix=${BBL_PREFIX}` : "";
+  console.log(`Backfill buildings — limit=${LIMIT}, source=${SOURCE}, linkOnly=${LINK_ONLY}${prefix}, loop=${LOOP}\n`);
 
-  if (!LINK_ONLY) {
-    // Collect unlinked BBLs from each source
-    let allBbls = new Set();
-
-    if (SOURCE === "all" || SOURCE === "dob") {
-      const bbls = await getUnlinkedBbls("dob_violations", LIMIT);
-      bbls.forEach((b) => allBbls.add(b));
-    }
-    if (SOURCE === "all" || SOURCE === "hpd") {
-      const bbls = await getUnlinkedBbls("hpd_violations", LIMIT);
-      bbls.forEach((b) => allBbls.add(b));
-    }
-
-    const uniqueBbls = [...allBbls].slice(0, LIMIT);
-    console.log(`\nTotal unique BBLs to process: ${uniqueBbls.length}`);
-
-    // Filter out BBLs that already have buildings
-    const missingBbls = await filterExistingBbls(uniqueBbls);
-
-    if (missingBbls.length > 0) {
-      await createBuildings(missingBbls);
-    } else {
-      console.log("\nAll BBLs already have buildings. Moving to linking...");
-    }
-  }
-
-  // Now link all unlinked violations
-  const tables = [];
-  if (SOURCE === "all" || SOURCE === "dob") tables.push("dob_violations");
-  if (SOURCE === "all" || SOURCE === "hpd") tables.push("hpd_violations");
-  if (SOURCE === "all") tables.push("bedbug_reports", "evictions");
-
+  let round = 0;
+  let totalCreated = 0;
   let totalLinked = 0;
-  for (const table of tables) {
-    totalLinked += await linkViolations(table);
+
+  do {
+    round++;
+    if (LOOP) console.log(`\n========== ROUND ${round} ==========\n`);
+
+    if (!LINK_ONLY) {
+      let allBbls = new Set();
+
+      if (SOURCE === "all" || SOURCE === "dob") {
+        const bbls = await getUnlinkedBbls("dob_violations", LIMIT);
+        bbls.forEach((b) => allBbls.add(b));
+      }
+      if (SOURCE === "all" || SOURCE === "hpd") {
+        const bbls = await getUnlinkedBbls("hpd_violations", LIMIT);
+        bbls.forEach((b) => allBbls.add(b));
+      }
+
+      const uniqueBbls = [...allBbls].slice(0, LIMIT);
+      console.log(`\nTotal unique BBLs to process: ${uniqueBbls.length}`);
+
+      if (uniqueBbls.length === 0) {
+        console.log("No more unlinked BBLs found. Moving to final linking pass...");
+        break;
+      }
+
+      const missingBbls = await filterExistingBbls(uniqueBbls);
+
+      if (missingBbls.length > 0) {
+        totalCreated += await createBuildings(missingBbls);
+      } else {
+        console.log("\nAll BBLs already have buildings.");
+      }
+    }
+
+    // Link violations
+    const tables = [];
+    if (SOURCE === "all" || SOURCE === "dob") tables.push("dob_violations");
+    if (SOURCE === "all" || SOURCE === "hpd") tables.push("hpd_violations");
+    if (SOURCE === "all") tables.push("bedbug_reports", "evictions");
+
+    for (const table of tables) {
+      totalLinked += await linkViolations(table);
+    }
+
+  } while (LOOP);
+
+  // Final linking pass
+  if (LOOP) {
+    console.log("\n========== FINAL LINK PASS ==========\n");
+    const tables = [];
+    if (SOURCE === "all" || SOURCE === "dob") tables.push("dob_violations");
+    if (SOURCE === "all" || SOURCE === "hpd") tables.push("hpd_violations");
+    if (SOURCE === "all") tables.push("bedbug_reports", "evictions");
+    for (const table of tables) {
+      totalLinked += await linkViolations(table);
+    }
   }
 
-  console.log(`\nDone! Total violations linked: ${totalLinked}`);
+  console.log(`\nDone! Total created: ${totalCreated}, total linked: ${totalLinked}`);
 }
 
 main().catch((err) => {
