@@ -12,6 +12,8 @@ import { MonitorButton } from "@/components/building/MonitorButton";
 import { NearbyCrimeSummary } from "@/components/crime/NearbyCrimeSummary";
 import { NearbyTransit } from "@/components/transit/NearbyTransit";
 import { NearbySchools } from "@/components/schools/NearbySchools";
+import { NearbyRecreation } from "@/components/building/NearbyRecreation";
+import { BuildingLocationMap } from "@/components/building/BuildingLocationMap";
 import { RentStabilizationCard } from "@/components/building/RentStabilizationCard";
 import { EnergyScoreCard } from "@/components/building/EnergyScoreCard";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
@@ -262,6 +264,15 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
 
             {/* Violations & Complaints Tabs */}
             <IssuesTabs violations={violations} complaints={complaints} litigations={litigations} dobViolations={dobViolations} bedbugs={bedbugs} evictions={evictions} permits={permits} />
+
+            {/* Building Location Map */}
+            {building.latitude && building.longitude && (
+              <BuildingLocationMap
+                latitude={building.latitude}
+                longitude={building.longitude}
+                address={building.full_address}
+              />
+            )}
           </div>
 
           {/* Sidebar */}
@@ -356,6 +367,14 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
             {/* Nearby Schools & Colleges */}
             {building.latitude && building.longitude && (
               <NearbySchools
+                latitude={building.latitude}
+                longitude={building.longitude}
+              />
+            )}
+
+            {/* Nearby Recreation */}
+            {building.latitude && building.longitude && (
+              <NearbyRecreation
                 latitude={building.latitude}
                 longitude={building.longitude}
               />
