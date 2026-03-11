@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { SearchBar } from "@/components/search/SearchBar";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { LiveStats } from "@/components/home/LiveStats";
@@ -35,23 +36,31 @@ export default function HomePage() {
     <div>
       {/* Hero */}
       <section className="relative text-white overflow-x-clip">
-        <div className="absolute inset-0 bg-[#0F1D2E]" />
         <div
-          className="absolute inset-0 bg-center bg-no-repeat bg-cover opacity-60"
+          className="absolute inset-0 bg-center bg-no-repeat bg-cover"
           style={{ backgroundImage: "url('/nyc-skyline.png')" }}
         />
+        <div className="absolute inset-0 bg-[#1e3a5f]/50" />
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-24 text-center">
+          <Image
+            src="/lucid-rents-logo.png"
+            alt="Lucid Rents"
+            width={200}
+            height={133}
+            className="mx-auto mb-6 h-[80px] sm:h-[100px] w-auto drop-shadow-lg"
+            priority
+          />
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-4">
             Check Your Address
           </h1>
-          <p className="text-lg sm:text-xl text-[#0F1D2E] mb-10 max-w-2xl mx-auto">
+          <p className="text-lg sm:text-xl text-white/80 mb-10 max-w-2xl mx-auto">
             See the truth about any NYC building before you sign.
             Violations, complaints, tenant reviews, and crime data — all in one place.
           </p>
           <div className="max-w-2xl mx-auto">
             <SearchBar size="hero" placeholder="Enter any NYC address, zip code, or neighborhood..." />
           </div>
-          <p className="text-sm text-[#0F1D2E] mt-4">
+          <p className="text-sm text-white/60 mt-4">
             Try &ldquo;123 Main Street Brooklyn&rdquo; or &ldquo;10001&rdquo;
           </p>
         </div>
