@@ -305,13 +305,16 @@ async function linkByBbl(
   let linked = 0;
   const affectedBuildingIds = new Set<string>();
 
-  // Link ALL unlinked records with BBLs — not just from this sync run.
-  // The previous imported_at filter missed records when upsert updated existing rows.
+  // Link unlinked records from the last 120 days — wide enough to catch stragglers
+  // but scoped enough to avoid full table scans that timeout on Vercel (60s).
+  const linkCutoff = new Date();
+  linkCutoff.setDate(linkCutoff.getDate() - 120);
   const { data: unlinked } = await supabase
     .from(table)
     .select("id, bbl")
     .is("building_id", null)
     .not("bbl", "is", null)
+    .gte("imported_at", linkCutoff.toISOString())
     .limit(50000);
 
   if (!unlinked || unlinked.length === 0) return { linked, affectedBuildingIds };
