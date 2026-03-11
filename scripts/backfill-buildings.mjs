@@ -366,18 +366,20 @@ async function linkViolations(table) {
     }
 
     let batchLinked = 0;
-    for (let i = 0; i < upsertChunks.length; i += CONCURRENCY) {
-      const concurrent = upsertChunks.slice(i, i + CONCURRENCY);
+    // Use individual .update() calls instead of .upsert() to avoid NOT NULL constraint errors
+    // (upsert tries to INSERT which fails on tables with required columns like litigation_id)
+    for (let i = 0; i < updates.length; i += CONCURRENCY) {
+      const batch = updates.slice(i, i + CONCURRENCY);
       const results = await Promise.all(
-        concurrent.map((chunk) =>
-          supabase.from(table).upsert(chunk, { onConflict: "id" })
+        batch.map((u) =>
+          supabase.from(table).update({ building_id: u.building_id }).eq("id", u.id)
         )
       );
       for (let j = 0; j < results.length; j++) {
         if (results[j].error) {
           console.error(`  Link error: ${results[j].error.message}`);
         } else {
-          batchLinked += concurrent[j].length;
+          batchLinked++;
         }
       }
     }
@@ -390,6 +392,115 @@ async function linkViolations(table) {
   }
 
   console.log(`  Total linked in ${table}: ${linked}`);
+  return linked;
+}
+
+// ── Step 6: Link 311 complaints by address ────────────────────────────────────
+async function link311ByAddress() {
+  console.log(`\nLinking unlinked complaints_311 by address...`);
+
+  const FETCH_LIMIT = 1000;
+  const MAX_BATCHES = 500;
+  let linked = 0;
+  let batch = 0;
+
+  while (true) {
+    batch++;
+
+    // Get unlinked 311 records with addresses
+    const { data: unlinked, error } = await supabase
+      .from("complaints_311")
+      .select("id, incident_address, borough")
+      .is("building_id", null)
+      .not("incident_address", "is", null)
+      .limit(FETCH_LIMIT);
+
+    if (error) {
+      console.error(`  Error fetching unlinked 311:`, error.message);
+      break;
+    }
+    if (!unlinked?.length) {
+      console.log(`  No more unlinked 311 records`);
+      break;
+    }
+
+    // Extract unique addresses
+    const addrSet = new Map(); // normalized_addr -> [record ids]
+    for (const r of unlinked) {
+      const addr = r.incident_address?.trim().toUpperCase();
+      if (!addr) continue;
+      if (!addrSet.has(addr)) addrSet.set(addr, []);
+      addrSet.get(addr).push(r.id);
+    }
+
+    const uniqueAddrs = [...addrSet.keys()];
+    console.log(`  Batch ${batch}: ${unlinked.length} unlinked, ${uniqueAddrs.length} unique addresses`);
+
+    // Look up buildings by full_address (concurrent batches)
+    const addrToBuilding = new Map();
+    for (let i = 0; i < uniqueAddrs.length; i += CONCURRENCY) {
+      const addrBatch = uniqueAddrs.slice(i, i + CONCURRENCY);
+      const results = await Promise.all(
+        addrBatch.map((addr) =>
+          supabase
+            .from("buildings")
+            .select("id, full_address")
+            .ilike("full_address", `${addr}%`)
+            .limit(1)
+        )
+      );
+      for (let j = 0; j < results.length; j++) {
+        const { data: buildings } = results[j];
+        if (buildings?.length > 0) {
+          addrToBuilding.set(addrBatch[j], buildings[0].id);
+        }
+      }
+    }
+
+    console.log(`  Matched ${addrToBuilding.size} of ${uniqueAddrs.length} addresses to buildings`);
+
+    // Build update list
+    const updates = [];
+    for (const [addr, ids] of addrSet) {
+      const buildingId = addrToBuilding.get(addr);
+      if (buildingId) {
+        for (const id of ids) {
+          updates.push({ id, building_id: buildingId });
+        }
+      }
+    }
+
+    if (updates.length === 0) {
+      console.log(`  Batch ${batch}: no matchable records`);
+      break;
+    }
+
+    // Concurrent updates
+    let batchLinked = 0;
+    for (let i = 0; i < updates.length; i += CONCURRENCY) {
+      const updateBatch = updates.slice(i, i + CONCURRENCY);
+      const results = await Promise.all(
+        updateBatch.map((u) =>
+          supabase.from("complaints_311").update({ building_id: u.building_id }).eq("id", u.id)
+        )
+      );
+      for (const r of results) {
+        if (r.error) {
+          console.error(`  311 link error: ${r.error.message}`);
+        } else {
+          batchLinked++;
+        }
+      }
+    }
+
+    linked += batchLinked;
+    console.log(`  Batch ${batch}: linked ${batchLinked} (total: ${linked})`);
+
+    if (unlinked.length < FETCH_LIMIT || batch >= MAX_BATCHES) break;
+    await sleep(50);
+  }
+
+  console.log(`  Total linked in complaints_311: ${linked}`);
   return linked;
 }
 
@@ -440,14 +551,19 @@ async function main() {
       }
     }
 
-    // Link violations
+    // Link violations (BBL-based)
     const tables = [];
     if (SOURCE === "all" || SOURCE === "dob") tables.push("dob_violations");
     if (SOURCE === "all" || SOURCE === "hpd") tables.push("hpd_violations");
-    if (SOURCE === "all") tables.push("bedbug_reports", "evictions");
+    if (SOURCE === "all") tables.push("hpd_litigations", "bedbug_reports", "evictions");
 
     for (const table of tables) {
       roundLinked += await linkViolations(table);
+    }
+
+    // Link 311 complaints by address (not BBL)
+    if (SOURCE === "all" || SOURCE === "311") {
+      roundLinked += await link311ByAddress();
     }
     totalLinked += roundLinked;
 
@@ -465,9 +581,12 @@ async function main() {
     const tables = [];
     if (SOURCE === "all" || SOURCE === "dob") tables.push("dob_violations");
     if (SOURCE === "all" || SOURCE === "hpd") tables.push("hpd_violations");
-    if (SOURCE === "all") tables.push("bedbug_reports", "evictions");
+    if (SOURCE === "all") tables.push("hpd_litigations", "bedbug_reports", "evictions");
     for (const table of tables) {
       totalLinked += await linkViolations(table);
+    }
+    if (SOURCE === "all" || SOURCE === "311") {
+      totalLinked += await link311ByAddress();
     }
   }
 
