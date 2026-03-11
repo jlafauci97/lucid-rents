@@ -418,7 +418,7 @@ async function link311ByAddress() {
   console.log(`\nLinking unlinked complaints_311 by address...`);
 
   const FETCH_LIMIT = 1000; // Supabase max per query
-  const MAX_BATCHES = 500;
+  const MAX_BATCHES = 5000;
   let linked = 0;
   let created = 0;
   let batch = 0;
@@ -787,7 +787,7 @@ async function main() {
       const uniqueBbls = [...allBbls].slice(0, LIMIT);
       console.log(`\nTotal unique BBLs to process: ${uniqueBbls.length}`);
 
-      if (uniqueBbls.length === 0) {
+      if (uniqueBbls.length === 0 && SOURCE !== "311" && SOURCE !== "evictions") {
         console.log("No more unlinked BBLs found. Moving to final linking pass...");
         break;
       }
