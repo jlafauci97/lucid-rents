@@ -305,17 +305,18 @@ async function linkByBbl(
   let linked = 0;
   const affectedBuildingIds = new Set<string>();
 
-  // Link unlinked records from the last 120 days — wide enough to catch stragglers
-  // but scoped enough to avoid full table scans that timeout on Vercel (60s).
+  // Link unlinked records from the last 30 days — narrow enough to avoid
+  // statement timeouts on large tables (HPD 800K+) within Vercel's 60s limit.
+  // The daily cron ensures records are linked within a day of import.
   const linkCutoff = new Date();
-  linkCutoff.setDate(linkCutoff.getDate() - 120);
+  linkCutoff.setDate(linkCutoff.getDate() - 30);
   const { data: unlinked } = await supabase
     .from(table)
     .select("id, bbl")
     .is("building_id", null)
     .not("bbl", "is", null)
     .gte("imported_at", linkCutoff.toISOString())
-    .limit(50000);
+    .limit(5000);
 
   if (!unlinked || unlinked.length === 0) return { linked, affectedBuildingIds };
 
@@ -341,8 +342,8 @@ async function linkByBbl(
   const unmatchedBbls = bblSet.filter((bbl) => !bblToBuilding.has(bbl));
   if (unmatchedBbls.length > 0) {
     let created = 0;
-    // Limit to 200 new buildings per sync to avoid timeout
-    const toCreate = unmatchedBbls.slice(0, 200);
+    // Limit to 50 new buildings per sync to stay within Vercel 60s timeout
+    const toCreate = unmatchedBbls.slice(0, 50);
     for (const bbl of toCreate) {
       try {
         const addr = await getAddressForBbl(supabase, bbl);
