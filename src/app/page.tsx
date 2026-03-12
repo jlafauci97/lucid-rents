@@ -41,7 +41,7 @@ export default function HomePage() {
           style={{ backgroundImage: "url('/nyc-skyline.png')" }}
         />
         <div className="absolute inset-0 bg-[#0F1D2E]/50" />
-        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 sm:pt-4 pb-6 sm:pb-8 text-center">
+        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-8 pb-8 sm:pb-12 text-center">
           <Image
             src="/lucid-rents-logo.png"
             alt="Lucid Rents"
