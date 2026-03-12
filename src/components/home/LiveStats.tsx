@@ -42,7 +42,7 @@ export async function LiveStats() {
     {
       icon: FileSearch,
       label: "Data Sources",
-      value: "4",
+      value: "25+",
     },
   ];
 
