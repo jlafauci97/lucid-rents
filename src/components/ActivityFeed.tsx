@@ -155,6 +155,8 @@ export function ActivityFeed() {
       }
     }
     fetchActivity();
+    const interval = setInterval(fetchActivity, 120000);
+    return () => clearInterval(interval);
   }, []);
 
   return (
