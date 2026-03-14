@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 const PLUTO_API = "https://data.cityofnewyork.us/resource/64uk-42ks.json";
 const BATCH_SIZE = 200; // buildings per call — keeps within timeout

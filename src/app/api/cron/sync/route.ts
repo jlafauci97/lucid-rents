@@ -32,8 +32,8 @@ const BOROUGH_MAP: Record<string, string> = {
 
 const PAGE_SIZE = 5000;
 const BATCH_SIZE = 500;
-const MAX_PAGES = 2; // Safety limit: max API pages per sync (prevents 60s timeout)
-const STALE_SYNC_MINUTES = 5; // Mark "running" syncs older than this as "failed"
+const MAX_PAGES = 5; // Safety limit: max API pages per sync (Pro plan: 300s timeout)
+const STALE_SYNC_MINUTES = 10; // Mark "running" syncs older than this as "failed"
 
 const COMPLAINT_TYPES = [
   "HEAT/HOT WATER",
@@ -1664,9 +1664,9 @@ async function updateBuildingCounts(
 }
 
 // ---------------------------------------------------------------------------
-// Max duration for Vercel serverless functions (Hobby=60s)
+// Max duration for Vercel serverless functions (Pro=300s)
 // ---------------------------------------------------------------------------
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 // Source registry — maps query param to sync function
 const SOURCES: Record<string, (supabase: ReturnType<typeof getSupabaseAdmin>) => Promise<SyncResult>> = {
@@ -1737,7 +1737,7 @@ export async function GET(req: NextRequest) {
     // Update aggregate counts only for affected buildings (skip if running low on time)
     let countErrors: string[] = [];
     const elapsedAfterSync = (Date.now() - startTime) / 1000;
-    if (elapsedAfterSync < 50) {
+    if (elapsedAfterSync < 250) {
       countErrors = await updateBuildingCounts(supabase, allAffectedIds);
     } else if (allAffectedIds.size > 0) {
       countErrors.push(`Skipped building count update (${elapsedAfterSync.toFixed(1)}s elapsed, ${allAffectedIds.size} buildings)`);
@@ -1745,7 +1745,7 @@ export async function GET(req: NextRequest) {
 
     // Backfill slugs for any buildings missing them (skip if running low on time)
     let slugsBackfilled = 0;
-    if ((Date.now() - startTime) / 1000 < 55) {
+    if ((Date.now() - startTime) / 1000 < 270) {
       try {
         const { data: noSlugs } = await supabase
           .from("buildings")
