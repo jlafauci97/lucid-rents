@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { AlertTriangle, Building2, MapPin, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
-import { buildingUrl, canonicalUrl, cityPath } from "@/lib/seo";
+import { buildingUrl, canonicalUrl } from "@/lib/seo";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import type { Metadata } from "next";
@@ -10,12 +10,12 @@ export const metadata: Metadata = {
   title: "Worst Rated Buildings in NYC | Lucid Rents",
   description:
     "NYC buildings ranked by HPD violations, 311 complaints, and reported issues. Find the worst-rated buildings in Manhattan, Brooklyn, Queens, Bronx, and Staten Island.",
-  alternates: { canonical: canonicalUrl(cityPath("/worst-rated-buildings")) },
+  alternates: { canonical: canonicalUrl("/rankings") },
   openGraph: {
     title: "Worst Rated Buildings in NYC",
     description:
       "NYC buildings ranked by HPD violations and 311 complaints.",
-    url: canonicalUrl(cityPath("/worst-rated-buildings")),
+    url: canonicalUrl("/rankings"),
     siteName: "Lucid Rents",
     type: "website",
     locale: "en_US",
@@ -71,7 +71,7 @@ export default async function RankingsPage({ searchParams }: RankingsPageProps) 
     const base: Record<string, string> = { borough, sort: sortBy, page: String(page) };
     const merged = { ...base, ...overrides };
     const qs = new URLSearchParams(merged).toString();
-    return `${cityPath("/worst-rated-buildings")}?${qs}`;
+    return `/rankings?${qs}`;
   }
 
   return (

@@ -253,8 +253,6 @@ export default async function RentStabilizationPage({
           ))}
         </div>
 
-        <AdBlock adSlot="RENT_STAB_TOP" adFormat="horizontal" />
-
         {/* Results table */}
         {rows.length === 0 ? (
           <div className="text-center py-16 bg-white border border-[#e2e8f0] rounded-xl">

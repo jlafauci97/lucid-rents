@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+import { CookieConsent } from "@/components/ui/CookieConsent";
 import { type City, DEFAULT_CITY, isValidCity } from "@/lib/cities";
 
 const GA_MEASUREMENT_ID = "G-FS7Q3PF982";
@@ -58,13 +59,6 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
-      <head>
-        <script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2908534121884582"
-          crossOrigin="anonymous"
-        />
-      </head>
       <Script
         src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
         strategy="afterInteractive"
@@ -83,6 +77,7 @@ export default async function RootLayout({
         <Navbar city={city} />
         <main className="min-h-[calc(100vh-64px-200px)]">{children}</main>
         <Footer city={city} />
+        <CookieConsent />
       </body>
     </html>
   );

@@ -135,8 +135,6 @@ export default async function BoroughPage({ params, searchParams }: BoroughPageP
         </Link>
       </div>
 
-      <AdBlock adSlot="BOROUGH_TOP" adFormat="horizontal" />
-
       <div className="space-y-3">
         {buildingList.map((building) => (
           <BuildingCard key={building.id} building={building} />

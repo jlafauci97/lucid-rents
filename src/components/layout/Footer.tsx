@@ -40,6 +40,11 @@ export function Footer({ city = DEFAULT_CITY }: { city?: City }) {
                   About
                 </Link>
               </li>
+              <li>
+                <Link href="/contact" className="hover:text-white transition-colors">
+                  Contact
+                </Link>
+              </li>
             </ul>
           </div>
           <div>

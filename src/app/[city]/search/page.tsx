@@ -149,7 +149,6 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           <SearchFilters />
         </Suspense>
       </div>
-      <AdBlock adSlot="SEARCH_TOP" adFormat="horizontal" />
       <Suspense fallback={<SearchSkeleton />}>
         <SearchResults q={q} borough={borough} zip={zip} page={page} />
       </Suspense>

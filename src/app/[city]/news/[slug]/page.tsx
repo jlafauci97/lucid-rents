@@ -230,7 +230,6 @@ async function CategoryView({
                 ))}
               </div>
             </div>
-            <AdBlock adSlot="NEWS_SIDEBAR" adFormat="rectangle" />
           </aside>
         </div>
       </div>
@@ -349,8 +348,6 @@ async function ArticleView({ slug }: { slug: string }) {
             <p className="text-sm text-[#475569] leading-relaxed">{typedArticle.excerpt}</p>
           </div>
         )}
-
-        <AdBlock adSlot="NEWS_ARTICLE_TOP" adFormat="horizontal" />
 
         <div className="rounded-xl border border-[#e2e8f0] overflow-hidden bg-white mb-6">
           <div className="flex items-center justify-between px-4 py-2 bg-[#f8fafc] border-b border-[#e2e8f0]">

@@ -300,8 +300,6 @@ export default async function TransitLinePage({
           </div>
         </div>
 
-        <AdBlock adSlot="TRANSIT_TOP" adFormat="horizontal" />
-
         {/* Results info */}
         {totalCount > 0 && (
           <p className="text-sm text-[#64748b] mb-4">

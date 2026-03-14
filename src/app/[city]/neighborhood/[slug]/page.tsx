@@ -254,8 +254,6 @@ export default async function NeighborhoodPage({
         </div>
       </div>
 
-      <AdBlock adSlot="NEIGHBORHOOD_TOP" adFormat="horizontal" />
-
       {/* Crime Summary */}
       {crime && crime.total > 0 && (
         <div className="bg-white rounded-xl border border-[#e2e8f0] p-6 mb-8">

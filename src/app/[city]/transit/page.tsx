@@ -183,8 +183,6 @@ export default async function TransitHubPage() {
           </div>
         </section>
 
-        <AdBlock adSlot="TRANSIT_HUB_MID" adFormat="horizontal" />
-
         {/* Bus section */}
         {busRoutes.length > 0 && (
           <section className="mb-10">

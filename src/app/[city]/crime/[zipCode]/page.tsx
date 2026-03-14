@@ -200,8 +200,6 @@ export default async function CrimeZipPage({
         </div>
       </div>
 
-      <AdBlock adSlot="CRIME_ZIP_TOP" adFormat="horizontal" />
-
       {/* Charts */}
       <div className="space-y-8 mb-8">
         <CrimeTrend zipCode={zipCode} />

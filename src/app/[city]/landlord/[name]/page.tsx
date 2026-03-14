@@ -282,8 +282,6 @@ export default async function LandlordDetailPage({
         </div>
       </div>
 
-      <AdBlock adSlot="LANDLORD_TOP" adFormat="horizontal" />
-
       {/* Worst Buildings */}
       {buildings.length > 1 && (
         <div className="mb-8">

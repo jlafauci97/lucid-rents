@@ -222,8 +222,6 @@ export default async function LandlordsPage({ searchParams }: LandlordsPageProps
         </div>
       </div>
 
-      <AdBlock adSlot="LANDLORDS_TOP" adFormat="horizontal" />
-
       {/* Landlords table */}
       {paginatedLandlords.length > 0 ? (
         <div className="bg-white rounded-xl border border-[#e2e8f0] overflow-hidden">

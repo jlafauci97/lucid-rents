@@ -161,8 +161,6 @@ export default async function ScaffoldingPage() {
           <ScaffoldingMap data={zipData || []} />
         </section>
 
-        <AdBlock adSlot="SCAFFOLDING_TOP" adFormat="horizontal" />
-
         {/* Section 2: Longest-standing sheds */}
         <section className="bg-white border border-[#e2e8f0] rounded-xl p-5 sm:p-6 mb-6">
           <h2 className="text-lg font-bold text-[#0F1D2E] mb-1">
@@ -174,8 +172,6 @@ export default async function ScaffoldingPage() {
           </p>
           <ScaffoldingTable data={longestSheds || []} />
         </section>
-
-        <AdBlock adSlot="SCAFFOLDING_MID" adFormat="horizontal" />
 
         {/* Section 3: Borough Breakdown */}
         <section className="bg-white border border-[#e2e8f0] rounded-xl p-5 sm:p-6 mb-6">

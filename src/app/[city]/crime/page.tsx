@@ -187,8 +187,6 @@ export default async function CrimePage({
         </div>
       </div>
 
-      <AdBlock adSlot="CRIME_TOP" adFormat="horizontal" />
-
       {/* Table */}
       {rows.length === 0 ? (
         <div className="text-center py-16 bg-white border border-[#e2e8f0] rounded-xl">

@@ -91,9 +91,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Ad */}
-      <AdBlock adSlot="HOME_MID_1" adFormat="horizontal" />
-
       {/* Recent Activity */}
       <section className="py-16 bg-[#EFF6FF]">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">

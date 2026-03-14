@@ -52,7 +52,7 @@ export function getLineByLetter(letter: string): SubwayLine | undefined {
 }
 
 export function transitLineUrl(slug: string, city: string = "nyc"): string {
-  return `/${city}/apartments-near-${slug}`;
+  return `/${city}/apartments-near/${slug}`;
 }
 
 export function busRouteSlug(routeName: string): string {

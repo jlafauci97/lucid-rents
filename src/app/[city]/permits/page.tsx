@@ -148,8 +148,6 @@ export default async function PermitsPage() {
           <PermitMap data={zipData || []} />
         </section>
 
-        <AdBlock adSlot="PERMITS_TOP" adFormat="horizontal" />
-
         {/* Section 2: Recent Permits */}
         <section className="bg-white border border-[#e2e8f0] rounded-xl p-5 sm:p-6 mb-6">
           <h2 className="text-lg font-bold text-[#0F1D2E] mb-1">
@@ -160,8 +158,6 @@ export default async function PermitsPage() {
           </p>
           <PermitTable data={recentPermits || []} />
         </section>
-
-        <AdBlock adSlot="PERMITS_MID" adFormat="horizontal" />
 
         {/* Section 3: Work Type Breakdown */}
         <section className="bg-white border border-[#e2e8f0] rounded-xl p-5 sm:p-6 mb-6">

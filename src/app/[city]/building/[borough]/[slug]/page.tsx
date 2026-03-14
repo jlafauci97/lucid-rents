@@ -260,8 +260,6 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
               )}
             </section>
 
-            <AdBlock adSlot="BUILDING_MID_1" adFormat="horizontal" />
-
             {/* Violation & Complaint Trends */}
             <ViolationTrend buildingId={buildingId} />
 
