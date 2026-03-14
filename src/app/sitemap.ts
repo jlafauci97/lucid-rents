@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { BOROUGH_SLUGS, buildingUrl, landlordSlug, cityPath, neighborhoodUrl } from "@/lib/seo";
 import { NEWS_CATEGORIES } from "@/lib/news-sources";
+import { SUBWAY_LINES, transitLineUrl } from "@/lib/subway-lines";
 
 const BASE_URL = "https://lucidrents.com";
 const BUILDINGS_PER_SITEMAP = 45000;
@@ -71,6 +72,7 @@ async function generateStaticSitemap(): Promise<MetadataRoute.Sitemap> {
     "/scaffolding",
     "/permits",
     "/energy",
+    "/transit",
   ];
   for (const page of staticPages) {
     entries.push({
@@ -85,6 +87,15 @@ async function generateStaticSitemap(): Promise<MetadataRoute.Sitemap> {
     entries.push({
       url: `${BASE_URL}${cityPath(`/news/${category}`)}`,
       changeFrequency: "daily",
+      priority: 0.7,
+    });
+  }
+
+  // Transit line pages (all 23 subway lines)
+  for (const line of SUBWAY_LINES) {
+    entries.push({
+      url: `${BASE_URL}${transitLineUrl(line.slug)}`,
+      changeFrequency: "weekly",
       priority: 0.7,
     });
   }

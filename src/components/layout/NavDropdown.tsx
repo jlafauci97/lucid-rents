@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { ChevronDown, ArrowLeftRight, ShieldCheck, Wrench, BarChart3, Construction, ClipboardList, Zap } from "lucide-react";
+import { ChevronDown, ArrowLeftRight, ShieldCheck, Wrench, BarChart3, Construction, ClipboardList, Zap, TrainFront } from "lucide-react";
 import { type City, DEFAULT_CITY } from "@/lib/cities";
 
 const tools = [
@@ -41,6 +41,12 @@ const tools = [
     icon: Zap,
     label: "Energy Scores",
     description: "Building energy efficiency & emissions data",
+  },
+  {
+    path: "/transit",
+    icon: TrainFront,
+    label: "Near Transit",
+    description: "Find apartments near subway & bus lines",
   },
 ];
 

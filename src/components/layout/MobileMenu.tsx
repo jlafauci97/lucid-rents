@@ -19,6 +19,7 @@ import {
   Construction,
   ClipboardList,
   Zap,
+  TrainFront,
   User,
   Bell,
   LogOut,
@@ -44,6 +45,7 @@ const navLinks = [
   { path: "/scaffolding", icon: Construction, label: "Scaffolding" },
   { path: "/permits", icon: ClipboardList, label: "Permits" },
   { path: "/energy", icon: Zap, label: "Energy Scores" },
+  { path: "/transit", icon: TrainFront, label: "Near Transit" },
   { path: "/review/new", icon: PenSquare, label: "Submit Review" },
 ];
 
