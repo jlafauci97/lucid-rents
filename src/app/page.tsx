@@ -136,6 +136,53 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* How It Works */}
+      <section className="py-16 bg-white border-t border-[#e2e8f0]">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-2xl sm:text-3xl font-bold text-[#0F1D2E] mb-6 text-center">
+            How Lucid Rents Works
+          </h2>
+          <div className="prose prose-slate max-w-none text-sm leading-relaxed text-[#334155] space-y-4">
+            <p>
+              Finding the right apartment in New York City is hard enough without
+              hidden surprises. Lucid Rents was built to give renters the same
+              level of information that landlords, brokers, and property managers
+              already have access to &mdash; completely free.
+            </p>
+            <p>
+              We pull data directly from official NYC government sources every
+              day. This includes HPD housing violations from the Department of
+              Housing Preservation and Development, DOB violations and permits
+              from the Department of Buildings, 311 service request complaints,
+              NYPD crime data, energy benchmarking scores, rent stabilization
+              records from Department of Finance tax bills, and MTA transit stop
+              locations. Every data point is tied to a specific building using
+              BBL (Borough-Block-Lot) tax lot identifiers, giving you a complete
+              picture of any property in the city.
+            </p>
+            <p>
+              Each building on Lucid Rents receives a letter grade from A+ to F,
+              calculated from its violation history, complaint volume, and tenant
+              reviews. This score helps you compare buildings at a glance and
+              avoid properties with chronic maintenance issues, pest problems, or
+              unresponsive management. You can also read reviews from real
+              tenants who have lived in the building &mdash; covering
+              everything from noise levels and heating to how quickly the
+              landlord responds to repair requests.
+            </p>
+            <p>
+              Beyond individual building lookups, our tenant tools help you
+              explore NYC housing data at scale. Check if your apartment is rent
+              stabilized, track active scaffolding and sidewalk sheds in your
+              neighborhood, compare multiple buildings side by side, browse crime
+              statistics by zip code, and find apartments near any subway or bus
+              line. Every tool is designed to help you make a more informed
+              decision before signing a lease.
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="bg-[#0F1D2E] text-white py-16">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">

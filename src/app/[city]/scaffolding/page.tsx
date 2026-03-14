@@ -184,6 +184,39 @@ export default async function ScaffoldingPage() {
           <BoroughBreakdown data={boroughStats} />
         </section>
 
+        {/* Editorial content */}
+        <section className="mt-8 space-y-4 text-sm leading-relaxed text-[#334155]">
+          <h2 className="text-lg font-bold text-[#0F1D2E]">
+            Understanding NYC Sidewalk Sheds
+          </h2>
+          <p>
+            Sidewalk sheds (commonly called scaffolding) are temporary overhead
+            structures installed to protect pedestrians from falling debris
+            during construction, facade repairs, or building inspections. Under
+            NYC Local Law 11, buildings taller than six stories must undergo
+            periodic facade inspections every five years. When inspectors find
+            unsafe conditions, property owners are required to install a
+            sidewalk shed until repairs are complete.
+          </p>
+          <p>
+            While intended as a short-term safety measure, many sidewalk sheds
+            remain in place for years &mdash; sometimes decades. The NYC
+            Department of Buildings issues sidewalk shed permits that must be
+            renewed every three months, but there is no hard limit on how many
+            times a permit can be renewed. This has led to thousands of
+            semi-permanent structures blocking sunlight, reducing foot traffic
+            for local businesses, and creating safety concerns of their own.
+          </p>
+          <p>
+            This tracker uses official NYC DOB permit data to show every active
+            sidewalk shed in the city. You can see how long each shed has been
+            up, which neighborhoods have the highest concentration, and when
+            permits are set to expire. If you live near a long-standing
+            sidewalk shed, you can contact your local Community Board or file
+            a 311 complaint requesting an update on the construction timeline.
+          </p>
+        </section>
+
         <AdBlock adSlot="SCAFFOLDING_BOTTOM" adFormat="horizontal" />
       </div>
     </AdSidebar>

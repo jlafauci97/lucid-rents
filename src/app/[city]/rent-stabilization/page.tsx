@@ -328,6 +328,40 @@ export default async function RentStabilizationPage({
           </div>
         )}
 
+        {/* Editorial content */}
+        <section className="mt-8 space-y-4 text-sm leading-relaxed text-[#334155]">
+          <h2 className="text-lg font-bold text-[#0F1D2E]">
+            What Is Rent Stabilization?
+          </h2>
+          <p>
+            Rent stabilization is a set of laws that limit how much a landlord
+            can raise rent each year for tenants in qualifying buildings.
+            In New York City, approximately one million apartments are rent
+            stabilized &mdash; making it one of the largest rent regulation
+            systems in the country. Buildings with six or more units built
+            before 1974, or those that received certain tax benefits like
+            421-a or J-51, are typically covered.
+          </p>
+          <p>
+            If your apartment is rent stabilized, you have important
+            protections: your landlord can only increase rent by the amount set
+            each year by the NYC Rent Guidelines Board, you have the right to
+            renew your lease, and you cannot be evicted without just cause.
+            Landlords are also required to maintain the apartment and provide
+            essential services. These protections persist as long as the unit
+            remains stabilized, regardless of how many times it changes hands.
+          </p>
+          <p>
+            The data on this page comes from NYC Department of Finance tax bill
+            records (RPIE filings), which landlords of rent stabilized buildings
+            must submit annually. The stabilized unit count reflects what the
+            owner reported for the most recent tax year available. Note that
+            individual apartment registration status can be verified through
+            the DHCR (Division of Housing and Community Renewal) by requesting
+            a rent history for your specific unit.
+          </p>
+        </section>
+
         <AdBlock adSlot="RENT_STAB_BOTTOM" adFormat="horizontal" />
       </div>
     </AdSidebar>

@@ -158,12 +158,12 @@ async function getLastSyncDate(
     .single();
 
   if (data?.completed_at) {
-    // Subtract 3 days from last sync time to account for data publishing lag.
-    // NYC Open Data may update records a few days after the date they occurred.
+    // Subtract 7 days from last sync time to account for data publishing lag.
+    // NYC Open Data may update records up to a week after the date they occurred.
     // The upsert with onConflict ensures re-fetched records don't create duplicates.
     // Truncate to start-of-day since SODA dates are at midnight (T00:00:00).
     const syncDate = new Date(data.completed_at);
-    syncDate.setDate(syncDate.getDate() - 3);
+    syncDate.setDate(syncDate.getDate() - 7);
     syncDate.setUTCHours(0, 0, 0, 0);
     return toSodaDate(syncDate.toISOString());
   }

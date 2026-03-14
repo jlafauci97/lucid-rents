@@ -225,44 +225,55 @@ async function denormalizeToBuildings(
 ): Promise<number> {
   let updated = 0;
 
-  // Get all distinct building_ids from rent_stabilization
-  const { data: linkedBuildings } = await supabase
+  // Fetch all linked records in one query, sorted by year desc so the first
+  // occurrence per building_id is the latest year.
+  const { data: allRecords } = await supabase
     .from("rent_stabilization")
-    .select("building_id")
-    .not("building_id", "is", null);
+    .select("building_id, year, units_stabilized")
+    .not("building_id", "is", null)
+    .not("units_stabilized", "is", null)
+    .order("year", { ascending: false })
+    .limit(200000);
 
-  if (!linkedBuildings || linkedBuildings.length === 0) return 0;
+  if (!allRecords || allRecords.length === 0) return 0;
 
-  const buildingIds = [...new Set(linkedBuildings.map((r) => r.building_id).filter(Boolean))] as string[];
+  // Group by building_id, keep only the latest year (first seen due to sort)
+  const latestByBuilding = new Map<string, { units_stabilized: number; year: number }>();
+  for (const r of allRecords) {
+    if (!r.building_id || latestByBuilding.has(r.building_id)) continue;
+    latestByBuilding.set(r.building_id, {
+      units_stabilized: r.units_stabilized,
+      year: r.year,
+    });
+  }
 
-  for (const buildingId of buildingIds) {
-    // Get latest year's data for this building
-    const { data: latest } = await supabase
-      .from("rent_stabilization")
-      .select("units_stabilized, year")
-      .eq("building_id", buildingId)
-      .not("units_stabilized", "is", null)
-      .order("year", { ascending: false })
-      .limit(1)
-      .single();
+  // Batch update buildings with 20 concurrent requests to avoid overwhelming Supabase
+  const entries = Array.from(latestByBuilding.entries());
+  const CONCURRENT = 20;
 
-    if (!latest) continue;
-
-    const isStabilized = (latest.units_stabilized ?? 0) > 0;
-
-    const { error } = await supabase
-      .from("buildings")
-      .update({
-        is_rent_stabilized: isStabilized,
-        stabilized_units: latest.units_stabilized,
-        stabilized_year: latest.year,
+  for (let i = 0; i < entries.length; i += CONCURRENT) {
+    const batch = entries.slice(i, i + CONCURRENT);
+    const results = await Promise.all(
+      batch.map(([buildingId, data]) => {
+        const isStabilized = (data.units_stabilized ?? 0) > 0;
+        return supabase
+          .from("buildings")
+          .update({
+            is_rent_stabilized: isStabilized,
+            stabilized_units: data.units_stabilized,
+            stabilized_year: data.year,
+          })
+          .eq("id", buildingId)
+          .then(({ error }) => ({ buildingId, error }));
       })
-      .eq("id", buildingId);
+    );
 
-    if (error) {
-      errors.push(`Denormalize error (${buildingId}): ${error.message}`);
-    } else {
-      updated++;
+    for (const { buildingId, error } of results) {
+      if (error) {
+        errors.push(`Denormalize error (${buildingId}): ${error.message}`);
+      } else {
+        updated++;
+      }
     }
   }
 
