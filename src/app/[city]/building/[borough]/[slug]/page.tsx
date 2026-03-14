@@ -13,6 +13,7 @@ import { NearbyCrimeSummary } from "@/components/crime/NearbyCrimeSummary";
 import { NearbyTransit } from "@/components/transit/NearbyTransit";
 import { NearbySchools } from "@/components/schools/NearbySchools";
 import { NearbyRecreation } from "@/components/building/NearbyRecreation";
+import { NearbyBuildings } from "@/components/building/NearbyBuildings";
 import { BuildingLocationMap } from "@/components/building/BuildingLocationMap";
 import { RentStabilizationCard } from "@/components/building/RentStabilizationCard";
 import { RentRangeCard } from "@/components/building/RentRangeCard";
@@ -434,6 +435,17 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
             )}
           </div>
         </div>
+
+        {/* Nearby Buildings — full width below the grid */}
+        {building.zip_code && (
+          <div className="mt-8">
+            <NearbyBuildings
+              buildingId={buildingId}
+              zipCode={building.zip_code}
+              borough={building.borough}
+            />
+          </div>
+        )}
       </div>
     </div>
     </AdSidebar>
