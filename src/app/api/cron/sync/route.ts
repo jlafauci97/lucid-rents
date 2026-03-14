@@ -305,20 +305,32 @@ async function linkByBbl(
   let linked = 0;
   const affectedBuildingIds = new Set<string>();
 
-  // Link unlinked records from the last 30 days — narrow enough to avoid
-  // statement timeouts on large tables (HPD 800K+) within Vercel's 60s limit.
-  // The daily cron ensures records are linked within a day of import.
+  // Link ALL unlinked records from the last 30 days by paginating in batches.
+  // Vercel Pro has 900s timeout so we can process much more per sync run.
   const linkCutoff = new Date();
   linkCutoff.setDate(linkCutoff.getDate() - 30);
-  const { data: unlinked } = await supabase
-    .from(table)
-    .select("id, bbl")
-    .is("building_id", null)
-    .not("bbl", "is", null)
-    .gte("imported_at", linkCutoff.toISOString())
-    .limit(5000);
 
-  if (!unlinked || unlinked.length === 0) return { linked, affectedBuildingIds };
+  const PAGE_SIZE = 5000;
+  let allUnlinked: { id: string; bbl: string }[] = [];
+  let offset = 0;
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const { data: batch } = await supabase
+      .from(table)
+      .select("id, bbl")
+      .is("building_id", null)
+      .not("bbl", "is", null)
+      .gte("imported_at", linkCutoff.toISOString())
+      .range(offset, offset + PAGE_SIZE - 1);
+
+    if (!batch || batch.length === 0) break;
+    allUnlinked = allUnlinked.concat(batch);
+    if (batch.length < PAGE_SIZE) break;
+    offset += PAGE_SIZE;
+  }
+
+  const unlinked = allUnlinked;
+  if (unlinked.length === 0) return { linked, affectedBuildingIds };
 
   const bblSet = [...new Set(unlinked.map((r) => r.bbl).filter(Boolean))] as string[];
 
@@ -342,8 +354,8 @@ async function linkByBbl(
   const unmatchedBbls = bblSet.filter((bbl) => !bblToBuilding.has(bbl));
   if (unmatchedBbls.length > 0) {
     let created = 0;
-    // Limit new buildings per sync to stay within Vercel 60s timeout
-    const toCreate = unmatchedBbls.slice(0, 200);
+    // Vercel Pro: 900s timeout allows more building creation per sync
+    const toCreate = unmatchedBbls.slice(0, 500);
     for (const bbl of toCreate) {
       try {
         const addr = await getAddressForBbl(supabase, bbl);
