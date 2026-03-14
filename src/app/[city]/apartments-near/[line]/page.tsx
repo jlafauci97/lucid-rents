@@ -1,14 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import {
-  Building2,
-  MapPin,
   ChevronLeft,
-  ChevronRight,
   TrainFront,
   Bus,
 } from "lucide-react";
 import Link from "next/link";
-import { buildingUrl, canonicalUrl, cityPath } from "@/lib/seo";
+import { canonicalUrl, cityPath } from "@/lib/seo";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import {
@@ -17,13 +14,13 @@ import {
   transitLineUrl,
   busRouteFromSlug,
 } from "@/lib/subway-lines";
+import { TransitBuildingList } from "@/components/transit/TransitBuildingList";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 export const revalidate = 86400;
 
 const MAX_DISTANCE_MI = 0.35;
-const PAGE_SIZE = 24;
 const STOP_CHUNK_SIZE = 10;
 
 function haversineDistance(
@@ -112,17 +109,13 @@ export async function generateMetadata({
 
 export default async function TransitLinePage({
   params,
-  searchParams,
 }: {
   params: Promise<{ city: string; line: string }>;
-  searchParams: Promise<{ page?: string }>;
 }) {
   const { line: lineSlug } = await params;
-  const sp = await searchParams;
   const lineInfo = parseLineSlug(lineSlug);
   if (!lineInfo) notFound();
 
-  const page = Math.max(1, parseInt(sp.page || "1", 10));
   const supabase = await createClient();
 
   // 1. Get all stops for this line
@@ -203,20 +196,12 @@ export default async function TransitLinePage({
     );
 
   const totalCount = buildingsWithDistance.length;
-  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
-  const paged = buildingsWithDistance.slice(
-    (page - 1) * PAGE_SIZE,
-    page * PAGE_SIZE
-  );
   const stationCount = new Set(
     buildingsWithDistance.map((b) => b.nearest_station)
   ).size;
 
   const isSubway = lineInfo.type === "subway";
   const Icon = isSubway ? TrainFront : Bus;
-  const badgeColor =
-    lineInfo.color === "#FCCC0A" ? "#92400e" : lineInfo.color;
-  const badgeBg = `${lineInfo.color}15`;
 
   return (
     <AdSidebar>
@@ -300,154 +285,15 @@ export default async function TransitLinePage({
           </div>
         </div>
 
-        {/* Results info */}
-        {totalCount > 0 && (
-          <p className="text-sm text-[#64748b] mb-4">
-            Showing {(page - 1) * PAGE_SIZE + 1}&ndash;
-            {Math.min(page * PAGE_SIZE, totalCount)} of{" "}
-            {totalCount.toLocaleString()} buildings
-          </p>
-        )}
-
-        {/* Building cards */}
-        {paged.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-            {paged.map((building) => (
-              <Link
-                key={building.id}
-                href={buildingUrl(building)}
-                className="group bg-white border border-[#e2e8f0] rounded-xl p-4 hover:shadow-md hover:border-[#3B82F6]/40 transition-all"
-              >
-                <h3 className="font-semibold text-[#0F1D2E] group-hover:text-[#3B82F6] transition-colors truncate text-sm">
-                  {building.full_address}
-                </h3>
-                <div className="flex items-center gap-1 text-xs text-[#64748b] mt-1">
-                  <MapPin className="w-3 h-3 flex-shrink-0" />
-                  {building.borough}
-                  {building.zip_code && ` \u00b7 ${building.zip_code}`}
-                  {building.year_built
-                    ? ` \u00b7 Built ${building.year_built}`
-                    : ""}
-                </div>
-
-                {/* Station badge */}
-                <div className="mt-3">
-                  <span
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
-                    style={{ backgroundColor: badgeBg, color: badgeColor }}
-                  >
-                    <Icon className="w-3 h-3" />
-                    {building.nearest_station} \u00b7{" "}
-                    {building.station_distance_mi} mi
-                  </span>
-                </div>
-
-                {/* Stats */}
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-3 text-xs">
-                  {building.violation_count > 0 && (
-                    <span
-                      className={`font-medium ${
-                        building.violation_count > 50
-                          ? "text-[#ef4444]"
-                          : building.violation_count > 10
-                            ? "text-[#f97316]"
-                            : "text-[#64748b]"
-                      }`}
-                    >
-                      {building.violation_count.toLocaleString()} violations
-                    </span>
-                  )}
-                  {building.complaint_count > 0 && (
-                    <span
-                      className={`font-medium ${
-                        building.complaint_count > 50
-                          ? "text-[#ef4444]"
-                          : building.complaint_count > 10
-                            ? "text-[#f97316]"
-                            : "text-[#64748b]"
-                      }`}
-                    >
-                      {building.complaint_count.toLocaleString()} complaints
-                    </span>
-                  )}
-                  {building.total_units ? (
-                    <span className="text-[#64748b]">
-                      {building.total_units} units
-                    </span>
-                  ) : null}
-                  {building.is_rent_stabilized && (
-                    <span className="text-emerald-600 font-medium">
-                      Rent Stabilized
-                    </span>
-                  )}
-                </div>
-
-                {/* Score bar */}
-                {building.overall_score != null && (
-                  <div className="mt-3 flex items-center gap-2">
-                    <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full"
-                        style={{
-                          width: `${(Number(building.overall_score) / 10) * 100}%`,
-                          backgroundColor:
-                            Number(building.overall_score) >= 7
-                              ? "#22c55e"
-                              : Number(building.overall_score) >= 4
-                                ? "#f59e0b"
-                                : "#ef4444",
-                        }}
-                      />
-                    </div>
-                    <span className="text-xs font-semibold text-[#0F1D2E]">
-                      {building.overall_score}/10
-                    </span>
-                  </div>
-                )}
-              </Link>
-            ))}
-          </div>
-        ) : (
-          <div className="bg-white rounded-xl border border-[#e2e8f0] p-12 text-center mb-6">
-            <Building2 className="w-12 h-12 text-[#94a3b8] mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-[#0F1D2E] mb-2">
-              No buildings found
-            </h3>
-            <p className="text-sm text-[#64748b]">
-              No buildings found near {lineInfo.displayName}{" "}
-              {isSubway ? "stations" : "stops"}.
-            </p>
-          </div>
-        )}
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 bg-white border border-[#e2e8f0] rounded-xl mb-6">
-            <p className="text-sm text-[#64748b]">
-              Page {page} of {totalPages}
-            </p>
-            <div className="flex gap-2">
-              {page > 1 && (
-                <Link
-                  href={`${transitLineUrl(lineSlug)}?page=${page - 1}`}
-                  className="flex items-center gap-1 px-3 py-1.5 text-sm border border-[#e2e8f0] rounded-lg hover:bg-gray-50 transition-colors text-[#64748b]"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                  Previous
-                </Link>
-              )}
-              {page < totalPages && (
-                <Link
-                  href={`${transitLineUrl(lineSlug)}?page=${page + 1}`}
-                  className="flex items-center gap-1 px-3 py-1.5 text-sm border border-[#e2e8f0] rounded-lg hover:bg-gray-50 transition-colors text-[#64748b]"
-                >
-                  Next
-                  <ChevronRight className="w-4 h-4" />
-                </Link>
-              )}
-            </div>
-          </div>
-        )}
+        {/* Search + building cards + pagination (client component) */}
+        <TransitBuildingList
+          buildings={buildingsWithDistance}
+          lineSlug={lineSlug}
+          lineType={lineInfo.type}
+          lineColor={lineInfo.color}
+          lineTextColor={lineInfo.textColor}
+          routeName={lineInfo.routeName}
+        />
 
         <AdBlock adSlot="TRANSIT_BOTTOM" adFormat="horizontal" />
       </div>
