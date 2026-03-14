@@ -12,9 +12,12 @@ import {
   TrainFront,
   Bus,
 } from "lucide-react";
-import { searchNeighborhoods } from "@/lib/nyc-neighborhoods";
+import {
+  searchNeighborhoods,
+  NYC_ZIP_NEIGHBORHOODS,
+  NYC_ZIP_BOROUGHS,
+} from "@/lib/nyc-neighborhoods";
 import { buildingUrl } from "@/lib/seo";
-import { transitLineUrl } from "@/lib/subway-lines";
 
 const PAGE_SIZE = 24;
 
@@ -63,16 +66,32 @@ export function TransitBuildingList({
   const badgeColor = lineColor === "#FCCC0A" ? "#92400e" : lineColor;
   const badgeBg = `${lineColor}15`;
 
-  // Resolve neighborhood matches for display chips
+  // Resolve neighborhood matches for display chips (limited to 5)
   const neighborhoodMatches = useMemo(() => {
     if (query.trim().length < 2) return [];
     return searchNeighborhoods(query.trim(), 5);
   }, [query]);
 
-  // Get the set of zip codes that match neighborhoods
+  // Get ALL zip codes that match the query (no limit) for filtering
   const matchedZips = useMemo(() => {
-    return new Set(neighborhoodMatches.map((m) => m.zipCode));
-  }, [neighborhoodMatches]);
+    const q = query.trim().toLowerCase();
+    if (q.length < 2) return new Set<string>();
+
+    const zips = new Set<string>();
+    const isDigits = /^\d+$/.test(q);
+
+    for (const [zip, name] of Object.entries(NYC_ZIP_NEIGHBORHOODS)) {
+      if (isDigits) {
+        if (zip.startsWith(q)) zips.add(zip);
+      } else {
+        // Match neighborhood name OR borough name
+        if (name.toLowerCase().includes(q)) zips.add(zip);
+        const borough = NYC_ZIP_BOROUGHS[zip];
+        if (borough && borough.toLowerCase().includes(q)) zips.add(zip);
+      }
+    }
+    return zips;
+  }, [query]);
 
   // Filter buildings
   const filtered = useMemo(() => {
@@ -80,13 +99,14 @@ export function TransitBuildingList({
     if (!q) return buildings;
 
     return buildings.filter((b) => {
-      // Match by neighborhood zip codes
-      if (matchedZips.size > 0 && b.zip_code && matchedZips.has(b.zip_code)) {
+      const zip = b.zip_code?.trim() || "";
+      // Match by neighborhood/borough zip codes
+      if (matchedZips.size > 0 && zip && matchedZips.has(zip)) {
         return true;
       }
-      // Match by zip code directly
-      if (b.zip_code && b.zip_code.startsWith(q)) return true;
-      // Match by address, borough, station name
+      // Match by zip code directly (partial match)
+      if (zip && zip.startsWith(q)) return true;
+      // Match by address, borough, station name (substring)
       if (b.full_address.toLowerCase().includes(q)) return true;
       if (b.borough.toLowerCase().includes(q)) return true;
       if (b.nearest_station.toLowerCase().includes(q)) return true;
