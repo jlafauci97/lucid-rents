@@ -3,6 +3,9 @@ import { BOROUGH_SLUGS, buildingUrl, landlordSlug, cityPath, neighborhoodUrl } f
 import { NEWS_CATEGORIES } from "@/lib/news-sources";
 import { SUBWAY_LINES, transitLineUrl } from "@/lib/subway-lines";
 
+// Prevent static generation — sitemap must fetch live data at request time
+export const dynamic = "force-dynamic";
+
 const BASE_URL = "https://lucidrents.com";
 const BUILDINGS_PER_SITEMAP = 45000;
 
