@@ -235,7 +235,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
           {/* Main column */}
           <div className="lg:col-span-2 space-y-8">
             {/* Reviews */}
-            <section>
+            <section id="reviews">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold text-[#0F1D2E]">
                   Tenant Reviews ({reviews.length})
@@ -268,37 +268,47 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
             </section>
 
             {/* Market Data & Availability */}
-            <MarketListings listings={marketListings} amenities={amenities} />
+            <div id="rent">
+              <MarketListings listings={marketListings} amenities={amenities} />
+            </div>
 
             {/* Violation & Complaint Trends */}
-            <ViolationTrend buildingId={buildingId} />
+            <div id="violation-trends">
+              <ViolationTrend buildingId={buildingId} />
+            </div>
 
             {/* Violations by Unit Breakdown */}
+            <div id="violations-by-unit">
             <ViolationsByUnit
               violationSummaries={violationSummaries}
               units={units}
               buildingId={buildingId}
             />
+            </div>
 
             <AdBlock adSlot="BUILDING_MID_2" adFormat="horizontal" />
 
             {/* Violations & Complaints Tabs */}
-            <IssuesTabs violations={violations} complaints={complaints} litigations={litigations} dobViolations={dobViolations} bedbugs={bedbugs} evictions={evictions} permits={permits} />
+            <div id="violations">
+              <IssuesTabs violations={violations} complaints={complaints} litigations={litigations} dobViolations={dobViolations} bedbugs={bedbugs} evictions={evictions} permits={permits} />
+            </div>
 
             {/* Building Location Map */}
             {building.latitude && building.longitude && (
+              <div id="location">
               <BuildingLocationMap
                 latitude={building.latitude}
                 longitude={building.longitude}
                 address={building.full_address}
               />
+              </div>
             )}
           </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Building Info */}
-            <Card>
+            <Card id="building-details">
               <CardHeader>
                 <h3 className="font-semibold text-[#0F1D2E]">
                   Building Details
@@ -366,48 +376,60 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
             </Card>
 
             {/* Rent Stabilization */}
+            <div id="rent-stabilization">
             <RentStabilizationCard
               isStabilized={building.is_rent_stabilized}
               stabilizedUnits={building.stabilized_units}
               totalUnits={building.residential_units}
               stabilizedYear={building.stabilized_year}
             />
+            </div>
 
             {/* Energy Score */}
-            <EnergyScoreCard data={energyData[0] || null} />
+            <div id="energy-score">
+              <EnergyScoreCard data={energyData[0] || null} />
+            </div>
 
             {/* Nearby Transit */}
             {building.latitude && building.longitude && (
+              <div id="transit">
               <NearbyTransit
                 latitude={building.latitude}
                 longitude={building.longitude}
               />
+              </div>
             )}
 
             {/* Nearby Schools & Colleges */}
             {building.latitude && building.longitude && (
+              <div id="schools">
               <NearbySchools
                 latitude={building.latitude}
                 longitude={building.longitude}
               />
+              </div>
             )}
 
             {/* Nearby Recreation */}
             {building.latitude && building.longitude && (
+              <div id="recreation">
               <NearbyRecreation
                 latitude={building.latitude}
                 longitude={building.longitude}
               />
+              </div>
             )}
 
             {/* Neighborhood Crime */}
             {building.zip_code && (
+              <div id="crime">
               <NearbyCrimeSummary zipCode={building.zip_code} />
+              </div>
             )}
 
             {/* Units */}
             {units.length > 0 && (
-              <Card>
+              <Card id="units">
                 <CardHeader>
                   <h3 className="font-semibold text-[#0F1D2E]">
                     Units ({units.length})
@@ -441,7 +463,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
 
         {/* Nearby Buildings — full width below the grid */}
         {building.zip_code && (
-          <div className="mt-8">
+          <div id="nearby-buildings" className="mt-8">
             <NearbyBuildings
               buildingId={buildingId}
               zipCode={building.zip_code}

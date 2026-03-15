@@ -294,7 +294,7 @@ export function MarketListings({ listings: rawListings, amenities }: MarketListi
 
         {/* Amenities */}
         {dedupedAmenities.length > 0 && (
-          <Card>
+          <Card id="amenities">
             <CardHeader>
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4.5 h-4.5 text-[#a855f7]" />
@@ -336,7 +336,7 @@ export function MarketListings({ listings: rawListings, amenities }: MarketListi
 
         {/* Office Hours */}
         {listing && listing.office_hours.length > 0 && (
-          <Card>
+          <Card id="office-hours">
             <CardHeader>
               <div className="flex items-center gap-2">
                 <Clock className="w-4.5 h-4.5 text-[#64748b]" />
