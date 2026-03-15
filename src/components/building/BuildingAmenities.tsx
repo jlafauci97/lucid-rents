@@ -36,11 +36,12 @@ const CATEGORY_CONFIG: {
 export function BuildingAmenities({ amenities }: BuildingAmenitiesProps) {
   if (!amenities || amenities.length === 0) return null;
 
-  // Deduplicate by amenity name (prefer streeteasy)
+  // Deduplicate by amenity name (prefer streeteasy > rent_com > zillow)
   const seen = new Set<string>();
   const deduped: AmenityEntry[] = [];
-  const sorted = [...amenities].sort((a, b) =>
-    a.source === "streeteasy" ? -1 : b.source === "streeteasy" ? 1 : 0
+  const SOURCE_PRIORITY: Record<string, number> = { streeteasy: 0, rent_com: 1, zillow: 2 };
+  const sorted = [...amenities].sort(
+    (a, b) => (SOURCE_PRIORITY[a.source] ?? 9) - (SOURCE_PRIORITY[b.source] ?? 9)
   );
   for (const a of sorted) {
     const key = a.amenity.toLowerCase();
@@ -96,7 +97,7 @@ export function BuildingAmenities({ amenities }: BuildingAmenitiesProps) {
           })}
         </div>
         <p className="text-[10px] text-[#94a3b8] mt-3">
-          Data from StreetEasy & Zillow
+          Data from StreetEasy, Rent.com & Zillow
         </p>
       </CardContent>
     </Card>

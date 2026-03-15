@@ -18,6 +18,7 @@ import { BuildingLocationMap } from "@/components/building/BuildingLocationMap";
 import { RentStabilizationCard } from "@/components/building/RentStabilizationCard";
 import { RentRangeCard } from "@/components/building/RentRangeCard";
 import { BuildingAmenities } from "@/components/building/BuildingAmenities";
+import { MarketListings } from "@/components/building/MarketListings";
 import { EnergyScoreCard } from "@/components/building/EnergyScoreCard";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -99,7 +100,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
   const buildingId = building.id;
 
   // Fetch violations, complaints, litigations, DOB violations, bedbugs, evictions, reviews, and units in parallel
-  const [violationsRes, complaintsRes, litigationsRes, dobViolationsRes, bedbugsRes, evictionsRes, permitsRes, energyRes, reviewsRes, unitsRes, violationSummaryRes, rentsRes, amenitiesRes] = await Promise.all([
+  const [violationsRes, complaintsRes, litigationsRes, dobViolationsRes, bedbugsRes, evictionsRes, permitsRes, energyRes, reviewsRes, unitsRes, violationSummaryRes, rentsRes, amenitiesRes, listingsRes] = await Promise.all([
     supabase
       .from("hpd_violations")
       .select("*")
@@ -174,6 +175,10 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
       .from("building_amenities")
       .select("amenity, category, source")
       .eq("building_id", buildingId),
+    supabase
+      .from("building_listings")
+      .select("*")
+      .eq("building_id", buildingId),
   ]);
 
   const violations = (violationsRes.data || []) as HpdViolation[];
@@ -189,6 +194,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
   const violationSummaries = violationSummaryRes.data || [];
   const rents = rentsRes.data || [];
   const amenities = amenitiesRes.data || [];
+  const marketListings = listingsRes.data || [];
 
   // Check if user is monitoring this building
   let isMonitored = false;
@@ -260,6 +266,9 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
                 </Card>
               )}
             </section>
+
+            {/* Market Data & Availability */}
+            <MarketListings listings={marketListings} amenities={amenities} />
 
             {/* Violation & Complaint Trends */}
             <ViolationTrend buildingId={buildingId} />
@@ -355,12 +364,6 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
                 </dl>
               </CardContent>
             </Card>
-
-            {/* Rent Range */}
-            <RentRangeCard rents={rents} />
-
-            {/* Building Amenities */}
-            <BuildingAmenities amenities={amenities} />
 
             {/* Rent Stabilization */}
             <RentStabilizationCard

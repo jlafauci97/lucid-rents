@@ -29,11 +29,11 @@ function formatRent(amount: number): string {
 export function RentRangeCard({ rents }: RentRangeCardProps) {
   if (!rents || rents.length === 0) return null;
 
-  // Merge data from multiple sources — prefer StreetEasy, fall back to Zillow
+  // Merge data from multiple sources — prefer StreetEasy > Rent.com > Zillow
   const merged = new Map<number, RentEntry>();
-  // Sort so streeteasy comes last (overwrites zillow)
-  const sorted = [...rents].sort((a, b) =>
-    a.source === "zillow" ? -1 : b.source === "zillow" ? 1 : 0
+  const SOURCE_PRIORITY: Record<string, number> = { zillow: 0, rent_com: 1, streeteasy: 2 };
+  const sorted = [...rents].sort(
+    (a, b) => (SOURCE_PRIORITY[a.source] ?? 0) - (SOURCE_PRIORITY[b.source] ?? 0)
   );
   for (const r of sorted) {
     const existing = merged.get(r.bedrooms);
@@ -90,7 +90,7 @@ export function RentRangeCard({ rents }: RentRangeCardProps) {
           ))}
         </div>
         <p className="text-[10px] text-[#94a3b8] mt-3">
-          Based on recent listings from StreetEasy & Zillow
+          Based on recent listings from StreetEasy, Rent.com & Zillow
         </p>
       </CardContent>
     </Card>
