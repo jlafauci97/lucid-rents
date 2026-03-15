@@ -29,6 +29,18 @@
       "schedule": "0 6 * * *"
     },
     {
+      "path": "/api/cron/sync?source=sheds",
+      "schedule": "20 6 * * *"
+    },
+    {
+      "path": "/api/cron/sync?source=permits",
+      "schedule": "30 6 * * *"
+    },
+    {
+      "path": "/api/cron/sync?mode=link",
+      "schedule": "0 7 * * *"
+    },
+    {
       "path": "/api/cron/sync-rent-stabilization",
       "schedule": "0 7 1 * *"
     },
@@ -43,14 +55,6 @@
     {
       "path": "/api/cron/sync-zillow-rents",
       "schedule": "30 7 1 * *"
-    },
-    {
-      "path": "/api/cron/sync?source=sheds",
-      "schedule": "20 6 * * *"
-    },
-    {
-      "path": "/api/cron/sync?source=permits",
-      "schedule": "30 6 * * *"
     },
     {
       "path": "/api/cron/sync-energy",

@@ -1694,8 +1694,176 @@ const SOURCES: Record<string, (supabase: ReturnType<typeof getSupabaseAdmin>) =>
 };
 
 // ---------------------------------------------------------------------------
+// Link-only tables — maps source name to the DB table + label used by linkByBbl
+// ---------------------------------------------------------------------------
+const LINK_TABLES: Record<string, { table: string; label: string }> = {
+  hpd: { table: "hpd_violations", label: "HPD" },
+  litigations: { table: "hpd_litigations", label: "HPD Litigations" },
+  dob: { table: "dob_violations", label: "DOB" },
+  bedbugs: { table: "bedbug_reports", label: "Bedbugs" },
+  evictions: { table: "evictions", label: "Evictions" },
+  sheds: { table: "sidewalk_sheds", label: "Sheds" },
+  permits: { table: "dob_permits", label: "Permits" },
+};
+
+/**
+ * Link-only mode: runs linkByBbl for all (or specific) tables without fetching
+ * new data. Also handles 311 address-based linking with a generous time budget.
+ */
+async function runLinkOnly(
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+  sourceParam: string | null,
+  startTime: number
+): Promise<NextResponse> {
+  const errors: string[] = [];
+  const allAffectedIds = new Set<string>();
+  const linkResults: Record<string, { linked: number; errors: string[] }> = {};
+  const syncStartTime = new Date().toISOString();
+
+  // Determine which tables to link
+  const tablesToLink = sourceParam
+    ? (LINK_TABLES[sourceParam] ? { [sourceParam]: LINK_TABLES[sourceParam] } : null)
+    : LINK_TABLES;
+
+  if (sourceParam && !tablesToLink && sourceParam !== "complaints") {
+    return NextResponse.json(
+      { error: `Unknown link source: ${sourceParam}. Valid: ${[...Object.keys(LINK_TABLES), "complaints"].join(", ")}` },
+      { status: 400 }
+    );
+  }
+
+  // Link BBL-based tables
+  if (tablesToLink) {
+    for (const [name, { table, label }] of Object.entries(tablesToLink)) {
+      const tableErrors: string[] = [];
+      try {
+        const result = await linkByBbl(supabase, table, syncStartTime, tableErrors, label);
+        for (const id of result.affectedBuildingIds) allAffectedIds.add(id);
+        linkResults[name] = { linked: result.linked, errors: tableErrors };
+      } catch (err) {
+        tableErrors.push(`${label} link error: ${String(err)}`);
+        linkResults[name] = { linked: 0, errors: tableErrors };
+      }
+    }
+  }
+
+  // Link 311 complaints by address (generous time budget in link-only mode)
+  if (!sourceParam || sourceParam === "complaints") {
+    const complaintsErrors: string[] = [];
+    let complaintsLinked = 0;
+    try {
+      // Find unlinked 311 records from last 30 days
+      const linkCutoff = new Date();
+      linkCutoff.setDate(linkCutoff.getDate() - 30);
+
+      const { data: unlinked } = await supabase
+        .from("complaints_311")
+        .select("unique_key, incident_address")
+        .is("building_id", null)
+        .not("incident_address", "is", null)
+        .gte("imported_at", linkCutoff.toISOString())
+        .limit(10000);
+
+      if (unlinked && unlinked.length > 0) {
+        // Group by address
+        const addressToKeys = new Map<string, string[]>();
+        for (const r of unlinked) {
+          const addr = (r.incident_address as string).trim().toUpperCase();
+          if (!addr) continue;
+          if (!addressToKeys.has(addr)) addressToKeys.set(addr, []);
+          addressToKeys.get(addr)!.push(r.unique_key);
+        }
+
+        let lookupCount = 0;
+        const MAX_LOOKUPS = 200; // Much higher budget in link-only mode
+
+        for (const [address, uniqueKeys] of addressToKeys) {
+          if (lookupCount >= MAX_LOOKUPS) break;
+          // Stop if running low on time (250s of 300s max)
+          if (Date.now() - startTime > 250_000) {
+            complaintsErrors.push(`311 linking stopped at ${lookupCount} lookups (time budget)`);
+            break;
+          }
+          lookupCount++;
+
+          const { data: matchedBuildings } = await supabase
+            .from("buildings")
+            .select("id")
+            .ilike("full_address", `%${address}%`)
+            .limit(1);
+
+          if (matchedBuildings && matchedBuildings.length > 0) {
+            const buildingId = matchedBuildings[0].id;
+            for (let i = 0; i < uniqueKeys.length; i += 500) {
+              const keyBatch = uniqueKeys.slice(i, i + 500);
+              const { error: linkError } = await supabase
+                .from("complaints_311")
+                .update({ building_id: buildingId })
+                .in("unique_key", keyBatch);
+
+              if (!linkError) {
+                complaintsLinked += keyBatch.length;
+              } else {
+                complaintsErrors.push(`311 link error (${address}): ${linkError.message}`);
+              }
+            }
+            allAffectedIds.add(buildingId);
+          }
+        }
+      }
+    } catch (err) {
+      complaintsErrors.push(`311 link error: ${String(err)}`);
+    }
+    linkResults["complaints"] = { linked: complaintsLinked, errors: complaintsErrors };
+  }
+
+  // Update building counts for all affected buildings
+  let countErrors: string[] = [];
+  if (allAffectedIds.size > 0 && (Date.now() - startTime) / 1000 < 260) {
+    countErrors = await updateBuildingCounts(supabase, allAffectedIds);
+  }
+
+  // Backfill slugs
+  let slugsBackfilled = 0;
+  if ((Date.now() - startTime) / 1000 < 280) {
+    try {
+      const { data: noSlugs } = await supabase
+        .from("buildings")
+        .select("id, full_address")
+        .is("slug", null)
+        .limit(500);
+
+      if (noSlugs && noSlugs.length > 0) {
+        for (const b of noSlugs) {
+          const slug = generateBuildingSlug(b.full_address);
+          await supabase.from("buildings").update({ slug }).eq("id", b.id);
+        }
+        slugsBackfilled = noSlugs.length;
+      }
+    } catch (slugErr) {
+      errors.push(`Slug backfill error: ${String(slugErr)}`);
+    }
+  }
+
+  const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+
+  return NextResponse.json({
+    success: true,
+    mode: "link",
+    source: sourceParam || "all",
+    duration_seconds: parseFloat(elapsed),
+    buildings_updated: allAffectedIds.size,
+    slugs_backfilled: slugsBackfilled,
+    building_count_errors: countErrors,
+    link_results: linkResults,
+    errors,
+  });
+}
+
+// ---------------------------------------------------------------------------
 // GET handler -- works as both Vercel cron and manual trigger
 // Use ?source=hpd|complaints|litigations|dob|nypd|bedbugs|evictions to sync one source at a time.
+// Use ?mode=link to run linking only (no data fetching).
 // Omit source param to run all (may timeout on Hobby plan).
 // ---------------------------------------------------------------------------
 export async function GET(req: NextRequest) {
@@ -1711,12 +1879,18 @@ export async function GET(req: NextRequest) {
   const startTime = Date.now();
   const { searchParams } = new URL(req.url);
   const sourceParam = searchParams.get("source");
+  const mode = searchParams.get("mode"); // "link" = link-only, null = full sync
 
   try {
     const supabase = getSupabaseAdmin();
 
     // Clean up any zombie "running" sync_log entries from previous timeouts
     const staleCleaned = await cleanupStaleSyncs(supabase);
+
+    // --- Link-only mode: skip data fetching, just run BBL/address matching ---
+    if (mode === "link") {
+      return runLinkOnly(supabase, sourceParam, startTime);
+    }
 
     // Determine which sources to sync
     let sourcesToRun: [string, (supabase: ReturnType<typeof getSupabaseAdmin>) => Promise<SyncResult>][];
@@ -1785,6 +1959,7 @@ export async function GET(req: NextRequest) {
     // Build response
     const response: Record<string, unknown> = {
       success: true,
+      mode: "sync",
       source: sourceParam || "all",
       duration_seconds: parseFloat(elapsed),
       stale_syncs_cleaned: staleCleaned,
