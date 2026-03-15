@@ -10,7 +10,7 @@ interface NearbyBuildingsProps {
 }
 
 function letterGrade(score: number | null): { letter: string; color: string; bg: string } {
-  if (score == null) return { letter: "?", color: "#94a3b8", bg: "#f1f5f9" };
+  if (score == null) return { letter: "?", color: "#3B82F6", bg: "#eff6ff" };
   if (score >= 9) return { letter: "A+", color: "#15803d", bg: "#dcfce7" };
   if (score >= 8) return { letter: "A", color: "#16a34a", bg: "#dcfce7" };
   if (score >= 7) return { letter: "B+", color: "#65a30d", bg: "#ecfccb" };
@@ -57,7 +57,7 @@ export async function NearbyBuildings({ buildingId, zipCode, borough }: NearbyBu
                   className="w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0"
                   style={{ backgroundColor: grade.bg, color: grade.color }}
                 >
-                  {grade.letter}
+                  {b.overall_score != null ? grade.letter : <Building2 className="w-5 h-5 text-[#3B82F6]" />}
                 </div>
 
                 <div className="flex-1 min-w-0">

@@ -50,6 +50,9 @@ export default function HomePage() {
             className="mx-auto mb-1 h-[120px] sm:h-[150px] w-auto drop-shadow-lg"
             priority
           />
+          <p className="text-xs sm:text-sm uppercase tracking-[0.2em] text-white/70 font-medium mb-3">
+            A Rental Intelligence Platform
+          </p>
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-1">
             Check Your Building
           </h1>
