@@ -1,8 +1,9 @@
-name: Scrape Rent.com
+name: Scrape Rental Listings
 
 on:
   schedule:
     # Run daily at 6:00 AM EST (11:00 UTC) — after the Vercel syncs finish
+    # Each source staggers 15 min apart to avoid overwhelming Supabase
     - cron: "0 11 * * *"
   workflow_dispatch:
     inputs:
@@ -14,11 +15,15 @@ on:
         description: "Single borough (leave empty for all)"
         required: false
         default: ""
+      source:
+        description: "Source to scrape (all, rent_com, zillow, apartments_com, streeteasy)"
+        required: false
+        default: "all"
 
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 120
 
     steps:
       - name: Checkout
@@ -34,17 +39,50 @@ jobs:
           pip install scrapling supabase
           scrapling install
 
-      - name: Run scraper
+      - name: Scrape Rent.com
+        if: ${{ github.event.inputs.source == 'all' || github.event.inputs.source == 'rent_com' || github.event_name == 'schedule' }}
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           PAGES="${{ github.event.inputs.pages || '3' }}"
           BOROUGH="${{ github.event.inputs.borough || '' }}"
-
           ARGS="--pages=$PAGES"
-          if [ -n "$BOROUGH" ]; then
-            ARGS="$ARGS --borough=$BOROUGH"
-          fi
-
+          if [ -n "$BOROUGH" ]; then ARGS="$ARGS --borough=$BOROUGH"; fi
           python scripts/scrape-rent-com.py $ARGS
+
+      - name: Scrape Zillow
+        if: ${{ github.event.inputs.source == 'all' || github.event.inputs.source == 'zillow' || github.event_name == 'schedule' }}
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          PAGES="${{ github.event.inputs.pages || '3' }}"
+          BOROUGH="${{ github.event.inputs.borough || '' }}"
+          ARGS="--pages=$PAGES"
+          if [ -n "$BOROUGH" ]; then ARGS="$ARGS --borough=$BOROUGH"; fi
+          python scripts/scrape-zillow.py $ARGS
+
+      - name: Scrape Apartments.com
+        if: ${{ github.event.inputs.source == 'all' || github.event.inputs.source == 'apartments_com' || github.event_name == 'schedule' }}
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          PAGES="${{ github.event.inputs.pages || '3' }}"
+          BOROUGH="${{ github.event.inputs.borough || '' }}"
+          ARGS="--pages=$PAGES"
+          if [ -n "$BOROUGH" ]; then ARGS="$ARGS --borough=$BOROUGH"; fi
+          python scripts/scrape-apartments-com.py $ARGS
+
+      - name: Scrape StreetEasy
+        if: ${{ github.event.inputs.source == 'all' || github.event.inputs.source == 'streeteasy' || github.event_name == 'schedule' }}
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          PAGES="${{ github.event.inputs.pages || '3' }}"
+          BOROUGH="${{ github.event.inputs.borough || '' }}"
+          ARGS="--pages=$PAGES"
+          if [ -n "$BOROUGH" ]; then ARGS="$ARGS --borough=$BOROUGH"; fi
+          python scripts/scrape-streeteasy.py $ARGS
