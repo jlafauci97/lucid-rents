@@ -14,6 +14,7 @@ import { NearbyTransit } from "@/components/transit/NearbyTransit";
 import { NearbySchools } from "@/components/schools/NearbySchools";
 import { NearbyRecreation } from "@/components/building/NearbyRecreation";
 import { NearbyBuildings } from "@/components/building/NearbyBuildings";
+import { SameLandlordBuildings } from "@/components/building/SameLandlordBuildings";
 import { BuildingLocationMap } from "@/components/building/BuildingLocationMap";
 import { RentStabilizationCard } from "@/components/building/RentStabilizationCard";
 import { RentRangeCard } from "@/components/building/RentRangeCard";
@@ -466,6 +467,16 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
             )}
           </div>
         </div>
+
+        {/* Same Landlord Buildings — cross-link within portfolio */}
+        {building.owner_name && (
+          <div id="same-landlord" className="mt-8">
+            <SameLandlordBuildings
+              buildingId={buildingId}
+              ownerName={building.owner_name}
+            />
+          </div>
+        )}
 
         {/* Nearby Buildings — full width below the grid */}
         {building.zip_code && (

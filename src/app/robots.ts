@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 
-export const dynamic = "force-dynamic";
+// Revalidate every 6 hours — keeps crawlers fast while staying fresh
+export const revalidate = 21600;
 
 const BUILDINGS_PER_SITEMAP = 45000;
 
