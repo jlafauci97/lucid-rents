@@ -7,7 +7,7 @@ import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { createClient } from "@/lib/supabase/server";
 import type { Building } from "@/types";
-import { cityPath } from "@/lib/seo";
+import { cityPath, canonicalUrl } from "@/lib/seo";
 import type { Metadata } from "next";
 
 interface SearchPageProps {
@@ -18,8 +18,16 @@ export async function generateMetadata({
   searchParams,
 }: SearchPageProps): Promise<Metadata> {
   const params = await searchParams;
+  const title = params.q ? `Search: ${params.q}` : "Search NYC Buildings";
+  const description = params.q
+    ? `Search results for "${params.q}" — find building violations, complaints, and tenant reviews.`
+    : "Search NYC buildings by address, zip code, or neighborhood. View violations, complaints, tenant reviews, and more.";
+  const url = canonicalUrl(cityPath("/search"));
   return {
-    title: params.q ? `Search: ${params.q}` : "Search Buildings",
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: { title, description, url, siteName: "Lucid Rents", type: "website" },
   };
 }
 

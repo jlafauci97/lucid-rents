@@ -56,9 +56,27 @@ async function generateStaticSitemap(): Promise<MetadataRoute.Sitemap> {
   // Homepage (stays at root)
   entries.push({
     url: BASE_URL,
+    lastModified: new Date(),
     changeFrequency: "daily",
     priority: 1.0,
   });
+
+  // Static root pages (not city-specific)
+  const rootPages = [
+    { path: "/about", freq: "monthly" as const, priority: 0.5 },
+    { path: "/contact", freq: "monthly" as const, priority: 0.5 },
+    { path: "/privacy", freq: "monthly" as const, priority: 0.3 },
+    { path: "/terms", freq: "monthly" as const, priority: 0.3 },
+    { path: "/guides/nyc-tenant-rights", freq: "monthly" as const, priority: 0.7 },
+  ];
+  for (const page of rootPages) {
+    entries.push({
+      url: `${BASE_URL}${page.path}`,
+      lastModified: new Date(),
+      changeFrequency: page.freq,
+      priority: page.priority,
+    });
+  }
 
   // Static city-specific pages
   const staticPages = [
@@ -80,6 +98,7 @@ async function generateStaticSitemap(): Promise<MetadataRoute.Sitemap> {
   for (const page of staticPages) {
     entries.push({
       url: `${BASE_URL}${cityPath(page)}`,
+      lastModified: new Date(),
       changeFrequency: page === "/news" ? "daily" : "weekly",
       priority: 0.8,
     });

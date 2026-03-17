@@ -17,7 +17,7 @@ import { LetterGrade } from "@/components/ui/LetterGrade";
 import { LandlordViolationTrend } from "@/components/landlord/LandlordViolationTrend";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { landlordSlug, landlordUrl, landlordJsonLd, canonicalUrl, buildingUrl, cityPath } from "@/lib/seo";
+import { landlordSlug, landlordUrl, landlordJsonLd, breadcrumbJsonLd, canonicalUrl, buildingUrl, cityPath } from "@/lib/seo";
 import { deriveScore } from "@/lib/constants";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
@@ -173,6 +173,11 @@ export default async function LandlordDetailPage({
     <AdSidebar>
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <JsonLd data={landlordJsonLd(displayName, totalBuildings)} />
+      <JsonLd data={breadcrumbJsonLd([
+        { name: "Home", url: "/" },
+        { name: "Landlords", url: cityPath("/landlords") },
+        { name: displayName, url: landlordUrl(displayName) },
+      ])} />
       <Breadcrumbs
         items={[
           { label: "Home", href: "/" },

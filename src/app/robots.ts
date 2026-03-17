@@ -1,10 +1,12 @@
 import type { MetadataRoute } from "next";
 
+// Keep this in sync with generateSitemaps() in sitemap.ts.
+// Estimated: 1 static + ceil(buildings / 45000) building sitemaps.
+const SITEMAP_COUNT = 16;
+
 export default function robots(): MetadataRoute.Robots {
-  // List individual sitemaps since the auto-generated index at /sitemap.xml
-  // isn't working reliably in this Next.js version
   const sitemaps: string[] = [];
-  for (let i = 0; i <= 15; i++) {
+  for (let i = 0; i < SITEMAP_COUNT; i++) {
     sitemaps.push(`https://lucidrents.com/sitemap/${i}.xml`);
   }
 

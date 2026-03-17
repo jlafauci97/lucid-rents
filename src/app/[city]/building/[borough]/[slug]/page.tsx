@@ -22,7 +22,7 @@ import { MarketListings } from "@/components/building/MarketListings";
 import { EnergyScoreCard } from "@/components/building/EnergyScoreCard";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { SLUG_TO_BOROUGH, buildingUrl, canonicalUrl, buildingJsonLd, landlordUrl, cityPath } from "@/lib/seo";
+import { SLUG_TO_BOROUGH, buildingUrl, canonicalUrl, buildingJsonLd, breadcrumbJsonLd, landlordUrl, cityPath } from "@/lib/seo";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { PenSquare } from "lucide-react";
@@ -216,6 +216,12 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
     <AdSidebar>
     <div>
       <JsonLd data={buildingJsonLd(building)} />
+      <JsonLd data={breadcrumbJsonLd([
+        { name: "Home", url: "/" },
+        { name: "Buildings", url: cityPath("/buildings") },
+        { name: building.borough, url: cityPath(`/buildings/${boroughSlug}`) },
+        { name: shortAddress, url: buildingUrl(building) },
+      ])} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-2">
         <Breadcrumbs

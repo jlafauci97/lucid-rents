@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { ArrowLeftRight } from "lucide-react";
+import { canonicalUrl, cityPath } from "@/lib/seo";
 import type { Metadata } from "next";
 import type { Building } from "@/types";
 
@@ -13,6 +14,14 @@ export const metadata: Metadata = {
   title: "Compare Buildings",
   description:
     "Compare NYC buildings side by side. View scores, violations, complaints, and more to find the best apartment.",
+  alternates: { canonical: canonicalUrl(cityPath("/compare")) },
+  openGraph: {
+    title: "Compare NYC Buildings",
+    description: "Compare NYC buildings side by side. View scores, violations, complaints, and more.",
+    url: canonicalUrl(cityPath("/compare")),
+    siteName: "Lucid Rents",
+    type: "website",
+  },
 };
 
 interface ComparePageProps {
