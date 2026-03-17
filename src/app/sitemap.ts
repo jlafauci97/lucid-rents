@@ -185,6 +185,33 @@ async function generateStaticSitemap(): Promise<MetadataRoute.Sitemap> {
     }
   }
 
+  // Individual news articles
+  const newsRes = await fetch(
+    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/news_articles?select=slug,published_at&order=published_at.desc&limit=500`,
+    {
+      headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! },
+    }
+  );
+  if (newsRes.ok) {
+    const articles = (await newsRes.json()) as { slug: string; published_at: string }[];
+    for (const article of articles) {
+      entries.push({
+        url: `${BASE_URL}${cityPath(`/news/${article.slug}`)}`,
+        lastModified: new Date(article.published_at),
+        changeFrequency: "monthly",
+        priority: 0.5,
+      });
+    }
+  }
+
+  // Compare page
+  entries.push({
+    url: `${BASE_URL}${cityPath("/compare")}`,
+    lastModified: new Date(),
+    changeFrequency: "monthly",
+    priority: 0.4,
+  });
+
   return entries;
 }
 
