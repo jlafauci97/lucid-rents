@@ -7,6 +7,7 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { SLUG_TO_BOROUGH, BOROUGH_SLUGS, canonicalUrl, buildingUrl, cityPath } from "@/lib/seo";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
+import { BoroughExploreLinks } from "@/components/seo/BoroughExploreLinks";
 import type { Building } from "@/types";
 import type { Metadata } from "next";
 
@@ -167,6 +168,8 @@ export default async function BoroughPage({ params, searchParams }: BoroughPageP
           )}
         </div>
       )}
+      {/* Cross-links: neighborhoods, landlords, explore */}
+      <BoroughExploreLinks borough={borough} boroughSlug={boroughSlug} />
     </div>
     </AdSidebar>
   );

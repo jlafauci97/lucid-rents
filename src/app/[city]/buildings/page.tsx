@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/Card";
-import { Building2, AlertTriangle, MessageSquare } from "lucide-react";
+import { Building2, AlertTriangle, MessageSquare, Users, ShieldAlert, MapPin, TrendingDown } from "lucide-react";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { BOROUGH_SLUGS, canonicalUrl, cityPath } from "@/lib/seo";
@@ -125,6 +125,64 @@ export default async function BuildingsIndexPage() {
           </Link>
         ))}
       </div>
+
+      {/* Cross-links to related sections */}
+      <section className="mt-12">
+        <h2 className="text-xl font-bold text-[#0F1D2E] mb-4">Explore More</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Link
+            href={cityPath("/worst-rated-buildings")}
+            className="group flex items-center gap-3 p-4 bg-white border border-[#e2e8f0] rounded-xl hover:shadow-md hover:border-red-300 transition-all"
+          >
+            <div className="p-2 rounded-lg bg-red-50">
+              <TrendingDown className="w-5 h-5 text-[#ef4444]" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-[#0F1D2E] group-hover:text-[#ef4444] transition-colors">Worst Rated Buildings</p>
+              <p className="text-xs text-[#64748b]">Ranked by violations</p>
+            </div>
+          </Link>
+
+          <Link
+            href={cityPath("/landlords")}
+            className="group flex items-center gap-3 p-4 bg-white border border-[#e2e8f0] rounded-xl hover:shadow-md hover:border-purple-300 transition-all"
+          >
+            <div className="p-2 rounded-lg bg-purple-50">
+              <Users className="w-5 h-5 text-[#8B5CF6]" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-[#0F1D2E] group-hover:text-[#8B5CF6] transition-colors">Landlord Directory</p>
+              <p className="text-xs text-[#64748b]">Search by owner name</p>
+            </div>
+          </Link>
+
+          <Link
+            href={cityPath("/crime")}
+            className="group flex items-center gap-3 p-4 bg-white border border-[#e2e8f0] rounded-xl hover:shadow-md hover:border-amber-300 transition-all"
+          >
+            <div className="p-2 rounded-lg bg-amber-50">
+              <ShieldAlert className="w-5 h-5 text-[#d97706]" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-[#0F1D2E] group-hover:text-[#d97706] transition-colors">Crime Data</p>
+              <p className="text-xs text-[#64748b]">Safety by zip code</p>
+            </div>
+          </Link>
+
+          <Link
+            href={cityPath("/rent-data")}
+            className="group flex items-center gap-3 p-4 bg-white border border-[#e2e8f0] rounded-xl hover:shadow-md hover:border-emerald-300 transition-all"
+          >
+            <div className="p-2 rounded-lg bg-emerald-50">
+              <MapPin className="w-5 h-5 text-[#10b981]" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-[#0F1D2E] group-hover:text-[#10b981] transition-colors">Rent Data</p>
+              <p className="text-xs text-[#64748b]">Market prices by area</p>
+            </div>
+          </Link>
+        </div>
+      </section>
     </div>
   );
 }
