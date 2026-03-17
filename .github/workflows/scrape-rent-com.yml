@@ -36,7 +36,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install scrapling supabase
+          pip install scrapling supabase playwright
+          playwright install --with-deps chromium
           scrapling install
 
       - name: Scrape Rent.com
