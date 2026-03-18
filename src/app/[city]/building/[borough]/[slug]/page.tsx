@@ -26,7 +26,7 @@ import { SLUG_TO_BOROUGH, buildingUrl, canonicalUrl, buildingJsonLd, landlordUrl
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { PenSquare } from "lucide-react";
-import type { Building, HpdViolation, Complaint311, HpdLitigation, DobViolation, BedBugReport, Eviction, DobPermit, EnergyBenchmark, ReviewWithDetails } from "@/types";
+import type { Building, HpdViolation, Complaint311, HpdLitigation, DobViolation, BedBugReport, Eviction, DobPermit, EnergyBenchmark, ReviewWithDetails, UnitListing } from "@/types";
 import type { Metadata } from "next";
 
 export const revalidate = 86400; // 24h ISR
@@ -100,7 +100,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
   const buildingId = building.id;
 
   // Fetch violations, complaints, litigations, DOB violations, bedbugs, evictions, reviews, and units in parallel
-  const [violationsRes, complaintsRes, litigationsRes, dobViolationsRes, bedbugsRes, evictionsRes, permitsRes, energyRes, reviewsRes, unitsRes, violationSummaryRes, rentsRes, amenitiesRes, listingsRes] = await Promise.all([
+  const [violationsRes, complaintsRes, litigationsRes, dobViolationsRes, bedbugsRes, evictionsRes, permitsRes, energyRes, reviewsRes, unitsRes, violationSummaryRes, rentsRes, amenitiesRes, listingsRes, unitListingsRes] = await Promise.all([
     supabase
       .from("hpd_violations")
       .select("*")
@@ -179,6 +179,11 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
       .from("building_listings")
       .select("*")
       .eq("building_id", buildingId),
+    supabase
+      .from("unit_listings")
+      .select("*")
+      .eq("building_id", buildingId)
+      .eq("available", true),
   ]);
 
   const violations = (violationsRes.data || []) as HpdViolation[];
@@ -195,6 +200,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
   const rents = rentsRes.data || [];
   const amenities = amenitiesRes.data || [];
   const marketListings = listingsRes.data || [];
+  const unitListings = (unitListingsRes.data || []) as UnitListing[];
 
   // Check if user is monitoring this building
   let isMonitored = false;
@@ -436,24 +442,45 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
                   </h3>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-2">
-                    {units.map((unit) => (
-                      <Link
-                        key={unit.id}
-                        href={`${buildingUrl(building)}/unit/${unit.id}`}
-                        className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-50 transition-colors"
-                      >
-                        <span className="text-sm font-medium text-[#0F1D2E]">
-                          Unit {unit.unit_number}
-                        </span>
-                        {unit.review_count > 0 && (
-                          <span className="text-xs text-[#64748b]">
-                            {unit.review_count} review
-                            {unit.review_count !== 1 ? "s" : ""}
-                          </span>
-                        )}
-                      </Link>
-                    ))}
+                  <div className="space-y-1">
+                    {units.map((unit) => {
+                      const listing = unitListings.find(
+                        (ul) => ul.unit_id === unit.id
+                      );
+                      return (
+                        <Link
+                          key={unit.id}
+                          href={`${buildingUrl(building)}/unit/${unit.id}`}
+                          className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-50 transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-[#0F1D2E]">
+                              Unit {unit.unit_number}
+                            </span>
+                            {listing?.bedrooms != null && (
+                              <span className="text-xs text-[#64748b]">
+                                {listing.bedrooms === 0
+                                  ? "Studio"
+                                  : `${listing.bedrooms} bed`}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-3">
+                            {listing?.price != null && (
+                              <span className="text-sm font-semibold text-[#16a34a]">
+                                ${listing.price.toLocaleString()}/mo
+                              </span>
+                            )}
+                            {unit.review_count > 0 && (
+                              <span className="text-xs text-[#64748b]">
+                                {unit.review_count} review
+                                {unit.review_count !== 1 ? "s" : ""}
+                              </span>
+                            )}
+                          </div>
+                        </Link>
+                      );
+                    })}
                   </div>
                 </CardContent>
               </Card>

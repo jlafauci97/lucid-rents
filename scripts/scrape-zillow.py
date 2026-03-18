@@ -1,16 +1,20 @@
 #!/usr/bin/env python3
 """
-Scrape rent data from zillow.com for NYC's five boroughs using Scrapling.
+Scrape rent data from zillow.com for NYC neighborhoods using Scrapling.
 
 Uses StealthyFetcher with real_chrome=True to bypass anti-bot protection,
 then extracts structured JSON from Next.js __NEXT_DATA__ payload.
 
+Scrapes neighborhood-by-neighborhood (283 total) to bypass Zillow's 820-result
+cap per search, capturing far more listings than borough-level scraping.
+
 Usage:
-    python3 scripts/scrape-zillow.py                        # all boroughs, 5 pages each
-    python3 scripts/scrape-zillow.py --borough=Manhattan    # single borough
-    python3 scripts/scrape-zillow.py --pages=20             # more pages per borough
-    python3 scripts/scrape-zillow.py --start-page=3         # start from page 3
-    python3 scripts/scrape-zillow.py --dry-run              # preview without DB writes
+    python3 scripts/scrape-zillow.py                              # all neighborhoods, 20 pages each
+    python3 scripts/scrape-zillow.py --borough=Manhattan          # all Manhattan neighborhoods
+    python3 scripts/scrape-zillow.py --neighborhood="Upper East Side"  # single neighborhood
+    python3 scripts/scrape-zillow.py --pages=5                    # limit pages per neighborhood
+    python3 scripts/scrape-zillow.py --start-index=10             # start from 10th neighborhood (resume)
+    python3 scripts/scrape-zillow.py --dry-run                    # preview without DB writes
 """
 
 import json
@@ -47,14 +51,12 @@ from supabase import create_client
 
 supabase = create_client(SUPABASE_URL, SERVICE_KEY)
 
-# ── CONSTANTS ────────────────────────────────────────────────────────────────
-BOROUGH_URLS = {
-    "Manhattan": "https://www.zillow.com/manhattan-new-york-ny/rentals/",
-    "Brooklyn": "https://www.zillow.com/brooklyn-new-york-ny/rentals/",
-    "Queens": "https://www.zillow.com/queens-new-york-ny/rentals/",
-    "Bronx": "https://www.zillow.com/bronx-new-york-ny/rentals/",
-    "Staten Island": "https://www.zillow.com/staten-island-new-york-ny/rentals/",
-}
+# ── NEIGHBORHOOD IMPORT ──────────────────────────────────────────────────────
+sys.path.insert(0, str(Path(__file__).parent))
+from importlib import import_module
+_nbhd_mod = import_module("zillow-neighborhoods")
+ALL_BOROUGHS = _nbhd_mod.ALL_BOROUGHS
+get_url = _nbhd_mod.get_url
 
 MAX_RETRIES = 3
 RETRY_DELAY = 5  # seconds between retries
@@ -166,6 +168,43 @@ def normalize_address(address: str) -> str:
         else:
             normalized.append(part.rstrip(".,"))
     return " ".join(normalized)
+
+
+def parse_unit_number(address_street: str) -> str | None:
+    """Extract unit/apartment number from a Zillow address street string.
+    Examples:
+      '91 Attorney St #5H' -> '5H'
+      '23-10 42nd Rd # 19D' -> '19D'
+      '138 E 94th St APT 6W' -> '6W'
+      '1503 Lexington Ave Unit 2' -> '2'
+      '400 W 61st St' -> None
+    """
+    if not address_street:
+        return None
+
+    # Try matching common patterns: #, APT, UNIT, STE
+    patterns = [
+        r'#\s*(\w+)',
+        r'\bAPT\.?\s*(\w+)',
+        r'\bUNIT\s+(\w+)',
+        r'\bSTE\.?\s+(\w+)',
+    ]
+    for pat in patterns:
+        m = re.search(pat, address_street, re.IGNORECASE)
+        if m:
+            val = m.group(1).upper()
+            # Reject values that are clearly not unit numbers:
+            # - "PENTHOUSE" or other full words that aren't unit IDs
+            # - Hex-like strings > 6 chars (Zillow listing IDs)
+            # - Pure numeric strings > 5 digits (Zillow zpids)
+            if val in ("PENTHOUSE", "BSMT", "BASEMENT", "GARDEN", "LOBBY"):
+                return None
+            if len(val) > 6:
+                return None
+            if val.isdigit() and len(val) > 5:
+                return None
+            return val
+    return None
 
 
 # ── BOROUGH DETECTION ────────────────────────────────────────────────────────
@@ -339,9 +378,18 @@ def extract_listings(data: dict) -> tuple[list[dict], int]:
 
             # Extract street part (before city) for normalization
             # addressStreet may contain unit info like "23-10 42nd Rd # 19D"
+            unit_number = parse_unit_number(address_street) or parse_unit_number(address)
             street = address_street.split("#")[0].strip() if address_street else ""
+            # Also strip APT/UNIT from street for matching
+            for sep in [" APT ", " apt ", " Apt ", " UNIT ", " unit ", " Unit "]:
+                if sep in street:
+                    street = street.split(sep)[0].strip()
             if not street:
                 street = address.split(",")[0].strip() if "," in address else address
+                # Strip unit from address-derived street too
+                for sep in [" APT ", " apt ", " Apt ", " UNIT ", " unit ", " Unit ", " #"]:
+                    if sep in street:
+                        street = street.split(sep)[0].strip()
 
             # Parse units into rent_by_beds
             rent_by_beds = {}
@@ -370,9 +418,45 @@ def extract_listings(data: dict) -> tuple[list[dict], int]:
                         "sqft_max": None,
                     }
 
+            # Fallback: if no units array, extract top-level price/beds
+            if not rent_by_beds:
+                top_price = parse_price(item.get("price", "") or item.get("unformattedPrice", "") or "")
+                if top_price is None:
+                    # Try hdpData for price
+                    hdp = item.get("hdpData", {}) or {}
+                    home_info = hdp.get("homeInfo", {}) or {}
+                    top_price = home_info.get("price")
+                    if top_price and isinstance(top_price, (int, float)) and 500 <= top_price <= 50000:
+                        top_price = int(top_price)
+                    else:
+                        top_price = None
+
+                if top_price:
+                    # Get beds from top-level or hdpData
+                    top_beds = None
+                    hdp = item.get("hdpData", {}) or {}
+                    home_info = hdp.get("homeInfo", {}) or {}
+                    beds_val = home_info.get("bedrooms") or item.get("beds")
+                    if beds_val is not None:
+                        try:
+                            top_beds = int(beds_val)
+                        except (ValueError, TypeError):
+                            top_beds = None
+
+                    if top_beds is not None:
+                        rent_by_beds[top_beds] = {
+                            "min_rent": top_price,
+                            "max_rent": top_price,
+                            "sqft_min": None,
+                            "sqft_max": None,
+                        }
+
             # Compute overall price range from units
             all_prices = [parse_price(u.get("price", "")) for u in units if not u.get("roomForRent")]
             all_prices = [p for p in all_prices if p is not None]
+            # Include top-level price if no units
+            if not all_prices and rent_by_beds:
+                all_prices = [v["min_rent"] for v in rent_by_beds.values()]
             price_min = min(all_prices) if all_prices else None
             price_max = max(all_prices) if all_prices else None
 
@@ -385,6 +469,9 @@ def extract_listings(data: dict) -> tuple[list[dict], int]:
                     all_beds.append(int(u.get("beds", "")))
                 except (ValueError, TypeError):
                     pass
+            # Include top-level beds if no units
+            if not all_beds and rent_by_beds:
+                all_beds = list(rent_by_beds.keys())
             bed_min = min(all_beds) if all_beds else None
             bed_max = max(all_beds) if all_beds else None
 
@@ -435,6 +522,8 @@ def extract_listings(data: dict) -> tuple[list[dict], int]:
                 "longitude": longitude,
                 "property_type": "MULTI_FAMILY" if item.get("isBuilding") else "APARTMENT",
                 "listing_url": detail_url,
+                # Unit-level data
+                "unit_number": unit_number,
                 # Amenities (limited from search results)
                 "amenities": amenities,
                 # Rent data (aggregated for building_rents)
@@ -484,30 +573,34 @@ def match_building(listing: dict) -> str | None:
 
     normalized = normalize_address(street)
 
-    # Try exact match on full_address containing the street + zip
-    result = supabase.table("buildings") \
-        .select("id") \
-        .eq("zip_code", zip_code) \
-        .ilike("full_address", f"%{normalized}%") \
-        .limit(1) \
-        .execute()
-
-    if result.data and len(result.data) > 0:
-        return result.data[0]["id"]
-
-    # Try matching with just house number + zip
-    parts = normalized.split()
-    if len(parts) >= 2:
-        house_num = parts[0]
+    try:
+        # Try exact match on full_address containing the street + zip
         result = supabase.table("buildings") \
             .select("id") \
             .eq("zip_code", zip_code) \
-            .eq("house_number", house_num) \
+            .ilike("full_address", f"%{normalized}%") \
             .limit(1) \
             .execute()
 
         if result.data and len(result.data) > 0:
             return result.data[0]["id"]
+
+        # Try matching with just house number + zip
+        parts = normalized.split()
+        if len(parts) >= 2:
+            house_num = parts[0]
+            result = supabase.table("buildings") \
+                .select("id") \
+                .eq("zip_code", zip_code) \
+                .eq("house_number", house_num) \
+                .limit(1) \
+                .execute()
+
+            if result.data and len(result.data) > 0:
+                return result.data[0]["id"]
+
+    except Exception as e:
+        print(f"    DB match error (will create new): {e}")
 
     return None
 
@@ -688,18 +781,122 @@ def upsert_listing(building_id: str, listing: dict) -> bool:
         return False
 
 
+def find_or_create_unit(building_id: str, unit_number: str, bedrooms: int | None = None) -> str | None:
+    """Find an existing unit or create a new one. Returns unit ID."""
+    if not unit_number:
+        return None
+
+    try:
+        # Try to find existing unit
+        result = supabase.table("units") \
+            .select("id") \
+            .eq("building_id", building_id) \
+            .eq("unit_number", unit_number) \
+            .limit(1) \
+            .execute()
+
+        if result.data and len(result.data) > 0:
+            return result.data[0]["id"]
+
+        # Create new unit
+        row = {
+            "building_id": building_id,
+            "unit_number": unit_number,
+            "bedrooms": bedrooms,
+            "review_count": 0,
+        }
+        result = supabase.table("units").insert(row).execute()
+        if result.data and len(result.data) > 0:
+            return result.data[0]["id"]
+    except Exception as e:
+        err_msg = str(e).lower()
+        if "duplicate" in err_msg or "unique" in err_msg:
+            # Race condition: another insert happened; fetch it
+            try:
+                result = supabase.table("units") \
+                    .select("id") \
+                    .eq("building_id", building_id) \
+                    .eq("unit_number", unit_number) \
+                    .limit(1) \
+                    .execute()
+                if result.data and len(result.data) > 0:
+                    return result.data[0]["id"]
+            except Exception:
+                pass
+        print(f"    Unit find/create error for {unit_number}: {e}")
+    return None
+
+
+def upsert_unit_listing(building_id: str, unit_id: str, unit_number: str,
+                        listing: dict, price: int | None = None,
+                        bedrooms: int | None = None) -> bool:
+    """Upsert a unit-level listing into unit_listings table."""
+    now = datetime.now(timezone.utc).isoformat()
+
+    row = {
+        "unit_id": unit_id,
+        "building_id": building_id,
+        "source": SOURCE,
+        "unit_number": unit_number,
+        "price": price,
+        "bedrooms": bedrooms,
+        "bathrooms": None,
+        "sqft": None,
+        "listing_url": listing.get("listing_url"),
+        "available": True,
+        "scraped_at": now,
+        "updated_at": now,
+    }
+
+    try:
+        supabase.table("unit_listings") \
+            .upsert(row, on_conflict="unit_id,source") \
+            .execute()
+        return True
+    except Exception as e:
+        print(f"    Unit listing upsert error for {unit_number}: {e}")
+        return False
+
+
 # ── MAIN ─────────────────────────────────────────────────────────────────────
 def main():
-    parser = argparse.ArgumentParser(description="Scrape zillow.com for NYC rent data")
+    parser = argparse.ArgumentParser(description="Scrape zillow.com for NYC rent data by neighborhood")
     parser.add_argument("--borough", type=str, default="", help="Single borough to scrape")
-    parser.add_argument("--pages", type=int, default=5, help="Pages per borough (41 listings/page)")
+    parser.add_argument("--neighborhood", type=str, default="", help="Single neighborhood name (e.g. 'Upper East Side')")
+    parser.add_argument("--pages", type=int, default=20, help="Max pages per neighborhood (41 listings/page)")
     parser.add_argument("--dry-run", action="store_true", help="Preview without writing to DB")
-    parser.add_argument("--start-page", type=int, default=1, help="Starting page number")
+    parser.add_argument("--start-index", type=int, default=0, help="Skip first N neighborhoods (for resuming)")
     args = parser.parse_args()
 
-    boroughs = {args.borough: BOROUGH_URLS[args.borough]} if args.borough else BOROUGH_URLS
+    # Build neighborhood list
+    neighborhoods = []
+    if args.neighborhood:
+        # Find specific neighborhood
+        for borough, nbhds in ALL_BOROUGHS.items():
+            for name, slug in nbhds:
+                if name.lower() == args.neighborhood.lower():
+                    neighborhoods.append((borough, name, slug))
+                    break
+        if not neighborhoods:
+            print(f"ERROR: Neighborhood '{args.neighborhood}' not found")
+            sys.exit(1)
+    elif args.borough:
+        if args.borough not in ALL_BOROUGHS:
+            print(f"ERROR: Borough '{args.borough}' not found. Choose from: {list(ALL_BOROUGHS.keys())}")
+            sys.exit(1)
+        for name, slug in ALL_BOROUGHS[args.borough]:
+            neighborhoods.append((args.borough, name, slug))
+    else:
+        for borough, nbhds in ALL_BOROUGHS.items():
+            for name, slug in nbhds:
+                neighborhoods.append((borough, name, slug))
+
     max_pages = args.pages
     dry_run = args.dry_run
+
+    # Apply start_index for resuming
+    if args.start_index > 0:
+        neighborhoods = neighborhoods[args.start_index:]
 
     total_matched = 0
     total_created = 0
@@ -708,16 +905,26 @@ def main():
     total_amenities = 0
     total_listings_saved = 0
     total_listings = 0
+    total_units_linked = 0
+    neighborhoods_scraped = 0
+    neighborhoods_empty = 0
 
-    print(f"Scraping zillow.com — boroughs={list(boroughs.keys())}, pages={max_pages}, dry_run={dry_run}")
+    print(f"Scraping zillow.com — {len(neighborhoods)} neighborhoods, max {max_pages} pages each, dry_run={dry_run}")
+    if args.start_index > 0:
+        print(f"Resuming from index {args.start_index}")
     print(f"Start time: {datetime.now()}\n")
 
-    for borough, base_url in boroughs.items():
+    for idx, (borough, nbhd_name, slug) in enumerate(neighborhoods):
+        global_idx = idx + args.start_index
+        base_url = get_url(slug)
+
         print(f"\n{'='*60}")
-        print(f"BOROUGH: {borough}")
+        print(f"[{global_idx}] {nbhd_name}, {borough}")
         print(f"{'='*60}")
 
-        for page_num in range(args.start_page, args.start_page + max_pages):
+        nbhd_listings = 0
+
+        for page_num in range(1, max_pages + 1):
             if page_num == 1:
                 url = base_url
             else:
@@ -728,15 +935,22 @@ def main():
             data = fetch_page(url)
             if data is None:
                 print(f"    FAILED to fetch page {page_num} after {MAX_RETRIES} retries. Skipping.")
-                continue
+                if page_num == 1:
+                    neighborhoods_empty += 1
+                break
 
             listings, total_results = extract_listings(data)
             print(f"    Got {len(listings)} listings (total available: {total_results})")
 
             if len(listings) == 0:
-                print(f"    No more listings. Moving to next borough.")
+                if page_num == 1:
+                    neighborhoods_empty += 1
+                    print(f"    No listings in {nbhd_name}. Skipping.")
+                else:
+                    print(f"    No more listings.")
                 break
 
+            nbhd_listings += len(listings)
             total_listings += len(listings)
 
             for listing in listings:
@@ -748,47 +962,87 @@ def main():
                     print(f"    [DRY RUN] {addr} | beds={beds_available} | amenities={amenity_count} | rents={listing['rent_by_beds']}")
                     continue
 
-                # Try to match existing building
-                building_id = match_building(listing)
+                try:
+                    # Try to match existing building
+                    building_id = match_building(listing)
 
-                if building_id:
-                    total_matched += 1
-                    label = "MATCHED"
-                else:
-                    # Create new building
-                    building_id = create_building(listing)
                     if building_id:
-                        total_created += 1
-                        label = "CREATED"
+                        total_matched += 1
+                        label = "MATCHED"
                     else:
-                        total_failed += 1
-                        print(f"    SKIP {addr} (could not match or create)")
-                        continue
+                        # Create new building
+                        building_id = create_building(listing)
+                        if building_id:
+                            total_created += 1
+                            label = "CREATED"
+                        else:
+                            total_failed += 1
+                            print(f"    SKIP {addr} (could not match or create)")
+                            continue
 
-                # Upsert all data for this building
-                rents_added = upsert_rents(building_id, listing["rent_by_beds"])
-                amenities_added = upsert_amenities(building_id, listing["amenities"])
-                listing_saved = upsert_listing(building_id, listing)
+                    # Upsert all data for this building
+                    rents_added = upsert_rents(building_id, listing["rent_by_beds"])
+                    amenities_added = upsert_amenities(building_id, listing["amenities"])
+                    listing_saved = upsert_listing(building_id, listing)
 
-                total_rents += rents_added
-                total_amenities += amenities_added
-                if listing_saved:
-                    total_listings_saved += 1
+                    # Link to specific unit if we have a unit number
+                    unit_linked = False
+                    unit_num = listing.get("unit_number")
+                    if unit_num and building_id:
+                        # Get the best price/beds for this unit
+                        unit_beds = None
+                        unit_price = None
+                        if listing["rent_by_beds"]:
+                            # Use the first (usually only) bed count
+                            first_bed = next(iter(listing["rent_by_beds"]))
+                            unit_beds = first_bed
+                            unit_price = listing["rent_by_beds"][first_bed]["min_rent"]
+                        elif listing.get("price_min"):
+                            unit_price = listing["price_min"]
+                            unit_beds = listing.get("bed_min")
 
-                print(f"    {label} {addr} -> {rents_added} rents, {amenities_added} amenities, listing={'OK' if listing_saved else 'FAIL'}")
+                        unit_id = find_or_create_unit(building_id, unit_num, bedrooms=unit_beds)
+                        if unit_id:
+                            unit_linked = upsert_unit_listing(
+                                building_id, unit_id, unit_num, listing,
+                                price=unit_price, bedrooms=unit_beds
+                            )
+                            if unit_linked:
+                                total_units_linked += 1
+
+                    total_rents += rents_added
+                    total_amenities += amenities_added
+                    if listing_saved:
+                        total_listings_saved += 1
+
+                    unit_str = f", unit={unit_num}" if unit_linked else ""
+                    print(f"    {label} {addr} -> {rents_added} rents, {amenities_added} amenities, listing={'OK' if listing_saved else 'FAIL'}{unit_str}")
+                except Exception as e:
+                    total_failed += 1
+                    print(f"    ERROR processing {addr}: {e}")
+                    continue
 
             # Check if we've gone past the total
             if page_num * LISTINGS_PER_PAGE >= total_results:
-                print(f"    Reached end of results ({total_results} total). Moving to next borough.")
+                print(f"    Reached end of results ({total_results} total).")
                 break
 
             # Polite delay between pages
             print(f"    Waiting {PAGE_DELAY}s...")
             time.sleep(PAGE_DELAY)
 
+        if nbhd_listings > 0:
+            neighborhoods_scraped += 1
+        print(f"  {nbhd_name} total: {nbhd_listings} listings")
+
+        # Brief delay between neighborhoods
+        time.sleep(2)
+
     print(f"\n{'='*60}")
     print(f"SUMMARY")
     print(f"{'='*60}")
+    print(f"Neighborhoods scraped:   {neighborhoods_scraped}")
+    print(f"Neighborhoods empty:     {neighborhoods_empty}")
     print(f"Total listings scraped:  {total_listings}")
     print(f"Matched to buildings:    {total_matched}")
     print(f"New buildings created:   {total_created}")
@@ -796,6 +1050,7 @@ def main():
     print(f"Rent records upserted:   {total_rents}")
     print(f"Amenity records upserted:{total_amenities}")
     print(f"Full listings saved:     {total_listings_saved}")
+    print(f"Units linked:            {total_units_linked}")
     print(f"End time: {datetime.now()}")
 
 
