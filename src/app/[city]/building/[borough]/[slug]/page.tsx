@@ -275,7 +275,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
 
             {/* Market Data & Availability */}
             <div id="rent">
-              <MarketListings listings={marketListings} amenities={amenities} />
+              <MarketListings listings={marketListings} amenities={amenities} units={units} unitListings={unitListings} buildingUrl={buildingUrl(building)} />
             </div>
 
             {/* Violation & Complaint Trends */}
@@ -433,58 +433,6 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
               </div>
             )}
 
-            {/* Units */}
-            {units.length > 0 && (
-              <Card id="units">
-                <CardHeader>
-                  <h3 className="font-semibold text-[#0F1D2E]">
-                    Units ({units.length})
-                  </h3>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-1">
-                    {units.map((unit) => {
-                      const listing = unitListings.find(
-                        (ul) => ul.unit_id === unit.id
-                      );
-                      return (
-                        <Link
-                          key={unit.id}
-                          href={`${buildingUrl(building)}/unit/${unit.id}`}
-                          className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-50 transition-colors"
-                        >
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-[#0F1D2E]">
-                              Unit {unit.unit_number}
-                            </span>
-                            {listing?.bedrooms != null && (
-                              <span className="text-xs text-[#64748b]">
-                                {listing.bedrooms === 0
-                                  ? "Studio"
-                                  : `${listing.bedrooms} bed`}
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-3">
-                            {listing?.price != null && (
-                              <span className="text-sm font-semibold text-[#16a34a]">
-                                ${listing.price.toLocaleString()}/mo
-                              </span>
-                            )}
-                            {unit.review_count > 0 && (
-                              <span className="text-xs text-[#64748b]">
-                                {unit.review_count} review
-                                {unit.review_count !== 1 ? "s" : ""}
-                              </span>
-                            )}
-                          </div>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </div>
         </div>
 
