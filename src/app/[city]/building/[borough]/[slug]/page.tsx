@@ -28,7 +28,7 @@ import { SLUG_TO_BOROUGH, buildingUrl, canonicalUrl, buildingJsonLd, breadcrumbJ
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { PenSquare } from "lucide-react";
-import type { Building, HpdViolation, Complaint311, HpdLitigation, DobViolation, BedBugReport, Eviction, DobPermit, EnergyBenchmark, ReviewWithDetails } from "@/types";
+import type { Building, HpdViolation, Complaint311, HpdLitigation, DobViolation, BedBugReport, Eviction, DobPermit, EnergyBenchmark, ReviewWithDetails, UnitListing } from "@/types";
 import type { Metadata } from "next";
 
 export const revalidate = 86400; // 24h ISR
@@ -102,7 +102,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
   const buildingId = building.id;
 
   // Fetch violations, complaints, litigations, DOB violations, bedbugs, evictions, reviews, and units in parallel
-  const [violationsRes, complaintsRes, litigationsRes, dobViolationsRes, bedbugsRes, evictionsRes, permitsRes, energyRes, reviewsRes, unitsRes, violationSummaryRes, rentsRes, amenitiesRes, , rentHistoryRes] = await Promise.all([
+  const [violationsRes, complaintsRes, litigationsRes, dobViolationsRes, bedbugsRes, evictionsRes, permitsRes, energyRes, reviewsRes, unitsRes, violationSummaryRes, rentsRes, amenitiesRes, listingsRes, unitListingsRes] = await Promise.all([
     supabase
       .from("hpd_violations")
       .select("*")
@@ -182,11 +182,10 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
       .select("*")
       .eq("building_id", buildingId),
     supabase
-      .from("unit_rent_history")
-      .select("id, unit_number, bedrooms, bathrooms, rent, sqft, source, observed_at")
+      .from("unit_listings")
+      .select("*")
       .eq("building_id", buildingId)
-      .order("observed_at", { ascending: false })
-      .limit(500),
+      .eq("available", true),
   ]);
 
   const violations = (violationsRes.data || []) as HpdViolation[];
@@ -202,7 +201,8 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
   const violationSummaries = violationSummaryRes.data || [];
   const rents = rentsRes.data || [];
   const amenities = amenitiesRes.data || [];
-  const rentHistory = (rentHistoryRes.data || []) as RentHistoryEntry[];
+  const marketListings = listingsRes.data || [];
+  const unitListings = (unitListingsRes.data || []) as UnitListing[];
 
   // Check if user is monitoring this building
   let isMonitored = false;
@@ -283,7 +283,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
 
             {/* Rent History */}
             <div id="rent">
-              <RentHistory history={rentHistory} />
+              <MarketListings listings={marketListings} amenities={amenities} units={units} unitListings={unitListings} buildingUrl={buildingUrl(building)} />
             </div>
 
             {/* Building Amenities */}
@@ -448,37 +448,6 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
               </div>
             )}
 
-            {/* Units */}
-            {units.length > 0 && (
-              <Card id="units">
-                <CardHeader>
-                  <h3 className="font-semibold text-[#0F1D2E]">
-                    Units ({units.length})
-                  </h3>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {units.map((unit) => (
-                      <Link
-                        key={unit.id}
-                        href={`${buildingUrl(building)}/unit/${unit.id}`}
-                        className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-50 transition-colors"
-                      >
-                        <span className="text-sm font-medium text-[#0F1D2E]">
-                          Unit {unit.unit_number}
-                        </span>
-                        {unit.review_count > 0 && (
-                          <span className="text-xs text-[#64748b]">
-                            {unit.review_count} review
-                            {unit.review_count !== 1 ? "s" : ""}
-                          </span>
-                        )}
-                      </Link>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </div>
         </div>
 

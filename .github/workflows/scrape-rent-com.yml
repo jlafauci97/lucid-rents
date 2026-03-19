@@ -36,7 +36,9 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install scrapling supabase
+          pip install "scrapling[all]" supabase playwright
+          playwright install --with-deps chromium
+          patchright install chromium
           scrapling install
 
       - name: Scrape Rent.com
@@ -63,26 +65,6 @@ jobs:
           if [ -n "$BOROUGH" ]; then ARGS="$ARGS --borough=$BOROUGH"; fi
           python scripts/scrape-zillow.py $ARGS
 
-      - name: Scrape Apartments.com
-        if: ${{ github.event.inputs.source == 'all' || github.event.inputs.source == 'apartments_com' || github.event_name == 'schedule' }}
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: |
-          PAGES="${{ github.event.inputs.pages || '3' }}"
-          BOROUGH="${{ github.event.inputs.borough || '' }}"
-          ARGS="--pages=$PAGES"
-          if [ -n "$BOROUGH" ]; then ARGS="$ARGS --borough=$BOROUGH"; fi
-          python scripts/scrape-apartments-com.py $ARGS
-
-      - name: Scrape StreetEasy
-        if: ${{ github.event.inputs.source == 'all' || github.event.inputs.source == 'streeteasy' || github.event_name == 'schedule' }}
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: |
-          PAGES="${{ github.event.inputs.pages || '3' }}"
-          BOROUGH="${{ github.event.inputs.borough || '' }}"
-          ARGS="--pages=$PAGES"
-          if [ -n "$BOROUGH" ]; then ARGS="$ARGS --borough=$BOROUGH"; fi
-          python scripts/scrape-streeteasy.py $ARGS
+      # Apartments.com and StreetEasy disabled until historical data scrape is complete
+      # - name: Scrape Apartments.com
+      # - name: Scrape StreetEasy

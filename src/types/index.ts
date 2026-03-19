@@ -57,6 +57,21 @@ export interface Unit {
   updated_at: string;
 }
 
+export interface UnitListing {
+  id: string;
+  unit_id: string;
+  building_id: string;
+  source: string;
+  unit_number: string;
+  price: number | null;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  sqft: number | null;
+  listing_url: string | null;
+  available: boolean;
+  scraped_at: string;
+}
+
 export interface Profile {
   id: string;
   display_name: string | null;

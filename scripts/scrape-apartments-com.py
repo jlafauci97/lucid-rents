@@ -33,8 +33,8 @@ if env_path.exists():
             key, val = line.split("=", 1)
             env[key.strip()] = val.strip().strip('"').replace("\\n", "")
 
-SUPABASE_URL = os.environ.get("NEXT_PUBLIC_SUPABASE_URL") or env.get("NEXT_PUBLIC_SUPABASE_URL", "")
-SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or env.get("SUPABASE_SERVICE_ROLE_KEY", "")
+SUPABASE_URL = (os.environ.get("NEXT_PUBLIC_SUPABASE_URL") or env.get("NEXT_PUBLIC_SUPABASE_URL", "")).strip().replace("\\n", "")
+SERVICE_KEY = (os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or env.get("SUPABASE_SERVICE_ROLE_KEY", "")).strip().replace("\\n", "")
 
 if not SUPABASE_URL or not SERVICE_KEY:
     print("ERROR: Missing SUPABASE_URL or SERVICE_KEY in .env.local or environment")

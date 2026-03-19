@@ -300,7 +300,8 @@ async function linkByBbl(
   table: string,
   syncStartTime: string,
   errors: string[],
-  label: string
+  label: string,
+  createBuildings = true
 ): Promise<{ linked: number; affectedBuildingIds: Set<string> }> {
   let linked = 0;
   const affectedBuildingIds = new Set<string>();
@@ -332,7 +333,8 @@ async function linkByBbl(
   const unlinked = allUnlinked;
   if (unlinked.length === 0) return { linked, affectedBuildingIds };
 
-  const bblSet = [...new Set(unlinked.map((r) => r.bbl).filter(Boolean))] as string[];
+  // Only keep valid 10-digit numeric BBLs (skip malformed letter-prefix or 11-digit)
+  const bblSet = [...new Set(unlinked.map((r) => r.bbl).filter((b) => b && /^\d{10}$/.test(b)))] as string[];
 
   // Fetch building IDs for those BBLs (batch in groups of 500 for .in())
   const bblToBuilding = new Map<string, string>();
@@ -350,9 +352,9 @@ async function linkByBbl(
     }
   }
 
-  // Create buildings for unmatched BBLs
+  // Create buildings for unmatched BBLs (only in link-only mode to save time during normal syncs)
   const unmatchedBbls = bblSet.filter((bbl) => !bblToBuilding.has(bbl));
-  if (unmatchedBbls.length > 0) {
+  if (createBuildings && unmatchedBbls.length > 0) {
     let created = 0;
     // Vercel Pro: 900s timeout allows more building creation per sync
     const toCreate = unmatchedBbls.slice(0, 500);
@@ -406,17 +408,23 @@ async function linkByBbl(
   }
 
   for (const [buildingId, recordIds] of buildingToRecordIds) {
-    const { error: linkError } = await supabase
-      .from(table)
-      .update({ building_id: buildingId })
-      .in("id", recordIds);
+    // Batch updates in groups of 200 to avoid URL length limits with .in()
+    let batchLinked = 0;
+    for (let i = 0; i < recordIds.length; i += 200) {
+      const batch = recordIds.slice(i, i + 200);
+      const { error: linkError } = await supabase
+        .from(table)
+        .update({ building_id: buildingId })
+        .in("id", batch);
 
-    if (!linkError) {
-      linked += recordIds.length;
-      affectedBuildingIds.add(buildingId);
-    } else {
-      errors.push(`${label} link error (building ${buildingId}): ${linkError.message}`);
+      if (!linkError) {
+        batchLinked += batch.length;
+      } else {
+        errors.push(`${label} link error (building ${buildingId}): ${linkError.message}`);
+      }
     }
+    linked += batchLinked;
+    if (batchLinked > 0) affectedBuildingIds.add(buildingId);
   }
 
   return { linked, affectedBuildingIds };
@@ -528,7 +536,7 @@ async function syncHPDViolations(supabase: ReturnType<typeof getSupabaseAdmin>):
 
     // Linking: match by BBL to buildings (scoped to this sync run)
     try {
-      const linkResult = await linkByBbl(supabase, "hpd_violations", syncStartTime, errors, "HPD");
+      const linkResult = await linkByBbl(supabase, "hpd_violations", syncStartTime, errors, "HPD", false);
       totalLinked = linkResult.linked;
       for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
     } catch (linkErr) {
@@ -828,7 +836,7 @@ async function syncHPDLitigations(supabase: ReturnType<typeof getSupabaseAdmin>)
 
     // Linking: match by BBL (scoped to this sync run)
     try {
-      const linkResult = await linkByBbl(supabase, "hpd_litigations", syncStartTime, errors, "HPD Litigations");
+      const linkResult = await linkByBbl(supabase, "hpd_litigations", syncStartTime, errors, "HPD Litigations", false);
       totalLinked = linkResult.linked;
       for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
     } catch (linkErr) {
@@ -913,9 +921,14 @@ async function syncDOBViolations(supabase: ReturnType<typeof getSupabaseAdmin>):
           // DOB API returns lot as 5 digits; we take last 4 to match buildings table
           let bbl: string | null = null;
           if (r.boro && r.block && r.lot) {
-            const block = r.block.padStart(5, "0").slice(-5);
-            const lot = r.lot.padStart(4, "0").slice(-4);
-            bbl = `${r.boro}${block}${lot}`;
+            // Normalize boro to numeric code (API sometimes returns text)
+            const boroMap: Record<string, string> = { "1": "1", "2": "2", "3": "3", "4": "4", "5": "5", MANHATTAN: "1", BRONX: "2", BROOKLYN: "3", QUEENS: "4", "STATEN ISLAND": "5" };
+            const boroCode = boroMap[r.boro.toUpperCase()] || r.boro;
+            if (/^\d$/.test(boroCode)) {
+              const block = r.block.padStart(5, "0").slice(-5);
+              const lot = r.lot.padStart(4, "0").slice(-4);
+              bbl = `${boroCode}${block}${lot}`;
+            }
           }
 
           return {
@@ -950,7 +963,7 @@ async function syncDOBViolations(supabase: ReturnType<typeof getSupabaseAdmin>):
 
     // Linking: match by BBL (scoped to this sync run)
     try {
-      const linkResult = await linkByBbl(supabase, "dob_violations", syncStartTime, errors, "DOB");
+      const linkResult = await linkByBbl(supabase, "dob_violations", syncStartTime, errors, "DOB", false);
       totalLinked = linkResult.linked;
       for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
     } catch (linkErr) {
@@ -1243,7 +1256,7 @@ async function syncBedBugReports(supabase: ReturnType<typeof getSupabaseAdmin>):
 
     // Linking: match by BBL
     try {
-      const linkResult = await linkByBbl(supabase, "bedbug_reports", syncStartTime, errors, "Bedbugs");
+      const linkResult = await linkByBbl(supabase, "bedbug_reports", syncStartTime, errors, "Bedbugs", false);
       totalLinked = linkResult.linked;
       for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
     } catch (linkErr) {
@@ -1353,13 +1366,71 @@ async function syncEvictions(supabase: ReturnType<typeof getSupabaseAdmin>): Pro
       }
     }
 
-    // Linking: match by BBL
+    // Linking: match by BBL (for the few evictions that have BBLs)
     try {
-      const linkResult = await linkByBbl(supabase, "evictions", syncStartTime, errors, "Evictions");
+      const linkResult = await linkByBbl(supabase, "evictions", syncStartTime, errors, "Evictions", false);
       totalLinked = linkResult.linked;
       for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
     } catch (linkErr) {
       errors.push(`Evictions linking phase error: ${String(linkErr)}`);
+    }
+
+    // Address-based linking for evictions without BBLs
+    try {
+      const linkCutoff = new Date();
+      linkCutoff.setDate(linkCutoff.getDate() - 30);
+      const { data: unlinked } = await supabase
+        .from("evictions")
+        .select("court_index_number, eviction_address, borough")
+        .is("building_id", null)
+        .is("bbl", null)
+        .not("eviction_address", "is", null)
+        .gte("imported_at", linkCutoff.toISOString())
+        .limit(5000);
+
+      if (unlinked && unlinked.length > 0) {
+        const addrToKeys = new Map<string, string[]>();
+        for (const r of unlinked) {
+          // Extract just the street address (before any apartment info)
+          const raw = (r.eviction_address as string).trim().toUpperCase();
+          // Remove apartment/unit suffixes for matching
+          const addr = raw.replace(/\s+(APT|UNIT|#|FL|FLOOR|STE|SUITE|RM|ROOM)\b.*$/i, "").trim();
+          if (!addr || addr.length < 5) continue;
+          if (!addrToKeys.has(addr)) addrToKeys.set(addr, []);
+          addrToKeys.get(addr)!.push(r.court_index_number);
+        }
+
+        let lookupCount = 0;
+        const MAX_LOOKUPS = 100;
+        for (const [address, courtIndexes] of addrToKeys) {
+          if (lookupCount >= MAX_LOOKUPS) break;
+          lookupCount++;
+          const { data: matched } = await supabase
+            .from("buildings")
+            .select("id")
+            .ilike("full_address", `%${address}%`)
+            .limit(1);
+
+          if (matched && matched.length > 0) {
+            for (let i = 0; i < courtIndexes.length; i += 200) {
+              const batch = courtIndexes.slice(i, i + 200);
+              const { error: linkError } = await supabase
+                .from("evictions")
+                .update({ building_id: matched[0].id })
+                .in("court_index_number", batch);
+              if (!linkError) {
+                totalLinked += batch.length;
+                affectedBuildingIds.add(matched[0].id);
+              }
+            }
+          }
+        }
+        if (lookupCount > 0) {
+          errors.push(`Evictions address linking: checked ${lookupCount} addresses`);
+        }
+      }
+    } catch (addrErr) {
+      errors.push(`Evictions address linking error: ${String(addrErr)}`);
     }
 
     await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
@@ -1487,7 +1558,7 @@ async function syncSidewalkSheds(supabase: ReturnType<typeof getSupabaseAdmin>):
 
     // Linking: match by BBL
     try {
-      const linkResult = await linkByBbl(supabase, "sidewalk_sheds", syncStartTime, errors, "Sheds");
+      const linkResult = await linkByBbl(supabase, "sidewalk_sheds", syncStartTime, errors, "Sheds", false);
       totalLinked = linkResult.linked;
       for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
     } catch (linkErr) {
@@ -1614,7 +1685,7 @@ async function syncDobPermits(supabase: ReturnType<typeof getSupabaseAdmin>): Pr
 
     // Linking: match by BBL
     try {
-      const linkResult = await linkByBbl(supabase, "dob_permits", syncStartTime, errors, "Permits");
+      const linkResult = await linkByBbl(supabase, "dob_permits", syncStartTime, errors, "Permits", false);
       totalLinked = linkResult.linked;
       for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
     } catch (linkErr) {
