@@ -490,12 +490,13 @@ def match_building(listing: dict) -> str | None:
 
 # ── DATABASE WRITES ──────────────────────────────────────────────────────────
 def upsert_rents(building_id: str, rent_by_beds: dict) -> int:
-    """Upsert rent data for a building."""
+    """Upsert rent data for a building and append to rent history."""
     if not rent_by_beds:
         return 0
 
     now = datetime.now(timezone.utc).isoformat()
     rows = []
+    history_rows = []
     for beds, data in rent_by_beds.items():
         if beds < 0:
             continue  # skip unknown bed counts
@@ -513,6 +514,14 @@ def upsert_rents(building_id: str, rent_by_beds: dict) -> int:
             "scraped_at": now,
             "updated_at": now,
         })
+        history_rows.append({
+            "building_id": building_id,
+            "source": SOURCE,
+            "bedrooms": beds,
+            "rent": median,
+            "sqft": data.get("sqft_min"),
+            "observed_at": now,
+        })
 
     if not rows:
         return 0
@@ -521,10 +530,18 @@ def upsert_rents(building_id: str, rent_by_beds: dict) -> int:
         supabase.table("building_rents") \
             .upsert(rows, on_conflict="building_id,source,bedrooms") \
             .execute()
-        return len(rows)
     except Exception as e:
         print(f"    Rent upsert error: {e}")
         return 0
+
+    try:
+        supabase.table("unit_rent_history") \
+            .upsert(history_rows, on_conflict="building_id,source,unit_number,bedrooms,rent,observed_at") \
+            .execute()
+    except Exception as e:
+        print(f"    Rent history insert error: {e}")
+
+    return len(rows)
 
 
 def upsert_amenities(building_id: str, amenities: list[str]) -> int:

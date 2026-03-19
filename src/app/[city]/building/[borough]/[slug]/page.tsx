@@ -19,7 +19,8 @@ import { BuildingLocationMap } from "@/components/building/BuildingLocationMap";
 import { RentStabilizationCard } from "@/components/building/RentStabilizationCard";
 import { RentRangeCard } from "@/components/building/RentRangeCard";
 import { BuildingAmenities } from "@/components/building/BuildingAmenities";
-import { MarketListings } from "@/components/building/MarketListings";
+import { RentHistory } from "@/components/building/RentHistory";
+import type { RentHistoryEntry } from "@/components/building/RentHistory";
 import { EnergyScoreCard } from "@/components/building/EnergyScoreCard";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -101,7 +102,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
   const buildingId = building.id;
 
   // Fetch violations, complaints, litigations, DOB violations, bedbugs, evictions, reviews, and units in parallel
-  const [violationsRes, complaintsRes, litigationsRes, dobViolationsRes, bedbugsRes, evictionsRes, permitsRes, energyRes, reviewsRes, unitsRes, violationSummaryRes, rentsRes, amenitiesRes, listingsRes] = await Promise.all([
+  const [violationsRes, complaintsRes, litigationsRes, dobViolationsRes, bedbugsRes, evictionsRes, permitsRes, energyRes, reviewsRes, unitsRes, violationSummaryRes, rentsRes, amenitiesRes, , rentHistoryRes] = await Promise.all([
     supabase
       .from("hpd_violations")
       .select("*")
@@ -180,6 +181,12 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
       .from("building_listings")
       .select("*")
       .eq("building_id", buildingId),
+    supabase
+      .from("unit_rent_history")
+      .select("id, unit_number, bedrooms, bathrooms, rent, sqft, source, observed_at")
+      .eq("building_id", buildingId)
+      .order("observed_at", { ascending: false })
+      .limit(500),
   ]);
 
   const violations = (violationsRes.data || []) as HpdViolation[];
@@ -195,7 +202,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
   const violationSummaries = violationSummaryRes.data || [];
   const rents = rentsRes.data || [];
   const amenities = amenitiesRes.data || [];
-  const marketListings = listingsRes.data || [];
+  const rentHistory = (rentHistoryRes.data || []) as RentHistoryEntry[];
 
   // Check if user is monitoring this building
   let isMonitored = false;
@@ -274,10 +281,17 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
               )}
             </section>
 
-            {/* Market Data & Availability */}
+            {/* Rent History */}
             <div id="rent">
-              <MarketListings listings={marketListings} amenities={amenities} />
+              <RentHistory history={rentHistory} />
             </div>
+
+            {/* Building Amenities */}
+            {amenities.length > 0 && (
+              <div id="amenities">
+                <BuildingAmenities amenities={amenities} />
+              </div>
+            )}
 
             {/* Violation & Complaint Trends */}
             <div id="violation-trends">
