@@ -215,7 +215,7 @@ export function RentHistory({ history }: RentHistoryProps) {
           <div className="flex items-center gap-2">
             <History className="w-4.5 h-4.5 text-[#2563EB]" />
             <h3 className="text-base font-bold text-[#0F1D2E]">
-              Historical Rents ({groups.length})
+              Unit Rent Data ({groups.length})
             </h3>
           </div>
           <span className="text-xs text-[#94a3b8]">
