@@ -36,7 +36,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install scrapling supabase playwright
+          pip install scrapling supabase playwright curl_cffi
           playwright install --with-deps chromium
           scrapling install
 
