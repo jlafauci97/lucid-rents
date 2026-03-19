@@ -2,8 +2,7 @@ name: Scrape Rental Listings
 
 on:
   schedule:
-    # Run daily at 6:00 AM EST (11:00 UTC) — after the Vercel syncs finish
-    # Each source staggers 15 min apart to avoid overwhelming Supabase
+    # Run daily at 6:00 AM EST (11:00 UTC)
     - cron: "0 11 * * *"
   workflow_dispatch:
     inputs:
@@ -11,19 +10,20 @@ on:
         description: "Pages per borough to scrape"
         required: false
         default: "3"
-      borough:
-        description: "Single borough (leave empty for all)"
-        required: false
-        default: ""
       source:
-        description: "Source to scrape (all, rent_com, zillow, apartments_com, streeteasy)"
+        description: "Source to scrape (all, rent_com, zillow)"
         required: false
         default: "all"
 
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        borough: [Manhattan, Brooklyn, Queens, Bronx, "Staten Island"]
+    name: "${{ matrix.borough }}"
 
     steps:
       - name: Checkout
@@ -48,10 +48,7 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           PAGES="${{ github.event.inputs.pages || '3' }}"
-          BOROUGH="${{ github.event.inputs.borough || '' }}"
-          ARGS="--pages=$PAGES"
-          if [ -n "$BOROUGH" ]; then ARGS="$ARGS --borough=$BOROUGH"; fi
-          python scripts/scrape-rent-com.py $ARGS
+          python scripts/scrape-rent-com.py --pages=$PAGES --borough="${{ matrix.borough }}"
 
       - name: Scrape Zillow
         if: ${{ github.event.inputs.source == 'all' || github.event.inputs.source == 'zillow' || github.event_name == 'schedule' }}
@@ -60,11 +57,6 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           PAGES="${{ github.event.inputs.pages || '3' }}"
-          BOROUGH="${{ github.event.inputs.borough || '' }}"
-          ARGS="--pages=$PAGES"
-          if [ -n "$BOROUGH" ]; then ARGS="$ARGS --borough=$BOROUGH"; fi
-          python scripts/scrape-zillow.py $ARGS
+          python scripts/scrape-zillow.py --pages=$PAGES --borough="${{ matrix.borough }}"
 
       # Apartments.com and StreetEasy disabled until historical data scrape is complete
-      # - name: Scrape Apartments.com
-      # - name: Scrape StreetEasy
