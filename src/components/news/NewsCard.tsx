@@ -63,7 +63,7 @@ export function NewsCard({ article }: { article: NewsArticle }) {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={article.image_url}
-              alt=""
+              alt={`Thumbnail for ${article.title}`}
               className="w-full h-full object-cover"
               loading="lazy"
             />

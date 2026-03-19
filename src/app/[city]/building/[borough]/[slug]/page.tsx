@@ -14,15 +14,17 @@ import { NearbyTransit } from "@/components/transit/NearbyTransit";
 import { NearbySchools } from "@/components/schools/NearbySchools";
 import { NearbyRecreation } from "@/components/building/NearbyRecreation";
 import { NearbyBuildings } from "@/components/building/NearbyBuildings";
+import { SameLandlordBuildings } from "@/components/building/SameLandlordBuildings";
 import { BuildingLocationMap } from "@/components/building/BuildingLocationMap";
 import { RentStabilizationCard } from "@/components/building/RentStabilizationCard";
 import { RentRangeCard } from "@/components/building/RentRangeCard";
 import { BuildingAmenities } from "@/components/building/BuildingAmenities";
-import { MarketListings } from "@/components/building/MarketListings";
+import { RentHistory } from "@/components/building/RentHistory";
+import type { RentHistoryEntry } from "@/components/building/RentHistory";
 import { EnergyScoreCard } from "@/components/building/EnergyScoreCard";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { SLUG_TO_BOROUGH, buildingUrl, canonicalUrl, buildingJsonLd, landlordUrl, cityPath } from "@/lib/seo";
+import { SLUG_TO_BOROUGH, buildingUrl, canonicalUrl, buildingJsonLd, breadcrumbJsonLd, landlordUrl, cityPath } from "@/lib/seo";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { PenSquare } from "lucide-react";
@@ -222,6 +224,12 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
     <AdSidebar>
     <div>
       <JsonLd data={buildingJsonLd(building)} />
+      <JsonLd data={breadcrumbJsonLd([
+        { name: "Home", url: "/" },
+        { name: "Buildings", url: cityPath("/buildings") },
+        { name: building.borough, url: cityPath(`/buildings/${boroughSlug}`) },
+        { name: shortAddress, url: buildingUrl(building) },
+      ])} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-2">
         <Breadcrumbs
@@ -273,10 +281,17 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
               )}
             </section>
 
-            {/* Market Data & Availability */}
+            {/* Rent History */}
             <div id="rent">
               <MarketListings listings={marketListings} amenities={amenities} units={units} unitListings={unitListings} buildingUrl={buildingUrl(building)} />
             </div>
+
+            {/* Building Amenities */}
+            {amenities.length > 0 && (
+              <div id="amenities">
+                <BuildingAmenities amenities={amenities} />
+              </div>
+            )}
 
             {/* Violation & Complaint Trends */}
             <div id="violation-trends">
@@ -435,6 +450,16 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
 
           </div>
         </div>
+
+        {/* Same Landlord Buildings — cross-link within portfolio */}
+        {building.owner_name && (
+          <div id="same-landlord" className="mt-8">
+            <SameLandlordBuildings
+              buildingId={buildingId}
+              ownerName={building.owner_name}
+            />
+          </div>
+        )}
 
         {/* Nearby Buildings — full width below the grid */}
         {building.zip_code && (

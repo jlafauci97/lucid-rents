@@ -3,7 +3,7 @@ import Link from "next/link";
 import { MapPin, Building2, AlertTriangle, MessageSquare, Users, Siren } from "lucide-react";
 import { LetterGrade } from "@/components/ui/LetterGrade";
 import { getLetterGrade, getGradeColor } from "@/lib/constants";
-import { buildingUrl, landlordUrl, canonicalUrl, cityPath, neighborhoodUrl } from "@/lib/seo";
+import { buildingUrl, landlordUrl, canonicalUrl, cityPath, neighborhoodUrl, breadcrumbJsonLd } from "@/lib/seo";
 import { getNeighborhoodName, parseNeighborhoodSlug } from "@/lib/nyc-neighborhoods";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -181,6 +181,11 @@ export default async function NeighborhoodPage({
           addressCountry: "US",
         },
       }} />
+      <JsonLd data={breadcrumbJsonLd([
+        { name: "Home", url: "/" },
+        { name: "Neighborhoods", url: cityPath("/crime") },
+        { name: neighborhoodName || zipCode, url: neighborhoodUrl(zipCode) },
+      ])} />
       <Breadcrumbs items={[
         { label: "Home", href: "/" },
         { label: "Neighborhoods", href: cityPath("/crime") },

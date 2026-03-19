@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
-import { AlertTriangle, Building2, MapPin, ChevronLeft, ChevronRight } from "lucide-react";
+import { AlertTriangle, Building2, MapPin, ChevronLeft, ChevronRight, Users } from "lucide-react";
 import Link from "next/link";
-import { buildingUrl, canonicalUrl, cityPath } from "@/lib/seo";
+import { buildingUrl, canonicalUrl, cityPath, landlordUrl } from "@/lib/seo";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import type { Metadata } from "next";
@@ -187,9 +187,16 @@ export default async function RankingsPage({ searchParams }: RankingsPageProps) 
                         </Link>
                       </td>
                       <td className="px-4 py-3 hidden md:table-cell">
-                        <p className="text-xs text-[#64748b] truncate max-w-[200px]">
-                          {building.owner_name || "—"}
-                        </p>
+                        {building.owner_name ? (
+                          <Link
+                            href={landlordUrl(building.owner_name)}
+                            className="text-xs text-[#64748b] hover:text-[#3B82F6] transition-colors truncate max-w-[200px] block"
+                          >
+                            {building.owner_name}
+                          </Link>
+                        ) : (
+                          <p className="text-xs text-[#64748b]">—</p>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-center">
                         <span className={`inline-flex items-center gap-1 text-sm font-semibold ${
@@ -265,6 +272,34 @@ export default async function RankingsPage({ searchParams }: RankingsPageProps) 
       )}
 
       <AdBlock adSlot="RANKINGS_BOTTOM" adFormat="horizontal" />
+
+      {/* Cross-links */}
+      <section className="mt-10">
+        <h2 className="text-lg font-bold text-[#0F1D2E] mb-4">Related</h2>
+        <div className="flex flex-wrap gap-3">
+          <Link
+            href={cityPath("/landlords")}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-purple-50 text-[#8B5CF6] border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors"
+          >
+            <Users className="w-4 h-4" />
+            Landlord Directory
+          </Link>
+          <Link
+            href={cityPath("/buildings")}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-blue-50 text-[#3B82F6] border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+          >
+            <Building2 className="w-4 h-4" />
+            All Buildings
+          </Link>
+          <Link
+            href={cityPath("/crime")}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-amber-50 text-[#d97706] border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors"
+          >
+            <AlertTriangle className="w-4 h-4" />
+            Crime by Zip Code
+          </Link>
+        </div>
+      </section>
     </div>
     </AdSidebar>
   );

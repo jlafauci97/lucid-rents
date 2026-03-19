@@ -3,8 +3,8 @@ import { BOROUGH_SLUGS, buildingUrl, landlordSlug, cityPath, neighborhoodUrl } f
 import { NEWS_CATEGORIES } from "@/lib/news-sources";
 import { SUBWAY_LINES, transitLineUrl } from "@/lib/subway-lines";
 
-// Prevent static generation — sitemap must fetch live data at request time
-export const dynamic = "force-dynamic";
+// Revalidate every 6 hours — fast responses for crawlers, stays reasonably fresh
+export const revalidate = 21600;
 
 const BASE_URL = "https://lucidrents.com";
 const BUILDINGS_PER_SITEMAP = 45000;
@@ -56,9 +56,27 @@ async function generateStaticSitemap(): Promise<MetadataRoute.Sitemap> {
   // Homepage (stays at root)
   entries.push({
     url: BASE_URL,
+    lastModified: new Date(),
     changeFrequency: "daily",
     priority: 1.0,
   });
+
+  // Static root pages (not city-specific)
+  const rootPages = [
+    { path: "/about", freq: "monthly" as const, priority: 0.5 },
+    { path: "/contact", freq: "monthly" as const, priority: 0.5 },
+    { path: "/privacy", freq: "monthly" as const, priority: 0.3 },
+    { path: "/terms", freq: "monthly" as const, priority: 0.3 },
+    { path: "/guides/nyc-tenant-rights", freq: "monthly" as const, priority: 0.7 },
+  ];
+  for (const page of rootPages) {
+    entries.push({
+      url: `${BASE_URL}${page.path}`,
+      lastModified: new Date(),
+      changeFrequency: page.freq,
+      priority: page.priority,
+    });
+  }
 
   // Static city-specific pages
   const staticPages = [
@@ -80,6 +98,7 @@ async function generateStaticSitemap(): Promise<MetadataRoute.Sitemap> {
   for (const page of staticPages) {
     entries.push({
       url: `${BASE_URL}${cityPath(page)}`,
+      lastModified: new Date(),
       changeFrequency: page === "/news" ? "daily" : "weekly",
       priority: 0.8,
     });
@@ -112,59 +131,101 @@ async function generateStaticSitemap(): Promise<MetadataRoute.Sitemap> {
     });
   }
 
-  // Neighborhood + crime zip pages
+  // Neighborhood + crime zip pages — include updated_at for accurate lastmod
   const zipRes = await fetch(
-    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/buildings?select=zip_code&limit=1000`,
+    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/buildings?select=zip_code,updated_at&limit=1000`,
     {
       headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! },
     }
   );
   if (zipRes.ok) {
-    const zipData = await zipRes.json();
-    const zipCodes = [
-      ...new Set(
-        (zipData as { zip_code: string }[])
-          .map((b) => b.zip_code)
-          .filter(Boolean)
-      ),
-    ] as string[];
+    const zipData = (await zipRes.json()) as { zip_code: string; updated_at: string | null }[];
+    // Group by zip code and find most recent updated_at per zip
+    const zipLastMod = new Map<string, Date>();
+    for (const b of zipData) {
+      if (!b.zip_code) continue;
+      if (b.updated_at) {
+        const d = new Date(b.updated_at);
+        const existing = zipLastMod.get(b.zip_code);
+        if (!existing || d > existing) zipLastMod.set(b.zip_code, d);
+      } else if (!zipLastMod.has(b.zip_code)) {
+        zipLastMod.set(b.zip_code, new Date());
+      }
+    }
 
-    for (const zip of zipCodes) {
+    for (const [zip, lastMod] of zipLastMod) {
       entries.push({
         url: `${BASE_URL}${neighborhoodUrl(zip)}`,
+        lastModified: lastMod,
         changeFrequency: "weekly",
         priority: 0.7,
       });
       entries.push({
         url: `${BASE_URL}${cityPath(`/crime/${zip}`)}`,
+        lastModified: lastMod,
         changeFrequency: "weekly",
         priority: 0.6,
       });
     }
   }
 
-  // Top landlords — fetch distinct owner names
+  // Top landlords — fetch distinct owner names with most recent update
   const landlordRes = await fetch(
-    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/buildings?select=owner_name&owner_name=not.is.null&order=owner_name.asc&limit=2000`,
+    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/buildings?select=owner_name,updated_at&owner_name=not.is.null&order=owner_name.asc&limit=2000`,
     {
       headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! },
     }
   );
   if (landlordRes.ok) {
-    const landlordData = await landlordRes.json();
-    const uniqueNames = [
-      ...new Set(
-        (landlordData as { owner_name: string }[]).map((b) => b.owner_name)
-      ),
-    ];
-    for (const name of uniqueNames) {
+    const landlordData = (await landlordRes.json()) as { owner_name: string; updated_at: string | null }[];
+    // Group by owner and find most recent updated_at
+    const landlordLastMod = new Map<string, Date>();
+    for (const b of landlordData) {
+      if (b.updated_at) {
+        const d = new Date(b.updated_at);
+        const existing = landlordLastMod.get(b.owner_name);
+        if (!existing || d > existing) landlordLastMod.set(b.owner_name, d);
+      } else if (!landlordLastMod.has(b.owner_name)) {
+        landlordLastMod.set(b.owner_name, new Date());
+      }
+    }
+
+    for (const [name, lastMod] of landlordLastMod) {
       entries.push({
         url: `${BASE_URL}${cityPath(`/landlord/${landlordSlug(name)}`)}`,
+        lastModified: lastMod,
         changeFrequency: "monthly",
         priority: 0.5,
       });
     }
   }
+
+  // Individual news articles
+  const newsRes = await fetch(
+    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/news_articles?select=slug,published_at&order=published_at.desc&limit=500`,
+    {
+      headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! },
+    }
+  );
+  if (newsRes.ok) {
+    const articles = (await newsRes.json()) as { slug: string; published_at: string }[];
+    for (const article of articles) {
+      entries.push({
+        url: `${BASE_URL}${cityPath(`/news/${article.slug}`)}`,
+        lastModified: new Date(article.published_at),
+        changeFrequency: "monthly",
+        priority: 0.5,
+      });
+    }
+  }
+
+  // Compare page
+  entries.push({
+    url: `${BASE_URL}${cityPath("/compare")}`,
+    lastModified: new Date(),
+    changeFrequency: "monthly",
+    priority: 0.4,
+  });
 
   return entries;
 }

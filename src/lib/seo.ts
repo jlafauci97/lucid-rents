@@ -95,7 +95,7 @@ export function buildingJsonLd(building: {
     schema.yearBuilt = building.year_built;
   }
   if (building.total_units) {
-    schema.numberOfRooms = building.total_units;
+    schema.numberOfAccommodationUnits = building.total_units;
   }
   if (building.review_count > 0 && building.overall_score != null) {
     schema.aggregateRating = {

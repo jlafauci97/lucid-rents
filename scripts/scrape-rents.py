@@ -438,14 +438,30 @@ def upsert_rents(building_id, rent_rows):
         "updated_at": now,
     } for r in rent_rows]
 
+    history_rows = [{
+        "building_id": building_id,
+        "source": r["source"],
+        "bedrooms": r["bedrooms"],
+        "rent": r["median_rent"],
+        "observed_at": now,
+    } for r in rent_rows]
+
     try:
         supabase.table("building_rents").upsert(
             rows, on_conflict="building_id,source,bedrooms"
         ).execute()
-        return len(rows)
     except Exception as e:
         print(f"  Rent upsert error: {e}")
         return 0
+
+    try:
+        supabase.table("unit_rent_history").upsert(
+            history_rows, on_conflict="building_id,source,unit_number,bedrooms,rent,observed_at"
+        ).execute()
+    except Exception as e:
+        print(f"  Rent history insert error: {e}")
+
+    return len(rows)
 
 
 def upsert_amenities(building_id, amenity_rows):

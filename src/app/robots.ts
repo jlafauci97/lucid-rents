@@ -1,10 +1,30 @@
 import type { MetadataRoute } from "next";
 
-export default function robots(): MetadataRoute.Robots {
-  // List individual sitemaps since the auto-generated index at /sitemap.xml
-  // isn't working reliably in this Next.js version
+// Revalidate every 6 hours — keeps crawlers fast while staying fresh
+export const revalidate = 21600;
+
+const BUILDINGS_PER_SITEMAP = 45000;
+
+export default async function robots(): Promise<MetadataRoute.Robots> {
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/buildings?select=id&limit=1&offset=0`,
+    {
+      headers: {
+        apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        Prefer: "count=exact",
+      },
+    }
+  );
+
+  const countHeader = res.headers.get("content-range");
+  const totalBuildings = countHeader
+    ? parseInt(countHeader.split("/")[1] || "0", 10)
+    : 50000;
+
+  const sitemapCount = 1 + Math.ceil(totalBuildings / BUILDINGS_PER_SITEMAP);
+
   const sitemaps: string[] = [];
-  for (let i = 0; i <= 15; i++) {
+  for (let i = 0; i < sitemapCount; i++) {
     sitemaps.push(`https://lucidrents.com/sitemap/${i}.xml`);
   }
 

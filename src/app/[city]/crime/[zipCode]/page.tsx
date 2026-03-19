@@ -3,7 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Siren, ArrowLeft, Building2, MapPin } from "lucide-react";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
-import { buildingUrl, canonicalUrl, neighborhoodUrl, cityPath } from "@/lib/seo";
+import { buildingUrl, canonicalUrl, neighborhoodUrl, cityPath, breadcrumbJsonLd } from "@/lib/seo";
 import { getNeighborhoodName } from "@/lib/nyc-neighborhoods";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -141,6 +141,11 @@ export default async function CrimeZipPage({
           addressCountry: "US",
         },
       }} />
+      <JsonLd data={breadcrumbJsonLd([
+        { name: "Home", url: "/" },
+        { name: "Crime", url: cityPath("/crime") },
+        { name: neighborhoodName || zipCode, url: cityPath(`/crime/${zipCode}`) },
+      ])} />
       <Breadcrumbs items={[
         { label: "Home", href: "/" },
         { label: "Crime", href: cityPath("/crime") },

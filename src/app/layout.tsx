@@ -42,9 +42,18 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: "Lucid Rents",
+    images: [
+      {
+        url: "/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Lucid Rents - Know Your NYC Apartment Before You Sign",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
+    images: ["/og-image.jpg"],
   },
 };
 
@@ -59,6 +68,10 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
+      <head>
+        <link rel="preconnect" href="https://www.googletagmanager.com" />
+        <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+      </head>
       <Script
         src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
         strategy="afterInteractive"

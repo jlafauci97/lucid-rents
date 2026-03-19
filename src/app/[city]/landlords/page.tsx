@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { Users, Building2, Search, ChevronLeft, ChevronRight, AlertTriangle, MessageSquare, ArrowRight, Scale, HardHat } from "lucide-react";
+import { Users, Building2, Search, ChevronLeft, ChevronRight, AlertTriangle, MessageSquare, ArrowRight, Scale, HardHat, ShieldAlert } from "lucide-react";
 import { LetterGrade } from "@/components/ui/LetterGrade";
 import Link from "next/link";
 import { landlordUrl, canonicalUrl, cityPath } from "@/lib/seo";
@@ -423,6 +423,34 @@ export default async function LandlordsPage({ searchParams }: LandlordsPageProps
       )}
 
       <AdBlock adSlot="LANDLORDS_BOTTOM" adFormat="horizontal" />
+
+      {/* Cross-links */}
+      <section className="mt-10">
+        <h2 className="text-lg font-bold text-[#0F1D2E] mb-4">Related</h2>
+        <div className="flex flex-wrap gap-3">
+          <Link
+            href={cityPath("/worst-rated-buildings")}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-red-50 text-[#ef4444] border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
+          >
+            <AlertTriangle className="w-4 h-4" />
+            Worst Rated Buildings
+          </Link>
+          <Link
+            href={cityPath("/buildings")}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-blue-50 text-[#3B82F6] border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+          >
+            <Building2 className="w-4 h-4" />
+            Buildings Directory
+          </Link>
+          <Link
+            href={cityPath("/crime")}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-amber-50 text-[#d97706] border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors"
+          >
+            <ShieldAlert className="w-4 h-4" />
+            Crime by Zip Code
+          </Link>
+        </div>
+      </section>
     </div>
     </AdSidebar>
   );
