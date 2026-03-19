@@ -203,14 +203,24 @@ export function RentHistory({ history }: RentHistoryProps) {
 
   const groups = groupByUnit(history);
 
+  // Most recent observation date across all entries
+  const lastChecked = history.reduce((latest, entry) => {
+    return entry.observed_at > latest ? entry.observed_at : latest;
+  }, history[0].observed_at);
+
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center gap-2">
-          <History className="w-4.5 h-4.5 text-[#2563EB]" />
-          <h3 className="text-base font-bold text-[#0F1D2E]">
-            Rent History ({groups.length})
-          </h3>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <History className="w-4.5 h-4.5 text-[#2563EB]" />
+            <h3 className="text-base font-bold text-[#0F1D2E]">
+              Historical Rents ({groups.length})
+            </h3>
+          </div>
+          <span className="text-xs text-[#94a3b8]">
+            Last checked {formatDate(lastChecked)}
+          </span>
         </div>
       </CardHeader>
       <CardContent>
