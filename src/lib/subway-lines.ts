@@ -59,8 +59,8 @@ export function busRouteSlug(routeName: string): string {
   return `${routeName.toLowerCase()}-bus`;
 }
 
-export function busRouteFromSlug(slug: string): string | null {
-  if (!slug.endsWith("-bus")) return null;
+export function busRouteFromSlug(slug: string | undefined): string | null {
+  if (!slug || !slug.endsWith("-bus")) return null;
   const name = slug.slice(0, -4);
   let route = name.toUpperCase();
   // Fix Bronx mixed-case prefix: BX → Bx
