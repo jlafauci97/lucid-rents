@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Shield, MessageSquare, Star, MapPin, ExternalLink, RefreshCw, ChevronRight, Scale, HardHat, Siren, Bug, DoorOpen } from "lucide-react";
+import { Shield, MessageSquare, Star, MapPin, ExternalLink, RefreshCw, Scale, HardHat, Siren, Bug, DoorOpen, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { ActivityItem } from "@/app/api/activity/route";
 import { buildingUrl, cityPath } from "@/lib/seo";
 import { useCity } from "@/lib/city-context";
@@ -213,23 +214,34 @@ function FeedCard({ item }: { item: ActivityItem }) {
   );
 }
 
+const ITEMS_PER_PAGE = 25;
+
 export function FeedView() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const city = useCity();
+
+  const currentPage = Math.max(parseInt(searchParams.get("page") || "1", 10), 1);
+  const initialFilter = (searchParams.get("filter") || "all") as FilterType;
+
   const [items, setItems] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<FilterType>("all");
+  const [activeFilter, setActiveFilter] = useState<FilterType>(initialFilter);
+  const [totalPages, setTotalPages] = useState(1);
 
-  const fetchItems = useCallback(async (filter: FilterType, isRefresh = false) => {
+  const fetchItems = useCallback(async (filter: FilterType, page: number, isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
     else setLoading(true);
     setError(false);
 
     try {
-      const res = await fetch(`/api/activity?limit=50&filter=${filter}`);
+      const res = await fetch(`/api/activity?limit=${ITEMS_PER_PAGE}&filter=${filter}&page=${page}`);
       if (!res.ok) throw new Error("Failed to fetch");
       const data = await res.json();
       setItems(data.items ?? []);
+      setTotalPages(data.totalPages ?? 1);
     } catch {
       setError(true);
     } finally {
@@ -239,20 +251,32 @@ export function FeedView() {
   }, []);
 
   useEffect(() => {
-    fetchItems(activeFilter);
-  }, [activeFilter, fetchItems]);
+    fetchItems(activeFilter, currentPage);
+  }, [activeFilter, currentPage, fetchItems]);
 
-  // Auto-refresh every 2 minutes
+  // Auto-refresh every 2 minutes (only on page 1)
   useEffect(() => {
+    if (currentPage !== 1) return;
     const interval = setInterval(() => {
-      fetchItems(activeFilter, true);
+      fetchItems(activeFilter, 1, true);
     }, 120000);
     return () => clearInterval(interval);
-  }, [activeFilter, fetchItems]);
+  }, [activeFilter, currentPage, fetchItems]);
+
+  const navigateToPage = (page: number, filter?: FilterType) => {
+    const f = filter ?? activeFilter;
+    const params = new URLSearchParams();
+    if (page > 1) params.set("page", String(page));
+    if (f !== "all") params.set("filter", f);
+    const qs = params.toString();
+    router.push(cityPath(`/feed${qs ? `?${qs}` : ""}`, city));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const handleFilterChange = (filter: FilterType) => {
     if (filter === activeFilter) return;
     setActiveFilter(filter);
+    navigateToPage(1, filter);
   };
 
   return (
@@ -268,7 +292,7 @@ export function FeedView() {
             <h2 className="text-lg font-bold text-[#0F1D2E]">Feed</h2>
           </div>
           <button
-            onClick={() => fetchItems(activeFilter, true)}
+            onClick={() => fetchItems(activeFilter, currentPage, true)}
             disabled={refreshing}
             className="p-2 rounded-full hover:bg-[#EFF6FF] text-[#64748b] hover:text-[#3B82F6] transition-colors disabled:opacity-50"
             title="Refresh"
@@ -312,7 +336,7 @@ export function FeedView() {
           <div className="px-4 py-16 text-center">
             <p className="text-[#64748b] mb-3">Unable to load the feed right now.</p>
             <button
-              onClick={() => fetchItems(activeFilter)}
+              onClick={() => fetchItems(activeFilter, currentPage)}
               className="text-sm text-[#3B82F6] hover:text-[#2563EB] font-medium"
             >
               Try again
@@ -330,6 +354,66 @@ export function FeedView() {
           <FeedCard key={`${item.type}-${item.id}`} item={item} />
         ))}
       </div>
+
+      {/* Pagination */}
+      {!loading && !error && totalPages > 1 && (
+        <div className="flex items-center justify-between px-4 py-4 border-t border-[#e2e8f0]">
+          <button
+            onClick={() => navigateToPage(currentPage - 1)}
+            disabled={currentPage <= 1}
+            className="flex items-center gap-1 text-sm font-medium text-[#64748b] hover:text-[#3B82F6] disabled:opacity-30 disabled:hover:text-[#64748b] transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Previous
+          </button>
+
+          <div className="flex items-center gap-1">
+            {generatePageNumbers(currentPage, totalPages).map((p, i) =>
+              p === "..." ? (
+                <span key={`ellipsis-${i}`} className="px-2 text-sm text-[#94a3b8]">&hellip;</span>
+              ) : (
+                <button
+                  key={p}
+                  onClick={() => navigateToPage(p as number)}
+                  className={`min-w-[36px] h-9 rounded-lg text-sm font-medium transition-colors ${
+                    p === currentPage
+                      ? "bg-[#3B82F6] text-white"
+                      : "text-[#64748b] hover:bg-[#f1f5f9] hover:text-[#0F1D2E]"
+                  }`}
+                >
+                  {p}
+                </button>
+              )
+            )}
+          </div>
+
+          <button
+            onClick={() => navigateToPage(currentPage + 1)}
+            disabled={currentPage >= totalPages}
+            className="flex items-center gap-1 text-sm font-medium text-[#64748b] hover:text-[#3B82F6] disabled:opacity-30 disabled:hover:text-[#64748b] transition-colors"
+          >
+            Next
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      )}
     </div>
   );
+}
+
+function generatePageNumbers(current: number, total: number): (number | "...")[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+
+  const pages: (number | "...")[] = [1];
+
+  if (current > 3) pages.push("...");
+
+  const start = Math.max(2, current - 1);
+  const end = Math.min(total - 1, current + 1);
+  for (let i = start; i <= end; i++) pages.push(i);
+
+  if (current < total - 2) pages.push("...");
+
+  pages.push(total);
+  return pages;
 }
