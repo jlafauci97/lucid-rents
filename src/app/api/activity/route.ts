@@ -21,9 +21,11 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const limit = Math.min(parseInt(searchParams.get("limit") || "50", 10), 100);
     const filter = searchParams.get("filter") || "all";
+    const page = Math.max(parseInt(searchParams.get("page") || "1", 10), 1);
 
     const supabase = await createClient();
-    const perSource = Math.ceil(limit / 8);
+    // Fetch enough per source to cover the requested page
+    const perSource = Math.ceil((limit * page) / 8);
 
     // Date cutoff: only fetch recent records to avoid full table scans on
     // tables with millions of rows (DOB: 2.2M, HPD: 800K, 311: 800K, NYPD: 475K)
@@ -50,7 +52,7 @@ export async function GET(request: Request) {
           .gte("created_at", cutoffDate)
           .lte("created_at", maxDate)
           .order("created_at", { ascending: false })
-          .limit(filter === "all" ? perSource : limit)
+          .limit(filter === "all" ? perSource : limit * page)
       );
     } else {
       promises.push(Promise.resolve({ data: null }));
@@ -65,7 +67,7 @@ export async function GET(request: Request) {
           .gte("inspection_date", cutoffDate.slice(0, 10))
           .lte("inspection_date", maxDateShort)
           .order("inspection_date", { ascending: false })
-          .limit(filter === "all" ? perSource : limit)
+          .limit(filter === "all" ? perSource : limit * page)
       );
     } else {
       promises.push(Promise.resolve({ data: null }));
@@ -80,7 +82,7 @@ export async function GET(request: Request) {
           .gte("created_date", cutoffDate)
           .lte("created_date", maxDate)
           .order("created_date", { ascending: false })
-          .limit(filter === "all" ? perSource : limit)
+          .limit(filter === "all" ? perSource : limit * page)
       );
     } else {
       promises.push(Promise.resolve({ data: null }));
@@ -96,7 +98,7 @@ export async function GET(request: Request) {
           .gte("case_open_date", cutoffDate.slice(0, 10))
           .lte("case_open_date", maxDateShort)
           .order("case_open_date", { ascending: false })
-          .limit(filter === "all" ? perSource : limit)
+          .limit(filter === "all" ? perSource : limit * page)
       );
     } else {
       promises.push(Promise.resolve({ data: null }));
@@ -112,7 +114,7 @@ export async function GET(request: Request) {
           .gte("issue_date", cutoffDate.slice(0, 10))
           .lte("issue_date", maxDateShort)
           .order("issue_date", { ascending: false })
-          .limit(filter === "all" ? perSource : limit)
+          .limit(filter === "all" ? perSource : limit * page)
       );
     } else {
       promises.push(Promise.resolve({ data: null }));
@@ -128,7 +130,7 @@ export async function GET(request: Request) {
           .gte("cmplnt_date", cutoffDate.slice(0, 10))
           .lte("cmplnt_date", maxDateShort)
           .order("cmplnt_date", { ascending: false })
-          .limit(filter === "all" ? perSource : limit)
+          .limit(filter === "all" ? perSource : limit * page)
       );
     } else {
       promises.push(Promise.resolve({ data: null }));
@@ -144,7 +146,7 @@ export async function GET(request: Request) {
           .gte("filing_date", cutoffDate.slice(0, 10))
           .lte("filing_date", maxDateShort)
           .order("filing_date", { ascending: false })
-          .limit(filter === "all" ? perSource : limit)
+          .limit(filter === "all" ? perSource : limit * page)
       );
     } else {
       promises.push(Promise.resolve({ data: null }));
@@ -160,7 +162,7 @@ export async function GET(request: Request) {
           .gte("executed_date", cutoffDate.slice(0, 10))
           .lte("executed_date", maxDateShort)
           .order("executed_date", { ascending: false })
-          .limit(filter === "all" ? perSource : limit)
+          .limit(filter === "all" ? perSource : limit * page)
       );
     } else {
       promises.push(Promise.resolve({ data: null }));
@@ -343,11 +345,13 @@ export async function GET(request: Request) {
       }
     }
 
-    // Sort by date descending
+    // Sort by date descending and paginate
     items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    const result = items.slice(0, limit);
+    const offset = (page - 1) * limit;
+    const result = items.slice(offset, offset + limit);
+    const totalPages = Math.ceil(items.length / limit);
 
-    return NextResponse.json({ items: result });
+    return NextResponse.json({ items: result, page, totalPages, hasMore: page < totalPages });
   } catch (error) {
     console.error("Activity feed error:", error);
     return NextResponse.json(
