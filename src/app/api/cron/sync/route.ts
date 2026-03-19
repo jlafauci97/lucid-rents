@@ -300,7 +300,8 @@ async function linkByBbl(
   table: string,
   syncStartTime: string,
   errors: string[],
-  label: string
+  label: string,
+  createBuildings = true
 ): Promise<{ linked: number; affectedBuildingIds: Set<string> }> {
   let linked = 0;
   const affectedBuildingIds = new Set<string>();
@@ -351,9 +352,9 @@ async function linkByBbl(
     }
   }
 
-  // Create buildings for unmatched BBLs
+  // Create buildings for unmatched BBLs (only in link-only mode to save time during normal syncs)
   const unmatchedBbls = bblSet.filter((bbl) => !bblToBuilding.has(bbl));
-  if (unmatchedBbls.length > 0) {
+  if (createBuildings && unmatchedBbls.length > 0) {
     let created = 0;
     // Vercel Pro: 900s timeout allows more building creation per sync
     const toCreate = unmatchedBbls.slice(0, 500);
@@ -535,7 +536,7 @@ async function syncHPDViolations(supabase: ReturnType<typeof getSupabaseAdmin>):
 
     // Linking: match by BBL to buildings (scoped to this sync run)
     try {
-      const linkResult = await linkByBbl(supabase, "hpd_violations", syncStartTime, errors, "HPD");
+      const linkResult = await linkByBbl(supabase, "hpd_violations", syncStartTime, errors, "HPD", false);
       totalLinked = linkResult.linked;
       for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
     } catch (linkErr) {
@@ -835,7 +836,7 @@ async function syncHPDLitigations(supabase: ReturnType<typeof getSupabaseAdmin>)
 
     // Linking: match by BBL (scoped to this sync run)
     try {
-      const linkResult = await linkByBbl(supabase, "hpd_litigations", syncStartTime, errors, "HPD Litigations");
+      const linkResult = await linkByBbl(supabase, "hpd_litigations", syncStartTime, errors, "HPD Litigations", false);
       totalLinked = linkResult.linked;
       for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
     } catch (linkErr) {
@@ -962,7 +963,7 @@ async function syncDOBViolations(supabase: ReturnType<typeof getSupabaseAdmin>):
 
     // Linking: match by BBL (scoped to this sync run)
     try {
-      const linkResult = await linkByBbl(supabase, "dob_violations", syncStartTime, errors, "DOB");
+      const linkResult = await linkByBbl(supabase, "dob_violations", syncStartTime, errors, "DOB", false);
       totalLinked = linkResult.linked;
       for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
     } catch (linkErr) {
@@ -1255,7 +1256,7 @@ async function syncBedBugReports(supabase: ReturnType<typeof getSupabaseAdmin>):
 
     // Linking: match by BBL
     try {
-      const linkResult = await linkByBbl(supabase, "bedbug_reports", syncStartTime, errors, "Bedbugs");
+      const linkResult = await linkByBbl(supabase, "bedbug_reports", syncStartTime, errors, "Bedbugs", false);
       totalLinked = linkResult.linked;
       for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
     } catch (linkErr) {
@@ -1367,7 +1368,7 @@ async function syncEvictions(supabase: ReturnType<typeof getSupabaseAdmin>): Pro
 
     // Linking: match by BBL
     try {
-      const linkResult = await linkByBbl(supabase, "evictions", syncStartTime, errors, "Evictions");
+      const linkResult = await linkByBbl(supabase, "evictions", syncStartTime, errors, "Evictions", false);
       totalLinked = linkResult.linked;
       for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
     } catch (linkErr) {
@@ -1499,7 +1500,7 @@ async function syncSidewalkSheds(supabase: ReturnType<typeof getSupabaseAdmin>):
 
     // Linking: match by BBL
     try {
-      const linkResult = await linkByBbl(supabase, "sidewalk_sheds", syncStartTime, errors, "Sheds");
+      const linkResult = await linkByBbl(supabase, "sidewalk_sheds", syncStartTime, errors, "Sheds", false);
       totalLinked = linkResult.linked;
       for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
     } catch (linkErr) {
@@ -1626,7 +1627,7 @@ async function syncDobPermits(supabase: ReturnType<typeof getSupabaseAdmin>): Pr
 
     // Linking: match by BBL
     try {
-      const linkResult = await linkByBbl(supabase, "dob_permits", syncStartTime, errors, "Permits");
+      const linkResult = await linkByBbl(supabase, "dob_permits", syncStartTime, errors, "Permits", false);
       totalLinked = linkResult.linked;
       for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
     } catch (linkErr) {
