@@ -1366,13 +1366,71 @@ async function syncEvictions(supabase: ReturnType<typeof getSupabaseAdmin>): Pro
       }
     }
 
-    // Linking: match by BBL
+    // Linking: match by BBL (for the few evictions that have BBLs)
     try {
       const linkResult = await linkByBbl(supabase, "evictions", syncStartTime, errors, "Evictions", false);
       totalLinked = linkResult.linked;
       for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
     } catch (linkErr) {
       errors.push(`Evictions linking phase error: ${String(linkErr)}`);
+    }
+
+    // Address-based linking for evictions without BBLs
+    try {
+      const linkCutoff = new Date();
+      linkCutoff.setDate(linkCutoff.getDate() - 30);
+      const { data: unlinked } = await supabase
+        .from("evictions")
+        .select("court_index_number, eviction_address, borough")
+        .is("building_id", null)
+        .is("bbl", null)
+        .not("eviction_address", "is", null)
+        .gte("imported_at", linkCutoff.toISOString())
+        .limit(5000);
+
+      if (unlinked && unlinked.length > 0) {
+        const addrToKeys = new Map<string, string[]>();
+        for (const r of unlinked) {
+          // Extract just the street address (before any apartment info)
+          const raw = (r.eviction_address as string).trim().toUpperCase();
+          // Remove apartment/unit suffixes for matching
+          const addr = raw.replace(/\s+(APT|UNIT|#|FL|FLOOR|STE|SUITE|RM|ROOM)\b.*$/i, "").trim();
+          if (!addr || addr.length < 5) continue;
+          if (!addrToKeys.has(addr)) addrToKeys.set(addr, []);
+          addrToKeys.get(addr)!.push(r.court_index_number);
+        }
+
+        let lookupCount = 0;
+        const MAX_LOOKUPS = 100;
+        for (const [address, courtIndexes] of addrToKeys) {
+          if (lookupCount >= MAX_LOOKUPS) break;
+          lookupCount++;
+          const { data: matched } = await supabase
+            .from("buildings")
+            .select("id")
+            .ilike("full_address", `%${address}%`)
+            .limit(1);
+
+          if (matched && matched.length > 0) {
+            for (let i = 0; i < courtIndexes.length; i += 200) {
+              const batch = courtIndexes.slice(i, i + 200);
+              const { error: linkError } = await supabase
+                .from("evictions")
+                .update({ building_id: matched[0].id })
+                .in("court_index_number", batch);
+              if (!linkError) {
+                totalLinked += batch.length;
+                affectedBuildingIds.add(matched[0].id);
+              }
+            }
+          }
+        }
+        if (lookupCount > 0) {
+          errors.push(`Evictions address linking: checked ${lookupCount} addresses`);
+        }
+      }
+    } catch (addrErr) {
+      errors.push(`Evictions address linking error: ${String(addrErr)}`);
     }
 
     await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
