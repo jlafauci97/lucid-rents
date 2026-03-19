@@ -332,7 +332,8 @@ async function linkByBbl(
   const unlinked = allUnlinked;
   if (unlinked.length === 0) return { linked, affectedBuildingIds };
 
-  const bblSet = [...new Set(unlinked.map((r) => r.bbl).filter(Boolean))] as string[];
+  // Only keep valid 10-digit numeric BBLs (skip malformed letter-prefix or 11-digit)
+  const bblSet = [...new Set(unlinked.map((r) => r.bbl).filter((b) => b && /^\d{10}$/.test(b)))] as string[];
 
   // Fetch building IDs for those BBLs (batch in groups of 500 for .in())
   const bblToBuilding = new Map<string, string>();
@@ -406,17 +407,23 @@ async function linkByBbl(
   }
 
   for (const [buildingId, recordIds] of buildingToRecordIds) {
-    const { error: linkError } = await supabase
-      .from(table)
-      .update({ building_id: buildingId })
-      .in("id", recordIds);
+    // Batch updates in groups of 200 to avoid URL length limits with .in()
+    let batchLinked = 0;
+    for (let i = 0; i < recordIds.length; i += 200) {
+      const batch = recordIds.slice(i, i + 200);
+      const { error: linkError } = await supabase
+        .from(table)
+        .update({ building_id: buildingId })
+        .in("id", batch);
 
-    if (!linkError) {
-      linked += recordIds.length;
-      affectedBuildingIds.add(buildingId);
-    } else {
-      errors.push(`${label} link error (building ${buildingId}): ${linkError.message}`);
+      if (!linkError) {
+        batchLinked += batch.length;
+      } else {
+        errors.push(`${label} link error (building ${buildingId}): ${linkError.message}`);
+      }
     }
+    linked += batchLinked;
+    if (batchLinked > 0) affectedBuildingIds.add(buildingId);
   }
 
   return { linked, affectedBuildingIds };
@@ -913,9 +920,14 @@ async function syncDOBViolations(supabase: ReturnType<typeof getSupabaseAdmin>):
           // DOB API returns lot as 5 digits; we take last 4 to match buildings table
           let bbl: string | null = null;
           if (r.boro && r.block && r.lot) {
-            const block = r.block.padStart(5, "0").slice(-5);
-            const lot = r.lot.padStart(4, "0").slice(-4);
-            bbl = `${r.boro}${block}${lot}`;
+            // Normalize boro to numeric code (API sometimes returns text)
+            const boroMap: Record<string, string> = { "1": "1", "2": "2", "3": "3", "4": "4", "5": "5", MANHATTAN: "1", BRONX: "2", BROOKLYN: "3", QUEENS: "4", "STATEN ISLAND": "5" };
+            const boroCode = boroMap[r.boro.toUpperCase()] || r.boro;
+            if (/^\d$/.test(boroCode)) {
+              const block = r.block.padStart(5, "0").slice(-5);
+              const lot = r.lot.padStart(4, "0").slice(-4);
+              bbl = `${boroCode}${block}${lot}`;
+            }
           }
 
           return {
