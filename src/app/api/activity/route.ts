@@ -27,7 +27,7 @@ export async function GET(request: Request) {
     // For single-type filters, fetch enough for full pagination.
     // For "all", fetch a moderate amount per source — we'll interleave types
     // to ensure variety rather than letting one source dominate.
-    const perSource = filter !== "all" ? limit * page : Math.ceil((limit * page) / 4);
+    const perSource = filter !== "all" ? limit * page : Math.ceil((limit * page) / 2);
 
     // Date cutoff: only fetch recent records to avoid full table scans on
     // tables with millions of rows (DOB: 2.2M, HPD: 800K, 311: 800K, NYPD: 475K)
