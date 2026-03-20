@@ -565,7 +565,10 @@ export default function MissionControlPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1 text-sm">
               {health.syncs.map((sync) => (
                 <div key={sync.sync_type} className="flex items-center justify-between py-1.5 border-b border-[#f1f5f9]">
-                  <span className="text-[#334155] font-medium">{friendlyName(sync.sync_type)}</span>
+                  <div className="flex items-center gap-2">
+                    <StatusDot status={sync.status} />
+                    <span className="text-[#334155] font-medium">{friendlyName(sync.sync_type)}</span>
+                  </div>
                   <span className="text-[#94a3b8] text-xs font-mono">{sync.schedule}</span>
                 </div>
               ))}
