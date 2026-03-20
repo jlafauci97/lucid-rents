@@ -24,10 +24,10 @@ export async function GET(request: Request) {
     const page = Math.max(parseInt(searchParams.get("page") || "1", 10), 1);
 
     const supabase = await createClient();
-    // Fetch enough per source so the merged+sorted result has dense date coverage.
-    // Each source needs (limit * page) items since after merging all sources and
-    // sorting by date, only the top (limit * page) items survive for pagination.
-    const perSource = limit * page;
+    // For single-type filters, fetch enough for full pagination.
+    // For "all", fetch a moderate amount per source — we'll interleave types
+    // to ensure variety rather than letting one source dominate.
+    const perSource = filter !== "all" ? limit * page : Math.ceil((limit * page) / 4);
 
     // Date cutoff: only fetch recent records to avoid full table scans on
     // tables with millions of rows (DOB: 2.2M, HPD: 800K, 311: 800K, NYPD: 475K)
@@ -347,11 +347,42 @@ export async function GET(request: Request) {
       }
     }
 
-    // Sort by date descending and paginate
-    items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    // For "all" filter: interleave types so the feed shows variety.
+    // Group by type, sort each group by date, then round-robin pick from each.
+    let merged: ActivityItem[];
+    if (filter === "all") {
+      const byType = new Map<string, ActivityItem[]>();
+      for (const item of items) {
+        if (!byType.has(item.type)) byType.set(item.type, []);
+        byType.get(item.type)!.push(item);
+      }
+      // Sort each type's items by date descending
+      for (const arr of byType.values()) {
+        arr.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      }
+      // Round-robin interleave
+      merged = [];
+      const queues = [...byType.values()];
+      const indices = new Array(queues.length).fill(0);
+      while (merged.length < items.length) {
+        let added = false;
+        for (let i = 0; i < queues.length; i++) {
+          if (indices[i] < queues[i].length) {
+            merged.push(queues[i][indices[i]]);
+            indices[i]++;
+            added = true;
+          }
+        }
+        if (!added) break;
+      }
+    } else {
+      items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      merged = items;
+    }
+
     const offset = (page - 1) * limit;
-    const result = items.slice(offset, offset + limit);
-    const totalPages = Math.ceil(items.length / limit);
+    const result = merged.slice(offset, offset + limit);
+    const totalPages = Math.ceil(merged.length / limit);
 
     return NextResponse.json({ items: result, page, totalPages, hasMore: page < totalPages });
   } catch (error) {
