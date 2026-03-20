@@ -37,19 +37,38 @@ export async function GET(req: NextRequest) {
 
   const supabase = await createClient();
 
-  // Query buildings with owner_name, filtering for those with issues
-  let query = supabase
-    .from("buildings")
-    .select("id, full_address, borough, owner_name, violation_count, complaint_count, litigation_count, dob_violation_count, overall_score")
-    .not("owner_name", "is", null)
-    .or("violation_count.gt.0,complaint_count.gt.0");
+  // Query ALL buildings with owner_name in paginated batches to bypass Supabase row limits
+  const allBuildings: BuildingRow[] = [];
+  const DB_BATCH = 10000;
+  let dbOffset = 0;
+  let fetchError: string | null = null;
 
-  // Filter by search term if provided
-  if (search) {
-    query = query.ilike("owner_name", `%${search}%`);
+  while (true) {
+    let query = supabase
+      .from("buildings")
+      .select("id, full_address, borough, owner_name, violation_count, complaint_count, litigation_count, dob_violation_count, overall_score")
+      .not("owner_name", "is", null)
+      .or("violation_count.gt.0,complaint_count.gt.0")
+      .order("id", { ascending: true })
+      .range(dbOffset, dbOffset + DB_BATCH - 1);
+
+    if (search) {
+      query = query.ilike("owner_name", `%${search}%`);
+    }
+
+    const { data, error: batchError } = await query;
+    if (batchError) {
+      fetchError = batchError.message;
+      break;
+    }
+    if (!data || data.length === 0) break;
+    allBuildings.push(...(data as BuildingRow[]));
+    if (data.length < DB_BATCH) break; // last page
+    dbOffset += DB_BATCH;
   }
 
-  const { data: buildings, error } = await query;
+  const buildings = allBuildings;
+  const error = fetchError;
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
