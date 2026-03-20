@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { ChevronDown, ArrowLeftRight, ShieldCheck, Wrench, BarChart3, Construction, ClipboardList, Zap, TrainFront } from "lucide-react";
+import { ChevronDown, ArrowLeftRight, ShieldCheck, Wrench, BarChart3, Construction, ClipboardList, Zap, TrainFront, Scale } from "lucide-react";
 import { type City, DEFAULT_CITY } from "@/lib/cities";
 
 const tools = [
@@ -47,6 +47,12 @@ const tools = [
     icon: TrainFront,
     label: "Near Transit",
     description: "Find apartments near subway & bus lines",
+  },
+  {
+    path: "/tenant-rights",
+    icon: Scale,
+    label: "Tenant Rights",
+    description: "Know your rights as an NYC tenant",
   },
 ];
 
