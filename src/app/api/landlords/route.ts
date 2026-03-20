@@ -37,10 +37,13 @@ export async function GET(req: NextRequest) {
 
   const supabase = await createClient();
 
-  // Query ALL buildings with owner_name in paginated batches to bypass Supabase row limits
+  // Fetch buildings with owner_name that have meaningful violation/complaint data.
+  // Use cursor-based pagination with ID ordering to avoid statement timeouts
+  // on the 670K+ buildings table. Only include buildings with at least 1
+  // violation or complaint to keep result set manageable.
   const allBuildings: BuildingRow[] = [];
   const DB_BATCH = 10000;
-  let dbOffset = 0;
+  let lastId: string | null = null;
   let fetchError: string | null = null;
 
   while (true) {
@@ -50,7 +53,11 @@ export async function GET(req: NextRequest) {
       .not("owner_name", "is", null)
       .or("violation_count.gt.0,complaint_count.gt.0")
       .order("id", { ascending: true })
-      .range(dbOffset, dbOffset + DB_BATCH - 1);
+      .limit(DB_BATCH);
+
+    if (lastId) {
+      query = query.gt("id", lastId);
+    }
 
     if (search) {
       query = query.ilike("owner_name", `%${search}%`);
@@ -63,8 +70,8 @@ export async function GET(req: NextRequest) {
     }
     if (!data || data.length === 0) break;
     allBuildings.push(...(data as BuildingRow[]));
+    lastId = (data[data.length - 1] as BuildingRow).id;
     if (data.length < DB_BATCH) break; // last page
-    dbOffset += DB_BATCH;
   }
 
   const buildings = allBuildings;
