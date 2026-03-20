@@ -71,7 +71,7 @@ export async function GET(req: NextRequest) {
   const error = fetchError;
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: String(error) }, { status: 500 });
   }
 
   // Aggregate by owner_name in JS
