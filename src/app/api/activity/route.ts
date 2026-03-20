@@ -24,10 +24,8 @@ export async function GET(request: Request) {
     const page = Math.max(parseInt(searchParams.get("page") || "1", 10), 1);
 
     const supabase = await createClient();
-    // For single-type filters, fetch enough for full pagination.
-    // For "all", fetch a moderate amount per source — we'll interleave types
-    // to ensure variety rather than letting one source dominate.
-    const perSource = filter !== "all" ? limit * page : Math.ceil((limit * page) / 2);
+    // No per-source cap — fetch up to Supabase max (1000) per source to show
+    // every available record. The merged result is paginated client-side.
 
     // Date cutoff: only fetch recent records to avoid full table scans on
     // tables with millions of rows (DOB: 2.2M, HPD: 800K, 311: 800K, NYPD: 475K)
@@ -54,7 +52,7 @@ export async function GET(request: Request) {
           .gte("created_at", cutoffDate)
           .lte("created_at", maxDate)
           .order("created_at", { ascending: false })
-          .limit(perSource)
+          .limit(1000)
       );
     } else {
       promises.push(Promise.resolve({ data: null }));
@@ -69,7 +67,7 @@ export async function GET(request: Request) {
           .gte("inspection_date", cutoffDate.slice(0, 10))
           .lte("inspection_date", maxDateShort)
           .order("inspection_date", { ascending: false })
-          .limit(perSource)
+          .limit(1000)
       );
     } else {
       promises.push(Promise.resolve({ data: null }));
@@ -84,7 +82,7 @@ export async function GET(request: Request) {
           .gte("created_date", cutoffDate)
           .lte("created_date", maxDate)
           .order("created_date", { ascending: false })
-          .limit(perSource)
+          .limit(1000)
       );
     } else {
       promises.push(Promise.resolve({ data: null }));
@@ -100,7 +98,7 @@ export async function GET(request: Request) {
           .gte("case_open_date", cutoffDate.slice(0, 10))
           .lte("case_open_date", maxDateShort)
           .order("case_open_date", { ascending: false })
-          .limit(perSource)
+          .limit(1000)
       );
     } else {
       promises.push(Promise.resolve({ data: null }));
@@ -116,7 +114,7 @@ export async function GET(request: Request) {
           .gte("issue_date", cutoffDate.slice(0, 10))
           .lte("issue_date", maxDateShort)
           .order("issue_date", { ascending: false })
-          .limit(perSource)
+          .limit(1000)
       );
     } else {
       promises.push(Promise.resolve({ data: null }));
@@ -132,7 +130,7 @@ export async function GET(request: Request) {
           .gte("cmplnt_date", cutoffDate.slice(0, 10))
           .lte("cmplnt_date", maxDateShort)
           .order("cmplnt_date", { ascending: false })
-          .limit(perSource)
+          .limit(1000)
       );
     } else {
       promises.push(Promise.resolve({ data: null }));
@@ -148,7 +146,7 @@ export async function GET(request: Request) {
           .gte("filing_date", cutoffDate.slice(0, 10))
           .lte("filing_date", maxDateShort)
           .order("filing_date", { ascending: false })
-          .limit(perSource)
+          .limit(1000)
       );
     } else {
       promises.push(Promise.resolve({ data: null }));
@@ -164,7 +162,7 @@ export async function GET(request: Request) {
           .gte("executed_date", cutoffDate.slice(0, 10))
           .lte("executed_date", maxDateShort)
           .order("executed_date", { ascending: false })
-          .limit(perSource)
+          .limit(1000)
       );
     } else {
       promises.push(Promise.resolve({ data: null }));
