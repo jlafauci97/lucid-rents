@@ -2,6 +2,10 @@ import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import {
   Building2, TreePine, Dumbbell, Car, WashingMachine,
   Shield, PawPrint, Package, Gem, Sparkles,
+  DoorOpen, Snowflake, Briefcase, Users, CookingPot,
+  ArrowUpDown, Trees, Waves, Fence, Flame,
+  Sun, Home, Crown, Warehouse, Basketball,
+  Dog, Bath, Shirt, Lock,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -32,6 +36,38 @@ const CATEGORY_CONFIG: {
   { key: "luxury", label: "Luxury", icon: Gem, color: "text-[#a855f7]" },
   { key: "other", label: "Other", icon: Sparkles, color: "text-[#94a3b8]" },
 ];
+
+const AMENITY_ICONS: Record<string, LucideIcon> = {
+  "air conditioning": Snowflake,
+  "balcony": Sun,
+  "balcony, patio, deck": Sun,
+  "basketball court": Basketball,
+  "bbq": Flame,
+  "business center": Briefcase,
+  "clubhouse": Users,
+  "co-working spaces": Users,
+  "controlled access": Lock,
+  "deck": Fence,
+  "dishwasher": CookingPot,
+  "dog spa": Dog,
+  "elevator": ArrowUpDown,
+  "extra storage": Package,
+  "fitness center": Dumbbell,
+  "furnished available": Home,
+  "garage": Car,
+  "garden": Trees,
+  "hardwood flooring": Home,
+  "laundry facility": WashingMachine,
+  "oceanfront pool": Waves,
+  "outdoor space": TreePine,
+  "patio": Sun,
+  "penthouse": Crown,
+  "pet friendly": PawPrint,
+  "pet washing station": Bath,
+  "pool": Waves,
+  "swimming pool": Waves,
+  "washer & dryer in unit": Shirt,
+};
 
 export function BuildingAmenities({ amenities }: BuildingAmenitiesProps) {
   if (!amenities || amenities.length === 0) return null;
@@ -83,14 +119,18 @@ export function BuildingAmenities({ amenities }: BuildingAmenitiesProps) {
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
-                  {items.map((item) => (
-                    <span
-                      key={item}
-                      className="px-2 py-0.5 text-xs bg-[#f1f5f9] text-[#334155] rounded-full"
-                    >
-                      {item}
-                    </span>
-                  ))}
+                  {items.map((item) => {
+                    const AmenityIcon = AMENITY_ICONS[item.toLowerCase()];
+                    return (
+                      <span
+                        key={item}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-[#f1f5f9] text-[#334155] rounded-full"
+                      >
+                        {AmenityIcon && <AmenityIcon className="w-3 h-3 text-[#64748b]" />}
+                        {item}
+                      </span>
+                    );
+                  })}
                 </div>
               </div>
             );
