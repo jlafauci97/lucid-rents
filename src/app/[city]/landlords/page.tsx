@@ -57,7 +57,8 @@ export default async function LandlordsPage({ searchParams }: LandlordsPageProps
     .from("buildings")
     .select("id, full_address, borough, owner_name, violation_count, complaint_count, litigation_count, dob_violation_count, overall_score")
     .not("owner_name", "is", null)
-    .or("violation_count.gt.0,complaint_count.gt.0");
+    .or("violation_count.gt.0,complaint_count.gt.0")
+    .limit(10000);
 
   if (search) {
     query = query.ilike("owner_name", `%${search}%`);

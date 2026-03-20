@@ -1135,7 +1135,8 @@ async function syncNYPDComplaints(supabase: ReturnType<typeof getSupabaseAdmin>)
           const { data: buildingsInZip } = await supabase
             .from("buildings")
             .select("id")
-            .eq("zip_code", zip);
+            .eq("zip_code", zip)
+            .limit(10000);
 
           if (buildingsInZip && buildingsInZip.length > 0) {
             for (const b of buildingsInZip) {

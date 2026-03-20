@@ -40,7 +40,8 @@ async function findBuildings(supabase: Awaited<ReturnType<typeof createClient>>,
     .from("buildings")
     .select(BUILDING_SELECT)
     .not("owner_name", "is", null)
-    .order("violation_count", { ascending: false });
+    .order("violation_count", { ascending: false })
+    .limit(10000);
 
   if (!buildings) return null;
 
@@ -71,7 +72,7 @@ export async function generateMetadata({
     .from("buildings")
     .select("owner_name")
     .not("owner_name", "is", null)
-    .limit(50000);
+    .limit(10000);
 
   let displayName = decodeURIComponent(name);
   if (buildings) {
@@ -110,7 +111,8 @@ export default async function LandlordDetailPage({
     .from("buildings")
     .select(BUILDING_SELECT)
     .not("owner_name", "is", null)
-    .order("violation_count", { ascending: false });
+    .order("violation_count", { ascending: false })
+    .limit(10000);
 
   if (!allBuildings) notFound();
 

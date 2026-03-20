@@ -168,7 +168,8 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
     supabase
       .from("hpd_violations")
       .select("apartment, class, status, inspection_date")
-      .eq("building_id", buildingId),
+      .eq("building_id", buildingId)
+      .limit(10000),
     supabase
       .from("building_rents")
       .select("bedrooms, min_rent, max_rent, median_rent, listing_count, source")
