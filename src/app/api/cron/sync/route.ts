@@ -235,62 +235,164 @@ async function finalizeSyncLog(
     .eq("id", logId);
 }
 
-/** Look up address info for a BBL from the source table that has it.
- *  Returns enough data to create a building entry. */
-async function getAddressForBbl(
+/** Batch-resolve addresses for multiple BBLs from source tables.
+ *  Much more efficient than single-BBL lookups — uses IN() queries
+ *  to resolve hundreds of BBLs in a handful of queries. */
+async function batchGetAddressesForBbls(
   supabase: ReturnType<typeof getSupabaseAdmin>,
-  bbl: string
-): Promise<{ borough: string; house_number: string; street_name: string; zip_code: string | null; full_address: string } | null> {
-  // Try bedbug_reports first (has structured address fields)
-  const { data: bb } = await supabase
-    .from("bedbug_reports")
-    .select("borough, house_number, street_name, postcode")
-    .eq("bbl", bbl)
-    .not("street_name", "is", null)
-    .limit(1)
-    .single();
+  bbls: string[],
+  errors: string[],
+  label: string
+): Promise<Map<string, { borough: string; house_number: string; street_name: string; zip_code: string | null; full_address: string }>> {
+  const result = new Map<string, { borough: string; house_number: string; street_name: string; zip_code: string | null; full_address: string }>();
+  if (bbls.length === 0) return result;
 
-  if (bb?.street_name && bb?.borough) {
-    const borough = bb.borough.length <= 1 ? (BOROUGH_MAP[bb.borough] || bb.borough) : bb.borough;
-    const houseNum = bb.house_number || "";
-    const fullAddr = `${houseNum ? houseNum + " " : ""}${bb.street_name}, ${borough}, NY${bb.postcode ? " " + bb.postcode : ""}`;
-    return { borough, house_number: houseNum, street_name: bb.street_name, zip_code: bb.postcode || null, full_address: fullAddr };
+  // Helper to format a full address string
+  function formatAddr(houseNum: string, streetName: string, borough: string, zip: string | null): string {
+    return `${houseNum ? houseNum + " " : ""}${streetName}, ${borough}, NY${zip ? " " + zip : ""}`;
   }
 
-  // Try evictions (has eviction_address as a single string)
-  const { data: ev } = await supabase
-    .from("evictions")
-    .select("borough, eviction_address, eviction_zip")
-    .eq("bbl", bbl)
-    .not("eviction_address", "is", null)
-    .limit(1)
-    .single();
-
-  if (ev?.eviction_address && ev?.borough) {
-    const borough = ev.borough.length <= 1 ? (BOROUGH_MAP[ev.borough] || ev.borough) : ev.borough;
-    const houseMatch = ev.eviction_address.match(/^([0-9-]+)\s+(.+)/);
-    const houseNum = houseMatch ? houseMatch[1] : "";
-    const streetName = houseMatch ? houseMatch[2] : ev.eviction_address;
-    const fullAddr = `${ev.eviction_address}, ${borough}, NY${ev.eviction_zip ? " " + ev.eviction_zip : ""}`;
-    return { borough, house_number: houseNum, street_name: streetName, zip_code: ev.eviction_zip || null, full_address: fullAddr };
+  // Helper to normalize borough codes to names
+  function normBorough(b: string): string {
+    return b.length <= 1 ? (BOROUGH_MAP[b] || b) : b;
   }
 
-  // Try HPD violations
-  const { data: hpd } = await supabase
-    .from("hpd_violations")
-    .select("borough, house_number, street_name")
-    .eq("bbl", bbl)
-    .not("street_name", "is", null)
-    .limit(1)
-    .single();
+  let remaining = bbls;
 
-  if (hpd?.street_name && hpd?.borough) {
-    const houseNum = hpd.house_number || "";
-    const fullAddr = `${houseNum ? houseNum + " " : ""}${hpd.street_name}, ${hpd.borough}, NY`;
-    return { borough: hpd.borough, house_number: houseNum, street_name: hpd.street_name, zip_code: null, full_address: fullAddr };
+  // 1. Try HPD violations (most common source, has structured fields)
+  for (let i = 0; i < remaining.length; i += 500) {
+    const batch = remaining.slice(i, i + 500);
+    try {
+      const { data } = await supabase
+        .from("hpd_violations")
+        .select("bbl, borough, house_number, street_name")
+        .in("bbl", batch)
+        .not("street_name", "is", null)
+        .not("borough", "is", null);
+
+      if (data) {
+        for (const r of data) {
+          if (r.bbl && r.street_name && r.borough && !result.has(r.bbl)) {
+            const houseNum = r.house_number || "";
+            result.set(r.bbl, {
+              borough: r.borough,
+              house_number: houseNum,
+              street_name: r.street_name,
+              zip_code: null,
+              full_address: formatAddr(houseNum, r.street_name, r.borough, null),
+            });
+          }
+        }
+      }
+    } catch (err) {
+      errors.push(`${label} address lookup (hpd_violations) error: ${String(err)}`);
+    }
   }
 
-  return null;
+  remaining = bbls.filter((b) => !result.has(b));
+  if (remaining.length === 0) return result;
+
+  // 2. Try bedbug_reports (has structured address + zip)
+  for (let i = 0; i < remaining.length; i += 500) {
+    const batch = remaining.slice(i, i + 500);
+    try {
+      const { data } = await supabase
+        .from("bedbug_reports")
+        .select("bbl, borough, house_number, street_name, postcode")
+        .in("bbl", batch)
+        .not("street_name", "is", null)
+        .not("borough", "is", null);
+
+      if (data) {
+        for (const r of data) {
+          if (r.bbl && r.street_name && r.borough && !result.has(r.bbl)) {
+            const borough = normBorough(r.borough);
+            const houseNum = r.house_number || "";
+            result.set(r.bbl, {
+              borough,
+              house_number: houseNum,
+              street_name: r.street_name,
+              zip_code: r.postcode || null,
+              full_address: formatAddr(houseNum, r.street_name, borough, r.postcode || null),
+            });
+          }
+        }
+      }
+    } catch (err) {
+      errors.push(`${label} address lookup (bedbug_reports) error: ${String(err)}`);
+    }
+  }
+
+  remaining = bbls.filter((b) => !result.has(b));
+  if (remaining.length === 0) return result;
+
+  // 3. Try evictions
+  for (let i = 0; i < remaining.length; i += 500) {
+    const batch = remaining.slice(i, i + 500);
+    try {
+      const { data } = await supabase
+        .from("evictions")
+        .select("bbl, borough, eviction_address, eviction_zip")
+        .in("bbl", batch)
+        .not("eviction_address", "is", null)
+        .not("borough", "is", null);
+
+      if (data) {
+        for (const r of data) {
+          if (r.bbl && r.eviction_address && r.borough && !result.has(r.bbl)) {
+            const borough = normBorough(r.borough);
+            const houseMatch = r.eviction_address.match(/^([0-9-]+)\s+(.+)/);
+            const houseNum = houseMatch ? houseMatch[1] : "";
+            const streetName = houseMatch ? houseMatch[2] : r.eviction_address;
+            result.set(r.bbl, {
+              borough,
+              house_number: houseNum,
+              street_name: streetName,
+              zip_code: r.eviction_zip || null,
+              full_address: formatAddr(r.eviction_address, "", borough, r.eviction_zip || null).replace(", ,", ","),
+            });
+          }
+        }
+      }
+    } catch (err) {
+      errors.push(`${label} address lookup (evictions) error: ${String(err)}`);
+    }
+  }
+
+  // 4. Try sidewalk_sheds (has house_number, street_name, borough, zip)
+  remaining = bbls.filter((b) => !result.has(b));
+  if (remaining.length === 0) return result;
+
+  for (let i = 0; i < remaining.length; i += 500) {
+    const batch = remaining.slice(i, i + 500);
+    try {
+      const { data } = await supabase
+        .from("sidewalk_sheds")
+        .select("bbl, borough, house_number, street_name, zip_code")
+        .in("bbl", batch)
+        .not("street_name", "is", null)
+        .not("borough", "is", null);
+
+      if (data) {
+        for (const r of data) {
+          if (r.bbl && r.street_name && r.borough && !result.has(r.bbl)) {
+            const houseNum = r.house_number || "";
+            result.set(r.bbl, {
+              borough: r.borough,
+              house_number: houseNum,
+              street_name: r.street_name,
+              zip_code: r.zip_code || null,
+              full_address: formatAddr(houseNum, r.street_name, r.borough, r.zip_code || null),
+            });
+          }
+        }
+      }
+    } catch (err) {
+      errors.push(`${label} address lookup (sidewalk_sheds) error: ${String(err)}`);
+    }
+  }
+
+  return result;
 }
 
 /** Link records by BBL and return set of affected building IDs.
@@ -350,44 +452,58 @@ async function linkByBbl(
     }
   }
 
-  // Create buildings for unmatched BBLs
+  // Create buildings for unmatched BBLs — batch address lookup + bulk upsert
   const unmatchedBbls = bblSet.filter((bbl) => !bblToBuilding.has(bbl));
   if (unmatchedBbls.length > 0) {
     let created = 0;
-    // Vercel Pro: 900s timeout allows more building creation per sync
-    const toCreate = unmatchedBbls.slice(0, 500);
-    for (const bbl of toCreate) {
-      try {
-        const addr = await getAddressForBbl(supabase, bbl);
-        if (!addr) continue;
 
-        const slug = generateBuildingSlug(addr.full_address);
-        const { data: newBuilding, error: createErr } = await supabase
+    // Batch-resolve addresses for all unmatched BBLs (a few IN() queries instead of N+1)
+    const addressMap = await batchGetAddressesForBbls(supabase, unmatchedBbls, errors, label);
+
+    // Build rows for batch upsert
+    const buildingRows = [];
+    for (const bbl of unmatchedBbls) {
+      const addr = addressMap.get(bbl);
+      if (!addr) continue;
+      const slug = generateBuildingSlug(addr.full_address);
+      buildingRows.push({
+        bbl,
+        borough: addr.borough,
+        house_number: addr.house_number || null,
+        street_name: addr.street_name,
+        zip_code: addr.zip_code,
+        full_address: addr.full_address,
+        slug,
+      });
+    }
+
+    // Batch upsert buildings (500 at a time to stay within payload limits)
+    for (let i = 0; i < buildingRows.length; i += BATCH_SIZE) {
+      const batch = buildingRows.slice(i, i + BATCH_SIZE);
+      try {
+        const { data: newBuildings, error: createErr } = await supabase
           .from("buildings")
-          .upsert({
-            bbl,
-            borough: addr.borough,
-            house_number: addr.house_number || null,
-            street_name: addr.street_name,
-            zip_code: addr.zip_code,
-            full_address: addr.full_address,
-            slug,
-          }, { onConflict: "bbl" })
-          .select("id, bbl")
-          .single();
+          .upsert(batch, { onConflict: "bbl", ignoreDuplicates: false })
+          .select("id, bbl");
 
         if (createErr) {
-          errors.push(`${label} create building error (BBL ${bbl}): ${createErr.message}`);
-        } else if (newBuilding) {
-          bblToBuilding.set(newBuilding.bbl, newBuilding.id);
-          created++;
+          errors.push(`${label} batch create buildings error (batch ${i}): ${createErr.message}`);
+        } else if (newBuildings) {
+          for (const b of newBuildings) {
+            bblToBuilding.set(b.bbl, b.id);
+            created++;
+          }
         }
       } catch (err) {
-        errors.push(`${label} create building error (BBL ${bbl}): ${String(err)}`);
+        errors.push(`${label} batch create buildings error (batch ${i}): ${String(err)}`);
       }
     }
+
     if (created > 0) {
-      errors.push(`${label}: created ${created} new building entries for unmatched BBLs`);
+      errors.push(`${label}: created ${created} new building entries for ${unmatchedBbls.length} unmatched BBLs`);
+    }
+    if (unmatchedBbls.length - created > 0) {
+      errors.push(`${label}: ${unmatchedBbls.length - created} BBLs could not be resolved to addresses`);
     }
   }
 
@@ -406,17 +522,21 @@ async function linkByBbl(
   }
 
   for (const [buildingId, recordIds] of buildingToRecordIds) {
-    const { error: linkError } = await supabase
-      .from(table)
-      .update({ building_id: buildingId })
-      .in("id", recordIds);
+    // Batch in groups of 500 to avoid URL length limits on .in()
+    for (let i = 0; i < recordIds.length; i += 500) {
+      const idBatch = recordIds.slice(i, i + 500);
+      const { error: linkError } = await supabase
+        .from(table)
+        .update({ building_id: buildingId })
+        .in("id", idBatch);
 
-    if (!linkError) {
-      linked += recordIds.length;
-      affectedBuildingIds.add(buildingId);
-    } else {
-      errors.push(`${label} link error (building ${buildingId}): ${linkError.message}`);
+      if (!linkError) {
+        linked += idBatch.length;
+      } else {
+        errors.push(`${label} link error (building ${buildingId}): ${linkError.message}`);
+      }
     }
+    affectedBuildingIds.add(buildingId);
   }
 
   return { linked, affectedBuildingIds };
@@ -686,12 +806,15 @@ async function sync311Complaints(supabase: ReturnType<typeof getSupabaseAdmin>):
     if (elapsedMs < 45_000 && addressToKeys.size > 0) {
       try {
         let lookupCount = 0;
-        const MAX_LOOKUPS = 30;
+        // Sort addresses by number of complaints (most complaints first) to maximize linking
+        const sortedAddresses = [...addressToKeys.entries()].sort((a, b) => b[1].length - a[1].length);
 
-        for (const [address, uniqueKeys] of addressToKeys) {
-          if (lookupCount >= MAX_LOOKUPS) break;
-          // Stop linking if running low on time
-          if (Date.now() - fnStart > 50_000) break;
+        for (const [address, uniqueKeys] of sortedAddresses) {
+          // Stop linking if running low on time (leave 10s for finalization)
+          if (Date.now() - fnStart > 50_000) {
+            errors.push(`311 linking stopped at ${lookupCount} lookups (time budget)`);
+            break;
+          }
           lookupCount++;
 
           const { data: matchedBuildings } = await supabase
@@ -1717,6 +1840,7 @@ async function runLinkOnly(
 ): Promise<NextResponse> {
   const errors: string[] = [];
   const allAffectedIds = new Set<string>();
+  const logId = await createSyncLog(supabase, "link");
   const linkResults: Record<string, { linked: number; errors: string[] }> = {};
   const syncStartTime = new Date().toISOString();
 
@@ -1846,6 +1970,12 @@ async function runLinkOnly(
   }
 
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+
+  // Sum linked counts across all tables
+  const totalLinked = Object.values(linkResults).reduce(
+    (sum, r) => sum + (r as { linked: number }).linked, 0
+  );
+  await finalizeSyncLog(supabase, logId, "completed", 0, totalLinked, errors);
 
   return NextResponse.json({
     success: true,

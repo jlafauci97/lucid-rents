@@ -116,17 +116,36 @@ export async function GET() {
     { name: "dob_permits", dateCol: "imported_at", warnHours: 48 },
     { name: "sidewalk_sheds", dateCol: "imported_at", warnHours: 48 },
     { name: "evictions", dateCol: "imported_at", warnHours: 48 },
+    { name: "bedbug_reports", dateCol: "imported_at", warnHours: 168 }, // weekly data source — longer threshold
   ];
 
   for (const t of tables) {
     try {
-      const { count } = await supabase
+      // Use estimated count first (fast, uses pg_class stats), then fall back
+      // to exact count only for small-ish tables. Exact count on large tables
+      // can exceed the Supabase statement timeout and silently return null.
+      const { count: exactCount, error: countError } = await supabase
         .from(t.name)
-        .select("*", { count: "exact", head: true });
+        .select("*", { count: "estimated", head: true });
+
+      let rowCount = exactCount ?? 0;
+      let countNote = "";
+
+      if (countError) {
+        // If even estimated count fails, try a limited probe to see if any rows exist
+        const { data: probe } = await supabase
+          .from(t.name)
+          .select("id")
+          .limit(1);
+        rowCount = probe && probe.length > 0 ? -1 : 0; // -1 = "has data but count unavailable"
+        countNote = ` (count error: ${countError.message})`;
+      }
 
       let latestRecord: string | null = null;
       let status: "healthy" | "warning" | "error" = "healthy";
-      let details = `${(count ?? 0).toLocaleString()} rows`;
+      let details = rowCount === -1
+        ? `count unavailable${countNote}`
+        : `${rowCount.toLocaleString()} rows${countNote}`;
 
       if (t.dateCol && !t.countOnly) {
         const { data: latest } = await supabase
@@ -146,9 +165,9 @@ export async function GET() {
         }
       }
 
-      if ((count ?? 0) === 0) status = "error";
+      if (rowCount === 0) status = "error";
 
-      dataChecks.push({ name: t.name, status, row_count: count ?? 0, latest_record: latestRecord, details });
+      dataChecks.push({ name: t.name, status, row_count: rowCount, latest_record: latestRecord, details });
     } catch {
       dataChecks.push({ name: t.name, status: "error", row_count: 0, latest_record: null, details: "Query failed" });
     }
