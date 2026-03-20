@@ -345,42 +345,11 @@ export async function GET(request: Request) {
       }
     }
 
-    // For "all" filter: interleave types so the feed shows variety.
-    // Group by type, sort each group by date, then round-robin pick from each.
-    let merged: ActivityItem[];
-    if (filter === "all") {
-      const byType = new Map<string, ActivityItem[]>();
-      for (const item of items) {
-        if (!byType.has(item.type)) byType.set(item.type, []);
-        byType.get(item.type)!.push(item);
-      }
-      // Sort each type's items by date descending
-      for (const arr of byType.values()) {
-        arr.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-      }
-      // Round-robin interleave
-      merged = [];
-      const queues = [...byType.values()];
-      const indices = new Array(queues.length).fill(0);
-      while (merged.length < items.length) {
-        let added = false;
-        for (let i = 0; i < queues.length; i++) {
-          if (indices[i] < queues[i].length) {
-            merged.push(queues[i][indices[i]]);
-            indices[i]++;
-            added = true;
-          }
-        }
-        if (!added) break;
-      }
-    } else {
-      items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-      merged = items;
-    }
-
+    // Sort all items chronologically (newest first) and paginate
+    items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     const offset = (page - 1) * limit;
-    const result = merged.slice(offset, offset + limit);
-    const totalPages = Math.ceil(merged.length / limit);
+    const result = items.slice(offset, offset + limit);
+    const totalPages = Math.ceil(items.length / limit);
 
     return NextResponse.json({ items: result, page, totalPages, hasMore: page < totalPages });
   } catch (error) {
