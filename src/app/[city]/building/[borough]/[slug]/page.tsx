@@ -19,6 +19,7 @@ import { BuildingLocationMap } from "@/components/building/BuildingLocationMap";
 import { RentStabilizationCard } from "@/components/building/RentStabilizationCard";
 import { RentRangeCard } from "@/components/building/RentRangeCard";
 import { BuildingAmenities } from "@/components/building/BuildingAmenities";
+import { MarketListings } from "@/components/building/MarketListings";
 import { RentHistory } from "@/components/building/RentHistory";
 import type { RentHistoryEntry } from "@/components/building/RentHistory";
 import { EnergyScoreCard } from "@/components/building/EnergyScoreCard";

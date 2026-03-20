@@ -4,7 +4,7 @@ import {
   Shield, PawPrint, Package, Gem, Sparkles,
   DoorOpen, Snowflake, Briefcase, Users, CookingPot,
   ArrowUpDown, Trees, Waves, Fence, Flame,
-  Sun, Home, Crown, Warehouse, Basketball,
+  Sun, Home, Crown, Warehouse, Circle,
   Dog, Bath, Shirt, Lock,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -41,7 +41,7 @@ const AMENITY_ICONS: Record<string, LucideIcon> = {
   "air conditioning": Snowflake,
   "balcony": Sun,
   "balcony, patio, deck": Sun,
-  "basketball court": Basketball,
+  "basketball court": Circle,
   "bbq": Flame,
   "business center": Briefcase,
   "clubhouse": Users,

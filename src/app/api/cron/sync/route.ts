@@ -1840,7 +1840,7 @@ async function runLinkOnly(
         // Group by address
         const addressToKeys = new Map<string, string[]>();
         for (const r of unlinked) {
-          const addr = (r.incident_address as string).trim().toUpperCase();
+          const addr = (r.incident_address as string).trim().toUpperCase().replace(/\s+/g, " ");
           if (!addr) continue;
           if (!addressToKeys.has(addr)) addressToKeys.set(addr, []);
           addressToKeys.get(addr)!.push(r.unique_key);
