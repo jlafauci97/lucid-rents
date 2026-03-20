@@ -19,6 +19,7 @@ import {
   ChevronRight,
   ExternalLink,
   Lock,
+  CalendarDays,
 } from "lucide-react";
 
 // --- Types ---
@@ -60,6 +61,15 @@ interface PageCheck {
   category: "public" | "data" | "dashboard";
 }
 
+interface SyncHistoryEntry {
+  sync_type: string;
+  status: string;
+  started_at: string;
+  records_added: number;
+  records_linked: number;
+  errors: string[] | null;
+}
+
 interface HealthData {
   status: "healthy" | "warning" | "error";
   checked_at: string;
@@ -69,6 +79,7 @@ interface HealthData {
   data: DataCheck[];
   rpcs: RpcCheck[];
   activity_feed: { status: string; details: string };
+  sync_history: SyncHistoryEntry[];
   pages: PageCheck[];
 }
 
@@ -555,6 +566,19 @@ export default function MissionControlPage() {
           </div>
         </Section>
 
+        {/* Daily Sync Activity */}
+        <Section
+          title="Daily Sync Activity"
+          icon={<CalendarDays className="w-5 h-5" />}
+          badge={
+            <span className="text-xs text-[#64748b] ml-2">
+              Last 7 days
+            </span>
+          }
+        >
+          <DailySyncActivity history={health.sync_history} />
+        </Section>
+
         {/* Cron Schedule Reference */}
         <Section
           title="Cron Schedule Reference"
@@ -565,7 +589,10 @@ export default function MissionControlPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1 text-sm">
               {health.syncs.map((sync) => (
                 <div key={sync.sync_type} className="flex items-center justify-between py-1.5 border-b border-[#f1f5f9]">
-                  <span className="text-[#334155] font-medium">{friendlyName(sync.sync_type)}</span>
+                  <div className="flex items-center gap-2">
+                    <StatusDot status={sync.status} />
+                    <span className="text-[#334155] font-medium">{friendlyName(sync.sync_type)}</span>
+                  </div>
                   <span className="text-[#94a3b8] text-xs font-mono">{sync.schedule}</span>
                 </div>
               ))}
@@ -673,6 +700,111 @@ function DataCard({ data }: { data: DataCheck }) {
         {data.row_count.toLocaleString()}
       </p>
       <p className="text-xs text-[#94a3b8] mt-1">{data.details}</p>
+    </div>
+  );
+}
+
+function DailySyncActivity({ history }: { history: SyncHistoryEntry[] }) {
+  // Group by date (YYYY-MM-DD)
+  const byDate: Record<string, SyncHistoryEntry[]> = {};
+  for (const entry of history) {
+    const date = entry.started_at.split("T")[0];
+    if (!byDate[date]) byDate[date] = [];
+    byDate[date].push(entry);
+  }
+
+  const dates = Object.keys(byDate).sort((a, b) => b.localeCompare(a));
+
+  if (dates.length === 0) {
+    return (
+      <div className="bg-white border border-[#e2e8f0] rounded-xl p-6 text-center text-[#94a3b8] text-sm">
+        No sync activity in the last 7 days
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {dates.map((date) => {
+        const entries = byDate[date];
+        const completed = entries.filter((e) => e.status === "completed").length;
+        const failed = entries.filter((e) => e.status === "failed").length;
+        const totalAdded = entries.reduce((s, e) => s + (e.records_added ?? 0), 0);
+        const totalLinked = entries.reduce((s, e) => s + (e.records_linked ?? 0), 0);
+        const isToday = date === new Date().toISOString().split("T")[0];
+        const label = isToday
+          ? "Today"
+          : new Date(date + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+
+        return (
+          <div key={date} className="bg-white border border-[#e2e8f0] rounded-xl overflow-hidden">
+            {/* Date header */}
+            <div className="flex items-center justify-between px-4 py-3 bg-[#f8fafc] border-b border-[#e2e8f0]">
+              <div className="flex items-center gap-3">
+                <span className={`text-sm font-semibold ${isToday ? "text-[#3B82F6]" : "text-[#0F1D2E]"}`}>
+                  {label}
+                </span>
+                <span className="text-xs text-[#94a3b8]">{date}</span>
+              </div>
+              <div className="flex items-center gap-3 text-xs">
+                {completed > 0 && (
+                  <span className="text-emerald-600 font-medium">{completed} completed</span>
+                )}
+                {failed > 0 && (
+                  <span className="text-red-600 font-medium">{failed} failed</span>
+                )}
+                <span className="text-[#64748b]">
+                  {totalAdded.toLocaleString()} added
+                  {totalLinked > 0 && ` · ${totalLinked.toLocaleString()} linked`}
+                </span>
+              </div>
+            </div>
+            {/* Entries */}
+            <div className="divide-y divide-[#f1f5f9]">
+              {entries.map((entry, i) => {
+                const time = new Date(entry.started_at).toLocaleTimeString("en-US", {
+                  hour: "numeric",
+                  minute: "2-digit",
+                  hour12: true,
+                });
+                const hasErrors = entry.errors && entry.errors.length > 0;
+                return (
+                  <div
+                    key={`${entry.sync_type}-${i}`}
+                    className={`flex items-center justify-between px-4 py-2.5 text-sm ${entry.status === "failed" ? "bg-red-50/40" : ""}`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <StatusDot status={entry.status === "completed" ? "healthy" : entry.status === "running" ? "warning" : "error"} />
+                      <span className="font-medium text-[#0F1D2E] truncate">
+                        {friendlyName(entry.sync_type)}
+                      </span>
+                      <span className="text-[#94a3b8] text-xs flex-shrink-0">{time}</span>
+                    </div>
+                    <div className="flex items-center gap-3 flex-shrink-0 ml-3">
+                      {entry.records_added > 0 && (
+                        <span className="text-xs text-[#64748b]">
+                          +{entry.records_added.toLocaleString()}
+                        </span>
+                      )}
+                      {entry.records_linked > 0 && (
+                        <span className="text-xs text-[#94a3b8]">
+                          {entry.records_linked.toLocaleString()} linked
+                        </span>
+                      )}
+                      {hasErrors && (
+                        <span className="text-xs text-red-500 max-w-[200px] truncate" title={entry.errors![0]}>
+                          {entry.errors![0].slice(0, 60)}
+                        </span>
+                      )}
+                      <StatusBadge status={entry.status} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

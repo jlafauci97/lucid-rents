@@ -126,7 +126,7 @@ export async function GET() {
   const supabase = getSupabaseAdmin();
 
   // Run ALL checks in parallel for speed
-  const [syncResults, dataResults, rpcResults, feedResult] = await Promise.all([
+  const [syncResults, dataResults, rpcResults, feedResult, syncHistoryResult] = await Promise.all([
     // 1. Sync checks — all in parallel
     Promise.all(
       syncTypeDefs.map(async (syncDef): Promise<SyncCheck> => {
@@ -263,6 +263,24 @@ export async function GET() {
         return { status: "error" as const, details: String(err) };
       }
     })(),
+
+    // 5. Sync history — last 7 days of sync_log entries
+    (async () => {
+      try {
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - 7);
+        const { data } = await supabase
+          .from("sync_log")
+          .select("sync_type, status, started_at, records_added, records_linked, errors")
+          .gte("started_at", cutoff.toISOString())
+          .order("started_at", { ascending: false })
+          .limit(200);
+
+        return data ?? [];
+      } catch {
+        return [];
+      }
+    })(),
   ]);
 
   // Overall health
@@ -295,6 +313,7 @@ export async function GET() {
     data: dataResults,
     rpcs: rpcResults,
     activity_feed: feedResult,
+    sync_history: syncHistoryResult,
     pages,
   });
 }
