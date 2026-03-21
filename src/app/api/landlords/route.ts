@@ -2,33 +2,6 @@ import { isValidCity } from "@/lib/cities";
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 
-interface BuildingRow {
-  id: string;
-  full_address: string;
-  borough: string;
-  owner_name: string;
-  violation_count: number;
-  complaint_count: number;
-  litigation_count: number;
-  dob_violation_count: number;
-  overall_score: number | null;
-}
-
-interface LandlordAggregation {
-  name: string;
-  buildingCount: number;
-  totalViolations: number;
-  totalComplaints: number;
-  totalLitigations: number;
-  totalDobViolations: number;
-  avgScore: number | null;
-  worstBuilding: {
-    id: string;
-    address: string;
-    violations: number;
-  };
-}
-
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
   const search = searchParams.get("search") || "";
@@ -43,138 +16,66 @@ export async function GET(req: NextRequest) {
 
   const supabase = await createClient();
 
-  // Fetch buildings with owner_name that have meaningful violation/complaint data.
-  // Use cursor-based pagination with ID ordering to avoid statement timeouts
-  // on the 670K+ buildings table. Only include buildings with at least 1
-  // violation or complaint to keep result set manageable.
-  const allBuildings: BuildingRow[] = [];
-  const DB_BATCH = 10000;
-  let lastId: string | null = null;
-  let fetchError: string | null = null;
+  // Determine sort column
+  const sortColumns: Record<string, string> = {
+    violations: "total_violations",
+    complaints: "total_complaints",
+    litigations: "total_litigations",
+    dob: "total_dob_violations",
+    buildings: "building_count",
+  };
+  const sortCol = sortColumns[sort] || "total_violations";
 
-  while (true) {
-    let query = supabase
-      .from("buildings")
-      .select("id, full_address, borough, owner_name, violation_count, complaint_count, litigation_count, dob_violation_count, overall_score")
-      .not("owner_name", "is", null)
-      .or("violation_count.gt.0,complaint_count.gt.0")
-      .order("id", { ascending: true })
-      .limit(DB_BATCH);
+  // Count total matching landlords
+  let countQuery = supabase
+    .from("landlord_stats")
+    .select("id", { count: "exact", head: true });
 
-    if (cityParam) {
-      query = query.eq("metro", cityParam);
-    }
-
-    if (lastId) {
-      query = query.gt("id", lastId);
-    }
-
-    if (search) {
-      query = query.ilike("owner_name", `%${search}%`);
-    }
-
-    const { data, error: batchError } = await query;
-    if (batchError) {
-      fetchError = batchError.message;
-      break;
-    }
-    if (!data || data.length === 0) break;
-    allBuildings.push(...(data as BuildingRow[]));
-    lastId = (data[data.length - 1] as BuildingRow).id;
-    if (data.length < DB_BATCH) break; // last page
+  if (search) {
+    countQuery = countQuery.ilike("name", `%${search}%`);
   }
 
-  const buildings = allBuildings;
-  const error = fetchError;
+  const { count: total, error: countError } = await countQuery;
+  if (countError) {
+    return NextResponse.json({ error: countError.message }, { status: 500 });
+  }
 
+  // Fetch paginated results
+  const offset = (page - 1) * limit;
+  let query = supabase
+    .from("landlord_stats")
+    .select("name,slug,building_count,total_violations,total_complaints,total_litigations,total_dob_violations,avg_score,worst_building_id,worst_building_address,worst_building_violations")
+    .order(sortCol, { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  if (search) {
+    query = query.ilike("name", `%${search}%`);
+  }
+
+  const { data: landlords, error } = await query;
   if (error) {
-    return NextResponse.json({ error: String(error) }, { status: 500 });
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // Aggregate by owner_name in JS
-  const landlordMap = new Map<string, LandlordAggregation>();
-
-  for (const building of (buildings || []) as BuildingRow[]) {
-    const name = building.owner_name;
-    if (!name) continue;
-
-    const existing = landlordMap.get(name);
-    if (existing) {
-      existing.buildingCount++;
-      existing.totalViolations += building.violation_count || 0;
-      existing.totalComplaints += building.complaint_count || 0;
-      existing.totalLitigations += building.litigation_count || 0;
-      existing.totalDobViolations += building.dob_violation_count || 0;
-      if (building.overall_score !== null) {
-        // Track scores for averaging
-        const scores = (existing as LandlordAggregation & { _scores?: number[] })._scores || [];
-        scores.push(building.overall_score);
-        (existing as LandlordAggregation & { _scores?: number[] })._scores = scores;
-        existing.avgScore =
-          scores.reduce((a, b) => a + b, 0) / scores.length;
-      }
-      // Track worst building
-      if (
-        (building.violation_count || 0) >
-        existing.worstBuilding.violations
-      ) {
-        existing.worstBuilding = {
-          id: building.id,
-          address: building.full_address,
-          violations: building.violation_count || 0,
-        };
-      }
-    } else {
-      const scores: number[] = building.overall_score !== null ? [building.overall_score] : [];
-      const entry: LandlordAggregation & { _scores?: number[] } = {
-        name,
-        buildingCount: 1,
-        totalViolations: building.violation_count || 0,
-        totalComplaints: building.complaint_count || 0,
-        totalLitigations: building.litigation_count || 0,
-        totalDobViolations: building.dob_violation_count || 0,
-        avgScore: building.overall_score,
-        worstBuilding: {
-          id: building.id,
-          address: building.full_address,
-          violations: building.violation_count || 0,
-        },
-        _scores: scores,
-      };
-      landlordMap.set(name, entry);
-    }
-  }
-
-  // Convert to array and remove internal _scores field
-  let landlords: LandlordAggregation[] = Array.from(landlordMap.values()).map(
-    ({ ...rest }) => {
-      const { _scores, ...landlord } = rest as LandlordAggregation & { _scores?: number[] };
-      void _scores;
-      return landlord;
-    }
-  );
-
-  // Sort
-  if (sort === "violations") {
-    landlords.sort((a, b) => b.totalViolations - a.totalViolations);
-  } else if (sort === "complaints") {
-    landlords.sort((a, b) => b.totalComplaints - a.totalComplaints);
-  } else if (sort === "litigations") {
-    landlords.sort((a, b) => b.totalLitigations - a.totalLitigations);
-  } else if (sort === "dob") {
-    landlords.sort((a, b) => b.totalDobViolations - a.totalDobViolations);
-  } else if (sort === "buildings") {
-    landlords.sort((a, b) => b.buildingCount - a.buildingCount);
-  }
-
-  // Paginate
-  const total = landlords.length;
-  const start = (page - 1) * limit;
-  const paginatedLandlords = landlords.slice(start, start + limit);
+  // Map to expected format
+  const mapped = (landlords || []).map((l) => ({
+    name: l.name,
+    buildingCount: l.building_count,
+    totalViolations: l.total_violations,
+    totalComplaints: l.total_complaints,
+    totalLitigations: l.total_litigations,
+    totalDobViolations: l.total_dob_violations,
+    avgScore: l.avg_score,
+    worstBuilding: {
+      id: l.worst_building_id,
+      address: l.worst_building_address,
+      violations: l.worst_building_violations,
+    },
+  }));
 
   return NextResponse.json({
-    landlords: paginatedLandlords,
-    total,
+    landlords: mapped,
+    total: total || 0,
     page,
   });
 }
