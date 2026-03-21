@@ -1,8 +1,14 @@
 import { NextResponse } from "next/server";
+import { isValidCity, DEFAULT_CITY } from "@/lib/cities";
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
+    const cityParam = searchParams.get("city") || DEFAULT_CITY;
+    if (!isValidCity(cityParam)) {
+      return NextResponse.json({ error: "Invalid city" }, { status: 400 });
+    }
+    const city = cityParam;
     const borough = searchParams.get("borough") || "";
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -10,7 +16,7 @@ export async function GET(request: Request) {
 
     // Get zip centroids for lat/lon mapping
     const centroidsRes = await fetch(
-      `${supabaseUrl}/rest/v1/nyc_zip_centroids?select=zip_code,avg_lat,avg_lon`,
+      `${supabaseUrl}/rest/v1/nyc_zip_centroids?select=zip_code,avg_lat,avg_lon&metro=eq.${encodeURIComponent(city)}`,
       {
         headers: { apikey: supabaseKey },
         cache: "no-store",
@@ -33,7 +39,7 @@ export async function GET(request: Request) {
           apikey: supabaseKey,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ metro_filter: city }),
         cache: "no-store",
       }
     );

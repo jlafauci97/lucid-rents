@@ -2,6 +2,8 @@
 
 import { useState, useMemo } from "react";
 import { ArrowUpDown } from "lucide-react";
+import { getRegions, getRegionLabel } from "@/lib/constants";
+import { useCity } from "@/lib/city-context";
 
 interface ZipRentRow {
   zip_code: string;
@@ -10,9 +12,8 @@ interface ZipRentRow {
   month: string;
 }
 
-const BOROUGHS = ["Manhattan", "Brooklyn", "Queens", "Bronx", "Staten Island"];
-
 export function ZipRentTable({ data }: { data: ZipRentRow[] }) {
+  const city = useCity();
   const [borough, setBorough] = useState("");
   const [sortBy, setSortBy] = useState<"median_rent" | "zip_code">("median_rent");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
@@ -70,9 +71,9 @@ export function ZipRentTable({ data }: { data: ZipRentRow[] }) {
               : "bg-[#f1f5f9] text-[#64748b] hover:bg-[#e2e8f0]"
           }`}
         >
-          All Boroughs
+          All {getRegionLabel(city)}s
         </button>
-        {BOROUGHS.map((b) => (
+        {getRegions(city).map((b) => (
           <button
             key={b}
             onClick={() => setBorough(b)}

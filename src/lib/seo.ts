@@ -1,32 +1,46 @@
-import { type City, DEFAULT_CITY } from "./cities";
-import { neighborhoodPageSlug } from "./nyc-neighborhoods";
+import { type City, DEFAULT_CITY, CITY_META } from "./cities";
+import { neighborhoodPageSlugByCity } from "./neighborhoods";
 
 const BASE_URL = "https://lucidrents.com";
 
-export const BOROUGH_SLUGS: Record<string, string> = {
-  Manhattan: "manhattan",
-  Brooklyn: "brooklyn",
-  Queens: "queens",
-  Bronx: "bronx",
-  "Staten Island": "staten-island",
-};
+/** Slugify a region/borough name for URLs */
+export function regionSlug(name: string): string {
+  return name.toLowerCase().replace(/\s+/g, "-");
+}
+
+/** Reverse-lookup: slug → display name. Works for any city's regions. */
+export function regionFromSlug(slug: string, city: City = DEFAULT_CITY): string {
+  const regions = CITY_META[city].regions;
+  for (const r of regions) {
+    if (regionSlug(r) === slug) return r;
+  }
+  // Fallback: title-case the slug
+  return slug
+    .split("-")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
+// Keep legacy exports for backward compatibility with existing NYC code
+export const BOROUGH_SLUGS: Record<string, string> = Object.fromEntries(
+  CITY_META.nyc.regions.map((r) => [r, regionSlug(r)])
+);
 
 export const SLUG_TO_BOROUGH: Record<string, string> = Object.fromEntries(
   Object.entries(BOROUGH_SLUGS).map(([name, slug]) => [slug, name])
 );
 
-/** Prefix a path with the city slug, e.g. cityPath("/buildings") => "/nyc/buildings" */
+/** Prefix a path with the city's external URL prefix */
 export function cityPath(path: string, city: City = DEFAULT_CITY): string {
-  return `/${city}${path}`;
+  return `/${CITY_META[city].urlPrefix}${path}`;
 }
 
 export function buildingUrl(
   b: { borough: string; slug: string },
   city: City = DEFAULT_CITY
 ): string {
-  const boroughSlug =
-    BOROUGH_SLUGS[b.borough] || b.borough.toLowerCase().replace(/\s+/g, "-");
-  return `/${city}/building/${boroughSlug}/${b.slug}`;
+  const bSlug = regionSlug(b.borough);
+  return `/${CITY_META[city].urlPrefix}/building/${bSlug}/${b.slug}`;
 }
 
 export function landlordSlug(ownerName: string): string {
@@ -41,14 +55,14 @@ export function landlordUrl(
   ownerName: string,
   city: City = DEFAULT_CITY
 ): string {
-  return `/${city}/landlord/${landlordSlug(ownerName)}`;
+  return `/${CITY_META[city].urlPrefix}/landlord/${landlordSlug(ownerName)}`;
 }
 
 export function neighborhoodUrl(
   zipCode: string,
   city: City = DEFAULT_CITY
 ): string {
-  return `/${city}/neighborhood/${neighborhoodPageSlug(zipCode)}`;
+  return `/${CITY_META[city].urlPrefix}/neighborhood/${neighborhoodPageSlugByCity(zipCode, city)}`;
 }
 
 export function canonicalUrl(path: string): string {
@@ -64,17 +78,21 @@ export function generateBuildingSlug(fullAddress: string): string {
 
 // --- JSON-LD generators ---
 
-export function buildingJsonLd(building: {
-  full_address: string;
-  borough: string;
-  zip_code: string | null;
-  year_built: number | null;
-  total_units: number | null;
-  overall_score: number | null;
-  review_count: number;
-  slug: string;
-}) {
-  const url = canonicalUrl(buildingUrl(building));
+export function buildingJsonLd(
+  building: {
+    full_address: string;
+    borough: string;
+    zip_code: string | null;
+    year_built: number | null;
+    total_units: number | null;
+    overall_score: number | null;
+    review_count: number;
+    slug: string;
+  },
+  city: City = DEFAULT_CITY
+) {
+  const url = canonicalUrl(buildingUrl(building, city));
+  const meta = CITY_META[city];
 
   const schema: Record<string, unknown> = {
     "@context": "https://schema.org",
@@ -85,7 +103,7 @@ export function buildingJsonLd(building: {
       "@type": "PostalAddress",
       streetAddress: building.full_address.split(",")[0]?.trim(),
       addressLocality: building.borough,
-      addressRegion: "NY",
+      addressRegion: meta.stateCode,
       postalCode: building.zip_code,
       addressCountry: "US",
     },
@@ -110,24 +128,29 @@ export function buildingJsonLd(building: {
   return schema;
 }
 
-export function landlordJsonLd(name: string, buildingCount: number) {
+export function landlordJsonLd(
+  name: string,
+  buildingCount: number,
+  city: City = DEFAULT_CITY
+) {
+  const meta = CITY_META[city];
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
     name,
-    url: canonicalUrl(landlordUrl(name)),
-    description: `Property owner managing ${buildingCount} building${buildingCount !== 1 ? "s" : ""} in New York City`,
+    url: canonicalUrl(landlordUrl(name, city)),
+    description: `Property owner managing ${buildingCount} building${buildingCount !== 1 ? "s" : ""} in ${meta.fullName}`,
   };
 }
 
-export function newsCollectionJsonLd() {
+export function newsCollectionJsonLd(city: City = DEFAULT_CITY) {
+  const meta = CITY_META[city];
   return {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
-    name: "NYC Housing News",
-    description:
-      "Latest NYC rental market news, tenant rights updates, and housing guides for New York City renters.",
-    url: canonicalUrl(cityPath("/news")),
+    name: `${meta.name} Housing News`,
+    description: `Latest ${meta.name} rental market news, tenant rights updates, and housing guides for ${meta.fullName} renters.`,
+    url: canonicalUrl(cityPath("/news", city)),
     publisher: {
       "@type": "Organization",
       name: "Lucid Rents",

@@ -1,3 +1,4 @@
+import { isValidCity, DEFAULT_CITY } from "@/lib/cities";
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -35,6 +36,12 @@ export async function GET(req: NextRequest) {
   const page = parseInt(searchParams.get("page") || "1", 10);
   const limit = 25;
 
+  const cityParam = searchParams.get("city") || DEFAULT_CITY;
+  if (!isValidCity(cityParam)) {
+    return NextResponse.json({ error: `Invalid city: ${cityParam}` }, { status: 400 });
+  }
+  const city = cityParam;
+
   const supabase = await createClient();
 
   // Fetch buildings with owner_name that have meaningful violation/complaint data.
@@ -50,6 +57,7 @@ export async function GET(req: NextRequest) {
     let query = supabase
       .from("buildings")
       .select("id, full_address, borough, owner_name, violation_count, complaint_count, litigation_count, dob_violation_count, overall_score")
+      .eq("metro", city)
       .not("owner_name", "is", null)
       .or("violation_count.gt.0,complaint_count.gt.0")
       .order("id", { ascending: true })

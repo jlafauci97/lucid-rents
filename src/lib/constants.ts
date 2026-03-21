@@ -103,6 +103,9 @@ export const REVIEW_CATEGORIES = [
 
 export type CategorySlug = (typeof REVIEW_CATEGORIES)[number]["slug"];
 
+import type { City } from "./cities";
+import { CITY_META } from "./cities";
+
 export const BOROUGHS = [
   "Manhattan",
   "Brooklyn",
@@ -111,11 +114,35 @@ export const BOROUGHS = [
   "Staten Island",
 ] as const;
 
+/** City-specific region lists (boroughs for NYC, areas for LA) */
+export function getRegions(city: City): readonly string[] {
+  return CITY_META[city].regions;
+}
+
+/** Label for the region concept in a given city */
+export function getRegionLabel(city: City): string {
+  return CITY_META[city].regionLabel;
+}
+
 export const LEASE_TYPES = [
   { value: "market_rate", label: "Market Rate" },
   { value: "rent_stabilized", label: "Rent Stabilized" },
   { value: "rent_controlled", label: "Rent Controlled" },
 ] as const;
+
+/** City-specific lease types */
+export const LEASE_TYPES_BY_CITY: Record<City, readonly { value: string; label: string }[]> = {
+  nyc: LEASE_TYPES,
+  "los-angeles": [
+    { value: "market_rate", label: "Market Rate" },
+    { value: "rso", label: "RSO (Rent Stabilized)" },
+  ],
+};
+
+/** Rent protection label per city */
+export function getRentProtectionLabel(city: City): string {
+  return city === "nyc" ? "Rent Stabilized" : "RSO Protected";
+}
 
 export const SCORE_COLORS = {
   good: { min: 7, color: "#10b981", label: "Good" },
@@ -188,3 +215,31 @@ export const HOUSING_COMPLAINT_TYPES = [
   "UNSANITARY CONDITION",
   "WATER SYSTEM",
 ] as const;
+
+export const LA_HOUSING_COMPLAINT_TYPES = [
+  "COCKROACHES/RODENTS/PESTS",
+  "PLUMBING",
+  "ELECTRICAL",
+  "HEATING",
+  "STRUCTURAL",
+  "MOLD/MILDEW",
+  "WATER DAMAGE",
+  "GENERAL MAINTENANCE",
+  "SAFETY/SECURITY",
+  "NOISE",
+  "TRASH/DEBRIS",
+  "PARKING",
+  "ELEVATOR",
+  "FIRE SAFETY",
+] as const;
+
+/** Get the complaint types for a given city */
+export function getComplaintTypes(city: City): readonly string[] {
+  return city === "nyc" ? HOUSING_COMPLAINT_TYPES : LA_HOUSING_COMPLAINT_TYPES;
+}
+
+/** City-specific violation agency labels */
+export const VIOLATION_AGENCIES: Record<City, { housing: string; building: string; crime: string }> = {
+  nyc: { housing: "HPD", building: "DOB", crime: "NYPD" },
+  "los-angeles": { housing: "LAHD", building: "LADBS", crime: "LAPD" },
+};

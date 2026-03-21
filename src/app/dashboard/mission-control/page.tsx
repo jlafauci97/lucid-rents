@@ -24,6 +24,8 @@ import {
 
 // --- Types ---
 
+type MetroFilter = "all" | "nyc" | "los-angeles";
+
 interface SyncCheck {
   sync_type: string;
   status: "healthy" | "warning" | "error";
@@ -35,6 +37,7 @@ interface SyncCheck {
   error_preview: string | null;
   schedule: string;
   category: "daily" | "twice_daily" | "monthly";
+  city?: string;
 }
 
 interface DataCheck {
@@ -45,6 +48,7 @@ interface DataCheck {
   latest_record: string | null;
   details: string;
   category: "core" | "violations" | "supplemental";
+  city?: string;
 }
 
 interface RpcCheck {
@@ -59,6 +63,7 @@ interface PageCheck {
   path: string;
   label: string;
   category: "public" | "data" | "dashboard";
+  city?: string;
 }
 
 interface SyncHistoryEntry {
@@ -74,6 +79,7 @@ interface HealthData {
   status: "healthy" | "warning" | "error";
   checked_at: string;
   response_time_ms: number;
+  metro: string;
   summary: { errors: number; warnings: number; healthy: number; total: number };
   syncs: SyncCheck[];
   data: DataCheck[];
@@ -152,6 +158,11 @@ function friendlyName(name: string) {
     .replace("Hpd", "HPD")
     .replace("Dob", "DOB")
     .replace("Nypd", "NYPD")
+    .replace("Lahd", "LAHD")
+    .replace("Ladbs", "LADBS")
+    .replace("Lapd", "LAPD")
+    .replace("La 311", "LA 311")
+    .replace("La Permits", "LA Permits")
     .replace("311", "311")
     .replace("Rpc", "RPC")
     .replace("Rent Stab", "Rent Stabilization");
@@ -247,8 +258,15 @@ function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
 
 // --- Main Page ---
 
+const METRO_TABS: { key: MetroFilter; label: string }[] = [
+  { key: "all", label: "All Cities" },
+  { key: "nyc", label: "NYC" },
+  { key: "los-angeles", label: "Los Angeles" },
+];
+
 export default function MissionControlPage() {
   const [authed, setAuthed] = useState(false);
+  const [metro, setMetro] = useState<MetroFilter>("all");
   const [health, setHealth] = useState<HealthData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -264,7 +282,8 @@ export default function MissionControlPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/health", { cache: "no-store" });
+      const url = metro === "all" ? "/api/health" : `/api/health?metro=${metro}`;
+      const res = await fetch(url, { cache: "no-store" });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       setHealth(data);
@@ -274,7 +293,7 @@ export default function MissionControlPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [metro]);
 
   useEffect(() => {
     if (!authed) return;
@@ -369,6 +388,22 @@ export default function MissionControlPage() {
                 Refresh
               </button>
             </div>
+          </div>
+          {/* City tab switcher */}
+          <div className="flex gap-1 mt-4 bg-white/10 rounded-lg p-1 w-fit">
+            {METRO_TABS.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setMetro(tab.key)}
+                className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                  metro === tab.key
+                    ? "bg-white text-[#0F1D2E] shadow-sm"
+                    : "text-white/80 hover:text-white hover:bg-white/10"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
         </div>
       </div>

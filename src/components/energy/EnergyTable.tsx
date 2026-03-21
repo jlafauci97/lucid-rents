@@ -3,6 +3,8 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { ArrowUpDown } from "lucide-react";
+import { getRegions, getRegionLabel } from "@/lib/constants";
+import { useCity } from "@/lib/city-context";
 
 interface EnergyRow {
   property_name: string | null;
@@ -23,8 +25,6 @@ const BOROUGH_SLUGS: Record<string, string> = {
   "Staten Island": "staten-island",
 };
 
-const BOROUGHS = ["Manhattan", "Brooklyn", "Queens", "Bronx", "Staten Island"];
-
 function scoreClass(score: number | null): string {
   if (score == null) return "text-[#94a3b8]";
   if (score >= 75) return "text-emerald-600 font-bold";
@@ -33,6 +33,7 @@ function scoreClass(score: number | null): string {
 }
 
 export function EnergyTable({ data }: { data: EnergyRow[] }) {
+  const city = useCity();
   const [borough, setBorough] = useState("");
   const [sortBy, setSortBy] = useState<"energy_star_score" | "site_eui">("energy_star_score");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
@@ -81,9 +82,9 @@ export function EnergyTable({ data }: { data: EnergyRow[] }) {
               : "bg-[#f1f5f9] text-[#64748b] hover:bg-[#e2e8f0]"
           }`}
         >
-          All Boroughs
+          All {getRegionLabel(city)}s
         </button>
-        {BOROUGHS.map((b) => (
+        {getRegions(city).map((b) => (
           <button
             key={b}
             onClick={() => setBorough(b)}

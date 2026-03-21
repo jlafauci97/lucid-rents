@@ -5,6 +5,8 @@ import { Siren, ArrowLeft, Building2, MapPin } from "lucide-react";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { buildingUrl, canonicalUrl, neighborhoodUrl, cityPath, breadcrumbJsonLd } from "@/lib/seo";
 import { getNeighborhoodName } from "@/lib/nyc-neighborhoods";
+import { CITY_META } from "@/lib/cities";
+import type { City } from "@/lib/cities";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { CrimeTrend } from "@/components/crime/CrimeTrend";
@@ -43,7 +45,7 @@ export const revalidate = 3600;
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ zipCode: string }>;
+  params: Promise<{ city: string; zipCode: string }>;
 }): Promise<Metadata> {
   const { zipCode } = await params;
   const name = getNeighborhoodName(zipCode);
@@ -77,9 +79,10 @@ function formatDate(dateStr: string | null): string {
 export default async function CrimeZipPage({
   params,
 }: {
-  params: Promise<{ zipCode: string }>;
+  params: Promise<{ city: string; zipCode: string }>;
 }) {
-  const { zipCode } = await params;
+  const { city: cityParam, zipCode } = await params;
+  const city = cityParam as City;
   const neighborhoodName = getNeighborhoodName(zipCode);
   const displayName = neighborhoodName ? `${neighborhoodName} (${zipCode})` : zipCode;
   const supabase = await createClient();
@@ -137,7 +140,7 @@ export default async function CrimeZipPage({
           "@type": "PostalAddress",
           postalCode: zipCode,
           ...(neighborhoodName ? { addressLocality: neighborhoodName } : {}),
-          addressRegion: "NY",
+          addressRegion: CITY_META[city].stateCode,
           addressCountry: "US",
         },
       }} />

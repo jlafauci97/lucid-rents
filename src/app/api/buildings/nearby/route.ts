@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { isValidCity, DEFAULT_CITY } from "@/lib/cities";
 
 export async function GET(request: Request) {
   try {
@@ -7,6 +8,11 @@ export async function GET(request: Request) {
     const lat = parseFloat(searchParams.get("lat") || "");
     const lon = parseFloat(searchParams.get("lon") || "");
     const limit = Math.min(parseInt(searchParams.get("limit") || "12", 10), 24);
+    const cityParam = searchParams.get("city") || DEFAULT_CITY;
+
+    if (!isValidCity(cityParam)) {
+      return NextResponse.json({ error: "Invalid city" }, { status: 400 });
+    }
 
     if (isNaN(lat) || isNaN(lon)) {
       return NextResponse.json({ error: "lat and lon required" }, { status: 400 });
@@ -16,8 +22,9 @@ export async function GET(request: Request) {
 
     // Get zip centroids
     const { data: centroids } = await supabase
-      .from("nyc_zip_centroids")
-      .select("zip_code, avg_lat, avg_lon");
+      .from("zip_centroids")
+      .select("zip_code, avg_lat, avg_lon")
+      .eq("metro", cityParam);
 
     if (!centroids || centroids.length === 0) {
       return NextResponse.json({ buildings: [], zips: [] });
@@ -40,6 +47,7 @@ export async function GET(request: Request) {
       .select(
         "id, full_address, borough, zip_code, slug, overall_score, violation_count, complaint_count, review_count, total_units, year_built"
       )
+      .eq("metro", cityParam)
       .in("zip_code", nearbyZips)
       .order("review_count", { ascending: false })
       .limit(limit);

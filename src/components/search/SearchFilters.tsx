@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { BOROUGHS } from "@/lib/constants";
+import { getRegions, getRegionLabel } from "@/lib/constants";
 import { cityPath } from "@/lib/seo";
 import { useCity } from "@/lib/city-context";
 
@@ -31,8 +31,8 @@ export function SearchFilters() {
         onChange={(e) => updateFilter("borough", e.target.value)}
         className="rounded-lg border border-[#e2e8f0] bg-white px-3 py-2 text-sm text-[#0F1D2E] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
       >
-        <option value="">All Boroughs</option>
-        {BOROUGHS.map((b) => (
+        <option value="">All {getRegionLabel(city)}s</option>
+        {getRegions(city).map((b) => (
           <option key={b} value={b}>
             {b}
           </option>
