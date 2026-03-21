@@ -65,28 +65,31 @@ export async function LiveStats({ metro }: LiveStatsProps = {}) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const raw: any = Array.isArray(data) ? data[0] : data;
 
+  const buildings = Number(raw?.buildings_count || 0);
+  const hpd = Number(raw?.hpd_violations_count || 0);
+  const dob = Number(raw?.dob_violations_count || 0);
+  const complaints = Number(raw?.complaints_311_count || 0);
+
   const stats = [
     {
       icon: Building2,
       label: "Buildings Tracked",
-      value: raw?.buildings_count != null ? Number(raw.buildings_count).toLocaleString() : "600K+",
+      value: buildings > 0 ? buildings.toLocaleString() : "600K+",
     },
     {
       icon: Shield,
       label: "Violations on Record",
-      value: raw?.hpd_violations_count != null
-        ? (Number(raw.hpd_violations_count) + Number(raw.dob_violations_count || 0)).toLocaleString()
-        : "2M+",
+      value: hpd + dob > 0 ? (hpd + dob).toLocaleString() : "2M+",
     },
     {
       icon: MessageSquare,
       label: "311 Complaints",
-      value: raw?.complaints_311_count != null ? Number(raw.complaints_311_count).toLocaleString() : "500K+",
+      value: complaints > 0 ? complaints.toLocaleString() : "500K+",
     },
     {
       icon: FileSearch,
       label: "Data Sources",
-      value: metro ? "15+" : "25+",
+      value: "25+",
     },
   ];
 
