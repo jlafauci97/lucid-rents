@@ -290,6 +290,36 @@ async function getAddressForBbl(
     return { borough: hpd.borough, house_number: houseNum, street_name: hpd.street_name, zip_code: null, full_address: fullAddr };
   }
 
+  // Try DOB violations
+  const { data: dob } = await supabase
+    .from("dob_violations")
+    .select("borough, house_number, street_name")
+    .eq("bbl", bbl)
+    .not("street_name", "is", null)
+    .limit(1)
+    .single();
+
+  if (dob?.street_name && dob?.borough) {
+    const houseNum = dob.house_number || "";
+    const fullAddr = `${houseNum ? houseNum + " " : ""}${dob.street_name}, ${dob.borough}, NY`;
+    return { borough: dob.borough, house_number: houseNum, street_name: dob.street_name, zip_code: null, full_address: fullAddr };
+  }
+
+  // Try DOB permits
+  const { data: permit } = await supabase
+    .from("dob_permits")
+    .select("borough, house_no, street_name, zip_code")
+    .eq("bbl", bbl)
+    .not("street_name", "is", null)
+    .limit(1)
+    .single();
+
+  if (permit?.street_name && permit?.borough) {
+    const houseNum = permit.house_no || "";
+    const fullAddr = `${houseNum ? houseNum + " " : ""}${permit.street_name}, ${permit.borough}, NY${permit.zip_code ? " " + permit.zip_code : ""}`;
+    return { borough: permit.borough, house_number: houseNum, street_name: permit.street_name, zip_code: permit.zip_code || null, full_address: fullAddr };
+  }
+
   return null;
 }
 
@@ -431,6 +461,105 @@ async function linkByBbl(
 }
 
 // ---------------------------------------------------------------------------
+// Address-based linking for LA records (no BBL, use house_number + street_name
+// or incident_address or address column to match buildings.full_address)
+// ---------------------------------------------------------------------------
+async function linkByAddress(
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+  table: string,
+  idColumn: string,
+  addressColumns: string | string[],
+  syncStartTime: string,
+  errors: string[],
+  label: string,
+  maxLookups = 200,
+  metro?: string
+): Promise<{ linked: number; affectedBuildingIds: Set<string> }> {
+  let linked = 0;
+  const affectedBuildingIds = new Set<string>();
+
+  const linkCutoff = new Date();
+  linkCutoff.setDate(linkCutoff.getDate() - 30);
+
+  const cols = Array.isArray(addressColumns) ? addressColumns : [addressColumns];
+  const selectCols = [idColumn, ...cols].join(", ");
+  const primaryAddrCol = cols[cols.length - 1]; // filter on the main address column
+
+  // Fetch unlinked records with an address
+  let allUnlinked: Record<string, unknown>[] = [];
+  let offset = 0;
+  const PAGE = 5000;
+  while (true) {
+    let query = supabase
+      .from(table)
+      .select(selectCols)
+      .is("building_id", null)
+      .not(primaryAddrCol, "is", null)
+      .gte("imported_at", linkCutoff.toISOString());
+    if (metro) query = query.eq("metro", metro);
+    const { data: batch } = await query.range(offset, offset + PAGE - 1);
+
+    if (!batch || batch.length === 0) break;
+    allUnlinked = allUnlinked.concat(batch as unknown as Record<string, unknown>[]);
+    if (batch.length < PAGE) break;
+    offset += PAGE;
+  }
+
+  if (allUnlinked.length === 0) return { linked, affectedBuildingIds };
+
+  // Group by normalized address
+  const addressToIds = new Map<string, string[]>();
+  for (const r of allUnlinked) {
+    // Build address string from columns (e.g. house_number + street_name → "123 MAIN ST")
+    let raw: string;
+    if (cols.length > 1) {
+      raw = cols.map(c => String(r[c] || "").trim()).filter(Boolean).join(" ");
+    } else {
+      raw = String(r[cols[0]] || "").trim();
+    }
+    raw = raw.toUpperCase().replace(/\s+/g, " ");
+    if (!raw || raw.length < 5) continue;
+    // Strip apartment/unit suffixes for better matching
+    const addr = raw.replace(/\s+(APT|UNIT|#|FL|FLOOR|STE|SUITE|RM|ROOM)\b.*$/i, "").trim();
+    if (!addr) continue;
+    if (!addressToIds.has(addr)) addressToIds.set(addr, []);
+    addressToIds.get(addr)!.push(String(r[idColumn]));
+  }
+
+  let lookupCount = 0;
+  for (const [address, recordIds] of addressToIds) {
+    if (lookupCount >= maxLookups) break;
+    lookupCount++;
+
+    const { data: matched } = await supabase
+      .from("buildings")
+      .select("id")
+      .ilike("full_address", `%${address}%`)
+      .limit(1);
+
+    if (matched && matched.length > 0) {
+      const buildingId = matched[0].id;
+      for (let i = 0; i < recordIds.length; i += 200) {
+        const batch = recordIds.slice(i, i + 200);
+        const { error: linkError } = await supabase
+          .from(table)
+          .update({ building_id: buildingId })
+          .in(idColumn, batch);
+
+        if (!linkError) {
+          linked += batch.length;
+        } else {
+          errors.push(`${label} address link error: ${linkError.message}`);
+        }
+      }
+      affectedBuildingIds.add(buildingId);
+    }
+  }
+
+  return { linked, affectedBuildingIds };
+}
+
+// ---------------------------------------------------------------------------
 // Sync result type
 // ---------------------------------------------------------------------------
 interface SyncResult {
@@ -502,9 +631,22 @@ async function syncHPDViolations(supabase: ReturnType<typeof getSupabaseAdmin>):
 
       const rows = records
         .filter((r) => r.violationid)
-        .map((r) => ({
+        .map((r) => {
+          // Construct BBL from boroid + block + lot (HPD API doesn't provide a bbl field)
+          let bbl: string | null = null;
+          const boroRaw = r.boroid as string | undefined;
+          const blockRaw = r.block as string | undefined;
+          const lotRaw = r.lot as string | undefined;
+          if (boroRaw && blockRaw && lotRaw) {
+            if (/^\d$/.test(boroRaw)) {
+              const block = String(blockRaw).padStart(5, "0").slice(-5);
+              const lot = String(lotRaw).padStart(4, "0").slice(-4);
+              bbl = `${boroRaw}${block}${lot}`;
+            }
+          }
+          return {
           violation_id: String(r.violationid),
-          bbl: r.bbl || null,
+          bbl,
           bin: r.bin || null,
           class: r.class && ["A", "B", "C", "I"].includes(r.class.toUpperCase())
             ? r.class.toUpperCase()
@@ -520,7 +662,8 @@ async function syncHPDViolations(supabase: ReturnType<typeof getSupabaseAdmin>):
           street_name: r.streetname || null,
           apartment: r.apartment || null,
           imported_at: new Date().toISOString(),
-        }));
+        };
+        });
 
       if (rows.length > 0) {
         totalAdded += await batchUpsert(supabase, "hpd_violations", rows, "violation_id", errors, "HPD");
@@ -536,7 +679,7 @@ async function syncHPDViolations(supabase: ReturnType<typeof getSupabaseAdmin>):
 
     // Linking: match by BBL to buildings (scoped to this sync run)
     try {
-      const linkResult = await linkByBbl(supabase, "hpd_violations", syncStartTime, errors, "HPD", false);
+      const linkResult = await linkByBbl(supabase, "hpd_violations", syncStartTime, errors, "HPD", true);
       totalLinked = linkResult.linked;
       for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
     } catch (linkErr) {
@@ -836,7 +979,7 @@ async function syncHPDLitigations(supabase: ReturnType<typeof getSupabaseAdmin>)
 
     // Linking: match by BBL (scoped to this sync run)
     try {
-      const linkResult = await linkByBbl(supabase, "hpd_litigations", syncStartTime, errors, "HPD Litigations", false);
+      const linkResult = await linkByBbl(supabase, "hpd_litigations", syncStartTime, errors, "HPD Litigations", true);
       totalLinked = linkResult.linked;
       for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
     } catch (linkErr) {
@@ -963,7 +1106,7 @@ async function syncDOBViolations(supabase: ReturnType<typeof getSupabaseAdmin>):
 
     // Linking: match by BBL (scoped to this sync run)
     try {
-      const linkResult = await linkByBbl(supabase, "dob_violations", syncStartTime, errors, "DOB", false);
+      const linkResult = await linkByBbl(supabase, "dob_violations", syncStartTime, errors, "DOB", true);
       totalLinked = linkResult.linked;
       for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
     } catch (linkErr) {
@@ -1106,6 +1249,7 @@ async function syncNYPDComplaints(supabase: ReturnType<typeof getSupabaseAdmin>)
 
     // No BBL linking for crimes — they're area-based, matched by zip code.
     // Instead, update crime_count on buildings that share a zip code with new crimes.
+    // Batched: count per zip, then bulk-update all buildings in that zip at once.
     try {
       // Get distinct zip codes from recently synced crimes
       const { data: recentZips } = await supabase
@@ -1118,35 +1262,30 @@ async function syncNYPDComplaints(supabase: ReturnType<typeof getSupabaseAdmin>)
       if (recentZips && recentZips.length > 0) {
         const uniqueZips = [...new Set(recentZips.map((r) => r.zip_code).filter(Boolean))] as string[];
 
-        // For each zip, count crimes in last 12 months and update buildings
         const oneYearAgo = new Date();
         oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
         const sinceDate = oneYearAgo.toISOString().slice(0, 10);
 
-        for (const zip of uniqueZips) {
-          // Count crimes in this zip for last 12 months
-          const { count: crimeCount } = await supabase
-            .from("nypd_complaints")
-            .select("id", { count: "exact", head: true })
-            .eq("zip_code", zip)
-            .gte("cmplnt_date", sinceDate);
+        // Process zips in parallel batches of 5
+        for (let i = 0; i < uniqueZips.length; i += 5) {
+          const zipBatch = uniqueZips.slice(i, i + 5);
+          await Promise.all(zipBatch.map(async (zip) => {
+            const { count: crimeCount } = await supabase
+              .from("nypd_complaints")
+              .select("id", { count: "exact", head: true })
+              .eq("zip_code", zip)
+              .gte("cmplnt_date", sinceDate);
 
-          // Update all buildings in this zip
-          const { data: buildingsInZip } = await supabase
-            .from("buildings")
-            .select("id")
-            .eq("zip_code", zip)
-            .limit(10000);
+            // Bulk-update all buildings in this zip at once (no N+1)
+            const { error: updateErr } = await supabase
+              .from("buildings")
+              .update({ crime_count: crimeCount ?? 0 })
+              .eq("zip_code", zip);
 
-          if (buildingsInZip && buildingsInZip.length > 0) {
-            for (const b of buildingsInZip) {
-              await supabase
-                .from("buildings")
-                .update({ crime_count: crimeCount ?? 0 })
-                .eq("id", b.id);
-              affectedBuildingIds.add(b.id);
+            if (updateErr) {
+              errors.push(`NYPD crime count update error (zip ${zip}): ${updateErr.message}`);
             }
-          }
+          }));
         }
       }
     } catch (countErr) {
@@ -1257,7 +1396,7 @@ async function syncBedBugReports(supabase: ReturnType<typeof getSupabaseAdmin>):
 
     // Linking: match by BBL
     try {
-      const linkResult = await linkByBbl(supabase, "bedbug_reports", syncStartTime, errors, "Bedbugs", false);
+      const linkResult = await linkByBbl(supabase, "bedbug_reports", syncStartTime, errors, "Bedbugs", true);
       totalLinked = linkResult.linked;
       for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
     } catch (linkErr) {
@@ -1369,7 +1508,7 @@ async function syncEvictions(supabase: ReturnType<typeof getSupabaseAdmin>): Pro
 
     // Linking: match by BBL (for the few evictions that have BBLs)
     try {
-      const linkResult = await linkByBbl(supabase, "evictions", syncStartTime, errors, "Evictions", false);
+      const linkResult = await linkByBbl(supabase, "evictions", syncStartTime, errors, "Evictions", true);
       totalLinked = linkResult.linked;
       for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
     } catch (linkErr) {
@@ -1559,7 +1698,7 @@ async function syncSidewalkSheds(supabase: ReturnType<typeof getSupabaseAdmin>):
 
     // Linking: match by BBL
     try {
-      const linkResult = await linkByBbl(supabase, "sidewalk_sheds", syncStartTime, errors, "Sheds", false);
+      const linkResult = await linkByBbl(supabase, "sidewalk_sheds", syncStartTime, errors, "Sheds", true);
       totalLinked = linkResult.linked;
       for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
     } catch (linkErr) {
@@ -1686,7 +1825,7 @@ async function syncDobPermits(supabase: ReturnType<typeof getSupabaseAdmin>): Pr
 
     // Linking: match by BBL
     try {
-      const linkResult = await linkByBbl(supabase, "dob_permits", syncStartTime, errors, "Permits", false);
+      const linkResult = await linkByBbl(supabase, "dob_permits", syncStartTime, errors, "Permits", true);
       totalLinked = linkResult.linked;
       for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
     } catch (linkErr) {
@@ -1703,7 +1842,9 @@ async function syncDobPermits(supabase: ReturnType<typeof getSupabaseAdmin>): Pr
 }
 
 // ---------------------------------------------------------------------------
-// Update building counts — only for affected buildings
+// Update building counts — batched to avoid N+1 queries.
+// Processes buildings in parallel batches of 10 and counts all tables per
+// building in a single Promise.all, reducing total queries from 8*N to ~N.
 // ---------------------------------------------------------------------------
 async function updateBuildingCounts(
   supabase: ReturnType<typeof getSupabaseAdmin>,
@@ -1726,22 +1867,30 @@ async function updateBuildingCounts(
     { table: "dob_permits", column: "permit_count" },
   ];
 
-  for (const { table, column } of countTasks) {
-    try {
-      for (const bid of buildingIds) {
-        const { count } = await supabase
-          .from(table)
-          .select("id", { count: "exact", head: true })
-          .eq("building_id", bid);
+  const CONCURRENT = 10;
 
-        await supabase
-          .from("buildings")
-          .update({ [column]: count ?? 0 })
-          .eq("id", bid);
+  for (let i = 0; i < buildingIds.length; i += CONCURRENT) {
+    const batch = buildingIds.slice(i, i + CONCURRENT);
+    await Promise.all(batch.map(async (bid) => {
+      try {
+        // Count all tables for this building in parallel
+        const counts = await Promise.all(
+          countTasks.map(({ table }) =>
+            supabase.from(table).select("id", { count: "exact", head: true }).eq("building_id", bid)
+              .then(({ count }) => count ?? 0)
+          )
+        );
+
+        // Build single update payload
+        const update: Record<string, number> = {};
+        countTasks.forEach(({ column }, idx) => { update[column] = counts[idx]; });
+
+        const { error } = await supabase.from("buildings").update(update).eq("id", bid);
+        if (error) errors.push(`Update counts error (${bid}): ${error.message}`);
+      } catch (err) {
+        errors.push(`Update counts error (${bid}): ${String(err)}`);
       }
-    } catch (err) {
-      errors.push(`Update ${column} error: ${String(err)}`);
-    }
+    }));
   }
 
   return errors;
@@ -1917,6 +2066,15 @@ async function syncLAHDViolations(
       if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) { hasMore = false; } else { offset += PAGE_SIZE; }
     }
 
+    // Address-based linking for LA violations (no BBLs — use house_number + street_name)
+    try {
+      const linkResult = await linkByAddress(supabase, "hpd_violations", "id", ["house_number", "street_name"], syncStartTime, errors, "LAHD", 200, "los-angeles");
+      totalLinked = linkResult.linked;
+      for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
+    } catch (linkErr) {
+      errors.push(`LAHD address linking error: ${String(linkErr)}`);
+    }
+
     await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
   } catch (err) {
     errors.push(`LAHD fatal error: ${String(err)}`);
@@ -1998,6 +2156,15 @@ async function syncLA311Complaints(
       if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) { hasMore = false; } else { offset += PAGE_SIZE; }
     }
 
+    // Address-based linking for LA 311 complaints
+    try {
+      const linkResult = await linkByAddress(supabase, "complaints_311", "unique_key", "incident_address", syncStartTime, errors, "LA311", 200, "los-angeles");
+      totalLinked = linkResult.linked;
+      for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
+    } catch (linkErr) {
+      errors.push(`LA311 address linking error: ${String(linkErr)}`);
+    }
+
     await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
   } catch (err) {
     errors.push(`LA 311 fatal error: ${String(err)}`);
@@ -2017,6 +2184,7 @@ async function syncLADBSViolations(
 ): Promise<SyncResult> {
   const lastSync = await getLastSyncDate(supabase, "ladbs_violations");
   const logId = await createSyncLog(supabase, "ladbs_violations");
+  const syncStartTime = new Date().toISOString();
 
   let totalAdded = 0;
   let totalLinked = 0;
@@ -2057,6 +2225,8 @@ async function syncLADBSViolations(
           issue_date: r.adddttm ? String(r.adddttm).slice(0, 10) : null,
           status: r.stat ? String(r.stat) : null,
           borough: r.apc ? String(r.apc) : "Los Angeles",
+          house_number: r.stno ? String(r.stno) : null,
+          street_name: [r.predir, r.stname, r.suffix].filter(Boolean).map(String).join(" ").trim() || null,
           zip_code: r.zip ? String(r.zip).replace(/-.*/, "").slice(0, 5) : null,
           metro: "los-angeles",
           imported_at: new Date().toISOString(),
@@ -2068,6 +2238,15 @@ async function syncLADBSViolations(
 
       pagesFetched++;
       if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) { hasMore = false; } else { offset += PAGE_SIZE; }
+    }
+
+    // Address-based linking for LADBS violations (use house_number + street_name)
+    try {
+      const linkResult = await linkByAddress(supabase, "dob_violations", "id", ["house_number", "street_name"], syncStartTime, errors, "LADBS", 200, "los-angeles");
+      totalLinked = linkResult.linked;
+      for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
+    } catch (linkErr) {
+      errors.push(`LADBS address linking error: ${String(linkErr)}`);
     }
 
     await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
@@ -2100,6 +2279,7 @@ async function syncLAPermits(
 ): Promise<SyncResult> {
   const lastSync = await getLastSyncDate(supabase, "la_permits");
   const logId = await createSyncLog(supabase, "la_permits");
+  const syncStartTime = new Date().toISOString();
 
   let totalAdded = 0;
   let totalLinked = 0;
@@ -2141,7 +2321,8 @@ async function syncLAPermits(
           expiration_date: r.expiration_date ? String(r.expiration_date).slice(0, 10) : null,
           status: r.status ? String(r.status) : null,
           borough: r.council_district ? `District ${r.council_district}` : "Los Angeles",
-          address: r.address ? String(r.address) : null,
+          house_no: r.address ? String(r.address).match(/^(\d[\w-]*)\s/)?.[1] || null : null,
+          street_name: r.address ? String(r.address).replace(/^(\d[\w-]*)\s+/, "").trim() || null : null,
           zip_code: r.zip_code ? String(r.zip_code).slice(0, 5) : null,
           metro: "los-angeles",
           imported_at: new Date().toISOString(),
@@ -2153,6 +2334,15 @@ async function syncLAPermits(
 
       pagesFetched++;
       if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) { hasMore = false; } else { offset += PAGE_SIZE; }
+    }
+
+    // Address-based linking for LA permits (use house_no + street_name)
+    try {
+      const linkResult = await linkByAddress(supabase, "dob_permits", "id", ["house_no", "street_name"], syncStartTime, errors, "LA Permits", 200, "los-angeles");
+      totalLinked = linkResult.linked;
+      for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
+    } catch (linkErr) {
+      errors.push(`LA Permits address linking error: ${String(linkErr)}`);
     }
 
     await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
@@ -2377,6 +2567,35 @@ async function runLinkOnly(
       complaintsErrors.push(`311 link error: ${String(err)}`);
     }
     linkResults["complaints"] = { linked: complaintsLinked, errors: complaintsErrors };
+  }
+
+  // Link LA records by address (tables that use address-based matching instead of BBL)
+  if ((Date.now() - startTime) / 1000 < 240) {
+    const laAddrTables: { name: string; table: string; idColumn: string; addressColumns: string | string[]; label: string }[] = [
+      { name: "lahd", table: "hpd_violations", idColumn: "id", addressColumns: ["house_number", "street_name"], label: "LAHD" },
+      { name: "ladbs", table: "dob_violations", idColumn: "id", addressColumns: ["house_number", "street_name"], label: "LADBS" },
+      { name: "la-311", table: "complaints_311", idColumn: "unique_key", addressColumns: "incident_address", label: "LA311" },
+      { name: "la-permits", table: "dob_permits", idColumn: "id", addressColumns: ["house_no", "street_name"], label: "LA Permits" },
+    ];
+
+    for (const { name, table, idColumn, addressColumns, label } of laAddrTables) {
+      if (sourceParam && sourceParam !== name) continue;
+      if ((Date.now() - startTime) / 1000 > 260) break;
+
+      const tableErrors: string[] = [];
+      try {
+        const result = await linkByAddress(supabase, table, idColumn, addressColumns, syncStartTime, tableErrors, label, 200, "los-angeles");
+        for (const id of result.affectedBuildingIds) allAffectedIds.add(id);
+        const existing = linkResults[name];
+        linkResults[name] = {
+          linked: (existing?.linked ?? 0) + result.linked,
+          errors: [...(existing?.errors ?? []), ...tableErrors],
+        };
+      } catch (err) {
+        tableErrors.push(`${label} LA address link error: ${String(err)}`);
+        if (!linkResults[name]) linkResults[name] = { linked: 0, errors: tableErrors };
+      }
+    }
   }
 
   // Update building counts for all affected buildings

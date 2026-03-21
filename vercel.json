@@ -77,10 +77,6 @@
       "schedule": "15 10 * * *"
     },
     {
-      "path": "/api/cron/sync?source=ladbs",
-      "schedule": "30 10 * * *"
-    },
-    {
       "path": "/api/cron/sync?source=la-permits",
       "schedule": "45 10 * * *"
     },

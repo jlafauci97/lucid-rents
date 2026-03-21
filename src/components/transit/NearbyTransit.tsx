@@ -20,15 +20,18 @@ interface TransitData {
 interface NearbyTransitProps {
   latitude: number;
   longitude: number;
+  city?: string;
 }
 
-const TRANSIT_CONFIG: {
+interface TransitConfigItem {
   key: string;
   label: string;
   icon: LucideIcon;
   color: string;
   badgeColor: string;
-}[] = [
+}
+
+const NYC_TRANSIT_CONFIG: TransitConfigItem[] = [
   {
     key: "subway",
     label: "Subway",
@@ -66,7 +69,29 @@ const TRANSIT_CONFIG: {
   },
 ];
 
-export function NearbyTransit({ latitude, longitude }: NearbyTransitProps) {
+const LA_TRANSIT_CONFIG: TransitConfigItem[] = [
+  {
+    key: "rail",
+    label: "Metro Rail",
+    icon: TrainFront,
+    color: "text-[#2563EB]",
+    badgeColor: "bg-[#2563EB] text-white",
+  },
+  {
+    key: "bus",
+    label: "Bus",
+    icon: Bus,
+    color: "text-[#0891B2]",
+    badgeColor: "bg-[#0891B2] text-white",
+  },
+];
+
+function getTransitConfig(city?: string): TransitConfigItem[] {
+  if (city === "los-angeles" || city === "CA/Los-Angeles") return LA_TRANSIT_CONFIG;
+  return NYC_TRANSIT_CONFIG;
+}
+
+export function NearbyTransit({ latitude, longitude, city }: NearbyTransitProps) {
   const [data, setData] = useState<TransitData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -74,7 +99,7 @@ export function NearbyTransit({ latitude, longitude }: NearbyTransitProps) {
     async function fetchTransit() {
       try {
         const res = await fetch(
-          `/api/transit/nearby?lat=${latitude}&lng=${longitude}`
+          `/api/transit/nearby?lat=${latitude}&lng=${longitude}${city ? `&city=${city}` : ""}`
         );
         if (!res.ok) return;
         const json = await res.json();
@@ -124,7 +149,7 @@ export function NearbyTransit({ latitude, longitude }: NearbyTransitProps) {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {TRANSIT_CONFIG.map(({ key, label, icon: Icon, color, badgeColor }) => {
+          {getTransitConfig(city).map(({ key, label, icon: Icon, color, badgeColor }) => {
             const stops = data.transit[key];
             if (!stops || stops.length === 0) return null;
 

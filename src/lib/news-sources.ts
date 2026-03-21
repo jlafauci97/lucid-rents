@@ -5,6 +5,8 @@ export interface NewsSource {
   defaultCategory: NewsCategory;
   /** If true, all articles from this source are considered housing-relevant (skip keyword filter) */
   alwaysRelevant?: boolean;
+  /** Metro area this source covers. Defaults to 'nyc' if not set. */
+  metro?: string;
 }
 
 export type NewsCategory =
@@ -20,7 +22,7 @@ export const NEWS_CATEGORIES: Record<
 > = {
   "rental-market": {
     label: "Rental Market",
-    description: "NYC rental market trends, pricing, and housing supply updates",
+    description: "Rental market trends, pricing, and housing supply updates",
     icon: "TrendingUp",
     color: "#3B82F6",
   },
@@ -38,13 +40,13 @@ export const NEWS_CATEGORIES: Record<
   },
   guides: {
     label: "Guides",
-    description: "Practical tips and guides for NYC renters",
+    description: "Practical tips and guides for renters",
     icon: "BookOpen",
     color: "#F59E0B",
   },
   general: {
     label: "General",
-    description: "General NYC housing and real estate news",
+    description: "General housing and real estate news",
     icon: "Newspaper",
     color: "#64748B",
   },
@@ -90,10 +92,34 @@ export const NEWS_SOURCES: NewsSource[] = [
     defaultCategory: "rental-market",
     alwaysRelevant: true,
   },
+  // --- Los Angeles sources ---
+  {
+    name: "Urbanize LA",
+    slug: "urbanize-la",
+    feedUrl: "https://la.urbanize.city/rss.xml",
+    defaultCategory: "rental-market",
+    alwaysRelevant: true,
+    metro: "los-angeles",
+  },
+  {
+    name: "The Real Deal LA",
+    slug: "real-deal-la",
+    feedUrl: "https://therealdeal.com/la/feed/",
+    defaultCategory: "rental-market",
+    alwaysRelevant: true,
+    metro: "los-angeles",
+  },
+  {
+    name: "Knock LA",
+    slug: "knock-la",
+    feedUrl: "https://knock-la.com/feed/",
+    defaultCategory: "tenant-rights",
+    metro: "los-angeles",
+  },
 ];
 
 /**
- * Keywords that indicate an article is relevant to NYC housing/real estate.
+ * Keywords that indicate an article is relevant to housing/real estate.
  * Articles that don't match ANY of these are filtered out entirely.
  */
 const RELEVANCE_KEYWORDS: string[] = [
@@ -143,10 +169,21 @@ const RELEVANCE_KEYWORDS: string[] = [
   "home sale",
   "homeowner",
   "homebuyer",
+  // LA-specific keywords
+  "lahd",
+  "lamc",
+  "rent control",
+  "rso",
+  "ellis act",
+  "measure hhh",
+  "proposition hhh",
+  "inclusionary",
+  "adus",
+  "accessory dwelling",
 ];
 
 /**
- * Check if an article is relevant to NYC housing/real estate.
+ * Check if an article is relevant to housing/real estate.
  */
 export function isHousingRelevant(title: string, excerpt: string | null): boolean {
   const text = `${title} ${excerpt || ""}`.toLowerCase();

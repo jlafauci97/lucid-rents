@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { SearchBar } from "@/components/search/SearchBar";
 import { SearchFilters } from "@/components/search/SearchFilters";
+import { SearchSort } from "@/components/search/SearchSort";
 import { BuildingCard } from "@/components/search/BuildingCard";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { AdSidebar } from "@/components/ui/AdSidebar";
@@ -12,9 +13,11 @@ import type { Metadata } from "next";
 
 import { CITY_META, type City } from "@/lib/cities";
 
+type SortOption = "relevance" | "score-desc" | "score-asc" | "violations-desc" | "reviews-desc";
+
 interface SearchPageProps {
   params: Promise<{ city: string }>;
-  searchParams: Promise<{ q?: string; borough?: string; zip?: string; page?: string }>;
+  searchParams: Promise<{ q?: string; borough?: string; zip?: string; page?: string; sort?: string }>;
 }
 
 export async function generateMetadata({
@@ -36,15 +39,50 @@ export async function generateMetadata({
   };
 }
 
+const VALID_SORTS: SortOption[] = ["relevance", "score-desc", "score-asc", "violations-desc", "reviews-desc"];
+
+function isValidSort(s: string | undefined): s is SortOption {
+  return !!s && (VALID_SORTS as string[]).includes(s);
+}
+
+function applySortOrder(
+  query: ReturnType<ReturnType<Awaited<ReturnType<typeof createClient>>["from"]>["select"]>,
+  sort: SortOption
+) {
+  switch (sort) {
+    case "score-desc":
+      return query.order("overall_score", { ascending: false, nullsFirst: false });
+    case "score-asc":
+      return query.order("overall_score", { ascending: true, nullsFirst: false });
+    case "violations-desc":
+      return query.order("violation_count", { ascending: false });
+    case "reviews-desc":
+      return query.order("review_count", { ascending: false });
+    case "relevance":
+    default:
+      return query.order("review_count", { ascending: false });
+  }
+}
+
+function buildPaginationParams(q: string, sort: SortOption, borough?: string, zip?: string): string {
+  const parts = [`q=${encodeURIComponent(q)}`];
+  if (sort !== "relevance") parts.push(`sort=${sort}`);
+  if (borough) parts.push(`borough=${borough}`);
+  if (zip) parts.push(`zip=${zip}`);
+  return parts.join("&");
+}
+
 async function SearchResults({
   q,
   borough,
   zip,
+  sort,
   page,
 }: {
   q: string;
   borough?: string;
   zip?: string;
+  sort: SortOption;
   page: number;
 }) {
   if (!q) {
@@ -65,11 +103,12 @@ async function SearchResults({
     .from("buildings")
     .select("*", { count: "exact" })
     .textSearch("search_vector", q, { type: "websearch", config: "english" })
-    .range(offset, offset + limit - 1)
-    .order("review_count", { ascending: false });
+    .range(offset, offset + limit - 1);
 
   if (borough) query = query.eq("borough", borough);
   if (zip) query = query.eq("zip_code", zip);
+
+  query = applySortOrder(query, sort);
 
   const { data: buildings, count } = await query;
 
@@ -87,6 +126,7 @@ async function SearchResults({
   }
 
   const totalPages = Math.ceil((count || 0) / limit);
+  const paginationBase = buildPaginationParams(q, sort, borough, zip);
 
   return (
     <div>
@@ -102,7 +142,7 @@ async function SearchResults({
         <div className="flex justify-center gap-2 mt-8">
           {page > 1 && (
             <a
-              href={`${cityPath("/search")}?q=${encodeURIComponent(q)}&page=${page - 1}${borough ? `&borough=${borough}` : ""}${zip ? `&zip=${zip}` : ""}`}
+              href={`${cityPath("/search")}?${paginationBase}&page=${page - 1}`}
               className="px-4 py-2 rounded-lg border border-[#e2e8f0] text-sm hover:bg-gray-50"
             >
               Previous
@@ -113,7 +153,7 @@ async function SearchResults({
           </span>
           {page < totalPages && (
             <a
-              href={`${cityPath("/search")}?q=${encodeURIComponent(q)}&page=${page + 1}${borough ? `&borough=${borough}` : ""}${zip ? `&zip=${zip}` : ""}`}
+              href={`${cityPath("/search")}?${paginationBase}&page=${page + 1}`}
               className="px-4 py-2 rounded-lg border border-[#e2e8f0] text-sm hover:bg-gray-50"
             >
               Next
@@ -149,6 +189,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const q = params.q || "";
   const borough = params.borough;
   const zip = params.zip;
+  const sort: SortOption = isValidSort(params.sort) ? params.sort : "relevance";
   const page = parseInt(params.page || "1", 10);
 
   return (
@@ -157,13 +198,16 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
       <div className="mb-6">
         <SearchBar initialQuery={q} />
       </div>
-      <div className="mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <Suspense fallback={null}>
           <SearchFilters />
         </Suspense>
+        <Suspense fallback={null}>
+          <SearchSort />
+        </Suspense>
       </div>
       <Suspense fallback={<SearchSkeleton />}>
-        <SearchResults q={q} borough={borough} zip={zip} page={page} />
+        <SearchResults q={q} borough={borough} zip={zip} sort={sort} page={page} />
       </Suspense>
       <AdBlock adSlot="SEARCH_BOTTOM" adFormat="horizontal" />
     </div>

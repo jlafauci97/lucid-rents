@@ -5,7 +5,20 @@ import { buildingUrl, cityPath } from "@/lib/seo";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { StarRating } from "@/components/ui/StarRating";
-import { PenSquare, Bookmark, ThumbsUp, ChevronRight, Bell } from "lucide-react";
+import { LetterGrade } from "@/components/ui/LetterGrade";
+import { ActivityTimeline } from "@/components/dashboard/ActivityTimeline";
+import {
+  PenSquare,
+  Bookmark,
+  ThumbsUp,
+  ChevronRight,
+  Bell,
+  AlertTriangle,
+  Search,
+  ArrowLeftRight,
+  Shield,
+  MapPin,
+} from "lucide-react";
 import { formatRelativeDate } from "@/lib/utils";
 import type { Metadata } from "next";
 
@@ -18,7 +31,19 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [profileRes, reviewsRes, savedRes, monitoredRes] = await Promise.all([
+  // Compute 7-day cutoff for alerts
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const alertCutoff = sevenDaysAgo.toISOString().split("T")[0];
+
+  const [
+    profileRes,
+    reviewsRes,
+    savedRes,
+    monitoredRes,
+    savedCountRes,
+    monitoredCountRes,
+  ] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", user.id).single(),
     supabase
       .from("reviews")
@@ -38,12 +63,41 @@ export default async function DashboardPage() {
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(5),
+    supabase
+      .from("saved_buildings")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id),
+    supabase
+      .from("monitored_buildings")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id),
   ]);
 
   const profile = profileRes.data;
   const reviews = reviewsRes.data || [];
   const saved = savedRes.data || [];
   const monitored = monitoredRes.data || [];
+  const savedCount = savedCountRes.count ?? 0;
+  const monitoredCount = monitoredCountRes.count ?? 0;
+
+  // Get monitored building IDs for alerts count and activity timeline
+  const monitoredBuildingIds = monitored
+    .map((item) => {
+      const b = item.building as { id: string } | null;
+      return b?.id;
+    })
+    .filter((id): id is string => !!id);
+
+  // Fetch alert count: violations on monitored buildings in last 7 days
+  let alertCount = 0;
+  if (monitoredBuildingIds.length > 0) {
+    const alertRes = await supabase
+      .from("hpd_violations")
+      .select("id", { count: "exact", head: true })
+      .in("building_id", monitoredBuildingIds)
+      .gte("nov_issue_date", alertCutoff);
+    alertCount = alertRes.count ?? 0;
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -65,10 +119,10 @@ export default async function DashboardPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
         <Card>
           <CardContent className="flex items-center gap-4 py-6">
-            <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
               <PenSquare className="w-6 h-6 text-blue-600" />
             </div>
             <div>
@@ -81,7 +135,7 @@ export default async function DashboardPage() {
         </Card>
         <Card>
           <CardContent className="flex items-center gap-4 py-6">
-            <div className="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center flex-shrink-0">
               <ThumbsUp className="w-6 h-6 text-amber-600" />
             </div>
             <div>
@@ -94,12 +148,12 @@ export default async function DashboardPage() {
         </Card>
         <Card>
           <CardContent className="flex items-center gap-4 py-6">
-            <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center flex-shrink-0">
               <Bookmark className="w-6 h-6 text-emerald-600" />
             </div>
             <div>
               <p className="text-2xl font-bold text-[#0F1D2E]">
-                {saved.length}
+                {savedCount}
               </p>
               <p className="text-sm text-[#64748b]">Saved Buildings</p>
             </div>
@@ -107,17 +161,82 @@ export default async function DashboardPage() {
         </Card>
         <Card>
           <CardContent className="flex items-center gap-4 py-6">
-            <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center flex-shrink-0">
               <Bell className="w-6 h-6 text-indigo-600" />
             </div>
             <div>
               <p className="text-2xl font-bold text-[#0F1D2E]">
-                {monitored.length}
+                {monitoredCount}
               </p>
               <p className="text-sm text-[#64748b]">Monitored</p>
             </div>
           </CardContent>
         </Card>
+        <Card>
+          <CardContent className="flex items-center gap-4 py-6">
+            <div className="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center flex-shrink-0">
+              <AlertTriangle className="w-6 h-6 text-red-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-[#0F1D2E]">
+                {alertCount}
+              </p>
+              <p className="text-sm text-[#64748b]">Alerts (7d)</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+        <Link href={cityPath("/buildings")}>
+          <Card hover className="h-full">
+            <CardContent className="flex flex-col items-center gap-2 py-5 text-center">
+              <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
+                <Search className="w-5 h-5 text-blue-600" />
+              </div>
+              <span className="text-sm font-medium text-[#0F1D2E]">
+                Search Buildings
+              </span>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href={cityPath("/compare")}>
+          <Card hover className="h-full">
+            <CardContent className="flex flex-col items-center gap-2 py-5 text-center">
+              <div className="w-10 h-10 bg-purple-50 rounded-lg flex items-center justify-center">
+                <ArrowLeftRight className="w-5 h-5 text-purple-600" />
+              </div>
+              <span className="text-sm font-medium text-[#0F1D2E]">
+                Compare Buildings
+              </span>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href={cityPath("/crime")}>
+          <Card hover className="h-full">
+            <CardContent className="flex flex-col items-center gap-2 py-5 text-center">
+              <div className="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center">
+                <MapPin className="w-5 h-5 text-amber-600" />
+              </div>
+              <span className="text-sm font-medium text-[#0F1D2E]">
+                View Crime Data
+              </span>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href={cityPath("/tenant-rights")}>
+          <Card hover className="h-full">
+            <CardContent className="flex flex-col items-center gap-2 py-5 text-center">
+              <div className="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center">
+                <Shield className="w-5 h-5 text-emerald-600" />
+              </div>
+              <span className="text-sm font-medium text-[#0F1D2E]">
+                Tenant Rights
+              </span>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -167,7 +286,7 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Saved Buildings */}
+        {/* Saved Buildings with Score Indicators */}
         <Card>
           <CardHeader className="flex items-center justify-between">
             <h2 className="font-semibold text-[#0F1D2E]">Saved Buildings</h2>
@@ -182,14 +301,20 @@ export default async function DashboardPage() {
             {saved.length > 0 ? (
               <div className="space-y-4">
                 {saved.map((item) => {
-                  const building = item.building as { id: string; full_address: string; borough: string; slug: string } | null;
+                  const building = item.building as {
+                    id: string;
+                    full_address: string;
+                    borough: string;
+                    slug: string;
+                    overall_score: number | null;
+                  } | null;
                   return (
                     <Link
                       key={item.id}
                       href={building ? buildingUrl(building) : "#"}
                       className="flex items-center justify-between py-2 hover:bg-gray-50 rounded px-2 -mx-2"
                     >
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-[#0F1D2E] truncate">
                           {building?.full_address}
                         </p>
@@ -197,6 +322,14 @@ export default async function DashboardPage() {
                           {building?.borough}
                         </p>
                       </div>
+                      {building && (
+                        <div className="flex-shrink-0 ml-3">
+                          <LetterGrade
+                            score={building.overall_score}
+                            size="sm"
+                          />
+                        </div>
+                      )}
                     </Link>
                   );
                 })}
@@ -211,7 +344,7 @@ export default async function DashboardPage() {
         </Card>
 
         {/* Monitored Buildings */}
-        <Card className="lg:col-span-2">
+        <Card>
           <CardHeader className="flex items-center justify-between">
             <h2 className="font-semibold text-[#0F1D2E]">Monitored Buildings</h2>
             <Link
@@ -253,6 +386,18 @@ export default async function DashboardPage() {
                 &quot;Monitor&quot; to track new violations.
               </p>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Activity Timeline */}
+        <Card>
+          <CardHeader className="flex items-center justify-between">
+            <h2 className="font-semibold text-[#0F1D2E]">
+              Recent Activity on Monitored Buildings
+            </h2>
+          </CardHeader>
+          <CardContent>
+            <ActivityTimeline buildingIds={monitoredBuildingIds} />
           </CardContent>
         </Card>
       </div>

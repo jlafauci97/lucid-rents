@@ -44,6 +44,7 @@ const BBOX_DEGREES = 0.025;
 export async function GET(request: NextRequest) {
   const lat = parseFloat(request.nextUrl.searchParams.get("lat") || "");
   const lng = parseFloat(request.nextUrl.searchParams.get("lng") || "");
+  const city = request.nextUrl.searchParams.get("city");
 
   if (isNaN(lat) || isNaN(lng)) {
     return NextResponse.json(
@@ -55,13 +56,23 @@ export async function GET(request: NextRequest) {
   const supabase = await createClient();
 
   // Query with bounding box for performance
-  const { data: schools, error } = await supabase
+  let query = supabase
     .from("nearby_schools")
     .select("type, school_id, name, latitude, longitude, address, grades")
     .gte("latitude", lat - BBOX_DEGREES)
     .lte("latitude", lat + BBOX_DEGREES)
     .gte("longitude", lng - BBOX_DEGREES)
     .lte("longitude", lng + BBOX_DEGREES);
+
+  if (city) {
+    const metro =
+      city === "los-angeles" || city === "CA/Los-Angeles"
+        ? "los-angeles"
+        : "nyc";
+    query = query.eq("metro", metro);
+  }
+
+  const { data: schools, error } = await query;
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
