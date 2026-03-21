@@ -67,6 +67,26 @@
     {
       "path": "/api/cron/sync-schools",
       "schedule": "30 9 1 * *"
+    },
+    {
+      "path": "/api/cron/sync?source=lahd",
+      "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/api/cron/sync?source=la-311",
+      "schedule": "10 5 * * *"
+    },
+    {
+      "path": "/api/cron/sync?source=ladbs",
+      "schedule": "20 5 * * *"
+    },
+    {
+      "path": "/api/cron/sync?source=lapd",
+      "schedule": "30 5 * * *"
+    },
+    {
+      "path": "/api/cron/sync?source=la-permits",
+      "schedule": "40 5 * * *"
     }
   ]
 }

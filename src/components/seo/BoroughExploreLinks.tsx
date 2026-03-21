@@ -1,15 +1,17 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { cityPath, landlordSlug, neighborhoodUrl } from "@/lib/seo";
-import { getNeighborhoodName } from "@/lib/nyc-neighborhoods";
+import { getNeighborhoodNameByCity } from "@/lib/neighborhoods";
+import { type City } from "@/lib/cities";
 import { MapPin, Users, AlertTriangle, ShieldAlert } from "lucide-react";
 
 interface BoroughExploreLinksProps {
   borough: string;
   boroughSlug: string;
+  city?: City;
 }
 
-export async function BoroughExploreLinks({ borough, boroughSlug }: BoroughExploreLinksProps) {
+export async function BoroughExploreLinks({ borough, boroughSlug, city = "nyc" }: BoroughExploreLinksProps) {
   const supabase = await createClient();
 
   // Fetch zip codes and top landlords for this borough in parallel
@@ -17,12 +19,14 @@ export async function BoroughExploreLinks({ borough, boroughSlug }: BoroughExplo
     supabase
       .from("buildings")
       .select("zip_code")
+      .eq("metro", city)
       .eq("borough", borough)
       .not("zip_code", "is", null)
       .limit(1000),
     supabase
       .from("buildings")
       .select("owner_name, violation_count")
+      .eq("metro", city)
       .eq("borough", borough)
       .not("owner_name", "is", null)
       .gt("violation_count", 0)
@@ -39,7 +43,7 @@ export async function BoroughExploreLinks({ borough, boroughSlug }: BoroughExplo
   const neighborhoods = [...zipCounts.entries()]
     .map(([zip, count]) => ({
       zip,
-      name: getNeighborhoodName(zip),
+      name: getNeighborhoodNameByCity(zip, city),
       count,
     }))
     .filter((n) => n.name)
@@ -76,7 +80,7 @@ export async function BoroughExploreLinks({ borough, boroughSlug }: BoroughExplo
             {neighborhoods.map((n) => (
               <Link
                 key={n.zip}
-                href={neighborhoodUrl(n.zip)}
+                href={neighborhoodUrl(n.zip, city)}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm bg-white border border-[#e2e8f0] rounded-lg hover:border-[#3B82F6] hover:text-[#3B82F6] transition-colors"
               >
                 {n.name}
@@ -127,21 +131,21 @@ export async function BoroughExploreLinks({ borough, boroughSlug }: BoroughExplo
         </h2>
         <div className="flex flex-wrap gap-3">
           <Link
-            href={`${cityPath("/worst-rated-buildings")}?borough=${encodeURIComponent(borough)}`}
+            href={`${cityPath("/worst-rated-buildings", city)}?borough=${encodeURIComponent(borough)}`}
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-red-50 text-[#ef4444] border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
           >
             <AlertTriangle className="w-4 h-4" />
             Worst Rated in {borough}
           </Link>
           <Link
-            href={cityPath("/landlords")}
+            href={cityPath("/landlords", city)}
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-purple-50 text-[#8B5CF6] border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors"
           >
             <Users className="w-4 h-4" />
             All Landlords
           </Link>
           <Link
-            href={cityPath("/crime")}
+            href={cityPath("/crime", city)}
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-amber-50 text-[#d97706] border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors"
           >
             <ShieldAlert className="w-4 h-4" />

@@ -2,6 +2,8 @@
 
 import { useState, useMemo } from "react";
 import { ArrowUpDown } from "lucide-react";
+import { getRegions, getRegionLabel } from "@/lib/constants";
+import { useCity } from "@/lib/city-context";
 
 interface ShedRow {
   house_no: string;
@@ -15,8 +17,6 @@ interface ShedRow {
   active_permits: number;
   owner_business_name: string | null;
 }
-
-const BOROUGHS = ["Manhattan", "Brooklyn", "Queens", "Bronx", "Staten Island"];
 
 const BOROUGH_NAME: Record<string, string> = {
   MANHATTAN: "Manhattan",
@@ -41,6 +41,7 @@ function formatDuration(days: number): string {
 }
 
 export function ScaffoldingTable({ data }: { data: ShedRow[] }) {
+  const city = useCity();
   const [borough, setBorough] = useState("");
   const [sortBy, setSortBy] = useState<"total_days" | "permit_count" | "first_issued">("total_days");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
@@ -94,9 +95,9 @@ export function ScaffoldingTable({ data }: { data: ShedRow[] }) {
               : "bg-[#f1f5f9] text-[#64748b] hover:bg-[#e2e8f0]"
           }`}
         >
-          All Boroughs
+          All {getRegionLabel(city)}s
         </button>
-        {BOROUGHS.map((b) => (
+        {getRegions(city).map((b) => (
           <button
             key={b}
             onClick={() => setBorough(b)}

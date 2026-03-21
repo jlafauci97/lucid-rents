@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import type { City } from "@/lib/cities";
 
 export const revalidate = 0;
 export const maxDuration = 30;
@@ -48,46 +49,78 @@ interface PageCheck {
   path: string;
   label: string;
   category: "public" | "data" | "dashboard";
+  city?: City | "all";
 }
 
-const syncTypeDefs = [
-  { type: "hpd_violations", schedule: "Daily 5:00 AM UTC", category: "daily" as const, warnHours: 26 },
-  { type: "complaints_311", schedule: "Daily 5:10 AM UTC", category: "daily" as const, warnHours: 26 },
-  { type: "hpd_litigations", schedule: "Daily 5:20 AM UTC", category: "daily" as const, warnHours: 26 },
-  { type: "dob_violations", schedule: "Daily 5:30 AM UTC", category: "daily" as const, warnHours: 26 },
-  { type: "nypd_complaints", schedule: "Daily 5:40 AM UTC", category: "daily" as const, warnHours: 26 },
-  { type: "bedbug_reports", schedule: "Daily 5:50 AM UTC", category: "daily" as const, warnHours: 26 },
-  { type: "evictions", schedule: "Daily 6:00 AM UTC", category: "daily" as const, warnHours: 26 },
-  { type: "sidewalk_sheds", schedule: "Daily 6:20 AM UTC", category: "daily" as const, warnHours: 26 },
-  { type: "dob_permits", schedule: "Daily 6:30 AM UTC", category: "daily" as const, warnHours: 26 },
-  { type: "link", schedule: "Daily 7:00 AM UTC", category: "daily" as const, warnHours: 26 },
-  { type: "news", schedule: "Daily 6:10 AM & 6:00 PM UTC", category: "twice_daily" as const, warnHours: 14 },
-  { type: "rent_stabilization", schedule: "1st of month 7:00 AM UTC", category: "monthly" as const, warnHours: 744 },
-  { type: "zillow_rents", schedule: "1st of month 7:30 AM UTC", category: "monthly" as const, warnHours: 744 },
-  { type: "energy", schedule: "1st of month 8:00 AM UTC", category: "monthly" as const, warnHours: 744 },
-  { type: "transit", schedule: "1st of month 9:00 AM UTC", category: "monthly" as const, warnHours: 744 },
-  { type: "schools", schedule: "1st of month 9:30 AM UTC", category: "monthly" as const, warnHours: 744 },
+interface SyncTypeDef {
+  type: string;
+  schedule: string;
+  category: "daily" | "twice_daily" | "monthly";
+  warnHours: number;
+  city: City | "all";
+}
+
+const syncTypeDefs: SyncTypeDef[] = [
+  // NYC syncs
+  { type: "hpd_violations", schedule: "Daily 5:00 AM UTC", category: "daily", warnHours: 26, city: "nyc" },
+  { type: "complaints_311", schedule: "Daily 5:10 AM UTC", category: "daily", warnHours: 26, city: "nyc" },
+  { type: "hpd_litigations", schedule: "Daily 5:20 AM UTC", category: "daily", warnHours: 26, city: "nyc" },
+  { type: "dob_violations", schedule: "Daily 5:30 AM UTC", category: "daily", warnHours: 26, city: "nyc" },
+  { type: "nypd_complaints", schedule: "Daily 5:40 AM UTC", category: "daily", warnHours: 26, city: "nyc" },
+  { type: "bedbug_reports", schedule: "Daily 5:50 AM UTC", category: "daily", warnHours: 26, city: "nyc" },
+  { type: "evictions", schedule: "Daily 6:00 AM UTC", category: "daily", warnHours: 26, city: "nyc" },
+  { type: "sidewalk_sheds", schedule: "Daily 6:20 AM UTC", category: "daily", warnHours: 26, city: "nyc" },
+  { type: "dob_permits", schedule: "Daily 6:30 AM UTC", category: "daily", warnHours: 26, city: "nyc" },
+  { type: "link", schedule: "Daily 7:00 AM UTC", category: "daily", warnHours: 26, city: "all" },
+  { type: "news", schedule: "Daily 6:10 AM & 6:00 PM UTC", category: "twice_daily", warnHours: 14, city: "all" },
+  { type: "rent_stabilization", schedule: "1st of month 7:00 AM UTC", category: "monthly", warnHours: 744, city: "nyc" },
+  { type: "zillow_rents", schedule: "1st of month 7:30 AM UTC", category: "monthly", warnHours: 744, city: "all" },
+  { type: "energy", schedule: "1st of month 8:00 AM UTC", category: "monthly", warnHours: 744, city: "nyc" },
+  { type: "transit", schedule: "1st of month 9:00 AM UTC", category: "monthly", warnHours: 744, city: "all" },
+  { type: "schools", schedule: "1st of month 9:30 AM UTC", category: "monthly", warnHours: 744, city: "all" },
+  // LA syncs
+  { type: "lahd_violations", schedule: "Daily 5:00 AM UTC", category: "daily", warnHours: 26, city: "los-angeles" },
+  { type: "la_311_complaints", schedule: "Daily 5:10 AM UTC", category: "daily", warnHours: 26, city: "los-angeles" },
+  { type: "ladbs_violations", schedule: "Daily 5:20 AM UTC", category: "daily", warnHours: 26, city: "los-angeles" },
+  { type: "lapd_complaints", schedule: "Daily 5:30 AM UTC", category: "daily", warnHours: 26, city: "los-angeles" },
+  { type: "la_permits", schedule: "Daily 5:40 AM UTC", category: "daily", warnHours: 26, city: "los-angeles" },
 ];
 
-const tableDefs = [
-  { name: "buildings", label: "Buildings", dateCol: null as string | null, countOnly: true, warnHours: 48, category: "core" as const },
-  { name: "reviews", label: "Reviews", dateCol: "created_at", countOnly: true, warnHours: 48, category: "core" as const },
-  { name: "hpd_violations", label: "HPD Violations", dateCol: "imported_at", countOnly: false, warnHours: 48, category: "violations" as const },
-  { name: "dob_violations", label: "DOB Violations", dateCol: "imported_at", countOnly: false, warnHours: 48, category: "violations" as const },
-  { name: "complaints_311", label: "311 Complaints", dateCol: "imported_at", countOnly: false, warnHours: 48, category: "violations" as const },
-  { name: "nypd_complaints", label: "NYPD Complaints", dateCol: "imported_at", countOnly: false, warnHours: 48, category: "violations" as const },
-  { name: "hpd_litigations", label: "HPD Litigations", dateCol: "imported_at", countOnly: false, warnHours: 48, category: "violations" as const },
-  { name: "dob_permits", label: "DOB Permits", dateCol: "imported_at", countOnly: false, warnHours: 48, category: "violations" as const },
-  { name: "sidewalk_sheds", label: "Sidewalk Sheds", dateCol: "imported_at", countOnly: false, warnHours: 48, category: "violations" as const },
-  { name: "evictions", label: "Evictions", dateCol: "imported_at", countOnly: false, warnHours: 48, category: "violations" as const },
-  { name: "bedbug_reports", label: "Bedbug Reports", dateCol: "imported_at", countOnly: false, warnHours: 48, category: "violations" as const },
-  { name: "news_articles", label: "News Articles", dateCol: "published_at", countOnly: false, warnHours: 24, category: "supplemental" as const },
-  { name: "rent_stabilization", label: "Rent Stabilization", dateCol: null, countOnly: true, warnHours: 48, category: "supplemental" as const },
-  { name: "building_rents", label: "Building Rents", dateCol: null, countOnly: true, warnHours: 48, category: "supplemental" as const },
-  { name: "energy_benchmarks", label: "Energy Benchmarks", dateCol: null, countOnly: true, warnHours: 48, category: "supplemental" as const },
-  { name: "transit_stops", label: "Transit Stops", dateCol: null, countOnly: true, warnHours: 48, category: "supplemental" as const },
-  { name: "schools", label: "Schools", dateCol: null, countOnly: true, warnHours: 48, category: "supplemental" as const },
-  { name: "unit_listings", label: "Unit Listings", dateCol: null, countOnly: true, warnHours: 48, category: "supplemental" as const },
+interface TableDef {
+  name: string;
+  label: string;
+  dateCol: string | null;
+  countOnly: boolean;
+  warnHours: number;
+  category: "core" | "violations" | "supplemental";
+  city: City | "all";
+}
+
+const tableDefs: TableDef[] = [
+  { name: "buildings", label: "Buildings", dateCol: null, countOnly: true, warnHours: 48, category: "core", city: "all" },
+  { name: "reviews", label: "Reviews", dateCol: "created_at", countOnly: true, warnHours: 48, category: "core", city: "all" },
+  // NYC violations
+  { name: "hpd_violations", label: "HPD Violations", dateCol: "imported_at", countOnly: false, warnHours: 48, category: "violations", city: "nyc" },
+  { name: "dob_violations", label: "DOB Violations", dateCol: "imported_at", countOnly: false, warnHours: 48, category: "violations", city: "nyc" },
+  { name: "complaints_311", label: "311 Complaints", dateCol: "imported_at", countOnly: false, warnHours: 48, category: "violations", city: "nyc" },
+  { name: "nypd_complaints", label: "NYPD Complaints", dateCol: "imported_at", countOnly: false, warnHours: 48, category: "violations", city: "nyc" },
+  { name: "hpd_litigations", label: "HPD Litigations", dateCol: "imported_at", countOnly: false, warnHours: 48, category: "violations", city: "nyc" },
+  { name: "dob_permits", label: "DOB Permits", dateCol: "imported_at", countOnly: false, warnHours: 48, category: "violations", city: "nyc" },
+  { name: "sidewalk_sheds", label: "Sidewalk Sheds", dateCol: "imported_at", countOnly: false, warnHours: 48, category: "violations", city: "nyc" },
+  { name: "evictions", label: "Evictions", dateCol: "imported_at", countOnly: false, warnHours: 48, category: "violations", city: "nyc" },
+  { name: "bedbug_reports", label: "Bedbug Reports", dateCol: "imported_at", countOnly: false, warnHours: 48, category: "violations", city: "nyc" },
+  // LA violations (tables will be created when LA data pipeline is built)
+  { name: "lahd_violations", label: "LAHD Violations", dateCol: "imported_at", countOnly: false, warnHours: 48, category: "violations", city: "los-angeles" },
+  { name: "ladbs_violations", label: "LADBS Violations", dateCol: "imported_at", countOnly: false, warnHours: 48, category: "violations", city: "los-angeles" },
+  { name: "lapd_complaints", label: "LAPD Complaints", dateCol: "imported_at", countOnly: false, warnHours: 48, category: "violations", city: "los-angeles" },
+  // Shared supplemental
+  { name: "news_articles", label: "News Articles", dateCol: "published_at", countOnly: false, warnHours: 24, category: "supplemental", city: "all" },
+  { name: "rent_stabilization", label: "Rent Stabilization", dateCol: null, countOnly: true, warnHours: 48, category: "supplemental", city: "nyc" },
+  { name: "building_rents", label: "Building Rents", dateCol: null, countOnly: true, warnHours: 48, category: "supplemental", city: "all" },
+  { name: "energy_benchmarks", label: "Energy Benchmarks", dateCol: null, countOnly: true, warnHours: 48, category: "supplemental", city: "nyc" },
+  { name: "transit_stops", label: "Transit Stops", dateCol: null, countOnly: true, warnHours: 48, category: "supplemental", city: "all" },
+  { name: "schools", label: "Schools", dateCol: null, countOnly: true, warnHours: 48, category: "supplemental", city: "all" },
+  { name: "unit_listings", label: "Unit Listings", dateCol: null, countOnly: true, warnHours: 48, category: "supplemental", city: "all" },
 ];
 
 const rpcNames = [
@@ -99,37 +132,64 @@ const rpcNames = [
 ];
 
 const pages: PageCheck[] = [
-  { path: "/", label: "Homepage", category: "public" },
-  { path: "/nyc/search", label: "Search", category: "public" },
-  { path: "/nyc/buildings", label: "Buildings Directory", category: "public" },
-  { path: "/nyc/feed", label: "Activity Feed", category: "public" },
-  { path: "/nyc/news", label: "News", category: "public" },
-  { path: "/nyc/map", label: "Map", category: "public" },
-  { path: "/nyc/landlords", label: "Landlords", category: "public" },
-  { path: "/nyc/review/new", label: "Submit Review", category: "public" },
-  { path: "/nyc/crime", label: "Crime Stats", category: "data" },
-  { path: "/nyc/permits", label: "DOB Permits", category: "data" },
-  { path: "/nyc/scaffolding", label: "Scaffolding", category: "data" },
-  { path: "/nyc/energy", label: "Energy", category: "data" },
-  { path: "/nyc/rent-data", label: "Rent Data", category: "data" },
-  { path: "/nyc/rent-stabilization", label: "Rent Stabilization", category: "data" },
-  { path: "/nyc/compare", label: "Compare", category: "data" },
-  { path: "/dashboard", label: "Dashboard", category: "dashboard" },
-  { path: "/dashboard/monitoring", label: "Monitoring", category: "dashboard" },
-  { path: "/dashboard/reviews", label: "My Reviews", category: "dashboard" },
-  { path: "/dashboard/saved", label: "Saved Buildings", category: "dashboard" },
-  { path: "/dashboard/settings", label: "Settings", category: "dashboard" },
+  { path: "/", label: "Homepage", category: "public", city: "all" },
+  // NYC pages
+  { path: "/nyc/search", label: "Search", category: "public", city: "nyc" },
+  { path: "/nyc/buildings", label: "Buildings Directory", category: "public", city: "nyc" },
+  { path: "/nyc/feed", label: "Activity Feed", category: "public", city: "nyc" },
+  { path: "/nyc/news", label: "News", category: "public", city: "nyc" },
+  { path: "/nyc/map", label: "Map", category: "public", city: "nyc" },
+  { path: "/nyc/landlords", label: "Landlords", category: "public", city: "nyc" },
+  { path: "/nyc/review/new", label: "Submit Review", category: "public", city: "nyc" },
+  { path: "/nyc/crime", label: "Crime Stats", category: "data", city: "nyc" },
+  { path: "/nyc/permits", label: "DOB Permits", category: "data", city: "nyc" },
+  { path: "/nyc/scaffolding", label: "Scaffolding", category: "data", city: "nyc" },
+  { path: "/nyc/energy", label: "Energy", category: "data", city: "nyc" },
+  { path: "/nyc/rent-data", label: "Rent Data", category: "data", city: "nyc" },
+  { path: "/nyc/rent-stabilization", label: "Rent Stabilization", category: "data", city: "nyc" },
+  { path: "/nyc/compare", label: "Compare", category: "data", city: "nyc" },
+  // LA pages
+  { path: "/CA/Los-Angeles/search", label: "Search", category: "public", city: "los-angeles" },
+  { path: "/CA/Los-Angeles/buildings", label: "Buildings Directory", category: "public", city: "los-angeles" },
+  { path: "/CA/Los-Angeles/feed", label: "Activity Feed", category: "public", city: "los-angeles" },
+  { path: "/CA/Los-Angeles/news", label: "News", category: "public", city: "los-angeles" },
+  { path: "/CA/Los-Angeles/map", label: "Map", category: "public", city: "los-angeles" },
+  { path: "/CA/Los-Angeles/landlords", label: "Landlords", category: "public", city: "los-angeles" },
+  { path: "/CA/Los-Angeles/review/new", label: "Submit Review", category: "public", city: "los-angeles" },
+  { path: "/CA/Los-Angeles/crime", label: "Crime Stats", category: "data", city: "los-angeles" },
+  { path: "/CA/Los-Angeles/rent-data", label: "Rent Data", category: "data", city: "los-angeles" },
+  { path: "/CA/Los-Angeles/compare", label: "Compare", category: "data", city: "los-angeles" },
+  // Dashboard (shared)
+  { path: "/dashboard", label: "Dashboard", category: "dashboard", city: "all" },
+  { path: "/dashboard/monitoring", label: "Monitoring", category: "dashboard", city: "all" },
+  { path: "/dashboard/reviews", label: "My Reviews", category: "dashboard", city: "all" },
+  { path: "/dashboard/saved", label: "Saved Buildings", category: "dashboard", city: "all" },
+  { path: "/dashboard/settings", label: "Settings", category: "dashboard", city: "all" },
 ];
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const startTime = Date.now();
   const supabase = getSupabaseAdmin();
+
+  // Optional city filter: "nyc", "los-angeles", or omitted for all
+  const metroParam = request.nextUrl.searchParams.get("metro") as City | null;
+
+  // Filter definitions by metro
+  const filteredSyncs = metroParam
+    ? syncTypeDefs.filter((s) => s.city === metroParam || s.city === "all")
+    : syncTypeDefs;
+  const filteredTables = metroParam
+    ? tableDefs.filter((t) => t.city === metroParam || t.city === "all")
+    : tableDefs;
+  const filteredPages = metroParam
+    ? pages.filter((p) => !p.city || p.city === metroParam || p.city === "all")
+    : pages;
 
   // Run ALL checks in parallel for speed
   const [syncResults, dataResults, rpcResults, feedResult] = await Promise.all([
     // 1. Sync checks — all in parallel
     Promise.all(
-      syncTypeDefs.map(async (syncDef): Promise<SyncCheck> => {
+      filteredSyncs.map(async (syncDef): Promise<SyncCheck & { city: City | "all" }> => {
         const { data } = await supabase
           .from("sync_log")
           .select("sync_type, status, started_at, completed_at, records_added, records_linked, errors")
@@ -150,6 +210,7 @@ export async function GET() {
             error_preview: "No sync log entry found",
             schedule: syncDef.schedule,
             category: syncDef.category,
+            city: syncDef.city,
           };
         }
 
@@ -175,13 +236,14 @@ export async function GET() {
           error_preview: errArr && errArr.length > 0 ? errArr[0].slice(0, 200) : null,
           schedule: syncDef.schedule,
           category: syncDef.category,
+          city: syncDef.city,
         };
       })
     ),
 
     // 2. Data table checks — all in parallel
     Promise.all(
-      tableDefs.map(async (t): Promise<DataCheck> => {
+      filteredTables.map(async (t): Promise<DataCheck & { city: City | "all" }> => {
         try {
           const { count } = await supabase
             .from(t.name)
@@ -211,9 +273,9 @@ export async function GET() {
 
           if ((count ?? 0) === 0) status = "error";
 
-          return { name: t.name, label: t.label, status, row_count: count ?? 0, latest_record: latestRecord, details, category: t.category };
+          return { name: t.name, label: t.label, status, row_count: count ?? 0, latest_record: latestRecord, details, category: t.category, city: t.city };
         } catch {
-          return { name: t.name, label: t.label, status: "error", row_count: 0, latest_record: null, details: "Query failed", category: t.category };
+          return { name: t.name, label: t.label, status: "error", row_count: 0, latest_record: null, details: "Query failed", category: t.category, city: t.city };
         }
       })
     ),
@@ -285,6 +347,7 @@ export async function GET() {
     status: overallStatus,
     checked_at: new Date().toISOString(),
     response_time_ms: Date.now() - startTime,
+    metro: metroParam || "all",
     summary: {
       errors: errorCount,
       warnings: warningCount,
@@ -295,6 +358,6 @@ export async function GET() {
     data: dataResults,
     rpcs: rpcResults,
     activity_feed: feedResult,
-    pages,
+    pages: filteredPages,
   });
 }

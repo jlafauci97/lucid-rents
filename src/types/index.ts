@@ -1,14 +1,18 @@
+import type { City } from "@/lib/cities";
+
 export type Borough = "Manhattan" | "Brooklyn" | "Queens" | "Bronx" | "Staten Island";
 
-export type LeaseType = "rent_stabilized" | "market_rate" | "rent_controlled";
+export type LeaseType = "rent_stabilized" | "market_rate" | "rent_controlled" | "rso";
 
 export type ReviewStatus = "draft" | "published" | "flagged" | "removed";
 
 export interface Building {
   id: string;
+  metro: City;
   bbl: string | null;
   bin: string | null;
-  borough: Borough;
+  apn: string | null;
+  borough: string;
   house_number: string | null;
   street_name: string;
   city: string;

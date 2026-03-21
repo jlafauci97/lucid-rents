@@ -1,9 +1,14 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { isValidCity, DEFAULT_CITY } from "@/lib/cities";
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
+    const cityParam = searchParams.get("city") || DEFAULT_CITY;
+    if (!isValidCity(cityParam)) {
+      return NextResponse.json({ error: "Invalid city" }, { status: 400 });
+    }
     const months = parseInt(searchParams.get("months") || "12", 10);
 
     const sinceDate = new Date();
@@ -14,6 +19,7 @@ export async function GET(request: Request) {
 
     const { data, error } = await supabase.rpc("crime_by_zip", {
       since_date: sinceDateStr,
+      metro: cityParam,
     });
 
     if (error) {

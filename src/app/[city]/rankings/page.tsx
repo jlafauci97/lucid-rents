@@ -4,6 +4,8 @@ import Link from "next/link";
 import { buildingUrl, canonicalUrl } from "@/lib/seo";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
+import { getRegions, getRegionLabel } from "@/lib/constants";
+import type { City } from "@/lib/cities";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -24,13 +26,16 @@ export const metadata: Metadata = {
 
 export const revalidate = 3600;
 
-const BOROUGHS = ["all", "Manhattan", "Brooklyn", "Queens", "Bronx", "Staten Island"];
-
 interface RankingsPageProps {
+  params: Promise<{ city: string }>;
   searchParams: Promise<{ borough?: string; sort?: string; page?: string }>;
 }
 
-export default async function RankingsPage({ searchParams }: RankingsPageProps) {
+export default async function RankingsPage({ params: routeParams, searchParams }: RankingsPageProps) {
+  const { city: cityParam } = await routeParams;
+  const city = cityParam as City;
+  const regions = ["all", ...getRegions(city)];
+  const regionLabel = getRegionLabel(city);
   const params = await searchParams;
   const borough = params.borough || "all";
   const sortBy = params.sort || "violations";
@@ -92,7 +97,7 @@ export default async function RankingsPage({ searchParams }: RankingsPageProps) 
       <div className="flex flex-col sm:flex-row gap-4 mb-6">
         {/* Borough filter */}
         <div className="flex flex-wrap gap-2">
-          {BOROUGHS.map((b) => (
+          {regions.map((b) => (
             <Link
               key={b}
               href={buildUrl({ borough: b, page: "1" })}
@@ -102,7 +107,7 @@ export default async function RankingsPage({ searchParams }: RankingsPageProps) 
                   : "bg-white text-[#64748b] border-[#e2e8f0] hover:border-[#94a3b8]"
               }`}
             >
-              {b === "all" ? "All Boroughs" : b}
+              {b === "all" ? `All ${regionLabel}s` : b}
             </Link>
           ))}
         </div>

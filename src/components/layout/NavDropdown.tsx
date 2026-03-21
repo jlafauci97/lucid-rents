@@ -3,7 +3,8 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { ChevronDown, ArrowLeftRight, ShieldCheck, Wrench, BarChart3, Construction, ClipboardList, Zap, TrainFront, Scale } from "lucide-react";
-import { type City, DEFAULT_CITY } from "@/lib/cities";
+import { type City, DEFAULT_CITY, CITY_META } from "@/lib/cities";
+import { cityPath } from "@/lib/seo";
 
 const tools = [
   {
@@ -21,7 +22,7 @@ const tools = [
   {
     path: "/rent-data",
     icon: BarChart3,
-    label: "NYC Rent Data",
+    label: "Rent Data",
     description: "Rent trends, prices & market data by area",
   },
   {
@@ -34,7 +35,7 @@ const tools = [
     path: "/permits",
     icon: ClipboardList,
     label: "Permits Tracker",
-    description: "Active DOB building permits by area",
+    description: "Active building permits by area",
   },
   {
     path: "/energy",
@@ -52,7 +53,7 @@ const tools = [
     path: "/tenant-rights",
     icon: Scale,
     label: "Tenant Rights",
-    description: "Know your rights as an NYC tenant",
+    description: "Know your rights as a tenant",
   },
 ];
 
@@ -86,7 +87,7 @@ export function NavDropdown({ city = DEFAULT_CITY }: { city?: City }) {
           {tools.map((tool) => (
             <Link
               key={tool.path}
-              href={`/${city}${tool.path}`}
+              href={cityPath(tool.path, city)}
               onClick={() => setOpen(false)}
               className="flex items-start gap-3 px-4 py-3 hover:bg-white/5 transition-colors"
             >

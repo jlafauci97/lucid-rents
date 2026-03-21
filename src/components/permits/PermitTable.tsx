@@ -3,6 +3,8 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { ArrowUpDown } from "lucide-react";
+import { getRegions, getRegionLabel } from "@/lib/constants";
+import { useCity } from "@/lib/city-context";
 
 interface PermitRow {
   work_permit: string;
@@ -30,8 +32,6 @@ const BOROUGH_SLUGS: Record<string, string> = {
   "Staten Island": "staten-island",
 };
 
-const BOROUGHS = ["Manhattan", "Brooklyn", "Queens", "Bronx", "Staten Island"];
-
 const BOROUGH_NAME: Record<string, string> = {
   MANHATTAN: "Manhattan",
   BROOKLYN: "Brooklyn",
@@ -52,6 +52,7 @@ function formatCost(cost: number | null): string {
 }
 
 export function PermitTable({ data }: { data: PermitRow[] }) {
+  const city = useCity();
   const [borough, setBorough] = useState("");
   const [workType, setWorkType] = useState("");
   const [sortBy, setSortBy] = useState<"issued_date" | "estimated_job_costs">("issued_date");
@@ -118,9 +119,9 @@ export function PermitTable({ data }: { data: PermitRow[] }) {
               : "bg-[#f1f5f9] text-[#64748b] hover:bg-[#e2e8f0]"
           }`}
         >
-          All Boroughs
+          All {getRegionLabel(city)}s
         </button>
-        {BOROUGHS.map((b) => (
+        {getRegions(city).map((b) => (
           <button
             key={b}
             onClick={() => setBorough(b)}

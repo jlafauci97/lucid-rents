@@ -1748,12 +1748,99 @@ async function updateBuildingCounts(
 }
 
 // ---------------------------------------------------------------------------
+// LA Open Data — SODA URL builder for data.lacity.org
+// ---------------------------------------------------------------------------
+function buildLASodaUrl(
+  endpoint: string,
+  whereClause: string,
+  limit: number,
+  offset: number,
+  orderBy: string
+): string {
+  const appToken = process.env.LA_OPEN_DATA_APP_TOKEN;
+  let url =
+    `https://data.lacity.org/resource/${endpoint}.json` +
+    `?$where=${encodeURIComponent(whereClause)}` +
+    `&$limit=${limit}` +
+    `&$offset=${offset}` +
+    `&$order=${encodeURIComponent(orderBy)}`;
+
+  if (appToken) {
+    url += `&$$app_token=${appToken}`;
+  }
+
+  return url;
+}
+
+// ---------------------------------------------------------------------------
+// LA Sync Functions (stubs — endpoints TBD during data source integration)
+// ---------------------------------------------------------------------------
+
+/**
+ * Sync LAHD Code Enforcement violations.
+ * LA Open Data endpoint: TBD
+ * Equivalent of NYC HPD violations.
+ */
+async function syncLAHDViolations(
+  supabase: ReturnType<typeof getSupabaseAdmin>
+): Promise<SyncResult> {
+  // TODO: Implement when LAHD endpoint is configured
+  // Pattern: fetch from data.lacity.org, map to hpd_violations schema with metro='los-angeles'
+  return { totalAdded: 0, totalLinked: 0, errors: ["LAHD sync not yet configured"], affectedBuildingIds: new Set() };
+}
+
+/**
+ * Sync LA 311 (MyLA311) service requests.
+ * LA Open Data endpoint: TBD
+ * Equivalent of NYC 311 complaints.
+ */
+async function syncLA311Complaints(
+  supabase: ReturnType<typeof getSupabaseAdmin>
+): Promise<SyncResult> {
+  return { totalAdded: 0, totalLinked: 0, errors: ["LA 311 sync not yet configured"], affectedBuildingIds: new Set() };
+}
+
+/**
+ * Sync LADBS building violations.
+ * LA Open Data endpoint: TBD
+ * Equivalent of NYC DOB violations.
+ */
+async function syncLADBSViolations(
+  supabase: ReturnType<typeof getSupabaseAdmin>
+): Promise<SyncResult> {
+  return { totalAdded: 0, totalLinked: 0, errors: ["LADBS sync not yet configured"], affectedBuildingIds: new Set() };
+}
+
+/**
+ * Sync LAPD crime data.
+ * LA Open Data endpoint: TBD (likely "2nbc-2tam" for 2020-present)
+ * Equivalent of NYPD complaints.
+ */
+async function syncLAPDCrimeData(
+  supabase: ReturnType<typeof getSupabaseAdmin>
+): Promise<SyncResult> {
+  return { totalAdded: 0, totalLinked: 0, errors: ["LAPD sync not yet configured"], affectedBuildingIds: new Set() };
+}
+
+/**
+ * Sync LADBS building permits.
+ * LA Open Data endpoint: TBD
+ * Equivalent of NYC DOB permits.
+ */
+async function syncLAPermits(
+  supabase: ReturnType<typeof getSupabaseAdmin>
+): Promise<SyncResult> {
+  return { totalAdded: 0, totalLinked: 0, errors: ["LA permits sync not yet configured"], affectedBuildingIds: new Set() };
+}
+
+// ---------------------------------------------------------------------------
 // Max duration for Vercel serverless functions (Pro max=300s)
 // ---------------------------------------------------------------------------
 export const maxDuration = 300;
 
 // Source registry — maps query param to sync function
 const SOURCES: Record<string, (supabase: ReturnType<typeof getSupabaseAdmin>) => Promise<SyncResult>> = {
+  // NYC sources
   hpd: syncHPDViolations,
   complaints: sync311Complaints,
   litigations: syncHPDLitigations,
@@ -1763,6 +1850,12 @@ const SOURCES: Record<string, (supabase: ReturnType<typeof getSupabaseAdmin>) =>
   evictions: syncEvictions,
   sheds: syncSidewalkSheds,
   permits: syncDobPermits,
+  // LA sources
+  lahd: syncLAHDViolations,
+  "la-311": syncLA311Complaints,
+  ladbs: syncLADBSViolations,
+  lapd: syncLAPDCrimeData,
+  "la-permits": syncLAPermits,
 };
 
 // ---------------------------------------------------------------------------

@@ -7,7 +7,7 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { LetterGrade } from "@/components/ui/LetterGrade";
 import { deriveScore } from "@/lib/constants";
 import { buildingUrl, cityPath, neighborhoodUrl } from "@/lib/seo";
-import { searchNeighborhoods, type NeighborhoodMatch } from "@/lib/nyc-neighborhoods";
+import { searchNeighborhoodsByCity, type NeighborhoodResult } from "@/lib/neighborhoods";
 import { useCity } from "@/lib/city-context";
 import type { Building } from "@/types";
 
@@ -26,7 +26,7 @@ export function SearchBar({
   const city = useCity();
   const [query, setQuery] = useState(initialQuery);
   const [results, setResults] = useState<Building[]>([]);
-  const [neighborhoodResults, setNeighborhoodResults] = useState<NeighborhoodMatch[]>([]);
+  const [neighborhoodResults, setNeighborhoodResults] = useState<NeighborhoodResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -41,7 +41,7 @@ export function SearchBar({
     }
 
     // Client-side neighborhood matching (instant)
-    const neighborhoods = searchNeighborhoods(debouncedQuery, 3);
+    const neighborhoods = searchNeighborhoodsByCity(debouncedQuery, city, 3);
     setNeighborhoodResults(neighborhoods);
     if (neighborhoods.length > 0) setOpen(true);
 
@@ -50,8 +50,8 @@ export function SearchBar({
     setLoading(true);
     const url =
       neighborhoods.length > 0
-        ? `/api/search?zip=${neighborhoods[0].zipCode}&limit=5`
-        : `/api/search?q=${encodeURIComponent(debouncedQuery)}&limit=5`;
+        ? `/api/search?zip=${neighborhoods[0].zipCode}&city=${city}&limit=5`
+        : `/api/search?q=${encodeURIComponent(debouncedQuery)}&city=${city}&limit=5`;
 
     fetch(url)
       .then((res) => res.json())
@@ -61,7 +61,7 @@ export function SearchBar({
       })
       .catch(() => setResults([]))
       .finally(() => setLoading(false));
-  }, [debouncedQuery]);
+  }, [debouncedQuery, city]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -133,7 +133,7 @@ export function SearchBar({
                       {n.name}
                     </p>
                     <p className="text-xs text-[#64748b]">
-                      {n.zipCode} &middot; {n.borough}
+                      {n.zipCode} &middot; {n.region}
                     </p>
                   </div>
                 </button>

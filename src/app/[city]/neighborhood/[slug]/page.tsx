@@ -5,6 +5,8 @@ import { LetterGrade } from "@/components/ui/LetterGrade";
 import { getLetterGrade, getGradeColor } from "@/lib/constants";
 import { buildingUrl, landlordUrl, canonicalUrl, cityPath, neighborhoodUrl, breadcrumbJsonLd } from "@/lib/seo";
 import { getNeighborhoodName, parseNeighborhoodSlug } from "@/lib/nyc-neighborhoods";
+import { CITY_META } from "@/lib/cities";
+import type { City } from "@/lib/cities";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { AdSidebar } from "@/components/ui/AdSidebar";
@@ -15,7 +17,7 @@ export const revalidate = 3600;
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ city: string; slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
   const zipCode = parseNeighborhoodSlug(slug);
@@ -111,9 +113,10 @@ function getSubGrade(value: number, thresholds: [number, number, number, number]
 export default async function NeighborhoodPage({
   params,
 }: {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ city: string; slug: string }>;
 }) {
-  const { slug } = await params;
+  const { city: cityParam, slug } = await params;
+  const city = cityParam as City;
   const zipCode = parseNeighborhoodSlug(slug);
   const neighborhoodName = getNeighborhoodName(zipCode);
 
@@ -177,7 +180,7 @@ export default async function NeighborhoodPage({
           "@type": "PostalAddress",
           postalCode: zipCode,
           ...(neighborhoodName ? { addressLocality: neighborhoodName } : {}),
-          addressRegion: "NY",
+          addressRegion: CITY_META[city].stateCode,
           addressCountry: "US",
         },
       }} />
