@@ -44,6 +44,10 @@ export interface Building {
   stabilized_year: number | null;
   latitude: number | null;
   longitude: number | null;
+  is_soft_story: boolean;
+  soft_story_status: string | null;
+  is_rso: boolean;
+  fire_risk_zone: string | null;
   created_at: string;
   updated_at: string;
 }

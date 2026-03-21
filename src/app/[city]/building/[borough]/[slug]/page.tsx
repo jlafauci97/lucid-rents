@@ -21,6 +21,7 @@ import { RentRangeCard } from "@/components/building/RentRangeCard";
 import { BuildingAmenities } from "@/components/building/BuildingAmenities";
 import { MarketListings } from "@/components/building/MarketListings";
 import { EnergyScoreCard } from "@/components/building/EnergyScoreCard";
+import { SeismicSafetyCard } from "@/components/building/SeismicSafetyCard";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { SLUG_TO_BOROUGH, buildingUrl, canonicalUrl, buildingJsonLd, breadcrumbJsonLd, landlordUrl, cityPath } from "@/lib/seo";
@@ -339,6 +340,12 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
             <div id="energy-score">
               <EnergyScoreCard data={energyData[0] || null} />
             </div>
+
+            {/* Seismic Safety (LA only) */}
+            <SeismicSafetyCard
+              isSoftStory={building.is_soft_story}
+              softStoryStatus={building.soft_story_status}
+            />
 
             {/* Nearby Transit */}
             {building.latitude && building.longitude && (
