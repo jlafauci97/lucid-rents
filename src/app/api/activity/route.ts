@@ -76,12 +76,13 @@ export async function GET(request: Request) {
 
     // Conditionally fetch based on filter — scoped to metro (city)
     if (filter === "all" || filter === "reviews") {
+      // Reviews don't have a metro column — fetch with building join including metro,
+      // then filter in-memory by building.metro (PostgREST can't filter parent by embed)
       promises.push(
         supabase
           .from("reviews")
-          .select("id, title, overall_rating, created_at, building_id, metro, buildings(full_address, borough, slug)")
+          .select("id, title, overall_rating, created_at, building_id, buildings(full_address, borough, slug, metro)")
           .not("building_id", "is", null)
-          .eq("metro", metro)
           .gte("created_at", cutoffDate)
           .lte("created_at", maxDate)
           .order("created_at", { ascending: false })
@@ -255,11 +256,12 @@ export async function GET(request: Request) {
 
     const items: ActivityItem[] = [];
 
-    // Normalize reviews
+    // Normalize reviews (filter by metro in-memory since reviews table has no metro column)
     if (reviewsResult.data) {
       for (const r of reviewsResult.data as Record<string, unknown>[]) {
-        const building = r.buildings as { full_address: string; borough: string; slug: string } | null;
+        const building = r.buildings as { full_address: string; borough: string; slug: string; metro?: string } | null;
         if (!building) continue;
+        if (building.metro && building.metro !== metro) continue;
         items.push({
           type: "review",
           id: r.id as string,
