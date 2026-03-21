@@ -96,22 +96,22 @@ export default function HomePage() {
           sizes="100vw"
         />
         <div className="absolute inset-0 bg-[#0F1D2E]/40" />
-        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 sm:pt-16 pb-12 sm:pb-20 text-center">
+        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-10 pb-8 sm:pb-12 text-center">
           <Image
             src="/lucid-rents-logo.png"
             alt="Lucid Rents"
             width={300}
             height={200}
-            className="mx-auto mb-1 h-[120px] sm:h-[150px] w-auto drop-shadow-lg"
+            className="mx-auto mb-1 h-[100px] sm:h-[120px] w-auto drop-shadow-lg"
             priority
           />
-          <p className="text-xs sm:text-sm uppercase tracking-[0.2em] text-white/70 font-medium mb-4">
+          <p className="text-xs sm:text-sm uppercase tracking-[0.2em] text-white/70 font-medium mb-2">
             A Rental Intelligence Platform
           </p>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-3">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-2">
             Check Your Apartment Building
           </h1>
-          <p className="text-sm sm:text-base text-white/80 mb-10 max-w-2xl mx-auto">
+          <p className="text-sm sm:text-base text-white/80 mb-6 max-w-2xl mx-auto">
             See the truth about any building before you sign. Violations,
             complaints, tenant reviews, and crime data — all in one place.
           </p>
