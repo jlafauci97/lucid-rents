@@ -2164,6 +2164,71 @@ async function syncLAPermits(
   return { totalAdded, totalLinked, errors, affectedBuildingIds };
 }
 
+/**
+ * Sync LA soft-story seismic retrofit data (monthly).
+ * Source: LADBS Soft Story Permits (nc44-6znn)
+ * Updates is_soft_story and soft_story_status on buildings.
+ */
+async function syncLASoftStory(
+  supabase: ReturnType<typeof getSupabaseAdmin>
+): Promise<SyncResult> {
+  const logId = await createSyncLog(supabase, "la_soft_story");
+  let totalAdded = 0;
+  const errors: string[] = [];
+  const affectedBuildingIds = new Set<string>();
+
+  try {
+    let offset = 0;
+
+    while (true) {
+      const url = buildLASodaUrl(
+        "nc44-6znn",
+        "1=1",
+        PAGE_SIZE,
+        offset,
+        "pcis_permit ASC"
+      );
+
+      const res = await fetch(url);
+      if (!res.ok) { errors.push(`Soft-story API error: ${res.status}`); break; }
+      const records = await res.json();
+      if (!records || records.length === 0) break;
+
+      for (const r of records as Record<string, unknown>[]) {
+        const addr = [r.address_start, r.street_direction, r.street_name, r.street_suffix].filter(Boolean).map(String).join(" ").trim();
+        if (!addr) continue;
+        const zip = r.zip_code ? String(r.zip_code).slice(0, 5) : "";
+        if (!zip) continue;
+
+        const slug = `${addr}-los-angeles-ca-${zip}`.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+        const status = r.latest_status ? String(r.latest_status) : "";
+        const isRetrofitted = status.toUpperCase().includes("COFC") || status.toUpperCase().includes("FINAL");
+        const softStoryStatus = isRetrofitted ? "Retrofitted" : status.toUpperCase().includes("EXPIRED") ? "Expired" : "In Progress";
+
+        const { count } = await supabase
+          .from("buildings")
+          .update({ is_soft_story: true, soft_story_status: softStoryStatus }, { count: "exact" })
+          .eq("slug", slug)
+          .eq("metro", "los-angeles");
+
+        if (count && count > 0) {
+          totalAdded += count;
+        }
+      }
+
+      offset += records.length;
+      if (records.length < PAGE_SIZE) break;
+    }
+
+    await finalizeSyncLog(supabase, logId, "completed", totalAdded, 0, errors);
+  } catch (err) {
+    errors.push(`Soft-story fatal error: ${String(err)}`);
+    await finalizeSyncLog(supabase, logId, "failed", totalAdded, 0, errors);
+  }
+
+  return { totalAdded, totalLinked: 0, errors, affectedBuildingIds };
+}
+
 // ---------------------------------------------------------------------------
 // Max duration for Vercel serverless functions (Pro max=300s)
 // ---------------------------------------------------------------------------
@@ -2187,6 +2252,7 @@ const SOURCES: Record<string, (supabase: ReturnType<typeof getSupabaseAdmin>) =>
   ladbs: syncLADBSViolations,
   lapd: syncLAPDCrimeData,
   "la-permits": syncLAPermits,
+  "la-soft-story": syncLASoftStory,
 };
 
 // ---------------------------------------------------------------------------
