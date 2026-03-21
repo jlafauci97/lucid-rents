@@ -19,6 +19,7 @@ interface SchoolData {
 interface NearbySchoolsProps {
   latitude: number;
   longitude: number;
+  city?: string;
 }
 
 const SCHOOL_CONFIG: {
@@ -53,15 +54,16 @@ const SCHOOL_CONFIG: {
   },
 ];
 
-export function NearbySchools({ latitude, longitude }: NearbySchoolsProps) {
+export function NearbySchools({ latitude, longitude, city }: NearbySchoolsProps) {
   const [data, setData] = useState<SchoolData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchSchools() {
       try {
+        const cityParam = city ? `&city=${city}` : "";
         const res = await fetch(
-          `/api/schools/nearby?lat=${latitude}&lng=${longitude}`
+          `/api/schools/nearby?lat=${latitude}&lng=${longitude}${cityParam}`
         );
         if (!res.ok) return;
         const json = await res.json();
@@ -74,7 +76,7 @@ export function NearbySchools({ latitude, longitude }: NearbySchoolsProps) {
     }
 
     fetchSchools();
-  }, [latitude, longitude]);
+  }, [latitude, longitude, city]);
 
   if (loading) {
     return (

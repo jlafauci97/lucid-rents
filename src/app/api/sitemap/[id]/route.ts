@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import {
-  BOROUGH_SLUGS,
   buildingUrl,
   landlordSlug,
   cityPath,
   neighborhoodUrl,
+  regionSlug,
 } from "@/lib/seo";
+import { CITY_META, VALID_CITIES, type City } from "@/lib/cities";
 import { NEWS_CATEGORIES } from "@/lib/news-sources";
 import { SUBWAY_LINES, transitLineUrl } from "@/lib/subway-lines";
 
@@ -128,6 +129,7 @@ async function generateStaticSitemap(): Promise<SitemapEntry[]> {
     { path: "/privacy", freq: "monthly", priority: 0.3 },
     { path: "/terms", freq: "monthly", priority: 0.3 },
     { path: "/guides/nyc-tenant-rights", freq: "monthly", priority: 0.7 },
+    { path: "/guides/la-tenant-rights", freq: "monthly", priority: 0.7 },
   ];
   for (const page of rootPages) {
     entries.push({
@@ -154,23 +156,28 @@ async function generateStaticSitemap(): Promise<SitemapEntry[]> {
     "/permits",
     "/energy",
     "/transit",
+    "/tenant-rights",
   ];
-  for (const page of staticPages) {
-    entries.push({
-      url: `${BASE_URL}${cityPath(page)}`,
-      lastModified: now,
-      changeFrequency: page === "/news" ? "daily" : "weekly",
-      priority: 0.8,
-    });
+  for (const cityKey of VALID_CITIES) {
+    for (const page of staticPages) {
+      entries.push({
+        url: `${BASE_URL}${cityPath(page, cityKey)}`,
+        lastModified: now,
+        changeFrequency: page === "/news" ? "daily" : "weekly",
+        priority: 0.8,
+      });
+    }
   }
 
   // News category pages
-  for (const category of Object.keys(NEWS_CATEGORIES)) {
-    entries.push({
-      url: `${BASE_URL}${cityPath(`/news/${category}`)}`,
-      changeFrequency: "daily",
-      priority: 0.7,
-    });
+  for (const cityKey of VALID_CITIES) {
+    for (const category of Object.keys(NEWS_CATEGORIES)) {
+      entries.push({
+        url: `${BASE_URL}${cityPath(`/news/${category}`, cityKey)}`,
+        changeFrequency: "daily",
+        priority: 0.7,
+      });
+    }
   }
 
   // Transit line pages
@@ -182,13 +189,16 @@ async function generateStaticSitemap(): Promise<SitemapEntry[]> {
     });
   }
 
-  // Borough directory pages
-  for (const slug of Object.values(BOROUGH_SLUGS)) {
-    entries.push({
-      url: `${BASE_URL}${cityPath(`/buildings/${slug}`)}`,
-      changeFrequency: "weekly",
-      priority: 0.8,
-    });
+  // Region directory pages (boroughs for NYC, areas for LA)
+  for (const cityKey of VALID_CITIES) {
+    const meta = CITY_META[cityKey];
+    for (const region of meta.regions) {
+      entries.push({
+        url: `${BASE_URL}${cityPath(`/buildings/${regionSlug(region)}`, cityKey)}`,
+        changeFrequency: "weekly",
+        priority: 0.8,
+      });
+    }
   }
 
   // Neighborhood + crime pages by zip code
@@ -299,15 +309,15 @@ async function generateBuildingSitemap(
   const offset = batchIndex * BUILDINGS_PER_SITEMAP;
 
   const buildings = await supabaseFetch<
-    { slug: string; borough: string; updated_at: string | null }[]
+    { slug: string; borough: string; metro: string; updated_at: string | null }[]
   >(
-    `buildings?select=slug,borough,updated_at&order=id.asc&offset=${offset}&limit=${BUILDINGS_PER_SITEMAP}`
+    `buildings?select=slug,borough,metro,updated_at&order=id.asc&offset=${offset}&limit=${BUILDINGS_PER_SITEMAP}`
   );
 
   if (!buildings || buildings.length === 0) return [];
 
   return buildings.map((b) => ({
-    url: `${BASE_URL}${buildingUrl(b)}`,
+    url: `${BASE_URL}${buildingUrl(b, (b.metro === "los-angeles" ? "los-angeles" : "nyc") as City)}`,
     lastModified: b.updated_at ? new Date(b.updated_at) : undefined,
     changeFrequency: "weekly",
     priority: 0.6,
