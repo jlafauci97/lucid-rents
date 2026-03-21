@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { isValidCity, DEFAULT_CITY } from "@/lib/cities";
+import { isValidCity } from "@/lib/cities";
 
 export interface ActivityItem {
   type: "review" | "violation" | "complaint" | "litigation" | "dob_violation" | "crime" | "bedbug" | "eviction";
@@ -23,11 +23,11 @@ export async function GET(request: Request) {
     const limit = Math.min(parseInt(searchParams.get("limit") || "50", 10), 100);
     const filter = searchParams.get("filter") || "all";
     const page = Math.max(parseInt(searchParams.get("page") || "1", 10), 1);
-    const cityParam = searchParams.get("city") || DEFAULT_CITY;
-    if (!isValidCity(cityParam)) {
+    const cityParam = searchParams.get("city");
+    if (cityParam && !isValidCity(cityParam)) {
       return NextResponse.json({ error: "Invalid city" }, { status: 400 });
     }
-    const city = cityParam;
+    const city = cityParam || null;
 
     const supabase = await createClient();
     // No per-source cap — fetch up to Supabase max (10000) per source to show
@@ -54,7 +54,7 @@ export async function GET(request: Request) {
         supabase
           .from("reviews")
           .select("id, title, overall_rating, created_at, building_id, buildings(full_address, borough, slug)")
-          .eq("metro", city)
+
           .not("building_id", "is", null)
           .gte("created_at", cutoffDate)
           .lte("created_at", maxDate)
@@ -70,7 +70,7 @@ export async function GET(request: Request) {
         supabase
           .from("hpd_violations")
           .select("id, class, nov_description, inspection_date, building_id, buildings(full_address, borough, slug)")
-          .eq("metro", city)
+
           .not("building_id", "is", null)
           .gte("inspection_date", cutoffDate.slice(0, 10))
           .lte("inspection_date", maxDateShort)
@@ -86,7 +86,7 @@ export async function GET(request: Request) {
         supabase
           .from("complaints_311")
           .select("id, complaint_type, descriptor, created_date, building_id, buildings(full_address, borough, slug)")
-          .eq("metro", city)
+
           .not("building_id", "is", null)
           .gte("created_date", cutoffDate)
           .lte("created_date", maxDate)
@@ -102,7 +102,7 @@ export async function GET(request: Request) {
         supabase
           .from("hpd_litigations")
           .select("id, case_type, case_status, respondent, case_open_date, building_id, buildings(full_address, borough, slug)")
-          .eq("metro", city)
+
           .not("building_id", "is", null)
           .not("case_open_date", "is", null)
           .gte("case_open_date", cutoffDate.slice(0, 10))
@@ -119,7 +119,7 @@ export async function GET(request: Request) {
         supabase
           .from("dob_violations")
           .select("id, violation_type, description, issue_date, building_id, buildings(full_address, borough, slug)")
-          .eq("metro", city)
+
           .not("building_id", "is", null)
           .not("issue_date", "is", null)
           .gte("issue_date", cutoffDate.slice(0, 10))
@@ -136,7 +136,7 @@ export async function GET(request: Request) {
         supabase
           .from("nypd_complaints")
           .select("id, offense_description, pd_description, crime_category, law_category, cmplnt_date, borough, zip_code")
-          .eq("metro", city)
+
           .in("crime_category", ["violent", "property"])
           .not("cmplnt_date", "is", null)
           .gte("cmplnt_date", cutoffDate.slice(0, 10))
@@ -153,7 +153,7 @@ export async function GET(request: Request) {
         supabase
           .from("bedbug_reports")
           .select("id, infested_dwelling_unit_count, filing_date, building_id, buildings(full_address, borough, slug)")
-          .eq("metro", city)
+
           .not("building_id", "is", null)
           .not("filing_date", "is", null)
           .gte("filing_date", cutoffDate.slice(0, 10))
@@ -170,7 +170,7 @@ export async function GET(request: Request) {
         supabase
           .from("evictions")
           .select("id, eviction_address, executed_date, borough, building_id, buildings(full_address, borough, slug)")
-          .eq("metro", city)
+
           .not("building_id", "is", null)
           .not("executed_date", "is", null)
           .gte("executed_date", cutoffDate.slice(0, 10))

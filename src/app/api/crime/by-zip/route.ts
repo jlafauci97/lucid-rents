@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { isValidCity, DEFAULT_CITY } from "@/lib/cities";
+import { isValidCity } from "@/lib/cities";
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const cityParam = searchParams.get("city") || DEFAULT_CITY;
-    if (!isValidCity(cityParam)) {
+    const cityParam = searchParams.get("city");
+    if (cityParam && !isValidCity(cityParam)) {
       return NextResponse.json({ error: "Invalid city" }, { status: 400 });
     }
     const months = parseInt(searchParams.get("months") || "12", 10);
@@ -17,10 +17,10 @@ export async function GET(request: Request) {
 
     const supabase = await createClient();
 
-    const { data, error } = await supabase.rpc("crime_by_zip", {
-      since_date: sinceDateStr,
-      metro: cityParam,
-    });
+    const rpcParams: Record<string, string> = { since_date: sinceDateStr };
+    if (cityParam) rpcParams.metro = cityParam;
+
+    const { data, error } = await supabase.rpc("crime_by_zip", rpcParams);
 
     if (error) {
       console.error("crime_by_zip RPC error:", error);

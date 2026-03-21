@@ -1,4 +1,4 @@
-import { DEFAULT_CITY, isValidCity } from "@/lib/cities";
+import { isValidCity } from "@/lib/cities";
 import { createClient } from "@/lib/supabase/server";
 import { searchSchema } from "@/lib/validators";
 import { NextRequest, NextResponse } from "next/server";
@@ -15,8 +15,8 @@ export async function GET(req: NextRequest) {
   }
 
   const { q, borough, zip, page, limit } = parsed.data;
-  const cityParam = req.nextUrl.searchParams.get("city") ?? DEFAULT_CITY;
-  if (!isValidCity(cityParam)) {
+  const cityParam = req.nextUrl.searchParams.get("city");
+  if (cityParam && !isValidCity(cityParam)) {
     return NextResponse.json({ error: "Invalid city" }, { status: 400 });
   }
   const offset = (page - 1) * limit;
@@ -26,10 +26,12 @@ export async function GET(req: NextRequest) {
   let query = supabase
     .from("buildings")
     .select("*", { count: "exact" })
-    .eq("metro", cityParam)
     .range(offset, offset + limit - 1)
     .order("review_count", { ascending: false });
 
+  if (cityParam) {
+    query = query.eq("metro", cityParam);
+  }
   if (q) {
     query = query.textSearch("search_vector", q, { type: "websearch", config: "english" });
   }

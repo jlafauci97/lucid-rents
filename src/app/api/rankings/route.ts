@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { isValidCity, DEFAULT_CITY } from "@/lib/cities";
+import { isValidCity } from "@/lib/cities";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -8,11 +8,10 @@ export async function GET(request: NextRequest) {
   const sortBy = searchParams.get("sort") || "violations";
   const page = parseInt(searchParams.get("page") || "1", 10);
   const limit = 25;
-  const cityParam = searchParams.get("city") || DEFAULT_CITY;
-  if (!isValidCity(cityParam)) {
+  const cityParam = searchParams.get("city");
+  if (cityParam && !isValidCity(cityParam)) {
     return NextResponse.json({ error: "Invalid city" }, { status: 400 });
   }
-  const city = cityParam;
 
   const supabase = createAdminClient();
 
@@ -23,9 +22,12 @@ export async function GET(request: NextRequest) {
     .select(
       "id, full_address, borough, zip_code, year_built, total_units, num_floors, owner_name, overall_score, review_count, violation_count, complaint_count"
     )
-    .eq("metro", city)
     .gt(sortColumn, 0)
     .order(sortColumn, { ascending: false });
+
+  if (cityParam) {
+    query = query.eq("metro", cityParam);
+  }
 
   if (borough && borough !== "all") {
     query = query.eq("borough", borough);

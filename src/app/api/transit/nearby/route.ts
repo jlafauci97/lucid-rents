@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { isValidCity, DEFAULT_CITY } from "@/lib/cities";
+import { isValidCity } from "@/lib/cities";
 
 // Haversine distance in miles
 function haversine(
@@ -45,9 +45,9 @@ const BBOX_DEGREES = 0.025;
 export async function GET(request: NextRequest) {
   const lat = parseFloat(request.nextUrl.searchParams.get("lat") || "");
   const lng = parseFloat(request.nextUrl.searchParams.get("lng") || "");
-  const cityParam = request.nextUrl.searchParams.get("city") || DEFAULT_CITY;
+  const cityParam = request.nextUrl.searchParams.get("city");
 
-  if (!isValidCity(cityParam)) {
+  if (cityParam && !isValidCity(cityParam)) {
     return NextResponse.json({ error: "Invalid city" }, { status: 400 });
   }
 
@@ -61,14 +61,19 @@ export async function GET(request: NextRequest) {
   const supabase = await createClient();
 
   // Query with bounding box for performance
-  const { data: stops, error } = await supabase
+  let transitQuery = supabase
     .from("transit_stops")
     .select("type, stop_id, name, latitude, longitude, routes, ada_accessible")
-    .eq("metro", cityParam)
     .gte("latitude", lat - BBOX_DEGREES)
     .lte("latitude", lat + BBOX_DEGREES)
     .gte("longitude", lng - BBOX_DEGREES)
     .lte("longitude", lng + BBOX_DEGREES);
+
+  if (cityParam) {
+    transitQuery = transitQuery.eq("metro", cityParam);
+  }
+
+  const { data: stops, error } = await transitQuery;
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
