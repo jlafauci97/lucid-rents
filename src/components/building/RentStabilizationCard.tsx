@@ -47,12 +47,21 @@ export function RentStabilizationCard({
             {isStabilized ? "Rent Stabilized" : "Not Rent Stabilized"}
           </div>
 
-          {/* Unit count */}
+          {/* Unit count – cap at totalUnits so we never show e.g. "261 of 259" */}
           {isStabilized && stabilizedUnits != null && (
             <p className="text-sm text-[#0F1D2E]">
-              <span className="font-semibold">{stabilizedUnits}</span>
+              <span className="font-semibold">
+                {totalUnits
+                  ? Math.min(stabilizedUnits, totalUnits)
+                  : stabilizedUnits}
+              </span>
               {totalUnits ? ` of ${totalUnits}` : ""} unit
-              {stabilizedUnits !== 1 ? "s" : ""} stabilized
+              {(totalUnits
+                ? Math.min(stabilizedUnits, totalUnits)
+                : stabilizedUnits) !== 1
+                ? "s"
+                : ""}{" "}
+              stabilized
             </p>
           )}
 

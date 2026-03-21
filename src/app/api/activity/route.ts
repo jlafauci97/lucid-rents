@@ -98,16 +98,22 @@ export async function GET(request: Request) {
     }
 
     if (filter === "all" || filter === "complaints") {
+      // Use a tighter window (30 days) and smaller limit for complaints
+      // because the complaints_311 table is very large (3M+ rows) and
+      // querying 90 days with 10k limit + join was timing out.
+      const complaintCutoff = new Date();
+      complaintCutoff.setDate(complaintCutoff.getDate() - 30);
+      complaintCutoff.setUTCHours(0, 0, 0, 0);
       promises.push(
         supabase
           .from("complaints_311")
           .select("id, complaint_type, descriptor, created_date, building_id, buildings(full_address, borough, slug)")
           .not("building_id", "is", null)
-          .gte("created_date", cutoffDate)
+          .gte("created_date", complaintCutoff.toISOString())
           .lte("created_date", maxDate)
           .order("created_date", { ascending: false })
           .order("id", { ascending: false })
-          .limit(10000)
+          .limit(2000)
       );
     } else {
       promises.push(Promise.resolve({ data: null, error: null }));
@@ -203,14 +209,13 @@ export async function GET(request: Request) {
       error?: { message: string } | null;
     }[];
 
-    // If any query failed, return error instead of caching bad/empty data
-    const failedIdx = results.findIndex(r => r.error !== undefined && r.error !== null);
-    if (failedIdx !== -1) {
-      console.error("Activity feed query failed:", results[failedIdx].error);
-      return NextResponse.json(
-        { error: "Failed to fetch activity feed" },
-        { status: 502 }
-      );
+    // Log failed queries but continue with whatever data we have.
+    // Previously a single query failure would 502 the entire feed.
+    for (const r of results) {
+      if (r.error) {
+        console.error("Activity feed query error (skipping):", r.error);
+        r.data = null; // treat as empty so normalizers below safely skip it
+      }
     }
 
     const [reviewsResult, violationsResult, complaintsResult, litigationsResult, dobResult, crimeResult, bedbugResult, evictionResult] = results;
