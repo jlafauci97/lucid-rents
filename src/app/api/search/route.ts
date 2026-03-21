@@ -3,6 +3,25 @@ import { createClient } from "@/lib/supabase/server";
 import { searchSchema } from "@/lib/validators";
 import { NextRequest, NextResponse } from "next/server";
 
+function applySortOrder(
+  query: ReturnType<ReturnType<Awaited<ReturnType<typeof createClient>>["from"]>["select"]>,
+  sort: string
+) {
+  switch (sort) {
+    case "score-desc":
+      return query.order("overall_score", { ascending: false, nullsFirst: false });
+    case "score-asc":
+      return query.order("overall_score", { ascending: true, nullsFirst: false });
+    case "violations-desc":
+      return query.order("violation_count", { ascending: false });
+    case "reviews-desc":
+      return query.order("review_count", { ascending: false });
+    case "relevance":
+    default:
+      return query.order("review_count", { ascending: false });
+  }
+}
+
 export async function GET(req: NextRequest) {
   const params = Object.fromEntries(req.nextUrl.searchParams);
   const parsed = searchSchema.safeParse(params);
@@ -14,7 +33,7 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const { q, borough, zip, page, limit } = parsed.data;
+  const { q, borough, zip, sort, page, limit } = parsed.data;
   const cityParam = req.nextUrl.searchParams.get("city");
   if (cityParam && !isValidCity(cityParam)) {
     return NextResponse.json({ error: "Invalid city" }, { status: 400 });
@@ -26,8 +45,7 @@ export async function GET(req: NextRequest) {
   let query = supabase
     .from("buildings")
     .select("*", { count: "exact" })
-    .range(offset, offset + limit - 1)
-    .order("review_count", { ascending: false });
+    .range(offset, offset + limit - 1);
 
   if (cityParam) {
     query = query.eq("metro", cityParam);
@@ -41,6 +59,8 @@ export async function GET(req: NextRequest) {
   if (zip) {
     query = query.eq("zip_code", zip);
   }
+
+  query = applySortOrder(query, sort);
 
   const { data, count, error } = await query;
 

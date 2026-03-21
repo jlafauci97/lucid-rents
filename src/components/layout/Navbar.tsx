@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { type City, DEFAULT_CITY } from "@/lib/cities";
 import { cityPath } from "@/lib/seo";
 import { NavDropdown } from "./NavDropdown";
+import { CitySwitcher } from "./CitySwitcher";
 import { MobileMenu } from "./MobileMenu";
 
 export async function Navbar({ city = DEFAULT_CITY }: { city?: City }) {
@@ -28,6 +29,9 @@ export async function Navbar({ city = DEFAULT_CITY }: { city?: City }) {
                 priority
               />
             </Link>
+            <div className="hidden md:block">
+              <CitySwitcher />
+            </div>
             <div className="hidden md:flex items-center gap-6">
               <Link
                 href={cityPath("/search", city)}

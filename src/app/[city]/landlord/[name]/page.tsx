@@ -15,6 +15,8 @@ import {
 import { Card, CardContent } from "@/components/ui/Card";
 import { LetterGrade } from "@/components/ui/LetterGrade";
 import { LandlordViolationTrend } from "@/components/landlord/LandlordViolationTrend";
+import { LandlordPortfolioSummary } from "@/components/landlord/LandlordPortfolioSummary";
+import { LandlordActionLinks } from "@/components/landlord/LandlordActionLinks";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { landlordSlug, landlordUrl, landlordJsonLd, breadcrumbJsonLd, canonicalUrl, buildingUrl, cityPath } from "@/lib/seo";
@@ -104,8 +106,22 @@ export default async function LandlordDetailPage({
   const { name } = await params;
   const supabase = await createClient();
 
-  const buildings = await findBuildings(supabase, name);
+  const [buildings, cityAvgResult] = await Promise.all([
+    findBuildings(supabase, name),
+    supabase
+      .from("buildings")
+      .select("overall_score")
+      .not("overall_score", "is", null)
+      .limit(5000),
+  ]);
   if (!buildings || buildings.length === 0) notFound();
+
+  const cityAvgScore = (() => {
+    const rows = cityAvgResult.data || [];
+    if (rows.length === 0) return 5;
+    const sum = rows.reduce((a, r) => a + (r.overall_score || 0), 0);
+    return sum / rows.length;
+  })();
 
   // If found via old URL format, redirect to slug URL
   if (buildings[0].owner_name) {
@@ -188,6 +204,9 @@ export default async function LandlordDetailPage({
           </div>
         </div>
       </div>
+
+      {/* Portfolio Summary with city comparison */}
+      <LandlordPortfolioSummary buildings={buildings} cityAvgScore={cityAvgScore} />
 
       {/* Aggregate stats */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4 mb-8">
@@ -298,6 +317,9 @@ export default async function LandlordDetailPage({
       <div className="mb-8">
         <LandlordViolationTrend landlordName={displayName} />
       </div>
+
+      {/* Tenant Resources */}
+      <LandlordActionLinks compareIds={buildings.slice(0, 3).map((b) => b.id)} />
 
       <AdBlock adSlot="LANDLORD_BOTTOM" adFormat="horizontal" />
 

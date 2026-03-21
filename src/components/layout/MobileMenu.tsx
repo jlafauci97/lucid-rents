@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { type City, DEFAULT_CITY } from "@/lib/cities";
 import { cityPath } from "@/lib/seo";
+import { MobileCitySwitcher } from "./CitySwitcher";
 
 interface MobileMenuProps {
   isLoggedIn: boolean;
@@ -41,22 +42,25 @@ interface NavLink {
   cities?: City[];
 }
 
-const navLinks: NavLink[] = [
+const primaryLinks: NavLink[] = [
   { path: "/search", icon: Search, label: "Search" },
   { path: "/worst-rated-buildings", icon: AlertTriangle, label: "Worst Buildings" },
   { path: "/landlords", icon: Users, label: "Landlords" },
   { path: "/crime", icon: Siren, label: "Crime" },
+  { path: "/review/new", icon: PenSquare, label: "Submit Review" },
+];
+
+const secondaryLinks: NavLink[] = [
+  { path: "/compare", icon: ArrowLeftRight, label: "Compare Buildings" },
   { path: "/feed", icon: Radio, label: "Feed" },
   { path: "/news", icon: Newspaper, label: "News" },
-  { path: "/rent-stabilization", icon: ShieldCheck, label: "Rent Stabilization", laLabel: "RSO Checker" },
-  { path: "/compare", icon: ArrowLeftRight, label: "Compare Buildings" },
   { path: "/rent-data", icon: BarChart3, label: "Rent Data" },
-  { path: "/scaffolding", icon: Construction, label: "Scaffolding", cities: ["nyc"] },
-  { path: "/permits", icon: ClipboardList, label: "Permits" },
-  { path: "/energy", icon: Zap, label: "Energy Scores" },
+  { path: "/rent-stabilization", icon: ShieldCheck, label: "Rent Stabilization", laLabel: "RSO Checker" },
   { path: "/transit", icon: TrainFront, label: "Near Transit" },
   { path: "/tenant-rights", icon: Scale, label: "Tenant Rights" },
-  { path: "/review/new", icon: PenSquare, label: "Submit Review" },
+  { path: "/permits", icon: ClipboardList, label: "Permits" },
+  { path: "/energy", icon: Zap, label: "Energy Scores" },
+  { path: "/scaffolding", icon: Construction, label: "Scaffolding", cities: ["nyc"] },
 ];
 
 export function MobileMenu({ isLoggedIn, city = DEFAULT_CITY }: MobileMenuProps) {
@@ -75,7 +79,9 @@ export function MobileMenu({ isLoggedIn, city = DEFAULT_CITY }: MobileMenuProps)
       {open && (
         <div className="absolute top-16 left-0 right-0 bg-[#0F1D2E] border-t border-white/10 shadow-lg z-50">
           <div className="px-4 py-3 space-y-1">
-            {navLinks
+            <MobileCitySwitcher city={city} />
+            <div className="border-t border-white/10 my-2" />
+            {primaryLinks
               .filter((link) => !link.cities || link.cities.includes(city))
               .map((link) => (
               <Link
@@ -83,6 +89,21 @@ export function MobileMenu({ isLoggedIn, city = DEFAULT_CITY }: MobileMenuProps)
                 href={cityPath(link.path, city)}
                 onClick={() => setOpen(false)}
                 className="flex items-center gap-3 px-3 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+              >
+                <link.icon className="w-4 h-4" />
+                {city === "los-angeles" && link.laLabel ? link.laLabel : link.label}
+              </Link>
+            ))}
+            <div className="border-t border-white/10 my-2" />
+            <p className="px-3 py-1 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">More</p>
+            {secondaryLinks
+              .filter((link) => !link.cities || link.cities.includes(city))
+              .map((link) => (
+              <Link
+                key={link.path}
+                href={cityPath(link.path, city)}
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
               >
                 <link.icon className="w-4 h-4" />
                 {city === "los-angeles" && link.laLabel ? link.laLabel : link.label}
