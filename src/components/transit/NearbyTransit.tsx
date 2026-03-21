@@ -40,6 +40,13 @@ const NYC_TRANSIT_CONFIG: TransitConfigItem[] = [
     badgeColor: "bg-[#2563EB] text-white",
   },
   {
+    key: "rail",
+    label: "Metro Rail",
+    icon: TrainFront,
+    color: "text-[#7C3AED]",
+    badgeColor: "bg-[#7C3AED] text-white",
+  },
+  {
     key: "bus",
     label: "Bus",
     icon: Bus,
