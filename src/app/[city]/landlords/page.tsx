@@ -24,21 +24,6 @@ export const metadata: Metadata = {
 
 export const revalidate = 3600;
 
-interface LandlordData {
-  name: string;
-  buildingCount: number;
-  totalViolations: number;
-  totalComplaints: number;
-  totalLitigations: number;
-  totalDobViolations: number;
-  avgScore: number | null;
-  worstBuilding: {
-    id: string;
-    address: string;
-    violations: number;
-  };
-}
-
 interface LandlordsPageProps {
   searchParams: Promise<{ search?: string; sort?: string; page?: string }>;
 }
@@ -52,94 +37,45 @@ export default async function LandlordsPage({ searchParams }: LandlordsPageProps
 
   const supabase = await createClient();
 
-  // Query buildings with owner_name that have violations or complaints
-  let query = supabase
-    .from("buildings")
-    .select("id, full_address, borough, owner_name, violation_count, complaint_count, litigation_count, dob_violation_count, overall_score")
-    .not("owner_name", "is", null)
-    .or("violation_count.gt.0,complaint_count.gt.0")
-    .limit(10000);
+  // Determine sort column
+  const sortColumns: Record<string, string> = {
+    violations: "total_violations",
+    complaints: "total_complaints",
+    litigations: "total_litigations",
+    dob: "total_dob_violations",
+    buildings: "building_count",
+  };
+  const sortCol = sortColumns[sortBy] || "total_violations";
+
+  // Count total matching landlords
+  let countQuery = supabase
+    .from("landlord_stats")
+    .select("id", { count: "exact", head: true });
 
   if (search) {
-    query = query.ilike("owner_name", `%${search}%`);
+    countQuery = countQuery.ilike("name", `%${search}%`);
   }
 
-  const { data: buildings } = await query;
+  const { count: total } = await countQuery;
+  const totalPages = Math.ceil((total || 0) / limit);
 
-  // Aggregate by owner_name
-  const landlordMap = new Map<string, LandlordData & { _scores: number[] }>();
-
-  for (const building of buildings || []) {
-    const name = building.owner_name as string;
-    if (!name) continue;
-
-    const existing = landlordMap.get(name);
-    if (existing) {
-      existing.buildingCount++;
-      existing.totalViolations += building.violation_count || 0;
-      existing.totalComplaints += building.complaint_count || 0;
-      existing.totalLitigations += building.litigation_count || 0;
-      existing.totalDobViolations += building.dob_violation_count || 0;
-      if (building.overall_score !== null) {
-        existing._scores.push(building.overall_score);
-        existing.avgScore =
-          existing._scores.reduce((a: number, b: number) => a + b, 0) / existing._scores.length;
-      }
-      if ((building.violation_count || 0) > existing.worstBuilding.violations) {
-        existing.worstBuilding = {
-          id: building.id,
-          address: building.full_address,
-          violations: building.violation_count || 0,
-        };
-      }
-    } else {
-      landlordMap.set(name, {
-        name,
-        buildingCount: 1,
-        totalViolations: building.violation_count || 0,
-        totalComplaints: building.complaint_count || 0,
-        totalLitigations: building.litigation_count || 0,
-        totalDobViolations: building.dob_violation_count || 0,
-        avgScore: building.overall_score,
-        worstBuilding: {
-          id: building.id,
-          address: building.full_address,
-          violations: building.violation_count || 0,
-        },
-        _scores: building.overall_score !== null ? [building.overall_score] : [],
-      });
-    }
-  }
-
-  // Convert, sort, paginate
-  let landlords: LandlordData[] = Array.from(landlordMap.values()).map(
-    ({ _scores, ...rest }) => {
-      void _scores;
-      return rest;
-    }
-  );
-
-  if (sortBy === "violations") {
-    landlords.sort((a, b) => b.totalViolations - a.totalViolations);
-  } else if (sortBy === "complaints") {
-    landlords.sort((a, b) => b.totalComplaints - a.totalComplaints);
-  } else if (sortBy === "litigations") {
-    landlords.sort((a, b) => b.totalLitigations - a.totalLitigations);
-  } else if (sortBy === "dob") {
-    landlords.sort((a, b) => b.totalDobViolations - a.totalDobViolations);
-  } else if (sortBy === "buildings") {
-    landlords.sort((a, b) => b.buildingCount - a.buildingCount);
-  }
-
-  const total = landlords.length;
-  const totalPages = Math.ceil(total / limit);
+  // Fetch paginated results
   const offset = (page - 1) * limit;
-  const paginatedLandlords = landlords.slice(offset, offset + limit);
+  let query = supabase
+    .from("landlord_stats")
+    .select("name,slug,building_count,total_violations,total_complaints,total_litigations,total_dob_violations,avg_score,worst_building_id,worst_building_address,worst_building_violations")
+    .order(sortCol, { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  if (search) {
+    query = query.ilike("name", `%${search}%`);
+  }
+
+  const { data: landlords } = await query;
 
   function buildUrl(overrides: Record<string, string>) {
     const base: Record<string, string> = { search, sort: sortBy, page: String(page) };
     const merged = { ...base, ...overrides };
-    // Remove empty values
     Object.keys(merged).forEach((key) => {
       if (!merged[key]) delete merged[key];
     });
@@ -195,8 +131,8 @@ export default async function LandlordsPage({ searchParams }: LandlordsPageProps
       {/* Sort options */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <p className="text-sm text-[#64748b]">
-          {total > 0
-            ? `${total.toLocaleString()} landlord${total !== 1 ? "s" : ""} found`
+          {(total || 0) > 0
+            ? `${(total || 0).toLocaleString()} landlord${(total || 0) !== 1 ? "s" : ""} found`
             : "No landlords found"}
           {search && ` matching "${search}"`}
         </p>
@@ -224,7 +160,7 @@ export default async function LandlordsPage({ searchParams }: LandlordsPageProps
       </div>
 
       {/* Landlords table */}
-      {paginatedLandlords.length > 0 ? (
+      {(landlords || []).length > 0 ? (
         <div className="bg-white rounded-xl border border-[#e2e8f0] overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -260,7 +196,7 @@ export default async function LandlordsPage({ searchParams }: LandlordsPageProps
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#e2e8f0]">
-                {paginatedLandlords.map((landlord, idx) => {
+                {(landlords || []).map((landlord, idx) => {
                   const rank = offset + idx + 1;
                   return (
                     <tr
@@ -285,75 +221,75 @@ export default async function LandlordsPage({ searchParams }: LandlordsPageProps
                             {landlord.name}
                           </p>
                           <p className="text-xs text-[#94a3b8] mt-0.5">
-                            Worst: {landlord.worstBuilding.address}
+                            Worst: {landlord.worst_building_address}
                           </p>
                         </Link>
                       </td>
                       <td className="px-4 py-3 text-center">
                         <span className="inline-flex items-center gap-1 text-sm text-[#64748b]">
                           <Building2 className="w-3.5 h-3.5" />
-                          {landlord.buildingCount.toLocaleString()}
+                          {landlord.building_count.toLocaleString()}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-center">
                         <span
                           className={`inline-flex items-center gap-1 text-sm font-semibold ${
-                            landlord.totalViolations > 100
+                            landlord.total_violations > 100
                               ? "text-[#EF4444]"
-                              : landlord.totalViolations > 20
+                              : landlord.total_violations > 20
                               ? "text-[#F59E0B]"
                               : "text-[#64748b]"
                           }`}
                         >
                           <AlertTriangle className="w-3.5 h-3.5" />
-                          {landlord.totalViolations.toLocaleString()}
+                          {landlord.total_violations.toLocaleString()}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-center hidden sm:table-cell">
                         <span
                           className={`inline-flex items-center gap-1 text-sm font-semibold ${
-                            landlord.totalComplaints > 100
+                            landlord.total_complaints > 100
                               ? "text-[#EF4444]"
-                              : landlord.totalComplaints > 20
+                              : landlord.total_complaints > 20
                               ? "text-[#F59E0B]"
                               : "text-[#64748b]"
                           }`}
                         >
                           <MessageSquare className="w-3.5 h-3.5" />
-                          {landlord.totalComplaints.toLocaleString()}
+                          {landlord.total_complaints.toLocaleString()}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-center hidden md:table-cell">
                         <span
                           className={`inline-flex items-center gap-1 text-sm font-semibold ${
-                            landlord.totalLitigations > 10
+                            landlord.total_litigations > 10
                               ? "text-[#8B5CF6]"
-                              : landlord.totalLitigations > 0
+                              : landlord.total_litigations > 0
                               ? "text-[#8B5CF6]"
                               : "text-[#64748b]"
                           }`}
                         >
                           <Scale className="w-3.5 h-3.5" />
-                          {landlord.totalLitigations.toLocaleString()}
+                          {landlord.total_litigations.toLocaleString()}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-center hidden md:table-cell">
                         <span
                           className={`inline-flex items-center gap-1 text-sm font-semibold ${
-                            landlord.totalDobViolations > 50
+                            landlord.total_dob_violations > 50
                               ? "text-[#EF4444]"
-                              : landlord.totalDobViolations > 10
+                              : landlord.total_dob_violations > 10
                               ? "text-[#3B82F6]"
                               : "text-[#64748b]"
                           }`}
                         >
                           <HardHat className="w-3.5 h-3.5" />
-                          {landlord.totalDobViolations.toLocaleString()}
+                          {landlord.total_dob_violations.toLocaleString()}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-center hidden lg:table-cell">
                         <div className="flex justify-center">
-                          <LetterGrade score={landlord.avgScore} size="sm" />
+                          <LetterGrade score={landlord.avg_score} size="sm" />
                         </div>
                       </td>
                       <td className="px-4 py-3 text-right hidden lg:table-cell">

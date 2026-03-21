@@ -72,12 +72,7 @@ function parseLineSlug(slug: string): LineInfo | null {
   return null;
 }
 
-export async function generateStaticParams() {
-  return SUBWAY_LINES.map((line) => ({
-    city: "nyc",
-    line: line.slug,
-  }));
-}
+export const dynamicParams = true;
 
 export async function generateMetadata({
   params,

@@ -33,32 +33,36 @@ const BUILDING_SELECT =
   "id, full_address, borough, zip_code, year_built, total_units, num_floors, owner_name, slug, overall_score, violation_count, complaint_count, litigation_count, dob_violation_count, review_count";
 
 async function findBuildings(supabase: Awaited<ReturnType<typeof createClient>>, param: string) {
-  // Try slug match first (new format)
-  const { data: bySlug } = await supabase.rpc("landlord_slug", { name: "" });
-  // Actually query using SQL function matching
+  // Step 1: Look up exact owner name from landlord_stats by slug
+  const { data: statsRows } = await supabase
+    .from("landlord_stats")
+    .select("name")
+    .eq("slug", param)
+    .limit(1);
+
+  const ownerName = statsRows?.[0]?.name;
+
+  if (!ownerName) {
+    // Fallback: try decoded name match (old URL format)
+    const decodedName = decodeURIComponent(param);
+    const { data: byName } = await supabase
+      .from("buildings")
+      .select(BUILDING_SELECT)
+      .ilike("owner_name", decodedName)
+      .order("violation_count", { ascending: false })
+      .limit(500);
+    return byName && byName.length > 0 ? byName : null;
+  }
+
+  // Step 2: Fetch buildings by exact owner_name match
   const { data: buildings } = await supabase
     .from("buildings")
     .select(BUILDING_SELECT)
-    .not("owner_name", "is", null)
+    .eq("owner_name", ownerName)
     .order("violation_count", { ascending: false })
-    .limit(10000);
+    .limit(500);
 
-  if (!buildings) return null;
-
-  // Filter by slug match
-  const slugMatches = buildings.filter(
-    (b) => b.owner_name && landlordSlug(b.owner_name) === param
-  );
-
-  if (slugMatches.length > 0) return slugMatches;
-
-  // Fall back to decoded name match (old format)
-  const decodedName = decodeURIComponent(param);
-  const nameMatches = buildings.filter(
-    (b) => b.owner_name?.toLowerCase() === decodedName.toLowerCase()
-  );
-
-  return nameMatches.length > 0 ? nameMatches : null;
+  return buildings && buildings.length > 0 ? buildings : null;
 }
 
 export async function generateMetadata({
@@ -67,20 +71,14 @@ export async function generateMetadata({
   const { name } = await params;
   const supabase = await createClient();
 
-  // Quick lookup for owner name
-  const { data: buildings } = await supabase
-    .from("buildings")
-    .select("owner_name")
-    .not("owner_name", "is", null)
-    .limit(10000);
+  // Quick lookup for owner name from landlord_stats
+  const { data: statsRows } = await supabase
+    .from("landlord_stats")
+    .select("name")
+    .eq("slug", name)
+    .limit(1);
 
-  let displayName = decodeURIComponent(name);
-  if (buildings) {
-    const match = buildings.find(
-      (b) => b.owner_name && landlordSlug(b.owner_name) === name
-    );
-    if (match) displayName = match.owner_name;
-  }
+  const displayName = statsRows?.[0]?.name || decodeURIComponent(name);
 
   const title = `${displayName} - Landlord Portfolio | Lucid Rents`;
   const description = `View all buildings, violations, and complaints for landlord ${displayName} in New York City.`;
@@ -106,38 +104,16 @@ export default async function LandlordDetailPage({
   const { name } = await params;
   const supabase = await createClient();
 
-  // Try slug-based lookup first
-  const { data: allBuildings } = await supabase
-    .from("buildings")
-    .select(BUILDING_SELECT)
-    .not("owner_name", "is", null)
-    .order("violation_count", { ascending: false })
-    .limit(10000);
+  const buildings = await findBuildings(supabase, name);
+  if (!buildings || buildings.length === 0) notFound();
 
-  if (!allBuildings) notFound();
-
-  // Match by slug
-  let buildings = allBuildings.filter(
-    (b) => b.owner_name && landlordSlug(b.owner_name) === name
-  );
-
-  // Fall back to decoded name (old URL format)
-  if (buildings.length === 0) {
-    const decodedName = decodeURIComponent(name);
-    buildings = allBuildings.filter(
-      (b) => b.owner_name?.toLowerCase() === decodedName.toLowerCase()
-    );
-
-    // If found via old format, redirect to slug URL
-    if (buildings.length > 0 && buildings[0].owner_name) {
-      const slug = landlordSlug(buildings[0].owner_name);
-      if (slug !== name) {
-        permanentRedirect(`/landlord/${slug}`);
-      }
+  // If found via old URL format, redirect to slug URL
+  if (buildings[0].owner_name) {
+    const correctSlug = landlordSlug(buildings[0].owner_name);
+    if (correctSlug !== name) {
+      permanentRedirect(cityPath(`/landlord/${correctSlug}`));
     }
   }
-
-  if (buildings.length === 0) notFound();
 
   // Aggregate stats
   const totalBuildings = buildings.length;

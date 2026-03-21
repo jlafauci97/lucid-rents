@@ -1,11 +1,11 @@
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { BuildingCard } from "@/components/search/BuildingCard";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { SLUG_TO_BOROUGH, canonicalUrl, buildingUrl, cityPath, regionSlug } from "@/lib/seo";
-import { CITY_META } from "@/lib/cities";
+import { SLUG_TO_BOROUGH, canonicalUrl, buildingUrl, cityPath } from "@/lib/seo";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { BoroughExploreLinks } from "@/components/seo/BoroughExploreLinks";
@@ -19,12 +19,8 @@ interface BoroughPageProps {
   searchParams: Promise<{ page?: string; sort?: string }>;
 }
 
-export function generateStaticParams() {
-  // Generate params for all cities' regions (NYC boroughs + LA neighborhoods)
-  return Object.values(CITY_META).flatMap((meta) =>
-    meta.regions.map((r) => ({ borough: regionSlug(r) }))
-  );
-}
+// Allow any borough/region slug — don't restrict with generateStaticParams
+export const dynamicParams = true;
 
 export async function generateMetadata({
   params,
@@ -64,25 +60,33 @@ export default async function BoroughPage({ params, searchParams }: BoroughPageP
   const sortColumn = sort === "score" ? "overall_score" : "violation_count";
   const ascending = sort === "score";
 
-  const supabase = await createClient();
+  let total = 0;
+  let buildingList: Building[] = [];
 
-  // Get total count
-  const { count: totalCount } = await supabase
-    .from("buildings")
-    .select("id", { count: "exact", head: true })
-    .eq("borough", borough);
+  try {
+    const supabase = await createClient();
 
-  // Get paginated buildings
-  const { data: buildings } = await supabase
-    .from("buildings")
-    .select("*")
-    .eq("borough", borough)
-    .order(sortColumn, { ascending, nullsFirst: false })
-    .range(offset, offset + PAGE_SIZE - 1);
+    // Get total count and paginated buildings in parallel
+    const [countRes, buildingsRes] = await Promise.all([
+      supabase
+        .from("buildings")
+        .select("id", { count: "exact", head: true })
+        .eq("borough", borough),
+      supabase
+        .from("buildings")
+        .select("*")
+        .eq("borough", borough)
+        .order(sortColumn, { ascending, nullsFirst: false })
+        .range(offset, offset + PAGE_SIZE - 1),
+    ]);
 
-  const total = totalCount || 0;
+    total = countRes.count || 0;
+    buildingList = (buildingsRes.data || []) as Building[];
+  } catch (err) {
+    console.error("BoroughPage query error:", err);
+  }
+
   const totalPages = Math.ceil(total / PAGE_SIZE);
-  const buildingList = (buildings || []) as Building[];
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -173,7 +177,9 @@ export default async function BoroughPage({ params, searchParams }: BoroughPageP
         </div>
       )}
       {/* Cross-links: neighborhoods, landlords, explore */}
-      <BoroughExploreLinks borough={borough} boroughSlug={boroughSlug} />
+      <Suspense fallback={null}>
+        <BoroughExploreLinks borough={borough} boroughSlug={boroughSlug} />
+      </Suspense>
     </div>
     </AdSidebar>
   );
