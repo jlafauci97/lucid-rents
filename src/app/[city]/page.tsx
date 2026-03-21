@@ -113,7 +113,7 @@ export default async function CityHomePage({
         </section>
 
         {/* Violation Ticker */}
-        <ViolationTicker />
+        <ViolationTicker metro={city} />
 
         {/* Stats */}
         <section className="border-b border-[#e2e8f0]">

@@ -99,13 +99,19 @@ function TickerItem({ item }: { item: ActivityItem }) {
   return content;
 }
 
-export function ViolationTicker() {
+interface ViolationTickerProps {
+  metro?: string;
+}
+
+export function ViolationTicker({ metro }: ViolationTickerProps = {}) {
   const [items, setItems] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const params = new URLSearchParams({ limit: "30" });
+    if (metro) params.set("city", metro);
     function fetchItems() {
-      fetch('/api/activity?limit=30')
+      fetch(`/api/activity?${params}`)
         .then((res) => res.json())
         .then((data) => {
           if (data.items) setItems(data.items);
@@ -114,7 +120,7 @@ export function ViolationTicker() {
         .finally(() => setLoading(false));
     }
     fetchItems();
-    const interval = setInterval(fetchItems, 120000); // refresh every 2 min
+    const interval = setInterval(fetchItems, 120000);
     return () => clearInterval(interval);
   }, []);
 
