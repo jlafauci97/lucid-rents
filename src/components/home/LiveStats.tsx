@@ -4,55 +4,33 @@ import type { City } from "@/lib/cities";
 async function getSnapshotCounts(metro?: City) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const apiKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  const countHeaders = { apikey: apiKey, Prefer: "count=exact" };
 
-  if (!metro) {
-    // No metro filter — use the aggregate RPC for combined counts
-    const res = await fetch(`${supabaseUrl}/rest/v1/rpc/data_snapshot_counts`, {
-      method: "POST",
-      headers: { apikey: apiKey, "Content-Type": "application/json" },
-      body: JSON.stringify({}),
-      next: { revalidate: 3600 },
-    });
-    if (!res.ok) return null;
-    return res.json();
-  }
+  // Always use aggregate RPC for violation/complaint counts (works for all metros)
+  const rpcRes = await fetch(`${supabaseUrl}/rest/v1/rpc/data_snapshot_counts`, {
+    method: "POST",
+    headers: { apikey: apiKey, "Content-Type": "application/json" },
+    body: JSON.stringify({}),
+    next: { revalidate: 3600 },
+  });
 
-  // Metro-filtered: query each table count directly
-  const headers = { apikey: apiKey, Prefer: "count=exact" };
-  const metroFilter = `&metro=eq.${encodeURIComponent(metro)}`;
+  const rpcData = rpcRes.ok ? await rpcRes.json() : null;
 
-  const [buildingsRes, hpdRes, dobRes, complaintsRes] = await Promise.all([
-    fetch(`${supabaseUrl}/rest/v1/buildings?select=id${metroFilter}`, {
-      headers: { ...headers, Range: "0-0" },
-      next: { revalidate: 3600 },
-    }),
-    fetch(`${supabaseUrl}/rest/v1/hpd_violations?select=id${metroFilter}`, {
-      headers: { ...headers, Range: "0-0" },
-      next: { revalidate: 3600 },
-    }),
-    fetch(`${supabaseUrl}/rest/v1/dob_violations?select=id${metroFilter}`, {
-      headers: { ...headers, Range: "0-0" },
-      next: { revalidate: 3600 },
-    }),
-    fetch(`${supabaseUrl}/rest/v1/complaints_311?select=id${metroFilter}`, {
-      headers: { ...headers, Range: "0-0" },
-      next: { revalidate: 3600 },
-    }),
-  ]);
-
-  // Extract counts from Content-Range header: "0-0/12345"
-  function extractCount(res: Response): number {
-    const range = res.headers.get("content-range") || "";
+  // For buildings count, filter by metro if provided
+  if (metro) {
+    const buildingsRes = await fetch(
+      `${supabaseUrl}/rest/v1/buildings?select=id&metro=eq.${encodeURIComponent(metro)}`,
+      { headers: { ...countHeaders, Range: "0-0" }, next: { revalidate: 3600 } }
+    );
+    const range = buildingsRes.headers.get("content-range") || "";
     const match = range.match(/\/(\d+)/);
-    return match ? parseInt(match[1], 10) : 0;
+    const metroBuildings = match ? parseInt(match[1], 10) : 0;
+
+    const base = Array.isArray(rpcData) ? rpcData[0] : rpcData;
+    return [{ ...base, buildings_count: metroBuildings || base?.buildings_count }];
   }
 
-  return [{
-    buildings_count: extractCount(buildingsRes),
-    hpd_violations_count: extractCount(hpdRes),
-    dob_violations_count: extractCount(dobRes),
-    complaints_311_count: extractCount(complaintsRes),
-  }];
+  return rpcData;
 }
 
 interface LiveStatsProps {
