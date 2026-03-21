@@ -156,7 +156,7 @@ export function ActivityFeed() {
       }
     }
     fetchActivity();
-    const interval = setInterval(fetchActivity, 120000);
+    const interval = setInterval(fetchActivity, 4 * 60 * 60 * 1000); // refresh every 4 hours
     return () => clearInterval(interval);
   }, [city]);
 

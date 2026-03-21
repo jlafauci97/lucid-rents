@@ -21,7 +21,7 @@ export interface ActivityItem {
 // Server-side cache – guarantees stable pagination within the TTL window and
 // prevents Supabase from being hit on every page/filter/refresh request.
 // ---------------------------------------------------------------------------
-const CACHE_TTL = 60_000; // 60 seconds
+const CACHE_TTL = 4 * 60 * 60 * 1000; // 4 hours
 const cache = new Map<string, { items: ActivityItem[]; ts: number }>();
 
 export async function GET(request: Request) {

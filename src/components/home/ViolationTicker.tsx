@@ -120,7 +120,7 @@ export function ViolationTicker({ metro }: ViolationTickerProps = {}) {
         .finally(() => setLoading(false));
     }
     fetchItems();
-    const interval = setInterval(fetchItems, 120000);
+    const interval = setInterval(fetchItems, 4 * 60 * 60 * 1000); // refresh every 4 hours
     return () => clearInterval(interval);
   }, []);
 
