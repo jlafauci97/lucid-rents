@@ -2,13 +2,15 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { BuildingHeader } from "@/components/building/BuildingHeader";
+import { QuickSummary } from "@/components/building/QuickSummary";
 import { IssuesTabs } from "@/components/building/IssuesTabs";
 import { ViolationTrend } from "@/components/building/ViolationTrend";
 import { ViolationsByUnit } from "@/components/building/ViolationsByUnit";
-import { ReviewCard } from "@/components/review/ReviewCard";
+import { ReviewSection } from "@/components/review/ReviewSection";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { MonitorButton } from "@/components/building/MonitorButton";
+import { SaveButton } from "@/components/building/SaveButton";
+import { ShareButton } from "@/components/building/ShareButton";
+import { SectionNav } from "@/components/building/SectionNav";
 import { NearbyCrimeSummary } from "@/components/crime/NearbyCrimeSummary";
 import { NearbyTransit } from "@/components/transit/NearbyTransit";
 import { NearbySchools } from "@/components/schools/NearbySchools";
@@ -19,6 +21,7 @@ import { SameLandlordBuildings } from "@/components/building/SameLandlordBuildin
 import { BuildingLocationMap } from "@/components/building/BuildingLocationMap";
 import { RentStabilizationCard } from "@/components/building/RentStabilizationCard";
 import { RentRangeCard } from "@/components/building/RentRangeCard";
+import { RentComparison } from "@/components/building/RentComparison";
 import { BuildingAmenities } from "@/components/building/BuildingAmenities";
 import { MarketListings } from "@/components/building/MarketListings";
 import { EnergyScoreCard } from "@/components/building/EnergyScoreCard";
@@ -29,7 +32,7 @@ import { SLUG_TO_BOROUGH, buildingUrl, canonicalUrl, buildingJsonLd, breadcrumbJ
 import { CITY_META } from "@/lib/cities";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
-import { PenSquare } from "lucide-react";
+import { TrackBuildingView } from "@/components/building/TrackBuildingView";
 import { cache } from "react";
 import type { Building, HpdViolation, Complaint311, HpdLitigation, DobViolation, BedBugReport, Eviction, DobPermit, EnergyBenchmark, ReviewWithDetails } from "@/types";
 import type { Metadata } from "next";
@@ -118,7 +121,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
     });
 
   // Fetch all data in parallel — including auth check
-  const [violations, complaints, litigations, dobViolations, bedbugs, evictions, permits, energyData, reviews, units, violationSummaries, rents, amenities, marketListings, rentHistory, monitorStatus] = await Promise.all([
+  const [violations, complaints, litigations, dobViolations, bedbugs, evictions, permits, energyData, reviews, units, violationSummaries, rents, amenities, marketListings, rentHistory, monitorStatus, saveStatus, neighborhoodRentsRaw] = await Promise.all([
     safe(supabase.from("hpd_violations").select("*").eq("building_id", buildingId).order("inspection_date", { ascending: false }).limit(20), [] as HpdViolation[]),
     safe(supabase.from("complaints_311").select("*").eq("building_id", buildingId).order("created_date", { ascending: false }).limit(20), [] as Complaint311[]),
     safe(supabase.from("hpd_litigations").select("*").eq("building_id", buildingId).order("case_open_date", { ascending: false }).limit(20), [] as HpdLitigation[]),
@@ -134,20 +137,45 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
     safe(supabase.from("building_amenities").select("amenity, category, source").eq("building_id", buildingId), []),
     safe(supabase.from("building_listings").select("*").eq("building_id", buildingId), []),
     safe(supabase.from("unit_rent_history").select("id, unit_number, bedrooms, bathrooms, rent, sqft, source, observed_at").eq("building_id", buildingId).order("observed_at", { ascending: false }).limit(100), []),
-    // Auth check runs in parallel instead of sequentially
-    (async () => {
+    // Auth checks run in parallel instead of sequentially
+    (async (): Promise<{ monitored: boolean; saved: boolean }> => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return false;
-        const { data } = await supabase.from("monitored_buildings").select("id").eq("user_id", user.id).eq("building_id", buildingId).single();
-        return !!data;
+        if (!user) return { monitored: false, saved: false };
+        const [monitorRes, saveRes] = await Promise.all([
+          supabase.from("monitored_buildings").select("id").eq("user_id", user.id).eq("building_id", buildingId).single(),
+          supabase.from("saved_buildings").select("id").eq("user_id", user.id).eq("building_id", buildingId).single(),
+        ]);
+        return { monitored: !!monitorRes.data, saved: !!saveRes.data };
       } catch {
-        return false;
+        return { monitored: false, saved: false };
       }
     })(),
+    null, // placeholder for saveStatus — extracted from authStatus below
+    safe(supabase.from("building_rents").select("bedrooms, median_rent").eq("zip_code", building.zip_code!).not("building_id", "eq", buildingId), [] as { bedrooms: number; median_rent: number }[]),
   ]);
 
-  const isMonitored = monitorStatus;
+  const authStatus = monitorStatus as unknown as { monitored: boolean; saved: boolean };
+  const isMonitored = authStatus.monitored;
+  const isSaved = authStatus.saved;
+
+  // Compute zip-level median rents per bedroom for neighborhood comparison
+  const neighborhoodRents = (() => {
+    const byBedroom = new Map<number, number[]>();
+    for (const r of (neighborhoodRentsRaw as { bedrooms: number; median_rent: number }[]) || []) {
+      if (r.median_rent > 0) {
+        const arr = byBedroom.get(r.bedrooms) || [];
+        arr.push(r.median_rent);
+        byBedroom.set(r.bedrooms, arr);
+      }
+    }
+    return [...byBedroom.entries()].map(([bedrooms, medians]) => {
+      medians.sort((a, b) => a - b);
+      const mid = Math.floor(medians.length / 2);
+      const median_rent = medians.length % 2 === 0 ? Math.round((medians[mid - 1] + medians[mid]) / 2) : medians[mid];
+      return { bedrooms, median_rent };
+    });
+  })();
 
   // Extract short address for breadcrumb
   const shortAddress = building.full_address.split(",")[0]?.trim() || building.full_address;
@@ -155,6 +183,15 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
   return (
     <AdSidebar>
     <div>
+      <TrackBuildingView
+        building={{
+          id: building.id,
+          full_address: building.full_address,
+          borough: building.borough,
+          slug: building.slug,
+          overall_score: building.overall_score,
+        }}
+      />
       <JsonLd data={buildingJsonLd(building)} />
       <JsonLd data={breadcrumbJsonLd([
         { name: "Home", url: "/" },
@@ -174,59 +211,52 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
         />
       </div>
 
-      <BuildingHeader building={building} />
+      <BuildingHeader building={building} city={city} />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <SectionNav />
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 scroll-mt-28">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main column */}
           <div className="lg:col-span-2 space-y-8">
+            {/* Quick Summary */}
+            <QuickSummary
+              building={building}
+              rents={rents}
+              violationCount={building.violation_count}
+              complaintCount={building.complaint_count}
+              bedbugCount={building.bedbug_report_count}
+              evictionCount={building.eviction_count}
+            />
+
             {/* Reviews */}
-            <section id="reviews">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-[#0F1D2E]">
-                  Tenant Reviews ({reviews.length})
-                </h2>
-                <div className="flex items-center gap-2">
-                  <MonitorButton buildingId={buildingId} initialMonitored={isMonitored} />
-                  <Link href={cityPath(`/review/new?building=${buildingId}`)}>
-                    <Button size="sm">
-                      <PenSquare className="w-4 h-4 mr-2" />
-                      Write Review
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-              {reviews.length > 0 ? (
-                <div className="space-y-4">
-                  {reviews.map((review) => (
-                    <ReviewCard key={review.id} review={review} />
-                  ))}
-                </div>
-              ) : (
-                <Card>
-                  <CardContent>
-                    <p className="text-center text-[#64748b] py-8">
-                      No reviews yet. Be the first to review this building!
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
-            </section>
+            <ReviewSection
+              reviews={reviews}
+              buildingId={buildingId}
+              isMonitored={isMonitored}
+              cityPath={cityPath("")}
+              headerActions={
+                <>
+                  <SaveButton buildingId={buildingId} initialSaved={isSaved} />
+                  <ShareButton address={shortAddress} url={canonicalUrl(buildingUrl(building))} />
+                </>
+              }
+            />
 
             {/* Rent History */}
-            <div id="rent">
+            <div id="rent" className="scroll-mt-28">
               <MarketListings listings={marketListings} amenities={amenities} rentHistory={rentHistory} buildingUrl={buildingUrl(building)} />
             </div>
 
             {/* Building Amenities */}
             {amenities.length > 0 && (
-              <div id="amenities">
+              <div id="amenities" className="scroll-mt-28">
                 <BuildingAmenities amenities={amenities} />
               </div>
             )}
 
             {/* Violation & Complaint Trends */}
-            <div id="violation-trends">
+            <div id="violation-trends" className="scroll-mt-28">
               <ViolationTrend buildingId={buildingId} housingAgency={city === "los-angeles" ? "LAHD" : "HPD"} />
             </div>
 
@@ -242,13 +272,13 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
             <AdBlock adSlot="BUILDING_MID_2" adFormat="horizontal" />
 
             {/* Violations & Complaints Tabs */}
-            <div id="violations">
+            <div id="violations" className="scroll-mt-28">
               <IssuesTabs violations={violations} complaints={complaints} litigations={litigations} dobViolations={dobViolations} bedbugs={bedbugs} evictions={evictions} permits={permits} city={city} />
             </div>
 
             {/* Building Location Map */}
             {building.latitude && building.longitude && (
-              <div id="location">
+              <div id="location" className="scroll-mt-28">
               <BuildingLocationMap
                 latitude={building.latitude}
                 longitude={building.longitude}
@@ -261,7 +291,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Building Info */}
-            <Card id="building-details">
+            <Card id="building-details" className="scroll-mt-28">
               <CardHeader>
                 <h3 className="font-semibold text-[#0F1D2E]">
                   Building Details
@@ -338,6 +368,18 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
             />
             </div>
 
+
+            {/* Rent Comparison */}
+            {building.zip_code && (
+              <div id="rent-comparison">
+                <RentComparison
+                  buildingRents={rents}
+                  neighborhoodRents={neighborhoodRents}
+                  zipCode={building.zip_code}
+                  borough={building.borough}
+                />
+              </div>
+            )}
             {/* Energy Score */}
             <div id="energy-score">
               <EnergyScoreCard data={energyData[0] || null} />
@@ -351,7 +393,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
 
             {/* Nearby Transit */}
             {building.latitude && building.longitude && (
-              <div id="transit">
+              <div id="transit" className="scroll-mt-28">
               <NearbyTransit
                 latitude={building.latitude}
                 longitude={building.longitude}
@@ -381,19 +423,17 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
               </div>
             )}
 
-            {/* Nearby Encampments (LA only) */}
-            {building.latitude && building.longitude && city === 'los-angeles' && (
-              <div id="encampments">
+            {/* Encampment Reports (LA only) */}
+            {building.latitude && building.longitude && city === "los-angeles" && (
               <NearbyEncampments
                 latitude={building.latitude}
                 longitude={building.longitude}
               />
-              </div>
             )}
 
             {/* Neighborhood Crime */}
             {building.zip_code && (
-              <div id="crime">
+              <div id="crime" className="scroll-mt-28">
               <NearbyCrimeSummary zipCode={building.zip_code} />
               </div>
             )}

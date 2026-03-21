@@ -9,6 +9,10 @@ export const searchSchema = z.object({
     .string()
     .regex(/^\d{5}$/)
     .optional(),
+  sort: z
+    .enum(["relevance", "score-desc", "score-asc", "violations-desc", "reviews-desc"])
+    .optional()
+    .default("relevance"),
   page: z.coerce.number().min(1).default(1),
   limit: z.coerce.number().min(1).max(50).default(20),
 }).refine((data) => data.q || data.zip, {
