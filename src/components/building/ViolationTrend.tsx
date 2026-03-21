@@ -27,6 +27,7 @@ interface TrendData {
 
 interface ViolationTrendProps {
   buildingId: string;
+  housingAgency?: string;
 }
 
 function formatMonthLabel(month: string): string {
@@ -83,7 +84,7 @@ function SkeletonChart() {
   );
 }
 
-export function ViolationTrend({ buildingId }: ViolationTrendProps) {
+export function ViolationTrend({ buildingId, housingAgency = "HPD" }: ViolationTrendProps) {
   const [data, setData] = useState<TrendData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -238,7 +239,7 @@ export function ViolationTrend({ buildingId }: ViolationTrendProps) {
               <Line
                 type="monotone"
                 dataKey="violations"
-                name="HPD Violations"
+                name={`${housingAgency} Violations`}
                 stroke="#EF4444"
                 strokeWidth={2}
                 dot={false}

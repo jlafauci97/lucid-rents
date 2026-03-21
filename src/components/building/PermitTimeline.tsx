@@ -5,6 +5,7 @@ import type { DobPermit } from "@/types";
 
 interface PermitTimelineProps {
   permits: DobPermit[];
+  agencyLabel?: string;
 }
 
 const statusColors: Record<string, { bg: string; text: string }> = {
@@ -21,11 +22,11 @@ function formatCost(cost: number | null): string | null {
   return `$${cost.toLocaleString()}`;
 }
 
-export function PermitTimeline({ permits }: PermitTimelineProps) {
+export function PermitTimeline({ permits, agencyLabel = "DOB" }: PermitTimelineProps) {
   if (permits.length === 0) {
     return (
       <p className="text-sm text-[#64748b] py-4">
-        No DOB permits on record.
+        No {agencyLabel} permits on record.
       </p>
     );
   }

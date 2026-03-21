@@ -9,13 +9,15 @@ import { ArrowLeft, BedDouble, Bath, Layers, Building2 } from "lucide-react";
 import type { HpdViolation, ReviewWithDetails } from "@/types";
 import type { Metadata } from "next";
 import { buildingUrl } from "@/lib/seo";
+import { CITY_META, type City } from "@/lib/cities";
 
 interface UnitPageProps {
-  params: Promise<{ borough: string; unitId: string }>;
+  params: Promise<{ city: string; borough: string; unitId: string }>;
 }
 
 export async function generateMetadata({ params }: UnitPageProps): Promise<Metadata> {
-  const { borough: buildingId, unitId } = await params;
+  const { city: cityParam, borough: buildingId, unitId } = await params;
+  const city = (cityParam || "nyc") as City;
   const supabase = await createClient();
 
   const [{ data: unit }, { data: building }] = await Promise.all([
@@ -25,9 +27,10 @@ export async function generateMetadata({ params }: UnitPageProps): Promise<Metad
 
   if (!unit || !building) return { title: "Unit Not Found" };
 
+  const cityName = CITY_META[city]?.name || "NYC";
   return {
     title: `Unit ${unit.unit_number} - ${building.full_address}`,
-    description: `View reviews, violations, and details for Unit ${unit.unit_number} at ${building.full_address} in ${building.borough}, NYC.`,
+    description: `View reviews, violations, and details for Unit ${unit.unit_number} at ${building.full_address} in ${building.borough}, ${cityName}.`,
   };
 }
 

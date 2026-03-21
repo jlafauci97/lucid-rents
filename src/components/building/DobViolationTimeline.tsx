@@ -5,6 +5,7 @@ import type { DobViolation } from "@/types";
 
 interface DobViolationTimelineProps {
   violations: DobViolation[];
+  agencyLabel?: string;
 }
 
 const categoryColors: Record<string, { bg: string; text: string }> = {
@@ -28,11 +29,11 @@ function getCategoryStyle(category: string | null) {
   return { bg: "bg-orange-50", text: "text-orange-700" };
 }
 
-export function DobViolationTimeline({ violations }: DobViolationTimelineProps) {
+export function DobViolationTimeline({ violations, agencyLabel = "DOB" }: DobViolationTimelineProps) {
   if (violations.length === 0) {
     return (
       <p className="text-sm text-[#64748b] py-4">
-        No DOB violations on record.
+        No {agencyLabel} violations on record.
       </p>
     );
   }

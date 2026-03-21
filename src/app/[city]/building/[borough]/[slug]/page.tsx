@@ -26,6 +26,7 @@ import { EnergyScoreCard } from "@/components/building/EnergyScoreCard";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { SLUG_TO_BOROUGH, buildingUrl, canonicalUrl, buildingJsonLd, breadcrumbJsonLd, landlordUrl, cityPath } from "@/lib/seo";
+import { CITY_META } from "@/lib/cities";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { PenSquare } from "lucide-react";
@@ -35,7 +36,7 @@ import type { Metadata } from "next";
 export const revalidate = 86400; // 24h ISR
 
 interface BuildingSlugPageProps {
-  params: Promise<{ borough: string; slug: string }>;
+  params: Promise<{ city: string; borough: string; slug: string }>;
 }
 
 async function getBuilding(boroughSlug: string, slug: string) {
@@ -58,7 +59,7 @@ async function getBuilding(boroughSlug: string, slug: string) {
 export async function generateMetadata({
   params,
 }: BuildingSlugPageProps): Promise<Metadata> {
-  const { borough, slug } = await params;
+  const { city: cityParam, borough, slug } = await params;
   const building = await getBuilding(borough, slug);
 
   if (!building) return { title: "Building Not Found" };
@@ -70,7 +71,8 @@ export async function generateMetadata({
   ];
   if (building.bedbug_report_count > 0) descParts.push(`${building.bedbug_report_count} bedbug reports`);
   if (building.eviction_count > 0) descParts.push(`${building.eviction_count} evictions`);
-  const description = `View ${descParts.join(", ")}, and tenant reviews for ${building.full_address} in ${building.borough}, NYC.`;
+  const cityName = CITY_META[cityParam as keyof typeof CITY_META]?.name || "NYC";
+  const description = `View ${descParts.join(", ")}, and tenant reviews for ${building.full_address} in ${building.borough}, ${cityName}.`;
   const url = canonicalUrl(buildingUrl(building));
 
   return {
@@ -94,7 +96,8 @@ export async function generateMetadata({
 }
 
 export default async function BuildingSlugPage({ params }: BuildingSlugPageProps) {
-  const { borough: boroughSlug, slug } = await params;
+  const { city: cityParam, borough: boroughSlug, slug } = await params;
+  const city = (cityParam || "nyc") as import("@/lib/cities").City;
   const building = await getBuilding(boroughSlug, slug);
 
   if (!building) notFound();
@@ -313,7 +316,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
 
             {/* Violations & Complaints Tabs */}
             <div id="violations">
-              <IssuesTabs violations={violations} complaints={complaints} litigations={litigations} dobViolations={dobViolations} bedbugs={bedbugs} evictions={evictions} permits={permits} />
+              <IssuesTabs violations={violations} complaints={complaints} litigations={litigations} dobViolations={dobViolations} bedbugs={bedbugs} evictions={evictions} permits={permits} city={city} />
             </div>
 
             {/* Building Location Map */}
