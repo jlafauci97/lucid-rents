@@ -44,15 +44,16 @@ const getBuilding = cache(async (boroughSlug: string, slug: string) => {
   if (!borough) return null;
 
   const supabase = await createClient();
+  // Use borough + slug + limit(1) instead of .single() to handle duplicate slugs
   const { data } = await supabase
     .from("buildings")
     .select("*")
     .eq("slug", slug)
-    .single();
+    .eq("borough", borough)
+    .limit(1);
 
-  if (!data) return null;
-  if (data.borough !== borough) return null;
-  return data as Building;
+  if (!data || data.length === 0) return null;
+  return data[0] as Building;
 });
 
 export async function generateMetadata({
