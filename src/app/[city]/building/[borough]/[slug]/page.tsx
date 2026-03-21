@@ -169,8 +169,9 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
       .order("unit_number", { ascending: true }),
     supabase
       .from("hpd_violations")
-      .select("apartment, class, status, inspection_date")
+      .select("id, apartment, class, status, inspection_date, nov_description")
       .eq("building_id", buildingId)
+      .order("inspection_date", { ascending: false })
       .limit(10000),
     supabase
       .from("building_rents")
