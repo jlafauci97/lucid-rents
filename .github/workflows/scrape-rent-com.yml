@@ -65,7 +65,7 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
-          PAGES="${{ github.event.inputs.pages || '3' }}"
+          PAGES="${{ github.event.inputs.pages || '25' }}"
           python scripts/scrape-streeteasy.py --pages=$PAGES --borough="${{ matrix.borough }}"
 
       # Apartments.com disabled until historical data scrape is complete
