@@ -22,6 +22,7 @@ import os
 import re
 import sys
 import time
+import random
 import argparse
 from pathlib import Path
 from datetime import datetime, timezone
@@ -60,7 +61,10 @@ get_url = _nbhd_mod.get_url
 
 MAX_RETRIES = 3
 RETRY_DELAY = 5  # seconds between retries
-PAGE_DELAY = 4  # seconds between page fetches
+PAGE_DELAY_MIN = 6  # randomized delay range between pages
+PAGE_DELAY_MAX = 12
+NEIGHBORHOOD_DELAY_MIN = 8  # randomized delay range between neighborhoods
+NEIGHBORHOOD_DELAY_MAX = 20
 LISTINGS_PER_PAGE = 41
 SOURCE = "zillow"
 
@@ -319,6 +323,10 @@ def fetch_page(url: str) -> dict | None:
                 network_idle=True,
                 timeout=30000,
                 wait=5000,
+                block_webrtc=True,
+                hide_canvas=True,
+                disable_resources=True,
+                google_search=True,
             )
 
             if page.status != 200:
@@ -1044,16 +1052,19 @@ def main():
                 print(f"    Reached end of results ({total_results} total).")
                 break
 
-            # Polite delay between pages
-            print(f"    Waiting {PAGE_DELAY}s...")
-            time.sleep(PAGE_DELAY)
+            # Randomized delay between pages to avoid detection
+            delay = random.uniform(PAGE_DELAY_MIN, PAGE_DELAY_MAX)
+            print(f"    Waiting {delay:.1f}s...")
+            time.sleep(delay)
 
         if nbhd_listings > 0:
             neighborhoods_scraped += 1
         print(f"  {nbhd_name} total: {nbhd_listings} listings")
 
-        # Brief delay between neighborhoods
-        time.sleep(2)
+        # Randomized delay between neighborhoods to avoid detection
+        delay = random.uniform(NEIGHBORHOOD_DELAY_MIN, NEIGHBORHOOD_DELAY_MAX)
+        print(f"  Neighborhood delay: {delay:.1f}s...")
+        time.sleep(delay)
 
     print(f"\n{'='*60}")
     print(f"SUMMARY")
