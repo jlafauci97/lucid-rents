@@ -1773,64 +1773,394 @@ function buildLASodaUrl(
 }
 
 // ---------------------------------------------------------------------------
-// LA Sync Functions (stubs — endpoints TBD during data source integration)
+// LA Sync Functions — data.lacity.org SODA API
 // ---------------------------------------------------------------------------
 
+// LA address matching: normalize address for matching against buildings table
+function normalizeLAAddress(addr: string): string {
+  return addr.toUpperCase().replace(/[.,#]/g, "").replace(/\s+/g, " ").trim();
+}
+
+// Link LA records to buildings by matching normalized address + zip
+async function linkLAByAddress(
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+  table: string,
+  sinceDate: string,
+  errors: string[],
+  label: string
+): Promise<{ linked: number; affectedBuildingIds: Set<string> }> {
+  let linked = 0;
+  const affectedBuildingIds = new Set<string>();
+
+  // Find unlinked records from this sync run
+  const { data: unlinked, error } = await supabase
+    .from(table)
+    .select("id, address, zip_code")
+    .eq("metro", "los-angeles")
+    .is("building_id", null)
+    .gte("imported_at", sinceDate)
+    .limit(5000);
+
+  if (error || !unlinked || unlinked.length === 0) {
+    if (error) errors.push(`${label} link query error: ${error.message}`);
+    return { linked, affectedBuildingIds };
+  }
+
+  // Get unique zip codes from unlinked records
+  const zips = [...new Set(unlinked.map((r) => r.zip_code).filter(Boolean))];
+  if (zips.length === 0) return { linked, affectedBuildingIds };
+
+  // Fetch LA buildings in those zips
+  const { data: buildings } = await supabase
+    .from("buildings")
+    .select("id, full_address, zip_code")
+    .eq("metro", "los-angeles")
+    .in("zip_code", zips);
+
+  if (!buildings || buildings.length === 0) return { linked, affectedBuildingIds };
+
+  // Build address lookup map
+  const addrMap = new Map<string, string>();
+  for (const b of buildings) {
+    // Extract street part before ", Los Angeles"
+    const street = b.full_address.split(",")[0]?.trim() || "";
+    const key = `${normalizeLAAddress(street)}|${b.zip_code}`;
+    addrMap.set(key, b.id);
+  }
+
+  // Match and update
+  const updates: { id: string; building_id: string }[] = [];
+  for (const rec of unlinked) {
+    if (!rec.address || !rec.zip_code) continue;
+    const key = `${normalizeLAAddress(rec.address)}|${rec.zip_code}`;
+    const buildingId = addrMap.get(key);
+    if (buildingId) {
+      updates.push({ id: rec.id, building_id: buildingId });
+      affectedBuildingIds.add(buildingId);
+    }
+  }
+
+  // Batch update building_id
+  for (let i = 0; i < updates.length; i += BATCH_SIZE) {
+    const batch = updates.slice(i, i + BATCH_SIZE);
+    for (const u of batch) {
+      await supabase.from(table).update({ building_id: u.building_id }).eq("id", u.id);
+      linked++;
+    }
+  }
+
+  return { linked, affectedBuildingIds };
+}
+
 /**
- * Sync LAHD Code Enforcement violations.
- * LA Open Data endpoint: TBD
- * Equivalent of NYC HPD violations.
+ * Sync LADBS Code Enforcement cases (housing violations).
+ * LA Open Data endpoint: u82d-eh7z (Building and Safety Code Enforcement)
+ * Equivalent of NYC HPD violations — stores in hpd_violations with metro='los-angeles'
  */
 async function syncLAHDViolations(
   supabase: ReturnType<typeof getSupabaseAdmin>
 ): Promise<SyncResult> {
-  // TODO: Implement when LAHD endpoint is configured
-  // Pattern: fetch from data.lacity.org, map to hpd_violations schema with metro='los-angeles'
-  return { totalAdded: 0, totalLinked: 0, errors: ["LAHD sync not yet configured"], affectedBuildingIds: new Set() };
+  const lastSync = await getLastSyncDate(supabase, "lahd_violations");
+  const logId = await createSyncLog(supabase, "lahd_violations");
+  const syncStartTime = new Date().toISOString();
+
+  let totalAdded = 0;
+  let totalLinked = 0;
+  const errors: string[] = [];
+  const affectedBuildingIds = new Set<string>();
+
+  try {
+    let offset = 0;
+    let hasMore = true;
+    let pagesFetched = 0;
+
+    while (hasMore) {
+      const url = buildLASodaUrl(
+        "u82d-eh7z",
+        `date_case_generated > '${lastSync}'`,
+        PAGE_SIZE,
+        offset,
+        "date_case_generated ASC"
+      );
+
+      const res = await fetch(url);
+      if (!res.ok) {
+        errors.push(`LAHD API error (offset ${offset}): ${res.status}`);
+        break;
+      }
+
+      const records = await res.json();
+      if (!records || records.length === 0) { hasMore = false; break; }
+
+      const rows = records
+        .filter((r: Record<string, unknown>) => r.case_number || r.case_id)
+        .map((r: Record<string, unknown>) => ({
+          violation_id: `LA-${r.case_number || r.case_id}`,
+          class: r.case_type ? String(r.case_type).slice(0, 1).toUpperCase() : null,
+          inspection_date: r.date_case_generated ? String(r.date_case_generated).slice(0, 10) : null,
+          nov_description: r.case_type ? String(r.case_type) : null,
+          status: r.status ? String(r.status) : null,
+          status_date: r.date_of_last_inspection ? String(r.date_of_last_inspection).slice(0, 10) : null,
+          borough: r.area_planning_commission ? String(r.area_planning_commission) : "Los Angeles",
+          house_number: null,
+          street_name: r.address_house_number && r.address_street_name
+            ? `${r.address_house_number} ${r.address_street_name} ${r.address_street_suffix || ""}`.trim()
+            : r.cse_address ? String(r.cse_address) : null,
+          address: r.cse_address ? String(r.cse_address) : null,
+          zip_code: r.address_zip ? String(r.address_zip).slice(0, 5) : null,
+          metro: "los-angeles",
+          imported_at: new Date().toISOString(),
+        }));
+
+      if (rows.length > 0) {
+        totalAdded += await batchUpsert(supabase, "hpd_violations", rows, "violation_id", errors, "LAHD");
+      }
+
+      pagesFetched++;
+      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) { hasMore = false; } else { offset += PAGE_SIZE; }
+    }
+
+    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
+  } catch (err) {
+    errors.push(`LAHD fatal error: ${String(err)}`);
+    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
+  }
+
+  return { totalAdded, totalLinked, errors, affectedBuildingIds };
 }
 
 /**
- * Sync LA 311 (MyLA311) service requests.
- * LA Open Data endpoint: TBD
- * Equivalent of NYC 311 complaints.
+ * Sync MyLA311 service requests.
+ * LA Open Data endpoint: h73f-gn57 (2025 data)
+ * Equivalent of NYC 311 complaints — stores in complaints_311 with metro='los-angeles'
  */
 async function syncLA311Complaints(
   supabase: ReturnType<typeof getSupabaseAdmin>
 ): Promise<SyncResult> {
-  return { totalAdded: 0, totalLinked: 0, errors: ["LA 311 sync not yet configured"], affectedBuildingIds: new Set() };
+  const lastSync = await getLastSyncDate(supabase, "la_311_complaints");
+  const logId = await createSyncLog(supabase, "la_311_complaints");
+  const syncStartTime = new Date().toISOString();
+
+  let totalAdded = 0;
+  let totalLinked = 0;
+  const errors: string[] = [];
+  const affectedBuildingIds = new Set<string>();
+
+  try {
+    let offset = 0;
+    let hasMore = true;
+    let pagesFetched = 0;
+
+    while (hasMore) {
+      const url = buildLASodaUrl(
+        "h73f-gn57",
+        `createddate > '${lastSync}'`,
+        PAGE_SIZE,
+        offset,
+        "createddate ASC"
+      );
+
+      const res = await fetch(url);
+      if (!res.ok) {
+        errors.push(`LA 311 API error (offset ${offset}): ${res.status}`);
+        break;
+      }
+
+      const records = await res.json();
+      if (!records || records.length === 0) { hasMore = false; break; }
+
+      const rows = records
+        .filter((r: Record<string, unknown>) => r.srnumber)
+        .map((r: Record<string, unknown>) => ({
+          unique_key: `LA311-${r.srnumber}`,
+          complaint_type: r.requesttype ? String(r.requesttype) : null,
+          descriptor: r.requestsource ? String(r.requestsource) : null,
+          agency: "MyLA311",
+          status: r.status ? String(r.status) : null,
+          created_date: r.createddate ? String(r.createddate) : null,
+          closed_date: r.closeddate ? String(r.closeddate) : null,
+          resolution_description: r.actiontaken ? String(r.actiontaken) : null,
+          borough: r.apc ? String(r.apc) : "Los Angeles",
+          incident_address: r.address ? String(r.address) : null,
+          address: r.address ? String(r.address) : null,
+          zip_code: r.zipcode ? String(r.zipcode).slice(0, 5) : null,
+          latitude: r.latitude ? parseFloat(String(r.latitude)) : null,
+          longitude: r.longitude ? parseFloat(String(r.longitude)) : null,
+          metro: "los-angeles",
+          imported_at: new Date().toISOString(),
+        }));
+
+      if (rows.length > 0) {
+        totalAdded += await batchUpsert(supabase, "complaints_311", rows, "unique_key", errors, "LA311");
+      }
+
+      pagesFetched++;
+      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) { hasMore = false; } else { offset += PAGE_SIZE; }
+    }
+
+    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
+  } catch (err) {
+    errors.push(`LA 311 fatal error: ${String(err)}`);
+    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
+  }
+
+  return { totalAdded, totalLinked, errors, affectedBuildingIds };
 }
 
 /**
- * Sync LADBS building violations.
- * LA Open Data endpoint: TBD
- * Equivalent of NYC DOB violations.
+ * Sync LADBS building code enforcement violations.
+ * LA Open Data endpoint: u82d-eh7z (same dataset, different filter for DOB-equivalent)
+ * Stores in dob_violations with metro='los-angeles'
  */
 async function syncLADBSViolations(
   supabase: ReturnType<typeof getSupabaseAdmin>
 ): Promise<SyncResult> {
-  return { totalAdded: 0, totalLinked: 0, errors: ["LADBS sync not yet configured"], affectedBuildingIds: new Set() };
+  const lastSync = await getLastSyncDate(supabase, "ladbs_violations");
+  const logId = await createSyncLog(supabase, "ladbs_violations");
+
+  let totalAdded = 0;
+  let totalLinked = 0;
+  const errors: string[] = [];
+  const affectedBuildingIds = new Set<string>();
+
+  try {
+    let offset = 0;
+    let hasMore = true;
+    let pagesFetched = 0;
+
+    while (hasMore) {
+      // Use LADBS permits dataset filtered for violation-related cases
+      const url = buildLASodaUrl(
+        "u82d-eh7z",
+        `date_case_generated > '${lastSync}' AND case_type LIKE '%VIOL%'`,
+        PAGE_SIZE,
+        offset,
+        "date_case_generated ASC"
+      );
+
+      const res = await fetch(url);
+      if (!res.ok) {
+        errors.push(`LADBS API error (offset ${offset}): ${res.status}`);
+        break;
+      }
+
+      const records = await res.json();
+      if (!records || records.length === 0) { hasMore = false; break; }
+
+      const rows = records
+        .filter((r: Record<string, unknown>) => r.case_number || r.case_id)
+        .map((r: Record<string, unknown>) => ({
+          violation_number: `LADBS-${r.case_number || r.case_id}`,
+          violation_type: r.case_type ? String(r.case_type) : null,
+          description: r.case_type ? String(r.case_type) : "LADBS violation",
+          issue_date: r.date_case_generated ? String(r.date_case_generated).slice(0, 10) : null,
+          status: r.status ? String(r.status) : null,
+          address: r.cse_address ? String(r.cse_address) : null,
+          zip_code: r.address_zip ? String(r.address_zip).slice(0, 5) : null,
+          metro: "los-angeles",
+          imported_at: new Date().toISOString(),
+        }));
+
+      if (rows.length > 0) {
+        totalAdded += await batchUpsert(supabase, "dob_violations", rows, "violation_number", errors, "LADBS");
+      }
+
+      pagesFetched++;
+      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) { hasMore = false; } else { offset += PAGE_SIZE; }
+    }
+
+    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
+  } catch (err) {
+    errors.push(`LADBS fatal error: ${String(err)}`);
+    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
+  }
+
+  return { totalAdded, totalLinked, errors, affectedBuildingIds };
 }
 
 /**
- * Sync LAPD crime data.
- * LA Open Data endpoint: TBD (likely "2nbc-2tam" for 2020-present)
- * Equivalent of NYPD complaints.
+ * Sync LAPD crime data — SKIPPED for now.
+ * The 2020-2024 dataset is deprecated (NIBRS transition).
+ * Will implement when a reliable current data source is identified.
  */
 async function syncLAPDCrimeData(
   supabase: ReturnType<typeof getSupabaseAdmin>
 ): Promise<SyncResult> {
-  return { totalAdded: 0, totalLinked: 0, errors: ["LAPD sync not yet configured"], affectedBuildingIds: new Set() };
+  return { totalAdded: 0, totalLinked: 0, errors: ["LAPD crime sync skipped — awaiting updated NIBRS data source"], affectedBuildingIds: new Set() };
 }
 
 /**
  * Sync LADBS building permits.
- * LA Open Data endpoint: TBD
- * Equivalent of NYC DOB permits.
+ * LA Open Data endpoint: hbkd-qubn (LADBS Permits)
+ * Equivalent of NYC DOB permits — stores in dob_permits with metro='los-angeles'
  */
 async function syncLAPermits(
   supabase: ReturnType<typeof getSupabaseAdmin>
 ): Promise<SyncResult> {
-  return { totalAdded: 0, totalLinked: 0, errors: ["LA permits sync not yet configured"], affectedBuildingIds: new Set() };
+  const lastSync = await getLastSyncDate(supabase, "la_permits");
+  const logId = await createSyncLog(supabase, "la_permits");
+
+  let totalAdded = 0;
+  let totalLinked = 0;
+  const errors: string[] = [];
+  const affectedBuildingIds = new Set<string>();
+
+  try {
+    let offset = 0;
+    let hasMore = true;
+    let pagesFetched = 0;
+
+    while (hasMore) {
+      const url = buildLASodaUrl(
+        "hbkd-qubn",
+        `issue_date > '${lastSync}'`,
+        PAGE_SIZE,
+        offset,
+        "issue_date ASC"
+      );
+
+      const res = await fetch(url);
+      if (!res.ok) {
+        errors.push(`LA Permits API error (offset ${offset}): ${res.status}`);
+        break;
+      }
+
+      const records = await res.json();
+      if (!records || records.length === 0) { hasMore = false; break; }
+
+      const rows = records
+        .filter((r: Record<string, unknown>) => r.permit_nbr || r.pcis_permit)
+        .map((r: Record<string, unknown>) => ({
+          job_number: `LADBS-${r.permit_nbr || r.pcis_permit}`,
+          permit_type: r.permit_type ? String(r.permit_type) : null,
+          permit_subtype: r.permit_sub_type ? String(r.permit_sub_type) : null,
+          work_type: r.work_description ? String(r.work_description) : null,
+          filing_date: r.issue_date ? String(r.issue_date).slice(0, 10) : null,
+          issuance_date: r.issue_date ? String(r.issue_date).slice(0, 10) : null,
+          expiration_date: r.expiration_date ? String(r.expiration_date).slice(0, 10) : null,
+          status: r.status ? String(r.status) : null,
+          borough: r.council_district ? `District ${r.council_district}` : "Los Angeles",
+          address: r.address ? String(r.address) : null,
+          zip_code: r.zip_code ? String(r.zip_code).slice(0, 5) : null,
+          metro: "los-angeles",
+          imported_at: new Date().toISOString(),
+        }));
+
+      if (rows.length > 0) {
+        totalAdded += await batchUpsert(supabase, "dob_permits", rows, "job_number", errors, "LA Permits");
+      }
+
+      pagesFetched++;
+      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) { hasMore = false; } else { offset += PAGE_SIZE; }
+    }
+
+    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
+  } catch (err) {
+    errors.push(`LA Permits fatal error: ${String(err)}`);
+    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
+  }
+
+  return { totalAdded, totalLinked, errors, affectedBuildingIds };
 }
 
 // ---------------------------------------------------------------------------
