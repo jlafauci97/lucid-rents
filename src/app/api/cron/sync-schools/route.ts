@@ -10,6 +10,9 @@ const supabase = createClient(
 
 const BATCH_SIZE = 500;
 const API_PAGE_SIZE = 1000;
+const LA_API_PAGE_SIZE = 2000;
+
+// ---------- NYC types ----------
 
 interface FacilityRecord {
   uid: string;
@@ -23,6 +26,32 @@ interface FacilityRecord {
   optype?: string;
 }
 
+// ---------- LA types ----------
+
+interface CDEFeatureAttributes {
+  CDSCode: string;
+  SchoolName: string;
+  Charter: string;
+  GradeLow: string;
+  GradeHigh: string;
+  Latitude: number;
+  Longitude: number;
+  Street: string;
+  City: string;
+  Zip: string;
+}
+
+interface CDEFeature {
+  attributes: CDEFeatureAttributes;
+}
+
+interface CDEResponse {
+  features: CDEFeature[];
+  exceededTransferLimit?: boolean;
+}
+
+// ---------- shared ----------
+
 interface SchoolRow {
   type: string;
   school_id: string;
@@ -31,8 +60,17 @@ interface SchoolRow {
   longitude: number;
   address: string | null;
   grades: string | null;
+  metro: string;
   updated_at: string;
 }
+
+function titleCase(str: string): string {
+  return str
+    .toLowerCase()
+    .replace(/(?:^|\s|-)\S/g, (c) => c.toUpperCase());
+}
+
+// ---------- NYC helpers ----------
 
 function mapType(facsubgrp: string, optype?: string): string {
   switch (facsubgrp) {
@@ -73,7 +111,7 @@ function deriveGrades(factype: string): string {
   return null as unknown as string;
 }
 
-async function fetchSchools(): Promise<SchoolRow[]> {
+async function fetchNYCSchools(): Promise<SchoolRow[]> {
   const rows: SchoolRow[] = [];
   let offset = 0;
 
@@ -88,7 +126,7 @@ async function fetchSchools(): Promise<SchoolRow[]> {
     const res = await fetch(
       `https://data.cityofnewyork.us/resource/ji82-xba5.json?${params}`
     );
-    if (!res.ok) throw new Error(`Facilities API ${res.status}`);
+    if (!res.ok) throw new Error(`NYC Facilities API ${res.status}`);
 
     const data: FacilityRecord[] = await res.json();
     if (data.length === 0) break;
@@ -107,6 +145,7 @@ async function fetchSchools(): Promise<SchoolRow[]> {
         longitude: lng,
         address: r.address || null,
         grades: deriveGrades(r.factype),
+        metro: "nyc",
         updated_at: new Date().toISOString(),
       });
     }
@@ -118,36 +157,118 @@ async function fetchSchools(): Promise<SchoolRow[]> {
   return rows;
 }
 
-function titleCase(str: string): string {
-  return str
-    .toLowerCase()
-    .replace(/(?:^|\s|-)\S/g, (c) => c.toUpperCase());
+// ---------- LA helpers ----------
+
+const GRADE_LABELS: Record<string, string> = {
+  KN: "K",
+  TK: "TK",
+  PK: "PK",
+  PS: "PS",
+};
+
+function formatGradeLevel(code: string): string {
+  if (!code) return "";
+  const upper = code.trim().toUpperCase();
+  if (GRADE_LABELS[upper]) return GRADE_LABELS[upper];
+  // Numeric grades
+  const n = parseInt(upper, 10);
+  if (!isNaN(n)) return String(n);
+  return upper;
 }
+
+function deriveGradeRange(low: string, high: string): string | null {
+  if (!low && !high) return null;
+  const lo = formatGradeLevel(low);
+  const hi = formatGradeLevel(high);
+  if (lo === hi) return lo;
+  if (lo && hi) return `${lo}-${hi}`;
+  return lo || hi || null;
+}
+
+async function fetchLASchools(): Promise<SchoolRow[]> {
+  const rows: SchoolRow[] = [];
+  let offset = 0;
+  const baseUrl =
+    "https://services3.arcgis.com/fdvHcZVgB2QSRNkL/arcgis/rest/services/SchoolSites2425/FeatureServer/0/query";
+
+  while (true) {
+    const params = new URLSearchParams({
+      where: "CountyName='Los Angeles' AND Status='Active'",
+      outFields:
+        "CDSCode,SchoolName,Charter,GradeLow,GradeHigh,Latitude,Longitude,Street,City,Zip",
+      f: "json",
+      resultRecordCount: String(LA_API_PAGE_SIZE),
+      resultOffset: String(offset),
+    });
+
+    const res = await fetch(`${baseUrl}?${params}`);
+    if (!res.ok) throw new Error(`CDE ArcGIS API ${res.status}`);
+
+    const data: CDEResponse = await res.json();
+    const features = data.features || [];
+    if (features.length === 0) break;
+
+    for (const feat of features) {
+      const a = feat.attributes;
+      if (!a.Latitude || !a.Longitude || !a.CDSCode) continue;
+
+      const addressParts = [a.Street, a.City, a.Zip].filter(Boolean);
+      const address = addressParts.length > 0 ? addressParts.join(", ") : null;
+
+      rows.push({
+        type: a.Charter === "Y" ? "charter_school" : "public_school",
+        school_id: a.CDSCode,
+        name: titleCase(a.SchoolName),
+        latitude: a.Latitude,
+        longitude: a.Longitude,
+        address,
+        grades: deriveGradeRange(a.GradeLow, a.GradeHigh),
+        metro: "los-angeles",
+        updated_at: new Date().toISOString(),
+      });
+    }
+
+    offset += LA_API_PAGE_SIZE;
+    if (!data.exceededTransferLimit && features.length < LA_API_PAGE_SIZE) break;
+  }
+
+  return rows;
+}
+
+// ---------- handler ----------
 
 export async function GET() {
   try {
-    const schools = await fetchSchools();
+    const [nycSchools, laSchools] = await Promise.all([
+      fetchNYCSchools(),
+      fetchLASchools(),
+    ]);
+
+    const allSchools = [...nycSchools, ...laSchools];
 
     // Batch upsert
-    for (let i = 0; i < schools.length; i += BATCH_SIZE) {
-      const batch = schools.slice(i, i + BATCH_SIZE);
+    for (let i = 0; i < allSchools.length; i += BATCH_SIZE) {
+      const batch = allSchools.slice(i, i + BATCH_SIZE);
       const { error } = await supabase
         .from("nearby_schools")
         .upsert(batch, { onConflict: "type,school_id" });
       if (error) throw new Error(`Upsert error: ${error.message}`);
     }
 
-    // Count by type
-    const counts: Record<string, number> = {};
-    for (const s of schools) {
-      counts[s.type] = (counts[s.type] || 0) + 1;
+    // Count by metro + type
+    const counts: Record<string, Record<string, number>> = {};
+    for (const s of allSchools) {
+      if (!counts[s.metro]) counts[s.metro] = {};
+      counts[s.metro][s.type] = (counts[s.metro][s.type] || 0) + 1;
     }
 
     return NextResponse.json({
       ok: true,
       counts,
-      total: schools.length,
-      message: `Synced ${schools.length} schools & colleges`,
+      total: allSchools.length,
+      nyc: nycSchools.length,
+      la: laSchools.length,
+      message: `Synced ${allSchools.length} schools & colleges (NYC: ${nycSchools.length}, LA: ${laSchools.length})`,
     });
   } catch (err) {
     console.error("School sync error:", err);

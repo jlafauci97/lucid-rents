@@ -69,6 +69,7 @@ export async function GET(req: NextRequest) {
             image_url: extractImageUrl(item) || null,
             author: item.creator || item["dc:creator"] || null,
             published_at: publishedAt,
+            metro: source.metro || "nyc",
           };
         });
 
