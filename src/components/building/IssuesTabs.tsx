@@ -10,6 +10,8 @@ import { BedBugTimeline } from "./BedBugTimeline";
 import { EvictionTimeline } from "./EvictionTimeline";
 import { PermitTimeline } from "./PermitTimeline";
 import type { HpdViolation, Complaint311, HpdLitigation, DobViolation, BedBugReport, Eviction, DobPermit } from "@/types";
+import { type City, DEFAULT_CITY } from "@/lib/cities";
+import { VIOLATION_AGENCIES } from "@/lib/constants";
 
 type TabKey = "violations" | "complaints" | "litigations" | "dob" | "bedbugs" | "evictions" | "permits";
 
@@ -21,19 +23,23 @@ interface IssuesTabsProps {
   bedbugs: BedBugReport[];
   evictions: Eviction[];
   permits: DobPermit[];
+  city?: City;
 }
 
-const tabs: { key: TabKey; label: string; icon: typeof AlertTriangle; activeBg: string; activeText: string }[] = [
-  { key: "violations", label: "HPD Violations", icon: AlertTriangle, activeBg: "bg-red-50 ring-1 ring-[#EF4444]", activeText: "text-[#EF4444]" },
-  { key: "complaints", label: "311 Complaints", icon: MessageSquare, activeBg: "bg-amber-50 ring-1 ring-[#F59E0B]", activeText: "text-[#F59E0B]" },
-  { key: "litigations", label: "HPD Litigations", icon: Scale, activeBg: "bg-violet-50 ring-1 ring-[#8B5CF6]", activeText: "text-[#8B5CF6]" },
-  { key: "dob", label: "DOB Violations", icon: HardHat, activeBg: "bg-blue-50 ring-1 ring-[#3B82F6]", activeText: "text-[#3B82F6]" },
-  { key: "bedbugs", label: "Bedbugs", icon: Bug, activeBg: "bg-purple-50 ring-1 ring-[#9333EA]", activeText: "text-[#9333EA]" },
-  { key: "evictions", label: "Evictions", icon: DoorOpen, activeBg: "bg-pink-50 ring-1 ring-[#EC4899]", activeText: "text-[#EC4899]" },
-  { key: "permits", label: "Permits", icon: ClipboardList, activeBg: "bg-teal-50 ring-1 ring-[#0D9488]", activeText: "text-[#0D9488]" },
-];
+function getTabs(city: City) {
+  const agencies = VIOLATION_AGENCIES[city] || VIOLATION_AGENCIES.nyc;
+  return [
+    { key: "violations" as TabKey, label: `${agencies.housing} Violations`, icon: AlertTriangle, activeBg: "bg-red-50 ring-1 ring-[#EF4444]", activeText: "text-[#EF4444]" },
+    { key: "complaints" as TabKey, label: "311 Complaints", icon: MessageSquare, activeBg: "bg-amber-50 ring-1 ring-[#F59E0B]", activeText: "text-[#F59E0B]" },
+    { key: "litigations" as TabKey, label: `${agencies.housing} Litigations`, icon: Scale, activeBg: "bg-violet-50 ring-1 ring-[#8B5CF6]", activeText: "text-[#8B5CF6]" },
+    { key: "dob" as TabKey, label: `${agencies.building} Violations`, icon: HardHat, activeBg: "bg-blue-50 ring-1 ring-[#3B82F6]", activeText: "text-[#3B82F6]" },
+    { key: "bedbugs" as TabKey, label: "Bedbugs", icon: Bug, activeBg: "bg-purple-50 ring-1 ring-[#9333EA]", activeText: "text-[#9333EA]" },
+    { key: "evictions" as TabKey, label: "Evictions", icon: DoorOpen, activeBg: "bg-pink-50 ring-1 ring-[#EC4899]", activeText: "text-[#EC4899]" },
+    { key: "permits" as TabKey, label: "Permits", icon: ClipboardList, activeBg: "bg-teal-50 ring-1 ring-[#0D9488]", activeText: "text-[#0D9488]" },
+  ];
+}
 
-export function IssuesTabs({ violations, complaints, litigations, dobViolations, bedbugs, evictions, permits }: IssuesTabsProps) {
+export function IssuesTabs({ violations, complaints, litigations, dobViolations, bedbugs, evictions, permits, city = DEFAULT_CITY }: IssuesTabsProps) {
   const [activeTab, setActiveTab] = useState<TabKey>("violations");
 
   const counts: Record<TabKey, number> = {
@@ -50,7 +56,7 @@ export function IssuesTabs({ violations, complaints, litigations, dobViolations,
     <section>
       {/* Tab buttons */}
       <div className="flex flex-wrap gap-2 mb-4">
-        {tabs.map((tab) => {
+        {getTabs(city).map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.key;
           return (
@@ -71,13 +77,20 @@ export function IssuesTabs({ violations, complaints, litigations, dobViolations,
       </div>
 
       {/* Tab content */}
-      {activeTab === "violations" && <ViolationTimeline violations={violations} />}
-      {activeTab === "complaints" && <ComplaintTimeline complaints={complaints} />}
-      {activeTab === "litigations" && <LitigationTimeline litigations={litigations} />}
-      {activeTab === "dob" && <DobViolationTimeline violations={dobViolations} />}
-      {activeTab === "bedbugs" && <BedBugTimeline reports={bedbugs} />}
-      {activeTab === "evictions" && <EvictionTimeline evictions={evictions} />}
-      {activeTab === "permits" && <PermitTimeline permits={permits} />}
+      {(() => {
+        const agencies = VIOLATION_AGENCIES[city] || VIOLATION_AGENCIES.nyc;
+        return (
+          <>
+            {activeTab === "violations" && <ViolationTimeline violations={violations} agencyLabel={agencies.housing} />}
+            {activeTab === "complaints" && <ComplaintTimeline complaints={complaints} />}
+            {activeTab === "litigations" && <LitigationTimeline litigations={litigations} agencyLabel={agencies.housing} />}
+            {activeTab === "dob" && <DobViolationTimeline violations={dobViolations} agencyLabel={agencies.building} />}
+            {activeTab === "bedbugs" && <BedBugTimeline reports={bedbugs} />}
+            {activeTab === "evictions" && <EvictionTimeline evictions={evictions} />}
+            {activeTab === "permits" && <PermitTimeline permits={permits} agencyLabel={agencies.building} />}
+          </>
+        );
+      })()}
     </section>
   );
 }

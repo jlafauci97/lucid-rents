@@ -5,6 +5,7 @@ import type { HpdLitigation } from "@/types";
 
 interface LitigationTimelineProps {
   litigations: HpdLitigation[];
+  agencyLabel?: string;
 }
 
 const statusColors: Record<string, { bg: string; text: string }> = {
@@ -22,11 +23,11 @@ function getStatusStyle(status: string | null) {
   return { bg: "bg-gray-50", text: "text-gray-700" };
 }
 
-export function LitigationTimeline({ litigations }: LitigationTimelineProps) {
+export function LitigationTimeline({ litigations, agencyLabel = "HPD" }: LitigationTimelineProps) {
   if (litigations.length === 0) {
     return (
       <p className="text-sm text-[#64748b] py-4">
-        No HPD litigations on record.
+        No {agencyLabel} litigations on record.
       </p>
     );
   }

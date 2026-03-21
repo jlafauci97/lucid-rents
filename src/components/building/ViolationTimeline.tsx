@@ -5,6 +5,7 @@ import type { HpdViolation } from "@/types";
 
 interface ViolationTimelineProps {
   violations: HpdViolation[];
+  agencyLabel?: string;
 }
 
 const classColors: Record<string, { bg: string; text: string; label: string }> = {
@@ -14,11 +15,11 @@ const classColors: Record<string, { bg: string; text: string; label: string }> =
   I: { bg: "bg-blue-50", text: "text-blue-700", label: "Info" },
 };
 
-export function ViolationTimeline({ violations }: ViolationTimelineProps) {
+export function ViolationTimeline({ violations, agencyLabel = "HPD" }: ViolationTimelineProps) {
   if (violations.length === 0) {
     return (
       <p className="text-sm text-[#64748b] py-4">
-        No HPD violations on record.
+        No {agencyLabel} violations on record.
       </p>
     );
   }
