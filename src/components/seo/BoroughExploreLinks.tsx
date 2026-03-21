@@ -12,27 +12,31 @@ interface BoroughExploreLinksProps {
 }
 
 export async function BoroughExploreLinks({ borough, boroughSlug, city = "nyc" }: BoroughExploreLinksProps) {
-  const supabase = await createClient();
+  let zipRes, landlordRes;
+  try {
+    const supabase = await createClient();
 
-  // Fetch zip codes and top landlords for this borough in parallel
-  const [zipRes, landlordRes] = await Promise.all([
-    supabase
-      .from("buildings")
-      .select("zip_code")
-      .eq("metro", city)
-      .eq("borough", borough)
-      .not("zip_code", "is", null)
-      .limit(1000),
-    supabase
-      .from("buildings")
-      .select("owner_name, violation_count")
-      .eq("metro", city)
-      .eq("borough", borough)
-      .not("owner_name", "is", null)
-      .gt("violation_count", 0)
-      .order("violation_count", { ascending: false })
-      .limit(500),
-  ]);
+    // Fetch zip codes and top landlords for this borough in parallel
+    [zipRes, landlordRes] = await Promise.all([
+      supabase
+        .from("buildings")
+        .select("zip_code")
+        .eq("borough", borough)
+        .not("zip_code", "is", null)
+        .limit(1000),
+      supabase
+        .from("buildings")
+        .select("owner_name, violation_count")
+        .eq("borough", borough)
+        .not("owner_name", "is", null)
+        .gt("violation_count", 0)
+        .order("violation_count", { ascending: false })
+        .limit(500),
+    ]);
+  } catch (err) {
+    console.error("BoroughExploreLinks query error:", err);
+    return null;
+  }
 
   // Build unique neighborhoods
   const zipCounts = new Map<string, number>();

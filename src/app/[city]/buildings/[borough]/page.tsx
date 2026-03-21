@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { BuildingCard } from "@/components/search/BuildingCard";
@@ -173,7 +174,9 @@ export default async function BoroughPage({ params, searchParams }: BoroughPageP
         </div>
       )}
       {/* Cross-links: neighborhoods, landlords, explore */}
-      <BoroughExploreLinks borough={borough} boroughSlug={boroughSlug} />
+      <Suspense fallback={null}>
+        <BoroughExploreLinks borough={borough} boroughSlug={boroughSlug} />
+      </Suspense>
     </div>
     </AdSidebar>
   );
