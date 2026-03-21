@@ -23,7 +23,7 @@ import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import type { Metadata } from "next";
 
-export const revalidate = 86400;
+export const revalidate = 0; // force-dynamic to prevent caching 404s from query timeouts
 
 interface LandlordPageProps {
   params: Promise<{ name: string }>;
