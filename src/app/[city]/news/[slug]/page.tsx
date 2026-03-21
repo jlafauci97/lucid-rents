@@ -77,11 +77,7 @@ export async function generateMetadata({
   };
 }
 
-export function generateStaticParams() {
-  return Object.keys(NEWS_CATEGORIES).map((category) => ({
-    slug: category,
-  }));
-}
+export const dynamicParams = true;
 
 export default async function NewsSlugPage({
   params,
