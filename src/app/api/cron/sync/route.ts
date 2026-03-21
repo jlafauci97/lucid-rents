@@ -2268,6 +2268,142 @@ const LINK_TABLES: Record<string, { table: string; label: string }> = {
   permits: { table: "dob_permits", label: "Permits" },
 };
 
+// ---------------------------------------------------------------------------
+// PLUTO enrichment — fills in year_built, owner_name, coordinates, etc.
+// for NYC shell buildings missing key data fields.
+// ---------------------------------------------------------------------------
+const PLUTO_ENDPOINT = "https://data.cityofnewyork.us/resource/64uk-42ks.json";
+const PLUTO_FIELDS = "bbl,address,zipcode,yearbuilt,numfloors,unitsres,unitstotal,landuse,bldgclass,ownername,latitude,longitude";
+
+async function enrichBuildingsWithPluto(
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+  startTime: number,
+  maxTimeMs: number,
+): Promise<{ enriched: number; errors: string[] }> {
+  const errors: string[] = [];
+  let enriched = 0;
+  const PLUTO_BATCH = 100;
+
+  // Find NYC buildings with a BBL but missing any key PLUTO field.
+  // Use OR filter: missing year_built, latitude, or owner_name.
+  let lastId: string | null = null;
+  const DB_BATCH = 500;
+  const MAX_ENRICH = 200; // Cap per sync run to stay within time budget
+
+  while (enriched < MAX_ENRICH) {
+    if (Date.now() - startTime > maxTimeMs) {
+      errors.push(`PLUTO enrichment stopped at ${enriched} (time budget)`);
+      break;
+    }
+
+    let query = supabase
+      .from("buildings")
+      .select("id,bbl,borough,year_built,total_units,num_floors,latitude,longitude,violation_count,complaint_count,overall_score,owner_name,building_class,land_use,residential_units,commercial_units")
+      .not("bbl", "is", null)
+      .or("year_built.is.null,latitude.is.null,owner_name.is.null")
+      .order("id", { ascending: true })
+      .limit(DB_BATCH);
+
+    if (lastId) {
+      query = query.gt("id", lastId);
+    }
+
+    const { data: buildings, error: queryErr } = await query;
+    if (queryErr) {
+      errors.push(`PLUTO query error: ${queryErr.message}`);
+      break;
+    }
+    if (!buildings || buildings.length === 0) break;
+
+    lastId = buildings[buildings.length - 1].id;
+
+    // Batch BBL lookups to PLUTO API
+    for (let i = 0; i < buildings.length; i += PLUTO_BATCH) {
+      if (Date.now() - startTime > maxTimeMs) break;
+
+      const chunk = buildings.slice(i, i + PLUTO_BATCH);
+      const bbls = chunk.map((b) => b.bbl).filter(Boolean) as string[];
+      if (bbls.length === 0) continue;
+
+      // Fetch from PLUTO API
+      const bblList = bbls.map((b) => `'${b}'`).join(",");
+      const params = new URLSearchParams({
+        $select: PLUTO_FIELDS,
+        $where: `bbl in(${bblList})`,
+        $limit: String(bbls.length),
+      });
+
+      let plutoData: Record<string, string>[] = [];
+      try {
+        const resp = await fetch(`${PLUTO_ENDPOINT}?${params.toString()}`);
+        if (resp.ok) {
+          plutoData = await resp.json();
+        } else {
+          errors.push(`PLUTO API ${resp.status}: ${await resp.text().catch(() => "")}`);
+          continue;
+        }
+      } catch (err) {
+        errors.push(`PLUTO fetch error: ${String(err)}`);
+        continue;
+      }
+
+      // Map PLUTO data by BBL
+      const plutoMap: Record<string, Record<string, string>> = {};
+      for (const p of plutoData) {
+        if (p.bbl) {
+          const cleanBbl = p.bbl.split(".")[0];
+          plutoMap[cleanBbl] = p;
+        }
+      }
+
+      // Apply updates
+      for (const building of chunk) {
+        const pluto = plutoMap[building.bbl];
+        if (!pluto) continue;
+
+        const updates: Record<string, unknown> = {};
+
+        if (pluto.yearbuilt && parseInt(pluto.yearbuilt) > 0 && !building.year_built)
+          updates.year_built = parseInt(pluto.yearbuilt);
+        if (pluto.numfloors && parseFloat(pluto.numfloors) > 0 && !building.num_floors)
+          updates.num_floors = Math.round(parseFloat(pluto.numfloors));
+        if (pluto.unitstotal && parseInt(pluto.unitstotal) > 0 && !building.total_units)
+          updates.total_units = parseInt(pluto.unitstotal);
+        if (pluto.unitsres && parseInt(pluto.unitsres) > 0 && !building.residential_units)
+          updates.residential_units = parseInt(pluto.unitsres);
+        if (pluto.landuse && !building.land_use)
+          updates.land_use = pluto.landuse;
+        if (pluto.bldgclass && !building.building_class)
+          updates.building_class = pluto.bldgclass;
+        if (pluto.ownername && !building.owner_name)
+          updates.owner_name = pluto.ownername;
+        if (pluto.latitude && pluto.longitude && !building.latitude) {
+          updates.latitude = parseFloat(pluto.latitude);
+          updates.longitude = parseFloat(pluto.longitude);
+        }
+        if (!building.overall_score) {
+          const total = (building.violation_count || 0) + (building.complaint_count || 0);
+          updates.overall_score = total === 0 ? 10 : Math.round(Math.max(0, 10 - Math.log10(total + 1) * 3) * 10) / 10;
+        }
+
+        if (Object.keys(updates).length === 0) continue;
+
+        const { error: updateErr } = await supabase.from("buildings").update(updates).eq("id", building.id);
+        if (updateErr) {
+          errors.push(`PLUTO update ${building.bbl}: ${updateErr.message}`);
+        } else {
+          enriched++;
+        }
+      }
+
+      // Small delay between PLUTO API batches
+      await new Promise((r) => setTimeout(r, 300));
+    }
+  }
+
+  return { enriched, errors };
+}
+
 /**
  * Link-only mode: runs linkByBbl for all (or specific) tables without fetching
  * new data. Also handles 311 address-based linking with a generous time budget.
@@ -2407,6 +2543,17 @@ async function runLinkOnly(
     }
   }
 
+  // Enrich shell buildings with PLUTO data (owner, coordinates, units, etc.)
+  let plutoEnriched = 0;
+  const elapsedBeforePluto = (Date.now() - startTime) / 1000;
+  if (elapsedBeforePluto < 200) {
+    const plutoResult = await enrichBuildingsWithPluto(supabase, startTime, 280_000);
+    plutoEnriched = plutoResult.enriched;
+    if (plutoResult.errors.length > 0) {
+      errors.push(...plutoResult.errors);
+    }
+  }
+
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 
   return NextResponse.json({
@@ -2416,6 +2563,7 @@ async function runLinkOnly(
     duration_seconds: parseFloat(elapsed),
     buildings_updated: allAffectedIds.size,
     slugs_backfilled: slugsBackfilled,
+    pluto_enriched: plutoEnriched,
     building_count_errors: countErrors,
     link_results: linkResults,
     errors,
