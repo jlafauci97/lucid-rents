@@ -229,10 +229,6 @@ export function RentHistory({ history }: RentHistoryProps) {
             <UnitRow key={group.key} group={group} />
           ))}
         </div>
-        <p className="text-[10px] text-[#94a3b8] mt-3">
-          Based on listing data from StreetEasy, Rent.com, Zillow &
-          Apartments.com
-        </p>
       </CardContent>
     </Card>
   );
