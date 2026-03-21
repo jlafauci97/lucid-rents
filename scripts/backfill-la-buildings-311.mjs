@@ -128,7 +128,13 @@ async function main() {
 
   while (totalFetched < LIMIT) {
     const fetchSize = Math.min(pageSize, LIMIT - totalFetched);
-    const url = `https://data.lacity.org/resource/${DATASET}.json?$limit=${fetchSize}&$offset=${offset}&$order=srnumber&$select=address,zipcode,latitude,longitude`;
+    // 2026 dataset (2cy6-i7zn) uses different field names than 2025 (h73f-gn57)
+    const is2026 = DATASET === "2cy6-i7zn";
+    const selectFields = is2026
+      ? "casenumber,locator_gis_returned_address,zipcode__c,geolocation__latitude__s,geolocation__longitude__s"
+      : "srnumber,address,zipcode,latitude,longitude";
+    const orderField = is2026 ? "casenumber" : "srnumber";
+    const url = `https://data.lacity.org/resource/${DATASET}.json?$limit=${fetchSize}&$offset=${offset}&$order=${orderField}&$select=${selectFields}`;
 
     console.log(`Fetching 311 records ${offset}–${offset + fetchSize}...`);
     const res = await fetch(url);
@@ -141,10 +147,17 @@ async function main() {
     if (!records || records.length === 0) break;
 
     for (const r of records) {
-      const address = (r.address || "").trim();
+      // Handle both 2025 and 2026 field names
+      let rawAddress = is2026
+        ? (r.locator_gis_returned_address || "")
+        : (r.address || "");
+      // 2026 addresses include city/state: "1335 N NORMANDIE AVE, LOS ANGELES, CA, 90027"
+      // Extract just the street part
+      const address = rawAddress.split(",")[0]?.trim() || "";
       if (!address || address.length < 5) continue;
 
-      const zip = (r.zipcode || "").trim().slice(0, 5);
+      const rawZip = is2026 ? (r.zipcode__c || "") : (r.zipcode || "");
+      const zip = rawZip.trim().slice(0, 5);
       if (!zip || zip.length !== 5 || !zip.startsWith("9")) continue;
 
       const key = `${address.toUpperCase()}|${zip}`;
@@ -167,8 +180,8 @@ async function main() {
         state: "CA",
         metro: "los-angeles",
         slug,
-        latitude: r.latitude ? parseFloat(r.latitude) : null,
-        longitude: r.longitude ? parseFloat(r.longitude) : null,
+        latitude: (r.latitude || r.geolocation__latitude__s) ? parseFloat(r.latitude || r.geolocation__latitude__s) : null,
+        longitude: (r.longitude || r.geolocation__longitude__s) ? parseFloat(r.longitude || r.geolocation__longitude__s) : null,
         violation_count: 0,
         complaint_count: 0,
         review_count: 0,
