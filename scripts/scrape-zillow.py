@@ -41,16 +41,10 @@ if env_path.exists():
 
 SUPABASE_URL = (os.environ.get("NEXT_PUBLIC_SUPABASE_URL") or env.get("NEXT_PUBLIC_SUPABASE_URL", "")).strip().replace("\\n", "")
 SERVICE_KEY = (os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or env.get("SUPABASE_SERVICE_ROLE_KEY", "")).strip().replace("\\n", "")
-PROXY_URL = (os.environ.get("PROXY_URL") or env.get("PROXY_URL", "")).strip().replace("\\n", "")
 
 if not SUPABASE_URL or not SERVICE_KEY:
     print("ERROR: Missing SUPABASE_URL or SERVICE_KEY in .env.local or environment")
     sys.exit(1)
-
-if PROXY_URL:
-    print(f"Using proxy: {PROXY_URL.split('@')[-1] if '@' in PROXY_URL else 'configured'}")
-else:
-    print("WARNING: No PROXY_URL set — Zillow will likely block most requests")
 
 # Late imports so env check fails fast
 from scrapling import StealthyFetcher
@@ -322,7 +316,8 @@ def fetch_page(url: str) -> dict | None:
     """Fetch a Zillow page and extract __NEXT_DATA__ JSON."""
     for attempt in range(MAX_RETRIES):
         try:
-            fetch_kwargs = dict(
+            page = StealthyFetcher.fetch(
+                url,
                 headless=True,
                 real_chrome=True,
                 network_idle=True,
@@ -333,9 +328,6 @@ def fetch_page(url: str) -> dict | None:
                 disable_resources=True,
                 google_search=True,
             )
-            if PROXY_URL:
-                fetch_kwargs["proxy"] = PROXY_URL
-            page = StealthyFetcher.fetch(url, **fetch_kwargs)
 
             if page.status != 200:
                 print(f"    Attempt {attempt + 1}: HTTP {page.status}")
