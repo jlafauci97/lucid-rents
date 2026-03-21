@@ -65,25 +65,33 @@ export default async function BoroughPage({ params, searchParams }: BoroughPageP
   const sortColumn = sort === "score" ? "overall_score" : "violation_count";
   const ascending = sort === "score";
 
-  const supabase = await createClient();
+  let total = 0;
+  let buildingList: Building[] = [];
 
-  // Get total count
-  const { count: totalCount } = await supabase
-    .from("buildings")
-    .select("id", { count: "exact", head: true })
-    .eq("borough", borough);
+  try {
+    const supabase = await createClient();
 
-  // Get paginated buildings
-  const { data: buildings } = await supabase
-    .from("buildings")
-    .select("*")
-    .eq("borough", borough)
-    .order(sortColumn, { ascending, nullsFirst: false })
-    .range(offset, offset + PAGE_SIZE - 1);
+    // Get total count and paginated buildings in parallel
+    const [countRes, buildingsRes] = await Promise.all([
+      supabase
+        .from("buildings")
+        .select("id", { count: "exact", head: true })
+        .eq("borough", borough),
+      supabase
+        .from("buildings")
+        .select("*")
+        .eq("borough", borough)
+        .order(sortColumn, { ascending, nullsFirst: false })
+        .range(offset, offset + PAGE_SIZE - 1),
+    ]);
 
-  const total = totalCount || 0;
+    total = countRes.count || 0;
+    buildingList = (buildingsRes.data || []) as Building[];
+  } catch (err) {
+    console.error("BoroughPage query error:", err);
+  }
+
   const totalPages = Math.ceil(total / PAGE_SIZE);
-  const buildingList = (buildings || []) as Building[];
 
   const jsonLd = {
     "@context": "https://schema.org",
