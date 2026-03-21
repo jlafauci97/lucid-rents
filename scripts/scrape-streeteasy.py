@@ -602,45 +602,49 @@ def match_building(listing: dict) -> str | None:
     street = addr.split(",")[0].strip() if "," in addr else addr
     normalized = normalize_address(street)
 
-    if zip_code:
-        # Try exact match on full_address containing the street + zip
-        result = supabase.table("buildings") \
-            .select("id") \
-            .eq("zip_code", zip_code) \
-            .ilike("full_address", f"%{normalized}%") \
-            .limit(1) \
-            .execute()
-
-        if result.data and len(result.data) > 0:
-            return result.data[0]["id"]
-
-    # Try matching with just house number + street name
-    parts = normalized.split()
-    if len(parts) >= 2:
-        house_num = parts[0]
+    try:
         if zip_code:
+            # Try exact match on full_address containing the street + zip
             result = supabase.table("buildings") \
                 .select("id") \
                 .eq("zip_code", zip_code) \
-                .eq("house_number", house_num) \
+                .ilike("full_address", f"%{normalized}%") \
                 .limit(1) \
                 .execute()
 
             if result.data and len(result.data) > 0:
                 return result.data[0]["id"]
 
-    # Try without zip code: match on full_address + borough
-    borough = listing.get("borough", "")
-    if borough:
-        result = supabase.table("buildings") \
-            .select("id") \
-            .eq("borough", borough) \
-            .ilike("full_address", f"%{normalized}%") \
-            .limit(1) \
-            .execute()
+        # Try matching with just house number + street name
+        parts = normalized.split()
+        if len(parts) >= 2:
+            house_num = parts[0]
+            if zip_code:
+                result = supabase.table("buildings") \
+                    .select("id") \
+                    .eq("zip_code", zip_code) \
+                    .eq("house_number", house_num) \
+                    .limit(1) \
+                    .execute()
 
-        if result.data and len(result.data) > 0:
-            return result.data[0]["id"]
+                if result.data and len(result.data) > 0:
+                    return result.data[0]["id"]
+
+        # Try without zip code: match on full_address + borough
+        borough = listing.get("borough", "")
+        if borough:
+            result = supabase.table("buildings") \
+                .select("id") \
+                .eq("borough", borough) \
+                .ilike("full_address", f"%{normalized}%") \
+                .limit(1) \
+                .execute()
+
+            if result.data and len(result.data) > 0:
+                return result.data[0]["id"]
+
+    except Exception as e:
+        print(f"    DB match error (will create new): {e}")
 
     return None
 
@@ -807,8 +811,8 @@ def upsert_listing(building_id: str, listing: dict) -> bool:
         "price_text": listing.get("price_text"),
         "bed_min": listing.get("bed_min"),
         "bed_max": listing.get("bed_max"),
-        "bath_min": listing.get("bath_min"),
-        "bath_max": listing.get("bath_max"),
+        "bath_min": int(listing["bath_min"]) if listing.get("bath_min") is not None else None,
+        "bath_max": int(listing["bath_max"]) if listing.get("bath_max") is not None else None,
         "sqft_min": listing.get("sqft_min"),
         "sqft_max": listing.get("sqft_max"),
         "bed_text": listing.get("bed_text"),
