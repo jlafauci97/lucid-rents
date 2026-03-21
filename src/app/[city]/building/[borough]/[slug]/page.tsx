@@ -20,8 +20,6 @@ import { RentStabilizationCard } from "@/components/building/RentStabilizationCa
 import { RentRangeCard } from "@/components/building/RentRangeCard";
 import { BuildingAmenities } from "@/components/building/BuildingAmenities";
 import { MarketListings } from "@/components/building/MarketListings";
-import { RentHistory } from "@/components/building/RentHistory";
-import type { RentHistoryEntry } from "@/components/building/RentHistory";
 import { EnergyScoreCard } from "@/components/building/EnergyScoreCard";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -30,7 +28,7 @@ import { CITY_META } from "@/lib/cities";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { PenSquare } from "lucide-react";
-import type { Building, HpdViolation, Complaint311, HpdLitigation, DobViolation, BedBugReport, Eviction, DobPermit, EnergyBenchmark, ReviewWithDetails, UnitListing } from "@/types";
+import type { Building, HpdViolation, Complaint311, HpdLitigation, DobViolation, BedBugReport, Eviction, DobPermit, EnergyBenchmark, ReviewWithDetails } from "@/types";
 import type { Metadata } from "next";
 
 export const revalidate = 86400; // 24h ISR
@@ -106,7 +104,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
   const buildingId = building.id;
 
   // Fetch violations, complaints, litigations, DOB violations, bedbugs, evictions, reviews, and units in parallel
-  const [violationsRes, complaintsRes, litigationsRes, dobViolationsRes, bedbugsRes, evictionsRes, permitsRes, energyRes, reviewsRes, unitsRes, violationSummaryRes, rentsRes, amenitiesRes, listingsRes, unitListingsRes] = await Promise.all([
+  const [violationsRes, complaintsRes, litigationsRes, dobViolationsRes, bedbugsRes, evictionsRes, permitsRes, energyRes, reviewsRes, unitsRes, violationSummaryRes, rentsRes, amenitiesRes, listingsRes, rentHistoryRes] = await Promise.all([
     supabase
       .from("hpd_violations")
       .select("*")
@@ -187,10 +185,11 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
       .select("*")
       .eq("building_id", buildingId),
     supabase
-      .from("unit_listings")
-      .select("*")
+      .from("unit_rent_history")
+      .select("id, unit_number, bedrooms, bathrooms, rent, sqft, source, observed_at")
       .eq("building_id", buildingId)
-      .eq("available", true),
+      .order("observed_at", { ascending: false })
+      .limit(100),
   ]);
 
   const violations = (violationsRes.data || []) as HpdViolation[];
@@ -207,7 +206,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
   const rents = rentsRes.data || [];
   const amenities = amenitiesRes.data || [];
   const marketListings = listingsRes.data || [];
-  const unitListings = (unitListingsRes.data || []) as UnitListing[];
+  const rentHistory = rentHistoryRes.data || [];
 
   // Check if user is monitoring this building
   let isMonitored = false;
@@ -288,7 +287,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
 
             {/* Rent History */}
             <div id="rent">
-              <MarketListings listings={marketListings} amenities={amenities} units={units} unitListings={unitListings} buildingUrl={buildingUrl(building)} />
+              <MarketListings listings={marketListings} amenities={amenities} rentHistory={rentHistory} buildingUrl={buildingUrl(building)} />
             </div>
 
             {/* Building Amenities */}

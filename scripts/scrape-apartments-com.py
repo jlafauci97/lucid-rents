@@ -55,8 +55,8 @@ BOROUGH_URLS = {
     "Staten Island": "https://www.apartments.com/staten-island-ny/",
 }
 
-MAX_RETRIES = 3
-RETRY_DELAY = 5  # seconds between retries
+MAX_RETRIES = 5
+RETRY_DELAY = 3  # seconds between retries
 PAGE_DELAY = 4  # seconds between page fetches
 LISTINGS_PER_PAGE = 40
 MAX_RESULTS = 700  # apartments.com caps at ~700 results
@@ -231,7 +231,7 @@ def fetch_page(url: str):
                 headless=True,
                 real_chrome=True,
                 network_idle=True,
-                timeout=30000,
+                timeout=45000,
                 wait=5000,
             )
 
@@ -460,30 +460,34 @@ def match_building(listing: dict) -> str | None:
     street = addr.split(",")[0].strip() if "," in addr else addr
     normalized = normalize_address(street)
 
-    # Try exact match on full_address containing the street + zip
-    result = supabase.table("buildings") \
-        .select("id") \
-        .eq("zip_code", zip_code) \
-        .ilike("full_address", f"%{normalized}%") \
-        .limit(1) \
-        .execute()
-
-    if result.data and len(result.data) > 0:
-        return result.data[0]["id"]
-
-    # Try matching with just house number + zip
-    parts = normalized.split()
-    if len(parts) >= 2:
-        house_num = parts[0]
+    try:
+        # Try exact match on full_address containing the street + zip
         result = supabase.table("buildings") \
             .select("id") \
             .eq("zip_code", zip_code) \
-            .eq("house_number", house_num) \
+            .ilike("full_address", f"%{normalized}%") \
             .limit(1) \
             .execute()
 
         if result.data and len(result.data) > 0:
             return result.data[0]["id"]
+
+        # Try matching with just house number + zip
+        parts = normalized.split()
+        if len(parts) >= 2:
+            house_num = parts[0]
+            result = supabase.table("buildings") \
+                .select("id") \
+                .eq("zip_code", zip_code) \
+                .eq("house_number", house_num) \
+                .limit(1) \
+                .execute()
+
+            if result.data and len(result.data) > 0:
+                return result.data[0]["id"]
+
+    except Exception as e:
+        print(f"    DB match error (will create new): {e}")
 
     return None
 

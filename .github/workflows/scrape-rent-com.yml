@@ -11,7 +11,7 @@ on:
         required: false
         default: "3"
       source:
-        description: "Source to scrape (all, rent_com, zillow)"
+        description: "Source to scrape (all, rent_com, zillow, streeteasy)"
         required: false
         default: "all"
 
@@ -59,4 +59,13 @@ jobs:
           PAGES="${{ github.event.inputs.pages || '3' }}"
           python scripts/scrape-zillow.py --pages=$PAGES --borough="${{ matrix.borough }}"
 
-      # Apartments.com and StreetEasy disabled until historical data scrape is complete
+      - name: Scrape StreetEasy
+        if: ${{ github.event.inputs.source == 'all' || github.event.inputs.source == 'streeteasy' || github.event_name == 'schedule' }}
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          PAGES="${{ github.event.inputs.pages || '3' }}"
+          python scripts/scrape-streeteasy.py --pages=$PAGES --borough="${{ matrix.borough }}"
+
+      # Apartments.com disabled until historical data scrape is complete
