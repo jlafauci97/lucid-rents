@@ -221,30 +221,45 @@ async function generateStaticSitemap(): Promise<SitemapEntry[]> {
     }
   }
 
-  // Top landlords
-  const landlordData = await supabaseFetch<
-    { owner_name: string; updated_at: string | null }[]
-  >(
-    "buildings?select=owner_name,updated_at&owner_name=not.is.null&order=owner_name.asc&limit=5000"
-  );
+  // All landlords — paginate to get every unique owner_name
+  const landlordLastMod = new Map<string, Date>();
+  let lastOwner = "";
+  let hasMore = true;
 
-  if (landlordData) {
-    const landlordLastMod = new Map<string, Date>();
-    for (const b of landlordData) {
+  while (hasMore) {
+    const filter = lastOwner
+      ? `&owner_name=gt.${encodeURIComponent(lastOwner)}`
+      : "";
+    const batch = await supabaseFetch<
+      { owner_name: string; updated_at: string | null }[]
+    >(
+      `buildings?select=owner_name,updated_at&owner_name=not.is.null&order=owner_name.asc${filter}&limit=10000`
+    );
+
+    if (!batch || batch.length === 0) {
+      hasMore = false;
+      break;
+    }
+
+    for (const b of batch) {
       const d = b.updated_at ? new Date(b.updated_at) : now;
       const existing = landlordLastMod.get(b.owner_name);
       if (!existing || d > existing)
         landlordLastMod.set(b.owner_name, d);
     }
 
-    for (const [name, lastMod] of landlordLastMod) {
-      entries.push({
-        url: `${BASE_URL}${cityPath(`/landlord/${landlordSlug(name)}`)}`,
-        lastModified: lastMod,
-        changeFrequency: "monthly",
-        priority: 0.5,
-      });
-    }
+    lastOwner = batch[batch.length - 1].owner_name;
+    // If we got fewer than limit, we've reached the end
+    if (batch.length < 10000) hasMore = false;
+  }
+
+  for (const [name, lastMod] of landlordLastMod) {
+    entries.push({
+      url: `${BASE_URL}${cityPath(`/landlord/${landlordSlug(name)}`)}`,
+      lastModified: lastMod,
+      changeFrequency: "monthly",
+      priority: 0.5,
+    });
   }
 
   // News articles
