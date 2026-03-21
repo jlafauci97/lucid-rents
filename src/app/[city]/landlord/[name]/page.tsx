@@ -110,38 +110,10 @@ export default async function LandlordDetailPage({
   const { name } = await params;
   const supabase = await createClient();
 
-  // Try slug-based lookup first
-  const { data: allBuildings } = await supabase
-    .from("buildings")
-    .select(BUILDING_SELECT)
-    .not("owner_name", "is", null)
-    .order("violation_count", { ascending: false })
-    .limit(10000);
+  // Use findBuildings which queries by owner_name pattern match
+  const buildings = await findBuildings(supabase, name);
 
-  if (!allBuildings) notFound();
-
-  // Match by slug
-  let buildings = allBuildings.filter(
-    (b) => b.owner_name && landlordSlug(b.owner_name) === name
-  );
-
-  // Fall back to decoded name (old URL format)
-  if (buildings.length === 0) {
-    const decodedName = decodeURIComponent(name);
-    buildings = allBuildings.filter(
-      (b) => b.owner_name?.toLowerCase() === decodedName.toLowerCase()
-    );
-
-    // If found via old format, redirect to slug URL
-    if (buildings.length > 0 && buildings[0].owner_name) {
-      const slug = landlordSlug(buildings[0].owner_name);
-      if (slug !== name) {
-        permanentRedirect(`/landlord/${slug}`);
-      }
-    }
-  }
-
-  if (buildings.length === 0) notFound();
+  if (!buildings || buildings.length === 0) notFound();
 
   // Aggregate stats
   const totalBuildings = buildings.length;
