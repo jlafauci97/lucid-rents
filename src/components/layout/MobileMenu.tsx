@@ -25,7 +25,7 @@ import {
   Bell,
   LogOut,
 } from "lucide-react";
-import { type City, DEFAULT_CITY, CITY_META, VALID_CITIES } from "@/lib/cities";
+import { type City, DEFAULT_CITY } from "@/lib/cities";
 import { cityPath } from "@/lib/seo";
 
 interface MobileMenuProps {
@@ -68,24 +68,6 @@ export function MobileMenu({ isLoggedIn, city = DEFAULT_CITY }: MobileMenuProps)
       {open && (
         <div className="absolute top-16 left-0 right-0 bg-[#0F1D2E] border-t border-white/10 shadow-lg z-50">
           <div className="px-4 py-3 space-y-1">
-            {/* City switcher */}
-            <div className="flex gap-2 px-3 py-2">
-              {VALID_CITIES.map((c) => (
-                <Link
-                  key={c}
-                  href={cityPath("/", c)}
-                  onClick={() => setOpen(false)}
-                  className={`text-xs font-medium px-3 py-1.5 rounded transition-colors ${
-                    c === city
-                      ? "bg-[#3B82F6] text-white"
-                      : "text-gray-400 hover:text-white bg-white/5"
-                  }`}
-                >
-                  {CITY_META[c].name}
-                </Link>
-              ))}
-            </div>
-            <div className="border-t border-white/10 my-2" />
             {navLinks.map((link) => (
               <Link
                 key={link.path}
