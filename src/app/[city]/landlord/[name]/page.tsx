@@ -33,32 +33,37 @@ const BUILDING_SELECT =
   "id, full_address, borough, zip_code, year_built, total_units, num_floors, owner_name, slug, overall_score, violation_count, complaint_count, litigation_count, dob_violation_count, review_count";
 
 async function findBuildings(supabase: Awaited<ReturnType<typeof createClient>>, param: string) {
-  // Try slug match first (new format)
-  const { data: bySlug } = await supabase.rpc("landlord_slug", { name: "" });
-  // Actually query using SQL function matching
+  // Convert slug back to a search pattern: "brukha-assets-llc" → "brukha%assets%llc"
+  const searchPattern = param.replace(/-/g, "%");
+
+  // Query buildings whose owner_name matches the slug pattern (case-insensitive)
   const { data: buildings } = await supabase
     .from("buildings")
     .select(BUILDING_SELECT)
     .not("owner_name", "is", null)
+    .ilike("owner_name", searchPattern)
     .order("violation_count", { ascending: false })
-    .limit(10000);
+    .limit(500);
 
-  if (!buildings) return null;
+  if (!buildings || buildings.length === 0) {
+    // Fall back to decoded name match (old URL format with encoded owner name)
+    const decodedName = decodeURIComponent(param);
+    const { data: byName } = await supabase
+      .from("buildings")
+      .select(BUILDING_SELECT)
+      .ilike("owner_name", decodedName)
+      .order("violation_count", { ascending: false })
+      .limit(500);
 
-  // Filter by slug match
-  const slugMatches = buildings.filter(
+    return byName && byName.length > 0 ? byName : null;
+  }
+
+  // Verify the slug actually matches (ilike is fuzzy, slug must be exact)
+  const exactMatches = buildings.filter(
     (b) => b.owner_name && landlordSlug(b.owner_name) === param
   );
 
-  if (slugMatches.length > 0) return slugMatches;
-
-  // Fall back to decoded name match (old format)
-  const decodedName = decodeURIComponent(param);
-  const nameMatches = buildings.filter(
-    (b) => b.owner_name?.toLowerCase() === decodedName.toLowerCase()
-  );
-
-  return nameMatches.length > 0 ? nameMatches : null;
+  return exactMatches.length > 0 ? exactMatches : buildings;
 }
 
 export async function generateMetadata({
@@ -67,19 +72,18 @@ export async function generateMetadata({
   const { name } = await params;
   const supabase = await createClient();
 
-  // Quick lookup for owner name
+  // Quick lookup for owner name using pattern match
+  const searchPattern = name.replace(/-/g, "%");
   const { data: buildings } = await supabase
     .from("buildings")
     .select("owner_name")
     .not("owner_name", "is", null)
-    .limit(10000);
+    .ilike("owner_name", searchPattern)
+    .limit(1);
 
   let displayName = decodeURIComponent(name);
-  if (buildings) {
-    const match = buildings.find(
-      (b) => b.owner_name && landlordSlug(b.owner_name) === name
-    );
-    if (match) displayName = match.owner_name;
+  if (buildings?.[0]?.owner_name) {
+    displayName = buildings[0].owner_name;
   }
 
   const title = `${displayName} - Landlord Portfolio | Lucid Rents`;
