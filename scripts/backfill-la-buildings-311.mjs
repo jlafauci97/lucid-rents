@@ -1,19 +1,16 @@
 #!/usr/bin/env node
 
 /**
- * Backfill LA buildings from LADBS Code Enforcement data.
+ * Backfill additional LA buildings from MyLA311 service requests.
  *
- * Fetches unique building addresses from the LADBS Code Enforcement dataset
- * on data.lacity.org, deduplicates by address+zip, and upserts into the
- * buildings table with metro='los-angeles'.
- *
- * Data source: LADBS Code Enforcement Cases (u82d-eh7z)
- * https://data.lacity.org/resource/u82d-eh7z.json
+ * Extracts unique addresses from 311 data that don't already exist
+ * in the buildings table. This dramatically expands LA building coverage
+ * beyond just enforcement cases.
  *
  * Usage:
- *   node scripts/backfill-la-buildings.mjs                  # default 5000
- *   node scripts/backfill-la-buildings.mjs --limit=20000    # bigger batch
- *   node scripts/backfill-la-buildings.mjs --offset=5000    # resume
+ *   node scripts/backfill-la-buildings-311.mjs
+ *   node scripts/backfill-la-buildings-311.mjs --limit=50000
+ *   node scripts/backfill-la-buildings-311.mjs --dataset=b7dx-7gc3  # 2024 data
  */
 
 import fs from "fs";
@@ -30,9 +27,7 @@ for (const line of envText.split("\n")) {
   if (m) env[m[1].trim()] = m[2].trim().replace(/^"|"$/g, "").replace(/\\n/g, "");
 }
 
-const SUPABASE_URL = env.NEXT_PUBLIC_SUPABASE_URL;
-const SERVICE_KEY = env.SUPABASE_SERVICE_ROLE_KEY;
-const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
+const supabase = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
 
 const args = Object.fromEntries(
   process.argv.slice(2).filter((a) => a.startsWith("--")).map((a) => {
@@ -40,12 +35,9 @@ const args = Object.fromEntries(
     return [k, v || "true"];
   })
 );
-const LIMIT = parseInt(args.limit || "30000", 10);
-const OFFSET = parseInt(args.offset || "0", 10);
+const LIMIT = parseInt(args.limit || "500000", 10);
+const DATASET = args.dataset || "h73f-gn57"; // 2025 by default
 const BATCH_SIZE = 500;
-
-// LADBS Code Enforcement dataset
-const ENDPOINT = "https://data.lacity.org/resource/u82d-eh7z.json";
 
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
@@ -59,7 +51,6 @@ function generateSlug(fullAddress) {
     .replace(/^-|-$/g, "");
 }
 
-// Map LA neighborhoods from zip codes
 function getNeighborhood(zipCode) {
   const map = {
     "90001": "Florence", "90002": "Watts", "90003": "South LA",
@@ -85,7 +76,6 @@ function getNeighborhood(zipCode) {
     "90077": "Bel Air", "90094": "Playa Vista",
     "90272": "Pacific Palisades", "90291": "Venice",
     "90292": "Marina del Rey", "90293": "Playa del Rey",
-    "91301": "Agoura Hills", "91302": "Calabasas",
     "91303": "Canoga Park", "91304": "Canoga Park",
     "91306": "Winnetka", "91307": "West Hills",
     "91311": "Chatsworth", "91316": "Encino",
@@ -98,9 +88,8 @@ function getNeighborhood(zipCode) {
     "91364": "Woodland Hills", "91367": "Woodland Hills",
     "91401": "Van Nuys", "91402": "Panorama City",
     "91403": "Sherman Oaks", "91405": "Van Nuys",
-    "91406": "Van Nuys", "91411": "Van Nuys",
-    "91423": "Sherman Oaks", "91436": "Encino",
-    "91501": "Burbank", "91601": "North Hollywood",
+    "91406": "Van Nuys", "91423": "Sherman Oaks",
+    "91436": "Encino", "91601": "North Hollywood",
     "91602": "North Hollywood", "91604": "Studio City",
     "91605": "North Hollywood", "91606": "North Hollywood",
     "91607": "Valley Village",
@@ -108,111 +97,116 @@ function getNeighborhood(zipCode) {
   return map[zipCode] || "Los Angeles";
 }
 
-async function fetchRecords(offset, limit) {
-  const params = new URLSearchParams({
-    $limit: String(limit),
-    $offset: String(offset),
-    $order: "apno",
-    $select: "apno,stno,predir,stname,suffix,zip,apc",
-  });
-
-  const url = `${ENDPOINT}?${params}`;
-  const res = await fetch(url);
-  if (!res.ok) {
-    throw new Error(`LADBS API ${res.status}: ${await res.text()}`);
-  }
-  return res.json();
-}
-
-function buildAddress(r) {
-  const parts = [r.stno, r.predir, r.stname, r.suffix].filter(Boolean);
-  return parts.join(" ").trim();
-}
-
 async function main() {
-  console.log(`\n=== LA Building Backfill (from LADBS Code Enforcement) ===`);
-  console.log(`Limit: ${LIMIT}, Offset: ${OFFSET}\n`);
+  console.log(`\n=== LA Building Backfill from MyLA311 (dataset: ${DATASET}) ===\n`);
 
-  // Fetch all records and deduplicate by address+zip
-  const addressMap = new Map(); // key: "address|zip" -> building data
-  let offset = OFFSET;
+  // Step 1: Get existing LA building slugs to skip duplicates
+  console.log("Loading existing LA building slugs...");
+  const existingSlugs = new Set();
+  let lastId = null;
+  while (true) {
+    let q = supabase
+      .from("buildings")
+      .select("id, slug")
+      .eq("metro", "los-angeles")
+      .order("id", { ascending: true })
+      .limit(10000);
+    if (lastId) q = q.gt("id", lastId);
+    const { data } = await q;
+    if (!data || data.length === 0) break;
+    for (const b of data) existingSlugs.add(b.slug);
+    lastId = data[data.length - 1].id;
+    if (data.length < 10000) break;
+  }
+  console.log(`  Found ${existingSlugs.size} existing LA buildings\n`);
+
+  // Step 2: Fetch 311 records and extract unique addresses
+  const addressMap = new Map();
+  let offset = 0;
   const pageSize = 5000;
   let totalFetched = 0;
 
   while (totalFetched < LIMIT) {
     const fetchSize = Math.min(pageSize, LIMIT - totalFetched);
-    console.log(`Fetching records ${offset}–${offset + fetchSize}...`);
+    const url = `https://data.lacity.org/resource/${DATASET}.json?$limit=${fetchSize}&$offset=${offset}&$order=srnumber&$select=address,zipcode,latitude,longitude`;
 
-    const records = await fetchRecords(offset, fetchSize);
-    if (!records || records.length === 0) {
-      console.log("No more records.");
+    console.log(`Fetching 311 records ${offset}–${offset + fetchSize}...`);
+    const res = await fetch(url);
+    if (!res.ok) {
+      console.error(`API error: ${res.status}`);
       break;
     }
 
-    for (const r of records) {
-      const address = buildAddress(r);
-      if (!address) continue;
+    const records = await res.json();
+    if (!records || records.length === 0) break;
 
-      const zip = (r.zip || "").replace(/-.*/, "").trim().slice(0, 5);
-      if (!zip || zip.length !== 5) continue;
+    for (const r of records) {
+      const address = (r.address || "").trim();
+      if (!address || address.length < 5) continue;
+
+      const zip = (r.zipcode || "").trim().slice(0, 5);
+      if (!zip || zip.length !== 5 || !zip.startsWith("9")) continue;
 
       const key = `${address.toUpperCase()}|${zip}`;
-      if (!addressMap.has(key)) {
-        const neighborhood = getNeighborhood(zip);
-        // Extract house number and street name from the address
-        const stno = r.stno || "";
-        const streetParts = [r.predir, r.stname, r.suffix].filter(Boolean).join(" ").trim();
+      if (addressMap.has(key)) continue;
 
-        addressMap.set(key, {
-          full_address: `${address}, Los Angeles, CA ${zip}`,
-          house_number: stno || address.split(" ")[0] || "",
-          street_name: streetParts || address.replace(/^\d+\s*/, "") || "UNKNOWN",
-          borough: neighborhood,
-          zip_code: zip,
-          city: "Los Angeles",
-          state: "CA",
-          metro: "los-angeles",
-          slug: generateSlug(`${address}-los-angeles-ca-${zip}`),
-          violation_count: 0,
-          complaint_count: 0,
-          review_count: 0,
-          overall_score: null,
-        });
-      }
+      const slug = generateSlug(`${address}-los-angeles-ca-${zip}`);
+      if (existingSlugs.has(slug)) continue;
+
+      const neighborhood = getNeighborhood(zip);
+      const houseNum = address.match(/^(\d+)/)?.[1] || "";
+      const streetName = address.replace(/^\d+\s*/, "").trim() || "UNKNOWN";
+
+      addressMap.set(key, {
+        full_address: `${address}, Los Angeles, CA ${zip}`,
+        house_number: houseNum,
+        street_name: streetName,
+        borough: neighborhood,
+        zip_code: zip,
+        city: "Los Angeles",
+        state: "CA",
+        metro: "los-angeles",
+        slug,
+        latitude: r.latitude ? parseFloat(r.latitude) : null,
+        longitude: r.longitude ? parseFloat(r.longitude) : null,
+        violation_count: 0,
+        complaint_count: 0,
+        review_count: 0,
+        overall_score: null,
+      });
     }
 
     totalFetched += records.length;
     offset += records.length;
-    console.log(`  Fetched ${records.length}, unique buildings so far: ${addressMap.size}`);
+    console.log(`  New unique addresses: ${addressMap.size}`);
 
     if (records.length < fetchSize) break;
     await sleep(300);
   }
 
-  console.log(`\nDeduped to ${addressMap.size} unique buildings. Upserting...`);
+  console.log(`\n${addressMap.size} new buildings to insert. Inserting...`);
 
-  // Upsert in batches
   const buildings = Array.from(addressMap.values());
   let inserted = 0;
+  let errors = 0;
 
   for (let i = 0; i < buildings.length; i += BATCH_SIZE) {
     const batch = buildings.slice(i, i + BATCH_SIZE);
-    const { error } = await supabase
-      .from("buildings")
-      .insert(batch);
+    const { error } = await supabase.from("buildings").insert(batch);
 
     if (error) {
-      console.error(`  Batch ${Math.floor(i / BATCH_SIZE) + 1} error:`, error.message);
+      errors++;
+      if (errors <= 3) console.error(`  Batch error:`, error.message);
     } else {
       inserted += batch.length;
     }
 
-    if ((i / BATCH_SIZE) % 10 === 0) {
+    if (i % (BATCH_SIZE * 20) === 0 && i > 0) {
       console.log(`  Progress: ${inserted}/${buildings.length}`);
     }
   }
 
-  console.log(`\n✅ Total buildings upserted: ${inserted}`);
+  console.log(`\n✅ Inserted ${inserted} new LA buildings (${errors} batch errors)`);
 }
 
 main().catch((err) => {
