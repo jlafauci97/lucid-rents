@@ -152,7 +152,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
       }
     })(),
     null, // placeholder for saveStatus — extracted from authStatus below
-    safe(supabase.from("building_rents").select("bedrooms, median_rent").eq("zip_code", building.zip_code!).not("building_id", "eq", buildingId), [] as { bedrooms: number; median_rent: number }[]),
+    safe(supabase.from("building_rents").select("bedrooms, median_rent, buildings!inner(zip_code)").eq("buildings.zip_code", building.zip_code!).neq("building_id", buildingId), [] as { bedrooms: number; median_rent: number }[]),
   ]);
 
   const authStatus = monitorStatus as unknown as { monitored: boolean; saved: boolean };
