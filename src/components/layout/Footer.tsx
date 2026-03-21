@@ -1,8 +1,37 @@
+"use client";
+
 import Link from "next/link";
-import { type City, DEFAULT_CITY } from "@/lib/cities";
+import { usePathname } from "next/navigation";
+import { type City, VALID_CITIES, CITY_META, DEFAULT_CITY } from "@/lib/cities";
 import { cityPath } from "@/lib/seo";
 
-export function Footer({ city = DEFAULT_CITY }: { city?: City }) {
+function cityFromPathname(pathname: string): City {
+  for (const c of VALID_CITIES) {
+    const prefix = `/${CITY_META[c].urlPrefix}`;
+    if (pathname === prefix || pathname.startsWith(prefix + "/")) return c;
+  }
+  return DEFAULT_CITY;
+}
+
+const DATA_SOURCES: Record<City, string[]> = {
+  nyc: [
+    "NYC Open Data - HPD Violations",
+    "NYC Open Data - DOB Violations",
+    "NYC Open Data - 311 Complaints",
+    "NYC PLUTO Building Data",
+  ],
+  "los-angeles": [
+    "LA Open Data - LAHD Violations",
+    "LA Open Data - LADBS Permits",
+    "LA Open Data - MyLA311 Cases",
+    "LA Open Data - Soft Story Data",
+  ],
+};
+
+export function Footer({ city: _city = DEFAULT_CITY }: { city?: City }) {
+  const pathname = usePathname();
+  const city = cityFromPathname(pathname);
+  const meta = CITY_META[city];
   return (
     <footer className="bg-[#0F1D2E] text-gray-400 mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -12,7 +41,7 @@ export function Footer({ city = DEFAULT_CITY }: { city?: City }) {
               <span className="text-[#3B82F6]">Lucid</span> Rents
             </h3>
             <p className="text-sm">
-              Know your NYC apartment before you sign. Real data, real reviews,
+              Know your {meta.fullName} apartment before you sign. Real data, real reviews,
               real transparency.
             </p>
           </div>
@@ -33,7 +62,7 @@ export function Footer({ city = DEFAULT_CITY }: { city?: City }) {
               </li>
               <li>
                 <Link href={cityPath("/news", city)} className="hover:text-white transition-colors">
-                  NYC Housing News
+                  {meta.fullName} Housing News
                 </Link>
               </li>
               <li>
@@ -53,10 +82,9 @@ export function Footer({ city = DEFAULT_CITY }: { city?: City }) {
               Data Sources
             </h4>
             <ul className="space-y-2 text-sm">
-              <li>NYC Open Data - HPD Violations</li>
-              <li>NYC Open Data - DOB Violations</li>
-              <li>NYC Open Data - 311 Complaints</li>
-              <li>NYC PLUTO Building Data</li>
+              {(DATA_SOURCES[city] || DATA_SOURCES.nyc).map((src) => (
+                <li key={src}>{src}</li>
+              ))}
             </ul>
           </div>
           <div>
