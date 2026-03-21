@@ -6,6 +6,7 @@ import Link from "next/link";
 import type { ActivityItem } from "@/app/api/activity/route";
 import { buildingUrl, cityPath } from "@/lib/seo";
 import { useCity } from "@/lib/city-context";
+import { CITY_META } from "@/lib/cities";
 
 function timeAgo(dateString: string): string {
   const date = new Date(dateString);
@@ -173,7 +174,7 @@ export function ActivityFeed() {
           </h3>
         </div>
         <span className="text-xs text-[#64748b]">
-          Across NYC
+          Across {CITY_META[city].name}
         </span>
       </div>
 

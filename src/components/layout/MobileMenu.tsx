@@ -33,18 +33,25 @@ interface MobileMenuProps {
   city?: City;
 }
 
-const navLinks = [
+interface NavLink {
+  path: string;
+  icon: typeof Search;
+  label: string;
+  laLabel?: string;
+  cities?: City[];
+}
+
+const navLinks: NavLink[] = [
   { path: "/search", icon: Search, label: "Search" },
   { path: "/worst-rated-buildings", icon: AlertTriangle, label: "Worst Buildings" },
   { path: "/landlords", icon: Users, label: "Landlords" },
   { path: "/crime", icon: Siren, label: "Crime" },
-
   { path: "/feed", icon: Radio, label: "Feed" },
   { path: "/news", icon: Newspaper, label: "News" },
-  { path: "/rent-stabilization", icon: ShieldCheck, label: "Rent Stabilization" },
+  { path: "/rent-stabilization", icon: ShieldCheck, label: "Rent Stabilization", laLabel: "RSO Checker" },
   { path: "/compare", icon: ArrowLeftRight, label: "Compare Buildings" },
   { path: "/rent-data", icon: BarChart3, label: "Rent Data" },
-  { path: "/scaffolding", icon: Construction, label: "Scaffolding" },
+  { path: "/scaffolding", icon: Construction, label: "Scaffolding", cities: ["nyc"] },
   { path: "/permits", icon: ClipboardList, label: "Permits" },
   { path: "/energy", icon: Zap, label: "Energy Scores" },
   { path: "/transit", icon: TrainFront, label: "Near Transit" },
@@ -68,7 +75,9 @@ export function MobileMenu({ isLoggedIn, city = DEFAULT_CITY }: MobileMenuProps)
       {open && (
         <div className="absolute top-16 left-0 right-0 bg-[#0F1D2E] border-t border-white/10 shadow-lg z-50">
           <div className="px-4 py-3 space-y-1">
-            {navLinks.map((link) => (
+            {navLinks
+              .filter((link) => !link.cities || link.cities.includes(city))
+              .map((link) => (
               <Link
                 key={link.path}
                 href={cityPath(link.path, city)}
@@ -76,7 +85,7 @@ export function MobileMenu({ isLoggedIn, city = DEFAULT_CITY }: MobileMenuProps)
                 className="flex items-center gap-3 px-3 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
               >
                 <link.icon className="w-4 h-4" />
-                {link.label}
+                {city === "los-angeles" && link.laLabel ? link.laLabel : link.label}
               </Link>
             ))}
 

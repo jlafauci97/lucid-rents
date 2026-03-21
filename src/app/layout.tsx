@@ -23,21 +23,22 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://lucidrents.com"),
   title: {
-    default: "Lucid Rents - Know Your NYC Apartment Before You Sign",
+    default: "Lucid Rents - Know Your Apartment Before You Sign",
     template: "%s | Lucid Rents",
   },
   description:
-    "Discover the truth about NYC apartments. Search building violations, bedbug reports, evictions, lead paint violations, read real tenant reviews, and uncover hidden issues before signing your lease.",
+    "Discover the truth about apartments in NYC and Los Angeles. Search building violations, bedbug reports, evictions, tenant reviews, and uncover hidden issues before signing your lease.",
   keywords: [
     "NYC apartments",
+    "Los Angeles apartments",
     "apartment reviews",
     "tenant reviews",
     "building violations",
     "NYC rentals",
+    "LA rentals",
     "apartment search",
-    "bedbug reports NYC",
-    "NYC evictions",
-    "lead paint violations NYC",
+    "bedbug reports",
+    "evictions",
   ],
   openGraph: {
     type: "website",
@@ -47,7 +48,7 @@ export const metadata: Metadata = {
         url: "/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "Lucid Rents - Know Your NYC Apartment Before You Sign",
+        alt: "Lucid Rents - Know Your Apartment Before You Sign",
       },
     ],
   },
