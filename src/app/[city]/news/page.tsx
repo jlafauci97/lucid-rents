@@ -99,7 +99,7 @@ export default async function NewsPage({
           {categories.map(([slug, meta]) => (
             <Link
               key={slug}
-              href={`/news/${slug}`}
+              href={cityPath(`/news/${slug}`)}
               className="px-3 py-1.5 text-sm font-medium rounded-full bg-[#f1f5f9] text-[#475569] hover:bg-[#e2e8f0] transition-colors"
             >
               {meta.label}
@@ -131,7 +131,7 @@ export default async function NewsPage({
                 {categories.map(([slug, meta]) => (
                   <Link
                     key={slug}
-                    href={`/news/${slug}`}
+                    href={cityPath(`/news/${slug}`)}
                     className="flex items-start gap-3 px-4 py-3 hover:bg-[#f8fafc] transition-colors"
                   >
                     <div

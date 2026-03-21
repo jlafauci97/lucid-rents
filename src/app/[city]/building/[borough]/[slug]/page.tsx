@@ -20,8 +20,6 @@ import { RentStabilizationCard } from "@/components/building/RentStabilizationCa
 import { RentRangeCard } from "@/components/building/RentRangeCard";
 import { BuildingAmenities } from "@/components/building/BuildingAmenities";
 import { MarketListings } from "@/components/building/MarketListings";
-import { RentHistory } from "@/components/building/RentHistory";
-import type { RentHistoryEntry } from "@/components/building/RentHistory";
 import { EnergyScoreCard } from "@/components/building/EnergyScoreCard";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -30,7 +28,8 @@ import { CITY_META } from "@/lib/cities";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { PenSquare } from "lucide-react";
-import type { Building, HpdViolation, Complaint311, HpdLitigation, DobViolation, BedBugReport, Eviction, DobPermit, EnergyBenchmark, ReviewWithDetails, UnitListing } from "@/types";
+import { cache } from "react";
+import type { Building, HpdViolation, Complaint311, HpdLitigation, DobViolation, BedBugReport, Eviction, DobPermit, EnergyBenchmark, ReviewWithDetails } from "@/types";
 import type { Metadata } from "next";
 
 export const revalidate = 86400; // 24h ISR
@@ -39,7 +38,8 @@ interface BuildingSlugPageProps {
   params: Promise<{ city: string; borough: string; slug: string }>;
 }
 
-async function getBuilding(boroughSlug: string, slug: string) {
+// cache() deduplicates across generateMetadata + page render in the same request
+const getBuilding = cache(async (boroughSlug: string, slug: string) => {
   const borough = SLUG_TO_BOROUGH[boroughSlug];
   if (!borough) return null;
 
@@ -51,10 +51,9 @@ async function getBuilding(boroughSlug: string, slug: string) {
     .single();
 
   if (!data) return null;
-  // Verify borough matches
   if (data.borough !== borough) return null;
   return data as Building;
-}
+});
 
 export async function generateMetadata({
   params,
@@ -105,122 +104,47 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
   const supabase = await createClient();
   const buildingId = building.id;
 
-  // Fetch violations, complaints, litigations, DOB violations, bedbugs, evictions, reviews, and units in parallel
-  const [violationsRes, complaintsRes, litigationsRes, dobViolationsRes, bedbugsRes, evictionsRes, permitsRes, energyRes, reviewsRes, unitsRes, violationSummaryRes, rentsRes, amenitiesRes, listingsRes, unitListingsRes] = await Promise.all([
-    supabase
-      .from("hpd_violations")
-      .select("*")
-      .eq("building_id", buildingId)
-      .order("inspection_date", { ascending: false })
-      .limit(20),
-    supabase
-      .from("complaints_311")
-      .select("*")
-      .eq("building_id", buildingId)
-      .order("created_date", { ascending: false })
-      .limit(20),
-    supabase
-      .from("hpd_litigations")
-      .select("*")
-      .eq("building_id", buildingId)
-      .order("case_open_date", { ascending: false })
-      .limit(20),
-    supabase
-      .from("dob_violations")
-      .select("*")
-      .eq("building_id", buildingId)
-      .order("issue_date", { ascending: false })
-      .limit(20),
-    supabase
-      .from("bedbug_reports")
-      .select("*")
-      .eq("building_id", buildingId)
-      .order("filing_date", { ascending: false })
-      .limit(20),
-    supabase
-      .from("evictions")
-      .select("*")
-      .eq("building_id", buildingId)
-      .order("executed_date", { ascending: false })
-      .limit(20),
-    supabase
-      .from("dob_permits")
-      .select("*")
-      .eq("building_id", buildingId)
-      .order("issued_date", { ascending: false })
-      .limit(20),
-    supabase
-      .from("energy_benchmarks")
-      .select("*")
-      .eq("building_id", buildingId)
-      .order("report_year", { ascending: false })
-      .limit(1),
-    supabase
-      .from("reviews")
-      .select(
-        `*, profile:profiles(id, display_name, avatar_url), category_ratings:review_category_ratings(*, category:review_categories(slug, name, icon)), unit:units(unit_number)`
-      )
-      .eq("building_id", buildingId)
-      .eq("status", "published")
-      .order("created_at", { ascending: false })
-      .limit(10),
-    supabase
-      .from("units")
-      .select("*")
-      .eq("building_id", buildingId)
-      .order("unit_number", { ascending: true }),
-    supabase
-      .from("hpd_violations")
-      .select("apartment, class, status, inspection_date")
-      .eq("building_id", buildingId)
-      .limit(10000),
-    supabase
-      .from("building_rents")
-      .select("bedrooms, min_rent, max_rent, median_rent, listing_count, source")
-      .eq("building_id", buildingId),
-    supabase
-      .from("building_amenities")
-      .select("amenity, category, source")
-      .eq("building_id", buildingId),
-    supabase
-      .from("building_listings")
-      .select("*")
-      .eq("building_id", buildingId),
-    supabase
-      .from("unit_listings")
-      .select("*")
-      .eq("building_id", buildingId)
-      .eq("available", true),
+  // Helper: wrap each query so a single failure doesn't kill the whole page
+  const safe = <T,>(promise: PromiseLike<{ data: T | null; error: unknown }>, fallback: T): Promise<T> =>
+    Promise.resolve(promise).then(({ data, error }) => {
+      if (error) console.error("Supabase query error:", error);
+      return data ?? fallback;
+    }).catch((err: unknown) => {
+      console.error("Supabase query exception:", err);
+      return fallback;
+    });
+
+  // Fetch all data in parallel — including auth check
+  const [violations, complaints, litigations, dobViolations, bedbugs, evictions, permits, energyData, reviews, units, violationSummaries, rents, amenities, marketListings, rentHistory, monitorStatus] = await Promise.all([
+    safe(supabase.from("hpd_violations").select("*").eq("building_id", buildingId).order("inspection_date", { ascending: false }).limit(20), [] as HpdViolation[]),
+    safe(supabase.from("complaints_311").select("*").eq("building_id", buildingId).order("created_date", { ascending: false }).limit(20), [] as Complaint311[]),
+    safe(supabase.from("hpd_litigations").select("*").eq("building_id", buildingId).order("case_open_date", { ascending: false }).limit(20), [] as HpdLitigation[]),
+    safe(supabase.from("dob_violations").select("*").eq("building_id", buildingId).order("issue_date", { ascending: false }).limit(20), [] as DobViolation[]),
+    safe(supabase.from("bedbug_reports").select("*").eq("building_id", buildingId).order("filing_date", { ascending: false }).limit(20), [] as BedBugReport[]),
+    safe(supabase.from("evictions").select("*").eq("building_id", buildingId).order("executed_date", { ascending: false }).limit(20), [] as Eviction[]),
+    safe(supabase.from("dob_permits").select("*").eq("building_id", buildingId).order("issued_date", { ascending: false }).limit(20), [] as DobPermit[]),
+    safe(supabase.from("energy_benchmarks").select("*").eq("building_id", buildingId).order("report_year", { ascending: false }).limit(1), [] as EnergyBenchmark[]),
+    safe(supabase.from("reviews").select(`*, profile:profiles(id, display_name, avatar_url), category_ratings:review_category_ratings(*, category:review_categories(slug, name, icon)), unit:units(unit_number)`).eq("building_id", buildingId).eq("status", "published").order("created_at", { ascending: false }).limit(10), []) as Promise<ReviewWithDetails[]>,
+    safe(supabase.from("units").select("*").eq("building_id", buildingId).order("unit_number", { ascending: true }), []),
+    safe(supabase.from("hpd_violations").select("id, apartment, class, status, inspection_date, nov_description").eq("building_id", buildingId).order("inspection_date", { ascending: false }).limit(10000), []),
+    safe(supabase.from("building_rents").select("bedrooms, min_rent, max_rent, median_rent, listing_count, source").eq("building_id", buildingId), []),
+    safe(supabase.from("building_amenities").select("amenity, category, source").eq("building_id", buildingId), []),
+    safe(supabase.from("building_listings").select("*").eq("building_id", buildingId), []),
+    safe(supabase.from("unit_rent_history").select("id, unit_number, bedrooms, bathrooms, rent, sqft, source, observed_at").eq("building_id", buildingId).order("observed_at", { ascending: false }).limit(100), []),
+    // Auth check runs in parallel instead of sequentially
+    (async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return false;
+        const { data } = await supabase.from("monitored_buildings").select("id").eq("user_id", user.id).eq("building_id", buildingId).single();
+        return !!data;
+      } catch {
+        return false;
+      }
+    })(),
   ]);
 
-  const violations = (violationsRes.data || []) as HpdViolation[];
-  const complaints = (complaintsRes.data || []) as Complaint311[];
-  const litigations = (litigationsRes.data || []) as HpdLitigation[];
-  const dobViolations = (dobViolationsRes.data || []) as DobViolation[];
-  const bedbugs = (bedbugsRes.data || []) as BedBugReport[];
-  const evictions = (evictionsRes.data || []) as Eviction[];
-  const permits = (permitsRes.data || []) as DobPermit[];
-  const energyData = (energyRes.data || []) as EnergyBenchmark[];
-  const reviews = (reviewsRes.data || []) as unknown as ReviewWithDetails[];
-  const units = unitsRes.data || [];
-  const violationSummaries = violationSummaryRes.data || [];
-  const rents = rentsRes.data || [];
-  const amenities = amenitiesRes.data || [];
-  const marketListings = listingsRes.data || [];
-  const unitListings = (unitListingsRes.data || []) as UnitListing[];
-
-  // Check if user is monitoring this building
-  let isMonitored = false;
-  const { data: { user } } = await supabase.auth.getUser();
-  if (user) {
-    const { data: monitorData } = await supabase
-      .from("monitored_buildings")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("building_id", buildingId)
-      .single();
-    isMonitored = !!monitorData;
-  }
+  const isMonitored = monitorStatus;
 
   // Extract short address for breadcrumb
   const shortAddress = building.full_address.split(",")[0]?.trim() || building.full_address;
@@ -288,7 +212,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
 
             {/* Rent History */}
             <div id="rent">
-              <MarketListings listings={marketListings} amenities={amenities} units={units} unitListings={unitListings} buildingUrl={buildingUrl(building)} />
+              <MarketListings listings={marketListings} amenities={amenities} rentHistory={rentHistory} buildingUrl={buildingUrl(building)} />
             </div>
 
             {/* Building Amenities */}

@@ -4,6 +4,14 @@ const nextConfig: NextConfig = {
   images: {
     formats: ["image/avif", "image/webp"],
   },
+  rewrites: async () => ({
+    beforeFiles: [
+      // Sitemap index: /sitemap.xml → API route
+      { source: "/sitemap.xml", destination: "/api/sitemap-index" },
+      // Individual sitemaps: /sitemap/0.xml → API route (pass id with .xml suffix, stripped in handler)
+      { source: "/sitemap/:id.xml", destination: "/api/sitemap/:id" },
+    ],
+  }),
   headers: async () => [
     {
       source: "/(.*)",

@@ -1,13 +1,8 @@
-import Link from "next/link";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import {
   TrendingDown, Building2, DollarSign, BedDouble, Bath, Ruler,
-  Clock, CheckCircle, Users, ChevronDown, Sparkles,
-  TreePine, Dumbbell, Car, WashingMachine, Shield, PawPrint,
-  Package, Gem, Home,
+  Clock, CheckCircle, Home,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
-import type { UnitListing } from "@/types";
 
 interface FloorPlan {
   bedCount: number;
@@ -70,17 +65,21 @@ export interface MarketListing {
   scraped_at: string;
 }
 
-interface UnitRow {
+interface RentHistoryRow {
   id: string;
   unit_number: string;
-  review_count: number;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  rent: number;
+  sqft: number | null;
+  source: string;
+  observed_at: string;
 }
 
 interface MarketListingsProps {
   listings: MarketListing[];
   amenities: AmenityEntry[];
-  units?: UnitRow[];
-  unitListings?: UnitListing[];
+  rentHistory?: RentHistoryRow[];
   buildingUrl?: string;
 }
 
@@ -92,18 +91,6 @@ const BED_LABELS: Record<number, string> = {
   4: "4+ Bed",
 };
 
-const AMENITY_CATEGORIES: { key: string; label: string; icon: LucideIcon; color: string }[] = [
-  { key: "building", label: "Building", icon: Building2, color: "text-[#2563EB]" },
-  { key: "outdoor", label: "Outdoor", icon: TreePine, color: "text-[#16a34a]" },
-  { key: "fitness", label: "Fitness", icon: Dumbbell, color: "text-[#7C3AED]" },
-  { key: "parking", label: "Parking & Bikes", icon: Car, color: "text-[#64748b]" },
-  { key: "laundry", label: "Laundry", icon: WashingMachine, color: "text-[#0ea5e9]" },
-  { key: "security", label: "Security", icon: Shield, color: "text-[#dc2626]" },
-  { key: "pet", label: "Pet Friendly", icon: PawPrint, color: "text-[#EA580C]" },
-  { key: "storage", label: "Storage", icon: Package, color: "text-[#78716c]" },
-  { key: "luxury", label: "Luxury", icon: Gem, color: "text-[#a855f7]" },
-  { key: "other", label: "Other", icon: Sparkles, color: "text-[#94a3b8]" },
-];
 
 function formatPrice(amount: number): string {
   return `$${amount.toLocaleString()}`;
@@ -139,7 +126,7 @@ function parseJsonb<T>(val: T[] | string | null | undefined): T[] {
   return [];
 }
 
-export function MarketListings({ listings: rawListings, amenities, units = [], unitListings = [], buildingUrl: bUrl = "" }: MarketListingsProps) {
+export function MarketListings({ listings: rawListings, amenities, rentHistory = [], buildingUrl: bUrl = "" }: MarketListingsProps) {
   // Safely parse JSONB fields that may come as strings from Supabase
   const listings = (rawListings || []).map((l) => ({
     ...l,
@@ -148,7 +135,7 @@ export function MarketListings({ listings: rawListings, amenities, units = [], u
     office_hours: parseJsonb<OfficeHour>(l.office_hours),
   }));
 
-  if (listings.length === 0 && (!amenities || amenities.length === 0) && units.length === 0) {
+  if (listings.length === 0 && (!amenities || amenities.length === 0) && rentHistory.length === 0) {
     return null;
   }
 
@@ -159,27 +146,6 @@ export function MarketListings({ listings: rawListings, amenities, units = [], u
   });
   const listing = sortedListings[0] || null;
 
-  // Deduplicate amenities across sources
-  const seenAmenities = new Set<string>();
-  const dedupedAmenities: AmenityEntry[] = [];
-  const sortedAmenities = [...(amenities || [])].sort((a, b) => {
-    const p: Record<string, number> = { streeteasy: 0, rent_com: 1, zillow: 2 };
-    return (p[a.source] ?? 9) - (p[b.source] ?? 9);
-  });
-  for (const a of sortedAmenities) {
-    const key = a.amenity.toLowerCase();
-    if (!seenAmenities.has(key)) {
-      seenAmenities.add(key);
-      dedupedAmenities.push(a);
-    }
-  }
-
-  // Group amenities by category
-  const amenityGroups = new Map<string, string[]>();
-  for (const a of dedupedAmenities) {
-    if (!amenityGroups.has(a.category)) amenityGroups.set(a.category, []);
-    amenityGroups.get(a.category)!.push(a.amenity);
-  }
 
   return (
     <section>
@@ -303,96 +269,69 @@ export function MarketListings({ listings: rawListings, amenities, units = [], u
           </Card>
         )}
 
-        {/* Available Units */}
-        {units.length > 0 && (
+        {/* Units Historic Rent */}
+        {rentHistory.length > 0 && (
           <Card id="units">
             <CardHeader>
               <div className="flex items-center gap-2">
                 <Home className="w-4.5 h-4.5 text-[#2563EB]" />
                 <h3 className="text-base font-bold text-[#0F1D2E]">
-                  Available Units ({units.length})
+                  Units Historic Rent ({rentHistory.length})
                 </h3>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="divide-y divide-[#f1f5f9]">
-                {units.map((unit) => {
-                  const ul = unitListings.find((l) => l.unit_id === unit.id);
-                  return (
-                    <Link
-                      key={unit.id}
-                      href={`${bUrl}/unit/${unit.id}`}
-                      className="flex items-center justify-between py-3 px-2 rounded-lg hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm font-semibold text-[#0F1D2E]">
-                          Unit {unit.unit_number}
-                        </span>
-                        {ul?.bedrooms != null && (
-                          <span className="text-xs text-[#64748b] bg-[#f1f5f9] px-2 py-0.5 rounded-full">
-                            {ul.bedrooms === 0 ? "Studio" : `${ul.bedrooms} Bed`}
-                          </span>
-                        )}
-                        {unit.review_count > 0 && (
-                          <span className="text-xs text-[#64748b]">
-                            {unit.review_count} review{unit.review_count !== 1 ? "s" : ""}
-                          </span>
-                        )}
-                      </div>
-                      {ul?.price != null && (
-                        <span className="text-sm font-bold text-[#16a34a]">
-                          ${ul.price.toLocaleString()}/mo
-                        </span>
-                      )}
-                    </Link>
-                  );
-                })}
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-[#e2e8f0]">
+                      <th className="text-left py-2 text-[#64748b] font-medium">Unit</th>
+                      <th className="text-left py-2 text-[#64748b] font-medium">Type</th>
+                      <th className="text-right py-2 text-[#64748b] font-medium">Rent</th>
+                      <th className="text-right py-2 text-[#64748b] font-medium hidden sm:table-cell">Sq Ft</th>
+                      <th className="text-right py-2 text-[#64748b] font-medium">As Of</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rentHistory
+                      .sort((a, b) => {
+                        // Sort by unit number (natural), then by date desc
+                        const unitCmp = (a.unit_number || "").localeCompare(b.unit_number || "", undefined, { numeric: true });
+                        if (unitCmp !== 0) return unitCmp;
+                        return b.observed_at.localeCompare(a.observed_at);
+                      })
+                      .map((entry) => (
+                        <tr key={entry.id} className="border-b border-[#f1f5f9] last:border-0">
+                          <td className="py-2.5 font-medium text-[#0F1D2E]">
+                            {entry.unit_number || "—"}
+                          </td>
+                          <td className="py-2.5 text-[#64748b]">
+                            {entry.bedrooms === 0 ? "Studio" : entry.bedrooms != null ? `${entry.bedrooms} Bed` : "—"}
+                          </td>
+                          <td className="py-2.5 text-right">
+                            <span className="font-semibold text-[#16a34a]">
+                              ${entry.rent.toLocaleString()}/mo
+                            </span>
+                          </td>
+                          <td className="py-2.5 text-right text-[#64748b] hidden sm:table-cell">
+                            {entry.sqft ? `${entry.sqft.toLocaleString()}` : "—"}
+                          </td>
+                          <td className="py-2.5 text-right text-[#64748b] text-xs">
+                            {new Date(entry.observed_at).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
               </div>
+              <p className="text-[10px] text-[#94a3b8] mt-3">
+                Based on listing data from StreetEasy, Rent.com & Zillow
+              </p>
             </CardContent>
           </Card>
         )}
 
-        {/* Amenities */}
-        {dedupedAmenities.length > 0 && (
-          <Card id="amenities">
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4.5 h-4.5 text-[#a855f7]" />
-                <h3 className="text-base font-bold text-[#0F1D2E]">
-                  Building Amenities ({dedupedAmenities.length})
-                </h3>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {AMENITY_CATEGORIES.map(({ key, label, icon: Icon, color }) => {
-                  const items = amenityGroups.get(key);
-                  if (!items || items.length === 0) return null;
-                  return (
-                    <div key={key}>
-                      <div className="flex items-center gap-1.5 mb-1.5">
-                        <Icon className={`w-3.5 h-3.5 ${color}`} />
-                        <span className="text-xs font-semibold text-[#64748b] uppercase tracking-wide">
-                          {label}
-                        </span>
-                      </div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {items.map((item) => (
-                          <span
-                            key={item}
-                            className="px-2 py-0.5 text-xs bg-[#f1f5f9] text-[#334155] rounded-full"
-                          >
-                            {item}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {/* Amenities are rendered separately by BuildingAmenities component */}
 
         {/* Office Hours */}
         {listing && listing.office_hours.length > 0 && (

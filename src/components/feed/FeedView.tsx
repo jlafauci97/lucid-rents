@@ -254,12 +254,12 @@ export function FeedView() {
     fetchItems(activeFilter, currentPage);
   }, [activeFilter, currentPage, fetchItems]);
 
-  // Auto-refresh every 2 minutes (only on page 1)
+  // Auto-refresh every 4 hours (only on page 1)
   useEffect(() => {
     if (currentPage !== 1) return;
     const interval = setInterval(() => {
       fetchItems(activeFilter, 1, true);
-    }, 120000);
+    }, 4 * 60 * 60 * 1000);
     return () => clearInterval(interval);
   }, [activeFilter, currentPage, fetchItems]);
 

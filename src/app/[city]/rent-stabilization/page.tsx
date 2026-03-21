@@ -205,7 +205,7 @@ export default async function RentStabilizationPage({
             {boroughStats.map((b) => (
               <Link
                 key={b.borough}
-                href={`/rent-stabilization?borough=${encodeURIComponent(b.borough)}`}
+                href={cityPath(`/rent-stabilization?borough=${encodeURIComponent(b.borough)}`)}
                 className={`bg-white border rounded-xl p-4 hover:border-[#3B82F6] transition-colors ${
                   borough === b.borough
                     ? "border-[#3B82F6] ring-1 ring-[#3B82F6]"
