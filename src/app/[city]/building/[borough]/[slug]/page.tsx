@@ -116,14 +116,20 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
       return fallback;
     });
 
-  // Fetch all data in parallel — including auth check
+  const isLA = city === "los-angeles";
+  const emptyHpdLit = [] as HpdLitigation[];
+  const emptyDobVio = [] as DobViolation[];
+  const emptyBedbugs = [] as BedBugReport[];
+  const emptyEvictions = [] as Eviction[];
+
+  // Fetch all data in parallel — skip NYC-only tables for LA buildings
   const [violations, complaints, litigations, dobViolations, bedbugs, evictions, permits, energyData, reviews, units, violationSummaries, rents, amenities, marketListings, rentHistory, monitorStatus] = await Promise.all([
     safe(supabase.from("hpd_violations").select("*").eq("building_id", buildingId).order("inspection_date", { ascending: false }).limit(20), [] as HpdViolation[]),
     safe(supabase.from("complaints_311").select("*").eq("building_id", buildingId).order("created_date", { ascending: false }).limit(20), [] as Complaint311[]),
-    safe(supabase.from("hpd_litigations").select("*").eq("building_id", buildingId).order("case_open_date", { ascending: false }).limit(20), [] as HpdLitigation[]),
-    safe(supabase.from("dob_violations").select("*").eq("building_id", buildingId).order("issue_date", { ascending: false }).limit(20), [] as DobViolation[]),
-    safe(supabase.from("bedbug_reports").select("*").eq("building_id", buildingId).order("filing_date", { ascending: false }).limit(20), [] as BedBugReport[]),
-    safe(supabase.from("evictions").select("*").eq("building_id", buildingId).order("executed_date", { ascending: false }).limit(20), [] as Eviction[]),
+    isLA ? Promise.resolve(emptyHpdLit) : safe(supabase.from("hpd_litigations").select("*").eq("building_id", buildingId).order("case_open_date", { ascending: false }).limit(20), emptyHpdLit),
+    isLA ? Promise.resolve(emptyDobVio) : safe(supabase.from("dob_violations").select("*").eq("building_id", buildingId).order("issue_date", { ascending: false }).limit(20), emptyDobVio),
+    isLA ? Promise.resolve(emptyBedbugs) : safe(supabase.from("bedbug_reports").select("*").eq("building_id", buildingId).order("filing_date", { ascending: false }).limit(20), emptyBedbugs),
+    isLA ? Promise.resolve(emptyEvictions) : safe(supabase.from("evictions").select("*").eq("building_id", buildingId).order("executed_date", { ascending: false }).limit(20), emptyEvictions),
     safe(supabase.from("dob_permits").select("*").eq("building_id", buildingId).order("issued_date", { ascending: false }).limit(20), [] as DobPermit[]),
     safe(supabase.from("energy_benchmarks").select("*").eq("building_id", buildingId).order("report_year", { ascending: false }).limit(1), [] as EnergyBenchmark[]),
     safe(supabase.from("reviews").select(`*, profile:profiles(id, display_name, avatar_url), category_ratings:review_category_ratings(*, category:review_categories(slug, name, icon)), unit:units(unit_number)`).eq("building_id", buildingId).eq("status", "published").order("created_at", { ascending: false }).limit(10), []) as Promise<ReviewWithDetails[]>,
@@ -334,6 +340,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
               stabilizedUnits={building.stabilized_units}
               totalUnits={building.residential_units}
               stabilizedYear={building.stabilized_year}
+              city={city}
             />
             </div>
 

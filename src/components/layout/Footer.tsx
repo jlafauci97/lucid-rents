@@ -1,8 +1,25 @@
 import Link from "next/link";
-import { type City, DEFAULT_CITY } from "@/lib/cities";
+import { type City, DEFAULT_CITY, CITY_META } from "@/lib/cities";
 import { cityPath } from "@/lib/seo";
 
+const DATA_SOURCES: Record<City, string[]> = {
+  nyc: [
+    "NYC Open Data - HPD Violations",
+    "NYC Open Data - DOB Violations",
+    "NYC Open Data - 311 Complaints",
+    "NYC PLUTO Building Data",
+  ],
+  "los-angeles": [
+    "LA Open Data - LAHD Violations",
+    "LA Open Data - LADBS Permits",
+    "LA Open Data - 311 Complaints",
+    "LA County Assessor Data",
+    "LAHD Soft-Story Inventory",
+  ],
+};
+
 export function Footer({ city = DEFAULT_CITY }: { city?: City }) {
+  const cityName = CITY_META[city]?.fullName || "New York City";
   return (
     <footer className="bg-[#0F1D2E] text-gray-400 mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -12,7 +29,7 @@ export function Footer({ city = DEFAULT_CITY }: { city?: City }) {
               <span className="text-[#3B82F6]">Lucid</span> Rents
             </h3>
             <p className="text-sm">
-              Know your NYC apartment before you sign. Real data, real reviews,
+              Know your {cityName} apartment before you sign. Real data, real reviews,
               real transparency.
             </p>
           </div>
@@ -33,7 +50,7 @@ export function Footer({ city = DEFAULT_CITY }: { city?: City }) {
               </li>
               <li>
                 <Link href={cityPath("/news", city)} className="hover:text-white transition-colors">
-                  NYC Housing News
+                  {cityName} Housing News
                 </Link>
               </li>
               <li>
@@ -53,10 +70,9 @@ export function Footer({ city = DEFAULT_CITY }: { city?: City }) {
               Data Sources
             </h4>
             <ul className="space-y-2 text-sm">
-              <li>NYC Open Data - HPD Violations</li>
-              <li>NYC Open Data - DOB Violations</li>
-              <li>NYC Open Data - 311 Complaints</li>
-              <li>NYC PLUTO Building Data</li>
+              {(DATA_SOURCES[city] || DATA_SOURCES.nyc).map((source) => (
+                <li key={source}>{source}</li>
+              ))}
             </ul>
           </div>
           <div>
