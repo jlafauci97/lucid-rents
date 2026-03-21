@@ -70,23 +70,23 @@
     },
     {
       "path": "/api/cron/sync?source=lahd",
-      "schedule": "0 5 * * *"
+      "schedule": "0 10 * * *"
     },
     {
       "path": "/api/cron/sync?source=la-311",
-      "schedule": "10 5 * * *"
+      "schedule": "15 10 * * *"
     },
     {
       "path": "/api/cron/sync?source=ladbs",
-      "schedule": "20 5 * * *"
-    },
-    {
-      "path": "/api/cron/sync?source=lapd",
-      "schedule": "30 5 * * *"
+      "schedule": "30 10 * * *"
     },
     {
       "path": "/api/cron/sync?source=la-permits",
-      "schedule": "40 5 * * *"
+      "schedule": "45 10 * * *"
+    },
+    {
+      "path": "/api/cron/sync?source=la-soft-story",
+      "schedule": "0 11 1 * *"
     },
     {
       "path": "/api/cron/health-check",
