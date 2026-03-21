@@ -5,8 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { BuildingCard } from "@/components/search/BuildingCard";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { SLUG_TO_BOROUGH, canonicalUrl, buildingUrl, cityPath, regionSlug } from "@/lib/seo";
-import { CITY_META } from "@/lib/cities";
+import { SLUG_TO_BOROUGH, canonicalUrl, buildingUrl, cityPath } from "@/lib/seo";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { BoroughExploreLinks } from "@/components/seo/BoroughExploreLinks";
@@ -20,12 +19,8 @@ interface BoroughPageProps {
   searchParams: Promise<{ page?: string; sort?: string }>;
 }
 
-export function generateStaticParams() {
-  // Generate params for all cities' regions (NYC boroughs + LA neighborhoods)
-  return Object.values(CITY_META).flatMap((meta) =>
-    meta.regions.map((r) => ({ borough: regionSlug(r) }))
-  );
-}
+// Allow any borough/region slug — don't restrict with generateStaticParams
+export const dynamicParams = true;
 
 export async function generateMetadata({
   params,
