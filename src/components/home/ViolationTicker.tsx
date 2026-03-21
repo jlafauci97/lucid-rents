@@ -104,13 +104,18 @@ export function ViolationTicker() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/activity?limit=30')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.items) setItems(data.items);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    function fetchItems() {
+      fetch('/api/activity?limit=30')
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.items) setItems(data.items);
+        })
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    }
+    fetchItems();
+    const interval = setInterval(fetchItems, 120000); // refresh every 2 min
+    return () => clearInterval(interval);
   }, []);
 
   if (loading) {
