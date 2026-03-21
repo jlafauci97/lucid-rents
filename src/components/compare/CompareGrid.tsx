@@ -8,6 +8,10 @@ import {
   AlertTriangle,
   MessageSquare,
   Star,
+  Bug,
+  Scale,
+  ShieldCheck,
+  Zap,
 } from "lucide-react";
 import { ScoreGauge } from "@/components/ui/ScoreGauge";
 import { buildingUrl, landlordUrl } from "@/lib/seo";
@@ -137,11 +141,40 @@ export function CompareGrid({ buildings }: CompareGridProps) {
       getNumericValue: (b) => b.complaint_count,
     },
     {
+      label: "Bedbug Reports",
+      icon: <Bug className="w-4 h-4" />,
+      getValue: (b) => (
+        <span className="text-sm font-semibold">{b.bedbug_report_count || 0}</span>
+      ),
+      highlight: "lower-is-better",
+      getNumericValue: (b) => b.bedbug_report_count || 0,
+    },
+    {
+      label: "Evictions",
+      icon: <Scale className="w-4 h-4" />,
+      getValue: (b) => (
+        <span className="text-sm font-semibold">{b.eviction_count || 0}</span>
+      ),
+      highlight: "lower-is-better",
+      getNumericValue: (b) => b.eviction_count || 0,
+    },
+    {
+      label: "Rent Stabilized",
+      icon: <ShieldCheck className="w-4 h-4" />,
+      getValue: (b) => (
+        <span className={`text-sm font-medium ${b.is_rent_stabilized ? "text-emerald-600" : "text-[#94a3b8]"}`}>
+          {b.is_rent_stabilized ? `Yes${b.stabilized_units ? ` (${b.stabilized_units} units)` : ""}` : "No"}
+        </span>
+      ),
+    },
+    {
       label: "Reviews",
       icon: <Star className="w-4 h-4" />,
       getValue: (b) => (
         <span className="text-sm text-[#0F1D2E]">{b.review_count}</span>
       ),
+      highlight: "higher-is-better",
+      getNumericValue: (b) => b.review_count,
     },
   ];
 

@@ -7,28 +7,35 @@ import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { ArrowLeftRight } from "lucide-react";
 import { canonicalUrl, cityPath } from "@/lib/seo";
+import { isValidCity, CITY_META } from "@/lib/cities";
 import type { Metadata } from "next";
 import type { Building } from "@/types";
 
-export const metadata: Metadata = {
-  title: "Compare Buildings",
-  description:
-    "Compare NYC buildings side by side. View scores, violations, complaints, and more to find the best apartment.",
-  alternates: { canonical: canonicalUrl(cityPath("/compare")) },
-  openGraph: {
-    title: "Compare NYC Buildings",
-    description: "Compare NYC buildings side by side. View scores, violations, complaints, and more.",
-    url: canonicalUrl(cityPath("/compare")),
-    siteName: "Lucid Rents",
-    type: "website",
-  },
-};
-
 interface ComparePageProps {
+  params: Promise<{ city: string }>;
   searchParams: Promise<{ ids?: string }>;
 }
 
-async function CompareContent({ searchParams }: ComparePageProps) {
+export async function generateMetadata({ params }: ComparePageProps): Promise<Metadata> {
+  const { city: cityParam } = await params;
+  const cityName = isValidCity(cityParam) ? CITY_META[cityParam].name : "NYC";
+  return {
+    title: `Compare ${cityName} Buildings`,
+    description: `Compare ${cityName} buildings side by side. View scores, violations, complaints, and more to find the best apartment.`,
+    alternates: { canonical: canonicalUrl(cityPath("/compare", isValidCity(cityParam) ? cityParam : undefined)) },
+    openGraph: {
+      title: `Compare ${cityName} Buildings`,
+      description: `Compare ${cityName} buildings side by side. View scores, violations, complaints, and more.`,
+      url: canonicalUrl(cityPath("/compare", isValidCity(cityParam) ? cityParam : undefined)),
+      siteName: "Lucid Rents",
+      type: "website",
+    },
+  };
+}
+
+async function CompareContent({ params: paramsPromise, searchParams }: ComparePageProps) {
+  const { city: cityParam } = await paramsPromise;
+  const cityName = isValidCity(cityParam) ? CITY_META[cityParam].name : "NYC";
   const params = await searchParams;
   const idsParam = params.ids || "";
   const ids = idsParam
@@ -67,7 +74,7 @@ async function CompareContent({ searchParams }: ComparePageProps) {
           </h1>
         </div>
         <p className="text-[#64748b] text-sm ml-[52px]">
-          Search and compare up to 3 NYC buildings side by side to find your
+          Search and compare up to 3 {cityName} buildings side by side to find your
           best option.
         </p>
       </div>
@@ -123,7 +130,7 @@ async function CompareContent({ searchParams }: ComparePageProps) {
   );
 }
 
-export default function ComparePage(props: ComparePageProps) {
+export default async function ComparePage(props: ComparePageProps) {
   return (
     <AdSidebar>
     <Suspense

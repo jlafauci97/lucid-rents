@@ -11,6 +11,7 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
+import { NeighborhoodRankCard } from "@/components/neighborhood/NeighborhoodRankCard";
 
 export const revalidate = 3600;
 
@@ -261,6 +262,9 @@ export default async function NeighborhoodPage({
           <p className="text-2xl font-bold text-[#0F1D2E]">{Number(stats.total_reviews).toLocaleString()}</p>
         </div>
       </div>
+
+      {/* Percentile Rankings */}
+      <NeighborhoodRankCard zipCode={zipCode} stats={stats} crimeData={crime} />
 
       {/* Crime Summary */}
       {crime && crime.total > 0 && (

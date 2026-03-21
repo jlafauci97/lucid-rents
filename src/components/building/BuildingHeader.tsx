@@ -3,13 +3,15 @@ import { ScoreGauge } from "@/components/ui/ScoreGauge";
 import { LetterGrade } from "@/components/ui/LetterGrade";
 import { Badge } from "@/components/ui/Badge";
 import { deriveScore } from "@/lib/constants";
+import { CITY_META, type City } from "@/lib/cities";
 import type { Building } from "@/types";
 
 interface BuildingHeaderProps {
   building: Building;
+  city?: City;
 }
 
-export function BuildingHeader({ building }: BuildingHeaderProps) {
+export function BuildingHeader({ building, city = "nyc" }: BuildingHeaderProps) {
   const score = building.overall_score ?? deriveScore(
     building.violation_count || 0,
     building.complaint_count || 0
@@ -30,7 +32,7 @@ export function BuildingHeader({ building }: BuildingHeaderProps) {
             <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-[#64748b]">
               <span className="flex items-center gap-1">
                 <MapPin className="w-4 h-4" />
-                {building.borough}, NY {building.zip_code}
+                {building.borough}, {CITY_META[city].stateCode} {building.zip_code}
               </span>
               {building.year_built && (
                 <span className="flex items-center gap-1">
