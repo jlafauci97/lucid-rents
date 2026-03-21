@@ -1,22 +1,66 @@
 import { Building2, Shield, MessageSquare, FileSearch } from "lucide-react";
+import type { City } from "@/lib/cities";
 
-async function getSnapshotCounts() {
-  const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/data_snapshot_counts`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({}),
-    next: { revalidate: 3600 },
-  });
-  if (!res.ok) return null;
-  return res.json();
+async function getSnapshotCounts(metro?: City) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const apiKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+  if (!metro) {
+    // No metro filter — use the aggregate RPC for combined counts
+    const res = await fetch(`${supabaseUrl}/rest/v1/rpc/data_snapshot_counts`, {
+      method: "POST",
+      headers: { apikey: apiKey, "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+      next: { revalidate: 3600 },
+    });
+    if (!res.ok) return null;
+    return res.json();
+  }
+
+  // Metro-filtered: query each table count directly
+  const headers = { apikey: apiKey, Prefer: "count=exact" };
+  const metroFilter = `&metro=eq.${encodeURIComponent(metro)}`;
+
+  const [buildingsRes, hpdRes, dobRes, complaintsRes] = await Promise.all([
+    fetch(`${supabaseUrl}/rest/v1/buildings?select=id${metroFilter}`, {
+      headers: { ...headers, Range: "0-0" },
+      next: { revalidate: 3600 },
+    }),
+    fetch(`${supabaseUrl}/rest/v1/hpd_violations?select=id${metroFilter}`, {
+      headers: { ...headers, Range: "0-0" },
+      next: { revalidate: 3600 },
+    }),
+    fetch(`${supabaseUrl}/rest/v1/dob_violations?select=id${metroFilter}`, {
+      headers: { ...headers, Range: "0-0" },
+      next: { revalidate: 3600 },
+    }),
+    fetch(`${supabaseUrl}/rest/v1/complaints_311?select=id${metroFilter}`, {
+      headers: { ...headers, Range: "0-0" },
+      next: { revalidate: 3600 },
+    }),
+  ]);
+
+  // Extract counts from Content-Range header: "0-0/12345"
+  function extractCount(res: Response): number {
+    const range = res.headers.get("content-range") || "";
+    const match = range.match(/\/(\d+)/);
+    return match ? parseInt(match[1], 10) : 0;
+  }
+
+  return [{
+    buildings_count: extractCount(buildingsRes),
+    hpd_violations_count: extractCount(hpdRes),
+    dob_violations_count: extractCount(dobRes),
+    complaints_311_count: extractCount(complaintsRes),
+  }];
 }
 
-export async function LiveStats() {
-  const data = await getSnapshotCounts();
+interface LiveStatsProps {
+  metro?: City;
+}
+
+export async function LiveStats({ metro }: LiveStatsProps = {}) {
+  const data = await getSnapshotCounts(metro);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const raw: any = Array.isArray(data) ? data[0] : data;
@@ -42,7 +86,7 @@ export async function LiveStats() {
     {
       icon: FileSearch,
       label: "Data Sources",
-      value: "25+",
+      value: metro ? "15+" : "25+",
     },
   ];
 
