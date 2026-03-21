@@ -26,8 +26,11 @@ export const BOROUGH_SLUGS: Record<string, string> = Object.fromEntries(
   CITY_META.nyc.regions.map((r) => [r, regionSlug(r)])
 );
 
+// Maps region slug → display name for ALL cities (NYC boroughs + LA areas)
 export const SLUG_TO_BOROUGH: Record<string, string> = Object.fromEntries(
-  Object.entries(BOROUGH_SLUGS).map(([name, slug]) => [slug, name])
+  Object.values(CITY_META).flatMap((meta) =>
+    meta.regions.map((r) => [regionSlug(r), r])
+  )
 );
 
 /** Prefix a path with the city's external URL prefix */
