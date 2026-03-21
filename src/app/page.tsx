@@ -67,15 +67,16 @@ export default function HomePage() {
       }} />
 
       {/* Hero */}
-      <section className="relative overflow-x-clip">
+      <section className="relative text-white overflow-x-clip">
         <Image
           src="/homepage-background.jpg"
           alt="City skyline"
           fill
-          className="object-cover object-bottom"
+          className="object-cover object-center"
           priority
           sizes="100vw"
         />
+        <div className="absolute inset-0 bg-[#0F1D2E]/40" />
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-12 pb-10 sm:pb-16 text-center">
           <Image
             src="/lucid-rents-logo.png"
@@ -85,20 +86,20 @@ export default function HomePage() {
             className="mx-auto mb-1 h-[120px] sm:h-[150px] w-auto drop-shadow-lg"
             priority
           />
-          <p className="text-xs sm:text-sm uppercase tracking-[0.2em] text-[#0F1D2E]/60 font-medium mb-3">
+          <p className="text-xs sm:text-sm uppercase tracking-[0.2em] text-white/70 font-medium mb-3">
             A Rental Intelligence Platform
           </p>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-1 text-[#0F1D2E]">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-1">
             Check Your NYC Apartment Building
           </h1>
-          <p className="text-sm sm:text-base text-[#0F1D2E]/70 mb-4 max-w-2xl mx-auto">
+          <p className="text-sm sm:text-base text-white/80 mb-4 max-w-2xl mx-auto">
             See the truth about any NYC building before you sign.
             Violations, complaints, tenant reviews, and crime data — all in one place.
           </p>
           <div className="max-w-2xl mx-auto">
             <SearchBar size="hero" placeholder="Enter any NYC address, zip code, or neighborhood..." />
           </div>
-          <p className="text-sm text-[#0F1D2E]/50 mt-2">
+          <p className="text-sm text-white/60 mt-2">
             Try &ldquo;123 Main Street Brooklyn&rdquo; or &ldquo;10001&rdquo;
           </p>
         </div>
