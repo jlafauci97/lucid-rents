@@ -13,6 +13,7 @@ import { NearbyCrimeSummary } from "@/components/crime/NearbyCrimeSummary";
 import { NearbyTransit } from "@/components/transit/NearbyTransit";
 import { NearbySchools } from "@/components/schools/NearbySchools";
 import { NearbyRecreation } from "@/components/building/NearbyRecreation";
+import { NearbyEncampments } from "@/components/building/NearbyEncampments";
 import { NearbyBuildings } from "@/components/building/NearbyBuildings";
 import { SameLandlordBuildings } from "@/components/building/SameLandlordBuildings";
 import { BuildingLocationMap } from "@/components/building/BuildingLocationMap";
@@ -354,6 +355,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
               <NearbyTransit
                 latitude={building.latitude}
                 longitude={building.longitude}
+                city={city}
               />
               </div>
             )}
@@ -364,6 +366,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
               <NearbySchools
                 latitude={building.latitude}
                 longitude={building.longitude}
+                city={city}
               />
               </div>
             )}
@@ -372,6 +375,16 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
             {building.latitude && building.longitude && (
               <div id="recreation">
               <NearbyRecreation
+                latitude={building.latitude}
+                longitude={building.longitude}
+              />
+              </div>
+            )}
+
+            {/* Nearby Encampments (LA only) */}
+            {building.latitude && building.longitude && city === 'los-angeles' && (
+              <div id="encampments">
+              <NearbyEncampments
                 latitude={building.latitude}
                 longitude={building.longitude}
               />
