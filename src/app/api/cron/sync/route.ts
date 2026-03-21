@@ -1877,10 +1877,10 @@ async function syncLAHDViolations(
     while (hasMore) {
       const url = buildLASodaUrl(
         "u82d-eh7z",
-        `date_case_generated > '${lastSync}'`,
+        `adddttm > '${lastSync}'`,
         PAGE_SIZE,
         offset,
-        "date_case_generated ASC"
+        "adddttm ASC"
       );
 
       const res = await fetch(url);
@@ -1892,22 +1892,19 @@ async function syncLAHDViolations(
       const records = await res.json();
       if (!records || records.length === 0) { hasMore = false; break; }
 
+      // LADBS fields: apno, stno, predir, stname, suffix, zip, apc, stat, adddttm, aptype
       const rows = records
-        .filter((r: Record<string, unknown>) => r.case_number || r.case_id)
+        .filter((r: Record<string, unknown>) => r.apno)
         .map((r: Record<string, unknown>) => ({
-          violation_id: `LA-${r.case_number || r.case_id}`,
-          class: r.case_type ? String(r.case_type).slice(0, 1).toUpperCase() : null,
-          inspection_date: r.date_case_generated ? String(r.date_case_generated).slice(0, 10) : null,
-          nov_description: r.case_type ? String(r.case_type) : null,
-          status: r.status ? String(r.status) : null,
-          status_date: r.date_of_last_inspection ? String(r.date_of_last_inspection).slice(0, 10) : null,
-          borough: r.area_planning_commission ? String(r.area_planning_commission) : "Los Angeles",
-          house_number: null,
-          street_name: r.address_house_number && r.address_street_name
-            ? `${r.address_house_number} ${r.address_street_name} ${r.address_street_suffix || ""}`.trim()
-            : r.cse_address ? String(r.cse_address) : null,
-          address: r.cse_address ? String(r.cse_address) : null,
-          zip_code: r.address_zip ? String(r.address_zip).slice(0, 5) : null,
+          violation_id: `LA-${r.apno}`,
+          class: r.aptype ? String(r.aptype).slice(0, 1).toUpperCase() : null,
+          inspection_date: r.adddttm ? String(r.adddttm).slice(0, 10) : null,
+          nov_description: r.aptype ? String(r.aptype) : null,
+          status: r.stat ? String(r.stat) : null,
+          borough: r.apc ? String(r.apc) : "Los Angeles",
+          house_number: r.stno ? String(r.stno) : null,
+          street_name: [r.predir, r.stname, r.suffix].filter(Boolean).map(String).join(" ").trim() || null,
+          zip_code: r.zip ? String(r.zip).replace(/-.*/, "").slice(0, 5) : null,
           metro: "los-angeles",
           imported_at: new Date().toISOString(),
         }));
@@ -1931,7 +1928,7 @@ async function syncLAHDViolations(
 
 /**
  * Sync MyLA311 service requests.
- * LA Open Data endpoint: h73f-gn57 (2025 data)
+ * LA Open Data endpoint: 2cy6-i7zn (2026 data — "MyLA311 Cases 2026")
  * Equivalent of NYC 311 complaints — stores in complaints_311 with metro='los-angeles'
  */
 async function syncLA311Complaints(
@@ -1953,7 +1950,7 @@ async function syncLA311Complaints(
 
     while (hasMore) {
       const url = buildLASodaUrl(
-        "h73f-gn57",
+        "2cy6-i7zn",
         `createddate > '${lastSync}'`,
         PAGE_SIZE,
         offset,
@@ -1969,23 +1966,26 @@ async function syncLA311Complaints(
       const records = await res.json();
       if (!records || records.length === 0) { hasMore = false; break; }
 
+      // 2026 dataset fields: casenumber, createddate, closeddate, type, status, origin,
+      // locator_gis_returned_address, locator_sr_house_number_, locator_sr_street_name__c,
+      // zipcode__c, geolocation__latitude__s, geolocation__longitude__s,
+      // locator_sr_area_planning, resolution_code__c
       const rows = records
-        .filter((r: Record<string, unknown>) => r.srnumber)
+        .filter((r: Record<string, unknown>) => r.casenumber)
         .map((r: Record<string, unknown>) => ({
-          unique_key: `LA311-${r.srnumber}`,
-          complaint_type: r.requesttype ? String(r.requesttype) : null,
-          descriptor: r.requestsource ? String(r.requestsource) : null,
+          unique_key: `LA311-${r.casenumber}`,
+          complaint_type: r.type ? String(r.type) : null,
+          descriptor: r.origin ? String(r.origin) : null,
           agency: "MyLA311",
           status: r.status ? String(r.status) : null,
           created_date: r.createddate ? String(r.createddate) : null,
           closed_date: r.closeddate ? String(r.closeddate) : null,
-          resolution_description: r.actiontaken ? String(r.actiontaken) : null,
-          borough: r.apc ? String(r.apc) : "Los Angeles",
-          incident_address: r.address ? String(r.address) : null,
-          address: r.address ? String(r.address) : null,
-          zip_code: r.zipcode ? String(r.zipcode).slice(0, 5) : null,
-          latitude: r.latitude ? parseFloat(String(r.latitude)) : null,
-          longitude: r.longitude ? parseFloat(String(r.longitude)) : null,
+          resolution_description: r.resolution_code__c ? String(r.resolution_code__c) : null,
+          borough: r.locator_sr_area_planning ? String(r.locator_sr_area_planning) : "Los Angeles",
+          incident_address: r.locator_gis_returned_address ? String(r.locator_gis_returned_address) : null,
+          zip_code: r.zipcode__c ? String(r.zipcode__c).slice(0, 5) : null,
+          latitude: r.geolocation__latitude__s ? parseFloat(String(r.geolocation__latitude__s)) : null,
+          longitude: r.geolocation__longitude__s ? parseFloat(String(r.geolocation__longitude__s)) : null,
           metro: "los-angeles",
           imported_at: new Date().toISOString(),
         }));
@@ -2029,13 +2029,14 @@ async function syncLADBSViolations(
     let pagesFetched = 0;
 
     while (hasMore) {
-      // Use LADBS permits dataset filtered for violation-related cases
+      // LADBS code enforcement dataset filtered for violation types
+      // Fields: apno, stno, predir, stname, suffix, zip, apc, stat, adddttm, aptype
       const url = buildLASodaUrl(
         "u82d-eh7z",
-        `date_case_generated > '${lastSync}' AND case_type LIKE '%VIOL%'`,
+        `adddttm > '${lastSync}' AND aptype LIKE '%VIOL%'`,
         PAGE_SIZE,
         offset,
-        "date_case_generated ASC"
+        "adddttm ASC"
       );
 
       const res = await fetch(url);
@@ -2048,15 +2049,15 @@ async function syncLADBSViolations(
       if (!records || records.length === 0) { hasMore = false; break; }
 
       const rows = records
-        .filter((r: Record<string, unknown>) => r.case_number || r.case_id)
+        .filter((r: Record<string, unknown>) => r.apno)
         .map((r: Record<string, unknown>) => ({
-          violation_number: `LADBS-${r.case_number || r.case_id}`,
-          violation_type: r.case_type ? String(r.case_type) : null,
-          description: r.case_type ? String(r.case_type) : "LADBS violation",
-          issue_date: r.date_case_generated ? String(r.date_case_generated).slice(0, 10) : null,
-          status: r.status ? String(r.status) : null,
-          address: r.cse_address ? String(r.cse_address) : null,
-          zip_code: r.address_zip ? String(r.address_zip).slice(0, 5) : null,
+          violation_number: `LADBS-${r.apno}`,
+          violation_type: r.aptype ? String(r.aptype) : null,
+          description: r.aptype ? String(r.aptype) : "LADBS violation",
+          issue_date: r.adddttm ? String(r.adddttm).slice(0, 10) : null,
+          status: r.stat ? String(r.stat) : null,
+          borough: r.apc ? String(r.apc) : "Los Angeles",
+          zip_code: r.zip ? String(r.zip).replace(/-.*/, "").slice(0, 5) : null,
           metro: "los-angeles",
           imported_at: new Date().toISOString(),
         }));
