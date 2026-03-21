@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { isValidCity, DEFAULT_CITY } from "@/lib/cities";
+import { isValidCity } from "@/lib/cities";
 
 export async function GET(request: Request) {
   try {
@@ -8,9 +8,9 @@ export async function GET(request: Request) {
     const lat = parseFloat(searchParams.get("lat") || "");
     const lon = parseFloat(searchParams.get("lon") || "");
     const limit = Math.min(parseInt(searchParams.get("limit") || "12", 10), 24);
-    const cityParam = searchParams.get("city") || DEFAULT_CITY;
+    const cityParam = searchParams.get("city");
 
-    if (!isValidCity(cityParam)) {
+    if (cityParam && !isValidCity(cityParam)) {
       return NextResponse.json({ error: "Invalid city" }, { status: 400 });
     }
 
@@ -21,10 +21,15 @@ export async function GET(request: Request) {
     const supabase = await createClient();
 
     // Get zip centroids
-    const { data: centroids } = await supabase
+    let centroidsQuery = supabase
       .from("zip_centroids")
-      .select("zip_code, avg_lat, avg_lon")
-      .eq("metro", cityParam);
+      .select("zip_code, avg_lat, avg_lon");
+
+    if (cityParam) {
+      centroidsQuery = centroidsQuery.eq("metro", cityParam);
+    }
+
+    const { data: centroids } = await centroidsQuery;
 
     if (!centroids || centroids.length === 0) {
       return NextResponse.json({ buildings: [], zips: [] });
@@ -42,15 +47,20 @@ export async function GET(request: Request) {
     const nearbyZips = sorted.map((c) => c.zip_code);
 
     // Get buildings in those zips
-    const { data: buildings } = await supabase
+    let buildingsQuery = supabase
       .from("buildings")
       .select(
         "id, full_address, borough, zip_code, slug, overall_score, violation_count, complaint_count, review_count, total_units, year_built"
       )
-      .eq("metro", cityParam)
       .in("zip_code", nearbyZips)
       .order("review_count", { ascending: false })
       .limit(limit);
+
+    if (cityParam) {
+      buildingsQuery = buildingsQuery.eq("metro", cityParam);
+    }
+
+    const { data: buildings } = await buildingsQuery;
 
     return NextResponse.json({
       buildings: buildings || [],

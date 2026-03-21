@@ -1,29 +1,33 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { isValidCity, DEFAULT_CITY } from "@/lib/cities";
+import { isValidCity } from "@/lib/cities";
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const cityParam = searchParams.get("city") || DEFAULT_CITY;
-    if (!isValidCity(cityParam)) {
+    const cityParam = searchParams.get("city");
+    if (cityParam && !isValidCity(cityParam)) {
       return NextResponse.json({ error: "Invalid city" }, { status: 400 });
     }
-    const city = cityParam;
 
     const supabase = await createClient();
 
     // Step 1: Fetch recent violations (no join — fast)
-    const { data: violations, error } = await supabase
+    let violationsQuery = supabase
       .from("hpd_violations")
       .select(
         "id, class, nov_description, inspection_date, borough, house_number, street_name, building_id"
       )
-      .eq("metro", city)
       .not("building_id", "is", null)
       .not("inspection_date", "is", null)
       .order("inspection_date", { ascending: false })
       .limit(100);
+
+    if (cityParam) {
+      violationsQuery = violationsQuery.eq("metro", cityParam);
+    }
+
+    const { data: violations, error } = await violationsQuery;
 
     if (error) {
       console.error("Recent violations error:", error);

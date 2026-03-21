@@ -1,15 +1,14 @@
 import { NextResponse } from "next/server";
 import { deriveScore } from "@/lib/constants";
-import { isValidCity, DEFAULT_CITY } from "@/lib/cities";
+import { isValidCity } from "@/lib/cities";
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const cityParam = searchParams.get("city") || DEFAULT_CITY;
-    if (!isValidCity(cityParam)) {
+    const cityParam = searchParams.get("city");
+    if (cityParam && !isValidCity(cityParam)) {
       return NextResponse.json({ error: "Invalid city" }, { status: 400 });
     }
-    const city = cityParam;
     const borough = searchParams.get("borough") || "";
     const minScore = parseFloat(searchParams.get("minScore") || "0");
     const maxScore = parseFloat(searchParams.get("maxScore") || "10");
@@ -18,13 +17,13 @@ export async function GET(request: Request) {
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
     // Get zip centroids for lat/lon mapping
-    const centroidsRes = await fetch(
-      `${supabaseUrl}/rest/v1/nyc_zip_centroids?select=zip_code,avg_lat,avg_lon&metro=eq.${encodeURIComponent(city)}`,
-      {
-        headers: { apikey: supabaseKey },
-        cache: "no-store",
-      }
-    );
+    let centroidsUrl = `${supabaseUrl}/rest/v1/nyc_zip_centroids?select=zip_code,avg_lat,avg_lon`;
+    if (cityParam) centroidsUrl += `&metro=eq.${encodeURIComponent(cityParam)}`;
+
+    const centroidsRes = await fetch(centroidsUrl, {
+      headers: { apikey: supabaseKey },
+      cache: "no-store",
+    });
     const centroids = await centroidsRes.json();
     const centroidMap = new Map<string, { lat: number; lon: number }>();
     for (const c of centroids) {
@@ -34,7 +33,8 @@ export async function GET(request: Request) {
     }
 
     // Fetch buildings with violations/complaints (the interesting ones for the map)
-    let url = `${supabaseUrl}/rest/v1/buildings?select=id,full_address,borough,zip_code,slug,overall_score,violation_count,complaint_count,review_count&metro=eq.${encodeURIComponent(city)}&or=(violation_count.gt.0,complaint_count.gt.0)&limit=5000`;
+    let url = `${supabaseUrl}/rest/v1/buildings?select=id,full_address,borough,zip_code,slug,overall_score,violation_count,complaint_count,review_count&or=(violation_count.gt.0,complaint_count.gt.0)&limit=5000`;
+    if (cityParam) url += `&metro=eq.${encodeURIComponent(cityParam)}`;
     if (borough) {
       url += `&borough=eq.${encodeURIComponent(borough)}`;
     }
