@@ -17,7 +17,7 @@ export async function GET(request: Request) {
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
     // Get zip centroids for lat/lon mapping
-    let centroidsUrl = `${supabaseUrl}/rest/v1/nyc_zip_centroids?select=zip_code,avg_lat,avg_lon`;
+    let centroidsUrl = `${supabaseUrl}/rest/v1/zip_centroids?select=zip_code,avg_lat,avg_lon`;
     if (cityParam) centroidsUrl += `&metro=eq.${encodeURIComponent(cityParam)}`;
 
     const centroidsRes = await fetch(centroidsUrl, {
