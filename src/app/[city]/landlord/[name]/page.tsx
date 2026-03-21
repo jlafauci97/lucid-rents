@@ -33,53 +33,37 @@ const BUILDING_SELECT =
   "id, full_address, borough, zip_code, year_built, total_units, num_floors, owner_name, slug, overall_score, violation_count, complaint_count, litigation_count, dob_violation_count, review_count";
 
 async function findBuildings(supabase: Awaited<ReturnType<typeof createClient>>, param: string) {
-  // Extract first word from slug for a targeted prefix search: "senior-living-options-inc" → "senior%"
-  const firstWord = param.split("-")[0];
+  // Step 1: Look up exact owner name from landlord_stats by slug
+  const { data: statsRow } = await supabase
+    .from("landlord_stats")
+    .select("name")
+    .eq("slug", param)
+    .limit(1)
+    .single();
 
-  // Query buildings with owner_name starting with the first word, then filter by exact slug
+  const ownerName = statsRow?.name;
+
+  if (!ownerName) {
+    // Fallback: try decoded name match (old URL format)
+    const decodedName = decodeURIComponent(param);
+    const { data: byName } = await supabase
+      .from("buildings")
+      .select(BUILDING_SELECT)
+      .ilike("owner_name", decodedName)
+      .order("violation_count", { ascending: false })
+      .limit(500);
+    return byName && byName.length > 0 ? byName : null;
+  }
+
+  // Step 2: Fetch buildings by exact owner_name match
   const { data: buildings } = await supabase
     .from("buildings")
     .select(BUILDING_SELECT)
-    .not("owner_name", "is", null)
-    .ilike("owner_name", `${firstWord}%`)
-    .order("violation_count", { ascending: false })
-    .limit(2000);
-
-  if (buildings && buildings.length > 0) {
-    const slugMatches = buildings.filter(
-      (b) => b.owner_name && landlordSlug(b.owner_name) === param
-    );
-    if (slugMatches.length > 0) return slugMatches;
-  }
-
-  // Fallback: broader search using full pattern
-  const searchPattern = `%${param.replace(/-/g, "%")}%`;
-  const { data: broader } = await supabase
-    .from("buildings")
-    .select(BUILDING_SELECT)
-    .not("owner_name", "is", null)
-    .ilike("owner_name", searchPattern)
+    .eq("owner_name", ownerName)
     .order("violation_count", { ascending: false })
     .limit(500);
 
-  if (broader && broader.length > 0) {
-    const slugMatches = broader.filter(
-      (b) => b.owner_name && landlordSlug(b.owner_name) === param
-    );
-    if (slugMatches.length > 0) return slugMatches;
-    return broader;
-  }
-
-  // Last resort: decoded name match (old URL format)
-  const decodedName = decodeURIComponent(param);
-  const { data: byName } = await supabase
-    .from("buildings")
-    .select(BUILDING_SELECT)
-    .ilike("owner_name", decodedName)
-    .order("violation_count", { ascending: false })
-    .limit(500);
-
-  return byName && byName.length > 0 ? byName : null;
+  return buildings && buildings.length > 0 ? buildings : null;
 }
 
 export async function generateMetadata({
@@ -88,19 +72,15 @@ export async function generateMetadata({
   const { name } = await params;
   const supabase = await createClient();
 
-  // Quick lookup for owner name using pattern match
-  const searchPattern = `%${name.replace(/-/g, "%")}%`;
-  const { data: buildings } = await supabase
-    .from("buildings")
-    .select("owner_name")
-    .not("owner_name", "is", null)
-    .ilike("owner_name", searchPattern)
-    .limit(1);
+  // Quick lookup for owner name from landlord_stats
+  const { data: statsRow } = await supabase
+    .from("landlord_stats")
+    .select("name")
+    .eq("slug", name)
+    .limit(1)
+    .single();
 
-  let displayName = decodeURIComponent(name);
-  if (buildings?.[0]?.owner_name) {
-    displayName = buildings[0].owner_name;
-  }
+  const displayName = statsRow?.name || decodeURIComponent(name);
 
   const title = `${displayName} - Landlord Portfolio | Lucid Rents`;
   const description = `View all buildings, violations, and complaints for landlord ${displayName} in New York City.`;
