@@ -99,12 +99,18 @@ function TickerItem({ item }: { item: ActivityItem }) {
   return content;
 }
 
-export function ViolationTicker() {
+interface ViolationTickerProps {
+  metro?: string;
+}
+
+export function ViolationTicker({ metro }: ViolationTickerProps = {}) {
   const [items, setItems] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/activity?limit=30')
+    const params = new URLSearchParams({ limit: "30" });
+    if (metro) params.set("city", metro);
+    fetch(`/api/activity?${params}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.items) setItems(data.items);

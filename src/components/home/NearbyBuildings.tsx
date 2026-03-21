@@ -43,7 +43,7 @@ export function NearbyBuildings() {
         try {
           const { latitude, longitude } = position.coords;
           const res = await fetch(
-            `/api/buildings/nearby?lat=${latitude}&lon=${longitude}&limit=12`
+            `/api/buildings/nearby?lat=${latitude}&lon=${longitude}&limit=12&city=${city}`
           );
           if (!res.ok) throw new Error("Failed to fetch");
           const data = await res.json();

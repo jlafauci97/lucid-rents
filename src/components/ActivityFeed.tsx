@@ -145,7 +145,7 @@ export function ActivityFeed() {
   useEffect(() => {
     async function fetchActivity() {
       try {
-        const res = await fetch("/api/activity");
+        const res = await fetch(`/api/activity?city=${city}`);
         if (!res.ok) throw new Error("Failed to fetch");
         const data = await res.json();
         setItems(data.items ?? []);
@@ -158,7 +158,7 @@ export function ActivityFeed() {
     fetchActivity();
     const interval = setInterval(fetchActivity, 120000);
     return () => clearInterval(interval);
-  }, []);
+  }, [city]);
 
   return (
     <div className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm overflow-hidden">
