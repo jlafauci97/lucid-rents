@@ -10,7 +10,7 @@ import { NEWS_CATEGORIES } from "@/lib/news-sources";
 import { SUBWAY_LINES, transitLineUrl } from "@/lib/subway-lines";
 
 const BASE_URL = "https://lucidrents.com";
-const BUILDINGS_PER_SITEMAP = 25000;
+const BUILDINGS_PER_SITEMAP = 10000;
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 

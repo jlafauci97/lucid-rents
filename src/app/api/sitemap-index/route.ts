@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 const BASE_URL = "https://lucidrents.com";
-const BUILDINGS_PER_SITEMAP = 25000;
+const BUILDINGS_PER_SITEMAP = 10000;
 
 /**
  * Sitemap index: /sitemap.xml
@@ -9,7 +9,7 @@ const BUILDINGS_PER_SITEMAP = 25000;
  * Sitemap 0 = static pages, sitemaps 1+ = buildings in batches.
  */
 export async function GET() {
-  let totalBuildings = 750000;
+  let totalBuildings = 1050000;
 
   try {
     const res = await fetch(
@@ -24,7 +24,7 @@ export async function GET() {
     );
     const countHeader = res.headers.get("content-range");
     if (countHeader) {
-      totalBuildings = parseInt(countHeader.split("/")[1] || "750000", 10);
+      totalBuildings = parseInt(countHeader.split("/")[1] || "1050000", 10);
     }
   } catch {
     // Fall back to estimate
