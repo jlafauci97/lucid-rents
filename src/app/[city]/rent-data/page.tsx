@@ -9,21 +9,25 @@ import { ZipRentTable } from "@/components/rent-data/ZipRentTable";
 import { RGBChart } from "@/components/rent-data/RGBChart";
 import { RentMap } from "@/components/rent-data/RentMap";
 
-export const metadata: Metadata = {
-  title: "NYC Rent Data & Trends | Lucid Rents",
-  description:
-    "Explore NYC rent prices by neighborhood, borough, and zip code. View median rent trends, borough comparisons, Rent Guidelines Board history, and an interactive rent map.",
-  alternates: { canonical: canonicalUrl(cityPath("/rent-data")) },
-  openGraph: {
-    title: "NYC Rent Data & Trends",
-    description:
-      "Median rent prices, borough comparisons, and neighborhood rent maps for New York City. Powered by Zillow ZORI data.",
-    url: canonicalUrl(cityPath("/rent-data")),
-    siteName: "Lucid Rents",
-    type: "website",
-    locale: "en_US",
-  },
-};
+export async function generateMetadata({ params }: { params: Promise<{ city: string }> }): Promise<Metadata> {
+  const { city } = await params;
+  const { isValidCity, CITY_META } = await import("@/lib/cities");
+  if (!isValidCity(city)) return {};
+  const meta = CITY_META[city];
+  return {
+    title: `${meta.fullName} Rent Data & Trends | Lucid Rents`,
+    description: `Explore ${meta.fullName} rent prices by neighborhood and zip code. View median rent trends, area comparisons, and an interactive rent map.`,
+    alternates: { canonical: canonicalUrl(cityPath("/rent-data", city)) },
+    openGraph: {
+      title: `${meta.fullName} Rent Data & Trends`,
+      description: `Median rent prices, area comparisons, and neighborhood rent maps for ${meta.fullName}. Powered by Zillow ZORI data.`,
+      url: canonicalUrl(cityPath("/rent-data", city)),
+      siteName: "Lucid Rents",
+      type: "website",
+      locale: "en_US",
+    },
+  };
+}
 
 export const revalidate = 86400;
 

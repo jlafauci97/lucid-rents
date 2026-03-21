@@ -1,6 +1,17 @@
+"use client";
+
 import Link from "next/link";
-import { type City, DEFAULT_CITY, CITY_META } from "@/lib/cities";
+import { usePathname } from "next/navigation";
+import { type City, VALID_CITIES, CITY_META, DEFAULT_CITY } from "@/lib/cities";
 import { cityPath } from "@/lib/seo";
+
+function cityFromPathname(pathname: string): City {
+  for (const c of VALID_CITIES) {
+    const prefix = `/${CITY_META[c].urlPrefix}`;
+    if (pathname === prefix || pathname.startsWith(prefix + "/")) return c;
+  }
+  return DEFAULT_CITY;
+}
 
 const DATA_SOURCES: Record<City, string[]> = {
   nyc: [
@@ -12,14 +23,15 @@ const DATA_SOURCES: Record<City, string[]> = {
   "los-angeles": [
     "LA Open Data - LAHD Violations",
     "LA Open Data - LADBS Permits",
-    "LA Open Data - 311 Complaints",
-    "LA County Assessor Data",
-    "LAHD Soft-Story Inventory",
+    "LA Open Data - MyLA311 Cases",
+    "LA Open Data - Soft Story Data",
   ],
 };
 
-export function Footer({ city = DEFAULT_CITY }: { city?: City }) {
-  const cityName = CITY_META[city]?.fullName || "New York City";
+export function Footer({ city: _city = DEFAULT_CITY }: { city?: City }) {
+  const pathname = usePathname();
+  const city = cityFromPathname(pathname);
+  const meta = CITY_META[city];
   return (
     <footer className="bg-[#0F1D2E] text-gray-400 mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -29,7 +41,7 @@ export function Footer({ city = DEFAULT_CITY }: { city?: City }) {
               <span className="text-[#3B82F6]">Lucid</span> Rents
             </h3>
             <p className="text-sm">
-              Know your {cityName} apartment before you sign. Real data, real reviews,
+              Know your {meta.fullName} apartment before you sign. Real data, real reviews,
               real transparency.
             </p>
           </div>
@@ -50,7 +62,7 @@ export function Footer({ city = DEFAULT_CITY }: { city?: City }) {
               </li>
               <li>
                 <Link href={cityPath("/news", city)} className="hover:text-white transition-colors">
-                  {cityName} Housing News
+                  {meta.fullName} Housing News
                 </Link>
               </li>
               <li>
@@ -70,8 +82,8 @@ export function Footer({ city = DEFAULT_CITY }: { city?: City }) {
               Data Sources
             </h4>
             <ul className="space-y-2 text-sm">
-              {(DATA_SOURCES[city] || DATA_SOURCES.nyc).map((source) => (
-                <li key={source}>{source}</li>
+              {(DATA_SOURCES[city] || DATA_SOURCES.nyc).map((src) => (
+                <li key={src}>{src}</li>
               ))}
             </ul>
           </div>
