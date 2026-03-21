@@ -34,14 +34,13 @@ const BUILDING_SELECT =
 
 async function findBuildings(supabase: Awaited<ReturnType<typeof createClient>>, param: string) {
   // Step 1: Look up exact owner name from landlord_stats by slug
-  const { data: statsRow } = await supabase
+  const { data: statsRows } = await supabase
     .from("landlord_stats")
     .select("name")
     .eq("slug", param)
-    .limit(1)
-    .single();
+    .limit(1);
 
-  const ownerName = statsRow?.name;
+  const ownerName = statsRows?.[0]?.name;
 
   if (!ownerName) {
     // Fallback: try decoded name match (old URL format)
@@ -73,14 +72,13 @@ export async function generateMetadata({
   const supabase = await createClient();
 
   // Quick lookup for owner name from landlord_stats
-  const { data: statsRow } = await supabase
+  const { data: statsRows } = await supabase
     .from("landlord_stats")
     .select("name")
     .eq("slug", name)
-    .limit(1)
-    .single();
+    .limit(1);
 
-  const displayName = statsRow?.name || decodeURIComponent(name);
+  const displayName = statsRows?.[0]?.name || decodeURIComponent(name);
 
   const title = `${displayName} - Landlord Portfolio | Lucid Rents`;
   const description = `View all buildings, violations, and complaints for landlord ${displayName} in New York City.`;
