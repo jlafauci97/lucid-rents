@@ -92,14 +92,15 @@ function FeedItemIcon({ type }: { type: ActivityItem["type"] }) {
   }
 }
 
-function sourceLabel(type: ActivityItem["type"]): string {
+function sourceLabel(type: ActivityItem["type"], city: string): string {
+  const isLA = city === "los-angeles";
   switch (type) {
-    case "violation": return "HPD Violation";
-    case "complaint": return "311 Complaint";
+    case "violation": return isLA ? "LAHD Violation" : "HPD Violation";
+    case "complaint": return isLA ? "LA 311 Complaint" : "311 Complaint";
     case "review": return "Tenant Review";
     case "litigation": return "HPD Litigation";
-    case "dob_violation": return "DOB Violation";
-    case "crime": return "NYPD Crime";
+    case "dob_violation": return isLA ? "LADBS Violation" : "DOB Violation";
+    case "crime": return "Crime Report";
     case "bedbug": return "Bedbug Report";
     case "eviction": return "Eviction";
   }
@@ -174,7 +175,7 @@ function FeedCard({ item }: { item: ActivityItem }) {
           {/* Header row: source + borough + time */}
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className={`text-sm font-semibold ${sourceColor(item.type)}`}>
-              {sourceLabel(item.type)}
+              {sourceLabel(item.type, city)}
             </span>
             {item.violationClass && (
               <span className="text-xs font-medium bg-red-50 text-[#EF4444] px-1.5 py-0.5 rounded">
@@ -237,7 +238,7 @@ export function FeedView() {
     setError(false);
 
     try {
-      const res = await fetch(`/api/activity?limit=${ITEMS_PER_PAGE}&filter=${filter}&page=${page}`);
+      const res = await fetch(`/api/activity?limit=${ITEMS_PER_PAGE}&filter=${filter}&page=${page}&city=${city}`);
       if (!res.ok) throw new Error("Failed to fetch");
       const data = await res.json();
       setItems(data.items ?? []);

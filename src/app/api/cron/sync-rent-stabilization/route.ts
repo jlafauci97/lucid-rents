@@ -93,6 +93,7 @@ function parseSummaryRows(csvRows: Record<string, string>[]): Record<string, unk
         units_total: unitstotal,
         est_units_stabilized: null,
         diff_units_stabilized: null,
+        metro: "nyc",
         raw_data: row,
         imported_at: now,
       });
@@ -106,6 +107,7 @@ function parseSummaryRows(csvRows: Record<string, string>[]): Record<string, unk
         units_total: unitstotal,
         est_units_stabilized: null,
         diff_units_stabilized: diff,
+        metro: "nyc",
         raw_data: row,
         imported_at: now,
       });
@@ -138,6 +140,7 @@ function parseV2Rows(csvRows: Record<string, string>[]): Record<string, unknown>
         units_total: null,
         est_units_stabilized: null,
         diff_units_stabilized: null,
+        metro: "nyc",
         raw_data: { ucbbl: bbl, year, [`uc${year}`]: row[`uc${year}`] },
         imported_at: now,
       });
