@@ -8,8 +8,8 @@
  * table with metro='los-angeles'.
  *
  * Data source: LA Metro GTFS
- * https://gitlab.com/LACMTA/gtfs_rail/-/raw/master/google_transit.zip  (rail)
- * https://gitlab.com/LACMTA/gtfs_bus/-/raw/master/google_transit.zip   (bus)
+ * https://gitlab.com/LACMTA/gtfs_rail/-/raw/master/gtfs_rail.zip  (rail)
+ * https://gitlab.com/LACMTA/gtfs_bus/-/raw/master/gtfs_rail.zip   (bus)
  *
  * Usage:
  *   node scripts/backfill-la-transit.mjs                   # rail + bus
@@ -54,8 +54,8 @@ const BATCH_SIZE = 500;
 // ── GTFS feed URLs ───────────────────────────────────────────────────
 // LA Metro publishes separate GTFS feeds for rail and bus on GitLab.
 // The developer.metro.net URL redirects to these.
-const GTFS_RAIL_URL = "https://gitlab.com/LACMTA/gtfs_rail/-/raw/master/google_transit.zip";
-const GTFS_BUS_URL = "https://gitlab.com/LACMTA/gtfs_bus/-/raw/master/google_transit.zip";
+const GTFS_RAIL_URL = "https://gitlab.com/LACMTA/gtfs_rail/-/raw/master/gtfs_rail.zip";
+const GTFS_BUS_URL = "https://gitlab.com/LACMTA/gtfs_bus/-/raw/master/gtfs_bus.zip";
 
 // ── Rail line detection ──────────────────────────────────────────────
 // Metro Rail route IDs/names in the GTFS feed.
