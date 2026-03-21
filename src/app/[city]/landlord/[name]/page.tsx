@@ -32,33 +32,66 @@ interface LandlordPageProps {
 const BUILDING_SELECT =
   "id, full_address, borough, zip_code, year_built, total_units, num_floors, owner_name, slug, overall_score, violation_count, complaint_count, litigation_count, dob_violation_count, review_count";
 
-async function findBuildings(supabase: Awaited<ReturnType<typeof createClient>>, param: string) {
-  // Try slug match first (new format)
-  const { data: bySlug } = await supabase.rpc("landlord_slug", { name: "" });
-  // Actually query using SQL function matching
-  const { data: buildings } = await supabase
-    .from("buildings")
-    .select(BUILDING_SELECT)
-    .not("owner_name", "is", null)
-    .order("violation_count", { ascending: false })
-    .limit(10000);
+/**
+ * Look up landlord name from slug via landlord_stats table,
+ * then fetch their buildings by exact owner_name match.
+ */
+async function findLandlordBuildings(supabase: Awaited<ReturnType<typeof createClient>>, slugParam: string) {
+  // Step 1: Look up actual owner name from landlord_stats by slug
+  const { data: statsRow } = await supabase
+    .from("landlord_stats")
+    .select("name")
+    .eq("slug", slugParam)
+    .limit(1)
+    .single();
 
-  if (!buildings) return null;
+  let ownerName: string | null = statsRow?.name || null;
 
-  // Filter by slug match
-  const slugMatches = buildings.filter(
-    (b) => b.owner_name && landlordSlug(b.owner_name) === param
-  );
+  // If no slug match, try decoding as old URL format
+  if (!ownerName) {
+    const decoded = decodeURIComponent(slugParam);
+    const { data: nameMatch } = await supabase
+      .from("landlord_stats")
+      .select("name,slug")
+      .ilike("name", decoded)
+      .limit(1)
+      .single();
 
-  if (slugMatches.length > 0) return slugMatches;
+    if (nameMatch) {
+      // Redirect to proper slug URL
+      if (nameMatch.slug !== slugParam) {
+        return { redirect: nameMatch.slug, buildings: null, ownerName: nameMatch.name };
+      }
+      ownerName = nameMatch.name;
+    }
+  }
 
-  // Fall back to decoded name match (old format)
-  const decodedName = decodeURIComponent(param);
-  const nameMatches = buildings.filter(
-    (b) => b.owner_name?.toLowerCase() === decodedName.toLowerCase()
-  );
+  if (!ownerName) return { redirect: null, buildings: null, ownerName: null };
 
-  return nameMatches.length > 0 ? nameMatches : null;
+  // Step 2: Fetch all buildings for this owner using cursor pagination
+  const allBuildings: Array<Record<string, unknown>> = [];
+  let lastId: string | null = null;
+  const BATCH = 1000;
+
+  while (true) {
+    let query = supabase
+      .from("buildings")
+      .select(BUILDING_SELECT)
+      .eq("owner_name", ownerName)
+      .order("violation_count", { ascending: false })
+      .limit(BATCH);
+
+    if (lastId) query = query.gt("id", lastId);
+
+    const { data, error } = await query;
+    if (error || !data || data.length === 0) break;
+
+    allBuildings.push(...data);
+    lastId = data[data.length - 1].id as string;
+    if (data.length < BATCH) break;
+  }
+
+  return { redirect: null, buildings: allBuildings, ownerName };
 }
 
 export async function generateMetadata({
@@ -67,21 +100,15 @@ export async function generateMetadata({
   const { name } = await params;
   const supabase = await createClient();
 
-  // Quick lookup for owner name
-  const { data: buildings } = await supabase
-    .from("buildings")
-    .select("owner_name")
-    .not("owner_name", "is", null)
-    .limit(10000);
+  // Quick lookup for display name
+  const { data: statsRow } = await supabase
+    .from("landlord_stats")
+    .select("name")
+    .eq("slug", name)
+    .limit(1)
+    .single();
 
-  let displayName = decodeURIComponent(name);
-  if (buildings) {
-    const match = buildings.find(
-      (b) => b.owner_name && landlordSlug(b.owner_name) === name
-    );
-    if (match) displayName = match.owner_name;
-  }
-
+  const displayName = statsRow?.name || decodeURIComponent(name);
   const title = `${displayName} - Landlord Portfolio | Lucid Rents`;
   const description = `View all buildings, violations, and complaints for landlord ${displayName} in New York City.`;
   const url = canonicalUrl(landlordUrl(displayName));
@@ -106,70 +133,44 @@ export default async function LandlordDetailPage({
   const { name } = await params;
   const supabase = await createClient();
 
-  // Try slug-based lookup first
-  const { data: allBuildings } = await supabase
-    .from("buildings")
-    .select(BUILDING_SELECT)
-    .not("owner_name", "is", null)
-    .order("violation_count", { ascending: false })
-    .limit(10000);
+  const { redirect, buildings, ownerName } = await findLandlordBuildings(supabase, name);
 
-  if (!allBuildings) notFound();
-
-  // Match by slug
-  let buildings = allBuildings.filter(
-    (b) => b.owner_name && landlordSlug(b.owner_name) === name
-  );
-
-  // Fall back to decoded name (old URL format)
-  if (buildings.length === 0) {
-    const decodedName = decodeURIComponent(name);
-    buildings = allBuildings.filter(
-      (b) => b.owner_name?.toLowerCase() === decodedName.toLowerCase()
-    );
-
-    // If found via old format, redirect to slug URL
-    if (buildings.length > 0 && buildings[0].owner_name) {
-      const slug = landlordSlug(buildings[0].owner_name);
-      if (slug !== name) {
-        permanentRedirect(`/landlord/${slug}`);
-      }
-    }
+  if (redirect) {
+    permanentRedirect(cityPath(`/landlord/${redirect}`));
   }
 
-  if (buildings.length === 0) notFound();
+  if (!buildings || buildings.length === 0 || !ownerName) notFound();
+
+  const displayName = ownerName;
 
   // Aggregate stats
   const totalBuildings = buildings.length;
   const totalViolations = buildings.reduce(
-    (sum, b) => sum + (b.violation_count || 0),
+    (sum, b) => sum + ((b.violation_count as number) || 0),
     0
   );
   const totalComplaints = buildings.reduce(
-    (sum, b) => sum + (b.complaint_count || 0),
+    (sum, b) => sum + ((b.complaint_count as number) || 0),
     0
   );
   const totalLitigations = buildings.reduce(
-    (sum, b) => sum + (b.litigation_count || 0),
+    (sum, b) => sum + ((b.litigation_count as number) || 0),
     0
   );
   const totalDobViolations = buildings.reduce(
-    (sum, b) => sum + (b.dob_violation_count || 0),
+    (sum, b) => sum + ((b.dob_violation_count as number) || 0),
     0
   );
   const avgScore = (() => {
     const scores = buildings.map((b) =>
-      b.overall_score ?? deriveScore(b.violation_count || 0, b.complaint_count || 0)
+      (b.overall_score as number) ?? deriveScore((b.violation_count as number) || 0, (b.complaint_count as number) || 0)
     );
     return scores.reduce((a, b) => a + b, 0) / scores.length;
   })();
   const totalUnits = buildings.reduce(
-    (sum, b) => sum + (b.total_units || 0),
+    (sum, b) => sum + ((b.total_units as number) || 0),
     0
   );
-
-  // Use the owner_name from first building for display (preserves original casing)
-  const displayName = buildings[0].owner_name || decodeURIComponent(name);
 
   return (
     <AdSidebar>
@@ -298,17 +299,17 @@ export default async function LandlordDetailPage({
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {buildings.slice(0, 3).map((b) => {
-              const score = b.overall_score ?? deriveScore(b.violation_count || 0, b.complaint_count || 0);
+              const score = (b.overall_score as number) ?? deriveScore((b.violation_count as number) || 0, (b.complaint_count as number) || 0);
               return (
-                <Link key={b.id} href={buildingUrl(b)}>
+                <Link key={b.id as string} href={buildingUrl(b as { slug?: string; id: string })}>
                   <div className="bg-white rounded-xl border-2 border-red-100 hover:border-red-200 p-4 transition-colors">
                     <div className="flex items-start justify-between gap-2 mb-2">
-                      <p className="text-sm font-semibold text-[#0F1D2E] truncate">{b.full_address}</p>
+                      <p className="text-sm font-semibold text-[#0F1D2E] truncate">{b.full_address as string}</p>
                       <LetterGrade score={score} size="sm" />
                     </div>
                     <div className="flex items-center gap-3 text-xs text-[#64748b]">
-                      <span className="text-[#EF4444] font-semibold">{(b.violation_count || 0).toLocaleString()} violations</span>
-                      <span>{(b.complaint_count || 0).toLocaleString()} complaints</span>
+                      <span className="text-[#EF4444] font-semibold">{((b.violation_count as number) || 0).toLocaleString()} violations</span>
+                      <span>{((b.complaint_count as number) || 0).toLocaleString()} complaints</span>
                     </div>
                   </div>
                 </Link>
@@ -338,20 +339,20 @@ export default async function LandlordDetailPage({
       {/* Building cards grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {buildings.map((building) => {
-          const score = building.overall_score ?? deriveScore(building.violation_count || 0, building.complaint_count || 0);
+          const score = (building.overall_score as number) ?? deriveScore((building.violation_count as number) || 0, (building.complaint_count as number) || 0);
           return (
-            <Link key={building.id} href={buildingUrl(building)}>
+            <Link key={building.id as string} href={buildingUrl(building as { slug?: string; id: string })}>
               <Card hover className="h-full">
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-semibold text-[#0F1D2E] truncate">
-                        {building.full_address}
+                        {building.full_address as string}
                       </p>
                       <div className="flex items-center gap-1 text-xs text-[#94a3b8] mt-0.5">
                         <MapPin className="w-3 h-3 flex-shrink-0" />
                         <span>
-                          {building.borough}
+                          {building.borough as string}
                           {building.zip_code && ` ${building.zip_code}`}
                         </span>
                       </div>
@@ -362,18 +363,18 @@ export default async function LandlordDetailPage({
                   {/* Building info row */}
                   <div className="flex items-center gap-1 text-xs text-[#64748b] mb-3">
                     {building.year_built && (
-                      <span>Built {building.year_built}</span>
+                      <span>Built {building.year_built as number}</span>
                     )}
                     {building.year_built && building.total_units && (
                       <span className="mx-1">-</span>
                     )}
                     {building.total_units && (
-                      <span>{building.total_units} units</span>
+                      <span>{building.total_units as number} units</span>
                     )}
                     {building.num_floors && (
                       <>
                         <span className="mx-1">-</span>
-                        <span>{building.num_floors} floors</span>
+                        <span>{building.num_floors as number} floors</span>
                       </>
                     )}
                   </div>
@@ -383,55 +384,55 @@ export default async function LandlordDetailPage({
                     <div className="flex items-center gap-1.5">
                       <AlertTriangle
                         className={`w-3.5 h-3.5 ${
-                          (building.violation_count || 0) > 10
+                          ((building.violation_count as number) || 0) > 10
                             ? "text-[#EF4444]"
                             : "text-[#94a3b8]"
                         }`}
                       />
                       <span
                         className={`text-sm font-semibold ${
-                          (building.violation_count || 0) > 10
+                          ((building.violation_count as number) || 0) > 10
                             ? "text-[#EF4444]"
                             : "text-[#64748b]"
                         }`}
                       >
-                        {(building.violation_count || 0).toLocaleString()}
+                        {((building.violation_count as number) || 0).toLocaleString()}
                       </span>
                       <span className="text-xs text-[#94a3b8]">violations</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <MessageSquare
                         className={`w-3.5 h-3.5 ${
-                          (building.complaint_count || 0) > 10
+                          ((building.complaint_count as number) || 0) > 10
                             ? "text-[#F59E0B]"
                             : "text-[#94a3b8]"
                         }`}
                       />
                       <span
                         className={`text-sm font-semibold ${
-                          (building.complaint_count || 0) > 10
+                          ((building.complaint_count as number) || 0) > 10
                             ? "text-[#F59E0B]"
                             : "text-[#64748b]"
                         }`}
                       >
-                        {(building.complaint_count || 0).toLocaleString()}
+                        {((building.complaint_count as number) || 0).toLocaleString()}
                       </span>
                       <span className="text-xs text-[#94a3b8]">complaints</span>
                     </div>
-                    {(building.litigation_count || 0) > 0 && (
+                    {((building.litigation_count as number) || 0) > 0 && (
                       <div className="flex items-center gap-1.5">
                         <Scale className="w-3.5 h-3.5 text-[#8B5CF6]" />
                         <span className="text-sm font-semibold text-[#8B5CF6]">
-                          {(building.litigation_count || 0).toLocaleString()}
+                          {((building.litigation_count as number) || 0).toLocaleString()}
                         </span>
                         <span className="text-xs text-[#94a3b8]">litigations</span>
                       </div>
                     )}
-                    {(building.dob_violation_count || 0) > 0 && (
+                    {((building.dob_violation_count as number) || 0) > 0 && (
                       <div className="flex items-center gap-1.5">
                         <HardHat className="w-3.5 h-3.5 text-[#3B82F6]" />
                         <span className="text-sm font-semibold text-[#3B82F6]">
-                          {(building.dob_violation_count || 0).toLocaleString()}
+                          {((building.dob_violation_count as number) || 0).toLocaleString()}
                         </span>
                         <span className="text-xs text-[#94a3b8]">DOB</span>
                       </div>
