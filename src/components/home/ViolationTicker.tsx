@@ -110,13 +110,18 @@ export function ViolationTicker({ metro }: ViolationTickerProps = {}) {
   useEffect(() => {
     const params = new URLSearchParams({ limit: "30" });
     if (metro) params.set("city", metro);
-    fetch(`/api/activity?${params}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.items) setItems(data.items);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    function fetchItems() {
+      fetch(`/api/activity?${params}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.items) setItems(data.items);
+        })
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    }
+    fetchItems();
+    const interval = setInterval(fetchItems, 120000);
+    return () => clearInterval(interval);
   }, []);
 
   if (loading) {

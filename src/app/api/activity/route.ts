@@ -17,6 +17,13 @@ export interface ActivityItem {
   zipCode?: string;
 }
 
+// ---------------------------------------------------------------------------
+// Server-side cache – guarantees stable pagination within the TTL window and
+// prevents Supabase from being hit on every page/filter/refresh request.
+// ---------------------------------------------------------------------------
+const CACHE_TTL = 60_000; // 60 seconds
+const cache = new Map<string, { items: ActivityItem[]; ts: number }>();
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -27,22 +34,31 @@ export async function GET(request: Request) {
     if (cityParam && !isValidCity(cityParam)) {
       return NextResponse.json({ error: "Invalid city" }, { status: 400 });
     }
-    const city = cityParam || null;
 
+    // --- Check cache ---
+    const cacheKey = `${filter}`;
+    const cached = cache.get(cacheKey);
+    if (cached && Date.now() - cached.ts < CACHE_TTL) {
+      const offset = (page - 1) * limit;
+      const result = cached.items.slice(offset, offset + limit);
+      const totalPages = Math.ceil(cached.items.length / limit);
+      return NextResponse.json({ items: result, page, totalPages, hasMore: page < totalPages });
+    }
+
+    // --- Fresh fetch ---
     const supabase = await createClient();
-    // No per-source cap — fetch up to Supabase max (10000) per source to show
-    // every available record. The merged result is paginated client-side.
 
-    // Date cutoff: only fetch recent records to avoid full table scans on
-    // tables with millions of rows (DOB: 2.2M, HPD: 800K, 311: 800K, NYPD: 475K)
+    // Snap cutoff to midnight UTC so every request today gets the same boundary
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - 90);
+    cutoff.setUTCHours(0, 0, 0, 0);
     const cutoffDate = cutoff.toISOString();
 
-    // Upper bound: filter out records with bad future dates (e.g. 2030 litigations)
-    const today = new Date();
-    today.setDate(today.getDate() + 1); // allow today + 1 day buffer for timezone differences
-    const maxDate = today.toISOString();
+    // Upper bound: end of tomorrow UTC to filter out bad future dates
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setUTCHours(23, 59, 59, 999);
+    const maxDate = tomorrow.toISOString();
     const maxDateShort = maxDate.slice(0, 10);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -54,15 +70,15 @@ export async function GET(request: Request) {
         supabase
           .from("reviews")
           .select("id, title, overall_rating, created_at, building_id, buildings(full_address, borough, slug)")
-
           .not("building_id", "is", null)
           .gte("created_at", cutoffDate)
           .lte("created_at", maxDate)
           .order("created_at", { ascending: false })
+          .order("id", { ascending: false })
           .limit(10000)
       );
     } else {
-      promises.push(Promise.resolve({ data: null }));
+      promises.push(Promise.resolve({ data: null, error: null }));
     }
 
     if (filter === "all" || filter === "violations") {
@@ -70,15 +86,15 @@ export async function GET(request: Request) {
         supabase
           .from("hpd_violations")
           .select("id, class, nov_description, inspection_date, building_id, buildings(full_address, borough, slug)")
-
           .not("building_id", "is", null)
           .gte("inspection_date", cutoffDate.slice(0, 10))
           .lte("inspection_date", maxDateShort)
           .order("inspection_date", { ascending: false })
+          .order("id", { ascending: false })
           .limit(10000)
       );
     } else {
-      promises.push(Promise.resolve({ data: null }));
+      promises.push(Promise.resolve({ data: null, error: null }));
     }
 
     if (filter === "all" || filter === "complaints") {
@@ -86,15 +102,15 @@ export async function GET(request: Request) {
         supabase
           .from("complaints_311")
           .select("id, complaint_type, descriptor, created_date, building_id, buildings(full_address, borough, slug)")
-
           .not("building_id", "is", null)
           .gte("created_date", cutoffDate)
           .lte("created_date", maxDate)
           .order("created_date", { ascending: false })
+          .order("id", { ascending: false })
           .limit(10000)
       );
     } else {
-      promises.push(Promise.resolve({ data: null }));
+      promises.push(Promise.resolve({ data: null, error: null }));
     }
 
     if (filter === "all" || filter === "litigations") {
@@ -102,16 +118,16 @@ export async function GET(request: Request) {
         supabase
           .from("hpd_litigations")
           .select("id, case_type, case_status, respondent, case_open_date, building_id, buildings(full_address, borough, slug)")
-
           .not("building_id", "is", null)
           .not("case_open_date", "is", null)
           .gte("case_open_date", cutoffDate.slice(0, 10))
           .lte("case_open_date", maxDateShort)
           .order("case_open_date", { ascending: false })
+          .order("id", { ascending: false })
           .limit(10000)
       );
     } else {
-      promises.push(Promise.resolve({ data: null }));
+      promises.push(Promise.resolve({ data: null, error: null }));
     }
 
     if (filter === "all" || filter === "dob_violations") {
@@ -119,16 +135,16 @@ export async function GET(request: Request) {
         supabase
           .from("dob_violations")
           .select("id, violation_type, description, issue_date, building_id, buildings(full_address, borough, slug)")
-
           .not("building_id", "is", null)
           .not("issue_date", "is", null)
           .gte("issue_date", cutoffDate.slice(0, 10))
           .lte("issue_date", maxDateShort)
           .order("issue_date", { ascending: false })
+          .order("id", { ascending: false })
           .limit(10000)
       );
     } else {
-      promises.push(Promise.resolve({ data: null }));
+      promises.push(Promise.resolve({ data: null, error: null }));
     }
 
     if (filter === "all" || filter === "crime") {
@@ -136,16 +152,16 @@ export async function GET(request: Request) {
         supabase
           .from("nypd_complaints")
           .select("id, offense_description, pd_description, crime_category, law_category, cmplnt_date, borough, zip_code")
-
           .in("crime_category", ["violent", "property"])
           .not("cmplnt_date", "is", null)
           .gte("cmplnt_date", cutoffDate.slice(0, 10))
           .lte("cmplnt_date", maxDateShort)
           .order("cmplnt_date", { ascending: false })
+          .order("id", { ascending: false })
           .limit(10000)
       );
     } else {
-      promises.push(Promise.resolve({ data: null }));
+      promises.push(Promise.resolve({ data: null, error: null }));
     }
 
     if (filter === "all" || filter === "bedbugs") {
@@ -153,16 +169,16 @@ export async function GET(request: Request) {
         supabase
           .from("bedbug_reports")
           .select("id, infested_dwelling_unit_count, filing_date, building_id, buildings(full_address, borough, slug)")
-
           .not("building_id", "is", null)
           .not("filing_date", "is", null)
           .gte("filing_date", cutoffDate.slice(0, 10))
           .lte("filing_date", maxDateShort)
           .order("filing_date", { ascending: false })
+          .order("id", { ascending: false })
           .limit(10000)
       );
     } else {
-      promises.push(Promise.resolve({ data: null }));
+      promises.push(Promise.resolve({ data: null, error: null }));
     }
 
     if (filter === "all" || filter === "evictions") {
@@ -170,28 +186,34 @@ export async function GET(request: Request) {
         supabase
           .from("evictions")
           .select("id, eviction_address, executed_date, borough, building_id, buildings(full_address, borough, slug)")
-
           .not("building_id", "is", null)
           .not("executed_date", "is", null)
           .gte("executed_date", cutoffDate.slice(0, 10))
           .lte("executed_date", maxDateShort)
           .order("executed_date", { ascending: false })
+          .order("id", { ascending: false })
           .limit(10000)
       );
     } else {
-      promises.push(Promise.resolve({ data: null }));
+      promises.push(Promise.resolve({ data: null, error: null }));
     }
 
-    const [reviewsResult, violationsResult, complaintsResult, litigationsResult, dobResult, crimeResult, bedbugResult, evictionResult] = await Promise.all(promises) as [
-      { data: unknown[] | null },
-      { data: unknown[] | null },
-      { data: unknown[] | null },
-      { data: unknown[] | null },
-      { data: unknown[] | null },
-      { data: unknown[] | null },
-      { data: unknown[] | null },
-      { data: unknown[] | null },
-    ];
+    const results = await Promise.all(promises) as {
+      data: unknown[] | null;
+      error?: { message: string } | null;
+    }[];
+
+    // If any query failed, return error instead of caching bad/empty data
+    const failedIdx = results.findIndex(r => r.error !== undefined && r.error !== null);
+    if (failedIdx !== -1) {
+      console.error("Activity feed query failed:", results[failedIdx].error);
+      return NextResponse.json(
+        { error: "Failed to fetch activity feed" },
+        { status: 502 }
+      );
+    }
+
+    const [reviewsResult, violationsResult, complaintsResult, litigationsResult, dobResult, crimeResult, bedbugResult, evictionResult] = results;
 
     const items: ActivityItem[] = [];
 
@@ -359,8 +381,16 @@ export async function GET(request: Request) {
       }
     }
 
-    // Sort all items chronologically (newest first) and paginate
-    items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    // Deterministic sort: date DESC, then id DESC as tiebreaker
+    items.sort((a, b) => {
+      const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
+      if (dateDiff !== 0) return dateDiff;
+      return b.id < a.id ? -1 : b.id > a.id ? 1 : 0;
+    });
+
+    // Store in cache
+    cache.set(cacheKey, { items, ts: Date.now() });
+
     const offset = (page - 1) * limit;
     const result = items.slice(offset, offset + limit);
     const totalPages = Math.ceil(items.length / limit);
