@@ -5,6 +5,9 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalUrl, cityPath } from "@/lib/seo";
 import { CITY_META, type City } from "@/lib/cities";
 import { FileSearch, Users, Shield, ArrowRight } from "lucide-react";
+import { ViolationTicker } from "@/components/home/ViolationTicker";
+import { LiveStats } from "@/components/home/LiveStats";
+import { ActivityFeed } from "@/components/ActivityFeed";
 
 export const metadata: Metadata = {
   title: "Lucid Rents — Apartment Building Intelligence",
@@ -138,6 +141,32 @@ export default function HomePage() {
               );
             })}
           </div>
+        </div>
+      </section>
+
+      {/* Violation Ticker */}
+      <ViolationTicker />
+
+      {/* Stats */}
+      <section className="border-b border-[#e2e8f0]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <LiveStats />
+        </div>
+      </section>
+
+      {/* Recent Activity */}
+      <section className="py-16 bg-[#EFF6FF]">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-[#0F1D2E] mb-2">
+              Recent Activity
+            </h2>
+            <p className="text-[#64748b]">
+              The latest violations, complaints, and tenant reviews across all
+              cities
+            </p>
+          </div>
+          <ActivityFeed />
         </div>
       </section>
 
