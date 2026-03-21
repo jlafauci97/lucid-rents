@@ -300,7 +300,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
 
             {/* Violation & Complaint Trends */}
             <div id="violation-trends">
-              <ViolationTrend buildingId={buildingId} />
+              <ViolationTrend buildingId={buildingId} housingAgency={city === "los-angeles" ? "LAHD" : "HPD"} />
             </div>
 
             {/* Violations by Unit Breakdown */}
@@ -389,11 +389,11 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
                         </dd>
                       </div>
                     )}
-                  {building.bbl && (
+                  {(building.bbl || building.apn) && (
                     <div>
-                      <dt className="text-[#94a3b8]">BBL</dt>
+                      <dt className="text-[#94a3b8]">{building.apn ? "APN" : "BBL"}</dt>
                       <dd className="text-[#0F1D2E] font-mono text-xs">
-                        {building.bbl}
+                        {building.apn || building.bbl}
                       </dd>
                     </div>
                   )}
