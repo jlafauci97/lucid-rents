@@ -100,7 +100,7 @@ export default async function NewsPage({
         {/* Category pills */}
         <div className="flex flex-wrap gap-2 mb-6">
           <Link
-            href={cityPath("/news")}
+            href={cityPath("/news", cityParam as import("@/lib/cities").City)}
             className="px-3 py-1.5 text-sm font-medium rounded-full bg-[#0F1D2E] text-white"
           >
             All
@@ -108,7 +108,7 @@ export default async function NewsPage({
           {categories.map(([slug, meta]) => (
             <Link
               key={slug}
-              href={cityPath(`/news/${slug}`)}
+              href={cityPath(`/news/${slug}`, cityParam as import("@/lib/cities").City)}
               className="px-3 py-1.5 text-sm font-medium rounded-full bg-[#f1f5f9] text-[#475569] hover:bg-[#e2e8f0] transition-colors"
             >
               {meta.label}
@@ -140,7 +140,7 @@ export default async function NewsPage({
                 {categories.map(([slug, meta]) => (
                   <Link
                     key={slug}
-                    href={cityPath(`/news/${slug}`)}
+                    href={cityPath(`/news/${slug}`, cityParam as import("@/lib/cities").City)}
                     className="flex items-start gap-3 px-4 py-3 hover:bg-[#f8fafc] transition-colors"
                   >
                     <div

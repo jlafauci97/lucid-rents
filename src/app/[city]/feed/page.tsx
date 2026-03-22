@@ -72,7 +72,7 @@ async function FeedStats() {
   );
 }
 
-async function TrendingBuildings() {
+async function TrendingBuildings({ city }: { city: string }) {
   const supabase = await createClient();
 
   const { data: buildings } = await supabase
@@ -112,7 +112,7 @@ async function TrendingBuildings() {
         ))}
       </div>
       <Link
-        href={cityPath("/worst-rated-buildings")}
+        href={cityPath("/worst-rated-buildings", city as City)}
         className="block px-4 py-3 text-sm text-[#3B82F6] hover:bg-[#EFF6FF] transition-colors font-medium border-t border-[#f1f5f9]"
       >
         View full rankings
@@ -132,7 +132,8 @@ function FeedSourceLabel() {
   );
 }
 
-export default function FeedPage() {
+export default async function FeedPage({ params }: { params: Promise<{ city: string }> }) {
+  const { city: cityParam } = await params;
   return (
     <AdSidebar>
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -146,7 +147,7 @@ export default function FeedPage() {
         <aside className="hidden lg:block space-y-6">
           <FeedStats />
           <AdBlock adSlot="FEED_SIDEBAR" adFormat="rectangle" />
-          <TrendingBuildings />
+          <TrendingBuildings city={cityParam} />
           <FeedSourceLabel />
         </aside>
       </div>

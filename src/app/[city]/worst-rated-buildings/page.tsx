@@ -87,7 +87,7 @@ export default async function RankingsPage({ params: routeParams, searchParams }
     const base: Record<string, string> = { borough, sort: sortBy, page: String(page) };
     const merged = { ...base, ...overrides };
     const qs = new URLSearchParams(merged).toString();
-    return `${cityPath("/worst-rated-buildings")}?${qs}`;
+    return `${cityPath("/worst-rated-buildings", city)}?${qs}`;
   }
 
   return (
@@ -294,21 +294,21 @@ export default async function RankingsPage({ params: routeParams, searchParams }
         <h2 className="text-lg font-bold text-[#0F1D2E] mb-4">Related</h2>
         <div className="flex flex-wrap gap-3">
           <Link
-            href={cityPath("/landlords")}
+            href={cityPath("/landlords", city)}
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-purple-50 text-[#8B5CF6] border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors"
           >
             <Users className="w-4 h-4" />
             Landlord Directory
           </Link>
           <Link
-            href={cityPath("/buildings")}
+            href={cityPath("/buildings", city)}
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-blue-50 text-[#3B82F6] border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
           >
             <Building2 className="w-4 h-4" />
             All Buildings
           </Link>
           <Link
-            href={cityPath("/crime")}
+            href={cityPath("/crime", city)}
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-amber-50 text-[#d97706] border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors"
           >
             <AlertTriangle className="w-4 h-4" />

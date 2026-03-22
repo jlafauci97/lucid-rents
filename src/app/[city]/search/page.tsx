@@ -30,7 +30,7 @@ export async function generateMetadata({
   const description = params.q
     ? `Search results for "${params.q}" — find building violations, complaints, and tenant reviews.`
     : `Search ${cityName} buildings by address, zip code, or neighborhood. View violations, complaints, tenant reviews, and more.`;
-  const url = canonicalUrl(cityPath("/search"));
+  const url = canonicalUrl(cityPath("/search", cityParam as City));
   return {
     title,
     description,
@@ -78,12 +78,14 @@ async function SearchResults({
   zip,
   sort,
   page,
+  city,
 }: {
   q: string;
   borough?: string;
   zip?: string;
   sort: SortOption;
   page: number;
+  city: string;
 }) {
   if (!q) {
     return (
@@ -142,7 +144,7 @@ async function SearchResults({
         <div className="flex justify-center gap-2 mt-8">
           {page > 1 && (
             <a
-              href={`${cityPath("/search")}?${paginationBase}&page=${page - 1}`}
+              href={`${cityPath("/search", city as City)}?${paginationBase}&page=${page - 1}`}
               className="px-4 py-2 rounded-lg border border-[#e2e8f0] text-sm hover:bg-gray-50"
             >
               Previous
@@ -153,7 +155,7 @@ async function SearchResults({
           </span>
           {page < totalPages && (
             <a
-              href={`${cityPath("/search")}?${paginationBase}&page=${page + 1}`}
+              href={`${cityPath("/search", city as City)}?${paginationBase}&page=${page + 1}`}
               className="px-4 py-2 rounded-lg border border-[#e2e8f0] text-sm hover:bg-gray-50"
             >
               Next
@@ -184,7 +186,8 @@ function SearchSkeleton() {
   );
 }
 
-export default async function SearchPage({ searchParams }: SearchPageProps) {
+export default async function SearchPage({ params: routeParams, searchParams }: SearchPageProps) {
+  const { city: cityParam } = await routeParams;
   const params = await searchParams;
   const q = params.q || "";
   const borough = params.borough;
@@ -207,7 +210,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         </Suspense>
       </div>
       <Suspense fallback={<SearchSkeleton />}>
-        <SearchResults q={q} borough={borough} zip={zip} sort={sort} page={page} />
+        <SearchResults q={q} borough={borough} zip={zip} sort={sort} page={page} city={cityParam} />
       </Suspense>
       <AdBlock adSlot="SEARCH_BOTTOM" adFormat="horizontal" />
     </div>

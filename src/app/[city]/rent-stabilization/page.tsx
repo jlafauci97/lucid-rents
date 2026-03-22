@@ -5,24 +5,96 @@ import { SearchBar } from "@/components/search/SearchBar";
 import { canonicalUrl, buildingUrl, cityPath } from "@/lib/seo";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
+import { isValidCity, CITY_META, type City } from "@/lib/cities";
 
-export const metadata: Metadata = {
-  title: "NYC Rent Stabilization Checker | Lucid Rents",
-  description:
-    "Check if your NYC apartment is rent stabilized. Search any address to find rent stabilization status, unit counts, and historical data for buildings in New York City.",
-  alternates: { canonical: canonicalUrl(cityPath("/rent-stabilization")) },
-  openGraph: {
-    title: "Is My NYC Apartment Rent Stabilized?",
-    description:
-      "Free rent stabilization lookup tool. Search any NYC address to check rent stabilization status based on DOF tax bill records.",
-    url: canonicalUrl(cityPath("/rent-stabilization")),
-    siteName: "Lucid Rents",
-    type: "website",
-    locale: "en_US",
+/* ---------------------------------------------------------------------------
+ * City-specific rent stabilization config
+ * -------------------------------------------------------------------------*/
+
+interface RentStabConfig {
+  title: string;
+  metaDescription: string;
+  headerDescription: string;
+  searchPlaceholder: string;
+  dataSourceLabel: string;
+  editorialTitle: string;
+  editorialParagraphs: string[];
+  jsonLdName: string;
+  jsonLdDescription: string;
+}
+
+const RENT_STAB_CONFIG: Record<City, RentStabConfig> = {
+  nyc: {
+    title: "NYC Rent Stabilization Checker",
+    metaDescription:
+      "Check if your NYC apartment is rent stabilized. Search any address to find rent stabilization status, unit counts, and historical data for buildings in New York City.",
+    headerDescription:
+      "Check if your apartment is rent stabilized. Search by address to find rent stabilization status based on NYC Department of Finance tax bill records. Rent stabilized tenants have protections including limits on rent increases and the right to lease renewal.",
+    searchPlaceholder: "Search by address to check rent stabilization...",
+    dataSourceLabel: "DOF Tax Bills",
+    editorialTitle: "What Is Rent Stabilization?",
+    editorialParagraphs: [
+      "Rent stabilization is a set of laws that limit how much a landlord can raise rent each year for tenants in qualifying buildings. In New York City, approximately one million apartments are rent stabilized \u2014 making it one of the largest rent regulation systems in the country. Buildings with six or more units built before 1974, or those that received certain tax benefits like 421-a or J-51, are typically covered.",
+      "If your apartment is rent stabilized, you have important protections: your landlord can only increase rent by the amount set each year by the NYC Rent Guidelines Board, you have the right to renew your lease, and you cannot be evicted without just cause. Landlords are also required to maintain the apartment and provide essential services.",
+      "The data on this page comes from NYC Department of Finance tax bill records (RPIE filings), which landlords of rent stabilized buildings must submit annually. Individual apartment registration status can be verified through the DHCR (Division of Housing and Community Renewal) by requesting a rent history for your specific unit.",
+    ],
+    jsonLdName: "NYC Rent Stabilization Checker",
+    jsonLdDescription:
+      "Check if any NYC building has rent stabilized apartments based on DOF tax bill records.",
+  },
+  "los-angeles": {
+    title: "LA Rent Stabilization (RSO) Checker",
+    metaDescription:
+      "Check if your Los Angeles apartment is covered by the Rent Stabilization Ordinance (RSO). Search any address to find RSO status and unit counts.",
+    headerDescription:
+      "Check if your apartment is covered by the LA Rent Stabilization Ordinance (RSO). Buildings with two or more units built before October 1, 1978 are generally covered. RSO tenants have protections including limits on annual rent increases and just-cause eviction requirements.",
+    searchPlaceholder: "Search by address to check RSO status...",
+    dataSourceLabel: "LAHD / ZIMAS",
+    editorialTitle: "What Is the LA Rent Stabilization Ordinance (RSO)?",
+    editorialParagraphs: [
+      "The Los Angeles Rent Stabilization Ordinance (RSO) covers approximately 624,000 rental units in the City of Los Angeles. Buildings with two or more units that were built before October 1, 1978 and have a certificate of occupancy are generally covered. Some exemptions apply, including single-family homes, condominiums, and newer construction.",
+      "If your apartment is covered by the RSO, your landlord can only increase rent by the annual percentage set by the LA Housing Department (LAHD), typically 3\u20138%. You also have just-cause eviction protections \u2014 your landlord cannot evict you without a legally recognized reason, and relocation assistance may be required for no-fault evictions.",
+      "You can verify your building\u2019s RSO status through the LAHD\u2019s ZIMAS lookup tool or by contacting LAHD directly. The data on this page reflects public records from the City of Los Angeles.",
+    ],
+    jsonLdName: "LA Rent Stabilization (RSO) Checker",
+    jsonLdDescription:
+      "Check if any Los Angeles building is covered by the Rent Stabilization Ordinance based on LAHD records.",
   },
 };
 
+/* ---------------------------------------------------------------------------
+ * Metadata
+ * -------------------------------------------------------------------------*/
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ city: string }>;
+}): Promise<Metadata> {
+  const { city } = await params;
+  if (!isValidCity(city)) return {};
+  const cfg = RENT_STAB_CONFIG[city];
+  const meta = CITY_META[city];
+  return {
+    title: `${cfg.title} | Lucid Rents`,
+    description: cfg.metaDescription,
+    alternates: { canonical: canonicalUrl(cityPath("/rent-stabilization", city)) },
+    openGraph: {
+      title: cfg.title,
+      description: cfg.metaDescription,
+      url: canonicalUrl(cityPath("/rent-stabilization", city)),
+      siteName: "Lucid Rents",
+      type: "website",
+      locale: "en_US",
+    },
+  };
+}
+
 export const revalidate = 86400;
+
+/* ---------------------------------------------------------------------------
+ * Data fetching
+ * -------------------------------------------------------------------------*/
 
 async function getBoroughStats() {
   const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/rent_stab_borough_stats`;
@@ -52,6 +124,10 @@ async function getStabilizedBuildings(borough?: string) {
   return res.json();
 }
 
+/* ---------------------------------------------------------------------------
+ * Types
+ * -------------------------------------------------------------------------*/
+
 interface BoroughStat {
   borough: string;
   total_buildings: number;
@@ -69,15 +145,26 @@ interface StabilizedBuilding {
   owner_name: string | null;
 }
 
+/* ---------------------------------------------------------------------------
+ * Page
+ * -------------------------------------------------------------------------*/
+
 export default async function RentStabilizationPage({
+  params: routeParams,
   searchParams,
 }: {
+  params: Promise<{ city: string }>;
   searchParams: Promise<{ borough?: string; sort?: string; order?: string }>;
 }) {
-  const params = await searchParams;
-  const borough = params.borough || "";
-  const sortBy = params.sort || "stabilized_units";
-  const order = params.order || "desc";
+  const { city: cityParam } = await routeParams;
+  const city: City = isValidCity(cityParam) ? cityParam : "nyc";
+  const cfg = RENT_STAB_CONFIG[city];
+  const meta = CITY_META[city];
+
+  const sp = await searchParams;
+  const borough = sp.borough || "";
+  const sortBy = sp.sort || "stabilized_units";
+  const order = sp.order || "desc";
 
   const [stats, buildings] = await Promise.all([
     getBoroughStats(),
@@ -108,14 +195,15 @@ export default async function RentStabilizationPage({
     );
   }
 
-  const boroughs = ["Manhattan", "Brooklyn", "Queens", "Bronx", "Staten Island"];
+  const regions = meta.regions;
+  const regionLabel = meta.regionLabel;
 
   const totalStabilized = boroughStats.reduce((s, b) => s + b.stabilized_buildings, 0);
   const totalUnits = boroughStats.reduce((s, b) => s + b.total_stabilized_units, 0);
 
   function sortUrl(col: string) {
     const newOrder = sortBy === col && order === "desc" ? "asc" : "desc";
-    const base = `/rent-stabilization?sort=${col}&order=${newOrder}`;
+    const base = cityPath(`/rent-stabilization?sort=${col}&order=${newOrder}`, city);
     return borough ? `${base}&borough=${encodeURIComponent(borough)}` : base;
   }
 
@@ -129,12 +217,11 @@ export default async function RentStabilizationPage({
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "WebApplication",
-              name: "NYC Rent Stabilization Checker",
-              url: "https://lucidrents.com/rent-stabilization",
+              name: cfg.jsonLdName,
+              url: canonicalUrl(cityPath("/rent-stabilization", city)),
               applicationCategory: "RealEstate",
               operatingSystem: "All",
-              description:
-                "Check if any NYC building has rent stabilized apartments based on DOF tax bill records.",
+              description: cfg.jsonLdDescription,
             }),
           }}
         />
@@ -146,14 +233,11 @@ export default async function RentStabilizationPage({
               <ShieldCheck className="w-6 h-6 text-[#10b981]" />
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold text-[#0F1D2E]">
-              NYC Rent Stabilization Checker
+              {cfg.title}
             </h1>
           </div>
           <p className="text-[#64748b] text-sm sm:text-base max-w-3xl">
-            Check if your apartment is rent stabilized. Search by address to find
-            rent stabilization status based on NYC Department of Finance tax bill
-            records. Rent stabilized tenants have protections including limits on
-            rent increases and the right to lease renewal.
+            {cfg.headerDescription}
           </p>
         </div>
 
@@ -161,11 +245,11 @@ export default async function RentStabilizationPage({
         <div className="max-w-2xl mb-8">
           <SearchBar
             size="default"
-            placeholder="Search by address to check rent stabilization..."
+            placeholder={cfg.searchPlaceholder}
           />
         </div>
 
-        {/* Borough stats */}
+        {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
           <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
             <p className="text-xs text-[#64748b] font-medium uppercase tracking-wide">
@@ -185,27 +269,27 @@ export default async function RentStabilizationPage({
           </div>
           <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
             <p className="text-xs text-[#64748b] font-medium uppercase tracking-wide">
-              Boroughs
+              {regionLabel}s
             </p>
-            <p className="text-2xl font-bold text-[#0F1D2E] mt-1">5</p>
+            <p className="text-2xl font-bold text-[#0F1D2E] mt-1">{regions.length}</p>
           </div>
           <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
             <p className="text-xs text-[#64748b] font-medium uppercase tracking-wide">
               Data Source
             </p>
             <p className="text-sm font-semibold text-[#0F1D2E] mt-2">
-              DOF Tax Bills
+              {cfg.dataSourceLabel}
             </p>
           </div>
         </div>
 
-        {/* Borough breakdown */}
+        {/* Region breakdown */}
         {boroughStats.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 mb-6">
+          <div className={`grid grid-cols-1 sm:grid-cols-${Math.min(boroughStats.length, 5)} gap-3 mb-6`}>
             {boroughStats.map((b) => (
               <Link
                 key={b.borough}
-                href={cityPath(`/rent-stabilization?borough=${encodeURIComponent(b.borough)}`)}
+                href={cityPath(`/rent-stabilization?borough=${encodeURIComponent(b.borough)}`, city)}
                 className={`bg-white border rounded-xl p-4 hover:border-[#3B82F6] transition-colors ${
                   borough === b.borough
                     ? "border-[#3B82F6] ring-1 ring-[#3B82F6]"
@@ -226,22 +310,22 @@ export default async function RentStabilizationPage({
           </div>
         )}
 
-        {/* Borough filter chips */}
+        {/* Region filter chips */}
         <div className="flex flex-wrap gap-2 mb-6">
           <Link
-            href={cityPath("/rent-stabilization")}
+            href={cityPath("/rent-stabilization", city)}
             className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
               !borough
                 ? "bg-[#0F1D2E] text-white"
                 : "bg-[#f1f5f9] text-[#64748b] hover:bg-[#e2e8f0]"
             }`}
           >
-            All Boroughs
+            All {regionLabel}s
           </Link>
-          {boroughs.map((b) => (
+          {(regions as readonly string[]).map((b) => (
             <Link
               key={b}
-              href={`/rent-stabilization?borough=${encodeURIComponent(b)}${sortBy !== "stabilized_units" ? `&sort=${sortBy}&order=${order}` : ""}`}
+              href={cityPath(`/rent-stabilization?borough=${encodeURIComponent(b)}${sortBy !== "stabilized_units" ? `&sort=${sortBy}&order=${order}` : ""}`, city)}
               className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
                 borough === b
                   ? "bg-[#0F1D2E] text-white"
@@ -276,7 +360,7 @@ export default async function RentStabilizationPage({
                       </Link>
                     </th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide hidden sm:table-cell">
-                      Borough
+                      {regionLabel}
                     </th>
                     <th className="text-right px-4 py-3 text-xs font-semibold text-[#10b981] uppercase tracking-wide">
                       <Link
@@ -331,35 +415,11 @@ export default async function RentStabilizationPage({
         {/* Editorial content */}
         <section className="mt-8 space-y-4 text-sm leading-relaxed text-[#334155]">
           <h2 className="text-lg font-bold text-[#0F1D2E]">
-            What Is Rent Stabilization?
+            {cfg.editorialTitle}
           </h2>
-          <p>
-            Rent stabilization is a set of laws that limit how much a landlord
-            can raise rent each year for tenants in qualifying buildings.
-            In New York City, approximately one million apartments are rent
-            stabilized &mdash; making it one of the largest rent regulation
-            systems in the country. Buildings with six or more units built
-            before 1974, or those that received certain tax benefits like
-            421-a or J-51, are typically covered.
-          </p>
-          <p>
-            If your apartment is rent stabilized, you have important
-            protections: your landlord can only increase rent by the amount set
-            each year by the NYC Rent Guidelines Board, you have the right to
-            renew your lease, and you cannot be evicted without just cause.
-            Landlords are also required to maintain the apartment and provide
-            essential services. These protections persist as long as the unit
-            remains stabilized, regardless of how many times it changes hands.
-          </p>
-          <p>
-            The data on this page comes from NYC Department of Finance tax bill
-            records (RPIE filings), which landlords of rent stabilized buildings
-            must submit annually. The stabilized unit count reflects what the
-            owner reported for the most recent tax year available. Note that
-            individual apartment registration status can be verified through
-            the DHCR (Division of Housing and Community Renewal) by requesting
-            a rent history for your specific unit.
-          </p>
+          {cfg.editorialParagraphs.map((p, i) => (
+            <p key={i}>{p}</p>
+          ))}
         </section>
 
         <AdBlock adSlot="RENT_STAB_BOTTOM" adFormat="horizontal" />
