@@ -1,12 +1,10 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
-import { headers } from "next/headers";
 import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { CookieConsent } from "@/components/ui/CookieConsent";
-import { type City, DEFAULT_CITY, isValidCity } from "@/lib/cities";
 
 const GA_MEASUREMENT_ID = "G-FS7Q3PF982";
 
@@ -63,10 +61,6 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const hdrs = await headers();
-  const cityHeader = hdrs.get("x-city") || DEFAULT_CITY;
-  const city: City = isValidCity(cityHeader) ? cityHeader : DEFAULT_CITY;
-
   return (
     <html lang="en">
       <head>
@@ -88,9 +82,9 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}
       >
-        <Navbar city={city} />
+        <Navbar />
         <main className="min-h-[calc(100vh-64px-200px)]">{children}</main>
-        <Footer city={city} />
+        <Footer />
         <CookieConsent />
       </body>
     </html>

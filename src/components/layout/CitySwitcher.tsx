@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { MapPin, ChevronDown, Check } from "lucide-react";
 import { type City, VALID_CITIES, CITY_META } from "@/lib/cities";
-import { useCity } from "@/lib/city-context";
+import { useCityFromPath } from "@/lib/city-context";
 
 /**
  * Given the current pathname and city, compute the equivalent path for another city.
@@ -39,7 +39,7 @@ function buildCityPath(pathname: string, fromCity: City, toCity: City): string {
 }
 
 export function CitySwitcher() {
-  const city = useCity();
+  const city = useCityFromPath();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -108,7 +108,8 @@ export function CitySwitcher() {
 /**
  * Inline city switcher for the mobile menu (no dropdown, just a row of options).
  */
-export function MobileCitySwitcher({ city }: { city: City }) {
+export function MobileCitySwitcher() {
+  const city = useCityFromPath();
   const pathname = usePathname();
 
   return (

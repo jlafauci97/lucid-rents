@@ -1,6 +1,9 @@
+"use client";
+
 import Link from "next/link";
-import { type City, DEFAULT_CITY, CITY_META } from "@/lib/cities";
+import { type City, CITY_META } from "@/lib/cities";
 import { cityPath } from "@/lib/seo";
+import { useCityFromPath } from "@/lib/city-context";
 
 const DATA_SOURCES: Record<City, string[]> = {
   nyc: [
@@ -18,7 +21,8 @@ const DATA_SOURCES: Record<City, string[]> = {
   ],
 };
 
-export function Footer({ city = DEFAULT_CITY }: { city?: City }) {
+export function Footer() {
+  const city = useCityFromPath();
   const cityName = CITY_META[city]?.fullName || "New York City";
   return (
     <footer className="bg-[#0F1D2E] text-gray-400 mt-auto">

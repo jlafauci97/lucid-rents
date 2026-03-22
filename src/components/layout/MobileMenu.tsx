@@ -25,13 +25,13 @@ import {
   Bell,
   LogOut,
 } from "lucide-react";
-import { type City, DEFAULT_CITY } from "@/lib/cities";
+import { type City } from "@/lib/cities";
 import { cityPath } from "@/lib/seo";
+import { useCityFromPath } from "@/lib/city-context";
 import { MobileCitySwitcher } from "./CitySwitcher";
 
 interface MobileMenuProps {
   isLoggedIn: boolean;
-  city?: City;
 }
 
 interface NavLink {
@@ -63,7 +63,8 @@ const secondaryLinks: NavLink[] = [
   { path: "/scaffolding", icon: Construction, label: "Scaffolding", cities: ["nyc"] },
 ];
 
-export function MobileMenu({ isLoggedIn, city = DEFAULT_CITY }: MobileMenuProps) {
+export function MobileMenu({ isLoggedIn }: MobileMenuProps) {
+  const city = useCityFromPath();
   const [open, setOpen] = useState(false);
 
   return (
@@ -79,7 +80,7 @@ export function MobileMenu({ isLoggedIn, city = DEFAULT_CITY }: MobileMenuProps)
       {open && (
         <div className="absolute top-16 left-0 right-0 bg-[#0F1D2E] border-t border-white/10 shadow-lg z-50">
           <div className="px-4 py-3 space-y-1">
-            <MobileCitySwitcher city={city} />
+            <MobileCitySwitcher />
             <div className="border-t border-white/10 my-2" />
             {primaryLinks
               .filter((link) => !link.cities || link.cities.includes(city))

@@ -56,8 +56,11 @@ export function middleware(request: NextRequest) {
 
       const url = request.nextUrl.clone();
       url.pathname = internalPath;
-      const response = NextResponse.rewrite(url);
-      response.headers.set("x-city", internalCity);
+      const requestHeaders = new Headers(request.headers);
+      requestHeaders.set("x-city", internalCity);
+      const response = NextResponse.rewrite(url, {
+        request: { headers: requestHeaders },
+      });
       return response;
     }
   }
@@ -79,9 +82,9 @@ export function middleware(request: NextRequest) {
         return NextResponse.redirect(url, 301);
       }
     }
-    const response = NextResponse.next();
-    response.headers.set("x-city", firstSegment);
-    return response;
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set("x-city", firstSegment);
+    return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
   // 2. Redirect shorthand city slugs to canonical URLs
@@ -113,9 +116,9 @@ export function middleware(request: NextRequest) {
   }
 
   // 5. Everything else (homepage, api, auth, dashboard, about, privacy, terms) — pass through
-  const response = NextResponse.next();
-  response.headers.set("x-city", "nyc");
-  return response;
+  const fallbackHeaders = new Headers(request.headers);
+  fallbackHeaders.set("x-city", "nyc");
+  return NextResponse.next({ request: { headers: fallbackHeaders } });
 }
 
 export const config = {
