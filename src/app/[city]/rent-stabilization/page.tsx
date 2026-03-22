@@ -96,7 +96,7 @@ export const revalidate = 86400;
  * Data fetching
  * -------------------------------------------------------------------------*/
 
-async function getBoroughStats() {
+async function getBoroughStats(metro: string) {
   const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/rent_stab_borough_stats`;
   const res = await fetch(url, {
     method: "POST",
@@ -104,15 +104,15 @@ async function getBoroughStats() {
       apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({}),
+    body: JSON.stringify({ p_metro: metro }),
     next: { revalidate: 86400 },
   });
   if (!res.ok) return [];
   return res.json();
 }
 
-async function getStabilizedBuildings(borough?: string) {
-  let url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/buildings?is_rent_stabilized=eq.true&select=full_address,borough,slug,stabilized_units,residential_units,stabilized_year,owner_name&order=stabilized_units.desc.nullslast&limit=200`;
+async function getStabilizedBuildings(metro: string, borough?: string) {
+  let url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/buildings?is_rent_stabilized=eq.true&metro=eq.${encodeURIComponent(metro)}&select=full_address,borough,slug,stabilized_units,residential_units,stabilized_year,owner_name&order=stabilized_units.desc.nullslast&limit=200`;
   if (borough) {
     url += `&borough=eq.${encodeURIComponent(borough)}`;
   }
@@ -166,9 +166,10 @@ export default async function RentStabilizationPage({
   const sortBy = sp.sort || "stabilized_units";
   const order = sp.order || "desc";
 
+  const metro = city === "nyc" ? "nyc" : "los-angeles";
   const [stats, buildings] = await Promise.all([
-    getBoroughStats(),
-    getStabilizedBuildings(borough || undefined),
+    getBoroughStats(metro),
+    getStabilizedBuildings(metro, borough || undefined),
   ]);
 
   const boroughStats: BoroughStat[] = (stats || []).map((s: BoroughStat) => ({
