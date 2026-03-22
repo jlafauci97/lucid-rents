@@ -54,9 +54,7 @@ async function supabaseFetchWithCount(path: string): Promise<number> {
 export async function generateSitemaps() {
   const [totalBuildings, totalLandlords] = await Promise.all([
     supabaseFetchWithCount("buildings?select=id&limit=1&offset=0"),
-    supabaseFetchWithCount(
-      "landlord_stats?select=owner_name&limit=1&offset=0"
-    ),
+    supabaseFetchWithCount("landlord_stats?select=name&limit=1&offset=0"),
   ]);
 
   const landlordSitemapCount = Math.max(
@@ -86,7 +84,7 @@ export default async function sitemap({
 
   // Figure out landlord vs building boundary
   const totalLandlords = await supabaseFetchWithCount(
-    "landlord_stats?select=owner_name&limit=1&offset=0"
+    "landlord_stats?select=name&limit=1&offset=0"
   );
   const landlordSitemapCount = Math.max(
     1,
@@ -247,18 +245,15 @@ async function generateLandlordSitemap(
   const offset = batchIndex * LANDLORDS_PER_SITEMAP;
 
   const landlords = await supabaseFetch<
-    { owner_name: string; metro: string }[]
+    { slug: string }[]
   >(
-    `landlord_stats?select=owner_name,metro&order=owner_name.asc&offset=${offset}&limit=${LANDLORDS_PER_SITEMAP}`
+    `landlord_stats?select=slug&order=name.asc&offset=${offset}&limit=${LANDLORDS_PER_SITEMAP}`
   );
 
   if (!landlords || landlords.length === 0) return [];
 
   return landlords.map((l) => ({
-    url: `${BASE_URL}${cityPath(
-      `/landlord/${landlordSlug(l.owner_name)}`,
-      (l.metro === "los-angeles" ? "los-angeles" : "nyc") as City
-    )}`,
+    url: `${BASE_URL}/nyc/landlord/${l.slug}`,
     changeFrequency: "monthly" as const,
     priority: 0.5,
   }));
