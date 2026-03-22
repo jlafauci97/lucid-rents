@@ -13,7 +13,7 @@ export async function GET(
     if (cityParam && !isValidCity(cityParam)) {
       return NextResponse.json({ error: "Invalid city" }, { status: 400 });
     }
-    const months = parseInt(searchParams.get("months") || "12", 10);
+    const months = parseInt(searchParams.get("months") || "24", 10);
 
     const sinceDate = new Date();
     sinceDate.setMonth(sinceDate.getMonth() - months);

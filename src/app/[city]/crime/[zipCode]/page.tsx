@@ -89,9 +89,10 @@ export default async function CrimeZipPage({
   const supabase = await createClient();
 
   // Fetch summary, recent crimes, and buildings in this zip in parallel
-  const oneYearAgo = new Date();
-  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-  const sinceDate = oneYearAgo.toISOString().split("T")[0];
+  // Use 2-year lookback to capture all available data (LAPD data may lag)
+  const twoYearsAgo = new Date();
+  twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+  const sinceDate = twoYearsAgo.toISOString().split("T")[0];
 
   const [summaryRes, recentRes, buildingsRes] = await Promise.all([
     supabase.rpc("crime_zip_summary", {

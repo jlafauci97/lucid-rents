@@ -29,8 +29,12 @@ export async function GET(request: Request) {
       }
     }
 
-    // Fetch crime data aggregated by zip
-    const rpcBody: Record<string, string> = {};
+    // Fetch crime data aggregated by zip (2-year lookback to capture all available data)
+    const sinceDate = new Date();
+    sinceDate.setFullYear(sinceDate.getFullYear() - 2);
+    const rpcBody: Record<string, string> = {
+      since_date: sinceDate.toISOString().split("T")[0],
+    };
     if (cityParam) rpcBody.metro = cityParam;
 
     const crimeRes = await fetch(

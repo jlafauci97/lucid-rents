@@ -30,6 +30,12 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
 export const revalidate = 3600;
 
 async function getCrimeByZip(city: string) {
+  // Use 2-year lookback to ensure we capture all available data
+  // (LAPD data may lag behind current date due to NIBRS transition)
+  const sinceDate = new Date();
+  sinceDate.setFullYear(sinceDate.getFullYear() - 2);
+  const sinceDateStr = sinceDate.toISOString().split("T")[0];
+
   const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/crime_by_zip`;
   const res = await fetch(url, {
     method: "POST",
@@ -37,7 +43,7 @@ async function getCrimeByZip(city: string) {
       "apikey": process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ metro: city }),
+    body: JSON.stringify({ since_date: sinceDateStr, metro: city }),
     next: { revalidate: 3600 },
   });
   if (!res.ok) {
@@ -123,7 +129,7 @@ export default async function CrimePage({
           </h1>
         </div>
         <p className="text-[#64748b] text-sm sm:text-base">
-          {meta.crimeSource} crime data aggregated by zip code over the last 12 months. Click a
+          {meta.crimeSource} crime data aggregated by zip code. Click a
           zip code for detailed breakdowns and trends.
         </p>
       </div>

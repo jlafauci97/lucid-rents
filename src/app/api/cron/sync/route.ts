@@ -2266,7 +2266,106 @@ async function syncLADBSViolations(
 async function syncLAPDCrimeData(
   supabase: ReturnType<typeof getSupabaseAdmin>
 ): Promise<SyncResult> {
-  return { totalAdded: 0, totalLinked: 0, errors: ["LAPD crime sync skipped — awaiting updated NIBRS data source"], affectedBuildingIds: new Set() };
+  const lastSync = await getLastSyncDate(supabase, "lapd_crime");
+  const logId = await createSyncLog(supabase, "lapd_crime");
+  const syncStartTime = new Date().toISOString();
+
+  let totalAdded = 0;
+  let totalLinked = 0;
+  const errors: string[] = [];
+  const affectedBuildingIds = new Set<string>();
+
+  try {
+    let offset = 0;
+    let hasMore = true;
+    let pagesFetched = 0;
+
+    while (hasMore) {
+      const url = buildLASodaUrl(
+        "2nrs-mtv8",
+        `date_occ > '${lastSync}'`,
+        PAGE_SIZE,
+        offset,
+        "date_occ ASC"
+      );
+
+      const res = await fetch(url);
+      if (!res.ok) {
+        const errText = await res.text();
+        errors.push(`LAPD API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
+        break;
+      }
+
+      const records = await res.json();
+      if (!records || records.length === 0) {
+        hasMore = false;
+        break;
+      }
+
+      const rows = records
+        .filter((r: { dr_no?: string }) => r.dr_no)
+        .map((r: Record<string, string | undefined>) => {
+          const part = r.part_1_2 ? parseInt(String(r.part_1_2), 10) : null;
+          let lawCategory: string | null = null;
+          if (part === 1) lawCategory = "FELONY";
+          else if (part === 2) lawCategory = "MISDEMEANOR";
+
+          return {
+            cmplnt_num: `LAPD-${r.dr_no}`,
+            cmplnt_date: r.date_occ ? String(r.date_occ).slice(0, 10) : null,
+            borough: r.area_name ? String(r.area_name) : null,
+            precinct: null,
+            offense_description: r.crm_cd_desc ? String(r.crm_cd_desc) : null,
+            law_category: lawCategory,
+            crime_category: categorizeCrime(r.crm_cd_desc ? String(r.crm_cd_desc) : null),
+            pd_description: r.premis_desc ? String(r.premis_desc) : null,
+            latitude: r.lat ? parseFloat(String(r.lat)) : null,
+            longitude: r.lon ? parseFloat(String(r.lon)) : null,
+            zip_code: null,
+            metro: "los-angeles",
+            imported_at: new Date().toISOString(),
+          };
+        })
+        .filter((r: { latitude: number | null; longitude: number | null }) =>
+          !(r.latitude === 0 && r.longitude === 0)
+        );
+
+      if (rows.length > 0) {
+        totalAdded += await batchUpsert(supabase, "nypd_complaints", rows, "cmplnt_num", errors, "LAPD");
+      }
+
+      pagesFetched++;
+      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
+        hasMore = false;
+      } else {
+        offset += PAGE_SIZE;
+      }
+    }
+
+    // Backfill zip codes from lat/lon using nearest LA centroid
+    try {
+      const { error: zipErr } = await supabase.rpc("backfill_crime_zip_codes", {
+        target_metro: "los-angeles",
+      });
+      if (zipErr) {
+        errors.push(`LAPD zip backfill error: ${zipErr.message}`);
+      }
+    } catch (zipBackfillErr) {
+      errors.push(`LAPD zip backfill fatal: ${String(zipBackfillErr)}`);
+    }
+  } catch (err) {
+    errors.push(`LAPD crime sync fatal: ${String(err)}`);
+  }
+
+  await finalizeSyncLog(
+    supabase,
+    logId,
+    errors.length > 0 ? "failed" : "completed",
+    totalAdded,
+    totalLinked,
+    errors
+  );
+  return { totalAdded, totalLinked, errors, affectedBuildingIds };
 }
 
 /**
