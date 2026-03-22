@@ -86,8 +86,7 @@ export function middleware(request: NextRequest) {
 
   // 2. Redirect shorthand city slugs to canonical URLs
   // /la/... → /CA/Los-Angeles/...
-  // /los-angeles/... → /CA/Los-Angeles/...
-  if (firstSegment === "la" || firstSegment === "los-angeles") {
+  if (firstSegment === "la") {
     const url = request.nextUrl.clone();
     const rest = segments.slice(2).join("/");
     url.pathname = `/CA/Los-Angeles${rest ? `/${rest}` : ""}`;

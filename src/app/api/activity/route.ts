@@ -241,14 +241,12 @@ export async function GET(request: Request) {
       error?: { message: string } | null;
     }[];
 
-    // If any query failed, return error instead of caching bad/empty data
-    const failedIdx = results.findIndex(r => r.error !== undefined && r.error !== null);
-    if (failedIdx !== -1) {
-      console.error("Activity feed query failed:", results[failedIdx].error);
-      return NextResponse.json(
-        { error: "Failed to fetch activity feed" },
-        { status: 502 }
-      );
+    // Log failed queries but continue with the ones that succeeded
+    for (let i = 0; i < results.length; i++) {
+      if (results[i].error) {
+        console.error(`Activity feed query ${i} failed:`, results[i].error);
+        results[i].data = null; // Treat failed queries as empty
+      }
     }
 
     const [reviewsResult, violationsResult, complaintsResult, litigationsResult, dobResult, crimeResult, bedbugResult, evictionResult] = results;

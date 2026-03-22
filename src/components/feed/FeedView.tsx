@@ -249,7 +249,7 @@ export function FeedView() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [city]);
 
   useEffect(() => {
     fetchItems(activeFilter, currentPage);

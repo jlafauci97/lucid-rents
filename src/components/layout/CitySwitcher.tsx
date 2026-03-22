@@ -9,20 +9,33 @@ import { useCity } from "@/lib/city-context";
 
 /**
  * Given the current pathname and city, compute the equivalent path for another city.
- * Strips the current city's URL prefix and replaces it with the target city's prefix.
+ *
+ * We use the **internal** city key (e.g. "los-angeles") rather than the external
+ * urlPrefix ("CA/Los-Angeles") so that client-side <Link> navigation works
+ * without relying on middleware rewrites (which only run on server requests).
+ * The internal key matches the [city] dynamic segment directly.
  */
 function buildCityPath(pathname: string, fromCity: City, toCity: City): string {
-  const fromPrefix = `/${CITY_META[fromCity].urlPrefix}`;
-  const toPrefix = `/${CITY_META[toCity].urlPrefix}`;
+  // The current path may use either the internal key or the external urlPrefix
+  // depending on whether we arrived via middleware rewrite or direct navigation.
+  const fromInternal = `/${fromCity}`;
+  const fromExternal = `/${CITY_META[fromCity].urlPrefix}`;
+  const toInternal = `/${toCity}`;
 
-  // If the current path starts with the current city prefix, swap it
-  if (pathname.startsWith(fromPrefix)) {
-    const rest = pathname.slice(fromPrefix.length); // e.g. "/search" or ""
-    return `${toPrefix}${rest || ""}`;
+  // Try stripping the external prefix first (longer, more specific)
+  if (fromExternal !== fromInternal && pathname.startsWith(fromExternal)) {
+    const rest = pathname.slice(fromExternal.length); // e.g. "/search" or ""
+    return `${toInternal}${rest || ""}`;
+  }
+
+  // Then try stripping the internal prefix
+  if (pathname.startsWith(fromInternal)) {
+    const rest = pathname.slice(fromInternal.length);
+    return `${toInternal}${rest || ""}`;
   }
 
   // Fallback: just go to the other city's root
-  return toPrefix;
+  return toInternal;
 }
 
 export function CitySwitcher() {
