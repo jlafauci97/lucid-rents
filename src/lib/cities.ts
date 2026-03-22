@@ -22,6 +22,10 @@ export interface CityMeta {
   center: { lat: number; lng: number };
   /** Default map zoom level */
   zoom: number;
+  /** Crime data source label (e.g. "NYPD", "LAPD") */
+  crimeSource: string;
+  /** Areas used for crime page filter chips — may differ from regions */
+  crimeAreas: readonly string[];
 }
 
 export const CITY_META: Record<City, CityMeta> = {
@@ -37,6 +41,8 @@ export const CITY_META: Record<City, CityMeta> = {
     heroImage: "/nyc-skyline.jpg",
     center: { lat: 40.7128, lng: -74.006 },
     zoom: 11,
+    crimeSource: "NYPD",
+    crimeAreas: ["Manhattan", "Brooklyn", "Queens", "Bronx", "Staten Island"],
   },
   "los-angeles": {
     name: "Los Angeles",
@@ -103,6 +109,13 @@ export const CITY_META: Record<City, CityMeta> = {
     heroImage: "/la-skyline.jpg",
     center: { lat: 34.0522, lng: -118.2437 },
     zoom: 10,
+    crimeSource: "LAPD",
+    crimeAreas: [
+      "77th Street", "Central", "Devonshire", "Foothill", "Harbor",
+      "Hollenbeck", "Hollywood", "Mission", "N Hollywood", "Newton",
+      "Northeast", "Olympic", "Pacific", "Rampart", "Southeast",
+      "Southwest", "Topanga", "Van Nuys", "West LA", "West Valley", "Wilshire",
+    ],
   },
 };
 
