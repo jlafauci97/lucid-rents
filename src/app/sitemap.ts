@@ -1,41 +1,76 @@
 import type { MetadataRoute } from "next";
-import { BOROUGH_SLUGS, buildingUrl, landlordSlug, cityPath, neighborhoodUrl } from "@/lib/seo";
+import {
+  buildingUrl,
+  landlordSlug,
+  cityPath,
+  neighborhoodUrl,
+  regionSlug,
+} from "@/lib/seo";
+import { CITY_META, VALID_CITIES, type City } from "@/lib/cities";
 import { NEWS_CATEGORIES } from "@/lib/news-sources";
 import { SUBWAY_LINES, transitLineUrl } from "@/lib/subway-lines";
 
-// Prevent static generation — sitemap must fetch live data at request time
 export const dynamic = "force-dynamic";
 
 const BASE_URL = "https://lucidrents.com";
-const BUILDINGS_PER_SITEMAP = 45000;
+const BUILDINGS_PER_SITEMAP = 10000;
+const LANDLORDS_PER_SITEMAP = 10000;
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+// --- Supabase helper ---
+
+async function supabaseFetch<T>(path: string): Promise<T | null> {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+      headers: { apikey: SUPABASE_KEY },
+      next: { revalidate: 21600 },
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as T;
+  } catch {
+    return null;
+  }
+}
+
+async function supabaseFetchWithCount(path: string): Promise<number> {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+      headers: { apikey: SUPABASE_KEY, Prefer: "count=exact" },
+    });
+    const range = res.headers.get("content-range");
+    return range ? parseInt(range.split("/")[1] || "0", 10) : 0;
+  } catch {
+    return 0;
+  }
+}
 
 /**
- * Generate sitemap index entries. Next.js calls this to determine
- * how many sub-sitemaps exist (accessed as /sitemap/0.xml, /sitemap/1.xml, etc.)
- *
- * Sitemap 0: static pages, borough directories, neighborhoods, crime, top landlords
- * Sitemap 1+: building pages in batches of 45,000
+ * Sitemap index layout:
+ *   0           = static pages, neighborhoods, crime zips, transit, news
+ *   1..L        = landlord pages in batches of 10,000
+ *   L+1..L+B   = building pages in batches of 10,000
  */
 export async function generateSitemaps() {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/buildings?select=id&limit=1&offset=0`,
-    {
-      headers: {
-        apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        Prefer: "count=exact",
-      },
-    }
+  const [totalBuildings, totalLandlords] = await Promise.all([
+    supabaseFetchWithCount("buildings?select=id&limit=1&offset=0"),
+    supabaseFetchWithCount(
+      "landlord_stats?select=owner_name&limit=1&offset=0"
+    ),
+  ]);
+
+  const landlordSitemapCount = Math.max(
+    1,
+    Math.ceil(totalLandlords / LANDLORDS_PER_SITEMAP)
+  );
+  const buildingSitemapCount = Math.max(
+    1,
+    Math.ceil(totalBuildings / BUILDINGS_PER_SITEMAP)
   );
 
-  const countHeader = res.headers.get("content-range");
-  const totalBuildings = countHeader
-    ? parseInt(countHeader.split("/")[1] || "0", 10)
-    : 50000;
-
-  const buildingSitemapCount = Math.ceil(totalBuildings / BUILDINGS_PER_SITEMAP);
-
-  // Sitemap 0 = static + directories, sitemaps 1..N = buildings
-  return Array.from({ length: 1 + buildingSitemapCount }, (_, i) => ({ id: i }));
+  // 0 = static, 1..L = landlords, L+1..L+B = buildings
+  const total = 1 + landlordSitemapCount + buildingSitemapCount;
+  return Array.from({ length: total }, (_, i) => ({ id: i }));
 }
 
 export default async function sitemap({
@@ -44,23 +79,58 @@ export default async function sitemap({
   id: number;
 }): Promise<MetadataRoute.Sitemap> {
   const numId = Number(id);
+
   if (numId === 0) {
     return generateStaticSitemap();
   }
-  return generateBuildingSitemap(numId - 1);
+
+  // Figure out landlord vs building boundary
+  const totalLandlords = await supabaseFetchWithCount(
+    "landlord_stats?select=owner_name&limit=1&offset=0"
+  );
+  const landlordSitemapCount = Math.max(
+    1,
+    Math.ceil(totalLandlords / LANDLORDS_PER_SITEMAP)
+  );
+
+  if (numId <= landlordSitemapCount) {
+    return generateLandlordSitemap(numId - 1);
+  }
+
+  const buildingBatchIndex = numId - 1 - landlordSitemapCount;
+  return generateBuildingSitemap(buildingBatchIndex);
 }
+
+// --- Static sitemap (id=0) ---
 
 async function generateStaticSitemap(): Promise<MetadataRoute.Sitemap> {
   const entries: MetadataRoute.Sitemap = [];
 
-  // Homepage (stays at root)
+  // Homepage
   entries.push({
     url: BASE_URL,
     changeFrequency: "daily",
     priority: 1.0,
   });
 
-  // Static city-specific pages
+  // Static root pages
+  const rootPages = [
+    { path: "/about", freq: "monthly" as const, priority: 0.5 },
+    { path: "/contact", freq: "monthly" as const, priority: 0.5 },
+    { path: "/privacy", freq: "monthly" as const, priority: 0.3 },
+    { path: "/terms", freq: "monthly" as const, priority: 0.3 },
+    { path: "/guides/nyc-tenant-rights", freq: "monthly" as const, priority: 0.7 },
+    { path: "/guides/la-tenant-rights", freq: "monthly" as const, priority: 0.7 },
+  ];
+  for (const page of rootPages) {
+    entries.push({
+      url: `${BASE_URL}${page.path}`,
+      changeFrequency: page.freq,
+      priority: page.priority,
+    });
+  }
+
+  // City-specific static pages
   const staticPages = [
     "/buildings",
     "/landlords",
@@ -76,25 +146,30 @@ async function generateStaticSitemap(): Promise<MetadataRoute.Sitemap> {
     "/permits",
     "/energy",
     "/transit",
+    "/tenant-rights",
   ];
-  for (const page of staticPages) {
-    entries.push({
-      url: `${BASE_URL}${cityPath(page)}`,
-      changeFrequency: page === "/news" ? "daily" : "weekly",
-      priority: 0.8,
-    });
+  for (const cityKey of VALID_CITIES) {
+    for (const page of staticPages) {
+      entries.push({
+        url: `${BASE_URL}${cityPath(page, cityKey)}`,
+        changeFrequency: page === "/news" ? "daily" : "weekly",
+        priority: 0.8,
+      });
+    }
   }
 
   // News category pages
-  for (const category of Object.keys(NEWS_CATEGORIES)) {
-    entries.push({
-      url: `${BASE_URL}${cityPath(`/news/${category}`)}`,
-      changeFrequency: "daily",
-      priority: 0.7,
-    });
+  for (const cityKey of VALID_CITIES) {
+    for (const category of Object.keys(NEWS_CATEGORIES)) {
+      entries.push({
+        url: `${BASE_URL}${cityPath(`/news/${category}`, cityKey)}`,
+        changeFrequency: "daily",
+        priority: 0.7,
+      });
+    }
   }
 
-  // Transit line pages (all 23 subway lines)
+  // Transit line pages
   for (const line of SUBWAY_LINES) {
     entries.push({
       url: `${BASE_URL}${transitLineUrl(line.slug)}`,
@@ -103,33 +178,26 @@ async function generateStaticSitemap(): Promise<MetadataRoute.Sitemap> {
     });
   }
 
-  // Borough directory pages
-  for (const slug of Object.values(BOROUGH_SLUGS)) {
-    entries.push({
-      url: `${BASE_URL}${cityPath(`/buildings/${slug}`)}`,
-      changeFrequency: "weekly",
-      priority: 0.8,
-    });
+  // Region directory pages (boroughs for NYC, areas for LA)
+  for (const cityKey of VALID_CITIES) {
+    const meta = CITY_META[cityKey];
+    for (const region of meta.regions) {
+      entries.push({
+        url: `${BASE_URL}${cityPath(`/buildings/${regionSlug(region)}`, cityKey)}`,
+        changeFrequency: "weekly",
+        priority: 0.8,
+      });
+    }
   }
 
-  // Neighborhood + crime zip pages
-  const zipRes = await fetch(
-    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/buildings?select=zip_code&limit=1000`,
-    {
-      headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! },
-    }
-  );
-  if (zipRes.ok) {
-    const zipData = await zipRes.json();
-    const zipCodes = [
-      ...new Set(
-        (zipData as { zip_code: string }[])
-          .map((b) => b.zip_code)
-          .filter(Boolean)
-      ),
-    ] as string[];
+  // Neighborhood + crime pages by zip code
+  const zipData = await supabaseFetch<
+    { zip_code: string }[]
+  >("buildings?select=zip_code&zip_code=not.is.null&limit=10000");
 
-    for (const zip of zipCodes) {
+  if (zipData) {
+    const uniqueZips = [...new Set(zipData.map((b) => b.zip_code).filter(Boolean))];
+    for (const zip of uniqueZips) {
       entries.push({
         url: `${BASE_URL}${neighborhoodUrl(zip)}`,
         changeFrequency: "weekly",
@@ -143,54 +211,76 @@ async function generateStaticSitemap(): Promise<MetadataRoute.Sitemap> {
     }
   }
 
-  // Top landlords — fetch distinct owner names
-  const landlordRes = await fetch(
-    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/buildings?select=owner_name&owner_name=not.is.null&order=owner_name.asc&limit=2000`,
-    {
-      headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! },
-    }
-  );
-  if (landlordRes.ok) {
-    const landlordData = await landlordRes.json();
-    const uniqueNames = [
-      ...new Set(
-        (landlordData as { owner_name: string }[]).map((b) => b.owner_name)
-      ),
-    ];
-    for (const name of uniqueNames) {
+  // News articles
+  const articles = await supabaseFetch<
+    { slug: string; published_at: string }[]
+  >("news_articles?select=slug,published_at&order=published_at.desc&limit=1000");
+
+  if (articles) {
+    for (const article of articles) {
       entries.push({
-        url: `${BASE_URL}${cityPath(`/landlord/${landlordSlug(name)}`)}`,
+        url: `${BASE_URL}${cityPath(`/news/${article.slug}`)}`,
+        lastModified: new Date(article.published_at),
         changeFrequency: "monthly",
         priority: 0.5,
       });
     }
   }
 
+  // Compare page per city
+  for (const cityKey of VALID_CITIES) {
+    entries.push({
+      url: `${BASE_URL}${cityPath("/compare", cityKey)}`,
+      changeFrequency: "monthly",
+      priority: 0.4,
+    });
+  }
+
   return entries;
 }
+
+// --- Landlord sitemaps (id=1..L) ---
+
+async function generateLandlordSitemap(
+  batchIndex: number
+): Promise<MetadataRoute.Sitemap> {
+  const offset = batchIndex * LANDLORDS_PER_SITEMAP;
+
+  const landlords = await supabaseFetch<
+    { owner_name: string; metro: string }[]
+  >(
+    `landlord_stats?select=owner_name,metro&order=owner_name.asc&offset=${offset}&limit=${LANDLORDS_PER_SITEMAP}`
+  );
+
+  if (!landlords || landlords.length === 0) return [];
+
+  return landlords.map((l) => ({
+    url: `${BASE_URL}${cityPath(
+      `/landlord/${landlordSlug(l.owner_name)}`,
+      (l.metro === "los-angeles" ? "los-angeles" : "nyc") as City
+    )}`,
+    changeFrequency: "monthly" as const,
+    priority: 0.5,
+  }));
+}
+
+// --- Building sitemaps (id=L+1..L+B) ---
 
 async function generateBuildingSitemap(
   batchIndex: number
 ): Promise<MetadataRoute.Sitemap> {
   const offset = batchIndex * BUILDINGS_PER_SITEMAP;
 
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/buildings?select=slug,borough,updated_at&order=id.asc&offset=${offset}&limit=${BUILDINGS_PER_SITEMAP}`,
-    {
-      headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! },
-    }
+  const buildings = await supabaseFetch<
+    { slug: string; borough: string; metro: string; updated_at: string | null }[]
+  >(
+    `buildings?select=slug,borough,metro,updated_at&order=id.asc&offset=${offset}&limit=${BUILDINGS_PER_SITEMAP}`
   );
 
-  if (!res.ok) return [];
-
-  const buildings = (await res.json()) as {
-    slug: string;
-    borough: string;
-    updated_at: string | null;
-  }[];
+  if (!buildings || buildings.length === 0) return [];
 
   return buildings.map((b) => ({
-    url: `${BASE_URL}${buildingUrl(b)}`,
+    url: `${BASE_URL}${buildingUrl(b, (b.metro === "los-angeles" ? "los-angeles" : "nyc") as City)}`,
     lastModified: b.updated_at ? new Date(b.updated_at) : undefined,
     changeFrequency: "weekly" as const,
     priority: 0.6,
