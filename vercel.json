@@ -81,6 +81,10 @@
       "schedule": "45 10 * * *"
     },
     {
+      "path": "/api/cron/sync?mode=link",
+      "schedule": "30 11 * * *"
+    },
+    {
       "path": "/api/cron/sync?source=la-soft-story",
       "schedule": "0 11 1 * *"
     },

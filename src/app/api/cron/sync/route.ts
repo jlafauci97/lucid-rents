@@ -387,7 +387,7 @@ async function linkByBbl(
   if (createBuildings && unmatchedBbls.length > 0) {
     let created = 0;
     // Vercel Pro: 900s timeout allows more building creation per sync
-    const toCreate = unmatchedBbls.slice(0, 500);
+    const toCreate = unmatchedBbls.slice(0, 2000);
     for (const bbl of toCreate) {
       try {
         const addr = await getAddressForBbl(supabase, bbl);
@@ -837,7 +837,7 @@ async function sync311Complaints(supabase: ReturnType<typeof getSupabaseAdmin>):
     if (elapsedMs < 45_000 && addressToKeys.size > 0) {
       try {
         let lookupCount = 0;
-        const MAX_LOOKUPS = 30;
+        const MAX_LOOKUPS = 200;
 
         for (const [address, uniqueKeys] of addressToKeys) {
           if (lookupCount >= MAX_LOOKUPS) break;
@@ -2068,7 +2068,7 @@ async function syncLAHDViolations(
 
     // Address-based linking for LA violations (no BBLs — use house_number + street_name)
     try {
-      const linkResult = await linkByAddress(supabase, "hpd_violations", "id", ["house_number", "street_name"], syncStartTime, errors, "LAHD", 200, "los-angeles");
+      const linkResult = await linkByAddress(supabase, "hpd_violations", "id", ["house_number", "street_name"], syncStartTime, errors, "LAHD", 500, "los-angeles");
       totalLinked = linkResult.linked;
       for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
     } catch (linkErr) {
@@ -2158,7 +2158,7 @@ async function syncLA311Complaints(
 
     // Address-based linking for LA 311 complaints
     try {
-      const linkResult = await linkByAddress(supabase, "complaints_311", "unique_key", "incident_address", syncStartTime, errors, "LA311", 200, "los-angeles");
+      const linkResult = await linkByAddress(supabase, "complaints_311", "unique_key", "incident_address", syncStartTime, errors, "LA311", 500, "los-angeles");
       totalLinked = linkResult.linked;
       for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
     } catch (linkErr) {
@@ -2242,7 +2242,7 @@ async function syncLADBSViolations(
 
     // Address-based linking for LADBS violations (use house_number + street_name)
     try {
-      const linkResult = await linkByAddress(supabase, "dob_violations", "id", ["house_number", "street_name"], syncStartTime, errors, "LADBS", 200, "los-angeles");
+      const linkResult = await linkByAddress(supabase, "dob_violations", "id", ["house_number", "street_name"], syncStartTime, errors, "LADBS", 500, "los-angeles");
       totalLinked = linkResult.linked;
       for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
     } catch (linkErr) {
@@ -2338,7 +2338,7 @@ async function syncLAPermits(
 
     // Address-based linking for LA permits (use house_no + street_name)
     try {
-      const linkResult = await linkByAddress(supabase, "dob_permits", "id", ["house_no", "street_name"], syncStartTime, errors, "LA Permits", 200, "los-angeles");
+      const linkResult = await linkByAddress(supabase, "dob_permits", "id", ["house_no", "street_name"], syncStartTime, errors, "LA Permits", 500, "los-angeles");
       totalLinked = linkResult.linked;
       for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
     } catch (linkErr) {
@@ -2584,7 +2584,7 @@ async function runLinkOnly(
 
       const tableErrors: string[] = [];
       try {
-        const result = await linkByAddress(supabase, table, idColumn, addressColumns, syncStartTime, tableErrors, label, 200, "los-angeles");
+        const result = await linkByAddress(supabase, table, idColumn, addressColumns, syncStartTime, tableErrors, label, 1000, "los-angeles");
         for (const id of result.affectedBuildingIds) allAffectedIds.add(id);
         const existing = linkResults[name];
         linkResults[name] = {
