@@ -2570,31 +2570,136 @@ async function runLinkOnly(
     linkResults["complaints"] = { linked: complaintsLinked, errors: complaintsErrors };
   }
 
-  // Link LA records by address (tables that use address-based matching instead of BBL)
-  if ((Date.now() - startTime) / 1000 < 240) {
-    const laAddrTables: { name: string; table: string; idColumn: string; addressColumns: string | string[]; label: string }[] = [
-      { name: "lahd", table: "hpd_violations", idColumn: "id", addressColumns: ["house_number", "street_name"], label: "LAHD" },
-      { name: "ladbs", table: "dob_violations", idColumn: "id", addressColumns: ["house_number", "street_name"], label: "LADBS" },
-      { name: "la-311", table: "complaints_311", idColumn: "unique_key", addressColumns: "incident_address", label: "LA311" },
-      { name: "la-permits", table: "dob_permits", idColumn: "id", addressColumns: ["house_no", "street_name"], label: "LA Permits" },
-    ];
+  // Link LA records by address using in-memory batch matching.
+  // Load LA buildings once, then match all unlinked records locally (fast).
+  const laAddrTables: { name: string; table: string; idColumn: string; addressColumns: string[]; label: string }[] = [
+    { name: "lahd", table: "hpd_violations", idColumn: "id", addressColumns: ["house_number", "street_name"], label: "LAHD" },
+    { name: "ladbs", table: "dob_violations", idColumn: "id", addressColumns: ["house_number", "street_name"], label: "LADBS" },
+    { name: "la-311", table: "complaints_311", idColumn: "unique_key", addressColumns: ["incident_address"], label: "LA311" },
+    { name: "la-permits", table: "dob_permits", idColumn: "id", addressColumns: ["house_no", "street_name"], label: "LA Permits" },
+  ];
 
-    for (const { name, table, idColumn, addressColumns, label } of laAddrTables) {
-      if (sourceParam && sourceParam !== name) continue;
-      if ((Date.now() - startTime) / 1000 > 260) break;
+  const shouldLinkLA = laAddrTables.some(t => !sourceParam || sourceParam === t.name);
+  if (shouldLinkLA && (Date.now() - startTime) / 1000 < 200) {
+    // Load all LA buildings into an in-memory address map (one query, ~30MB for 278K rows)
+    const laErrors: string[] = [];
+    let buildingAddrMap: Map<string, string> | null = null;
+    try {
+      const allBuildings: { id: string; full_address: string }[] = [];
+      let offset = 0;
+      while (true) {
+        const { data: batch } = await supabase
+          .from("buildings")
+          .select("id, full_address")
+          .eq("metro", "los-angeles")
+          .range(offset, offset + 10000 - 1);
+        if (!batch || batch.length === 0) break;
+        allBuildings.push(...batch);
+        if (batch.length < 10000) break;
+        offset += 10000;
+      }
 
-      const tableErrors: string[] = [];
-      try {
-        const result = await linkByAddress(supabase, table, idColumn, addressColumns, syncStartTime, tableErrors, label, 1000, "los-angeles");
-        for (const id of result.affectedBuildingIds) allAffectedIds.add(id);
+      // Build normalized address → building_id map
+      // Key is the street portion before ", Los Angeles" normalized
+      buildingAddrMap = new Map<string, string>();
+      for (const b of allBuildings) {
+        const street = b.full_address.split(",")[0]?.trim() || "";
+        const normalized = street.toUpperCase().replace(/[.,#]/g, "").replace(/\s+/g, " ").trim();
+        if (normalized.length >= 5) {
+          buildingAddrMap.set(normalized, b.id);
+        }
+      }
+      laErrors.push(`Loaded ${allBuildings.length} LA buildings, ${buildingAddrMap.size} unique addresses`);
+    } catch (err) {
+      laErrors.push(`Failed to load LA buildings: ${String(err)}`);
+    }
+
+    if (buildingAddrMap && buildingAddrMap.size > 0) {
+      const linkCutoff = new Date();
+      linkCutoff.setDate(linkCutoff.getDate() - 30);
+
+      for (const { name, table, idColumn, addressColumns, label } of laAddrTables) {
+        if (sourceParam && sourceParam !== name) continue;
+        if ((Date.now() - startTime) / 1000 > 260) break;
+
+        const tableErrors: string[] = [...laErrors];
+        let tableLinked = 0;
+        try {
+          // Fetch unlinked LA records
+          const cols = [idColumn, ...addressColumns].join(", ");
+          const primaryCol = addressColumns[addressColumns.length - 1];
+          let allUnlinked: Record<string, unknown>[] = [];
+          let offset = 0;
+          while (true) {
+            const { data: batch } = await supabase
+              .from(table)
+              .select(cols)
+              .is("building_id", null)
+              .eq("metro", "los-angeles")
+              .not(primaryCol, "is", null)
+              .gte("imported_at", linkCutoff.toISOString())
+              .range(offset, offset + 5000 - 1);
+            if (!batch || batch.length === 0) break;
+            allUnlinked = allUnlinked.concat(batch as unknown as Record<string, unknown>[]);
+            if (batch.length < 5000) break;
+            offset += 5000;
+          }
+
+          if (allUnlinked.length === 0) {
+            tableErrors.push(`${label}: no unlinked records found`);
+            linkResults[name] = { linked: 0, errors: tableErrors };
+            continue;
+          }
+
+          // Group by normalized address
+          const addrToIds = new Map<string, string[]>();
+          for (const r of allUnlinked) {
+            let raw: string;
+            if (addressColumns.length > 1) {
+              raw = addressColumns.map(c => String(r[c] || "").trim()).filter(Boolean).join(" ");
+            } else {
+              raw = String(r[addressColumns[0]] || "").trim();
+            }
+            const normalized = raw.toUpperCase().replace(/[.,#]/g, "").replace(/\s+/g, " ")
+              .replace(/\s+(APT|UNIT|#|FL|FLOOR|STE|SUITE|RM|ROOM)\b.*$/i, "").trim();
+            if (normalized.length < 5) continue;
+            if (!addrToIds.has(normalized)) addrToIds.set(normalized, []);
+            addrToIds.get(normalized)!.push(String(r[idColumn]));
+          }
+
+          // Match in-memory
+          let matched = 0;
+          let unmatched = 0;
+          for (const [addr, recordIds] of addrToIds) {
+            const buildingId = buildingAddrMap.get(addr);
+            if (!buildingId) { unmatched++; continue; }
+            matched++;
+
+            for (let i = 0; i < recordIds.length; i += 200) {
+              const batch = recordIds.slice(i, i + 200);
+              const { error: linkError } = await supabase
+                .from(table)
+                .update({ building_id: buildingId })
+                .in(idColumn, batch);
+
+              if (!linkError) {
+                tableLinked += batch.length;
+              } else {
+                tableErrors.push(`${label} link error: ${linkError.message}`);
+              }
+            }
+            allAffectedIds.add(buildingId);
+          }
+          tableErrors.push(`${label}: ${allUnlinked.length} unlinked, ${matched} addresses matched, ${unmatched} unmatched`);
+        } catch (err) {
+          tableErrors.push(`${label} LA link error: ${String(err)}`);
+        }
+
         const existing = linkResults[name];
         linkResults[name] = {
-          linked: (existing?.linked ?? 0) + result.linked,
+          linked: (existing?.linked ?? 0) + tableLinked,
           errors: [...(existing?.errors ?? []), ...tableErrors],
         };
-      } catch (err) {
-        tableErrors.push(`${label} LA address link error: ${String(err)}`);
-        if (!linkResults[name]) linkResults[name] = { linked: 0, errors: tableErrors };
       }
     }
   }
