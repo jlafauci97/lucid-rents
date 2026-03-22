@@ -4,24 +4,28 @@ import { Building2, AlertTriangle, MessageSquare, Users, ShieldAlert, MapPin, Tr
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { BOROUGH_SLUGS, canonicalUrl, cityPath } from "@/lib/seo";
+import { isValidCity, CITY_META, type City } from "@/lib/cities";
 import type { Metadata } from "next";
 
 export const revalidate = 3600;
 
-export const metadata: Metadata = {
-  title: "NYC Buildings Directory | Lucid Rents",
-  description:
-    "Browse apartment buildings across all five NYC boroughs. View violations, complaints, and tenant reviews for buildings in Manhattan, Brooklyn, Queens, Bronx, and Staten Island.",
-  alternates: { canonical: canonicalUrl(cityPath("/buildings")) },
-  openGraph: {
-    title: "NYC Buildings Directory | Lucid Rents",
-    description:
-      "Browse apartment buildings across all five NYC boroughs with violations, complaints, and reviews.",
-    url: canonicalUrl(cityPath("/buildings")),
-    siteName: "Lucid Rents",
-    type: "website",
-  },
-};
+export async function generateMetadata({ params }: { params: Promise<{ city: string }> }): Promise<Metadata> {
+  const { city } = await params;
+  if (!isValidCity(city)) return {};
+  const meta = CITY_META[city];
+  return {
+    title: `${meta.fullName} Buildings Directory | Lucid Rents`,
+    description: `Browse apartment buildings across ${meta.fullName}. View violations, complaints, and tenant reviews.`,
+    alternates: { canonical: canonicalUrl(cityPath("/buildings", city)) },
+    openGraph: {
+      title: `${meta.fullName} Buildings Directory | Lucid Rents`,
+      description: `Browse apartment buildings across ${meta.fullName} with violations, complaints, and reviews.`,
+      url: canonicalUrl(cityPath("/buildings", city)),
+      siteName: "Lucid Rents",
+      type: "website",
+    },
+  };
+}
 
 interface BoroughStats {
   borough: string;
@@ -70,7 +74,8 @@ async function getBoroughStats(): Promise<BoroughStats[]> {
   return stats;
 }
 
-export default async function BuildingsIndexPage() {
+export default async function BuildingsIndexPage({ params }: { params: Promise<{ city: string }> }) {
+  const { city } = await params;
   const stats = await getBoroughStats();
 
   const jsonLd = {
@@ -82,14 +87,14 @@ export default async function BuildingsIndexPage() {
       "@type": "ListItem",
       position: i + 1,
       name: `${s.borough} Buildings`,
-      url: canonicalUrl(cityPath(`/buildings/${BOROUGH_SLUGS[s.borough]}`)),
+      url: canonicalUrl(cityPath(`/buildings/${BOROUGH_SLUGS[s.borough]}`, city as City)),
     })),
   };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <JsonLd data={jsonLd} />
-      <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Buildings", href: cityPath("/buildings") }]} />
+      <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Buildings", href: cityPath("/buildings", city as City) }]} />
 
       <h1 className="text-3xl font-bold text-[#0F1D2E] mt-6 mb-2">
         NYC Buildings Directory
@@ -100,7 +105,7 @@ export default async function BuildingsIndexPage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {stats.map((s) => (
-          <Link key={s.borough} href={cityPath(`/buildings/${BOROUGH_SLUGS[s.borough]}`)}>
+          <Link key={s.borough} href={cityPath(`/buildings/${BOROUGH_SLUGS[s.borough]}`, city as City)}>
             <Card hover>
               <CardContent className="p-6">
                 <h2 className="text-xl font-bold text-[#0F1D2E] mb-4">
@@ -131,7 +136,7 @@ export default async function BuildingsIndexPage() {
         <h2 className="text-xl font-bold text-[#0F1D2E] mb-4">Explore More</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Link
-            href={cityPath("/worst-rated-buildings")}
+            href={cityPath("/worst-rated-buildings", city as City)}
             className="group flex items-center gap-3 p-4 bg-white border border-[#e2e8f0] rounded-xl hover:shadow-md hover:border-red-300 transition-all"
           >
             <div className="p-2 rounded-lg bg-red-50">
@@ -144,7 +149,7 @@ export default async function BuildingsIndexPage() {
           </Link>
 
           <Link
-            href={cityPath("/landlords")}
+            href={cityPath("/landlords", city as City)}
             className="group flex items-center gap-3 p-4 bg-white border border-[#e2e8f0] rounded-xl hover:shadow-md hover:border-purple-300 transition-all"
           >
             <div className="p-2 rounded-lg bg-purple-50">
@@ -157,7 +162,7 @@ export default async function BuildingsIndexPage() {
           </Link>
 
           <Link
-            href={cityPath("/crime")}
+            href={cityPath("/crime", city as City)}
             className="group flex items-center gap-3 p-4 bg-white border border-[#e2e8f0] rounded-xl hover:shadow-md hover:border-amber-300 transition-all"
           >
             <div className="p-2 rounded-lg bg-amber-50">
@@ -170,7 +175,7 @@ export default async function BuildingsIndexPage() {
           </Link>
 
           <Link
-            href={cityPath("/rent-data")}
+            href={cityPath("/rent-data", city as City)}
             className="group flex items-center gap-3 p-4 bg-white border border-[#e2e8f0] rounded-xl hover:shadow-md hover:border-emerald-300 transition-all"
           >
             <div className="p-2 rounded-lg bg-emerald-50">

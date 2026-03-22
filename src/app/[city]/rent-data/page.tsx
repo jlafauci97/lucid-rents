@@ -46,7 +46,8 @@ async function fetchRpc(fnName: string) {
   return res.json();
 }
 
-export default async function RentDataPage() {
+export default async function RentDataPage({ params: routeParams }: { params: Promise<{ city: string }> }) {
+  const { city: cityParam } = await routeParams;
   const [citywideTrend, boroughTrend, zipCurrent] = await Promise.all([
     fetchRpc("rent_trend_citywide"),
     fetchRpc("rent_trend_by_borough"),
@@ -89,7 +90,7 @@ export default async function RentDataPage() {
               name: "NYC Rent Data & Trends",
               description:
                 "Median rent prices by zip code and borough for New York City, sourced from the Zillow Observed Rent Index (ZORI).",
-              url: canonicalUrl(cityPath("/rent-data")),
+              url: canonicalUrl(cityPath("/rent-data", cityParam as import("@/lib/cities").City)),
               creator: {
                 "@type": "Organization",
                 name: "Lucid Rents",
