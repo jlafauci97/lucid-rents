@@ -14,11 +14,11 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
   const meta = CITY_META[city];
   return {
     title: `${meta.fullName} Building Energy Scores | Lucid Rents`,
-    description: `See ENERGY STAR scores, energy use intensity, and greenhouse gas emissions for ${meta.fullName} multifamily buildings.`,
+    description: `How energy-efficient is your building? See ENERGY STAR scores, utility costs, and emissions data for ${meta.fullName} multifamily buildings.`,
     alternates: { canonical: canonicalUrl(cityPath("/energy", city)) },
     openGraph: {
       title: `${meta.fullName} Building Energy Scores`,
-      description: `ENERGY STAR scores and energy benchmarking data for ${meta.fullName} multifamily buildings.`,
+      description: `How energy-efficient is your building? ENERGY STAR scores and benchmarking data for ${meta.fullName} multifamily buildings.`,
       url: canonicalUrl(cityPath("/energy", city)),
       siteName: "Lucid Rents",
       type: "website",

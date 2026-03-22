@@ -28,8 +28,8 @@ export async function generateMetadata({
   const cityName = CITY_META[cityParam as City]?.fullName || "NYC";
   const title = params.q ? `Search: ${params.q}` : `Search ${cityName} Buildings`;
   const description = params.q
-    ? `Search results for "${params.q}" — find building violations, complaints, and tenant reviews.`
-    : `Search ${cityName} buildings by address, zip code, or neighborhood. View violations, complaints, tenant reviews, and more.`;
+    ? `Results for "${params.q}" — see violations, complaints, tenant reviews, and building scores before you sign.`
+    : `Search any ${cityName} building by address or zip code. Instantly see violations, tenant reviews, and safety data.`;
   const url = canonicalUrl(cityPath("/search", cityParam as City));
   return {
     title,

@@ -14,11 +14,11 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
   const meta = CITY_META[city];
   return {
     title: `Live Feed | ${meta.fullName} | Lucid Rents`,
-    description: `Real-time feed of violations, complaints, and tenant reviews across ${meta.fullName} buildings.`,
+    description: `See what's happening right now in ${meta.fullName} buildings — new violations, complaints, and tenant reviews as they come in.`,
     alternates: { canonical: canonicalUrl(cityPath("/feed", city)) },
     openGraph: {
       title: `Live Feed — ${meta.fullName} Building Activity`,
-      description: `Real-time feed of violations, complaints, and tenant reviews across ${meta.fullName} buildings.`,
+      description: `See what's happening right now in ${meta.fullName} buildings — violations, complaints, and reviews as they come in.`,
       url: canonicalUrl(cityPath("/feed", city)),
       siteName: "Lucid Rents",
       type: "website",

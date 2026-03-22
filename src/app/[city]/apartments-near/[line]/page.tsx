@@ -85,7 +85,7 @@ export async function generateMetadata({
 
   const typeWord = lineInfo.type === "subway" ? "stations" : "stops";
   const title = `Apartments Near the ${lineInfo.displayName} | Lucid Rents`;
-  const description = `Find apartments and buildings near ${lineInfo.displayName} ${typeWord} in NYC. Browse buildings within walking distance with violation records, reviews, and rent stabilization status.`;
+  const description = `Live near the ${lineInfo.displayName}? Browse apartments within walking distance of every stop — with violation records, reviews, and rent stabilization status.`;
 
   return {
     title,

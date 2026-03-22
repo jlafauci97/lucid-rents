@@ -20,7 +20,7 @@ export async function generateMetadata({
   const cityName = meta?.fullName ?? city;
   return {
     title: `${cityName} Tenant Rights Guide | Lucid Rents`,
-    description: `Know your rights as a ${cityName} tenant. ${config.heroDescription}`,
+    description: `Don't let your landlord take advantage of you. Know your rights as a ${cityName} tenant — from rent increases to eviction protections.`,
   };
 }
 

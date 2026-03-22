@@ -14,11 +14,11 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
   const meta = CITY_META[city];
   return {
     title: `Crime by Zip Code | ${meta.fullName} | Lucid Rents`,
-    description: `Explore crime data by zip code across ${meta.fullName}. View violent, property, and quality of life crime breakdowns.`,
+    description: `How safe is your neighborhood? See ${meta.fullName} crime rates by zip code — violent, property, and quality-of-life breakdowns with interactive maps.`,
     alternates: { canonical: canonicalUrl(cityPath("/crime", city)) },
     openGraph: {
       title: `${meta.fullName} Crime Data by Zip Code`,
-      description: `Crime data by zip code across ${meta.fullName} — violent, property, and quality of life crime breakdowns.`,
+      description: `How safe is your neighborhood? ${meta.fullName} crime rates by zip code with interactive maps and breakdowns.`,
       url: canonicalUrl(cityPath("/crime", city)),
       siteName: "Lucid Rents",
       type: "website",
@@ -44,7 +44,7 @@ async function getCrimeByZip(city: string) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ since_date: sinceDateStr, metro: city }),
-    next: { revalidate: 3600 },
+    cache: "no-store",
   });
   if (!res.ok) {
     console.error("crime_by_zip fetch error:", res.status, await res.text());

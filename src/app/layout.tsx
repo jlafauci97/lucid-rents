@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     template: "%s | Lucid Rents",
   },
   description:
-    "Discover the truth about apartments in NYC and Los Angeles. Search building violations, bedbug reports, evictions, tenant reviews, and uncover hidden issues before signing your lease.",
+    "Don't sign a lease blind. Check any NYC or LA building for violations, bedbug history, evictions, and real tenant reviews — free.",
   keywords: [
     "NYC apartments",
     "Los Angeles apartments",

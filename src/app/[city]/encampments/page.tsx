@@ -17,11 +17,11 @@ export async function generateMetadata({
   const meta = CITY_META[city];
   return {
     title: `Homeless Encampment Reports | ${meta.fullName} | Lucid Rents`,
-    description: `Map of homeless encampment reports across ${meta.fullName} from LA 311 service requests. View open, pending, and closed reports by location.`,
+    description: `See where homeless encampments have been reported across ${meta.fullName}. Interactive map with open, pending, and closed 311 reports by location.`,
     alternates: { canonical: canonicalUrl(cityPath("/encampments", city)) },
     openGraph: {
       title: `${meta.fullName} Homeless Encampment Reports`,
-      description: `Homeless encampment reports across ${meta.fullName} — mapped from LA 311 service requests.`,
+      description: `See where homeless encampments have been reported across ${meta.fullName} — mapped from 311 service requests.`,
       url: canonicalUrl(cityPath("/encampments", city)),
       siteName: "Lucid Rents",
       type: "website",

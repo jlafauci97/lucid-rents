@@ -18,11 +18,11 @@ export async function generateMetadata({
   const meta = CITY_META[city];
   return {
     title: `Worst Rated Buildings in ${meta.fullName} | Lucid Rents`,
-    description: `${meta.fullName} buildings ranked by violations, 311 complaints, and reported issues.`,
+    description: `These ${meta.fullName} buildings have the most violations and complaints. Check the list before you sign a lease.`,
     alternates: { canonical: canonicalUrl(cityPath("/worst-rated-buildings", city)) },
     openGraph: {
       title: `Worst Rated Buildings in ${meta.fullName}`,
-      description: `${meta.fullName} buildings ranked by violations and complaints.`,
+      description: `These ${meta.fullName} buildings have the most violations and complaints. Check the list before you sign a lease.`,
       url: canonicalUrl(cityPath("/worst-rated-buildings", city)),
       siteName: "Lucid Rents",
       type: "website",

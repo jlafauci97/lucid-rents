@@ -14,11 +14,11 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
   const meta = CITY_META[city];
   return {
     title: `${meta.fullName} Building Permits Tracker | Lucid Rents`,
-    description: `Track active DOB building permits across ${meta.fullName}. See permit density by neighborhood, work types, costs, and recently issued permits.`,
+    description: `What construction is happening near you? Track active building permits across ${meta.fullName} — see work types, costs, and neighborhood hotspots.`,
     alternates: { canonical: canonicalUrl(cityPath("/permits", city)) },
     openGraph: {
       title: `${meta.fullName} Building Permits Tracker`,
-      description: `Active DOB building permits across ${meta.fullName} — work types, costs, and neighborhood density. Powered by DOB permit data.`,
+      description: `What construction is happening near you? Active building permits across ${meta.fullName} with work types, costs, and maps.`,
       url: canonicalUrl(cityPath("/permits", city)),
       siteName: "Lucid Rents",
       type: "website",

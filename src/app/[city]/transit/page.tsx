@@ -19,11 +19,11 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
   const meta = CITY_META[city];
   return {
     title: `Apartments Near Transit | ${meta.fullName} | Lucid Rents`,
-    description: `Find ${meta.fullName} apartments near subway stations and bus stops. Browse buildings within walking distance of every transit line.`,
+    description: `Find ${meta.fullName} apartments you can actually commute from. Browse buildings within walking distance of every subway and bus line.`,
     alternates: { canonical: canonicalUrl(cityPath("/transit", city)) },
     openGraph: {
       title: "Apartments Near Transit",
-      description: `Find ${meta.fullName} apartments near subway stations and bus stops.`,
+      description: `Find ${meta.fullName} apartments you can actually commute from — near every subway and bus line.`,
       url: canonicalUrl(cityPath("/transit", city)),
       siteName: "Lucid Rents",
       type: "website",

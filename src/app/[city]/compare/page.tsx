@@ -21,11 +21,11 @@ export async function generateMetadata({ params }: ComparePageProps): Promise<Me
   const cityName = isValidCity(cityParam) ? CITY_META[cityParam].name : "NYC";
   return {
     title: `Compare ${cityName} Buildings`,
-    description: `Compare ${cityName} buildings side by side. View scores, violations, complaints, and more to find the best apartment.`,
+    description: `Can't decide between apartments? Compare ${cityName} buildings side by side on violations, scores, reviews, and more.`,
     alternates: { canonical: canonicalUrl(cityPath("/compare", isValidCity(cityParam) ? cityParam : undefined)) },
     openGraph: {
       title: `Compare ${cityName} Buildings`,
-      description: `Compare ${cityName} buildings side by side. View scores, violations, complaints, and more.`,
+      description: `Can't decide between apartments? Compare ${cityName} buildings side by side on violations, scores, reviews, and more.`,
       url: canonicalUrl(cityPath("/compare", isValidCity(cityParam) ? cityParam : undefined)),
       siteName: "Lucid Rents",
       type: "website",

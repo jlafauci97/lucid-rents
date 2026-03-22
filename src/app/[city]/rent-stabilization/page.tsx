@@ -27,7 +27,7 @@ const RENT_STAB_CONFIG: Record<City, RentStabConfig> = {
   nyc: {
     title: "NYC Rent Stabilization Checker",
     metaDescription:
-      "Check if your NYC apartment is rent stabilized. Search any address to find rent stabilization status, unit counts, and historical data for buildings in New York City.",
+      "Is your NYC apartment rent stabilized? Search any address to instantly check stabilization status, unit counts, and what protections you may have.",
     headerDescription:
       "Check if your apartment is rent stabilized. Search by address to find rent stabilization status based on NYC Department of Finance tax bill records. Rent stabilized tenants have protections including limits on rent increases and the right to lease renewal.",
     searchPlaceholder: "Search by address to check rent stabilization...",
@@ -45,7 +45,7 @@ const RENT_STAB_CONFIG: Record<City, RentStabConfig> = {
   "los-angeles": {
     title: "LA Rent Stabilization (RSO) Checker",
     metaDescription:
-      "Check if your Los Angeles apartment is covered by the Rent Stabilization Ordinance (RSO). Search any address to find RSO status and unit counts.",
+      "Is your LA apartment rent controlled? Search any address to check RSO status instantly — know your rights before your landlord raises the rent.",
     headerDescription:
       "Check if your apartment is covered by the LA Rent Stabilization Ordinance (RSO). Buildings with two or more units built before October 1, 1978 are generally covered. RSO tenants have protections including limits on annual rent increases and just-cause eviction requirements.",
     searchPlaceholder: "Search by address to check RSO status...",

@@ -5,7 +5,7 @@ import { Building2, Database, Shield, Users } from "lucide-react";
 export const metadata: Metadata = {
   title: "About Lucid Rents | NYC Apartment Transparency Platform",
   description:
-    "Lucid Rents helps NYC renters make informed decisions with building violations, tenant reviews, crime data, rent stabilization info, and more — all free.",
+    "We built Lucid Rents so every renter gets the same intel that landlords and brokers already have — violations, reviews, crime data, and more. Always free.",
   alternates: { canonical: canonicalUrl("/about") },
 };
 

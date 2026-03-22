@@ -30,7 +30,7 @@ export async function generateMetadata({
   if (!borough) return { title: "Not Found" };
 
   const title = `${borough} Buildings | Lucid Rents`;
-  const description = `Browse apartment buildings in ${borough}, NYC. View violations, complaints, scores, and tenant reviews.`;
+  const description = `Apartment hunting in ${borough}? Browse every building with violation scores, complaint history, and real tenant reviews.`;
   const url = canonicalUrl(cityPath(`/buildings/${boroughSlug}`, city as import("@/lib/cities").City));
 
   return {

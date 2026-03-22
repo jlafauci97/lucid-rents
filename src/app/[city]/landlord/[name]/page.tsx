@@ -83,7 +83,7 @@ export async function generateMetadata({
   const displayName = statsRows?.[0]?.name || decodeURIComponent(name);
 
   const title = `${displayName} - Landlord Portfolio | Lucid Rents`;
-  const description = `View all buildings, violations, and complaints for landlord ${displayName} in New York City.`;
+  const description = `Renting from ${displayName}? See every building they own, their violation history, and tenant complaints — all in one place.`;
   const url = canonicalUrl(landlordUrl(displayName));
 
   return {

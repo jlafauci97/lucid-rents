@@ -30,7 +30,7 @@ export async function generateMetadata({ params }: UnitPageProps): Promise<Metad
   const cityName = CITY_META[city]?.name || "NYC";
   return {
     title: `Unit ${unit.unit_number} - ${building.full_address}`,
-    description: `View reviews, violations, and details for Unit ${unit.unit_number} at ${building.full_address} in ${building.borough}, ${cityName}.`,
+    description: `What's it really like living in Unit ${unit.unit_number} at ${building.full_address}? See tenant reviews, violation history, and unit-specific details.`,
   };
 }
 

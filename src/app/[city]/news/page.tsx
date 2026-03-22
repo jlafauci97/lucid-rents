@@ -21,11 +21,11 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
   const meta = CITY_META[city];
   return {
     title: `${meta.fullName} Housing News | Lucid Rents`,
-    description: `Stay informed with the latest ${meta.fullName} rental market news, tenant rights updates, housing policy changes, and guides for ${meta.fullName} renters.`,
+    description: `The latest ${meta.fullName} housing news that actually affects renters — policy changes, tenant rights updates, and market shifts you need to know.`,
     alternates: { canonical: canonicalUrl(cityPath("/news", city)) },
     openGraph: {
       title: `${meta.fullName} Housing News — Lucid Rents`,
-      description: `Latest ${meta.fullName} rental market news, tenant rights updates, and housing guides.`,
+      description: `${meta.fullName} housing news that actually affects renters — policy changes, rights updates, and market shifts.`,
       url: canonicalUrl(cityPath("/news", city)),
       siteName: "Lucid Rents",
       type: "website",

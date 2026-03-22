@@ -5,7 +5,7 @@ import { Mail, MessageSquare, AlertCircle } from "lucide-react";
 export const metadata: Metadata = {
   title: "Contact Us | Lucid Rents",
   description:
-    "Get in touch with Lucid Rents. Report data issues, submit feedback, or ask questions about NYC apartment data.",
+    "Found a data issue or have feedback? Reach out to the Lucid Rents team — we read every message.",
   alternates: { canonical: canonicalUrl("/contact") },
 };
 

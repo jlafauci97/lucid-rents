@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Terms of Service | Lucid Rents",
   description:
-    "Terms of Service for Lucid Rents — rules and guidelines for using our platform.",
+    "Read the Lucid Rents Terms of Service — the rules and guidelines that govern your use of our platform.",
   alternates: { canonical: canonicalUrl("/terms") },
 };
 

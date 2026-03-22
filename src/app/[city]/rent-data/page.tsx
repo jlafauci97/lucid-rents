@@ -16,11 +16,11 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
   const meta = CITY_META[city];
   return {
     title: `${meta.fullName} Rent Data & Trends | Lucid Rents`,
-    description: `Explore ${meta.fullName} rent prices by neighborhood and zip code. View median rent trends, area comparisons, and an interactive rent map.`,
+    description: `What should you actually pay for rent in ${meta.fullName}? See median prices by neighborhood, rent trends over time, and an interactive map.`,
     alternates: { canonical: canonicalUrl(cityPath("/rent-data", city)) },
     openGraph: {
       title: `${meta.fullName} Rent Data & Trends`,
-      description: `Median rent prices, area comparisons, and neighborhood rent maps for ${meta.fullName}. Powered by Zillow ZORI data.`,
+      description: `What should you actually pay in ${meta.fullName}? Median rents by neighborhood, trends over time, and an interactive rent map.`,
       url: canonicalUrl(cityPath("/rent-data", city)),
       siteName: "Lucid Rents",
       type: "website",

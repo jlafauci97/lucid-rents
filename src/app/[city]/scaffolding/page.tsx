@@ -14,11 +14,11 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
   const meta = CITY_META[city];
   return {
     title: `${meta.fullName} Scaffolding & Sidewalk Sheds Tracker | Lucid Rents`,
-    description: `Track active sidewalk sheds and scaffolding across ${meta.fullName}. See how long scaffolding has been up, which neighborhoods have the most, and when permits expire.`,
+    description: `Is there scaffolding on your block? Track every active sidewalk shed across ${meta.fullName} — see how long it's been up and when the permit expires.`,
     alternates: { canonical: canonicalUrl(cityPath("/scaffolding", city)) },
     openGraph: {
       title: `${meta.fullName} Scaffolding & Sidewalk Sheds Tracker`,
-      description: `Active sidewalk shed permits, duration, and neighborhood density across ${meta.fullName}. Powered by DOB permit data.`,
+      description: `Is there scaffolding on your block? Every active sidewalk shed across ${meta.fullName} — duration, permits, and maps.`,
       url: canonicalUrl(cityPath("/scaffolding", city)),
       siteName: "Lucid Rents",
       type: "website",

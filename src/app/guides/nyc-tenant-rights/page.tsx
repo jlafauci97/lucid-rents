@@ -7,12 +7,12 @@ import { Scale, ShieldCheck, Wrench, Phone, AlertTriangle, Home } from "lucide-r
 export const metadata: Metadata = {
   title: "NYC Tenant Rights Guide 2026 | Lucid Rents",
   description:
-    "A comprehensive guide to tenant rights in New York City. Learn about rent stabilization, lease renewals, repairs, security deposits, eviction protections, and how to file complaints.",
+    "Every NYC renter should know these rights. Rent stabilization, lease renewals, repair obligations, eviction protections, and how to fight back when your landlord won't act.",
   alternates: { canonical: canonicalUrl("/guides/nyc-tenant-rights") },
   openGraph: {
     title: "NYC Tenant Rights Guide 2026",
     description:
-      "Everything NYC renters need to know about their legal rights, from rent stabilization to eviction protections.",
+      "Every NYC renter should know these rights — from rent stabilization to eviction protections.",
     url: canonicalUrl("/guides/nyc-tenant-rights"),
     siteName: "Lucid Rents",
     type: "article",

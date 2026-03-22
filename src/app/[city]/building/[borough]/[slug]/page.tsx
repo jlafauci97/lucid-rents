@@ -77,7 +77,7 @@ export async function generateMetadata({
   if (building.bedbug_report_count > 0) descParts.push(`${building.bedbug_report_count} bedbug reports`);
   if (building.eviction_count > 0) descParts.push(`${building.eviction_count} evictions`);
   const cityName = CITY_META[cityParam as keyof typeof CITY_META]?.name || "NYC";
-  const description = `View ${descParts.join(", ")}, and tenant reviews for ${building.full_address} in ${building.borough}, ${cityName}.`;
+  const description = `Thinking about ${building.full_address}? Check ${descParts.join(", ")}, and real tenant reviews before you sign a lease.`;
   const url = canonicalUrl(buildingUrl(building));
 
   return {

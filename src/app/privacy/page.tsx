@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Privacy Policy | Lucid Rents",
   description:
-    "Privacy Policy for Lucid Rents — how we collect, use, and protect your data.",
+    "How Lucid Rents collects, uses, and protects your data. We respect your privacy — read our full policy.",
   alternates: { canonical: canonicalUrl("/privacy") },
 };
 

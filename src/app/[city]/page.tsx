@@ -31,7 +31,7 @@ export async function generateMetadata({
   const meta = CITY_META[city];
   return {
     title: `${meta.fullName} Apartment Building Data | Lucid Rents`,
-    description: `Search building violations, tenant reviews, crime data, and more for ${meta.fullName} apartments. Make informed decisions before signing your lease.`,
+    description: `Looking for an apartment in ${meta.fullName}? Search any building for violations, tenant reviews, crime data, and rent history — all free.`,
     alternates: { canonical: canonicalUrl(cityPath("/", city)) },
   };
 }

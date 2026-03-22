@@ -59,7 +59,7 @@ export async function generateMetadata({
   const title = `${article.title} | Lucid Rents News`;
   const description =
     article.excerpt ||
-    `Read this ${article.category} article from ${article.source_name} on Lucid Rents.`;
+    `${article.category} coverage from ${article.source_name} — read the full story on Lucid Rents.`;
 
   return {
     title,

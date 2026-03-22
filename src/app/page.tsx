@@ -12,7 +12,7 @@ import { ActivityFeed } from "@/components/ActivityFeed";
 export const metadata: Metadata = {
   title: "Lucid Rents — Apartment Building Intelligence",
   description:
-    "Discover the truth about apartment buildings before you sign. Search building violations, tenant reviews, crime data, and more across New York City and Los Angeles.",
+    "Your next apartment has a history. Search any NYC or LA building to uncover violations, tenant complaints, crime stats, and honest reviews — before you sign.",
   alternates: { canonical: canonicalUrl("/") },
 };
 

@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Submit a Review",
+  description: "Lived in a building? Share your experience to help other renters make smarter decisions.",
 };
 
 interface ReviewNewPageProps {

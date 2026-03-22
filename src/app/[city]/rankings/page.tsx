@@ -11,12 +11,12 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Worst Rated Buildings in NYC | Lucid Rents",
   description:
-    "NYC buildings ranked by HPD violations, 311 complaints, and reported issues. Find the worst-rated buildings in Manhattan, Brooklyn, Queens, Bronx, and Staten Island.",
+    "Which NYC buildings have the most problems? See the worst-rated buildings ranked by HPD violations and 311 complaints across all five boroughs.",
   alternates: { canonical: canonicalUrl("/rankings") },
   openGraph: {
     title: "Worst Rated Buildings in NYC",
     description:
-      "NYC buildings ranked by HPD violations and 311 complaints.",
+      "Which NYC buildings have the most problems? See the worst-rated buildings ranked by HPD violations and 311 complaints.",
     url: canonicalUrl("/rankings"),
     siteName: "Lucid Rents",
     type: "website",

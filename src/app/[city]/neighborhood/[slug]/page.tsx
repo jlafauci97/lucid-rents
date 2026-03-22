@@ -27,11 +27,11 @@ export async function generateMetadata({
   const url = canonicalUrl(neighborhoodUrl(zipCode));
   return {
     title: name ? `${name} Report Card (${zipCode})` : `Neighborhood Report Card: ${zipCode}`,
-    description: `See the neighborhood report card for ${displayName}. Building grades, crime stats, violation density, and top landlords.`,
+    description: `Should you move to ${displayName}? See building grades, crime stats, top landlords, and violation density in one report card.`,
     alternates: { canonical: url },
     openGraph: {
       title: name ? `${name} Report Card (${zipCode})` : `Neighborhood Report Card: ${zipCode}`,
-      description: `Building grades, crime stats, and landlord data for ${displayName}, NYC.`,
+      description: `Should you move to ${displayName}? Building grades, crime stats, and landlord data in one report card.`,
       url,
       siteName: "Lucid Rents",
       type: "website",
