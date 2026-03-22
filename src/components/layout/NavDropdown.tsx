@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { ChevronDown, ArrowLeftRight, ShieldCheck, Wrench, BarChart3, Construction, ClipboardList, Zap, TrainFront, Scale } from "lucide-react";
+import { ChevronDown, ArrowLeftRight, ShieldCheck, Wrench, BarChart3, Construction, ClipboardList, Zap, TrainFront, Scale, Tent } from "lucide-react";
 import { type City, DEFAULT_CITY, CITY_META } from "@/lib/cities";
 import { cityPath } from "@/lib/seo";
 
@@ -57,6 +57,13 @@ const tools: ToolItem[] = [
     icon: TrainFront,
     label: "Near Transit",
     description: "Find apartments near transit stops",
+  },
+  {
+    path: "/encampments",
+    icon: Tent,
+    label: "Encampment Reports",
+    description: "Homeless encampment 311 reports mapped",
+    cities: ["los-angeles"],
   },
   {
     path: "/tenant-rights",
