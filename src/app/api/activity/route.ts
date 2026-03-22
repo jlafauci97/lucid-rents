@@ -241,14 +241,11 @@ export async function GET(request: Request) {
       error?: { message: string } | null;
     }[];
 
-    // Log query results for debugging
+    // Log failed queries but continue with the ones that succeeded
     for (let i = 0; i < results.length; i++) {
       if (results[i].error) {
         console.error(`Activity feed query ${i} failed:`, results[i].error);
         results[i].data = null; // Treat failed queries as empty
-      } else {
-        const data = results[i].data;
-        console.log(`Activity feed query ${i}: ${Array.isArray(data) ? data.length : 0} rows (metro=${metro})`);
       }
     }
 
