@@ -2,7 +2,9 @@ import { Suspense } from "react";
 import { SearchBar } from "@/components/search/SearchBar";
 import { SearchFilters } from "@/components/search/SearchFilters";
 import { SearchSort } from "@/components/search/SearchSort";
+import { SearchChips } from "@/components/search/SearchChips";
 import { BuildingCard } from "@/components/search/BuildingCard";
+import { TrendingBuildings } from "@/components/search/TrendingBuildings";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
@@ -195,23 +197,57 @@ export default async function SearchPage({ params: routeParams, searchParams }: 
   const sort: SortOption = isValidSort(params.sort) ? params.sort : "relevance";
   const page = parseInt(params.page || "1", 10);
 
+  const hasQuery = q.length > 0;
+
   return (
     <AdSidebar>
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-6">
-        <SearchBar initialQuery={q} />
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      {/* Search bar + filters */}
+      <div className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm p-4 sm:p-5 mb-5">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex-1">
+            <SearchBar initialQuery={q} />
+          </div>
+          <div className="flex gap-2">
+            <Suspense fallback={null}>
+              <SearchFilters />
+            </Suspense>
+            <Suspense fallback={null}>
+              <SearchSort />
+            </Suspense>
+          </div>
+        </div>
+        <div className="mt-3">
+          <Suspense fallback={null}>
+            <SearchChips />
+          </Suspense>
+        </div>
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-        <Suspense fallback={null}>
-          <SearchFilters />
+
+      {/* Results area */}
+      {hasQuery ? (
+        <Suspense fallback={<SearchSkeleton />}>
+          <SearchResults q={q} borough={borough} zip={zip} sort={sort} page={page} city={cityParam} />
         </Suspense>
-        <Suspense fallback={null}>
-          <SearchSort />
-        </Suspense>
-      </div>
-      <Suspense fallback={<SearchSkeleton />}>
-        <SearchResults q={q} borough={borough} zip={zip} sort={sort} page={page} city={cityParam} />
-      </Suspense>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <div className="lg:col-span-2">
+            <Suspense fallback={<SearchSkeleton />}>
+              <TrendingBuildings city={cityParam as City} />
+            </Suspense>
+          </div>
+          <div>
+            <div className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm p-5 text-center">
+              <p className="text-[#64748b] text-sm">
+                Search by address, neighborhood, or zip code to find buildings.
+              </p>
+              <p className="text-xs text-[#94a3b8] mt-2">
+                Or use the quick filters above to browse.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
       <AdBlock adSlot="SEARCH_BOTTOM" adFormat="horizontal" />
     </div>
     </AdSidebar>

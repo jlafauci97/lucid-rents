@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalUrl, cityPath } from "@/lib/seo";
 import { CITY_META, type City } from "@/lib/cities";
-import { FileSearch, Users, Shield, ArrowRight } from "lucide-react";
+import { FileSearch, Users, Shield, ArrowRight, Search, ClipboardList, CheckCircle2 } from "lucide-react";
 import { ViolationTicker } from "@/components/home/ViolationTicker";
 import { LiveStats } from "@/components/home/LiveStats";
 import { ActivityFeed } from "@/components/ActivityFeed";
@@ -208,31 +208,44 @@ export default function HomePage() {
       {/* How It Works */}
       <section className="py-16 bg-white border-t border-[#e2e8f0]">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-2xl sm:text-3xl font-bold text-[#0F1D2E] mb-6 text-center">
-            How Lucid Rents Works
+          <h2 className="text-2xl sm:text-3xl font-bold text-[#0F1D2E] mb-12 text-center">
+            How It Works
           </h2>
-          <div className="prose prose-slate max-w-none text-sm leading-relaxed text-[#334155] space-y-4">
-            <p>
-              Finding the right apartment is hard enough without hidden
-              surprises. Lucid Rents was built to give renters the same level of
-              information that landlords, brokers, and property managers already
-              have access to &mdash; completely free.
-            </p>
-            <p>
-              We pull data directly from official government sources every day.
-              This includes housing violations, building department complaints,
-              311 service requests, crime data, energy benchmarking scores, rent
-              stabilization records, and transit stop locations. Every data point
-              is tied to a specific building, giving you a complete picture of
-              any property.
-            </p>
-            <p>
-              Each building on Lucid Rents receives a letter grade from A+ to F,
-              calculated from its violation history, complaint volume, and tenant
-              reviews. This score helps you compare buildings at a glance and
-              avoid properties with chronic maintenance issues, pest problems, or
-              unresponsive management.
-            </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 relative">
+            {/* Connecting line (desktop only) */}
+            <div className="hidden md:block absolute top-8 left-[20%] right-[20%] h-px bg-[#e2e8f0]" />
+            {[
+              {
+                icon: Search,
+                num: "1",
+                title: "Search any address",
+                desc: "Enter a building address, zip code, or neighborhood to pull its complete record.",
+              },
+              {
+                icon: ClipboardList,
+                num: "2",
+                title: "See the full history",
+                desc: "Every violation, complaint, litigation, and tenant review — organized and scored.",
+              },
+              {
+                icon: CheckCircle2,
+                num: "3",
+                title: "Decide with confidence",
+                desc: "Compare buildings, read reviews, and sign your lease knowing what to expect.",
+              },
+            ].map((step) => (
+              <div key={step.num} className="text-center relative z-10">
+                <div className="w-16 h-16 bg-[#f8fafc] border-2 border-[#e2e8f0] rounded-2xl flex items-center justify-center mx-auto mb-5">
+                  <step.icon className="w-7 h-7 text-[#3B82F6]" />
+                </div>
+                <h3 className="text-lg font-semibold text-[#0F1D2E] mb-2">
+                  {step.title}
+                </h3>
+                <p className="text-sm text-[#64748b] leading-relaxed max-w-xs mx-auto">
+                  {step.desc}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
