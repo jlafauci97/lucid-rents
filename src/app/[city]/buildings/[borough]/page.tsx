@@ -15,7 +15,7 @@ import type { Metadata } from "next";
 export const revalidate = 3600;
 
 interface BoroughPageProps {
-  params: Promise<{ city: string; borough: string }>;
+  params: Promise<{ borough: string }>;
   searchParams: Promise<{ page?: string; sort?: string }>;
 }
 
@@ -25,13 +25,13 @@ export const dynamicParams = true;
 export async function generateMetadata({
   params,
 }: BoroughPageProps): Promise<Metadata> {
-  const { city, borough: boroughSlug } = await params;
+  const { borough: boroughSlug } = await params;
   const borough = SLUG_TO_BOROUGH[boroughSlug];
   if (!borough) return { title: "Not Found" };
 
   const title = `${borough} Buildings | Lucid Rents`;
   const description = `Browse apartment buildings in ${borough}, NYC. View violations, complaints, scores, and tenant reviews.`;
-  const url = canonicalUrl(cityPath(`/buildings/${boroughSlug}`, city as import("@/lib/cities").City));
+  const url = canonicalUrl(cityPath(`/buildings/${boroughSlug}`));
 
   return {
     title,
@@ -50,7 +50,7 @@ export async function generateMetadata({
 const PAGE_SIZE = 25;
 
 export default async function BoroughPage({ params, searchParams }: BoroughPageProps) {
-  const { city: cityParam, borough: boroughSlug } = await params;
+  const { borough: boroughSlug } = await params;
   const { page: pageStr, sort } = await searchParams;
   const borough = SLUG_TO_BOROUGH[boroughSlug];
   if (!borough) notFound();
@@ -108,8 +108,8 @@ export default async function BoroughPage({ params, searchParams }: BoroughPageP
       <Breadcrumbs
         items={[
           { label: "Home", href: "/" },
-          { label: "Buildings", href: cityPath("/buildings", cityParam as import("@/lib/cities").City) },
-          { label: borough, href: cityPath(`/buildings/${boroughSlug}`, cityParam as import("@/lib/cities").City) },
+          { label: "Buildings", href: cityPath("/buildings") },
+          { label: borough, href: cityPath(`/buildings/${boroughSlug}`) },
         ]}
       />
 
@@ -123,7 +123,7 @@ export default async function BoroughPage({ params, searchParams }: BoroughPageP
       {/* Sort controls */}
       <div className="flex gap-2 mb-6">
         <Link
-          href={cityPath(`/buildings/${boroughSlug}?sort=violations`, cityParam as import("@/lib/cities").City)}
+          href={cityPath(`/buildings/${boroughSlug}?sort=violations`)}
           className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
             sort !== "score"
               ? "bg-[#3B82F6] text-white"
@@ -133,7 +133,7 @@ export default async function BoroughPage({ params, searchParams }: BoroughPageP
           Most Violations
         </Link>
         <Link
-          href={cityPath(`/buildings/${boroughSlug}?sort=score`, cityParam as import("@/lib/cities").City)}
+          href={cityPath(`/buildings/${boroughSlug}?sort=score`)}
           className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
             sort === "score"
               ? "bg-[#3B82F6] text-white"
@@ -157,7 +157,7 @@ export default async function BoroughPage({ params, searchParams }: BoroughPageP
         <div className="flex justify-center gap-2 mt-8">
           {page > 1 && (
             <Link
-              href={cityPath(`/buildings/${boroughSlug}?page=${page - 1}${sort ? `&sort=${sort}` : ""}`, cityParam as import("@/lib/cities").City)}
+              href={cityPath(`/buildings/${boroughSlug}?page=${page - 1}${sort ? `&sort=${sort}` : ""}`)}
               className="px-4 py-2 rounded-lg bg-gray-100 text-sm font-medium text-[#0F1D2E] hover:bg-gray-200 transition-colors"
             >
               Previous
@@ -168,7 +168,7 @@ export default async function BoroughPage({ params, searchParams }: BoroughPageP
           </span>
           {page < totalPages && (
             <Link
-              href={cityPath(`/buildings/${boroughSlug}?page=${page + 1}${sort ? `&sort=${sort}` : ""}`, cityParam as import("@/lib/cities").City)}
+              href={cityPath(`/buildings/${boroughSlug}?page=${page + 1}${sort ? `&sort=${sort}` : ""}`)}
               className="px-4 py-2 rounded-lg bg-gray-100 text-sm font-medium text-[#0F1D2E] hover:bg-gray-200 transition-colors"
             >
               Next

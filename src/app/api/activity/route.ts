@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { isValidCity, type City } from "@/lib/cities";
+import { isValidCity } from "@/lib/cities";
 
 export interface ActivityItem {
-  type: "review" | "violation" | "complaint" | "litigation" | "dob_violation" | "crime" | "bedbug" | "eviction" | "encampment";
+  type: "review" | "violation" | "complaint" | "litigation" | "dob_violation" | "crime" | "bedbug" | "eviction";
   id: string;
   description: string;
   date: string;
@@ -15,6 +15,14 @@ export interface ActivityItem {
   violationClass?: string;
   crimeCategory?: string;
   zipCode?: string;
+  metro?: string;
+}
+
+/** Map city slug to the metro column value used in the database.
+ *  NYC records have metro='nyc'; LA records have metro='los-angeles'. */
+function cityToMetro(city: string | null): string {
+  if (!city || city === "nyc") return "nyc";
+  return city; // "los-angeles" matches the metro column directly
 }
 
 // ---------------------------------------------------------------------------
@@ -24,27 +32,21 @@ export interface ActivityItem {
 const CACHE_TTL = 4 * 60 * 60 * 1000; // 4 hours
 const cache = new Map<string, { items: ActivityItem[]; ts: number }>();
 
-/** Map city param to the metro value stored in the buildings table */
-function cityToMetro(city: City | null): string | null {
-  if (!city) return null;
-  if (city === "los-angeles") return "los-angeles";
-  return "nyc";
-}
-
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const limit = Math.min(parseInt(searchParams.get("limit") || "50", 10), 100);
     const filter = searchParams.get("filter") || "all";
     const page = Math.max(parseInt(searchParams.get("page") || "1", 10), 1);
-    const cityParam = searchParams.get("city") as City | null;
+    const cityParam = searchParams.get("city");
     if (cityParam && !isValidCity(cityParam)) {
       return NextResponse.json({ error: "Invalid city" }, { status: 400 });
     }
+
     const metro = cityToMetro(cityParam);
 
-    // --- Check cache (keyed by filter + city) ---
-    const cacheKey = `${filter}:${metro || "all"}`;
+    // --- Check cache ---
+    const cacheKey = `${filter}:${cityParam || "nyc"}`;
     const cached = cache.get(cacheKey);
     if (cached && Date.now() - cached.ts < CACHE_TTL) {
       const offset = (page - 1) * limit;
@@ -72,117 +74,17 @@ export async function GET(request: Request) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const promises: PromiseLike<any>[] = [];
 
-    // Helper: add metro filter to a building-joined query
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    function withMetro(query: any) {
-      if (metro) return query.eq("buildings.metro", metro);
-      return query;
-    }
-
-    // Conditionally fetch based on filter
+    // Conditionally fetch based on filter — scoped to metro (city)
     if (filter === "all" || filter === "reviews") {
       promises.push(
-        withMetro(
-          supabase
-            .from("reviews")
-            .select("id, title, overall_rating, created_at, building_id, buildings!inner(full_address, borough, slug, metro)")
-            .not("building_id", "is", null)
-            .gte("created_at", cutoffDate)
-            .lte("created_at", maxDate)
-            .order("created_at", { ascending: false })
-            .order("id", { ascending: false })
-            .limit(10000)
-        )
-      );
-    } else {
-      promises.push(Promise.resolve({ data: null, error: null }));
-    }
-
-    if (filter === "all" || filter === "violations") {
-      promises.push(
-        withMetro(
-          supabase
-            .from("hpd_violations")
-            .select("id, class, nov_description, inspection_date, building_id, buildings!inner(full_address, borough, slug, metro)")
-            .not("building_id", "is", null)
-            .gte("inspection_date", cutoffDate.slice(0, 10))
-            .lte("inspection_date", maxDateShort)
-            .order("inspection_date", { ascending: false })
-            .order("id", { ascending: false })
-            .limit(10000)
-        )
-      );
-    } else {
-      promises.push(Promise.resolve({ data: null, error: null }));
-    }
-
-    if (filter === "all" || filter === "complaints") {
-      promises.push(
-        withMetro(
-          supabase
-            .from("complaints_311")
-            .select("id, complaint_type, descriptor, created_date, building_id, buildings!inner(full_address, borough, slug, metro)")
-            .not("building_id", "is", null)
-            .gte("created_date", cutoffDate)
-            .lte("created_date", maxDate)
-            .order("created_date", { ascending: false })
-            .order("id", { ascending: false })
-            .limit(10000)
-        )
-      );
-    } else {
-      promises.push(Promise.resolve({ data: null, error: null }));
-    }
-
-    if (filter === "all" || filter === "litigations") {
-      promises.push(
-        withMetro(
-          supabase
-            .from("hpd_litigations")
-            .select("id, case_type, case_status, respondent, case_open_date, building_id, buildings!inner(full_address, borough, slug, metro)")
-            .not("building_id", "is", null)
-            .not("case_open_date", "is", null)
-            .gte("case_open_date", cutoffDate.slice(0, 10))
-            .lte("case_open_date", maxDateShort)
-            .order("case_open_date", { ascending: false })
-            .order("id", { ascending: false })
-            .limit(10000)
-        )
-      );
-    } else {
-      promises.push(Promise.resolve({ data: null, error: null }));
-    }
-
-    if (filter === "all" || filter === "dob_violations") {
-      promises.push(
-        withMetro(
-          supabase
-            .from("dob_violations")
-            .select("id, violation_type, description, issue_date, building_id, buildings!inner(full_address, borough, slug, metro)")
-            .not("building_id", "is", null)
-            .not("issue_date", "is", null)
-            .gte("issue_date", cutoffDate.slice(0, 10))
-            .lte("issue_date", maxDateShort)
-            .order("issue_date", { ascending: false })
-            .order("id", { ascending: false })
-            .limit(10000)
-        )
-      );
-    } else {
-      promises.push(Promise.resolve({ data: null, error: null }));
-    }
-
-    // NYPD crimes — NYC only (no building join, standalone table)
-    if ((filter === "all" || filter === "crime") && (!metro || metro === "nyc")) {
-      promises.push(
         supabase
-          .from("nypd_complaints")
-          .select("id, offense_description, pd_description, crime_category, law_category, cmplnt_date, borough, zip_code")
-          .in("crime_category", ["violent", "property"])
-          .not("cmplnt_date", "is", null)
-          .gte("cmplnt_date", cutoffDate.slice(0, 10))
-          .lte("cmplnt_date", maxDateShort)
-          .order("cmplnt_date", { ascending: false })
+          .from("reviews")
+          .select("id, title, overall_rating, created_at, building_id, metro, buildings(full_address, borough, slug)")
+          .not("building_id", "is", null)
+          .eq("metro", metro)
+          .gte("created_at", cutoffDate)
+          .lte("created_at", maxDate)
+          .order("created_at", { ascending: false })
           .order("id", { ascending: false })
           .limit(10000)
       );
@@ -190,55 +92,146 @@ export async function GET(request: Request) {
       promises.push(Promise.resolve({ data: null, error: null }));
     }
 
-    if (filter === "all" || filter === "bedbugs") {
+    if (filter === "all" || filter === "violations") {
       promises.push(
-        withMetro(
+        supabase
+          .from("hpd_violations")
+          .select("id, class, nov_description, inspection_date, building_id, metro, buildings(full_address, borough, slug)")
+          .not("building_id", "is", null)
+          .eq("metro", metro)
+          .gte("inspection_date", cutoffDate.slice(0, 10))
+          .lte("inspection_date", maxDateShort)
+          .order("inspection_date", { ascending: false })
+          .order("id", { ascending: false })
+          .limit(10000)
+      );
+    } else {
+      promises.push(Promise.resolve({ data: null, error: null }));
+    }
+
+    if (filter === "all" || filter === "complaints") {
+      promises.push(
+        supabase
+          .from("complaints_311")
+          .select("id, complaint_type, descriptor, created_date, building_id, metro, buildings(full_address, borough, slug)")
+          .not("building_id", "is", null)
+          .eq("metro", metro)
+          .gte("created_date", cutoffDate)
+          .lte("created_date", maxDate)
+          .order("created_date", { ascending: false })
+          .order("id", { ascending: false })
+          .limit(10000)
+      );
+    } else {
+      promises.push(Promise.resolve({ data: null, error: null }));
+    }
+
+    if (filter === "all" || filter === "litigations") {
+      // Litigations are NYC-only; skip for LA
+      if (metro === "nyc") {
+        promises.push(
+          supabase
+            .from("hpd_litigations")
+            .select("id, case_type, case_status, respondent, case_open_date, building_id, metro, buildings(full_address, borough, slug)")
+            .not("building_id", "is", null)
+            .not("case_open_date", "is", null)
+            .eq("metro", metro)
+            .gte("case_open_date", cutoffDate.slice(0, 10))
+            .lte("case_open_date", maxDateShort)
+            .order("case_open_date", { ascending: false })
+            .order("id", { ascending: false })
+            .limit(10000)
+        );
+      } else {
+        promises.push(Promise.resolve({ data: null, error: null }));
+      }
+    } else {
+      promises.push(Promise.resolve({ data: null, error: null }));
+    }
+
+    if (filter === "all" || filter === "dob_violations") {
+      promises.push(
+        supabase
+          .from("dob_violations")
+          .select("id, violation_type, description, issue_date, building_id, metro, buildings(full_address, borough, slug)")
+          .not("building_id", "is", null)
+          .not("issue_date", "is", null)
+          .eq("metro", metro)
+          .gte("issue_date", cutoffDate.slice(0, 10))
+          .lte("issue_date", maxDateShort)
+          .order("issue_date", { ascending: false })
+          .order("id", { ascending: false })
+          .limit(10000)
+      );
+    } else {
+      promises.push(Promise.resolve({ data: null, error: null }));
+    }
+
+    if (filter === "all" || filter === "crime") {
+      // Crime data is NYC-only for now (LAPD sync not yet active)
+      if (metro === "nyc") {
+        promises.push(
+          supabase
+            .from("nypd_complaints")
+            .select("id, offense_description, pd_description, crime_category, law_category, cmplnt_date, borough, zip_code, metro")
+            .in("crime_category", ["violent", "property"])
+            .not("cmplnt_date", "is", null)
+            .eq("metro", metro)
+            .gte("cmplnt_date", cutoffDate.slice(0, 10))
+            .lte("cmplnt_date", maxDateShort)
+            .order("cmplnt_date", { ascending: false })
+            .order("id", { ascending: false })
+            .limit(10000)
+        );
+      } else {
+        promises.push(Promise.resolve({ data: null, error: null }));
+      }
+    } else {
+      promises.push(Promise.resolve({ data: null, error: null }));
+    }
+
+    if (filter === "all" || filter === "bedbugs") {
+      // Bedbugs are NYC-only
+      if (metro === "nyc") {
+        promises.push(
           supabase
             .from("bedbug_reports")
-            .select("id, infested_dwelling_unit_count, filing_date, building_id, buildings!inner(full_address, borough, slug, metro)")
+            .select("id, infested_dwelling_unit_count, filing_date, building_id, metro, buildings(full_address, borough, slug)")
             .not("building_id", "is", null)
             .not("filing_date", "is", null)
+            .eq("metro", metro)
             .gte("filing_date", cutoffDate.slice(0, 10))
             .lte("filing_date", maxDateShort)
             .order("filing_date", { ascending: false })
             .order("id", { ascending: false })
             .limit(10000)
-        )
-      );
+        );
+      } else {
+        promises.push(Promise.resolve({ data: null, error: null }));
+      }
     } else {
       promises.push(Promise.resolve({ data: null, error: null }));
     }
 
     if (filter === "all" || filter === "evictions") {
-      promises.push(
-        withMetro(
+      // Evictions are NYC-only
+      if (metro === "nyc") {
+        promises.push(
           supabase
             .from("evictions")
-            .select("id, eviction_address, executed_date, borough, building_id, buildings!inner(full_address, borough, slug, metro)")
+            .select("id, eviction_address, executed_date, borough, building_id, metro, buildings(full_address, borough, slug)")
             .not("building_id", "is", null)
             .not("executed_date", "is", null)
+            .eq("metro", metro)
             .gte("executed_date", cutoffDate.slice(0, 10))
             .lte("executed_date", maxDateShort)
             .order("executed_date", { ascending: false })
             .order("id", { ascending: false })
             .limit(10000)
-        )
-      );
-    } else {
-      promises.push(Promise.resolve({ data: null, error: null }));
-    }
-
-    // Encampments — LA only
-    if ((filter === "all" || filter === "encampments") && (!metro || metro === "los-angeles")) {
-      promises.push(
-        supabase
-          .from("encampments")
-          .select("id, sr_number, address, status, created_date")
-          .gte("created_date", cutoffDate)
-          .lte("created_date", maxDate)
-          .order("created_date", { ascending: false })
-          .limit(5000)
-      );
+        );
+      } else {
+        promises.push(Promise.resolve({ data: null, error: null }));
+      }
     } else {
       promises.push(Promise.resolve({ data: null, error: null }));
     }
@@ -258,7 +251,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const [reviewsResult, violationsResult, complaintsResult, litigationsResult, dobResult, crimeResult, bedbugResult, evictionResult, encampmentResult] = results;
+    const [reviewsResult, violationsResult, complaintsResult, litigationsResult, dobResult, crimeResult, bedbugResult, evictionResult] = results;
 
     const items: ActivityItem[] = [];
 
@@ -368,7 +361,7 @@ export async function GET(request: Request) {
       }
     }
 
-    // Normalize NYPD crimes (NYC only)
+    // Normalize NYPD crimes
     if (crimeResult.data) {
       for (const cr of crimeResult.data as Record<string, unknown>[]) {
         const desc = cr.offense_description
@@ -422,21 +415,6 @@ export async function GET(request: Request) {
           buildingAddress: building.full_address,
           borough: building.borough,
           buildingSlug: building.slug,
-        });
-      }
-    }
-
-    // Normalize encampments (LA only)
-    if (encampmentResult.data) {
-      for (const enc of encampmentResult.data as Record<string, unknown>[]) {
-        items.push({
-          type: "encampment",
-          id: String(enc.sr_number || enc.id),
-          description: `Encampment report: ${enc.status || "Reported"}`,
-          date: enc.created_date as string,
-          buildingId: "",
-          buildingAddress: (enc.address as string) || "Los Angeles",
-          borough: "",
         });
       }
     }

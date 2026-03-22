@@ -3,9 +3,9 @@ import type { Metadata } from "next";
 import { Building2, Database, Shield, Users } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "About Lucid Rents | Apartment Transparency Platform",
+  title: "About Lucid Rents | NYC Apartment Transparency Platform",
   description:
-    "Lucid Rents helps renters make informed decisions with building violations, tenant reviews, crime data, rent stabilization info, and more — all free.",
+    "Lucid Rents helps NYC renters make informed decisions with building violations, tenant reviews, crime data, rent stabilization info, and more — all free.",
   alternates: { canonical: canonicalUrl("/about") },
 };
 
@@ -16,7 +16,7 @@ export default function AboutPage() {
         About Lucid Rents
       </h1>
       <p className="text-sm text-[#94a3b8] mb-8">
-        Transparency for renters
+        Transparency for NYC renters
       </p>
 
       <div className="prose prose-slate max-w-none space-y-8 text-[#334155] text-sm leading-relaxed">
@@ -25,13 +25,12 @@ export default function AboutPage() {
             Our Mission
           </h2>
           <p>
-            Lucid Rents is a free platform built to help renters in NYC and
-            Los Angeles make informed decisions before signing a lease. We
-            believe every tenant deserves access to the same information that
-            landlords, brokers, and property managers already have. By
-            aggregating public records and community reviews into one
-            easy-to-use tool, we aim to level the playing field for millions
-            of renters.
+            Lucid Rents is a free platform built to help New York City renters
+            make informed decisions before signing a lease. We believe every
+            tenant deserves access to the same information that landlords,
+            brokers, and property managers already have. By aggregating public
+            records and community reviews into one easy-to-use tool, we aim to
+            level the playing field for millions of NYC renters.
           </p>
         </section>
 
@@ -121,9 +120,9 @@ export default function AboutPage() {
             </li>
           </ul>
           <p className="mt-3">
-            All data is sourced from official public datasets including NYC
-            Open Data and LA Open Data. We sync our database daily to ensure
-            information is as current as possible.
+            All data is sourced from NYC Open Data and other official public
+            datasets. We sync our database daily to ensure information is as
+            current as possible.
           </p>
         </section>
 

@@ -1,31 +1,27 @@
-import type { Metadata } from "next";
+import { Metadata } from "next";
 import { ClipboardList } from "lucide-react";
 import { canonicalUrl, cityPath } from "@/lib/seo";
-import { isValidCity, CITY_META } from "@/lib/cities";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { PermitMap } from "@/components/permits/PermitMap";
 import { PermitTable } from "@/components/permits/PermitTable";
 import { WorkTypeBreakdown } from "@/components/permits/WorkTypeBreakdown";
 
-export async function generateMetadata({ params }: { params: Promise<{ city: string }> }): Promise<Metadata> {
-  const { city } = await params;
-  if (!isValidCity(city)) return {};
-  const meta = CITY_META[city];
-  return {
-    title: `${meta.fullName} Building Permits Tracker | Lucid Rents`,
-    description: `Track active DOB building permits across ${meta.fullName}. See permit density by neighborhood, work types, costs, and recently issued permits.`,
-    alternates: { canonical: canonicalUrl(cityPath("/permits", city)) },
-    openGraph: {
-      title: `${meta.fullName} Building Permits Tracker`,
-      description: `Active DOB building permits across ${meta.fullName} — work types, costs, and neighborhood density. Powered by DOB permit data.`,
-      url: canonicalUrl(cityPath("/permits", city)),
-      siteName: "Lucid Rents",
-      type: "website",
-      locale: "en_US",
-    },
-  };
-}
+export const metadata: Metadata = {
+  title: "NYC Building Permits Tracker | Lucid Rents",
+  description:
+    "Track active DOB building permits across NYC. See permit density by neighborhood, work types, costs, and recently issued permits.",
+  alternates: { canonical: canonicalUrl(cityPath("/permits")) },
+  openGraph: {
+    title: "NYC Building Permits Tracker",
+    description:
+      "Active DOB building permits across New York City — work types, costs, and neighborhood density. Powered by NYC DOB permit data.",
+    url: canonicalUrl(cityPath("/permits")),
+    siteName: "Lucid Rents",
+    type: "website",
+    locale: "en_US",
+  },
+};
 
 export const revalidate = 86400;
 

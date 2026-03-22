@@ -1,31 +1,27 @@
-import type { Metadata } from "next";
+import { Metadata } from "next";
 import { Construction } from "lucide-react";
 import { canonicalUrl, cityPath } from "@/lib/seo";
-import { isValidCity, CITY_META } from "@/lib/cities";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { ScaffoldingMap } from "@/components/scaffolding/ScaffoldingMap";
 import { ScaffoldingTable } from "@/components/scaffolding/ScaffoldingTable";
 import { BoroughBreakdown } from "@/components/scaffolding/BoroughBreakdown";
 
-export async function generateMetadata({ params }: { params: Promise<{ city: string }> }): Promise<Metadata> {
-  const { city } = await params;
-  if (!isValidCity(city)) return {};
-  const meta = CITY_META[city];
-  return {
-    title: `${meta.fullName} Scaffolding & Sidewalk Sheds Tracker | Lucid Rents`,
-    description: `Track active sidewalk sheds and scaffolding across ${meta.fullName}. See how long scaffolding has been up, which neighborhoods have the most, and when permits expire.`,
-    alternates: { canonical: canonicalUrl(cityPath("/scaffolding", city)) },
-    openGraph: {
-      title: `${meta.fullName} Scaffolding & Sidewalk Sheds Tracker`,
-      description: `Active sidewalk shed permits, duration, and neighborhood density across ${meta.fullName}. Powered by DOB permit data.`,
-      url: canonicalUrl(cityPath("/scaffolding", city)),
-      siteName: "Lucid Rents",
-      type: "website",
-      locale: "en_US",
-    },
-  };
-}
+export const metadata: Metadata = {
+  title: "NYC Scaffolding & Sidewalk Sheds Tracker | Lucid Rents",
+  description:
+    "Track active sidewalk sheds and scaffolding across NYC. See how long scaffolding has been up, which neighborhoods have the most, and when permits expire.",
+  alternates: { canonical: canonicalUrl(cityPath("/scaffolding")) },
+  openGraph: {
+    title: "NYC Scaffolding & Sidewalk Sheds Tracker",
+    description:
+      "Active sidewalk shed permits, duration, and neighborhood density across New York City. Powered by NYC DOB permit data.",
+    url: canonicalUrl(cityPath("/scaffolding")),
+    siteName: "Lucid Rents",
+    type: "website",
+    locale: "en_US",
+  },
+};
 
 export const revalidate = 86400;
 

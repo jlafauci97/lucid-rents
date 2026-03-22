@@ -83,27 +83,25 @@ export default async function NewsSlugPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ city: string; slug: string }>;
+  params: Promise<{ slug: string }>;
   searchParams: Promise<{ page?: string }>;
 }) {
-  const { city, slug } = await params;
+  const { slug } = await params;
 
   if (isCategory(slug)) {
-    return <CategoryView category={slug} city={city as import("@/lib/cities").City} searchParams={searchParams} />;
+    return <CategoryView category={slug} searchParams={searchParams} />;
   }
 
-  return <ArticleView slug={slug} city={city as import("@/lib/cities").City} />;
+  return <ArticleView slug={slug} />;
 }
 
 // ---- Category View ----
 
 async function CategoryView({
   category,
-  city,
   searchParams,
 }: {
   category: NewsCategory;
-  city: import("@/lib/cities").City;
   searchParams: Promise<{ page?: string }>;
 }) {
   const meta = NEWS_CATEGORIES[category];
@@ -155,7 +153,7 @@ async function CategoryView({
         <nav className="text-sm text-[#94a3b8] mb-4">
           <Link href="/" className="hover:text-[#3B82F6]">Home</Link>
           {" / "}
-          <Link href={cityPath("/news", city)} className="hover:text-[#3B82F6]">News</Link>
+          <Link href={cityPath("/news")} className="hover:text-[#3B82F6]">News</Link>
           {" / "}
           <span className="text-[#0F1D2E] font-medium">{meta.label}</span>
         </nav>
@@ -167,7 +165,7 @@ async function CategoryView({
 
         <div className="flex flex-wrap gap-2 mb-6">
           <Link
-            href={cityPath("/news", city)}
+            href={cityPath("/news")}
             className="px-3 py-1.5 text-sm font-medium rounded-full bg-[#f1f5f9] text-[#475569] hover:bg-[#e2e8f0] transition-colors"
           >
             All
@@ -245,7 +243,7 @@ function formatDate(dateStr: string): string {
   });
 }
 
-async function ArticleView({ slug, city }: { slug: string; city: import("@/lib/cities").City }) {
+async function ArticleView({ slug }: { slug: string }) {
   const supabase = await createClient();
 
   const { data: article } = await supabase
@@ -311,7 +309,7 @@ async function ArticleView({ slug, city }: { slug: string; city: import("@/lib/c
 
         <div className="flex items-center gap-4 mb-4">
           <Link
-            href={cityPath("/news", city)}
+            href={cityPath("/news")}
             className="flex items-center gap-1 text-sm text-[#3B82F6] hover:underline"
           >
             <ArrowLeft className="w-4 h-4" />

@@ -3,39 +3,32 @@ import { Users, Building2, Search, ChevronLeft, ChevronRight, AlertTriangle, Mes
 import { LetterGrade } from "@/components/ui/LetterGrade";
 import Link from "next/link";
 import { landlordUrl, canonicalUrl, cityPath } from "@/lib/seo";
-import { isValidCity, CITY_META, type City } from "@/lib/cities";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import type { Metadata } from "next";
 
-export async function generateMetadata({ params }: { params: Promise<{ city: string }> }): Promise<Metadata> {
-  const { city } = await params;
-  if (!isValidCity(city)) return {};
-  const meta = CITY_META[city];
-  return {
-    title: `Landlord Directory | ${meta.fullName} | Lucid Rents`,
-    description: `Search and explore ${meta.fullName} landlords. View violation counts, complaint histories, and building portfolios.`,
-    alternates: { canonical: canonicalUrl(cityPath("/landlords", city)) },
-    openGraph: {
-      title: `${meta.fullName} Landlord Directory`,
-      description: `Explore ${meta.fullName} landlords by violations, complaints, and building portfolios.`,
-      url: canonicalUrl(cityPath("/landlords", city)),
-      siteName: "Lucid Rents",
-      type: "website",
-      locale: "en_US",
-    },
-  };
-}
+export const metadata: Metadata = {
+  title: "Landlord Directory | Lucid Rents",
+  description:
+    "Search and explore NYC landlords. View violation counts, complaint histories, and building portfolios for property owners across New York City.",
+  alternates: { canonical: canonicalUrl(cityPath("/landlords")) },
+  openGraph: {
+    title: "NYC Landlord Directory",
+    description: "Explore NYC landlords by violations, complaints, and building portfolios.",
+    url: canonicalUrl(cityPath("/landlords")),
+    siteName: "Lucid Rents",
+    type: "website",
+    locale: "en_US",
+  },
+};
 
 export const revalidate = 3600;
 
 interface LandlordsPageProps {
-  params: Promise<{ city: string }>;
   searchParams: Promise<{ search?: string; sort?: string; page?: string }>;
 }
 
-export default async function LandlordsPage({ params: routeParams, searchParams }: LandlordsPageProps) {
-  const { city: cityParam } = await routeParams;
+export default async function LandlordsPage({ searchParams }: LandlordsPageProps) {
   const params = await searchParams;
   const search = params.search || "";
   const sortBy = params.sort || "violations";
@@ -87,7 +80,7 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
       if (!merged[key]) delete merged[key];
     });
     const qs = new URLSearchParams(merged).toString();
-    return `${cityPath("/landlords", cityParam as City)}?${qs}`;
+    return `${cityPath("/landlords")}?${qs}`;
   }
 
   return (
@@ -106,7 +99,7 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
 
       {/* Search bar */}
       <div className="mb-6">
-        <form action={cityPath("/landlords", cityParam as City)} method="GET" className="flex gap-3">
+        <form action={cityPath("/landlords")} method="GET" className="flex gap-3">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94a3b8]" />
             <input
@@ -126,7 +119,7 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
           </button>
           {search && (
             <Link
-              href={cityPath("/landlords", cityParam as City)}
+              href={cityPath("/landlords")}
               className="px-4 py-2.5 text-sm text-[#64748b] border border-[#e2e8f0] rounded-lg hover:bg-gray-50 transition-colors flex items-center"
             >
               Clear
@@ -357,7 +350,7 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
           </p>
           {search && (
             <Link
-              href={cityPath("/landlords", cityParam as City)}
+              href={cityPath("/landlords")}
               className="inline-flex items-center gap-2 mt-4 text-sm text-[#3B82F6] hover:text-[#2563EB] font-medium"
             >
               Clear search and view all
@@ -373,21 +366,21 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
         <h2 className="text-lg font-bold text-[#0F1D2E] mb-4">Related</h2>
         <div className="flex flex-wrap gap-3">
           <Link
-            href={cityPath("/worst-rated-buildings", cityParam as City)}
+            href={cityPath("/worst-rated-buildings")}
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-red-50 text-[#ef4444] border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
           >
             <AlertTriangle className="w-4 h-4" />
             Worst Rated Buildings
           </Link>
           <Link
-            href={cityPath("/buildings", cityParam as City)}
+            href={cityPath("/buildings")}
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-blue-50 text-[#3B82F6] border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
           >
             <Building2 className="w-4 h-4" />
             Buildings Directory
           </Link>
           <Link
-            href={cityPath("/crime", cityParam as City)}
+            href={cityPath("/crime")}
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-amber-50 text-[#d97706] border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors"
           >
             <ShieldAlert className="w-4 h-4" />
