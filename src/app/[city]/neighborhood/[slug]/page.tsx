@@ -135,7 +135,7 @@ export default async function NeighborhoodPage({
           No Data for {neighborhoodName ? `${neighborhoodName} (${zipCode})` : zipCode}
         </h1>
         <p className="text-[#64748b]">We don&apos;t have building data for this zip code yet.</p>
-        <Link href={cityPath("/crime")} className="text-[#3B82F6] text-sm mt-4 inline-block">
+        <Link href={cityPath("/crime", city)} className="text-[#3B82F6] text-sm mt-4 inline-block">
           Browse all neighborhoods
         </Link>
       </div>
@@ -187,12 +187,12 @@ export default async function NeighborhoodPage({
       }} />
       <JsonLd data={breadcrumbJsonLd([
         { name: "Home", url: "/" },
-        { name: "Neighborhoods", url: cityPath("/crime") },
+        { name: "Neighborhoods", url: cityPath("/crime", city) },
         { name: neighborhoodName || zipCode, url: neighborhoodUrl(zipCode) },
       ])} />
       <Breadcrumbs items={[
         { label: "Home", href: "/" },
-        { label: "Neighborhoods", href: cityPath("/crime") },
+        { label: "Neighborhoods", href: cityPath("/crime", city) },
         { label: neighborhoodName || zipCode, href: neighborhoodUrl(zipCode) },
       ]} />
 
@@ -292,7 +292,7 @@ export default async function NeighborhoodPage({
             </div>
           </div>
           <Link
-            href={cityPath(`/crime/${zipCode}`)}
+            href={cityPath(`/crime/${zipCode}`, city)}
             className="inline-flex items-center gap-1 text-sm text-[#3B82F6] font-medium mt-4"
           >
             View detailed crime data

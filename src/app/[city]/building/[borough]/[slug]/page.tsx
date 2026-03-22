@@ -201,8 +201,8 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
       <JsonLd data={buildingJsonLd(building)} />
       <JsonLd data={breadcrumbJsonLd([
         { name: "Home", url: "/" },
-        { name: "Buildings", url: cityPath("/buildings") },
-        { name: building.borough, url: cityPath(`/buildings/${boroughSlug}`) },
+        { name: "Buildings", url: cityPath("/buildings", city) },
+        { name: building.borough, url: cityPath(`/buildings/${boroughSlug}`, city) },
         { name: shortAddress, url: buildingUrl(building) },
       ])} />
 
@@ -210,8 +210,8 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
         <Breadcrumbs
           items={[
             { label: "Home", href: "/" },
-            { label: "Buildings", href: cityPath("/buildings") },
-            { label: building.borough, href: cityPath(`/buildings/${boroughSlug}`) },
+            { label: "Buildings", href: cityPath("/buildings", city) },
+            { label: building.borough, href: cityPath(`/buildings/${boroughSlug}`, city) },
             { label: shortAddress, href: buildingUrl(building) },
           ]}
         />
@@ -240,7 +240,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
               reviews={reviews}
               buildingId={buildingId}
               isMonitored={isMonitored}
-              cityPath={cityPath("")}
+              cityPath={cityPath("", city)}
               headerActions={
                 <>
                   <SaveButton buildingId={buildingId} initialSaved={isSaved} />
