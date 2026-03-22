@@ -29,6 +29,7 @@ interface CrimeTrendData {
 
 interface CrimeTrendProps {
   zipCode: string;
+  city: string;
 }
 
 function formatMonthLabel(month: string): string {
@@ -85,7 +86,7 @@ function SkeletonChart() {
   );
 }
 
-export function CrimeTrend({ zipCode }: CrimeTrendProps) {
+export function CrimeTrend({ zipCode, city }: CrimeTrendProps) {
   const [data, setData] = useState<CrimeTrendData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -95,7 +96,7 @@ export function CrimeTrend({ zipCode }: CrimeTrendProps) {
       try {
         setLoading(true);
         setError(null);
-        const res = await fetch(`/api/crime/${zipCode}/trends`);
+        const res = await fetch(`/api/crime/${zipCode}/trends?city=${city}`);
         if (!res.ok) {
           throw new Error("Failed to fetch crime trends");
         }
@@ -109,7 +110,7 @@ export function CrimeTrend({ zipCode }: CrimeTrendProps) {
     }
 
     fetchTrends();
-  }, [zipCode]);
+  }, [zipCode, city]);
 
   if (loading) return <SkeletonChart />;
 
