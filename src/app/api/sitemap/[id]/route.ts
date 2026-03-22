@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import {
   buildingUrl,
-  landlordSlug,
   cityPath,
   neighborhoodUrl,
   regionSlug,
@@ -11,21 +10,21 @@ import { NEWS_CATEGORIES } from "@/lib/news-sources";
 import { SUBWAY_LINES, transitLineUrl } from "@/lib/subway-lines";
 
 const BASE_URL = "https://lucidrents.com";
-const BUILDINGS_PER_SITEMAP = 10000;
+const ITEMS_PER_SITEMAP = 10000;
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 /**
  * Individual sitemap: /sitemap/[id].xml
- * id=0 → static pages (homepage, boroughs, neighborhoods, landlords, news, transit)
- * id=1+ → buildings in batches of 25,000
+ * id=0          → static pages (neighborhoods, crime, transit, news — NO landlords)
+ * id=1..L       → landlords in batches of 10,000
+ * id=L+1..L+B   → buildings in batches of 10,000
  */
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: rawId } = await params;
-  // Strip .xml suffix if present (rewrite sends "0.xml")
   const id = parseInt(rawId.replace(/\.xml$/, ""), 10);
 
   if (isNaN(id) || id < 0) {
@@ -37,7 +36,16 @@ export async function GET(
   if (id === 0) {
     urls = await generateStaticSitemap();
   } else {
-    urls = await generateBuildingSitemap(id - 1);
+    // Determine landlord/building boundary
+    const totalLandlords = await getCount("landlord_stats?select=name&limit=1&offset=0");
+    const landlordSitemapCount = Math.ceil(totalLandlords / ITEMS_PER_SITEMAP);
+
+    if (id <= landlordSitemapCount) {
+      urls = await generateLandlordSitemap(id - 1);
+    } else {
+      const buildingBatchIndex = id - 1 - landlordSitemapCount;
+      urls = await generateBuildingSitemap(buildingBatchIndex);
+    }
   }
 
   if (urls.length === 0) {
@@ -93,7 +101,7 @@ function escapeXml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-// --- Supabase helper ---
+// --- Supabase helpers ---
 
 async function supabaseFetch<T>(path: string): Promise<T | null> {
   try {
@@ -105,6 +113,19 @@ async function supabaseFetch<T>(path: string): Promise<T | null> {
     return (await res.json()) as T;
   } catch {
     return null;
+  }
+}
+
+async function getCount(path: string): Promise<number> {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+      headers: { apikey: SUPABASE_KEY, Prefer: "count=exact" },
+      next: { revalidate: 21600 },
+    });
+    const range = res.headers.get("content-range");
+    return range ? parseInt(range.split("/")[1] || "0", 10) : 0;
+  } catch {
+    return 0;
   }
 }
 
@@ -231,53 +252,10 @@ async function generateStaticSitemap(): Promise<SitemapEntry[]> {
     }
   }
 
-  // All landlords — paginate to get every unique owner_name
-  const landlordLastMod = new Map<string, Date>();
-  let lastOwner = "";
-  let hasMore = true;
-
-  while (hasMore) {
-    const filter = lastOwner
-      ? `&owner_name=gt.${encodeURIComponent(lastOwner)}`
-      : "";
-    const batch = await supabaseFetch<
-      { owner_name: string; updated_at: string | null }[]
-    >(
-      `buildings?select=owner_name,updated_at&owner_name=not.is.null&order=owner_name.asc${filter}&limit=10000`
-    );
-
-    if (!batch || batch.length === 0) {
-      hasMore = false;
-      break;
-    }
-
-    for (const b of batch) {
-      const d = b.updated_at ? new Date(b.updated_at) : now;
-      const existing = landlordLastMod.get(b.owner_name);
-      if (!existing || d > existing)
-        landlordLastMod.set(b.owner_name, d);
-    }
-
-    lastOwner = batch[batch.length - 1].owner_name;
-    // If we got fewer than limit, we've reached the end
-    if (batch.length < 10000) hasMore = false;
-  }
-
-  for (const [name, lastMod] of landlordLastMod) {
-    entries.push({
-      url: `${BASE_URL}${cityPath(`/landlord/${landlordSlug(name)}`)}`,
-      lastModified: lastMod,
-      changeFrequency: "monthly",
-      priority: 0.5,
-    });
-  }
-
   // News articles
   const articles = await supabaseFetch<
     { slug: string; published_at: string }[]
-  >(
-    "news_articles?select=slug,published_at&order=published_at.desc&limit=1000"
-  );
+  >("news_articles?select=slug,published_at&order=published_at.desc&limit=1000");
 
   if (articles) {
     for (const article of articles) {
@@ -290,28 +268,53 @@ async function generateStaticSitemap(): Promise<SitemapEntry[]> {
     }
   }
 
-  // Compare page
-  entries.push({
-    url: `${BASE_URL}${cityPath("/compare")}`,
-    lastModified: now,
-    changeFrequency: "monthly",
-    priority: 0.4,
-  });
+  // Compare page per city
+  for (const cityKey of VALID_CITIES) {
+    entries.push({
+      url: `${BASE_URL}${cityPath("/compare", cityKey)}`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.4,
+    });
+  }
 
   return entries;
 }
 
-// --- Building sitemap (id=1+) ---
+// --- Landlord sitemaps ---
+
+async function generateLandlordSitemap(
+  batchIndex: number
+): Promise<SitemapEntry[]> {
+  const offset = batchIndex * ITEMS_PER_SITEMAP;
+
+  const landlords = await supabaseFetch<
+    { slug: string; updated_at: string | null }[]
+  >(
+    `landlord_stats?select=slug,updated_at&order=name.asc&offset=${offset}&limit=${ITEMS_PER_SITEMAP}`
+  );
+
+  if (!landlords || landlords.length === 0) return [];
+
+  return landlords.map((l) => ({
+    url: `${BASE_URL}/nyc/landlord/${l.slug}`,
+    lastModified: l.updated_at ? new Date(l.updated_at) : undefined,
+    changeFrequency: "monthly",
+    priority: 0.5,
+  }));
+}
+
+// --- Building sitemaps ---
 
 async function generateBuildingSitemap(
   batchIndex: number
 ): Promise<SitemapEntry[]> {
-  const offset = batchIndex * BUILDINGS_PER_SITEMAP;
+  const offset = batchIndex * ITEMS_PER_SITEMAP;
 
   const buildings = await supabaseFetch<
     { slug: string; borough: string; metro: string; updated_at: string | null }[]
   >(
-    `buildings?select=slug,borough,metro,updated_at&order=id.asc&offset=${offset}&limit=${BUILDINGS_PER_SITEMAP}`
+    `buildings?select=slug,borough,metro,updated_at&order=id.asc&offset=${offset}&limit=${ITEMS_PER_SITEMAP}`
   );
 
   if (!buildings || buildings.length === 0) return [];
