@@ -2477,9 +2477,10 @@ async function runLinkOnly(
     ? (LINK_TABLES[sourceParam] ? { [sourceParam]: LINK_TABLES[sourceParam] } : null)
     : LINK_TABLES;
 
-  if (sourceParam && !tablesToLink && sourceParam !== "complaints") {
+  const LA_ADDR_SOURCES = ["lahd", "ladbs", "la-311", "la-permits"];
+  if (sourceParam && !tablesToLink && sourceParam !== "complaints" && !LA_ADDR_SOURCES.includes(sourceParam)) {
     return NextResponse.json(
-      { error: `Unknown link source: ${sourceParam}. Valid: ${[...Object.keys(LINK_TABLES), "complaints"].join(", ")}` },
+      { error: `Unknown link source: ${sourceParam}. Valid: ${[...Object.keys(LINK_TABLES), "complaints", ...LA_ADDR_SOURCES].join(", ")}` },
       { status: 400 }
     );
   }
