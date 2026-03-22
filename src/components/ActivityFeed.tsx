@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Shield, MessageSquare, Star, Scale, HardHat, Siren, Bug, DoorOpen } from "lucide-react";
+import { Shield, MessageSquare, Star, Scale, HardHat, Siren, Bug, DoorOpen, MapPin } from "lucide-react";
 import Link from "next/link";
 import type { ActivityItem } from "@/app/api/activity/route";
 import { buildingUrl, cityPath } from "@/lib/seo";
@@ -78,6 +78,12 @@ function ActivityIcon({ type }: { type: ActivityItem["type"] }) {
           <DoorOpen className="w-[18px] h-[18px] text-[#EC4899]" />
         </div>
       );
+    case "encampment":
+      return (
+        <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-orange-50 flex items-center justify-center">
+          <MapPin className="w-[18px] h-[18px] text-[#F97316]" />
+        </div>
+      );
   }
 }
 
@@ -99,6 +105,8 @@ function typeLabel(type: ActivityItem["type"]): string {
       return "Bedbug Report";
     case "eviction":
       return "Eviction";
+    case "encampment":
+      return "Encampment";
   }
 }
 
@@ -120,6 +128,8 @@ function typeBadgeClasses(type: ActivityItem["type"]): string {
       return "bg-purple-50 text-[#9333EA]";
     case "eviction":
       return "bg-pink-50 text-[#EC4899]";
+    case "encampment":
+      return "bg-orange-50 text-[#F97316]";
   }
 }
 

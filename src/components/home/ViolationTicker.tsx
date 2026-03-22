@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { AlertTriangle, Shield, MessageSquare, Star, Scale, HardHat, Siren, Bug, DoorOpen } from 'lucide-react';
-import { BOROUGH_SLUGS, cityPath } from '@/lib/seo';
+import { AlertTriangle, Shield, MessageSquare, Star, Scale, HardHat, Siren, Bug, DoorOpen, MapPin } from 'lucide-react';
+import { buildingUrl, cityPath } from '@/lib/seo';
 import type { ActivityItem } from '@/app/api/activity/route';
+import type { City } from '@/lib/cities';
 
 /** Icon color on the blue ticker background — lighter variants for readability */
 const typeIconColors: Record<ActivityItem['type'], string> = {
@@ -16,6 +17,7 @@ const typeIconColors: Record<ActivityItem['type'], string> = {
   crime: 'text-red-300',
   bedbug: 'text-purple-300',
   eviction: 'text-pink-200',
+  encampment: 'text-orange-200',
 };
 
 function TypeIcon({ type }: { type: ActivityItem['type'] }) {
@@ -39,6 +41,8 @@ function TypeIcon({ type }: { type: ActivityItem['type'] }) {
       return <Bug className={cls} />;
     case 'eviction':
       return <DoorOpen className={cls} />;
+    case 'encampment':
+      return <MapPin className={cls} />;
   }
 }
 
@@ -51,6 +55,7 @@ const typeLabels: Record<ActivityItem['type'], string> = {
   crime: 'Crime',
   bedbug: 'Bedbug Report',
   eviction: 'Eviction',
+  encampment: 'Encampment',
 };
 
 function formatDate(dateStr: string): string {
@@ -58,22 +63,21 @@ function formatDate(dateStr: string): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-function buildItemUrl(item: ActivityItem): string | null {
+function buildItemUrl(item: ActivityItem, city: City): string | null {
   if (item.type === 'crime' && item.zipCode) {
-    return cityPath(`/crime/${item.zipCode}`);
+    return cityPath(`/crime/${item.zipCode}`, city);
   }
   if (item.buildingSlug && item.borough) {
-    const boroughSlug = BOROUGH_SLUGS[item.borough] || item.borough.toLowerCase().replace(/\s+/g, '-');
-    return cityPath(`/building/${boroughSlug}/${item.buildingSlug}`);
+    return buildingUrl({ borough: item.borough, slug: item.buildingSlug }, city);
   }
   if (item.buildingId) {
-    return cityPath(`/building/${item.buildingId}`);
+    return cityPath(`/building/${item.buildingId}`, city);
   }
   return null;
 }
 
-function TickerItem({ item }: { item: ActivityItem }) {
-  const url = buildItemUrl(item);
+function TickerItem({ item, city }: { item: ActivityItem; city: City }) {
+  const url = buildItemUrl(item, city);
   const content = (
     <span className="inline-flex items-center gap-2 whitespace-nowrap">
       <TypeIcon type={item.type} />
@@ -100,12 +104,13 @@ function TickerItem({ item }: { item: ActivityItem }) {
 }
 
 interface ViolationTickerProps {
-  metro?: string;
+  metro?: City;
 }
 
-export function ViolationTicker({ metro }: ViolationTickerProps = {}) {
+export function ViolationTicker({ metro }: ViolationTickerProps) {
   const [items, setItems] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const city: City = metro || 'nyc';
 
   useEffect(() => {
     const params = new URLSearchParams({ limit: "30" });
@@ -120,9 +125,9 @@ export function ViolationTicker({ metro }: ViolationTickerProps = {}) {
         .finally(() => setLoading(false));
     }
     fetchItems();
-    const interval = setInterval(fetchItems, 4 * 60 * 60 * 1000); // refresh every 4 hours
+    const interval = setInterval(fetchItems, 4 * 60 * 60 * 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [metro]);
 
   if (loading) {
     return (
@@ -144,7 +149,6 @@ export function ViolationTicker({ metro }: ViolationTickerProps = {}) {
 
   if (items.length === 0) return null;
 
-  // Scale animation duration by item count for consistent speed
   const duration = items.length * 18;
 
   return (
@@ -163,10 +167,10 @@ export function ViolationTicker({ metro }: ViolationTickerProps = {}) {
             }}
           >
             {items.map((item) => (
-              <TickerItem key={`a-${item.type}-${item.id}`} item={item} />
+              <TickerItem key={`a-${item.type}-${item.id}`} item={item} city={city} />
             ))}
             {items.map((item) => (
-              <TickerItem key={`b-${item.type}-${item.id}`} item={item} />
+              <TickerItem key={`b-${item.type}-${item.id}`} item={item} city={city} />
             ))}
           </div>
         </div>
