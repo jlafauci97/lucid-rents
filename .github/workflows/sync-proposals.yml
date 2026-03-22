@@ -1,0 +1,61 @@
+name: Sync Proposals
+
+on:
+  schedule:
+    # Run daily at 7:00 AM EST (12:00 UTC)
+    - cron: "0 12 * * *"
+  workflow_dispatch:
+    inputs:
+      source:
+        description: "Source to sync (all, nyc_bills, nyc_zap, la_council, la_zimas)"
+        required: false
+        default: "all"
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Sync NYC Council Bills
+        if: ${{ github.event.inputs.source == 'all' || github.event.inputs.source == 'nyc_bills' || github.event_name == 'schedule' }}
+        continue-on-error: true
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/sync-nyc-council-bills.mjs
+
+      - name: Sync NYC ZAP Land Use
+        if: ${{ github.event.inputs.source == 'all' || github.event.inputs.source == 'nyc_zap' || github.event_name == 'schedule' }}
+        continue-on-error: true
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/sync-nyc-zap.mjs
+
+      - name: Sync LA Council Files
+        if: ${{ github.event.inputs.source == 'all' || github.event.inputs.source == 'la_council' || github.event_name == 'schedule' }}
+        continue-on-error: true
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/sync-la-council-files.mjs
+
+      - name: Sync LA ZIMAS Planning Cases
+        if: ${{ github.event.inputs.source == 'all' || github.event.inputs.source == 'la_zimas' || github.event_name == 'schedule' }}
+        continue-on-error: true
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/sync-la-zimas.mjs
