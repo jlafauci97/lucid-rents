@@ -1,16 +1,16 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Shield, MessageSquare, Star, MapPin, ExternalLink, RefreshCw, Scale, HardHat, Siren, Bug, DoorOpen, ChevronLeft, ChevronRight } from "lucide-react";
+import { Shield, MessageSquare, Star, MapPin, ExternalLink, RefreshCw, Scale, HardHat, Siren, Bug, DoorOpen, ChevronLeft, ChevronRight, DollarSign, FileCheck, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { ActivityItem } from "@/app/api/activity/route";
 import { buildingUrl, cityPath } from "@/lib/seo";
 import { useCity } from "@/lib/city-context";
 
-type FilterType = "all" | "violations" | "complaints" | "reviews" | "litigations" | "dob_violations" | "crime" | "bedbugs" | "evictions";
+type FilterType = "all" | "violations" | "complaints" | "reviews" | "litigations" | "dob_violations" | "crime" | "bedbugs" | "evictions" | "la_eviction" | "tenant_buyout" | "permit" | "enforcement";
 
-const filters: { key: FilterType; label: string }[] = [
+const NYC_FILTERS: { key: FilterType; label: string }[] = [
   { key: "all", label: "All" },
   { key: "violations", label: "HPD" },
   { key: "dob_violations", label: "DOB" },
@@ -20,6 +20,18 @@ const filters: { key: FilterType; label: string }[] = [
   { key: "bedbugs", label: "Bedbugs" },
   { key: "evictions", label: "Evictions" },
   { key: "reviews", label: "Reviews" },
+];
+
+const LA_FILTERS: { key: FilterType; label: string }[] = [
+  { key: "all", label: "All" },
+  { key: "violations", label: "LAHD" },
+  { key: "dob_violations", label: "LADBS" },
+  { key: "complaints", label: "311" },
+  { key: "crime", label: "Crime" },
+  { key: "la_eviction", label: "Evictions" },
+  { key: "enforcement", label: "Enforcement" },
+  { key: "permit", label: "Permits" },
+  { key: "tenant_buyout", label: "Buyouts" },
 ];
 
 function timeAgo(dateString: string): string {
@@ -84,9 +96,28 @@ function FeedItemIcon({ type }: { type: ActivityItem["type"] }) {
         </div>
       );
     case "eviction":
+    case "la_eviction":
       return (
         <div className="flex-shrink-0 w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center">
           <DoorOpen className="w-5 h-5 text-[#EC4899]" />
+        </div>
+      );
+    case "tenant_buyout":
+      return (
+        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
+          <DollarSign className="w-5 h-5 text-[#F97316]" />
+        </div>
+      );
+    case "permit":
+      return (
+        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center">
+          <FileCheck className="w-5 h-5 text-[#14B8A6]" />
+        </div>
+      );
+    case "enforcement":
+      return (
+        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
+          <ShieldAlert className="w-5 h-5 text-[#6366F1]" />
         </div>
       );
   }
@@ -100,9 +131,13 @@ function sourceLabel(type: ActivityItem["type"], city: string): string {
     case "review": return "Tenant Review";
     case "litigation": return "HPD Litigation";
     case "dob_violation": return isLA ? "LADBS Violation" : "DOB Violation";
-    case "crime": return "Crime Report";
+    case "crime": return isLA ? "LAPD Crime" : "NYPD Crime";
     case "bedbug": return "Bedbug Report";
     case "eviction": return "Eviction";
+    case "la_eviction": return "LAHD Eviction";
+    case "tenant_buyout": return "Tenant Buyout";
+    case "permit": return "Building Permit";
+    case "enforcement": return "LAHD Enforcement";
   }
 }
 
@@ -116,6 +151,10 @@ function sourceColor(type: ActivityItem["type"]): string {
     case "crime": return "text-[#DC2626]";
     case "bedbug": return "text-[#9333EA]";
     case "eviction": return "text-[#EC4899]";
+    case "la_eviction": return "text-[#EC4899]";
+    case "tenant_buyout": return "text-[#F97316]";
+    case "permit": return "text-[#14B8A6]";
+    case "enforcement": return "text-[#6366F1]";
   }
 }
 
@@ -301,8 +340,8 @@ export function FeedView() {
             <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
           </button>
         </div>
-        <div className="flex mt-2">
-          {filters.map((f) => (
+        <div className="flex mt-2 overflow-x-auto">
+          {(city === "los-angeles" ? LA_FILTERS : NYC_FILTERS).map((f) => (
             <button
               key={f.key}
               onClick={() => handleFilterChange(f.key)}

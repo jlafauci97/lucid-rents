@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { isValidCity } from "@/lib/cities";
 
 export interface ActivityItem {
-  type: "review" | "violation" | "complaint" | "litigation" | "dob_violation" | "crime" | "bedbug" | "eviction";
+  type: "review" | "violation" | "complaint" | "litigation" | "dob_violation" | "crime" | "bedbug" | "eviction" | "la_eviction" | "tenant_buyout" | "permit" | "enforcement";
   id: string;
   description: string;
   date: string;
@@ -168,24 +168,19 @@ export async function GET(request: Request) {
     }
 
     if (filter === "all" || filter === "crime") {
-      // Crime data is NYC-only for now (LAPD sync not yet active)
-      if (metro === "nyc") {
-        promises.push(
-          supabase
-            .from("nypd_complaints")
-            .select("id, offense_description, pd_description, crime_category, law_category, cmplnt_date, borough, zip_code, metro")
-            .in("crime_category", ["violent", "property"])
-            .not("cmplnt_date", "is", null)
-            .eq("metro", metro)
-            .gte("cmplnt_date", cutoffDate.slice(0, 10))
-            .lte("cmplnt_date", maxDateShort)
-            .order("cmplnt_date", { ascending: false })
-            .order("id", { ascending: false })
-            .limit(10000)
-        );
-      } else {
-        promises.push(Promise.resolve({ data: null, error: null }));
-      }
+      promises.push(
+        supabase
+          .from("nypd_complaints")
+          .select("id, offense_description, pd_description, crime_category, law_category, cmplnt_date, borough, zip_code, metro")
+          .in("crime_category", ["violent", "property"])
+          .not("cmplnt_date", "is", null)
+          .eq("metro", metro)
+          .gte("cmplnt_date", cutoffDate.slice(0, 10))
+          .lte("cmplnt_date", maxDateShort)
+          .order("cmplnt_date", { ascending: false })
+          .order("id", { ascending: false })
+          .limit(10000)
+      );
     } else {
       promises.push(Promise.resolve({ data: null, error: null }));
     }
@@ -236,6 +231,94 @@ export async function GET(request: Request) {
       promises.push(Promise.resolve({ data: null, error: null }));
     }
 
+    // LAHD Evictions (LA-only)
+    if (filter === "all" || filter === "la_eviction") {
+      if (metro === "los-angeles") {
+        promises.push(
+          supabase
+            .from("lahd_evictions")
+            .select("id, eviction_category, notice_type, notice_date, received_date, address, building_id, metro, buildings(full_address, borough, slug)")
+            .not("building_id", "is", null)
+            .gte("received_date", cutoffDate.slice(0, 10))
+            .lte("received_date", maxDateShort)
+            .order("received_date", { ascending: false })
+            .order("id", { ascending: false })
+            .limit(10000)
+        );
+      } else {
+        promises.push(Promise.resolve({ data: null, error: null }));
+      }
+    } else {
+      promises.push(Promise.resolve({ data: null, error: null }));
+    }
+
+    // LAHD Tenant Buyouts (LA-only)
+    if (filter === "all" || filter === "tenant_buyout") {
+      if (metro === "los-angeles") {
+        promises.push(
+          supabase
+            .from("lahd_tenant_buyouts")
+            .select("id, disclosure_date, compensation_amount, address, building_id, metro, buildings(full_address, borough, slug)")
+            .not("building_id", "is", null)
+            .not("disclosure_date", "is", null)
+            .gte("disclosure_date", cutoffDate.slice(0, 10))
+            .lte("disclosure_date", maxDateShort)
+            .order("disclosure_date", { ascending: false })
+            .order("id", { ascending: false })
+            .limit(10000)
+        );
+      } else {
+        promises.push(Promise.resolve({ data: null, error: null }));
+      }
+    } else {
+      promises.push(Promise.resolve({ data: null, error: null }));
+    }
+
+    // LA Building Permits
+    if (filter === "all" || filter === "permit") {
+      if (metro === "los-angeles") {
+        promises.push(
+          supabase
+            .from("dob_permits")
+            .select("id, work_permit, permit_status, work_type, job_description, issued_date, borough, building_id, metro, buildings(full_address, borough, slug)")
+            .not("building_id", "is", null)
+            .not("issued_date", "is", null)
+            .eq("metro", metro)
+            .gte("issued_date", cutoffDate.slice(0, 10))
+            .lte("issued_date", maxDateShort)
+            .order("issued_date", { ascending: false })
+            .order("id", { ascending: false })
+            .limit(10000)
+        );
+      } else {
+        promises.push(Promise.resolve({ data: null, error: null }));
+      }
+    } else {
+      promises.push(Promise.resolve({ data: null, error: null }));
+    }
+
+    // LAHD CCRIS Enforcement Cases (LA-only)
+    if (filter === "all" || filter === "enforcement") {
+      if (metro === "los-angeles") {
+        promises.push(
+          supabase
+            .from("lahd_ccris_cases")
+            .select("id, case_type, start_date, total_complaints, open_complaints, address, building_id, metro, buildings(full_address, borough, slug)")
+            .not("building_id", "is", null)
+            .not("start_date", "is", null)
+            .gte("start_date", cutoffDate.slice(0, 10))
+            .lte("start_date", maxDateShort)
+            .order("start_date", { ascending: false })
+            .order("id", { ascending: false })
+            .limit(10000)
+        );
+      } else {
+        promises.push(Promise.resolve({ data: null, error: null }));
+      }
+    } else {
+      promises.push(Promise.resolve({ data: null, error: null }));
+    }
+
     const results = await Promise.all(promises) as {
       data: unknown[] | null;
       error?: { message: string } | null;
@@ -249,7 +332,7 @@ export async function GET(request: Request) {
       }
     }
 
-    const [reviewsResult, violationsResult, complaintsResult, litigationsResult, dobResult, crimeResult, bedbugResult, evictionResult] = results;
+    const [reviewsResult, violationsResult, complaintsResult, litigationsResult, dobResult, crimeResult, bedbugResult, evictionResult, laEvictionResult, buyoutResult, permitResult, enforcementResult] = results;
 
     const items: ActivityItem[] = [];
 
@@ -364,14 +447,14 @@ export async function GET(request: Request) {
       for (const cr of crimeResult.data as Record<string, unknown>[]) {
         const desc = cr.offense_description
           ? `${cr.offense_description}${cr.pd_description ? `: ${cr.pd_description}` : ""}`
-          : "NYPD crime reported";
+          : (cr.metro === "los-angeles" ? "LAPD crime reported" : "NYPD crime reported");
         items.push({
           type: "crime",
           id: String(cr.id),
           description: (desc as string).length > 160 ? (desc as string).slice(0, 157) + "..." : desc as string,
           date: cr.cmplnt_date as string,
           buildingId: "",
-          buildingAddress: cr.zip_code ? `Zip ${cr.zip_code}` : "NYC",
+          buildingAddress: cr.zip_code ? `Zip ${cr.zip_code}` : (cr.metro === "los-angeles" ? "Los Angeles" : "NYC"),
           borough: (cr.borough as string) || "",
           crimeCategory: cr.crime_category as string,
           zipCode: cr.zip_code as string,
@@ -410,6 +493,95 @@ export async function GET(request: Request) {
           description: "Eviction executed",
           date: e.executed_date as string,
           buildingId: e.building_id as string,
+          buildingAddress: building.full_address,
+          borough: building.borough,
+          buildingSlug: building.slug,
+        });
+      }
+    }
+
+    // Normalize LAHD evictions
+    if (laEvictionResult.data) {
+      for (const e of laEvictionResult.data as Record<string, unknown>[]) {
+        const building = e.buildings as { full_address: string; borough: string; slug: string } | null;
+        if (!building) continue;
+        const cat = e.eviction_category ? String(e.eviction_category) : "";
+        const noticeType = e.notice_type ? String(e.notice_type) : "";
+        const desc = [cat, noticeType].filter(Boolean).join(" — ") || "LAHD eviction notice";
+        items.push({
+          type: "la_eviction",
+          id: String(e.id),
+          description: desc.length > 160 ? desc.slice(0, 157) + "..." : desc,
+          date: (e.received_date || e.notice_date) as string,
+          buildingId: e.building_id as string,
+          buildingAddress: building.full_address,
+          borough: building.borough,
+          buildingSlug: building.slug,
+        });
+      }
+    }
+
+    // Normalize tenant buyouts
+    if (buyoutResult.data) {
+      for (const b of buyoutResult.data as Record<string, unknown>[]) {
+        const building = b.buildings as { full_address: string; borough: string; slug: string } | null;
+        if (!building) continue;
+        const amount = b.compensation_amount ? Number(b.compensation_amount) : null;
+        const desc = amount
+          ? `Tenant buyout offer: $${amount.toLocaleString()}`
+          : "Tenant buyout disclosure filed";
+        items.push({
+          type: "tenant_buyout",
+          id: String(b.id),
+          description: desc,
+          date: b.disclosure_date as string,
+          buildingId: b.building_id as string,
+          buildingAddress: building.full_address,
+          borough: building.borough,
+          buildingSlug: building.slug,
+        });
+      }
+    }
+
+    // Normalize LA building permits
+    if (permitResult.data) {
+      for (const p of permitResult.data as Record<string, unknown>[]) {
+        const building = p.buildings as { full_address: string; borough: string; slug: string } | null;
+        if (!building) continue;
+        const desc = p.job_description
+          ? String(p.job_description)
+          : p.work_type
+            ? `Permit: ${p.work_type}`
+            : "Building permit issued";
+        items.push({
+          type: "permit",
+          id: String(p.id),
+          description: (desc as string).length > 160 ? (desc as string).slice(0, 157) + "..." : desc as string,
+          date: p.issued_date as string,
+          buildingId: p.building_id as string,
+          buildingAddress: building.full_address,
+          borough: building.borough,
+          buildingSlug: building.slug,
+        });
+      }
+    }
+
+    // Normalize LAHD CCRIS enforcement cases
+    if (enforcementResult.data) {
+      for (const c of enforcementResult.data as Record<string, unknown>[]) {
+        const building = c.buildings as { full_address: string; borough: string; slug: string } | null;
+        if (!building) continue;
+        const complaints = c.open_complaints ? Number(c.open_complaints) : 0;
+        const caseType = c.case_type ? String(c.case_type) : "Investigation";
+        const desc = complaints > 0
+          ? `${caseType} case — ${complaints} open complaint${complaints !== 1 ? "s" : ""}`
+          : `${caseType} enforcement case opened`;
+        items.push({
+          type: "enforcement",
+          id: String(c.id),
+          description: desc,
+          date: c.start_date as string,
+          buildingId: c.building_id as string,
           buildingAddress: building.full_address,
           borough: building.borough,
           buildingSlug: building.slug,

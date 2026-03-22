@@ -473,7 +473,9 @@ async function linkByAddress(
   errors: string[],
   label: string,
   maxLookups = 200,
-  metro?: string
+  metro?: string,
+  createMissing = false,
+  fullAddressColumn?: string
 ): Promise<{ linked: number; affectedBuildingIds: Set<string> }> {
   let linked = 0;
   const affectedBuildingIds = new Set<string>();
@@ -537,8 +539,40 @@ async function linkByAddress(
       .ilike("full_address", `%${address}%`)
       .limit(1);
 
+    let buildingId: string | null = null;
+
     if (matched && matched.length > 0) {
-      const buildingId = matched[0].id;
+      buildingId = matched[0].id;
+    } else if (createMissing && fullAddressColumn) {
+      // Auto-create building from the first unlinked record's full address
+      const sample = allUnlinked.find(r => {
+        const addr = String(r[fullAddressColumn] || "").trim();
+        return addr.toUpperCase().includes(address);
+      });
+      if (sample) {
+        const fullAddr = String(sample[fullAddressColumn] || "").trim();
+        if (fullAddr.length > 5) {
+          // Extract borough/neighborhood from address or use default
+          const slug = generateBuildingSlug(fullAddr);
+          const { data: created, error: createErr } = await supabase
+            .from("buildings")
+            .upsert({
+              full_address: fullAddr,
+              slug,
+              borough: "Los Angeles",
+              metro: metro || "los-angeles",
+            }, { onConflict: "slug" })
+            .select("id")
+            .single();
+
+          if (created && !createErr) {
+            buildingId = created.id;
+          }
+        }
+      }
+    }
+
+    if (buildingId) {
       for (let i = 0; i < recordIds.length; i += 200) {
         const batch = recordIds.slice(i, i + 200);
         const { error: linkError } = await supabase
@@ -2519,6 +2553,306 @@ async function syncLASoftStory(
 }
 
 // ---------------------------------------------------------------------------
+// LAHD Eviction Cases sync (data.lacity.org/resource/2u8b-eyuu)
+// ---------------------------------------------------------------------------
+async function syncLAHDEvictions(
+  supabase: ReturnType<typeof getSupabaseAdmin>
+): Promise<SyncResult> {
+  const lastSync = await getLastSyncDate(supabase, "lahd_evictions");
+  const logId = await createSyncLog(supabase, "lahd_evictions");
+  const syncStartTime = new Date().toISOString();
+
+  let totalAdded = 0;
+  let totalLinked = 0;
+  const errors: string[] = [];
+  const affectedBuildingIds = new Set<string>();
+
+  try {
+    let offset = 0;
+    let hasMore = true;
+    let pagesFetched = 0;
+
+    while (hasMore) {
+      const url = buildLASodaUrl(
+        "2u8b-eyuu",
+        `received > '${lastSync}'`,
+        PAGE_SIZE,
+        offset,
+        "received ASC"
+      );
+
+      const res = await fetch(url);
+      if (!res.ok) { errors.push(`LAHD Evictions API error (offset ${offset}): ${res.status}`); break; }
+
+      const records = await res.json();
+      if (!records || records.length === 0) { hasMore = false; break; }
+
+      const rows = records
+        .filter((r: Record<string, unknown>) => r.apn)
+        .map((r: Record<string, unknown>) => {
+          // Parse dates — format is "MM-DD-YYYY" or ISO
+          const parseDate = (d: unknown) => {
+            if (!d) return null;
+            const s = String(d);
+            const mdyMatch = s.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+            if (mdyMatch) return `${mdyMatch[3]}-${mdyMatch[1]}-${mdyMatch[2]}`;
+            return s.slice(0, 10);
+          };
+          return {
+            apn: String(r.apn),
+            address: r.officialaddress ? String(r.officialaddress) : null,
+            eviction_category: r.eviction_category ? String(r.eviction_category) : null,
+            notice_date: parseDate(r.notice_date),
+            notice_type: r.notice_type ? String(r.notice_type) : null,
+            received_date: parseDate(r.received),
+            metro: "los-angeles",
+            imported_at: new Date().toISOString(),
+          };
+        });
+
+      if (rows.length > 0) {
+        totalAdded += await batchUpsert(supabase, "lahd_evictions", rows, "idx_lahd_evictions_unique", errors, "LAHD Evictions", true);
+      }
+
+      pagesFetched++;
+      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) { hasMore = false; } else { offset += PAGE_SIZE; }
+    }
+
+    try {
+      const linkResult = await linkByAddress(supabase, "lahd_evictions", "id", "address", syncStartTime, errors, "LAHD Evictions", 500, "los-angeles", true, "address");
+      totalLinked = linkResult.linked;
+      for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
+    } catch (linkErr) {
+      errors.push(`LAHD Evictions linking error: ${String(linkErr)}`);
+    }
+
+    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
+  } catch (err) {
+    errors.push(`LAHD Evictions fatal error: ${String(err)}`);
+    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
+  }
+
+  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+}
+
+// ---------------------------------------------------------------------------
+// LAHD Tenant Buyout Cases sync (data.lacity.org/resource/ci3m-f23k)
+// ---------------------------------------------------------------------------
+async function syncLAHDTenantBuyouts(
+  supabase: ReturnType<typeof getSupabaseAdmin>
+): Promise<SyncResult> {
+  const lastSync = await getLastSyncDate(supabase, "lahd_tenant_buyouts");
+  const logId = await createSyncLog(supabase, "lahd_tenant_buyouts");
+  const syncStartTime = new Date().toISOString();
+
+  let totalAdded = 0;
+  let totalLinked = 0;
+  const errors: string[] = [];
+  const affectedBuildingIds = new Set<string>();
+
+  try {
+    let offset = 0;
+    let hasMore = true;
+    let pagesFetched = 0;
+
+    while (hasMore) {
+      const url = buildLASodaUrl(
+        "ci3m-f23k",
+        `disclosure_fileddate > '${lastSync}'`,
+        PAGE_SIZE,
+        offset,
+        "disclosure_fileddate ASC"
+      );
+
+      const res = await fetch(url);
+      if (!res.ok) { errors.push(`LAHD Buyouts API error (offset ${offset}): ${res.status}`); break; }
+
+      const records = await res.json();
+      if (!records || records.length === 0) { hasMore = false; break; }
+
+      const rows = records
+        .filter((r: Record<string, unknown>) => r.apn)
+        .map((r: Record<string, unknown>) => ({
+          apn: String(r.apn),
+          address: r.tenant_streetaddress ? String(r.tenant_streetaddress) : null,
+          disclosure_date: r.disclosure_fileddate ? String(r.disclosure_fileddate).slice(0, 10) : null,
+          compensation_amount: r.compensation_amount ? parseFloat(String(r.compensation_amount)) : null,
+          metro: "los-angeles",
+          imported_at: new Date().toISOString(),
+        }));
+
+      if (rows.length > 0) {
+        totalAdded += await batchUpsert(supabase, "lahd_tenant_buyouts", rows, "idx_lahd_buyouts_unique", errors, "LAHD Buyouts", true);
+      }
+
+      pagesFetched++;
+      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) { hasMore = false; } else { offset += PAGE_SIZE; }
+    }
+
+    try {
+      const linkResult = await linkByAddress(supabase, "lahd_tenant_buyouts", "id", "address", syncStartTime, errors, "LAHD Buyouts", 500, "los-angeles", true, "address");
+      totalLinked = linkResult.linked;
+      for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
+    } catch (linkErr) {
+      errors.push(`LAHD Buyouts linking error: ${String(linkErr)}`);
+    }
+
+    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
+  } catch (err) {
+    errors.push(`LAHD Buyouts fatal error: ${String(err)}`);
+    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
+  }
+
+  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+}
+
+// ---------------------------------------------------------------------------
+// LAHD CCRIS Cases sync (data.lacity.org/resource/ds2y-sb5t)
+// ---------------------------------------------------------------------------
+async function syncLAHDCCRIS(
+  supabase: ReturnType<typeof getSupabaseAdmin>
+): Promise<SyncResult> {
+  const lastSync = await getLastSyncDate(supabase, "lahd_ccris");
+  const logId = await createSyncLog(supabase, "lahd_ccris");
+  const syncStartTime = new Date().toISOString();
+
+  let totalAdded = 0;
+  let totalLinked = 0;
+  const errors: string[] = [];
+  const affectedBuildingIds = new Set<string>();
+
+  try {
+    let offset = 0;
+    let hasMore = true;
+    let pagesFetched = 0;
+
+    while (hasMore) {
+      const url = buildLASodaUrl(
+        "ds2y-sb5t",
+        `start_date > '${lastSync}'`,
+        PAGE_SIZE,
+        offset,
+        "start_date ASC"
+      );
+
+      const res = await fetch(url);
+      if (!res.ok) { errors.push(`LAHD CCRIS API error (offset ${offset}): ${res.status}`); break; }
+
+      const records = await res.json();
+      if (!records || records.length === 0) { hasMore = false; break; }
+
+      const rows = records
+        .filter((r: Record<string, unknown>) => r.apn)
+        .map((r: Record<string, unknown>) => ({
+          apn: String(r.apn),
+          address: r.address ? String(r.address) : null,
+          case_type: r.casetype ? String(r.casetype) : null,
+          start_date: r.start_date ? String(r.start_date).slice(0, 10) : null,
+          total_complaints: r.totalcomplaintscount ? parseInt(String(r.totalcomplaintscount), 10) : 0,
+          open_complaints: r.opencomplaintscount ? parseInt(String(r.opencomplaintscount), 10) : 0,
+          scheduled_inspections: r.scheduledinspectionscount ? parseInt(String(r.scheduledinspectionscount), 10) : 0,
+          metro: "los-angeles",
+          imported_at: new Date().toISOString(),
+        }));
+
+      if (rows.length > 0) {
+        totalAdded += await batchUpsert(supabase, "lahd_ccris_cases", rows, "idx_lahd_ccris_unique", errors, "LAHD CCRIS", true);
+      }
+
+      pagesFetched++;
+      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) { hasMore = false; } else { offset += PAGE_SIZE; }
+    }
+
+    try {
+      const linkResult = await linkByAddress(supabase, "lahd_ccris_cases", "id", "address", syncStartTime, errors, "LAHD CCRIS", 500, "los-angeles", true, "address");
+      totalLinked = linkResult.linked;
+      for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
+    } catch (linkErr) {
+      errors.push(`LAHD CCRIS linking error: ${String(linkErr)}`);
+    }
+
+    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
+  } catch (err) {
+    errors.push(`LAHD CCRIS fatal error: ${String(err)}`);
+    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
+  }
+
+  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+}
+
+// ---------------------------------------------------------------------------
+// LAHD Violation Summary sync — building enrichment only, no dates
+// (data.lacity.org/resource/cr8f-uc4j)
+// ---------------------------------------------------------------------------
+async function syncLAHDViolationSummary(
+  supabase: ReturnType<typeof getSupabaseAdmin>
+): Promise<SyncResult> {
+  const logId = await createSyncLog(supabase, "lahd_violation_summary");
+  const syncStartTime = new Date().toISOString();
+
+  let totalAdded = 0;
+  let totalLinked = 0;
+  const errors: string[] = [];
+  const affectedBuildingIds = new Set<string>();
+
+  try {
+    let offset = 0;
+    let hasMore = true;
+    let pagesFetched = 0;
+
+    while (hasMore) {
+      const url = buildLASodaUrl(
+        "cr8f-uc4j",
+        "1=1",
+        PAGE_SIZE,
+        offset,
+        ":id"
+      );
+
+      const res = await fetch(url);
+      if (!res.ok) { errors.push(`LAHD Violation Summary API error (offset ${offset}): ${res.status}`); break; }
+
+      const records = await res.json();
+      if (!records || records.length === 0) { hasMore = false; break; }
+
+      const rows = records
+        .filter((r: Record<string, unknown>) => r.apn)
+        .map((r: Record<string, unknown>) => ({
+          apn: String(r.apn),
+          address: r.address ? String(r.address) : null,
+          violation_type: r.violationtype ? String(r.violationtype) : null,
+          violations_cited: r.violations_cited ? parseInt(String(r.violations_cited), 10) : 0,
+          violations_cleared: r.violations_cleared ? parseInt(String(r.violations_cleared), 10) : 0,
+          metro: "los-angeles",
+          imported_at: new Date().toISOString(),
+        }));
+
+      if (rows.length > 0) {
+        totalAdded += await batchUpsert(supabase, "lahd_violation_summary", rows, "idx_lahd_violation_summary_unique", errors, "LAHD ViolSummary", true);
+      }
+
+      pagesFetched++;
+      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) { hasMore = false; } else { offset += PAGE_SIZE; }
+    }
+
+    try {
+      const linkResult = await linkByAddress(supabase, "lahd_violation_summary", "id", "address", syncStartTime, errors, "LAHD ViolSummary", 500, "los-angeles", true, "address");
+      totalLinked = linkResult.linked;
+      for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
+    } catch (linkErr) {
+      errors.push(`LAHD ViolSummary linking error: ${String(linkErr)}`);
+    }
+
+    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
+  } catch (err) {
+    errors.push(`LAHD ViolSummary fatal error: ${String(err)}`);
+    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
+  }
+
+  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+}
+
+// ---------------------------------------------------------------------------
 // Max duration for Vercel serverless functions (Pro max=300s)
 // ---------------------------------------------------------------------------
 export const maxDuration = 300;
@@ -2542,6 +2876,10 @@ const SOURCES: Record<string, (supabase: ReturnType<typeof getSupabaseAdmin>) =>
   lapd: syncLAPDCrimeData,
   "la-permits": syncLAPermits,
   "la-soft-story": syncLASoftStory,
+  "la-evictions": syncLAHDEvictions,
+  "la-buyouts": syncLAHDTenantBuyouts,
+  "la-ccris": syncLAHDCCRIS,
+  "la-violation-summary": syncLAHDViolationSummary,
 };
 
 // ---------------------------------------------------------------------------
@@ -2576,7 +2914,7 @@ async function runLinkOnly(
     ? (LINK_TABLES[sourceParam] ? { [sourceParam]: LINK_TABLES[sourceParam] } : null)
     : LINK_TABLES;
 
-  const LA_ADDR_SOURCES = ["lahd", "ladbs", "la-311", "la-permits"];
+  const LA_ADDR_SOURCES = ["lahd", "ladbs", "la-311", "la-permits", "la-evictions", "la-buyouts", "la-ccris", "la-violation-summary"];
   if (sourceParam && !tablesToLink && sourceParam !== "complaints" && !LA_ADDR_SOURCES.includes(sourceParam)) {
     return NextResponse.json(
       { error: `Unknown link source: ${sourceParam}. Valid: ${[...Object.keys(LINK_TABLES), "complaints", ...LA_ADDR_SOURCES].join(", ")}` },
@@ -2676,6 +3014,10 @@ async function runLinkOnly(
     { name: "ladbs", table: "dob_violations", idColumn: "id", addressColumns: ["house_number", "street_name"], label: "LADBS" },
     { name: "la-311", table: "complaints_311", idColumn: "unique_key", addressColumns: ["incident_address"], label: "LA311" },
     { name: "la-permits", table: "dob_permits", idColumn: "id", addressColumns: ["house_no", "street_name"], label: "LA Permits" },
+    { name: "la-evictions", table: "lahd_evictions", idColumn: "id", addressColumns: ["address"], label: "LAHD Evictions" },
+    { name: "la-buyouts", table: "lahd_tenant_buyouts", idColumn: "id", addressColumns: ["address"], label: "LAHD Buyouts" },
+    { name: "la-ccris", table: "lahd_ccris_cases", idColumn: "id", addressColumns: ["address"], label: "LAHD CCRIS" },
+    { name: "la-violation-summary", table: "lahd_violation_summary", idColumn: "id", addressColumns: ["address"], label: "LAHD ViolSummary" },
   ];
 
   const shouldLinkLA = laAddrTables.some(t => !sourceParam || sourceParam === t.name);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Shield, MessageSquare, Star, Scale, HardHat, Siren, Bug, DoorOpen } from "lucide-react";
+import { Shield, MessageSquare, Star, Scale, HardHat, Siren, Bug, DoorOpen, DollarSign, FileCheck, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import type { ActivityItem } from "@/app/api/activity/route";
 import { buildingUrl, cityPath } from "@/lib/seo";
@@ -73,9 +73,28 @@ function ActivityIcon({ type }: { type: ActivityItem["type"] }) {
         </div>
       );
     case "eviction":
+    case "la_eviction":
       return (
         <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-pink-50 flex items-center justify-center">
           <DoorOpen className="w-[18px] h-[18px] text-[#EC4899]" />
+        </div>
+      );
+    case "tenant_buyout":
+      return (
+        <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-orange-50 flex items-center justify-center">
+          <DollarSign className="w-[18px] h-[18px] text-[#F97316]" />
+        </div>
+      );
+    case "permit":
+      return (
+        <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-teal-50 flex items-center justify-center">
+          <FileCheck className="w-[18px] h-[18px] text-[#14B8A6]" />
+        </div>
+      );
+    case "enforcement":
+      return (
+        <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-indigo-50 flex items-center justify-center">
+          <ShieldAlert className="w-[18px] h-[18px] text-[#6366F1]" />
         </div>
       );
   }
@@ -99,6 +118,14 @@ function typeLabel(type: ActivityItem["type"]): string {
       return "Bedbug Report";
     case "eviction":
       return "Eviction";
+    case "la_eviction":
+      return "LAHD Eviction";
+    case "tenant_buyout":
+      return "Tenant Buyout";
+    case "permit":
+      return "Building Permit";
+    case "enforcement":
+      return "Enforcement";
   }
 }
 
@@ -119,7 +146,14 @@ function typeBadgeClasses(type: ActivityItem["type"]): string {
     case "bedbug":
       return "bg-purple-50 text-[#9333EA]";
     case "eviction":
+    case "la_eviction":
       return "bg-pink-50 text-[#EC4899]";
+    case "tenant_buyout":
+      return "bg-orange-50 text-[#F97316]";
+    case "permit":
+      return "bg-teal-50 text-[#14B8A6]";
+    case "enforcement":
+      return "bg-indigo-50 text-[#6366F1]";
   }
 }
 

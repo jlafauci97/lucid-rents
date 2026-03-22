@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { AlertTriangle, Shield, MessageSquare, Star, Scale, HardHat, Siren, Bug, DoorOpen } from 'lucide-react';
+import { AlertTriangle, Shield, MessageSquare, Star, Scale, HardHat, Siren, Bug, DoorOpen, DollarSign, FileCheck, ShieldAlert } from 'lucide-react';
 import { BOROUGH_SLUGS, cityPath } from '@/lib/seo';
 import type { ActivityItem } from '@/app/api/activity/route';
 
@@ -16,6 +16,10 @@ const typeIconColors: Record<ActivityItem['type'], string> = {
   crime: 'text-red-300',
   bedbug: 'text-purple-300',
   eviction: 'text-pink-200',
+  la_eviction: 'text-pink-200',
+  tenant_buyout: 'text-orange-200',
+  permit: 'text-teal-200',
+  enforcement: 'text-indigo-200',
 };
 
 function TypeIcon({ type }: { type: ActivityItem['type'] }) {
@@ -38,7 +42,14 @@ function TypeIcon({ type }: { type: ActivityItem['type'] }) {
     case 'bedbug':
       return <Bug className={cls} />;
     case 'eviction':
+    case 'la_eviction':
       return <DoorOpen className={cls} />;
+    case 'tenant_buyout':
+      return <DollarSign className={cls} />;
+    case 'permit':
+      return <FileCheck className={cls} />;
+    case 'enforcement':
+      return <ShieldAlert className={cls} />;
   }
 }
 
@@ -51,6 +62,10 @@ const typeLabels: Record<ActivityItem['type'], string> = {
   crime: 'Crime',
   bedbug: 'Bedbug Report',
   eviction: 'Eviction',
+  la_eviction: 'LAHD Eviction',
+  tenant_buyout: 'Tenant Buyout',
+  permit: 'Building Permit',
+  enforcement: 'Enforcement',
 };
 
 function formatDate(dateStr: string): string {
