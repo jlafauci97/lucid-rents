@@ -45,29 +45,21 @@ async function supabaseFetchWithCount(path: string): Promise<number> {
   }
 }
 
+// Upper bounds for sitemap index generation.
+// generateSitemaps() runs at build time when DB env vars may not be available,
+// so we use generous upper bounds. The sitemap() function returns [] for
+// IDs beyond actual data, which search engines handle gracefully.
+const MAX_LANDLORD_SITEMAPS = 70; // ~700k landlords / 10k per sitemap
+const MAX_BUILDING_SITEMAPS = 120; // ~1.2M buildings / 10k per sitemap
+
 /**
  * Sitemap index layout:
  *   0           = static pages, neighborhoods, crime zips, transit, news
- *   1..L        = landlord pages in batches of 10,000
- *   L+1..L+B   = building pages in batches of 10,000
+ *   1..70       = landlord pages in batches of 10,000
+ *   71..190     = building pages in batches of 10,000
  */
 export async function generateSitemaps() {
-  const [totalBuildings, totalLandlords] = await Promise.all([
-    supabaseFetchWithCount("buildings?select=id&limit=1&offset=0"),
-    supabaseFetchWithCount("landlord_stats?select=name&limit=1&offset=0"),
-  ]);
-
-  const landlordSitemapCount = Math.max(
-    1,
-    Math.ceil(totalLandlords / LANDLORDS_PER_SITEMAP)
-  );
-  const buildingSitemapCount = Math.max(
-    1,
-    Math.ceil(totalBuildings / BUILDINGS_PER_SITEMAP)
-  );
-
-  // 0 = static, 1..L = landlords, L+1..L+B = buildings
-  const total = 1 + landlordSitemapCount + buildingSitemapCount;
+  const total = 1 + MAX_LANDLORD_SITEMAPS + MAX_BUILDING_SITEMAPS;
   return Array.from({ length: total }, (_, i) => ({ id: i }));
 }
 
@@ -82,20 +74,13 @@ export default async function sitemap({
     return generateStaticSitemap();
   }
 
-  // Figure out landlord vs building boundary
-  const totalLandlords = await supabaseFetchWithCount(
-    "landlord_stats?select=name&limit=1&offset=0"
-  );
-  const landlordSitemapCount = Math.max(
-    1,
-    Math.ceil(totalLandlords / LANDLORDS_PER_SITEMAP)
-  );
-
-  if (numId <= landlordSitemapCount) {
+  // Sitemaps 1..MAX_LANDLORD_SITEMAPS = landlords
+  // Sitemaps MAX_LANDLORD_SITEMAPS+1.. = buildings
+  if (numId <= MAX_LANDLORD_SITEMAPS) {
     return generateLandlordSitemap(numId - 1);
   }
 
-  const buildingBatchIndex = numId - 1 - landlordSitemapCount;
+  const buildingBatchIndex = numId - 1 - MAX_LANDLORD_SITEMAPS;
   return generateBuildingSitemap(buildingBatchIndex);
 }
 
