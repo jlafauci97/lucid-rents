@@ -11,21 +11,26 @@ import {
 } from "@/lib/subway-lines";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = {
-  title: "Apartments Near Transit | NYC Subway & Bus Lines | Lucid Rents",
-  description:
-    "Find NYC apartments near subway stations and bus stops. Browse buildings within walking distance of every MTA subway line and bus route.",
-  alternates: { canonical: canonicalUrl(cityPath("/transit")) },
-  openGraph: {
-    title: "Apartments Near Transit",
-    description:
-      "Find NYC apartments near subway stations and bus stops. Browse every MTA line.",
-    url: canonicalUrl(cityPath("/transit")),
-    siteName: "Lucid Rents",
-    type: "website",
-    locale: "en_US",
-  },
-};
+import { isValidCity, CITY_META, type City } from "@/lib/cities";
+
+export async function generateMetadata({ params }: { params: Promise<{ city: string }> }): Promise<Metadata> {
+  const { city } = await params;
+  if (!isValidCity(city)) return {};
+  const meta = CITY_META[city];
+  return {
+    title: `Apartments Near Transit | ${meta.fullName} | Lucid Rents`,
+    description: `Find ${meta.fullName} apartments near subway stations and bus stops. Browse buildings within walking distance of every transit line.`,
+    alternates: { canonical: canonicalUrl(cityPath("/transit", city)) },
+    openGraph: {
+      title: "Apartments Near Transit",
+      description: `Find ${meta.fullName} apartments near subway stations and bus stops.`,
+      url: canonicalUrl(cityPath("/transit", city)),
+      siteName: "Lucid Rents",
+      type: "website",
+      locale: "en_US",
+    },
+  };
+}
 
 export const revalidate = 86400;
 
@@ -63,7 +68,8 @@ function getBusPrefix(route: string): string {
   return "Other";
 }
 
-export default async function TransitHubPage() {
+export default async function TransitHubPage({ params }: { params: Promise<{ city: string }> }) {
+  const { city: cityParam } = await params;
   const supabase = await createClient();
 
   // Fetch bus routes from transit_stops
@@ -122,7 +128,7 @@ export default async function TransitHubPage() {
               name: "Apartments Near Transit in NYC",
               description:
                 "Find NYC apartments near subway stations and bus stops.",
-              url: canonicalUrl(cityPath("/transit")),
+              url: canonicalUrl(cityPath("/transit", cityParam as City)),
               publisher: {
                 "@type": "Organization",
                 name: "Lucid Rents",
