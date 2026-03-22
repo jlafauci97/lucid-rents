@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { Building2, Siren, Filter } from "lucide-react";
+import { CITY_META, type City } from "@/lib/cities";
 import "leaflet/dist/leaflet.css";
 
 const MapContainer = dynamic(
@@ -26,9 +27,10 @@ type LayerToggle = "buildings" | "crime" | "both";
 
 interface CrimeMapSectionProps {
   borough: string;
+  city: string;
 }
 
-export function CrimeMapSection({ borough }: CrimeMapSectionProps) {
+export function CrimeMapSection({ borough, city }: CrimeMapSectionProps) {
   const [mounted, setMounted] = useState(false);
   const [layer, setLayer] = useState<LayerToggle>("crime");
   const [showFilters, setShowFilters] = useState(false);
@@ -184,8 +186,8 @@ export function CrimeMapSection({ borough }: CrimeMapSectionProps) {
 
       {/* Map */}
       <MapContainer
-        center={[40.7580, -73.9855]}
-        zoom={12}
+        center={[CITY_META[city as City].center.lat, CITY_META[city as City].center.lng]}
+        zoom={CITY_META[city as City].zoom}
         style={{ height: "100%", width: "100%" }}
         zoomControl={true}
       >

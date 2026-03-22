@@ -46,13 +46,14 @@ export function CrimeHeatLayer({ borough, visible }: CrimeHeatLayerProps) {
     setLoading(true);
     const params = new URLSearchParams();
     if (borough) params.set("borough", borough);
+    params.set("city", city);
 
     fetch(`/api/map/crime?${params}`)
       .then((res) => res.json())
       .then((data) => setPoints(data.points || []))
       .catch(() => setPoints([]))
       .finally(() => setLoading(false));
-  }, [borough, visible]);
+  }, [borough, visible, city]);
 
   const markers = useMemo(() => {
     return points.map((p) => {
