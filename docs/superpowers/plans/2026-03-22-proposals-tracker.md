@@ -575,6 +575,14 @@ function normalizeStatus(publicStatus, milestone) {
   return STATUS_MAP[publicStatus] || "active";
 }
 
+// ─── Borough normalization ───────────────────────────────────────────
+const BOROUGH_MAP = { MN: "Manhattan", BK: "Brooklyn", QN: "Queens", BX: "Bronx", SI: "Staten Island" };
+
+function normalizeBorough(raw) {
+  if (!raw) return null;
+  return BOROUGH_MAP[raw] || BOROUGH_MAP[raw.toUpperCase()] || raw;
+}
+
 // ─── Get last sync date ──────────────────────────────────────────────
 async function getLastSyncDate() {
   if (args.since) return args.since;
@@ -630,7 +638,7 @@ async function main() {
         type: "land_use",
         status: normalizeStatus(r.public_status, r.current_milestone),
         category: categorize(title + " " + brief),
-        borough: r.borough || null,
+        borough: normalizeBorough(r.borough),
         council_district: r.cc_district ? parseInt(r.cc_district) : null,
         neighborhood: r.community_district || null,
         sponsor: r.primary_applicant || null,
@@ -1069,7 +1077,7 @@ async function main() {
         council_district: null,
         neighborhood: null,
         sponsor: null,
-        intro_date: new Date().toISOString().split("T")[0], // ZIMAS doesn't expose filing date in this layer
+        intro_date: "2020-01-01", // Sentinel: ZIMAS doesn't expose filing date; fixed value avoids overwriting on re-sync
         last_action_date: null,
         hearing_date: null,
         source_url: `https://planning.lacity.gov/pdiscaseinfo/search/encoded/${encodeURIComponent(caseNbr)}`,
@@ -1163,6 +1171,7 @@ jobs:
 
       - name: Sync NYC Council Bills
         if: ${{ github.event.inputs.source == 'all' || github.event.inputs.source == 'nyc_bills' || github.event_name == 'schedule' }}
+        continue-on-error: true
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -1170,6 +1179,7 @@ jobs:
 
       - name: Sync NYC ZAP Land Use
         if: ${{ github.event.inputs.source == 'all' || github.event.inputs.source == 'nyc_zap' || github.event_name == 'schedule' }}
+        continue-on-error: true
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -1177,6 +1187,7 @@ jobs:
 
       - name: Sync LA Council Files
         if: ${{ github.event.inputs.source == 'all' || github.event.inputs.source == 'la_council' || github.event_name == 'schedule' }}
+        continue-on-error: true
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -1184,6 +1195,7 @@ jobs:
 
       - name: Sync LA ZIMAS Planning Cases
         if: ${{ github.event.inputs.source == 'all' || github.event.inputs.source == 'la_zimas' || github.event_name == 'schedule' }}
+        continue-on-error: true
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -1695,7 +1707,7 @@ git commit -m "feat: add ProposalFilters component"
 // src/components/proposals/ProposalList.tsx
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { ProposalCard, type Proposal } from "./ProposalCard";
 
@@ -1714,6 +1726,11 @@ export function ProposalList({ initialData, initialTotal, metro }: Props) {
 
   // When filters change via URL, reset to initial server data
   const filterKey = searchParams.toString();
+  useEffect(() => {
+    setProposals(initialData);
+    setTotal(initialTotal);
+    setPage(1);
+  }, [filterKey, initialData, initialTotal]);
 
   const loadMore = useCallback(async () => {
     setLoading(true);
