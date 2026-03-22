@@ -500,7 +500,7 @@ async function linkByAddress(
     const { data: batch } = await query.range(offset, offset + PAGE - 1);
 
     if (!batch || batch.length === 0) break;
-    allUnlinked = allUnlinked.concat(batch);
+    allUnlinked = allUnlinked.concat(batch as unknown as Record<string, unknown>[]);
     if (batch.length < PAGE) break;
     offset += PAGE;
   }
@@ -1249,6 +1249,7 @@ async function syncNYPDComplaints(supabase: ReturnType<typeof getSupabaseAdmin>)
 
     // No BBL linking for crimes — they're area-based, matched by zip code.
     // Instead, update crime_count on buildings that share a zip code with new crimes.
+    // Batched: count per zip, then bulk-update all buildings in that zip at once.
     try {
       // Get distinct zip codes from recently synced crimes
       const { data: recentZips } = await supabase
@@ -1261,35 +1262,30 @@ async function syncNYPDComplaints(supabase: ReturnType<typeof getSupabaseAdmin>)
       if (recentZips && recentZips.length > 0) {
         const uniqueZips = [...new Set(recentZips.map((r) => r.zip_code).filter(Boolean))] as string[];
 
-        // For each zip, count crimes in last 12 months and update buildings
         const oneYearAgo = new Date();
         oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
         const sinceDate = oneYearAgo.toISOString().slice(0, 10);
 
-        for (const zip of uniqueZips) {
-          // Count crimes in this zip for last 12 months
-          const { count: crimeCount } = await supabase
-            .from("nypd_complaints")
-            .select("id", { count: "exact", head: true })
-            .eq("zip_code", zip)
-            .gte("cmplnt_date", sinceDate);
+        // Process zips in parallel batches of 5
+        for (let i = 0; i < uniqueZips.length; i += 5) {
+          const zipBatch = uniqueZips.slice(i, i + 5);
+          await Promise.all(zipBatch.map(async (zip) => {
+            const { count: crimeCount } = await supabase
+              .from("nypd_complaints")
+              .select("id", { count: "exact", head: true })
+              .eq("zip_code", zip)
+              .gte("cmplnt_date", sinceDate);
 
-          // Update all buildings in this zip
-          const { data: buildingsInZip } = await supabase
-            .from("buildings")
-            .select("id")
-            .eq("zip_code", zip)
-            .limit(10000);
+            // Bulk-update all buildings in this zip at once (no N+1)
+            const { error: updateErr } = await supabase
+              .from("buildings")
+              .update({ crime_count: crimeCount ?? 0 })
+              .eq("zip_code", zip);
 
-          if (buildingsInZip && buildingsInZip.length > 0) {
-            for (const b of buildingsInZip) {
-              await supabase
-                .from("buildings")
-                .update({ crime_count: crimeCount ?? 0 })
-                .eq("id", b.id);
-              affectedBuildingIds.add(b.id);
+            if (updateErr) {
+              errors.push(`NYPD crime count update error (zip ${zip}): ${updateErr.message}`);
             }
-          }
+          }));
         }
       }
     } catch (countErr) {
@@ -1846,7 +1842,9 @@ async function syncDobPermits(supabase: ReturnType<typeof getSupabaseAdmin>): Pr
 }
 
 // ---------------------------------------------------------------------------
-// Update building counts — only for affected buildings
+// Update building counts — batched to avoid N+1 queries.
+// Processes buildings in parallel batches of 10 and counts all tables per
+// building in a single Promise.all, reducing total queries from 8*N to ~N.
 // ---------------------------------------------------------------------------
 async function updateBuildingCounts(
   supabase: ReturnType<typeof getSupabaseAdmin>,
@@ -1869,22 +1867,30 @@ async function updateBuildingCounts(
     { table: "dob_permits", column: "permit_count" },
   ];
 
-  for (const { table, column } of countTasks) {
-    try {
-      for (const bid of buildingIds) {
-        const { count } = await supabase
-          .from(table)
-          .select("id", { count: "exact", head: true })
-          .eq("building_id", bid);
+  const CONCURRENT = 10;
 
-        await supabase
-          .from("buildings")
-          .update({ [column]: count ?? 0 })
-          .eq("id", bid);
+  for (let i = 0; i < buildingIds.length; i += CONCURRENT) {
+    const batch = buildingIds.slice(i, i + CONCURRENT);
+    await Promise.all(batch.map(async (bid) => {
+      try {
+        // Count all tables for this building in parallel
+        const counts = await Promise.all(
+          countTasks.map(({ table }) =>
+            supabase.from(table).select("id", { count: "exact", head: true }).eq("building_id", bid)
+              .then(({ count }) => count ?? 0)
+          )
+        );
+
+        // Build single update payload
+        const update: Record<string, number> = {};
+        countTasks.forEach(({ column }, idx) => { update[column] = counts[idx]; });
+
+        const { error } = await supabase.from("buildings").update(update).eq("id", bid);
+        if (error) errors.push(`Update counts error (${bid}): ${error.message}`);
+      } catch (err) {
+        errors.push(`Update counts error (${bid}): ${String(err)}`);
       }
-    } catch (err) {
-      errors.push(`Update ${column} error: ${String(err)}`);
-    }
+    }));
   }
 
   return errors;
@@ -2178,6 +2184,7 @@ async function syncLADBSViolations(
 ): Promise<SyncResult> {
   const lastSync = await getLastSyncDate(supabase, "ladbs_violations");
   const logId = await createSyncLog(supabase, "ladbs_violations");
+  const syncStartTime = new Date().toISOString();
 
   let totalAdded = 0;
   let totalLinked = 0;
@@ -2272,6 +2279,7 @@ async function syncLAPermits(
 ): Promise<SyncResult> {
   const lastSync = await getLastSyncDate(supabase, "la_permits");
   const logId = await createSyncLog(supabase, "la_permits");
+  const syncStartTime = new Date().toISOString();
 
   let totalAdded = 0;
   let totalLinked = 0;

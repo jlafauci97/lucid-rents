@@ -1,11 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Search, PenSquare, User, LogOut, AlertTriangle, Users, Bell, Radio, Siren, Newspaper } from "lucide-react";
+import { User, LogOut, Bell } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { type City, DEFAULT_CITY } from "@/lib/cities";
-import { cityPath } from "@/lib/seo";
-import { NavDropdown } from "./NavDropdown";
 import { CitySwitcher } from "./CitySwitcher";
+import { NavLinks } from "./NavLinks";
 import { MobileMenu } from "./MobileMenu";
 
 export async function Navbar({ city = DEFAULT_CITY }: { city?: City }) {
@@ -32,58 +31,7 @@ export async function Navbar({ city = DEFAULT_CITY }: { city?: City }) {
             <div className="hidden md:block">
               <CitySwitcher />
             </div>
-            <div className="hidden md:flex items-center gap-6">
-              <Link
-                href={cityPath("/search", city)}
-                className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors"
-              >
-                <Search className="w-4 h-4" />
-                Search
-              </Link>
-              <Link
-                href={cityPath("/worst-rated-buildings", city)}
-                className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors"
-              >
-                <AlertTriangle className="w-4 h-4" />
-                Worst Buildings
-              </Link>
-              <Link
-                href={cityPath("/landlords", city)}
-                className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors"
-              >
-                <Users className="w-4 h-4" />
-                Landlords
-              </Link>
-              <Link
-                href={cityPath("/crime", city)}
-                className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors"
-              >
-                <Siren className="w-4 h-4" />
-                Crime
-              </Link>
-              <Link
-                href={cityPath("/feed", city)}
-                className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors"
-              >
-                <Radio className="w-4 h-4" />
-                Feed
-              </Link>
-              <Link
-                href={cityPath("/news", city)}
-                className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors"
-              >
-                <Newspaper className="w-4 h-4" />
-                News
-              </Link>
-              <NavDropdown city={city} />
-              <Link
-                href={cityPath("/review/new", city)}
-                className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors"
-              >
-                <PenSquare className="w-4 h-4" />
-                Submit Review
-              </Link>
-            </div>
+            <NavLinks />
           </div>
           <div className="hidden md:flex items-center gap-4">
             {user ? (

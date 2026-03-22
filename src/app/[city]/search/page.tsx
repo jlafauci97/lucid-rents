@@ -11,20 +11,25 @@ import type { Building } from "@/types";
 import { cityPath, canonicalUrl } from "@/lib/seo";
 import type { Metadata } from "next";
 
+import { CITY_META, type City } from "@/lib/cities";
+
 type SortOption = "relevance" | "score-desc" | "score-asc" | "violations-desc" | "reviews-desc";
 
 interface SearchPageProps {
+  params: Promise<{ city: string }>;
   searchParams: Promise<{ q?: string; borough?: string; zip?: string; page?: string; sort?: string }>;
 }
 
 export async function generateMetadata({
+  params: paramsPromise,
   searchParams,
 }: SearchPageProps): Promise<Metadata> {
-  const params = await searchParams;
-  const title = params.q ? `Search: ${params.q}` : "Search NYC Buildings";
+  const [{ city: cityParam }, params] = await Promise.all([paramsPromise, searchParams]);
+  const cityName = CITY_META[cityParam as City]?.fullName || "NYC";
+  const title = params.q ? `Search: ${params.q}` : `Search ${cityName} Buildings`;
   const description = params.q
     ? `Search results for "${params.q}" — find building violations, complaints, and tenant reviews.`
-    : "Search NYC buildings by address, zip code, or neighborhood. View violations, complaints, tenant reviews, and more.";
+    : `Search ${cityName} buildings by address, zip code, or neighborhood. View violations, complaints, tenant reviews, and more.`;
   const url = canonicalUrl(cityPath("/search"));
   return {
     title,

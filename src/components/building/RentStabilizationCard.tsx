@@ -31,7 +31,7 @@ export function RentStabilizationCard({
           ) : (
             <ShieldX className="w-[18px] h-[18px] text-[#94a3b8]" />
           )}
-          <h3 className="font-semibold text-[#0F1D2E]">Rent Stabilization</h3>
+          <h3 className="font-semibold text-[#0F1D2E]">{city === "los-angeles" ? "RSO (Rent Stabilization)" : "Rent Stabilization"}</h3>
         </div>
       </CardHeader>
       <CardContent>

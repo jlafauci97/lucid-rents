@@ -25,9 +25,21 @@ import {
   Bell,
   LogOut,
 } from "lucide-react";
-import { type City, DEFAULT_CITY } from "@/lib/cities";
+import { usePathname } from "next/navigation";
+import { type City, VALID_CITIES, CITY_META, DEFAULT_CITY } from "@/lib/cities";
 import { cityPath } from "@/lib/seo";
 import { MobileCitySwitcher } from "./CitySwitcher";
+
+/** Derive the current city from the URL pathname. */
+function cityFromPathname(pathname: string): City {
+  for (const c of VALID_CITIES) {
+    const prefix = `/${CITY_META[c].urlPrefix}`;
+    if (pathname === prefix || pathname.startsWith(prefix + "/")) {
+      return c;
+    }
+  }
+  return DEFAULT_CITY;
+}
 
 interface MobileMenuProps {
   isLoggedIn: boolean;
@@ -63,8 +75,10 @@ const secondaryLinks: NavLink[] = [
   { path: "/scaffolding", icon: Construction, label: "Scaffolding", cities: ["nyc"] },
 ];
 
-export function MobileMenu({ isLoggedIn, city = DEFAULT_CITY }: MobileMenuProps) {
+export function MobileMenu({ isLoggedIn, city: _city = DEFAULT_CITY }: MobileMenuProps) {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
+  const city = cityFromPathname(pathname);
 
   return (
     <div className="md:hidden">
