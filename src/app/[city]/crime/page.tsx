@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
 
 export const revalidate = 3600;
 
-async function getCrimeByZip() {
+async function getCrimeByZip(city: string) {
   const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/crime_by_zip`;
   const res = await fetch(url, {
     method: "POST",
@@ -37,7 +37,7 @@ async function getCrimeByZip() {
       "apikey": process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({}),
+    body: JSON.stringify({ metro: city }),
     next: { revalidate: 3600 },
   });
   if (!res.ok) {
@@ -69,7 +69,7 @@ export default async function CrimePage({
   const sortBy = params.sort || "total";
   const order = params.order || "desc";
 
-  const data = await getCrimeByZip();
+  const data = await getCrimeByZip(cityParam);
 
   let rows: ZipCrimeRow[] = (data || []).map((r: ZipCrimeRow) => ({
     zip_code: r.zip_code,
@@ -100,7 +100,8 @@ export default async function CrimePage({
       : String(bVal).localeCompare(String(aVal));
   });
 
-  const boroughs = ["Manhattan", "Brooklyn", "Queens", "Bronx", "Staten Island"];
+  const meta = CITY_META[cityParam as City];
+  const areas = meta.crimeAreas;
 
   function sortUrl(col: string) {
     const newOrder = sortBy === col && order === "desc" ? "asc" : "desc";
@@ -122,7 +123,7 @@ export default async function CrimePage({
           </h1>
         </div>
         <p className="text-[#64748b] text-sm sm:text-base">
-          NYPD crime data aggregated by zip code over the last 12 months. Click a
+          {meta.crimeSource} crime data aggregated by zip code over the last 12 months. Click a
           zip code for detailed breakdowns and trends.
         </p>
       </div>
@@ -137,26 +138,26 @@ export default async function CrimePage({
               : "bg-[#f1f5f9] text-[#64748b] hover:bg-[#e2e8f0]"
           }`}
         >
-          All Boroughs
+          All {meta.regionLabel}s
         </Link>
-        {boroughs.map((b) => (
+        {areas.map((area) => (
           <Link
-            key={b}
-            href={`${cityPath("/crime", cityParam as City)}?borough=${encodeURIComponent(b)}${sortBy !== "total" ? `&sort=${sortBy}&order=${order}` : ""}`}
+            key={area}
+            href={`${cityPath("/crime", cityParam as City)}?borough=${encodeURIComponent(area)}${sortBy !== "total" ? `&sort=${sortBy}&order=${order}` : ""}`}
             className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-              borough.toLowerCase() === b.toLowerCase()
+              borough.toLowerCase() === area.toLowerCase()
                 ? "bg-[#0F1D2E] text-white"
                 : "bg-[#f1f5f9] text-[#64748b] hover:bg-[#e2e8f0]"
             }`}
           >
-            {b}
+            {area}
           </Link>
         ))}
       </div>
 
       {/* Interactive Map */}
       <div className="mb-6">
-        <CrimeMapSection borough={borough} />
+        <CrimeMapSection borough={borough} city={cityParam} />
       </div>
 
       {/* Summary stats */}
@@ -214,7 +215,7 @@ export default async function CrimePage({
                   </th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide hidden sm:table-cell">
                     <Link href={sortUrl("borough")} className="inline-flex items-center gap-1 hover:text-[#0F1D2E]">
-                      Borough <ArrowUpDown className="w-3 h-3" />
+                      {meta.regionLabel} <ArrowUpDown className="w-3 h-3" />
                     </Link>
                   </th>
                   <th className="text-right px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide">
@@ -271,14 +272,19 @@ export default async function CrimePage({
                       {row.quality_of_life.toLocaleString()}
                     </td>
                     <td className="px-4 py-3 hidden lg:table-cell">
-                      <Link
-                        href={neighborhoodUrl(row.zip_code)}
-                        className="inline-flex items-center gap-1 text-xs text-[#3B82F6] hover:text-[#1d4ed8] font-medium"
-                        title="Neighborhood Report Card"
-                      >
-                        <MapPin className="w-3 h-3" />
-                        {getNeighborhoodName(row.zip_code) || "Report Card"}
-                      </Link>
+                      {(() => {
+                        const name = getNeighborhoodName(row.zip_code);
+                        return name ? (
+                          <Link
+                            href={neighborhoodUrl(row.zip_code)}
+                            className="inline-flex items-center gap-1 text-xs text-[#3B82F6] hover:text-[#1d4ed8] font-medium"
+                            title="Neighborhood Report Card"
+                          >
+                            <MapPin className="w-3 h-3" />
+                            {name}
+                          </Link>
+                        ) : null;
+                      })()}
                     </td>
                   </tr>
                 ))}
