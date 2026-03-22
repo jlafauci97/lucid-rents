@@ -14,36 +14,27 @@ export const revalidate = 1800; // 30 minutes
 
 const PER_PAGE = 20;
 
-export async function generateMetadata({ params }: { params: Promise<{ city: string }> }): Promise<Metadata> {
-  const { city } = await params;
-  const { isValidCity, CITY_META } = await import("@/lib/cities");
-  if (!isValidCity(city)) return {};
-  const meta = CITY_META[city];
-  return {
-    title: `${meta.fullName} Housing News | Lucid Rents`,
-    description: `Stay informed with the latest ${meta.fullName} rental market news, tenant rights updates, housing policy changes, and guides for ${meta.fullName} renters.`,
-    alternates: { canonical: canonicalUrl(cityPath("/news", city)) },
-    openGraph: {
-      title: `${meta.fullName} Housing News — Lucid Rents`,
-      description: `Latest ${meta.fullName} rental market news, tenant rights updates, and housing guides.`,
-      url: canonicalUrl(cityPath("/news", city)),
-      siteName: "Lucid Rents",
-      type: "website",
-      locale: "en_US",
-    },
-  };
-}
+export const metadata: Metadata = {
+  title: "NYC Housing News | Lucid Rents",
+  description:
+    "Stay informed with the latest NYC rental market news, tenant rights updates, housing policy changes, and guides for New York City renters.",
+  alternates: { canonical: canonicalUrl(cityPath("/news")) },
+  openGraph: {
+    title: "NYC Housing News — Lucid Rents",
+    description:
+      "Latest NYC rental market news, tenant rights updates, and housing guides for New York City renters.",
+    url: canonicalUrl(cityPath("/news")),
+    siteName: "Lucid Rents",
+    type: "website",
+    locale: "en_US",
+  },
+};
 
 export default async function NewsPage({
-  params: routeParams,
   searchParams,
 }: {
-  params: Promise<{ city: string }>;
   searchParams: Promise<{ page?: string }>;
 }) {
-  const { city: cityParam } = await routeParams;
-  const { isValidCity: isValid, CITY_META: cityMeta } = await import("@/lib/cities");
-  const cityName = isValid(cityParam) ? cityMeta[cityParam].fullName : "NYC";
   const params = await searchParams;
   const page = Math.max(1, parseInt(params.page || "1", 10));
   const offset = (page - 1) * PER_PAGE;
@@ -90,17 +81,17 @@ export default async function NewsPage({
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-[#0F1D2E]">
-            {cityName} Housing News
+            NYC Housing News
           </h1>
           <p className="text-sm text-[#64748b] mt-1">
-            Latest news on {cityName} rentals, tenant rights, and housing policy
+            Latest news on NYC rentals, tenant rights, and housing policy
           </p>
         </div>
 
         {/* Category pills */}
         <div className="flex flex-wrap gap-2 mb-6">
           <Link
-            href={cityPath("/news", cityParam as import("@/lib/cities").City)}
+            href={cityPath("/news")}
             className="px-3 py-1.5 text-sm font-medium rounded-full bg-[#0F1D2E] text-white"
           >
             All
@@ -108,7 +99,7 @@ export default async function NewsPage({
           {categories.map(([slug, meta]) => (
             <Link
               key={slug}
-              href={cityPath(`/news/${slug}`, cityParam as import("@/lib/cities").City)}
+              href={cityPath(`/news/${slug}`)}
               className="px-3 py-1.5 text-sm font-medium rounded-full bg-[#f1f5f9] text-[#475569] hover:bg-[#e2e8f0] transition-colors"
             >
               {meta.label}
@@ -140,7 +131,7 @@ export default async function NewsPage({
                 {categories.map(([slug, meta]) => (
                   <Link
                     key={slug}
-                    href={cityPath(`/news/${slug}`, cityParam as import("@/lib/cities").City)}
+                    href={cityPath(`/news/${slug}`)}
                     className="flex items-start gap-3 px-4 py-3 hover:bg-[#f8fafc] transition-colors"
                   >
                     <div

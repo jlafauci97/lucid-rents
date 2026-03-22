@@ -1,31 +1,27 @@
-import type { Metadata } from "next";
+import { Metadata } from "next";
 import { Zap } from "lucide-react";
 import { canonicalUrl, cityPath } from "@/lib/seo";
-import { isValidCity, CITY_META } from "@/lib/cities";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { EnergyMap } from "@/components/energy/EnergyMap";
 import { ScoreDistribution } from "@/components/energy/ScoreDistribution";
 import { EnergyTable } from "@/components/energy/EnergyTable";
 
-export async function generateMetadata({ params }: { params: Promise<{ city: string }> }): Promise<Metadata> {
-  const { city } = await params;
-  if (!isValidCity(city)) return {};
-  const meta = CITY_META[city];
-  return {
-    title: `${meta.fullName} Building Energy Scores | Lucid Rents`,
-    description: `See ENERGY STAR scores, energy use intensity, and greenhouse gas emissions for ${meta.fullName} multifamily buildings.`,
-    alternates: { canonical: canonicalUrl(cityPath("/energy", city)) },
-    openGraph: {
-      title: `${meta.fullName} Building Energy Scores`,
-      description: `ENERGY STAR scores and energy benchmarking data for ${meta.fullName} multifamily buildings.`,
-      url: canonicalUrl(cityPath("/energy", city)),
-      siteName: "Lucid Rents",
-      type: "website",
-      locale: "en_US",
-    },
-  };
-}
+export const metadata: Metadata = {
+  title: "NYC Building Energy Scores | Lucid Rents",
+  description:
+    "See ENERGY STAR scores, energy use intensity, and greenhouse gas emissions for NYC multifamily buildings. LL84 benchmarking data.",
+  alternates: { canonical: canonicalUrl(cityPath("/energy")) },
+  openGraph: {
+    title: "NYC Building Energy Scores",
+    description:
+      "ENERGY STAR scores and energy benchmarking data for NYC multifamily buildings. Powered by NYC LL84 benchmarking data.",
+    url: canonicalUrl(cityPath("/energy")),
+    siteName: "Lucid Rents",
+    type: "website",
+    locale: "en_US",
+  },
+};
 
 export const revalidate = 86400;
 

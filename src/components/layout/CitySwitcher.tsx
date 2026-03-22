@@ -4,7 +4,8 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { MapPin, ChevronDown, Check } from "lucide-react";
-import { type City, VALID_CITIES, CITY_META, DEFAULT_CITY } from "@/lib/cities";
+import { type City, VALID_CITIES, CITY_META } from "@/lib/cities";
+import { useCity } from "@/lib/city-context";
 
 /**
  * Given the current pathname and city, compute the equivalent path for another city.
@@ -24,22 +25,9 @@ function buildCityPath(pathname: string, fromCity: City, toCity: City): string {
   return toPrefix;
 }
 
-/** Derive the current city from the URL pathname.
- *  The CitySwitcher lives outside the CityProvider (in root layout),
- *  so it can't use useCity(). Instead, parse the URL. */
-function cityFromPathname(pathname: string): City {
-  for (const c of VALID_CITIES) {
-    const prefix = `/${CITY_META[c].urlPrefix}`;
-    if (pathname === prefix || pathname.startsWith(prefix + "/")) {
-      return c;
-    }
-  }
-  return DEFAULT_CITY;
-}
-
 export function CitySwitcher() {
+  const city = useCity();
   const pathname = usePathname();
-  const city = cityFromPathname(pathname);
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -107,9 +95,8 @@ export function CitySwitcher() {
 /**
  * Inline city switcher for the mobile menu (no dropdown, just a row of options).
  */
-export function MobileCitySwitcher({ city: _city }: { city?: City }) {
+export function MobileCitySwitcher({ city }: { city: City }) {
   const pathname = usePathname();
-  const city = cityFromPathname(pathname);
 
   return (
     <div className="flex items-center gap-2 px-3 py-2.5">

@@ -5,31 +5,24 @@ import { buildingUrl, canonicalUrl, cityPath, landlordUrl } from "@/lib/seo";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { getRegions, getRegionLabel } from "@/lib/constants";
-import { type City, isValidCity, CITY_META } from "@/lib/cities";
+import type { City } from "@/lib/cities";
 import type { Metadata } from "next";
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ city: string }>;
-}): Promise<Metadata> {
-  const { city } = await params;
-  if (!isValidCity(city)) return {};
-  const meta = CITY_META[city];
-  return {
-    title: `Worst Rated Buildings in ${meta.fullName} | Lucid Rents`,
-    description: `${meta.fullName} buildings ranked by violations, 311 complaints, and reported issues.`,
-    alternates: { canonical: canonicalUrl(cityPath("/worst-rated-buildings", city)) },
-    openGraph: {
-      title: `Worst Rated Buildings in ${meta.fullName}`,
-      description: `${meta.fullName} buildings ranked by violations and complaints.`,
-      url: canonicalUrl(cityPath("/worst-rated-buildings", city)),
-      siteName: "Lucid Rents",
-      type: "website",
-      locale: "en_US",
-    },
-  };
-}
+export const metadata: Metadata = {
+  title: "Worst Rated Buildings in NYC | Lucid Rents",
+  description:
+    "NYC buildings ranked by HPD violations, 311 complaints, and reported issues. Find the worst-rated buildings in Manhattan, Brooklyn, Queens, Bronx, and Staten Island.",
+  alternates: { canonical: canonicalUrl(cityPath("/worst-rated-buildings")) },
+  openGraph: {
+    title: "Worst Rated Buildings in NYC",
+    description:
+      "NYC buildings ranked by HPD violations and 311 complaints.",
+    url: canonicalUrl(cityPath("/worst-rated-buildings")),
+    siteName: "Lucid Rents",
+    type: "website",
+    locale: "en_US",
+  },
+};
 
 export const revalidate = 3600;
 
@@ -52,15 +45,11 @@ export default async function RankingsPage({ params: routeParams, searchParams }
 
   const supabase = await createClient();
 
-  // Map city slug to metro column value (metro defaults to 'nyc' for all tables)
-  const metro = city === "nyc" ? "nyc" : city;
-
   let query = supabase
     .from("buildings")
     .select(
       "id, full_address, borough, zip_code, slug, year_built, total_units, num_floors, owner_name, overall_score, review_count, violation_count, complaint_count"
-    )
-    .eq("metro", metro);
+    );
 
   if (borough !== "all") {
     query = query.eq("borough", borough);
@@ -87,7 +76,7 @@ export default async function RankingsPage({ params: routeParams, searchParams }
     const base: Record<string, string> = { borough, sort: sortBy, page: String(page) };
     const merged = { ...base, ...overrides };
     const qs = new URLSearchParams(merged).toString();
-    return `${cityPath("/worst-rated-buildings", city)}?${qs}`;
+    return `${cityPath("/worst-rated-buildings")}?${qs}`;
   }
 
   return (
@@ -100,7 +89,7 @@ export default async function RankingsPage({ params: routeParams, searchParams }
           Worst Rated Buildings
         </h1>
         <p className="text-[#64748b] mt-2">
-          {CITY_META[city].fullName} buildings ranked by the most violations, 311 complaints, and reported issues.
+          NYC buildings ranked by the most HPD violations, 311 complaints, and reported issues.
         </p>
       </div>
 
@@ -294,21 +283,21 @@ export default async function RankingsPage({ params: routeParams, searchParams }
         <h2 className="text-lg font-bold text-[#0F1D2E] mb-4">Related</h2>
         <div className="flex flex-wrap gap-3">
           <Link
-            href={cityPath("/landlords", city)}
+            href={cityPath("/landlords")}
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-purple-50 text-[#8B5CF6] border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors"
           >
             <Users className="w-4 h-4" />
             Landlord Directory
           </Link>
           <Link
-            href={cityPath("/buildings", city)}
+            href={cityPath("/buildings")}
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-blue-50 text-[#3B82F6] border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
           >
             <Building2 className="w-4 h-4" />
             All Buildings
           </Link>
           <Link
-            href={cityPath("/crime", city)}
+            href={cityPath("/crime")}
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-amber-50 text-[#d97706] border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors"
           >
             <AlertTriangle className="w-4 h-4" />

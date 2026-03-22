@@ -50,8 +50,7 @@ export async function generateMetadata({
   const { zipCode } = await params;
   const name = getNeighborhoodName(zipCode);
   const displayName = name ? `${name} (${zipCode})` : zipCode;
-  const { city } = await params;
-  const url = canonicalUrl(cityPath(`/crime/${zipCode}`, city as import("@/lib/cities").City));
+  const url = canonicalUrl(cityPath(`/crime/${zipCode}`));
   return {
     title: `Crime in ${displayName} | Lucid Rents`,
     description: `View crime trends, category breakdowns, and recent incidents for ${displayName}.`,
@@ -147,13 +146,13 @@ export default async function CrimeZipPage({
       }} />
       <JsonLd data={breadcrumbJsonLd([
         { name: "Home", url: "/" },
-        { name: "Crime", url: cityPath("/crime", city) },
-        { name: neighborhoodName || zipCode, url: cityPath(`/crime/${zipCode}`, city) },
+        { name: "Crime", url: cityPath("/crime") },
+        { name: neighborhoodName || zipCode, url: cityPath(`/crime/${zipCode}`) },
       ])} />
       <Breadcrumbs items={[
         { label: "Home", href: "/" },
-        { label: "Crime", href: cityPath("/crime", city) },
-        { label: neighborhoodName || zipCode, href: cityPath(`/crime/${zipCode}`, city) },
+        { label: "Crime", href: cityPath("/crime") },
+        { label: neighborhoodName || zipCode, href: cityPath(`/crime/${zipCode}`) },
       ]} />
 
       {/* Header */}

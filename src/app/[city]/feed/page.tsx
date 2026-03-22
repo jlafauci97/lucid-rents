@@ -6,26 +6,20 @@ import { buildingUrl, canonicalUrl, cityPath } from "@/lib/seo";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import type { Metadata } from "next";
-import { isValidCity, CITY_META, type City } from "@/lib/cities";
 
-export async function generateMetadata({ params }: { params: Promise<{ city: string }> }): Promise<Metadata> {
-  const { city } = await params;
-  if (!isValidCity(city)) return {};
-  const meta = CITY_META[city];
-  return {
-    title: `Live Feed | ${meta.fullName} | Lucid Rents`,
-    description: `Real-time feed of violations, complaints, and tenant reviews across ${meta.fullName} buildings.`,
-    alternates: { canonical: canonicalUrl(cityPath("/feed", city)) },
-    openGraph: {
-      title: `Live Feed — ${meta.fullName} Building Activity`,
-      description: `Real-time feed of violations, complaints, and tenant reviews across ${meta.fullName} buildings.`,
-      url: canonicalUrl(cityPath("/feed", city)),
-      siteName: "Lucid Rents",
-      type: "website",
-      locale: "en_US",
-    },
-  };
-}
+export const metadata: Metadata = {
+  title: "Live Feed | Lucid Rents",
+  description: "Real-time feed of violations, complaints, and tenant reviews across NYC buildings.",
+  alternates: { canonical: canonicalUrl(cityPath("/feed")) },
+  openGraph: {
+    title: "Live Feed — NYC Building Activity",
+    description: "Real-time feed of HPD violations, 311 complaints, and tenant reviews across NYC buildings.",
+    url: canonicalUrl(cityPath("/feed")),
+    siteName: "Lucid Rents",
+    type: "website",
+    locale: "en_US",
+  },
+};
 
 async function FeedStats() {
   const supabase = await createClient();
@@ -41,10 +35,10 @@ async function FeedStats() {
   } | null;
 
   const stats = [
-    { icon: Shield, label: "Housing Violations", count: counts?.hpd_violations_count ?? 0, color: "text-[#EF4444]", bg: "bg-red-50" },
+    { icon: Shield, label: "HPD Violations", count: counts?.hpd_violations_count ?? 0, color: "text-[#EF4444]", bg: "bg-red-50" },
     { icon: MessageSquare, label: "311 Complaints", count: counts?.complaints_311_count ?? 0, color: "text-[#F59E0B]", bg: "bg-amber-50" },
-    { icon: Scale, label: "Litigations", count: counts?.hpd_litigations_count ?? 0, color: "text-[#8B5CF6]", bg: "bg-purple-50" },
-    { icon: HardHat, label: "Building Violations", count: counts?.dob_violations_count ?? 0, color: "text-[#3B82F6]", bg: "bg-blue-50" },
+    { icon: Scale, label: "HPD Litigations", count: counts?.hpd_litigations_count ?? 0, color: "text-[#8B5CF6]", bg: "bg-purple-50" },
+    { icon: HardHat, label: "DOB Violations", count: counts?.dob_violations_count ?? 0, color: "text-[#3B82F6]", bg: "bg-blue-50" },
     { icon: Building2, label: "Buildings Tracked", count: counts?.buildings_count ?? 0, color: "text-[#0F1D2E]", bg: "bg-gray-100" },
   ];
 
@@ -72,7 +66,7 @@ async function FeedStats() {
   );
 }
 
-async function TrendingBuildings({ city }: { city: string }) {
+async function TrendingBuildings() {
   const supabase = await createClient();
 
   const { data: buildings } = await supabase
@@ -112,7 +106,7 @@ async function TrendingBuildings({ city }: { city: string }) {
         ))}
       </div>
       <Link
-        href={cityPath("/worst-rated-buildings", city as City)}
+        href={cityPath("/worst-rated-buildings")}
         className="block px-4 py-3 text-sm text-[#3B82F6] hover:bg-[#EFF6FF] transition-colors font-medium border-t border-[#f1f5f9]"
       >
         View full rankings
@@ -121,19 +115,7 @@ async function TrendingBuildings({ city }: { city: string }) {
   );
 }
 
-function FeedSourceLabel() {
-  // This is a server component — we can't read pathname here.
-  // Use a generic label that works for both cities.
-  return (
-    <div className="px-4 text-xs text-[#94a3b8] space-y-1">
-      <p>Data sourced from public records</p>
-      <p>Violations &middot; Complaints &middot; Permits &middot; Building Data</p>
-    </div>
-  );
-}
-
-export default async function FeedPage({ params }: { params: Promise<{ city: string }> }) {
-  const { city: cityParam } = await params;
+export default function FeedPage() {
   return (
     <AdSidebar>
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -147,8 +129,11 @@ export default async function FeedPage({ params }: { params: Promise<{ city: str
         <aside className="hidden lg:block space-y-6">
           <FeedStats />
           <AdBlock adSlot="FEED_SIDEBAR" adFormat="rectangle" />
-          <TrendingBuildings city={cityParam} />
-          <FeedSourceLabel />
+          <TrendingBuildings />
+          <div className="px-4 text-xs text-[#94a3b8] space-y-1">
+            <p>Data sourced from NYC Open Data</p>
+            <p>HPD &middot; DOB &middot; 311 &middot; PLUTO</p>
+          </div>
         </aside>
       </div>
     </div>

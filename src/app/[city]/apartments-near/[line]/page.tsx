@@ -107,7 +107,7 @@ export default async function TransitLinePage({
 }: {
   params: Promise<{ city: string; line: string }>;
 }) {
-  const { city, line: lineSlug } = await params;
+  const { line: lineSlug } = await params;
   const lineInfo = parseLineSlug(lineSlug);
   if (!lineInfo) notFound();
 
@@ -223,7 +223,7 @@ export default async function TransitLinePage({
         {/* Header */}
         <div className="mb-8">
           <Link
-            href={cityPath("/transit", city as import("@/lib/cities").City)}
+            href={cityPath("/transit")}
             className="inline-flex items-center gap-1 text-sm text-[#64748b] hover:text-[#3B82F6] transition-colors mb-3"
           >
             <ChevronLeft className="w-4 h-4" />
