@@ -247,7 +247,8 @@ export async function GET(request: Request) {
         console.error(`Activity feed query ${i} failed:`, results[i].error);
         results[i].data = null; // Treat failed queries as empty
       } else {
-        console.log(`Activity feed query ${i}: ${Array.isArray(results[i].data) ? results[i].data.length : 0} rows (metro=${metro})`);
+        const data = results[i].data;
+        console.log(`Activity feed query ${i}: ${Array.isArray(data) ? data.length : 0} rows (metro=${metro})`);
       }
     }
 
