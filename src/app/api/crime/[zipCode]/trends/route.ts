@@ -35,15 +35,18 @@ function calculateTrend(
 }
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ zipCode: string }> }
 ) {
   try {
     const { zipCode } = await params;
+    const { searchParams } = new URL(request.url);
+    const cityParam = searchParams.get("city") || "nyc";
     const supabase = await createClient();
 
     const { data, error } = await supabase.rpc("crime_zip_trends", {
       target_zip: zipCode,
+      metro: cityParam,
     });
 
     if (error) {

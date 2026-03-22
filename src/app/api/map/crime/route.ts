@@ -31,7 +31,7 @@ export async function GET(request: Request) {
 
     // Fetch crime data aggregated by zip
     const rpcBody: Record<string, string> = {};
-    if (cityParam) rpcBody.metro_filter = cityParam;
+    if (cityParam) rpcBody.metro = cityParam;
 
     const crimeRes = await fetch(
       `${supabaseUrl}/rest/v1/rpc/crime_by_zip`,
