@@ -58,7 +58,7 @@ export async function generateMetadata({
     alternates: { canonical: url },
     openGraph: {
       title: `Crime Data for ${displayName}`,
-      description: `Crime trends and recent incidents for ${displayName}, NYC.`,
+      description: `Crime trends and recent incidents for ${displayName}, ${CITY_META[city as City].fullName}.`,
       url,
       siteName: "Lucid Rents",
       type: "website",
@@ -97,6 +97,7 @@ export default async function CrimeZipPage({
     supabase.rpc("crime_zip_summary", {
       target_zip: zipCode,
       since_date: sinceDate,
+      metro: city,
     }),
     supabase
       .from("nypd_complaints")
@@ -104,6 +105,7 @@ export default async function CrimeZipPage({
         "id, cmplnt_num, cmplnt_date, offense_description, law_category, crime_category, pd_description, precinct"
       )
       .eq("zip_code", zipCode)
+      .eq("metro", city)
       .gte("cmplnt_date", sinceDate)
       .order("cmplnt_date", { ascending: false })
       .limit(25),
@@ -135,8 +137,8 @@ export default async function CrimeZipPage({
         "@context": "https://schema.org",
         "@type": "Place",
         name: neighborhoodName
-          ? `${neighborhoodName}, NYC (${zipCode})`
-          : `NYC Zip Code ${zipCode}`,
+          ? `${neighborhoodName}, ${CITY_META[city].name} (${zipCode})`
+          : `${CITY_META[city].name} Zip Code ${zipCode}`,
         address: {
           "@type": "PostalAddress",
           postalCode: zipCode,
@@ -169,7 +171,7 @@ export default async function CrimeZipPage({
           </div>
         </div>
         <p className="text-[#64748b] text-sm">
-          NYPD crime data for the last 12 months
+          {CITY_META[city].crimeSource} crime data for the last 12 months
         </p>
       </div>
 
@@ -211,23 +213,25 @@ export default async function CrimeZipPage({
 
       {/* Charts */}
       <div className="space-y-8 mb-8">
-        <CrimeTrend zipCode={zipCode} />
+        <CrimeTrend zipCode={zipCode} city={city} />
         <CrimeCategoryBreakdown summary={summary} />
       </div>
 
       {/* Neighborhood Report Card link */}
-      <Link
-        href={neighborhoodUrl(zipCode)}
-        className="flex items-center gap-3 bg-[#EFF6FF] border border-[#BFDBFE] rounded-xl p-4 mb-8 hover:bg-[#DBEAFE] transition-colors"
-      >
-        <MapPin className="w-5 h-5 text-[#3B82F6] shrink-0" />
-        <div>
-          <p className="text-sm font-semibold text-[#0F1D2E]">
-            {neighborhoodName ? `${neighborhoodName} Report Card` : "Neighborhood Report Card"}
-          </p>
-          <p className="text-xs text-[#64748b]">See building grades, violations, and landlord info for {displayName}</p>
-        </div>
-      </Link>
+      {neighborhoodName && (
+        <Link
+          href={neighborhoodUrl(zipCode)}
+          className="flex items-center gap-3 bg-[#EFF6FF] border border-[#BFDBFE] rounded-xl p-4 mb-8 hover:bg-[#DBEAFE] transition-colors"
+        >
+          <MapPin className="w-5 h-5 text-[#3B82F6] shrink-0" />
+          <div>
+            <p className="text-sm font-semibold text-[#0F1D2E]">
+              {neighborhoodName} Report Card
+            </p>
+            <p className="text-xs text-[#64748b]">See building grades, violations, and landlord info for {displayName}</p>
+          </div>
+        </Link>
+      )}
 
       {/* Two column layout: recent crimes + buildings */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -239,7 +243,7 @@ export default async function CrimeZipPage({
                 Recent Crimes
               </h2>
               <p className="text-sm text-[#64748b]">
-                Most recent incidents reported by NYPD
+                Most recent incidents reported by {CITY_META[city].crimeSource}
               </p>
             </CardHeader>
             <CardContent>
