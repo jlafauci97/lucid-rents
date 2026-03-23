@@ -165,6 +165,7 @@ async function main() {
       source: SOURCE,
       external_id: cfNumber,
       title: data.title,
+      description: null,
       type: "legislation",
       status: normalizeLaStatus(data.status || ""),
       category: categorize(data.title),

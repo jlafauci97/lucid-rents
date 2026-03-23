@@ -18,6 +18,7 @@ export interface Proposal {
   intro_date: string;
   last_action_date: string | null;
   hearing_date: string | null;
+  description: string | null;
   source_url: string;
   latitude: number | null;
   longitude: number | null;
@@ -59,9 +60,15 @@ export function ProposalCard({ proposal }: { proposal: Proposal }) {
         </span>
       </div>
 
-      <h3 className="text-sm font-semibold text-[#0F1D2E] mb-2 line-clamp-2">
+      <h3 className="text-sm font-semibold text-[#0F1D2E] mb-1 line-clamp-2">
         {proposal.title}
       </h3>
+
+      {proposal.description && (
+        <p className="text-xs text-[#64748b] mb-2 line-clamp-2">
+          {proposal.description}
+        </p>
+      )}
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#64748b]">
         {proposal.sponsor && (

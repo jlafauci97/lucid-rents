@@ -27,7 +27,7 @@ export async function GET(request: Request) {
     const offset = (page - 1) * limit;
     const filterStr = filters.join("&");
 
-    const url = `${supabaseUrl}/rest/v1/proposals?select=id,metro,source,external_id,title,type,status,category,borough,council_district,neighborhood,sponsor,intro_date,last_action_date,hearing_date,source_url,latitude,longitude&${filterStr}&order=intro_date.desc&limit=${limit}&offset=${offset}`;
+    const url = `${supabaseUrl}/rest/v1/proposals?select=id,metro,source,external_id,title,description,type,status,category,borough,council_district,neighborhood,sponsor,intro_date,last_action_date,hearing_date,source_url,latitude,longitude&${filterStr}&order=intro_date.desc&limit=${limit}&offset=${offset}`;
 
     const res = await fetch(url, {
       headers: {

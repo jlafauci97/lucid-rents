@@ -104,7 +104,7 @@ async function main() {
 
   while (totalFetched < LIMIT) {
     const fetchSize = Math.min(PAGE_SIZE, LIMIT - totalFetched);
-    const url = `https://data.cityofnewyork.us/resource/6ctv-n46c.json?$where=intro_date>'${sinceDate}'&$limit=${fetchSize}&$offset=${offset}&$order=intro_date DESC`;
+    const url = `https://data.cityofnewyork.us/resource/6ctv-n46c.json?$where=intro_date>'${sinceDate}'&$select=matter_id,file_num,status,primary_sponsor,name,title,summary,intro_date,modified_date,agenda_date,committee&$limit=${fetchSize}&$offset=${offset}&$order=intro_date DESC`;
 
     console.log(`Fetching bills ${offset}-${offset + fetchSize}...`);
     const res = await fetch(url);
@@ -124,6 +124,7 @@ async function main() {
       source: SOURCE,
       external_id: r.matter_id || r.file_number,
       title: r.title || r.name || "Untitled",
+      description: r.summary || null,
       type: "legislation",
       status: normalizeStatus(r.status),
       category: categorize(r.title || r.name || ""),

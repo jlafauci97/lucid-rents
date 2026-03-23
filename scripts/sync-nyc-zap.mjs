@@ -131,6 +131,7 @@ async function main() {
         source: SOURCE,
         external_id: r.project_id,
         title,
+        description: brief.trim() || null,
         type: "land_use",
         status: normalizeStatus(r.public_status, r.current_milestone),
         category: categorize(title + " " + brief),

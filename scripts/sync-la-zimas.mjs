@@ -130,6 +130,7 @@ async function main() {
         source: SOURCE,
         external_id: caseNbr,
         title: caseType ? `${caseType} - ${caseNbr}` : caseNbr,
+        description: null,
         type: "land_use",
         status: normalizeStatus(attrs.STATUS),
         category: categorize(caseType),
