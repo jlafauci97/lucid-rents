@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { ChevronDown, ArrowLeftRight, ShieldCheck, Wrench, BarChart3, Construction, ClipboardList, Zap, TrainFront, Scale, Tent, FileText } from "lucide-react";
+import { ChevronDown, ArrowLeftRight, ShieldCheck, ShieldAlert, Wrench, BarChart3, Construction, ClipboardList, Zap, TrainFront, Scale, Tent, FileText } from "lucide-react";
 import { type City, DEFAULT_CITY, CITY_META } from "@/lib/cities";
 import { cityPath } from "@/lib/seo";
 
@@ -63,6 +63,13 @@ const tools: ToolItem[] = [
     icon: Tent,
     label: "Encampment Reports",
     description: "Homeless encampment 311 reports mapped",
+    cities: ["los-angeles"],
+  },
+  {
+    path: "/seismic-fire-safety",
+    icon: ShieldAlert,
+    label: "Seismic & Fire Zones",
+    description: "Earthquake faults, liquefaction & fire hazard zones",
     cities: ["los-angeles"],
   },
   {
