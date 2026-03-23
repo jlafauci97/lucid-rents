@@ -214,8 +214,9 @@ async function syncSodaDataset(opts: {
     if (records.length < PAGE_SIZE) break;
     offset += PAGE_SIZE;
 
-    // Timeout guard — leave time for linking step
-    if (Date.now() - startTime > 120000) break;
+    // Timeout guard — leave time for linking step (5 min for prod, skip locally)
+    const MAX_SYNC_MS = process.env.NODE_ENV === "development" ? 540000 : 120000;
+    if (Date.now() - startTime > MAX_SYNC_MS) break;
   }
 
   return totalUpserted;
