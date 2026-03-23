@@ -49,9 +49,13 @@ export async function GET(request: Request) {
         cache: "no-store",
       }
     );
+    if (!crimeRes.ok) {
+      console.error("crime_by_zip RPC error:", crimeRes.status, await crimeRes.text());
+      return NextResponse.json({ points: [] });
+    }
     const crimeData = await crimeRes.json();
 
-    const points = (crimeData || [])
+    const points = (Array.isArray(crimeData) ? crimeData : [])
       .filter((r: { borough: string }) => !borough || r.borough?.toLowerCase() === borough.toLowerCase())
       .map((r: { zip_code: string; borough: string; total: number; violent: number; property: number; quality_of_life: number }) => {
         const centroid = centroidMap.get(r.zip_code);

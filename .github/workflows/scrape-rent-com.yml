@@ -11,14 +11,14 @@ on:
         required: false
         default: "3"
       source:
-        description: "Source to scrape (all, rent_com, zillow, streeteasy)"
+        description: "Source to scrape (all, rent_com, zillow, streeteasy, zumper, compass)"
         required: false
         default: "all"
 
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 180
     strategy:
       fail-fast: false
       matrix:
@@ -68,4 +68,20 @@ jobs:
           PAGES="${{ github.event.inputs.pages || '25' }}"
           python scripts/scrape-streeteasy.py --pages=$PAGES --borough="${{ matrix.borough }}"
 
-      # Apartments.com disabled until historical data scrape is complete
+      - name: Scrape Zumper
+        if: ${{ github.event.inputs.source == 'all' || github.event.inputs.source == 'zumper' || github.event_name == 'schedule' }}
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          PAGES="${{ github.event.inputs.pages || '5' }}"
+          python scripts/scrape-zumper.py --pages=$PAGES --borough="${{ matrix.borough }}"
+
+      - name: Scrape Compass
+        if: ${{ github.event.inputs.source == 'all' || github.event.inputs.source == 'compass' || github.event_name == 'schedule' }}
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          PAGES="${{ github.event.inputs.pages || '5' }}"
+          python scripts/scrape-compass.py --pages=$PAGES --borough="${{ matrix.borough }}"
