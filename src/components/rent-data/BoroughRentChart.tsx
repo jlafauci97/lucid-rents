@@ -10,6 +10,7 @@ import {
   CartesianGrid,
   Legend,
 } from "recharts";
+import type { City } from "@/lib/cities";
 
 interface DataPoint {
   borough: string;
@@ -17,7 +18,7 @@ interface DataPoint {
   avg_rent: number;
 }
 
-const BOROUGH_COLORS: Record<string, string> = {
+const NYC_COLORS: Record<string, string> = {
   Manhattan: "#3B82F6",
   Brooklyn: "#8B5CF6",
   Queens: "#10B981",
@@ -25,24 +26,38 @@ const BOROUGH_COLORS: Record<string, string> = {
   "Staten Island": "#64748B",
 };
 
-export function BoroughRentChart({ data }: { data: DataPoint[] }) {
+/** Palette for LA areas — auto-assigned from a pool of distinguishable colors */
+const COLOR_POOL = [
+  "#3B82F6", "#8B5CF6", "#10B981", "#F59E0B", "#EF4444",
+  "#EC4899", "#14B8A6", "#F97316", "#6366F1", "#84CC16",
+  "#06B6D4", "#A855F7", "#64748B", "#E11D48", "#0EA5E9",
+];
+
+export function BoroughRentChart({ data, city = "nyc" }: { data: DataPoint[]; city?: City }) {
   if (data.length === 0) {
     return (
       <div className="text-center py-12 text-[#94a3b8]">
-        No borough rent data available yet.
+        No area rent data available yet.
       </div>
     );
   }
 
-  // Normalize borough names to title case for chart keys
-  const normalizeBorough = (b: string) =>
-    b === "STATEN ISLAND"
-      ? "Staten Island"
-      : b.charAt(0).toUpperCase() + b.slice(1).toLowerCase();
+  // Normalize borough/area names to title case
+  const normalizeName = (b: string) => {
+    if (b === "STATEN ISLAND") return "Staten Island";
+    // Handle multi-word names like "NORTH HOLLYWOOD" → "North Hollywood"
+    return b
+      .split(/[\s-]+/)
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+      .join(b.includes("-") ? "-" : " ");
+  };
 
-  // Pivot: group by date, with one column per borough
+  // Pivot: group by date, with one column per borough/area
   const dateMap = new Map<string, Record<string, number | string>>();
+  const areaSet = new Set<string>();
   for (const d of data) {
+    const name = normalizeName(d.borough);
+    areaSet.add(name);
     if (!dateMap.has(d.date)) {
       dateMap.set(d.date, {
         date: d.date,
@@ -52,14 +67,19 @@ export function BoroughRentChart({ data }: { data: DataPoint[] }) {
         }),
       });
     }
-    dateMap.get(d.date)![normalizeBorough(d.borough)] = d.avg_rent;
+    dateMap.get(d.date)![name] = d.avg_rent;
   }
 
   const chartData = Array.from(dateMap.values()).sort(
     (a, b) => new Date(a.date as string).getTime() - new Date(b.date as string).getTime()
   );
 
-  const boroughs = Object.keys(BOROUGH_COLORS);
+  // Determine areas and their colors
+  const areas = Array.from(areaSet).sort();
+  const colorMap: Record<string, string> =
+    city === "nyc"
+      ? NYC_COLORS
+      : Object.fromEntries(areas.map((a, i) => [a, COLOR_POOL[i % COLOR_POOL.length]]));
 
   return (
     <ResponsiveContainer width="100%" height={400}>
@@ -88,12 +108,12 @@ export function BoroughRentChart({ data }: { data: DataPoint[] }) {
           wrapperStyle={{ fontSize: 12 }}
           iconType="line"
         />
-        {boroughs.map((b) => (
+        {areas.map((a) => (
           <Line
-            key={b}
+            key={a}
             type="monotone"
-            dataKey={b}
-            stroke={BOROUGH_COLORS[b]}
+            dataKey={a}
+            stroke={colorMap[a] || "#94a3b8"}
             strokeWidth={2}
             dot={false}
             activeDot={{ r: 4 }}

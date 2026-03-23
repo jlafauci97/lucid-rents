@@ -3,8 +3,9 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { ArrowUpDown } from "lucide-react";
-import { getRegions, getRegionLabel } from "@/lib/constants";
+import { getRegions, getRegionLabel, VIOLATION_AGENCIES } from "@/lib/constants";
 import { useCity } from "@/lib/city-context";
+import { buildingUrl } from "@/lib/seo";
 
 interface PermitRow {
   work_permit: string;
@@ -24,26 +25,6 @@ interface PermitRow {
   building_borough: string | null;
 }
 
-const BOROUGH_SLUGS: Record<string, string> = {
-  Manhattan: "manhattan",
-  Brooklyn: "brooklyn",
-  Queens: "queens",
-  Bronx: "bronx",
-  "Staten Island": "staten-island",
-};
-
-const BOROUGH_NAME: Record<string, string> = {
-  MANHATTAN: "Manhattan",
-  BROOKLYN: "Brooklyn",
-  QUEENS: "Queens",
-  BRONX: "Bronx",
-  "STATEN ISLAND": "Staten Island",
-};
-
-function normalizeBorough(b: string): string {
-  return BOROUGH_NAME[b.toUpperCase()] || b;
-}
-
 function formatCost(cost: number | null): string {
   if (cost == null || cost === 0) return "\u2014";
   if (cost >= 1_000_000) return `$${(cost / 1_000_000).toFixed(1)}M`;
@@ -53,6 +34,9 @@ function formatCost(cost: number | null): string {
 
 export function PermitTable({ data }: { data: PermitRow[] }) {
   const city = useCity();
+  const regionLabel = getRegionLabel(city);
+  const dataSource = VIOLATION_AGENCIES[city].building;
+
   const [borough, setBorough] = useState("");
   const [workType, setWorkType] = useState("");
   const [sortBy, setSortBy] = useState<"issued_date" | "estimated_job_costs">("issued_date");
@@ -70,7 +54,7 @@ export function PermitTable({ data }: { data: PermitRow[] }) {
   const filtered = useMemo(() => {
     let rows = data;
     if (borough) {
-      rows = rows.filter((r) => r.borough && normalizeBorough(r.borough) === borough);
+      rows = rows.filter((r) => r.borough === borough);
     }
     if (workType) {
       rows = rows.filter((r) => r.work_type === workType);
@@ -119,7 +103,7 @@ export function PermitTable({ data }: { data: PermitRow[] }) {
               : "bg-[#f1f5f9] text-[#64748b] hover:bg-[#e2e8f0]"
           }`}
         >
-          All {getRegionLabel(city)}s
+          All {regionLabel}s
         </button>
         {getRegions(city).map((b) => (
           <button
@@ -164,7 +148,7 @@ export function PermitTable({ data }: { data: PermitRow[] }) {
                 Work Type
               </th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide hidden md:table-cell">
-                Borough
+                {regionLabel}
               </th>
               <th className="text-right px-4 py-3 text-xs font-semibold text-[#0D9488] uppercase tracking-wide">
                 <button
@@ -193,7 +177,7 @@ export function PermitTable({ data }: { data: PermitRow[] }) {
                 <td className="px-4 py-3 text-sm font-semibold text-[#0F1D2E]">
                   {row.building_slug && row.building_borough ? (
                     <Link
-                      href={`/building/${BOROUGH_SLUGS[row.building_borough] || row.building_borough.toLowerCase().replace(/\s+/g, "-")}/${row.building_slug}`}
+                      href={buildingUrl({ borough: row.building_borough, slug: row.building_slug }, city)}
                       className="text-[#0D9488] hover:text-[#0F766E] hover:underline"
                     >
                       {row.house_no} {row.street_name}
@@ -206,7 +190,7 @@ export function PermitTable({ data }: { data: PermitRow[] }) {
                   {row.work_type || "\u2014"}
                 </td>
                 <td className="px-4 py-3 text-sm text-[#334155] hidden md:table-cell">
-                  {row.borough ? normalizeBorough(row.borough) : "\u2014"}
+                  {row.borough || "\u2014"}
                 </td>
                 <td className="px-4 py-3 text-sm text-[#334155] text-right">
                   {row.issued_date
@@ -230,7 +214,7 @@ export function PermitTable({ data }: { data: PermitRow[] }) {
       </div>
 
       <p className="text-xs text-[#94a3b8] mt-3">
-        Showing {Math.min(filtered.length, 100)} of {filtered.length} permits. Data: NYC DOB Permits.
+        Showing {Math.min(filtered.length, 100)} of {filtered.length} permits. Data: {dataSource} Permits.
       </p>
     </div>
   );

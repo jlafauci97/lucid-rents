@@ -308,6 +308,8 @@ export interface EnergyBenchmark {
   id: string;
   building_id: string | null;
   bbl: string | null;
+  apn: string | null;
+  metro: string;
   property_id: string | null;
   property_name: string | null;
   property_type: string | null;

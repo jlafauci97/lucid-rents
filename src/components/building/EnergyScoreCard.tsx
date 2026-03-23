@@ -22,11 +22,17 @@ function scoreLabel(score: number): string {
   return "Low Efficiency";
 }
 
+const ENERGY_LINK_LABEL: Record<City, string> = {
+  nyc: "NYC Energy Scores",
+  "los-angeles": "LA Energy Scores",
+};
+
 export function EnergyScoreCard({ data, city }: EnergyScoreCardProps) {
   if (!data || data.energy_star_score == null) return null;
 
   const score = data.energy_star_score;
   const colors = scoreColor(score);
+  const linkLabel = ENERGY_LINK_LABEL[city ?? "nyc"];
 
   return (
     <Card>
@@ -73,7 +79,7 @@ export function EnergyScoreCard({ data, city }: EnergyScoreCardProps) {
             href={cityPath("/energy", city)}
             className="text-xs text-[#3B82F6] hover:text-[#2563EB] font-medium transition-colors"
           >
-            NYC Energy Scores &rarr;
+            {linkLabel} &rarr;
           </Link>
         </div>
       </CardContent>

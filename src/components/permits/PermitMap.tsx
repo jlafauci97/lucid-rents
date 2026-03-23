@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import "leaflet/dist/leaflet.css";
+import { type City, CITY_META } from "@/lib/cities";
+import { useCity } from "@/lib/city-context";
 
 const MapContainer = dynamic(
   () => import("react-leaflet").then((m) => m.MapContainer),
@@ -34,6 +36,11 @@ type GeoJsonData = {
   features: GeoJsonFeature[];
 };
 
+const GEOJSON_FILE: Record<City, string> = {
+  nyc: "/nyc-zipcodes.geojson",
+  "los-angeles": "/la-zipcodes.geojson",
+};
+
 function getColor(count: number | undefined): string {
   if (count == null || count === 0) return "#e2e8f0";
   if (count >= 500) return "#134E4A";
@@ -45,17 +52,21 @@ function getColor(count: number | undefined): string {
   return "#CCFBF1";
 }
 
-export function PermitMap({ data }: { data: ZipPermitRow[] }) {
+export function PermitMap({ data, city: cityProp }: { data: ZipPermitRow[]; city?: City }) {
+  const cityFromContext = useCity();
+  const city = cityProp ?? cityFromContext;
+  const meta = CITY_META[city];
+
   const [geojson, setGeojson] = useState<GeoJsonData | null>(null);
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
-    fetch("/nyc-zipcodes.geojson")
+    fetch(GEOJSON_FILE[city])
       .then((r) => r.json())
       .then((d) => setGeojson(d))
       .catch(() => {});
-  }, []);
+  }, [city]);
 
   if (!isClient) {
     return (
@@ -79,8 +90,8 @@ export function PermitMap({ data }: { data: ZipPermitRow[] }) {
     <div>
       <div className="h-[450px] rounded-lg overflow-hidden border border-[#e2e8f0]">
         <MapContainer
-          center={[40.7128, -73.97]}
-          zoom={11}
+          center={[meta.center.lat, meta.center.lng]}
+          zoom={meta.zoom}
           style={{ height: "100%", width: "100%" }}
           scrollWheelZoom={false}
         >
@@ -92,8 +103,8 @@ export function PermitMap({ data }: { data: ZipPermitRow[] }) {
             <GeoJSON
               data={geojson as unknown as GeoJSON.GeoJsonObject}
               style={(feature) => {
-                const zip = feature?.properties?.postalCode;
-                const count = zip ? permitsByZip.get(zip) : undefined;
+                const zip = feature?.properties?.postalCode || feature?.properties?.ZCTA5CE20 || feature?.properties?.GEOID20;
+                const count = zip ? permitsByZip.get(String(zip)) : undefined;
                 return {
                   fillColor: getColor(count),
                   weight: 1,
@@ -103,9 +114,9 @@ export function PermitMap({ data }: { data: ZipPermitRow[] }) {
                 };
               }}
               onEachFeature={(feature, layer) => {
-                const zip = feature.properties?.postalCode;
-                const name = feature.properties?.PO_NAME || "";
-                const count = zip ? permitsByZip.get(zip) : undefined;
+                const zip = feature.properties?.postalCode || feature.properties?.ZCTA5CE20 || feature.properties?.GEOID20;
+                const name = feature.properties?.PO_NAME || feature.properties?.NAME || "";
+                const count = zip ? permitsByZip.get(String(zip)) : undefined;
                 layer.bindTooltip(
                   `<strong>${zip}</strong> ${name}<br/>` +
                     (count
@@ -122,12 +133,12 @@ export function PermitMap({ data }: { data: ZipPermitRow[] }) {
       <div className="flex flex-wrap items-center gap-3 mt-3 text-xs text-[#64748b]">
         <span className="font-medium">Active Permits:</span>
         {[
-          { color: "#CCFBF1", label: "1–9" },
-          { color: "#5EEAD4", label: "10–19" },
-          { color: "#14B8A6", label: "20–49" },
-          { color: "#0D9488", label: "50–99" },
-          { color: "#0F766E", label: "100–199" },
-          { color: "#115E59", label: "200–499" },
+          { color: "#CCFBF1", label: "1\u20139" },
+          { color: "#5EEAD4", label: "10\u201319" },
+          { color: "#14B8A6", label: "20\u201349" },
+          { color: "#0D9488", label: "50\u201399" },
+          { color: "#0F766E", label: "100\u2013199" },
+          { color: "#115E59", label: "200\u2013499" },
           { color: "#134E4A", label: "500+" },
         ].map((item) => (
           <span key={item.label} className="inline-flex items-center gap-1">

@@ -372,6 +372,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
               stabilizedUnits={building.stabilized_units}
               totalUnits={building.residential_units}
               stabilizedYear={building.stabilized_year}
+              yearBuilt={building.year_built}
               city={city}
             />
             </div>

@@ -102,7 +102,7 @@ export function ZipRentTable({ data }: { data: ZipRentRow[] }) {
                 </button>
               </th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide hidden sm:table-cell">
-                Borough
+                {getRegionLabel(city)}
               </th>
               <th className="text-right px-4 py-3 text-xs font-semibold text-[#3B82F6] uppercase tracking-wide">
                 <button

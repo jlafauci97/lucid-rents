@@ -9,6 +9,7 @@ interface RentStabilizationCardProps {
   stabilizedUnits: number | null;
   totalUnits: number | null;
   stabilizedYear: number | null;
+  yearBuilt?: number | null;
   city?: City;
 }
 
@@ -17,10 +18,16 @@ export function RentStabilizationCard({
   stabilizedUnits,
   totalUnits,
   stabilizedYear,
+  yearBuilt,
   city,
 }: RentStabilizationCardProps) {
+  const isLA = city === "los-angeles";
+
   // Don't render if we have no data at all
-  if (stabilizedYear == null) return null;
+  // For LA, we can show the card even without stabilizedYear if we have
+  // is_rent_stabilized set (derived from year_built)
+  if (stabilizedYear == null && !isLA) return null;
+  if (stabilizedYear == null && !isStabilized && isLA) return null;
 
   return (
     <Card>
@@ -31,7 +38,7 @@ export function RentStabilizationCard({
           ) : (
             <ShieldX className="w-[18px] h-[18px] text-[#94a3b8]" />
           )}
-          <h3 className="font-semibold text-[#0F1D2E]">{city === "los-angeles" ? "RSO (Rent Stabilization)" : "Rent Stabilization"}</h3>
+          <h3 className="font-semibold text-[#0F1D2E]">{isLA ? "RSO (Rent Stabilization)" : "Rent Stabilization"}</h3>
         </div>
       </CardHeader>
       <CardContent>
@@ -44,7 +51,9 @@ export function RentStabilizationCard({
                 : "bg-gray-100 text-gray-600"
             }`}
           >
-            {isStabilized ? "Rent Stabilized" : "Not Rent Stabilized"}
+            {isStabilized
+              ? (isLA ? "RSO Protected" : "Rent Stabilized")
+              : (isLA ? "Not RSO Protected" : "Not Rent Stabilized")}
           </div>
 
           {/* Unit count */}
@@ -52,21 +61,35 @@ export function RentStabilizationCard({
             <p className="text-sm text-[#0F1D2E]">
               <span className="font-semibold">{stabilizedUnits}</span>
               {totalUnits ? ` of ${totalUnits}` : ""} unit
-              {stabilizedUnits !== 1 ? "s" : ""} stabilized
+              {stabilizedUnits !== 1 ? "s" : ""} {isLA ? "covered" : "stabilized"}
             </p>
           )}
 
-          {/* Data year */}
+          {/* Data source info */}
           <p className="text-xs text-[#94a3b8]">
-            Based on {stabilizedYear} tax bill data
+            {isLA
+              ? `Based on assessor data${yearBuilt || stabilizedYear ? ` (built ${yearBuilt || stabilizedYear})` : ""}`
+              : `Based on ${stabilizedYear} tax bill data`}
           </p>
+
+          {/* LA-specific verify link */}
+          {isLA && (
+            <a
+              href="https://housing.lacity.gov/rental-property-owners/rso-property-search"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-[#3B82F6] hover:text-[#2563EB] font-medium transition-colors"
+            >
+              Verify on LAHD &rarr;
+            </a>
+          )}
 
           {/* Link to checker */}
           <Link
             href={cityPath("/rent-stabilization", city)}
             className="text-xs text-[#3B82F6] hover:text-[#2563EB] font-medium transition-colors"
           >
-            Rent Stabilization Checker &rarr;
+            {isLA ? "RSO Checker" : "Rent Stabilization Checker"} &rarr;
           </Link>
         </div>
       </CardContent>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
+import { CITY_META, type City } from "@/lib/cities";
 import "leaflet/dist/leaflet.css";
 
 const MapContainer = dynamic(
@@ -34,6 +35,11 @@ type GeoJsonData = {
   features: GeoJsonFeature[];
 };
 
+const GEOJSON_FILES: Record<City, string | null> = {
+  nyc: "/nyc-zipcodes.geojson",
+  "los-angeles": "/la-zipcodes.geojson",
+};
+
 // Green (high score) to Red (low score) color scale
 function getColor(score: number | undefined): string {
   if (score == null) return "#e2e8f0";
@@ -46,17 +52,27 @@ function getColor(score: number | undefined): string {
   return "#ef4444"; // red-500
 }
 
-export function EnergyMap({ data }: { data: ZipEnergyRow[] }) {
+interface EnergyMapProps {
+  data: ZipEnergyRow[];
+  city?: City;
+}
+
+export function EnergyMap({ data, city = "nyc" }: EnergyMapProps) {
   const [geojson, setGeojson] = useState<GeoJsonData | null>(null);
   const [isClient, setIsClient] = useState(false);
 
+  const cityMeta = CITY_META[city];
+  const geojsonFile = GEOJSON_FILES[city];
+
   useEffect(() => {
     setIsClient(true);
-    fetch("/nyc-zipcodes.geojson")
-      .then((r) => r.json())
-      .then((d) => setGeojson(d))
-      .catch(() => {});
-  }, []);
+    if (geojsonFile) {
+      fetch(geojsonFile)
+        .then((r) => r.json())
+        .then((d) => setGeojson(d))
+        .catch(() => {});
+    }
+  }, [geojsonFile]);
 
   if (!isClient) {
     return (
@@ -76,12 +92,38 @@ export function EnergyMap({ data }: { data: ZipEnergyRow[] }) {
 
   const scoreByZip = new Map(data.map((d) => [d.zip_code, d]));
 
+  // If no geojson file exists for this city, show a simple list view
+  if (!geojsonFile || !geojson) {
+    const topZips = [...data].sort((a, b) => b.avg_score - a.avg_score).slice(0, 20);
+    return (
+      <div>
+        <p className="text-sm text-[#64748b] mb-3">
+          Map view is not yet available for {cityMeta.fullName}. Showing top zip codes by average score.
+        </p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {topZips.map((z) => (
+            <div
+              key={z.zip_code}
+              className="bg-[#f8fafc] border border-[#e2e8f0] rounded-lg p-3"
+            >
+              <p className="font-semibold text-[#0F1D2E]">{z.zip_code}</p>
+              <p className="text-sm text-[#64748b]">
+                Score: <span className="font-medium text-[#0F1D2E]">{z.avg_score}</span>
+              </p>
+              <p className="text-xs text-[#94a3b8]">{z.building_count} buildings</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="h-[450px] rounded-lg overflow-hidden border border-[#e2e8f0]">
         <MapContainer
-          center={[40.7128, -73.97]}
-          zoom={11}
+          center={[cityMeta.center.lat, cityMeta.center.lng]}
+          zoom={cityMeta.zoom}
           style={{ height: "100%", width: "100%" }}
           scrollWheelZoom={false}
         >
@@ -89,34 +131,38 @@ export function EnergyMap({ data }: { data: ZipEnergyRow[] }) {
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
           />
-          {geojson && (
-            <GeoJSON
-              data={geojson as unknown as GeoJSON.GeoJsonObject}
-              style={(feature) => {
-                const zip = feature?.properties?.postalCode;
-                const row = zip ? scoreByZip.get(zip) : undefined;
-                return {
-                  fillColor: getColor(row?.avg_score),
-                  weight: 1,
-                  opacity: 0.7,
-                  color: "#94a3b8",
-                  fillOpacity: 0.65,
-                };
-              }}
-              onEachFeature={(feature, layer) => {
-                const zip = feature.properties?.postalCode;
-                const name = feature.properties?.PO_NAME || "";
-                const row = zip ? scoreByZip.get(zip) : undefined;
-                layer.bindTooltip(
-                  `<strong>${zip}</strong> ${name}<br/>` +
-                    (row
-                      ? `Avg Score: <strong>${row.avg_score}</strong><br/>Buildings: ${row.building_count}`
-                      : "No energy data"),
-                  { sticky: true }
-                );
-              }}
-            />
-          )}
+          <GeoJSON
+            data={geojson as unknown as GeoJSON.GeoJsonObject}
+            style={(feature) => {
+              const zip =
+                feature?.properties?.postalCode ||
+                feature?.properties?.ZIPCODE ||
+                feature?.properties?.zip_code;
+              const row = zip ? scoreByZip.get(String(zip)) : undefined;
+              return {
+                fillColor: getColor(row?.avg_score),
+                weight: 1,
+                opacity: 0.7,
+                color: "#94a3b8",
+                fillOpacity: 0.65,
+              };
+            }}
+            onEachFeature={(feature, layer) => {
+              const zip =
+                feature.properties?.postalCode ||
+                feature.properties?.ZIPCODE ||
+                feature.properties?.zip_code;
+              const name = feature.properties?.PO_NAME || feature.properties?.name || "";
+              const row = zip ? scoreByZip.get(String(zip)) : undefined;
+              layer.bindTooltip(
+                `<strong>${zip}</strong> ${name}<br/>` +
+                  (row
+                    ? `Avg Score: <strong>${row.avg_score}</strong><br/>Buildings: ${row.building_count}`
+                    : "No energy data"),
+                { sticky: true }
+              );
+            }}
+          />
         </MapContainer>
       </div>
       {/* Legend */}

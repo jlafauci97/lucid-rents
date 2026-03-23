@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import "leaflet/dist/leaflet.css";
+import { type City, CITY_META } from "@/lib/cities";
 
 const MapContainer = dynamic(
   () => import("react-leaflet").then((m) => m.MapContainer),
@@ -35,6 +36,11 @@ type GeoJsonData = {
   features: GeoJsonFeature[];
 };
 
+const GEOJSON_FILE: Record<City, string> = {
+  nyc: "/nyc-zipcodes.geojson",
+  "los-angeles": "/la-zipcodes.geojson",
+};
+
 function getColor(rent: number | undefined): string {
   if (rent == null) return "#e2e8f0";
   if (rent >= 4000) return "#991B1B";
@@ -46,17 +52,25 @@ function getColor(rent: number | undefined): string {
   return "#22C55E";
 }
 
-export function RentMap({ data }: { data: ZipRentRow[] }) {
+/** Extract zip code from geojson feature properties (different formats per source) */
+function getZipFromFeature(feature: GeoJsonFeature | undefined): string | undefined {
+  if (!feature?.properties) return undefined;
+  const p = feature.properties;
+  return (p.postalCode || p.ZCTA5CE20 || p.GEOID20 || p.zip_code || p.ZIP) as string | undefined;
+}
+
+export function RentMap({ data, city = "nyc" }: { data: ZipRentRow[]; city?: City }) {
+  const meta = CITY_META[city];
   const [geojson, setGeojson] = useState<GeoJsonData | null>(null);
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
-    fetch("/nyc-zipcodes.geojson")
+    fetch(GEOJSON_FILE[city])
       .then((r) => r.json())
       .then((d) => setGeojson(d))
       .catch(() => {});
-  }, []);
+  }, [city]);
 
   if (!isClient) {
     return (
@@ -80,8 +94,8 @@ export function RentMap({ data }: { data: ZipRentRow[] }) {
     <div>
       <div className="h-[450px] rounded-lg overflow-hidden border border-[#e2e8f0]">
         <MapContainer
-          center={[40.7128, -73.97]}
-          zoom={11}
+          center={[meta.center.lat, meta.center.lng]}
+          zoom={meta.zoom}
           style={{ height: "100%", width: "100%" }}
           scrollWheelZoom={false}
         >
@@ -91,9 +105,10 @@ export function RentMap({ data }: { data: ZipRentRow[] }) {
           />
           {geojson && (
             <GeoJSON
+              key={city}
               data={geojson as unknown as GeoJSON.GeoJsonObject}
               style={(feature) => {
-                const zip = feature?.properties?.postalCode;
+                const zip = getZipFromFeature(feature as GeoJsonFeature | undefined);
                 const rent = zip ? rentByZip.get(zip) : undefined;
                 return {
                   fillColor: getColor(rent),
@@ -104,8 +119,8 @@ export function RentMap({ data }: { data: ZipRentRow[] }) {
                 };
               }}
               onEachFeature={(feature, layer) => {
-                const zip = feature.properties?.postalCode;
-                const name = feature.properties?.PO_NAME || "";
+                const zip = getZipFromFeature(feature as unknown as GeoJsonFeature);
+                const name = (feature.properties?.PO_NAME || feature.properties?.NAME || "") as string;
                 const rent = zip ? rentByZip.get(zip) : undefined;
                 layer.bindTooltip(
                   `<strong>${zip}</strong> ${name}<br/>` +
@@ -124,11 +139,11 @@ export function RentMap({ data }: { data: ZipRentRow[] }) {
         <span className="font-medium">Median Rent:</span>
         {[
           { color: "#22C55E", label: "< $1,500" },
-          { color: "#86EFAC", label: "$1,500–2k" },
-          { color: "#FBBF24", label: "$2k–2.5k" },
-          { color: "#F59E0B", label: "$2.5k–3k" },
-          { color: "#F97316", label: "$3k–3.5k" },
-          { color: "#DC2626", label: "$3.5k–4k" },
+          { color: "#86EFAC", label: "$1,500\u20132k" },
+          { color: "#FBBF24", label: "$2k\u20132.5k" },
+          { color: "#F59E0B", label: "$2.5k\u20133k" },
+          { color: "#F97316", label: "$3k\u20133.5k" },
+          { color: "#DC2626", label: "$3.5k\u20134k" },
           { color: "#991B1B", label: "$4k+" },
         ].map((item) => (
           <span key={item.label} className="inline-flex items-center gap-1">

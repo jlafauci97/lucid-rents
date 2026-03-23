@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { ClipboardList } from "lucide-react";
 import { canonicalUrl, cityPath } from "@/lib/seo";
-import { isValidCity, CITY_META } from "@/lib/cities";
+import { isValidCity, CITY_META, type City } from "@/lib/cities";
+import { VIOLATION_AGENCIES } from "@/lib/constants";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { PermitMap } from "@/components/permits/PermitMap";
@@ -29,7 +30,7 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
 
 export const revalidate = 86400;
 
-async function fetchRpc(fnName: string) {
+async function fetchRpc(fnName: string, body: Record<string, unknown> = {}) {
   const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/${fnName}`;
   const res = await fetch(url, {
     method: "POST",
@@ -37,40 +38,59 @@ async function fetchRpc(fnName: string) {
       apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({}),
+    body: JSON.stringify(body),
     cache: "no-store",
   });
   if (!res.ok) return [];
   return res.json();
 }
 
-export default async function PermitsPage() {
+/** City-specific permit labels */
+function getPermitLabels(city: City) {
+  const agency = VIOLATION_AGENCIES[city].building;
+  if (city === "los-angeles") {
+    return {
+      agency,
+      agencyFull: "LA Department of Building and Safety",
+      regionLabel: CITY_META[city].regionLabel,
+      dataSource: "LADBS Permits",
+    };
+  }
+  return {
+    agency,
+    agencyFull: "Department of Buildings",
+    regionLabel: CITY_META[city].regionLabel,
+    dataSource: "NYC DOB Permits",
+  };
+}
+
+export default async function PermitsPage({ params }: { params: Promise<{ city: string }> }) {
+  const { city: citySlug } = await params;
+  if (!isValidCity(citySlug)) return null;
+
+  const city = citySlug as City;
+  const meta = CITY_META[city];
+  const labels = getPermitLabels(city);
+  const metro = city === "los-angeles" ? "los-angeles" : "nyc";
+
   const [stats, zipData, typeData, recentPermits] = await Promise.all([
-    fetchRpc("permit_stats"),
-    fetchRpc("permits_by_zip"),
-    fetchRpc("permits_by_type"),
-    fetchRpc("permits_recent"),
+    fetchRpc("permit_stats", { p_metro: metro }),
+    fetchRpc("permits_by_zip", { p_metro: metro }),
+    fetchRpc("permits_by_type", { p_metro: metro }),
+    fetchRpc("permits_recent", { p_metro: metro }),
   ]);
 
-  const boroughStats = (stats || []) as {
+  const areaStats = (stats || []) as {
     borough: string;
     active_count: number;
     top_work_type: string;
   }[];
 
-  const totalActive = boroughStats.reduce((s, b) => s + b.active_count, 0);
+  const totalActive = areaStats.reduce((s, b) => s + b.active_count, 0);
   const topWorkType =
-    boroughStats.length > 0 ? boroughStats[0].top_work_type : "\u2014";
-  const topBorough =
-    boroughStats.length > 0 ? boroughStats[0].borough : "\u2014";
-
-  const BOROUGH_NAME: Record<string, string> = {
-    MANHATTAN: "Manhattan",
-    BROOKLYN: "Brooklyn",
-    QUEENS: "Queens",
-    BRONX: "Bronx",
-    "STATEN ISLAND": "Staten Island",
-  };
+    areaStats.length > 0 ? areaStats[0].top_work_type : "\u2014";
+  const topArea =
+    areaStats.length > 0 ? areaStats[0].borough : "\u2014";
 
   return (
     <AdSidebar>
@@ -82,10 +102,9 @@ export default async function PermitsPage() {
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "Dataset",
-              name: "NYC Building Permits Tracker",
-              description:
-                "Active DOB building permits across New York City, sourced from NYC DOB permit data.",
-              url: "https://lucidrents.com/permits",
+              name: `${meta.fullName} Building Permits Tracker`,
+              description: `Active ${labels.agency} building permits across ${meta.fullName}, sourced from ${labels.dataSource}.`,
+              url: canonicalUrl(cityPath("/permits", city)),
               creator: {
                 "@type": "Organization",
                 name: "Lucid Rents",
@@ -102,13 +121,13 @@ export default async function PermitsPage() {
               <ClipboardList className="w-6 h-6 text-[#0D9488]" />
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold text-[#0F1D2E]">
-              NYC Permits Tracker
+              {meta.name} Permits Tracker
             </h1>
           </div>
           <p className="text-[#64748b] text-sm sm:text-base max-w-3xl">
-            Track active DOB building permits across NYC. See what construction
+            Track active {labels.agency} building permits across {meta.fullName}. See what construction
             and work is happening in your neighborhood, including permit types,
-            costs, and timelines. Data from NYC DOB permits.
+            costs, and timelines. Data from {labels.dataSource}.
           </p>
         </div>
 
@@ -135,7 +154,7 @@ export default async function PermitsPage() {
               Most Permits
             </p>
             <p className="text-sm font-semibold text-[#0F1D2E] mt-2">
-              {BOROUGH_NAME[topBorough?.toUpperCase()] || topBorough}
+              {topArea}
             </p>
           </div>
         </div>
@@ -149,7 +168,7 @@ export default async function PermitsPage() {
             Active building permits by zip code. Darker areas have more active
             permits.
           </p>
-          <PermitMap data={zipData || []} />
+          <PermitMap data={zipData || []} city={city} />
         </section>
 
         {/* Section 2: Recent Permits */}
@@ -158,7 +177,7 @@ export default async function PermitsPage() {
             Recently Issued Permits
           </h2>
           <p className="text-sm text-[#64748b] mb-4">
-            Most recently issued active building permits across NYC.
+            Most recently issued active building permits across {meta.fullName}.
           </p>
           <PermitTable data={recentPermits || []} />
         </section>

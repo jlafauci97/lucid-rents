@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { ArrowUpDown } from "lucide-react";
 import { getRegions, getRegionLabel } from "@/lib/constants";
+import { buildingUrl } from "@/lib/seo";
 import { useCity } from "@/lib/city-context";
 
 interface EnergyRow {
@@ -17,14 +18,6 @@ interface EnergyRow {
   building_borough: string | null;
 }
 
-const BOROUGH_SLUGS: Record<string, string> = {
-  Manhattan: "manhattan",
-  Brooklyn: "brooklyn",
-  Queens: "queens",
-  Bronx: "bronx",
-  "Staten Island": "staten-island",
-};
-
 function scoreClass(score: number | null): string {
   if (score == null) return "text-[#94a3b8]";
   if (score >= 75) return "text-emerald-600 font-bold";
@@ -32,11 +25,18 @@ function scoreClass(score: number | null): string {
   return "text-red-600 font-bold";
 }
 
-export function EnergyTable({ data }: { data: EnergyRow[] }) {
+interface EnergyTableProps {
+  data: EnergyRow[];
+  dataSourceLabel?: string;
+}
+
+export function EnergyTable({ data, dataSourceLabel }: EnergyTableProps) {
   const city = useCity();
   const [borough, setBorough] = useState("");
   const [sortBy, setSortBy] = useState<"energy_star_score" | "site_eui">("energy_star_score");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
+  const sourceLabel = dataSourceLabel || (city === "nyc" ? "NYC LL84 Energy Benchmarking" : "LA EBEWE Energy Benchmarking");
 
   const filtered = useMemo(() => {
     let rows = data;
@@ -72,7 +72,7 @@ export function EnergyTable({ data }: { data: EnergyRow[] }) {
 
   return (
     <div>
-      {/* Borough Filters */}
+      {/* Region Filters */}
       <div className="flex flex-wrap gap-2 mb-4">
         <button
           onClick={() => setBorough("")}
@@ -108,7 +108,7 @@ export function EnergyTable({ data }: { data: EnergyRow[] }) {
                 Building
               </th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide hidden md:table-cell">
-                Borough
+                {getRegionLabel(city)}
               </th>
               <th className="text-right px-4 py-3 text-xs font-semibold text-[#059669] uppercase tracking-wide">
                 <button
@@ -137,7 +137,7 @@ export function EnergyTable({ data }: { data: EnergyRow[] }) {
                 <td className="px-4 py-3 text-sm">
                   {row.building_slug && row.building_borough ? (
                     <Link
-                      href={`/building/${BOROUGH_SLUGS[row.building_borough] || row.building_borough.toLowerCase().replace(/\s+/g, "-")}/${row.building_slug}`}
+                      href={buildingUrl({ borough: row.building_borough, slug: row.building_slug }, city)}
                       className="text-[#059669] hover:text-[#047857] hover:underline font-semibold"
                     >
                       {row.property_name || row.address || "Unknown"}
@@ -172,7 +172,7 @@ export function EnergyTable({ data }: { data: EnergyRow[] }) {
       </div>
 
       <p className="text-xs text-[#94a3b8] mt-3">
-        Showing {Math.min(filtered.length, 100)} of {filtered.length} buildings. Data: NYC LL84 Energy Benchmarking.
+        Showing {Math.min(filtered.length, 100)} of {filtered.length} buildings. Data: {sourceLabel}.
       </p>
     </div>
   );

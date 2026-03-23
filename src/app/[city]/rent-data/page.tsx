@@ -8,6 +8,7 @@ import { BoroughRentChart } from "@/components/rent-data/BoroughRentChart";
 import { ZipRentTable } from "@/components/rent-data/ZipRentTable";
 import { RGBChart } from "@/components/rent-data/RGBChart";
 import { RentMap } from "@/components/rent-data/RentMap";
+import { type City, CITY_META } from "@/lib/cities";
 
 export async function generateMetadata({ params }: { params: Promise<{ city: string }> }): Promise<Metadata> {
   const { city } = await params;
@@ -31,7 +32,7 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
 
 export const revalidate = 86400;
 
-async function fetchRpc(fnName: string) {
+async function fetchRpc(fnName: string, params: Record<string, string> = {}) {
   const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/${fnName}`;
   const res = await fetch(url, {
     method: "POST",
@@ -39,7 +40,7 @@ async function fetchRpc(fnName: string) {
       apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({}),
+    body: JSON.stringify(params),
     next: { revalidate: 86400 },
   });
   if (!res.ok) return [];
@@ -48,10 +49,14 @@ async function fetchRpc(fnName: string) {
 
 export default async function RentDataPage({ params: routeParams }: { params: Promise<{ city: string }> }) {
   const { city: cityParam } = await routeParams;
+  const city = cityParam as City;
+  const meta = CITY_META[city];
+  const isNyc = city === "nyc";
+
   const [citywideTrend, boroughTrend, zipCurrent] = await Promise.all([
-    fetchRpc("rent_trend_citywide"),
-    fetchRpc("rent_trend_by_borough"),
-    fetchRpc("rent_by_zip_current"),
+    fetchRpc("rent_trend_citywide", { p_metro: city }),
+    fetchRpc("rent_trend_by_borough", { p_metro: city }),
+    fetchRpc("rent_by_zip_current", { p_metro: city }),
   ]);
 
   // Compute summary stats from zipCurrent
@@ -87,10 +92,9 @@ export default async function RentDataPage({ params: routeParams }: { params: Pr
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "Dataset",
-              name: "NYC Rent Data & Trends",
-              description:
-                "Median rent prices by zip code and borough for New York City, sourced from the Zillow Observed Rent Index (ZORI).",
-              url: canonicalUrl(cityPath("/rent-data", cityParam as import("@/lib/cities").City)),
+              name: `${meta.fullName} Rent Data & Trends`,
+              description: `Median rent prices by zip code and ${meta.regionLabel.toLowerCase()} for ${meta.fullName}, sourced from the Zillow Observed Rent Index (ZORI).`,
+              url: canonicalUrl(cityPath("/rent-data", city)),
               creator: {
                 "@type": "Organization",
                 name: "Lucid Rents",
@@ -107,13 +111,13 @@ export default async function RentDataPage({ params: routeParams }: { params: Pr
               <BarChart3 className="w-6 h-6 text-[#3B82F6]" />
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold text-[#0F1D2E]">
-              NYC Rent Data & Trends
+              {meta.fullName} Rent Data & Trends
             </h1>
           </div>
           <p className="text-[#64748b] text-sm sm:text-base max-w-3xl">
-            Explore median rent prices across NYC neighborhoods, track borough
-            trends over time, and see how Rent Guidelines Board decisions affect
-            stabilized tenants. Data from the Zillow Observed Rent Index (ZORI).
+            {isNyc
+              ? `Explore median rent prices across NYC neighborhoods, track borough trends over time, and see how Rent Guidelines Board decisions affect stabilized tenants. Data from the Zillow Observed Rent Index (ZORI).`
+              : `Explore median rent prices across ${meta.fullName} neighborhoods, track area trends over time, and compare rents by zip code. Data from the Zillow Observed Rent Index (ZORI).`}
           </p>
         </div>
 
@@ -148,23 +152,25 @@ export default async function RentDataPage({ params: routeParams }: { params: Pr
         {/* Section 1: Citywide Trend */}
         <section className="bg-white border border-[#e2e8f0] rounded-xl p-5 sm:p-6 mb-6">
           <h2 className="text-lg font-bold text-[#0F1D2E] mb-1">
-            NYC Median Rent Over Time
+            {meta.fullName} Median Rent Over Time
           </h2>
           <p className="text-sm text-[#64748b] mb-4">
-            Average median rent across all tracked NYC zip codes, monthly.
+            Average median rent across all tracked {meta.fullName} zip codes, monthly.
           </p>
           <CitywideTrendChart data={citywideTrend || []} />
         </section>
 
-        {/* Section 2: Borough Comparison */}
+        {/* Section 2: Area/Borough Comparison */}
         <section className="bg-white border border-[#e2e8f0] rounded-xl p-5 sm:p-6 mb-6">
           <h2 className="text-lg font-bold text-[#0F1D2E] mb-1">
-            Rent Trends by Borough
+            Rent Trends by {meta.regionLabel}
           </h2>
           <p className="text-sm text-[#64748b] mb-4">
-            How median rents compare across NYC&apos;s five boroughs over time.
+            {isNyc
+              ? "How median rents compare across NYC\u2019s five boroughs over time."
+              : `How median rents compare across ${meta.fullName}\u2019s areas over time.`}
           </p>
-          <BoroughRentChart data={boroughTrend || []} />
+          <BoroughRentChart data={boroughTrend || []} city={city} />
         </section>
 
         {/* Section 3: Zip Code Table */}
@@ -173,34 +179,36 @@ export default async function RentDataPage({ params: routeParams }: { params: Pr
             Rent by Neighborhood
           </h2>
           <p className="text-sm text-[#64748b] mb-4">
-            Current median rent for each NYC zip code. Filter by borough and
+            Current median rent for each {meta.fullName} zip code. Filter by {meta.regionLabel.toLowerCase()} and
             sort by rent or zip code.
           </p>
           <ZipRentTable data={zipData} />
         </section>
 
-        {/* Section 4: RGB History */}
-        <section className="bg-white border border-[#e2e8f0] rounded-xl p-5 sm:p-6 mb-6">
-          <h2 className="text-lg font-bold text-[#0F1D2E] mb-1">
-            Rent Guidelines Board Rate History
-          </h2>
-          <p className="text-sm text-[#64748b] mb-4">
-            Maximum annual rent increases set by the NYC Rent Guidelines Board
-            for rent-stabilized apartments.
-          </p>
-          <RGBChart />
-        </section>
+        {/* Section 4: RGB History — NYC only */}
+        {isNyc && (
+          <section className="bg-white border border-[#e2e8f0] rounded-xl p-5 sm:p-6 mb-6">
+            <h2 className="text-lg font-bold text-[#0F1D2E] mb-1">
+              Rent Guidelines Board Rate History
+            </h2>
+            <p className="text-sm text-[#64748b] mb-4">
+              Maximum annual rent increases set by the NYC Rent Guidelines Board
+              for rent-stabilized apartments.
+            </p>
+            <RGBChart />
+          </section>
+        )}
 
         {/* Section 5: Rent Map */}
         <section className="bg-white border border-[#e2e8f0] rounded-xl p-5 sm:p-6 mb-6">
           <h2 className="text-lg font-bold text-[#0F1D2E] mb-1">
-            NYC Rent Map
+            {meta.fullName} Rent Map
           </h2>
           <p className="text-sm text-[#64748b] mb-4">
             Interactive map showing current median rents by zip code. Hover over
             a neighborhood to see details.
           </p>
-          <RentMap data={zipData} />
+          <RentMap data={zipData} city={city} />
         </section>
 
         <AdBlock adSlot="RENT_DATA_BOTTOM" adFormat="horizontal" />

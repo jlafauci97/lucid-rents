@@ -220,6 +220,69 @@ async function linkToBuildings(
 }
 
 // ---------------------------------------------------------------------------
+// Derive RSO status for LA buildings from year_built + unit count.
+// Buildings with 2+ units built before Oct 1978 are generally RSO-covered.
+// Processes in batches since we can't do column-to-column updates via REST.
+// ---------------------------------------------------------------------------
+async function deriveLARSO(
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+  errors: string[]
+): Promise<number> {
+  let updated = 0;
+
+  // Find LA buildings that should be RSO but aren't marked yet
+  const { data: eligible, error: fetchError } = await supabase
+    .from("buildings")
+    .select("id, residential_units, total_units, year_built")
+    .eq("metro", "los-angeles")
+    .not("year_built", "is", null)
+    .lte("year_built", 1978)
+    .gte("year_built", 1)
+    .or("is_rent_stabilized.is.null,is_rent_stabilized.eq.false")
+    .limit(50000);
+
+  if (fetchError) {
+    errors.push(`LA RSO fetch error: ${fetchError.message}`);
+    return 0;
+  }
+
+  if (!eligible) return 0;
+
+  // Filter to buildings with 2+ units and batch update
+  const CONCURRENT = 20;
+  const toUpdate = eligible.filter(
+    (b) => (b.residential_units ?? b.total_units ?? 0) >= 2
+  );
+
+  for (let i = 0; i < toUpdate.length; i += CONCURRENT) {
+    const batch = toUpdate.slice(i, i + CONCURRENT);
+    const results = await Promise.all(
+      batch.map((b) =>
+        supabase
+          .from("buildings")
+          .update({
+            is_rent_stabilized: true,
+            stabilized_units: b.residential_units ?? b.total_units,
+            stabilized_year: b.year_built,
+          })
+          .eq("id", b.id)
+          .then(({ error }) => ({ id: b.id, error }))
+      )
+    );
+
+    for (const { id, error } of results) {
+      if (error) {
+        errors.push(`LA RSO update error (${id}): ${error.message}`);
+      } else {
+        updated++;
+      }
+    }
+  }
+
+  return updated;
+}
+
+// ---------------------------------------------------------------------------
 // Denormalize: update buildings with latest rent stabilization data
 // ---------------------------------------------------------------------------
 async function denormalizeToBuildings(
@@ -345,18 +408,21 @@ export async function GET(req: NextRequest) {
       errors.push(`V2 CSV error: ${String(err)}`);
     }
 
-    // Link to buildings by BBL
+    // Link to buildings by BBL (NYC)
     const linked = await linkToBuildings(supabase, errors);
 
-    // Denormalize to buildings table
+    // Denormalize to buildings table (NYC)
     const denormalized = await denormalizeToBuildings(supabase, errors);
+
+    // Derive RSO status for LA buildings
+    const laRsoUpdated = await deriveLARSO(supabase, errors);
 
     // Finalize sync log
     if (logId) {
       await supabase
         .from("sync_log")
         .update({
-          status: errors.length > 0 && totalAdded === 0 ? "failed" : "completed",
+          status: errors.length > 0 && totalAdded === 0 && laRsoUpdated === 0 ? "failed" : "completed",
           completed_at: new Date().toISOString(),
           records_added: totalAdded,
           records_linked: linked,
@@ -373,6 +439,7 @@ export async function GET(req: NextRequest) {
       records_upserted: totalAdded,
       records_linked: linked,
       buildings_denormalized: denormalized,
+      la_rso_updated: laRsoUpdated,
       errors,
     });
   } catch (err) {

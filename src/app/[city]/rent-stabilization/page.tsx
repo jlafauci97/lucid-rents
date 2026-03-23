@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import Link from "next/link";
-import { ShieldCheck, ArrowUpDown } from "lucide-react";
+import { ShieldCheck, ArrowUpDown, ExternalLink } from "lucide-react";
 import { SearchBar } from "@/components/search/SearchBar";
 import { canonicalUrl, buildingUrl, cityPath } from "@/lib/seo";
 import { AdSidebar } from "@/components/ui/AdSidebar";
@@ -112,7 +112,7 @@ async function getBoroughStats(metro: string) {
 }
 
 async function getStabilizedBuildings(metro: string, borough?: string) {
-  let url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/buildings?is_rent_stabilized=eq.true&metro=eq.${encodeURIComponent(metro)}&select=full_address,borough,slug,stabilized_units,residential_units,stabilized_year,owner_name&order=stabilized_units.desc.nullslast&limit=200`;
+  let url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/buildings?is_rent_stabilized=eq.true&metro=eq.${encodeURIComponent(metro)}&select=full_address,borough,slug,stabilized_units,residential_units,stabilized_year,owner_name,year_built&order=stabilized_units.desc.nullslast&limit=200`;
   if (borough) {
     url += `&borough=eq.${encodeURIComponent(borough)}`;
   }
@@ -143,6 +143,7 @@ interface StabilizedBuilding {
   residential_units: number | null;
   stabilized_year: number | null;
   owner_name: string | null;
+  year_built: number | null;
 }
 
 /* ---------------------------------------------------------------------------
@@ -166,7 +167,8 @@ export default async function RentStabilizationPage({
   const sortBy = sp.sort || "stabilized_units";
   const order = sp.order || "desc";
 
-  const metro = city === "nyc" ? "nyc" : "los-angeles";
+  const isLA = city === "los-angeles";
+  const metro = isLA ? "los-angeles" : "nyc";
   const [stats, buildings] = await Promise.all([
     getBoroughStats(metro),
     getStabilizedBuildings(metro, borough || undefined),
@@ -254,7 +256,7 @@ export default async function RentStabilizationPage({
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
           <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
             <p className="text-xs text-[#64748b] font-medium uppercase tracking-wide">
-              Stabilized Buildings
+              {isLA ? "RSO Buildings" : "Stabilized Buildings"}
             </p>
             <p className="text-2xl font-bold text-[#0F1D2E] mt-1">
               {totalStabilized.toLocaleString()}
@@ -262,7 +264,7 @@ export default async function RentStabilizationPage({
           </div>
           <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
             <p className="text-xs text-[#10b981] font-medium uppercase tracking-wide">
-              Stabilized Units
+              {isLA ? "RSO Units" : "Stabilized Units"}
             </p>
             <p className="text-2xl font-bold text-[#0F1D2E] mt-1">
               {totalUnits.toLocaleString()}
@@ -342,75 +344,118 @@ export default async function RentStabilizationPage({
         {rows.length === 0 ? (
           <div className="text-center py-16 bg-white border border-[#e2e8f0] rounded-xl">
             <ShieldCheck className="w-12 h-12 text-[#cbd5e1] mx-auto mb-3" />
-            <p className="text-[#64748b]">
-              No rent stabilized buildings found. Run the data import to populate this page.
+            <p className="text-[#64748b] max-w-md mx-auto">
+              {borough
+                ? `No rent stabilized buildings found in ${borough}. Try selecting a different ${regionLabel.toLowerCase()} or searching for a specific address.`
+                : city === "los-angeles"
+                  ? "Search for a specific address above to check its RSO status, or browse buildings by area."
+                  : "No rent stabilized buildings found. Try searching for a specific address above."}
             </p>
+            {city === "los-angeles" && (
+              <div className="mt-4 flex flex-col items-center gap-2">
+                <a
+                  href="https://housing.lacity.gov/rental-property-owners/rso-property-search"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-sm text-[#3B82F6] hover:text-[#2563EB] font-medium transition-colors"
+                >
+                  LAHD RSO Property Search <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              </div>
+            )}
           </div>
         ) : (
-          <div className="bg-white border border-[#e2e8f0] rounded-xl overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide">
-                      <Link
-                        href={sortUrl("full_address")}
-                        className="inline-flex items-center gap-1 hover:text-[#0F1D2E]"
-                      >
-                        Address <ArrowUpDown className="w-3 h-3" />
-                      </Link>
-                    </th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide hidden sm:table-cell">
-                      {regionLabel}
-                    </th>
-                    <th className="text-right px-4 py-3 text-xs font-semibold text-[#10b981] uppercase tracking-wide">
-                      <Link
-                        href={sortUrl("stabilized_units")}
-                        className="inline-flex items-center gap-1 hover:text-[#0F1D2E] ml-auto"
-                      >
-                        Stabilized <ArrowUpDown className="w-3 h-3" />
-                      </Link>
-                    </th>
-                    <th className="text-right px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide hidden md:table-cell">
-                      Total Units
-                    </th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide hidden lg:table-cell">
-                      Owner
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#e2e8f0]">
-                  {rows.map((row, i) => (
-                    <tr
-                      key={`${row.slug}-${i}`}
-                      className="hover:bg-[#f8fafc] transition-colors"
-                    >
-                      <td className="px-4 py-3">
+          <>
+            {isLA && (
+              <div className="mb-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
+                <strong>Note:</strong> RSO status is estimated based on LA County Assessor records.
+                Buildings with 2+ units built before October 1978 are generally covered by the RSO.
+                Verify your building&apos;s status through the{" "}
+                <a
+                  href="https://housing.lacity.gov/rental-property-owners/rso-property-search"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-amber-900 underline font-medium"
+                >
+                  LAHD RSO Property Search
+                </a>.
+              </div>
+            )}
+            <div className="bg-white border border-[#e2e8f0] rounded-xl overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide">
                         <Link
-                          href={buildingUrl(row)}
-                          className="text-sm font-semibold text-[#2563EB] hover:text-[#1d4ed8] hover:underline"
+                          href={sortUrl("full_address")}
+                          className="inline-flex items-center gap-1 hover:text-[#0F1D2E]"
                         >
-                          {row.full_address}
+                          Address <ArrowUpDown className="w-3 h-3" />
                         </Link>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-[#334155] hidden sm:table-cell">
-                        {row.borough}
-                      </td>
-                      <td className="px-4 py-3 text-sm font-semibold text-[#10b981] text-right">
-                        {row.stabilized_units?.toLocaleString() ?? "—"}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-[#334155] text-right hidden md:table-cell">
-                        {row.residential_units?.toLocaleString() ?? "—"}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-[#64748b] truncate max-w-[200px] hidden lg:table-cell">
-                        {row.owner_name || "—"}
-                      </td>
+                      </th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide hidden sm:table-cell">
+                        {regionLabel}
+                      </th>
+                      <th className="text-right px-4 py-3 text-xs font-semibold text-[#10b981] uppercase tracking-wide">
+                        <Link
+                          href={sortUrl("stabilized_units")}
+                          className="inline-flex items-center gap-1 hover:text-[#0F1D2E] ml-auto"
+                        >
+                          {isLA ? "RSO Units" : "Stabilized"} <ArrowUpDown className="w-3 h-3" />
+                        </Link>
+                      </th>
+                      <th className="text-right px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide hidden md:table-cell">
+                        Total Units
+                      </th>
+                      {isLA && (
+                        <th className="text-right px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide hidden md:table-cell">
+                          Year Built
+                        </th>
+                      )}
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide hidden lg:table-cell">
+                        Owner
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-[#e2e8f0]">
+                    {rows.map((row, i) => (
+                      <tr
+                        key={`${row.slug}-${i}`}
+                        className="hover:bg-[#f8fafc] transition-colors"
+                      >
+                        <td className="px-4 py-3">
+                          <Link
+                            href={buildingUrl(row)}
+                            className="text-sm font-semibold text-[#2563EB] hover:text-[#1d4ed8] hover:underline"
+                          >
+                            {row.full_address}
+                          </Link>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-[#334155] hidden sm:table-cell">
+                          {row.borough}
+                        </td>
+                        <td className="px-4 py-3 text-sm font-semibold text-[#10b981] text-right">
+                          {row.stabilized_units?.toLocaleString() ?? "—"}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-[#334155] text-right hidden md:table-cell">
+                          {row.residential_units?.toLocaleString() ?? "—"}
+                        </td>
+                        {isLA && (
+                          <td className="px-4 py-3 text-sm text-[#334155] text-right hidden md:table-cell">
+                            {row.year_built ?? "—"}
+                          </td>
+                        )}
+                        <td className="px-4 py-3 text-sm text-[#64748b] truncate max-w-[200px] hidden lg:table-cell">
+                          {row.owner_name || "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
+          </>
         )}
 
         {/* Editorial content */}
