@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getRegions, getRegionLabel } from "@/lib/constants";
 import { cityPath } from "@/lib/seo";
@@ -11,7 +12,12 @@ export function SearchFilters() {
   const searchParams = useSearchParams();
   const currentBorough = searchParams.get("borough") || "";
   const currentZip = searchParams.get("zip") || "";
-  const q = searchParams.get("q") || "";
+
+  const [zipInput, setZipInput] = useState(currentZip);
+
+  useEffect(() => {
+    setZipInput(currentZip);
+  }, [currentZip]);
 
   function updateFilter(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -41,9 +47,10 @@ export function SearchFilters() {
       <input
         type="text"
         placeholder="Zip code"
-        value={currentZip}
+        value={zipInput}
         onChange={(e) => {
           const val = e.target.value.replace(/\D/g, "").slice(0, 5);
+          setZipInput(val);
           if (val.length === 5 || val.length === 0) {
             updateFilter("zip", val);
           }

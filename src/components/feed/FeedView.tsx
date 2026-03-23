@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Shield, MessageSquare, Star, MapPin, ExternalLink, RefreshCw, Scale, HardHat, Siren, Bug, DoorOpen, ChevronLeft, ChevronRight, DollarSign, FileCheck, ShieldAlert } from "lucide-react";
+import { Shield, MessageSquare, Star, RefreshCw, Scale, HardHat, Siren, Bug, DoorOpen, ChevronLeft, ChevronRight, DollarSign, FileCheck, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { ActivityItem } from "@/app/api/activity/route";
@@ -51,76 +51,69 @@ function timeAgo(dateString: string): string {
   return `${months}mo`;
 }
 
-function FeedItemIcon({ type }: { type: ActivityItem["type"] }) {
-  switch (type) {
-    case "violation":
-      return (
-        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
-          <Shield className="w-5 h-5 text-[#EF4444]" />
-        </div>
-      );
-    case "complaint":
-      return (
-        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
-          <MessageSquare className="w-5 h-5 text-[#F59E0B]" />
-        </div>
-      );
-    case "review":
-      return (
-        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-          <Star className="w-5 h-5 text-[#3B82F6]" />
-        </div>
-      );
-    case "litigation":
-      return (
-        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-          <Scale className="w-5 h-5 text-[#8B5CF6]" />
-        </div>
-      );
-    case "dob_violation":
-      return (
-        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-sky-100 flex items-center justify-center">
-          <HardHat className="w-5 h-5 text-[#0EA5E9]" />
-        </div>
-      );
-    case "crime":
-      return (
-        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
-          <Siren className="w-5 h-5 text-[#DC2626]" />
-        </div>
-      );
-    case "bedbug":
-      return (
-        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-          <Bug className="w-5 h-5 text-[#9333EA]" />
-        </div>
-      );
-    case "eviction":
-    case "la_eviction":
-      return (
-        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center">
-          <DoorOpen className="w-5 h-5 text-[#EC4899]" />
-        </div>
-      );
-    case "tenant_buyout":
-      return (
-        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
-          <DollarSign className="w-5 h-5 text-[#F97316]" />
-        </div>
-      );
-    case "permit":
-      return (
-        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center">
-          <FileCheck className="w-5 h-5 text-[#14B8A6]" />
-        </div>
-      );
-    case "enforcement":
-      return (
-        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
-          <ShieldAlert className="w-5 h-5 text-[#6366F1]" />
-        </div>
-      );
+/** Convert a date string to a group label: "Today", "Yesterday", or "Mar 19" */
+function dateGroupLabel(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const itemDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const diffDays = Math.floor((today.getTime() - itemDay.getTime()) / 86400000);
+
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+/** Group items by date and return groups with labels and counts */
+function groupByDate(items: ActivityItem[]): { label: string; items: ActivityItem[] }[] {
+  const groups: { label: string; items: ActivityItem[] }[] = [];
+  let currentLabel = "";
+
+  for (const item of items) {
+    const label = dateGroupLabel(item.date);
+    if (label !== currentLabel) {
+      currentLabel = label;
+      groups.push({ label, items: [] });
+    }
+    groups[groups.length - 1].items.push(item);
   }
+  return groups;
+}
+
+/** Convert ALL-CAPS government text to sentence case */
+function humanize(text: string): string {
+  if (!text) return text;
+  // Check if more than 60% of chars are uppercase — likely government data
+  const upperCount = (text.match(/[A-Z]/g) || []).length;
+  const letterCount = (text.match(/[A-Za-z]/g) || []).length;
+  if (letterCount > 0 && upperCount / letterCount > 0.6) {
+    return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+  }
+  return text;
+}
+
+function FeedItemIcon({ type }: { type: ActivityItem["type"] }) {
+  const iconMap: Record<string, { bg: string; color: string; Icon: typeof Shield }> = {
+    violation: { bg: "bg-red-50", color: "text-[#EF4444]", Icon: Shield },
+    complaint: { bg: "bg-amber-50", color: "text-[#F59E0B]", Icon: MessageSquare },
+    review: { bg: "bg-blue-50", color: "text-[#3B82F6]", Icon: Star },
+    litigation: { bg: "bg-purple-50", color: "text-[#8B5CF6]", Icon: Scale },
+    dob_violation: { bg: "bg-sky-50", color: "text-[#0EA5E9]", Icon: HardHat },
+    crime: { bg: "bg-red-100", color: "text-[#DC2626]", Icon: Siren },
+    bedbug: { bg: "bg-purple-50", color: "text-[#9333EA]", Icon: Bug },
+    eviction: { bg: "bg-pink-50", color: "text-[#EC4899]", Icon: DoorOpen },
+    la_eviction: { bg: "bg-pink-50", color: "text-[#EC4899]", Icon: DoorOpen },
+    tenant_buyout: { bg: "bg-orange-50", color: "text-[#F97316]", Icon: DollarSign },
+    permit: { bg: "bg-teal-50", color: "text-[#14B8A6]", Icon: FileCheck },
+    enforcement: { bg: "bg-indigo-50", color: "text-[#6366F1]", Icon: ShieldAlert },
+  };
+
+  const entry = iconMap[type] || iconMap.violation;
+  return (
+    <div className={`flex-shrink-0 w-9 h-9 rounded-lg ${entry.bg} flex items-center justify-center`}>
+      <entry.Icon className={`w-[18px] h-[18px] ${entry.color}`} />
+    </div>
+  );
 }
 
 function sourceLabel(type: ActivityItem["type"], city: string): string {
@@ -158,43 +151,51 @@ function sourceColor(type: ActivityItem["type"]): string {
   }
 }
 
+function severityChipClasses(cls: string): string {
+  switch (cls.toUpperCase()) {
+    case "C": return "bg-red-100 text-[#EF4444]";
+    case "B": return "bg-amber-100 text-[#B45309]";
+    case "A": return "bg-[#f1f5f9] text-[#475569]";
+    default: return "bg-[#f1f5f9] text-[#475569]";
+  }
+}
+
 function RatingDots({ rating }: { rating: number }) {
   return (
-    <div className="flex items-center gap-0.5 mt-2">
+    <div className="flex items-center gap-0.5 mt-1.5">
       {[1, 2, 3, 4, 5].map((i) => (
         <div
           key={i}
-          className={`w-2 h-2 rounded-full ${
+          className={`w-[7px] h-[7px] rounded-full ${
             i <= rating ? "bg-[#3B82F6]" : "bg-[#e2e8f0]"
           }`}
         />
       ))}
-      <span className="text-xs text-[#64748b] ml-1">{rating}/5</span>
+      <span className="text-[11px] text-[#64748b] ml-1 font-mono">{rating}/5</span>
     </div>
   );
 }
 
 function SkeletonCard() {
   return (
-    <div className="px-4 py-5 animate-pulse">
+    <div className="px-5 py-4 animate-pulse border-b border-[#f1f5f9]">
       <div className="flex gap-3">
-        <div className="w-10 h-10 rounded-full bg-gray-200" />
-        <div className="flex-1 space-y-3">
+        <div className="w-9 h-9 rounded-lg bg-gray-200" />
+        <div className="flex-1 space-y-2">
           <div className="flex items-center gap-2">
-            <div className="h-4 bg-gray-200 rounded w-32" />
-            <div className="h-3 bg-gray-200 rounded w-16" />
+            <div className="h-4 bg-gray-200 rounded w-28" />
+            <div className="h-3 bg-gray-200 rounded w-12" />
+            <div className="h-3 bg-gray-200 rounded w-36" />
           </div>
           <div className="h-4 bg-gray-200 rounded w-full" />
           <div className="h-4 bg-gray-200 rounded w-3/4" />
-          <div className="flex items-center gap-2 mt-2">
-            <div className="h-3 bg-gray-200 rounded w-40" />
-          </div>
         </div>
       </div>
     </div>
   );
 }
 
+/** Compact feed card — address inline, no gray box */
 function FeedCard({ item }: { item: ActivityItem }) {
   const city = useCity();
   const href = item.type === "crime" && item.zipCode
@@ -203,52 +204,46 @@ function FeedCard({ item }: { item: ActivityItem }) {
       ? buildingUrl({ borough: item.borough, slug: item.buildingSlug }, city)
       : cityPath(`/building/${item.buildingId}`, city);
 
+  const address = item.buildingAddress
+    ? `${item.buildingAddress}${item.borough ? `, ${item.borough}` : ""}`
+    : item.borough || "";
+
   return (
     <Link
       href={href}
-      className="block px-4 py-5 hover:bg-[#f8fafc] transition-colors border-b border-[#f1f5f9] group"
+      className="flex gap-3 px-5 py-3.5 hover:bg-[#EFF6FF] transition-colors border-b border-[#f1f5f9]"
     >
-      <div className="flex gap-3">
-        <FeedItemIcon type={item.type} />
-        <div className="flex-1 min-w-0">
-          {/* Header row: source + borough + time */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className={`text-sm font-semibold ${sourceColor(item.type)}`}>
-              {sourceLabel(item.type, city)}
+      <FeedItemIcon type={item.type} />
+      <div className="flex-1 min-w-0">
+        {/* Meta row: source + severity + time + address */}
+        <div className="flex items-center gap-1.5 flex-wrap text-[13px]">
+          <span className={`font-semibold ${sourceColor(item.type)}`}>
+            {sourceLabel(item.type, city)}
+          </span>
+          {item.violationClass && (
+            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded font-mono tracking-wide ${severityChipClasses(item.violationClass)}`}>
+              CLASS {item.violationClass.toUpperCase()}
             </span>
-            {item.violationClass && (
-              <span className="text-xs font-medium bg-red-50 text-[#EF4444] px-1.5 py-0.5 rounded">
-                Class {item.violationClass}
-              </span>
-            )}
-            <span className="text-[#94a3b8]">&middot;</span>
-            <span className="text-sm text-[#94a3b8]">{timeAgo(item.date)}</span>
-          </div>
-
-          {/* Description */}
-          <p className="text-[15px] text-[#0F1D2E] leading-relaxed mt-1.5">
-            {item.description}
-          </p>
-
-          {/* Rating for reviews */}
-          {item.type === "review" && item.rating && (
-            <RatingDots rating={item.rating} />
           )}
-
-          {/* Building location card */}
-          <div className="mt-3 flex items-center justify-between bg-[#f8fafc] group-hover:bg-white border border-[#e2e8f0] rounded-lg px-3 py-2.5 transition-colors">
-            <div className="flex items-center gap-2 min-w-0">
-              <MapPin className="w-3.5 h-3.5 text-[#3B82F6] flex-shrink-0" />
-              <span className="text-sm text-[#0F1D2E] font-medium truncate">
-                {item.buildingAddress}
-              </span>
-              {item.borough && (
-                <span className="text-xs text-[#94a3b8] flex-shrink-0">{item.borough}</span>
-              )}
-            </div>
-            <ExternalLink className="w-3.5 h-3.5 text-[#94a3b8] flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-          </div>
+          <span className="text-[#cbd5e1]">&middot;</span>
+          <span className="text-[#94a3b8] font-mono text-xs">{timeAgo(item.date)}</span>
+          {address && (
+            <>
+              <span className="text-[#cbd5e1]">&middot;</span>
+              <span className="text-[#64748b] truncate">{address}</span>
+            </>
+          )}
         </div>
+
+        {/* Description — humanized */}
+        <p className="text-sm text-[#0F1D2E] leading-relaxed mt-1 line-clamp-2">
+          {humanize(item.description)}
+        </p>
+
+        {/* Rating for reviews */}
+        {item.type === "review" && item.rating && (
+          <RatingDots rating={item.rating} />
+        )}
       </div>
     </Link>
   );
@@ -270,6 +265,7 @@ export function FeedView() {
   const [error, setError] = useState(false);
   const [activeFilter, setActiveFilter] = useState<FilterType>(initialFilter);
   const [totalPages, setTotalPages] = useState(1);
+  const [filterCounts, setFilterCounts] = useState<Record<string, number>>({});
 
   const fetchItems = useCallback(async (filter: FilterType, page: number, isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -282,6 +278,7 @@ export function FeedView() {
       const data = await res.json();
       setItems(data.items ?? []);
       setTotalPages(data.totalPages ?? 1);
+      if (data.counts) setFilterCounts(data.counts);
     } catch {
       setError(true);
     } finally {
@@ -319,11 +316,14 @@ export function FeedView() {
     navigateToPage(1, filter);
   };
 
+  const dateGroups = groupByDate(items);
+  const filters = city === "los-angeles" ? LA_FILTERS : NYC_FILTERS;
+
   return (
     <div className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm overflow-hidden">
-      {/* Header with tabs */}
+      {/* Header */}
       <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-[#e2e8f0]">
-        <div className="flex items-center justify-between px-4 pt-4 pb-0">
+        <div className="flex items-center justify-between px-5 pt-4 pb-0">
           <div className="flex items-center gap-2.5">
             <div className="relative flex items-center justify-center">
               <span className="absolute w-2 h-2 rounded-full bg-[#22C55E] animate-ping opacity-40" />
@@ -334,33 +334,47 @@ export function FeedView() {
           <button
             onClick={() => fetchItems(activeFilter, currentPage, true)}
             disabled={refreshing}
-            className="p-2 rounded-full hover:bg-[#EFF6FF] text-[#64748b] hover:text-[#3B82F6] transition-colors disabled:opacity-50"
+            className="p-2 rounded-lg hover:bg-[#EFF6FF] text-[#64748b] hover:text-[#3B82F6] transition-colors disabled:opacity-50"
             title="Refresh"
           >
             <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
           </button>
         </div>
+
+        {/* Filter tabs with counts */}
         <div className="flex mt-2 overflow-x-auto">
-          {(city === "los-angeles" ? LA_FILTERS : NYC_FILTERS).map((f) => (
-            <button
-              key={f.key}
-              onClick={() => handleFilterChange(f.key)}
-              className={`flex-1 text-sm font-medium py-3 relative transition-colors ${
-                activeFilter === f.key
-                  ? "text-[#0F1D2E]"
-                  : "text-[#64748b] hover:text-[#0F1D2E] hover:bg-[#f8fafc]"
-              }`}
-            >
-              {f.label}
-              {activeFilter === f.key && (
-                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-[3px] bg-[#3B82F6] rounded-full" />
-              )}
-            </button>
-          ))}
+          {filters.map((f) => {
+            const count = filterCounts[f.key];
+            return (
+              <button
+                key={f.key}
+                onClick={() => handleFilterChange(f.key)}
+                className={`flex-1 text-sm font-medium py-3 relative transition-colors flex items-center justify-center gap-1.5 ${
+                  activeFilter === f.key
+                    ? "text-[#0F1D2E]"
+                    : "text-[#64748b] hover:text-[#0F1D2E] hover:bg-[#f8fafc]"
+                }`}
+              >
+                {f.label}
+                {count != null && count > 0 && (
+                  <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full ${
+                    activeFilter === f.key
+                      ? "bg-[#EFF6FF] text-[#3B82F6]"
+                      : "bg-[#f1f5f9] text-[#94a3b8]"
+                  }`}>
+                    {count}
+                  </span>
+                )}
+                {activeFilter === f.key && (
+                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-[3px] bg-[#3B82F6] rounded-full" />
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Feed items */}
+      {/* Feed items grouped by date */}
       <div>
         {loading && (
           <>
@@ -390,8 +404,24 @@ export function FeedView() {
           </div>
         )}
 
-        {!loading && !error && items.map((item) => (
-          <FeedCard key={`${item.type}-${item.id}`} item={item} />
+        {!loading && !error && dateGroups.map((group) => (
+          <div key={group.label}>
+            {/* Date group header */}
+            <div className="flex items-center gap-3 px-5 py-2.5 bg-[#f8fafc] border-b border-[#f1f5f9]">
+              <span className="text-[11px] font-semibold text-[#64748b] uppercase tracking-wider font-mono">
+                {group.label}
+              </span>
+              <div className="flex-1 h-px bg-[#e2e8f0]" />
+              <span className="text-[11px] text-[#94a3b8] font-mono">
+                {group.items.length} item{group.items.length !== 1 ? "s" : ""}
+              </span>
+            </div>
+
+            {/* Items in this group */}
+            {group.items.map((item) => (
+              <FeedCard key={`${item.type}-${item.id}`} item={item} />
+            ))}
+          </div>
         ))}
       </div>
 

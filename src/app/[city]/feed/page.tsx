@@ -143,8 +143,8 @@ export default async function FeedPage({ params }: { params: Promise<{ city: str
           <FeedView />
         </div>
 
-        {/* Sidebar */}
-        <aside className="hidden lg:block space-y-6">
+        {/* Sidebar — sticky */}
+        <aside className="hidden lg:block space-y-6 sticky top-20 self-start">
           <FeedStats />
           <AdBlock adSlot="FEED_SIDEBAR" adFormat="rectangle" />
           <TrendingBuildings city={cityParam} />
