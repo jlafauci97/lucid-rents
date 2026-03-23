@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { isValidCity } from "@/lib/cities";
 
+export const maxDuration = 30;
+
 export interface ActivityItem {
   type: "review" | "violation" | "complaint" | "litigation" | "dob_violation" | "crime" | "bedbug" | "eviction" | "la_eviction" | "tenant_buyout" | "permit" | "enforcement" | "rlto_violation" | "lead_inspection";
   id: string;
@@ -45,6 +47,10 @@ export async function GET(request: Request) {
 
     const metro = cityToMetro(cityParam);
 
+    // When fetching all types, limit each source to keep total response time under control.
+    // A single-filter request can afford more rows since only one query runs.
+    const perSourceLimit = filter === "all" ? 2000 : 10000;
+
     // --- Check cache ---
     const cacheKey = `${filter}:${cityParam || "nyc"}`;
     const cached = cache.get(cacheKey);
@@ -86,7 +92,7 @@ export async function GET(request: Request) {
           .lte("created_at", maxDate)
           .order("created_at", { ascending: false })
           .order("id", { ascending: false })
-          .limit(10000)
+          .limit(perSourceLimit)
       );
     } else {
       promises.push(Promise.resolve({ data: null, error: null }));
@@ -103,7 +109,7 @@ export async function GET(request: Request) {
           .lte("inspection_date", maxDateShort)
           .order("inspection_date", { ascending: false })
           .order("id", { ascending: false })
-          .limit(10000)
+          .limit(perSourceLimit)
       );
     } else {
       promises.push(Promise.resolve({ data: null, error: null }));
@@ -120,7 +126,7 @@ export async function GET(request: Request) {
           .lte("created_date", maxDate)
           .order("created_date", { ascending: false })
           .order("id", { ascending: false })
-          .limit(10000)
+          .limit(perSourceLimit)
       );
     } else {
       promises.push(Promise.resolve({ data: null, error: null }));
@@ -140,7 +146,7 @@ export async function GET(request: Request) {
             .lte("case_open_date", maxDateShort)
             .order("case_open_date", { ascending: false })
             .order("id", { ascending: false })
-            .limit(10000)
+            .limit(perSourceLimit)
         );
       } else {
         promises.push(Promise.resolve({ data: null, error: null }));
@@ -161,7 +167,7 @@ export async function GET(request: Request) {
           .lte("issue_date", maxDateShort)
           .order("issue_date", { ascending: false })
           .order("id", { ascending: false })
-          .limit(10000)
+          .limit(perSourceLimit)
       );
     } else {
       promises.push(Promise.resolve({ data: null, error: null }));
@@ -179,7 +185,7 @@ export async function GET(request: Request) {
           .lte("cmplnt_date", maxDateShort)
           .order("cmplnt_date", { ascending: false })
           .order("id", { ascending: false })
-          .limit(10000)
+          .limit(perSourceLimit)
       );
     } else {
       promises.push(Promise.resolve({ data: null, error: null }));
@@ -199,7 +205,7 @@ export async function GET(request: Request) {
             .lte("filing_date", maxDateShort)
             .order("filing_date", { ascending: false })
             .order("id", { ascending: false })
-            .limit(10000)
+            .limit(perSourceLimit)
         );
       } else {
         promises.push(Promise.resolve({ data: null, error: null }));
@@ -222,7 +228,7 @@ export async function GET(request: Request) {
             .lte("executed_date", maxDateShort)
             .order("executed_date", { ascending: false })
             .order("id", { ascending: false })
-            .limit(10000)
+            .limit(perSourceLimit)
         );
       } else {
         promises.push(Promise.resolve({ data: null, error: null }));
@@ -243,7 +249,7 @@ export async function GET(request: Request) {
             .lte("received_date", maxDateShort)
             .order("received_date", { ascending: false })
             .order("id", { ascending: false })
-            .limit(10000)
+            .limit(perSourceLimit)
         );
       } else {
         promises.push(Promise.resolve({ data: null, error: null }));
@@ -265,7 +271,7 @@ export async function GET(request: Request) {
             .lte("disclosure_date", maxDateShort)
             .order("disclosure_date", { ascending: false })
             .order("id", { ascending: false })
-            .limit(10000)
+            .limit(perSourceLimit)
         );
       } else {
         promises.push(Promise.resolve({ data: null, error: null }));
@@ -288,7 +294,7 @@ export async function GET(request: Request) {
             .lte("issued_date", maxDateShort)
             .order("issued_date", { ascending: false })
             .order("id", { ascending: false })
-            .limit(10000)
+            .limit(perSourceLimit)
         );
       } else {
         promises.push(Promise.resolve({ data: null, error: null }));
@@ -310,7 +316,7 @@ export async function GET(request: Request) {
             .lte("start_date", maxDateShort)
             .order("start_date", { ascending: false })
             .order("id", { ascending: false })
-            .limit(10000)
+            .limit(perSourceLimit)
         );
       } else {
         promises.push(Promise.resolve({ data: null, error: null }));
