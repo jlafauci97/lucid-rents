@@ -1,7 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import {
-  ArrowLeft,
   ShieldAlert,
   Flame,
   Mountain,
@@ -14,6 +13,7 @@ import {
   Phone,
 } from "lucide-react";
 import { CITY_META, type City } from "@/lib/cities";
+import { HazardMap } from "@/components/hazards/HazardMap";
 
 export async function generateMetadata({
   params,
@@ -24,8 +24,8 @@ export async function generateMetadata({
   const meta = CITY_META[city as City];
   const cityName = meta?.fullName ?? "Los Angeles";
   return {
-    title: `Seismic & Fire Zones Guide — ${cityName} | Lucid Rents`,
-    description: `Understand earthquake fault zones, liquefaction risk, fire hazard severity zones, and soft-story retrofit status for ${cityName} rental buildings.`,
+    title: `Seismic & Fire Zones — ${cityName} | Lucid Rents`,
+    description: `Explore earthquake fault zones, liquefaction risk, fire hazard severity zones, and landslide areas on an interactive map for ${cityName} rental buildings.`,
   };
 }
 
@@ -35,7 +35,6 @@ interface HazardSection {
   color: string;
   what: string;
   risk: string;
-  lookFor: string;
   source: string;
   sourceUrl: string;
 }
@@ -45,9 +44,8 @@ const HAZARD_SECTIONS: HazardSection[] = [
     icon: Zap,
     title: "Earthquake Fault Zones",
     color: "bg-red-50 text-red-600 border-red-200",
-    what: "Alquist-Priolo Earthquake Fault Zones are areas where surface fault rupture is most likely during an earthquake. California law requires special geological investigations before buildings can be constructed in these zones.",
-    risk: "Buildings directly on a fault trace face the highest ground rupture risk. During a major earthquake, the ground itself can shift and split along the fault line, causing severe structural damage even to well-built structures.",
-    lookFor: "Ask if the building had a fault investigation before construction. Buildings constructed after 1972 in these zones should have had a geologic study on file with LADBS.",
+    what: "Alquist-Priolo Earthquake Fault Zones are areas where surface fault rupture is most likely during an earthquake. California law requires special geological investigations before new construction.",
+    risk: "Buildings on a fault trace face the highest ground rupture risk. The ground itself can shift and split along the fault line during a major earthquake.",
     source: "California Geological Survey & LA City GeoHub",
     sourceUrl: "https://geohub.lacity.org/datasets/lahub::alquist-priolo-earthquake-fault-zones",
   },
@@ -55,9 +53,8 @@ const HAZARD_SECTIONS: HazardSection[] = [
     icon: Waves,
     title: "Liquefaction Zones",
     color: "bg-amber-50 text-amber-600 border-amber-200",
-    what: "Liquefaction zones are areas where the soil can behave like a liquid during strong earthquake shaking. This typically occurs in areas with loose, sandy soil and a high water table.",
-    risk: "During shaking, the ground can lose its ability to support structures, causing buildings to sink, tilt, or shift. Underground utilities (water, gas, sewer) are especially vulnerable. The risk is highest in older buildings without modern foundation engineering.",
-    lookFor: "Buildings in liquefaction zones should ideally have deep foundations or other engineering measures. Ask if a geotechnical report was done for the property.",
+    what: "Areas where soil can behave like liquid during strong earthquake shaking, typically in loose, sandy soil with a high water table.",
+    risk: "Buildings can sink, tilt, or shift. Underground utilities are especially vulnerable. Older buildings without modern foundation engineering face the highest risk.",
     source: "California Geological Survey & LA City GeoHub",
     sourceUrl: "https://geohub.lacity.org/datasets/lahub::liquefaction",
   },
@@ -65,19 +62,17 @@ const HAZARD_SECTIONS: HazardSection[] = [
     icon: Mountain,
     title: "Landslide Zones",
     color: "bg-orange-50 text-orange-600 border-orange-200",
-    what: "Earthquake-induced landslide zones identify hillside areas where previous landslides have occurred or where conditions (steep slopes, weak soil, rainfall) make landslides likely during earthquakes or heavy rain.",
-    risk: "Hillside properties face risks from earth movement that can damage foundations, retaining walls, and utilities. Heavy rain seasons compound earthquake-related landslide risk. Evacuation may be necessary during high-risk periods.",
-    lookFor: "Check if the building has proper drainage systems, retaining walls, and hillside anchoring. Hillside construction permits require additional engineering review through LADBS.",
+    what: "Hillside areas where previous landslides occurred or where conditions make landslides likely during earthquakes or heavy rain.",
+    risk: "Earth movement can damage foundations, retaining walls, and utilities. Heavy rain compounds earthquake-related landslide risk.",
     source: "California Geological Survey & LA City GeoHub",
     sourceUrl: "https://geohub.lacity.org/datasets/lahub::earthquake-induced-landslides",
   },
   {
     icon: Flame,
-    title: "Very High Fire Hazard Severity Zone",
+    title: "Very High Fire Hazard Severity Zones",
     color: "bg-red-50 text-red-600 border-red-200",
-    what: "Very High Fire Hazard Severity Zones (VHFHSZ) are areas designated by CAL FIRE and adopted by the City of LA where the wildfire threat is the most severe based on vegetation, terrain, weather, and fire history.",
-    risk: "Properties in VHFHSZ face the highest wildfire risk in the city. During fire events, evacuation may be mandatory and response times may be longer. Insurance costs are typically significantly higher, and some insurers may refuse coverage entirely.",
-    lookFor: "Buildings should maintain 200 feet of defensible space (brush clearance). Check if the building has fire-resistant roofing, enclosed eaves, and dual-pane windows. LAFD inspects brush clearance compliance annually.",
+    what: "Areas designated by CAL FIRE where the wildfire threat is most severe based on vegetation, terrain, weather, and fire history.",
+    risk: "Highest wildfire risk in the city. Evacuation may be mandatory during fire events. Insurance costs are significantly higher, and some insurers may refuse coverage.",
     source: "CAL FIRE & LA City GeoHub",
     sourceUrl: "https://geohub.lacity.org/datasets/lahub::very-high-fire-hazard-severity-zones",
   },
@@ -85,48 +80,26 @@ const HAZARD_SECTIONS: HazardSection[] = [
     icon: Wind,
     title: "High Wind Velocity Areas",
     color: "bg-sky-50 text-sky-600 border-sky-200",
-    what: "High wind velocity areas are zones prone to sustained strong winds, particularly during Santa Ana wind events. Buildings in these areas must meet enhanced structural and fire-resistance standards.",
-    risk: "High winds accelerate wildfire spread and can cause structural damage, downed trees, and power outages. During Santa Ana events, fire risk in these zones escalates dramatically. Wind-driven embers can travel over a mile ahead of a fire front.",
-    lookFor: "Buildings should have impact-resistant windows or shutters and secured roofing. Check that trees near the building are properly maintained and that balconies or patios are clear of combustible materials.",
+    what: "Zones prone to sustained strong winds, particularly during Santa Ana events. Buildings must meet enhanced structural and fire-resistance standards.",
+    risk: "High winds accelerate wildfire spread and can cause structural damage, downed trees, and power outages. Wind-driven embers can travel over a mile ahead of a fire front.",
     source: "LA City GeoHub",
     sourceUrl: "https://geohub.lacity.org/",
   },
 ];
 
-const SOFT_STORY_SECTION = {
-  icon: Home,
-  title: "Soft-Story Retrofit Program",
-  color: "bg-teal-50 text-teal-600 border-teal-200",
-  what: "LA's Mandatory Soft-Story Retrofit Program (Ordinance 183893) requires owners of pre-1978 wood-frame buildings with soft, weak, or open-front ground floors to seismically strengthen them. About 13,500 buildings are in the program.",
-  risk: "Soft-story buildings are among the most vulnerable during earthquakes. The weak ground floor (often a parking garage or commercial space) can collapse, causing upper floors to pancake down. This was a leading cause of deaths in the 1994 Northridge earthquake.",
-  lookFor: "Check the building's retrofit status on Lucid Rents. Buildings should show 'Retrofitted' or have an active retrofit permit. If the status is unknown or the building hasn't been retrofitted, ask your landlord about the timeline.",
-  tenantRights: [
-    "Landlords may pass through up to 50% of retrofit costs to tenants, but only for RSO units and only with LAHD approval.",
-    "Monthly pass-through increases are capped and spread over the useful life of the improvement.",
-    "If you must temporarily relocate during retrofit work, your landlord must provide relocation assistance.",
-    "You have the right to return to your unit at the same rent after retrofit work is complete.",
-    "Landlords cannot use retrofit work as a pretext for eviction.",
-  ],
-  source: "LADBS Soft-Story Retrofit Program",
-  sourceUrl: "https://www.ladbs.org/services/core-services/plan-check-permit/mandatory-retrofit-programs",
-};
-
-export default async function SeismicFireSafetyPage({
+export default async function SeismicFireZonesPage({
   params,
 }: {
   params: Promise<{ city: string }>;
 }) {
   const { city } = await params;
 
-  // Only meaningful for LA currently
   if (city !== "los-angeles") {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <ShieldAlert className="w-12 h-12 text-[#94a3b8] mx-auto mb-4" />
-          <h1 className="text-xl font-bold text-[#0F1D2E] mb-2">
-            Coming Soon
-          </h1>
+          <h1 className="text-xl font-bold text-[#0F1D2E] mb-2">Coming Soon</h1>
           <p className="text-sm text-[#64748b] max-w-md">
             Seismic and fire zone data is currently available for Los Angeles.
             We&apos;re working on expanding to other cities.
@@ -144,300 +117,224 @@ export default async function SeismicFireSafetyPage({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero */}
+      {/* Hero — compact */}
       <div className="bg-[#0F1D2E] text-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
-          <Link
-            href={`/${city}/tenant-rights`}
-            className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors mb-6"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Tenant Rights
-          </Link>
-          <div className="flex items-center gap-3 mb-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+          <div className="flex items-center gap-3 mb-3">
             <div className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-white/10">
               <ShieldAlert className="w-5 h-5 text-amber-400" />
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold">
-              Seismic & Fire Zones Guide
+              Seismic & Fire Zones
             </h1>
           </div>
           <p className="text-gray-300 leading-relaxed max-w-3xl">
-            Los Angeles faces unique natural hazards — from earthquake fault
-            lines to wildfire zones. Every building on Lucid Rents is checked
-            against official LA City hazard maps so you can understand the risks
-            before you sign a lease.
+            Explore officially designated earthquake, fire, and geological
+            hazard zones across Los Angeles. Toggle layers to see which areas
+            fall within each zone.
           </p>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        {/* How We Check Section */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Map — primary content */}
         <section className="mb-12">
-          <div className="bg-white rounded-xl border border-[#e2e8f0] p-6 sm:p-8">
-            <h2 className="text-xl font-bold text-[#0F1D2E] mb-3">
-              How Lucid Rents Checks Hazard Zones
-            </h2>
-            <p className="text-gray-600 leading-relaxed mb-4">
-              For every LA building, we query the official LA City GeoHub and
-              California state databases using the building&apos;s exact
-              coordinates. We check five hazard zone layers — earthquake faults,
-              liquefaction, landslides, fire severity, and high winds — plus the
-              LADBS soft-story retrofit status. Results appear on each
-              building&apos;s profile page.
-            </p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {[
-                { count: "5", label: "Hazard Layers" },
-                { count: "13.5K", label: "Soft-Story Buildings" },
-                { count: "24h", label: "Data Refresh" },
-              ].map((stat) => (
-                <div
-                  key={stat.label}
-                  className="bg-[#F8FAFC] rounded-lg px-4 py-3 text-center"
-                >
-                  <div className="text-lg font-bold text-[#0F1D2E]">
-                    {stat.count}
-                  </div>
-                  <div className="text-xs text-[#64748b]">{stat.label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <HazardMap />
         </section>
 
-        {/* Hazard Zone Sections */}
+        {/* Zone explainers in a compact grid */}
         <section className="mb-12">
           <h2 className="text-2xl font-bold text-[#0F1D2E] mb-6">
-            Hazard Zones Explained
+            What These Zones Mean
           </h2>
-          <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {HAZARD_SECTIONS.map((hazard) => {
               const Icon = hazard.icon;
               return (
                 <div
                   key={hazard.title}
-                  className="bg-white rounded-xl border border-[#e2e8f0] p-6 sm:p-8"
+                  className="bg-white rounded-xl border border-[#e2e8f0] p-5"
                 >
-                  <div className="flex items-center gap-3 mb-4">
+                  <div className="flex items-center gap-2.5 mb-3">
                     <div
-                      className={`inline-flex items-center justify-center w-10 h-10 rounded-lg border ${hazard.color}`}
+                      className={`inline-flex items-center justify-center w-8 h-8 rounded-lg border ${hazard.color}`}
                     >
-                      <Icon className="w-5 h-5" />
+                      <Icon className="w-4 h-4" />
                     </div>
-                    <h3 className="text-lg font-bold text-[#0F1D2E]">
+                    <h3 className="text-sm font-bold text-[#0F1D2E]">
                       {hazard.title}
                     </h3>
                   </div>
-
-                  <div className="space-y-4">
-                    <div>
-                      <h4 className="text-sm font-semibold text-[#0F1D2E] mb-1">
-                        What is it?
-                      </h4>
-                      <p className="text-sm text-gray-600 leading-relaxed">
-                        {hazard.what}
-                      </p>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-semibold text-[#0F1D2E] mb-1">
-                        What&apos;s the risk?
-                      </h4>
-                      <p className="text-sm text-gray-600 leading-relaxed">
-                        {hazard.risk}
-                      </p>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-semibold text-[#0F1D2E] mb-1">
-                        What to look for
-                      </h4>
-                      <p className="text-sm text-gray-600 leading-relaxed">
-                        {hazard.lookFor}
-                      </p>
-                    </div>
-                    <a
-                      href={hazard.sourceUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-xs font-medium text-[#3B82F6] hover:text-[#2563EB] transition-colors"
-                    >
-                      {hazard.source}
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </div>
+                  <p className="text-xs text-gray-600 leading-relaxed mb-2">
+                    {hazard.what}
+                  </p>
+                  <p className="text-xs text-gray-500 leading-relaxed mb-3">
+                    <span className="font-semibold text-[#0F1D2E]">Risk: </span>
+                    {hazard.risk}
+                  </p>
+                  <a
+                    href={hazard.sourceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-[10px] font-medium text-[#3B82F6] hover:text-[#2563EB] transition-colors"
+                  >
+                    {hazard.source}
+                    <ExternalLink className="w-2.5 h-2.5" />
+                  </a>
                 </div>
               );
             })}
-          </div>
-        </section>
 
-        {/* Soft-Story Section */}
-        <section className="mb-12">
-          <h2 className="text-2xl font-bold text-[#0F1D2E] mb-6">
-            Soft-Story Retrofit Program
-          </h2>
-          <div className="bg-white rounded-xl border border-[#e2e8f0] p-6 sm:p-8">
-            <div className="flex items-center gap-3 mb-4">
-              <div
-                className={`inline-flex items-center justify-center w-10 h-10 rounded-lg border ${SOFT_STORY_SECTION.color}`}
-              >
-                <Home className="w-5 h-5" />
+            {/* Soft-Story card */}
+            <div className="bg-white rounded-xl border border-[#e2e8f0] p-5">
+              <div className="flex items-center gap-2.5 mb-3">
+                <div className="inline-flex items-center justify-center w-8 h-8 rounded-lg border bg-teal-50 text-teal-600 border-teal-200">
+                  <Home className="w-4 h-4" />
+                </div>
+                <h3 className="text-sm font-bold text-[#0F1D2E]">
+                  Soft-Story Retrofit
+                </h3>
               </div>
-              <h3 className="text-lg font-bold text-[#0F1D2E]">
-                {SOFT_STORY_SECTION.title}
-              </h3>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <h4 className="text-sm font-semibold text-[#0F1D2E] mb-1">
-                  What is it?
-                </h4>
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  {SOFT_STORY_SECTION.what}
-                </p>
-              </div>
-              <div>
-                <h4 className="text-sm font-semibold text-[#0F1D2E] mb-1">
-                  What&apos;s the risk?
-                </h4>
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  {SOFT_STORY_SECTION.risk}
-                </p>
-              </div>
-              <div>
-                <h4 className="text-sm font-semibold text-[#0F1D2E] mb-1">
-                  What to look for
-                </h4>
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  {SOFT_STORY_SECTION.lookFor}
-                </p>
-              </div>
-
-              {/* Tenant Rights */}
-              <div>
-                <h4 className="text-sm font-semibold text-[#0F1D2E] mb-2">
-                  Your rights as a tenant
-                </h4>
-                <ul className="space-y-2">
-                  {SOFT_STORY_SECTION.tenantRights.map((right) => (
-                    <li
-                      key={right}
-                      className="flex items-start gap-2 text-sm text-gray-600"
-                    >
-                      <ShieldAlert className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
-                      {right}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
+              <p className="text-xs text-gray-600 leading-relaxed mb-2">
+                LA&apos;s Mandatory Retrofit Program requires ~13,500 pre-1978
+                wood-frame buildings with weak ground floors to be seismically
+                strengthened.
+              </p>
+              <p className="text-xs text-gray-500 leading-relaxed mb-3">
+                <span className="font-semibold text-[#0F1D2E]">Risk: </span>
+                Soft-story buildings are among the most vulnerable in
+                earthquakes. The weak ground floor can collapse, causing upper
+                floors to pancake.
+              </p>
               <a
-                href={SOFT_STORY_SECTION.sourceUrl}
+                href="https://www.ladbs.org/services/core-services/plan-check-permit/mandatory-retrofit-programs"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-xs font-medium text-[#3B82F6] hover:text-[#2563EB] transition-colors"
+                className="inline-flex items-center gap-1 text-[10px] font-medium text-[#3B82F6] hover:text-[#2563EB] transition-colors"
               >
-                {SOFT_STORY_SECTION.source}
-                <ExternalLink className="w-3 h-3" />
+                LADBS Retrofit Program
+                <ExternalLink className="w-2.5 h-2.5" />
               </a>
             </div>
           </div>
         </section>
 
-        {/* Preparedness Tips */}
+        {/* Tenant rights around retrofits — compact */}
         <section className="mb-12">
-          <h2 className="text-2xl font-bold text-[#0F1D2E] mb-6">
-            Renter Preparedness Tips
+          <h2 className="text-xl font-bold text-[#0F1D2E] mb-4">
+            Your Rights During Seismic Retrofit
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {[
-              {
-                title: "Earthquake Kit",
-                text: "Keep 3 days of water (1 gallon per person per day), non-perishable food, flashlight, first-aid kit, and a battery-powered radio. Store a pair of shoes and a flashlight near your bed.",
-              },
-              {
-                title: "Renter's Insurance",
-                text: "Your landlord's insurance does not cover your belongings. Get renter's insurance that includes earthquake and fire coverage — it's typically $15–30/month and covers temporary housing if you're displaced.",
-              },
-              {
-                title: "Know Your Exits",
-                text: "Identify two exits from your unit and your building. Know where gas shutoff valves are located. In an earthquake, do not use elevators. In a fire, check doors for heat before opening.",
-              },
-              {
-                title: "Emergency Contacts",
-                text: "Save LAFD (911), the Red Cross disaster line (800-733-2767), and your building manager's number. Register for NotifyLA alerts for real-time emergency notifications.",
-              },
-            ].map((tip) => (
-              <div
-                key={tip.title}
-                className="bg-white rounded-xl border border-[#e2e8f0] p-6"
-              >
-                <h3 className="font-semibold text-[#0F1D2E] mb-2">
-                  {tip.title}
-                </h3>
-                <p className="text-sm text-gray-500 leading-relaxed">
-                  {tip.text}
-                </p>
-              </div>
-            ))}
+          <div className="bg-white rounded-xl border border-[#e2e8f0] p-6">
+            <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {[
+                "Landlords may pass through up to 50% of retrofit costs to RSO tenants, only with LAHD approval.",
+                "Monthly pass-through increases are capped and spread over the useful life of the improvement.",
+                "You must receive relocation assistance if temporarily displaced during retrofit work.",
+                "You have the right to return to your unit at the same rent after retrofit work is complete.",
+                "Landlords cannot use retrofit work as a pretext for eviction.",
+                "Contact LAHD at (866) 557-7368 if your landlord violates these protections.",
+              ].map((right) => (
+                <li
+                  key={right}
+                  className="flex items-start gap-2 text-sm text-gray-600"
+                >
+                  <ShieldAlert className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
+                  {right}
+                </li>
+              ))}
+            </ul>
           </div>
         </section>
 
-        {/* Emergency Contacts */}
-        <section className="mb-12">
-          <h2 className="text-2xl font-bold text-[#0F1D2E] mb-2">
-            Emergency Contacts
-          </h2>
-          <p className="text-gray-500 mb-6">
-            Key numbers for emergencies, hazard questions, and building safety.
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            {[
-              {
-                name: "911 — Fire & Police",
-                description: "Immediate life-threatening emergencies, active fires, or structural collapse",
-                phone: "911",
-              },
-              {
-                name: "311 — LA City Services",
-                description: "Report building safety concerns, code violations, and non-emergency hazards",
-                phone: "311",
-              },
-              {
-                name: "LADBS Building Safety",
-                description: "Building inspection requests, retrofit status inquiries, and permit questions",
-                phone: "(213) 482-0480",
-              },
-              {
-                name: "NotifyLA Alerts",
-                description: "Sign up for real-time emergency alerts for your neighborhood",
-                phone: "(213) 484-4060",
-              },
-            ].map((contact) => (
-              <div
-                key={contact.name}
-                className="bg-white rounded-xl border border-[#e2e8f0] p-6 flex items-start gap-4"
-              >
-                <div className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-blue-50 text-blue-600 border border-blue-200 flex-shrink-0">
-                  <Phone className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-[#0F1D2E]">
-                    {contact.name}
+        {/* Preparedness + Emergency — side by side */}
+        <section className="mb-12 grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Preparedness */}
+          <div>
+            <h2 className="text-xl font-bold text-[#0F1D2E] mb-4">
+              Renter Preparedness
+            </h2>
+            <div className="space-y-3">
+              {[
+                {
+                  title: "Earthquake Kit",
+                  text: "Keep 3 days of water, food, flashlight, first-aid kit, and battery radio. Store shoes and a flashlight near your bed.",
+                },
+                {
+                  title: "Renter\u2019s Insurance",
+                  text: "Your landlord\u2019s insurance doesn\u2019t cover your belongings. Get renter\u2019s insurance with earthquake and fire coverage ($15\u201330/mo).",
+                },
+                {
+                  title: "Know Your Exits",
+                  text: "Identify two exits from your unit. Know where gas shutoffs are. Don\u2019t use elevators in earthquakes. Check doors for heat in fires.",
+                },
+              ].map((tip) => (
+                <div
+                  key={tip.title}
+                  className="bg-white rounded-xl border border-[#e2e8f0] p-4"
+                >
+                  <h3 className="text-sm font-semibold text-[#0F1D2E] mb-1">
+                    {tip.title}
                   </h3>
-                  <p className="text-sm text-gray-500 mt-1">
-                    {contact.description}
+                  <p className="text-xs text-gray-500 leading-relaxed">
+                    {tip.text}
                   </p>
-                  <a
-                    href={`tel:${contact.phone}`}
-                    className="inline-block mt-2 text-sm font-medium text-[#3B82F6] hover:text-[#2563EB] transition-colors"
-                  >
-                    {contact.phone}
-                  </a>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
+          </div>
+
+          {/* Emergency contacts */}
+          <div>
+            <h2 className="text-xl font-bold text-[#0F1D2E] mb-4">
+              Emergency Contacts
+            </h2>
+            <div className="space-y-3">
+              {[
+                {
+                  name: "911 — Fire & Police",
+                  description: "Immediate emergencies, active fires, structural collapse",
+                  phone: "911",
+                },
+                {
+                  name: "311 — LA City Services",
+                  description: "Building safety concerns, code violations, non-emergency hazards",
+                  phone: "311",
+                },
+                {
+                  name: "LADBS Building Safety",
+                  description: "Retrofit status inquiries, building inspections, permits",
+                  phone: "(213) 482-0480",
+                },
+                {
+                  name: "NotifyLA Alerts",
+                  description: "Real-time emergency alerts for your neighborhood",
+                  phone: "(213) 484-4060",
+                },
+              ].map((contact) => (
+                <div
+                  key={contact.name}
+                  className="bg-white rounded-xl border border-[#e2e8f0] p-4 flex items-start gap-3"
+                >
+                  <div className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-50 text-blue-600 border border-blue-200 flex-shrink-0">
+                    <Phone className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-[#0F1D2E]">
+                      {contact.name}
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {contact.description}
+                    </p>
+                    <a
+                      href={`tel:${contact.phone}`}
+                      className="inline-block mt-1 text-xs font-medium text-[#3B82F6] hover:text-[#2563EB] transition-colors"
+                    >
+                      {contact.phone}
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 
@@ -449,14 +346,10 @@ export default async function SeismicFireSafetyPage({
               <h3 className="font-semibold text-amber-800 mb-1">Disclaimer</h3>
               <p className="text-sm text-amber-700 leading-relaxed">
                 Hazard zone data is sourced from official LA City GeoHub,
-                California Geological Survey, CAL FIRE, and LADBS databases.
-                Zone designations indicate areas of elevated risk based on
-                geological and environmental factors — they do not guarantee that
-                a specific event will or will not occur at any location. This
-                guide is for informational purposes only and is not a
-                professional geological or fire zone assessment. For specific
-                concerns about a building, consult a licensed engineer or contact
-                LADBS.
+                California Geological Survey, and CAL FIRE databases. Zone
+                designations indicate elevated risk — they do not guarantee a
+                specific event will or will not occur. This is not a
+                professional geological or fire zone assessment.
               </p>
             </div>
           </div>
