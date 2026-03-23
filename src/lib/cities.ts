@@ -167,7 +167,7 @@ export const CITY_META: Record<City, CityMeta> = {
     ],
     parcelIdField: "pin",
     regionLabel: "Neighborhood",
-    heroImage: "/chicago-skyline.jpg",
+    heroImage: "/chicago-skyline.webp",
     center: { lat: 41.8781, lng: -87.6298 },
     zoom: 11,
     crimeSource: "CPD",
