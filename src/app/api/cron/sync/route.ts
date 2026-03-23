@@ -1876,9 +1876,9 @@ async function syncDobPermits(supabase: ReturnType<typeof getSupabaseAdmin>): Pr
 }
 
 // ---------------------------------------------------------------------------
-// Update building counts — batched to avoid N+1 queries.
-// Processes buildings in parallel batches of 10 and counts all tables per
-// building in a single Promise.all, reducing total queries from 8*N to ~N.
+// Update building counts — uses a single SQL RPC to count all 8 tables per
+// building in one database round-trip per batch. Replaces the old approach of
+// 8 separate COUNT queries per building (80+ queries for 10 buildings).
 // ---------------------------------------------------------------------------
 async function updateBuildingCounts(
   supabase: ReturnType<typeof getSupabaseAdmin>,
@@ -1890,41 +1890,28 @@ async function updateBuildingCounts(
 
   const buildingIds = [...affectedBuildingIds];
 
-  const countTasks: { table: string; column: string }[] = [
-    { table: "hpd_violations", column: "violation_count" },
-    { table: "complaints_311", column: "complaint_count" },
-    { table: "hpd_litigations", column: "litigation_count" },
-    { table: "dob_violations", column: "dob_violation_count" },
-    { table: "bedbug_reports", column: "bedbug_report_count" },
-    { table: "evictions", column: "eviction_count" },
-    { table: "sidewalk_sheds", column: "sidewalk_shed_count" },
-    { table: "dob_permits", column: "permit_count" },
-  ];
+  // Process in batches of 50 via the SQL RPC (1 query per batch instead of 8×N)
+  const BATCH_SIZE = 50;
 
-  const CONCURRENT = 10;
+  for (let i = 0; i < buildingIds.length; i += BATCH_SIZE) {
+    const batch = buildingIds.slice(i, i + BATCH_SIZE);
+    try {
+      const { data, error } = await supabase.rpc("bulk_update_building_counts", {
+        building_ids: batch,
+      });
 
-  for (let i = 0; i < buildingIds.length; i += CONCURRENT) {
-    const batch = buildingIds.slice(i, i + CONCURRENT);
-    await Promise.all(batch.map(async (bid) => {
-      try {
-        // Count all tables for this building in parallel
-        const counts = await Promise.all(
-          countTasks.map(({ table }) =>
-            supabase.from(table).select("id", { count: "exact", head: true }).eq("building_id", bid)
-              .then(({ count }) => count ?? 0)
-          )
-        );
-
-        // Build single update payload
-        const update: Record<string, number> = {};
-        countTasks.forEach(({ column }, idx) => { update[column] = counts[idx]; });
-
-        const { error } = await supabase.from("buildings").update(update).eq("id", bid);
-        if (error) errors.push(`Update counts error (${bid}): ${error.message}`);
-      } catch (err) {
-        errors.push(`Update counts error (${bid}): ${String(err)}`);
+      if (error) {
+        errors.push(`Bulk count update error (batch ${i}): ${error.message}`);
+      } else if (data) {
+        for (const row of data) {
+          if (!row.updated) {
+            errors.push(`Update counts error (${row.building_id}): ${row.error}`);
+          }
+        }
       }
-    }));
+    } catch (err) {
+      errors.push(`Bulk count update error (batch ${i}): ${String(err)}`);
+    }
   }
 
   return errors;
