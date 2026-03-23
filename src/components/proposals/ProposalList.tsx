@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { ProposalCard, type Proposal } from "./ProposalCard";
 
@@ -16,13 +16,49 @@ export function ProposalList({ initialData, initialTotal, metro }: Props) {
   const [total, setTotal] = useState(initialTotal);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(false);
+  const isFirstRender = useRef(true);
 
   const filterKey = searchParams.toString();
+
+  // On filter change, fetch fresh data client-side
   useEffect(() => {
-    setProposals(initialData);
-    setTotal(initialTotal);
-    setPage(1);
-  }, [filterKey, initialData, initialTotal]);
+    // Skip the first render — use server-provided initialData
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+
+    let cancelled = false;
+    async function fetchFiltered() {
+      setFetching(true);
+      try {
+        const params = new URLSearchParams(searchParams.toString());
+        params.set("metro", metro);
+        params.set("page", "1");
+        params.set("limit", "20");
+        // Remove non-API params
+        params.delete("view");
+
+        const res = await fetch(`/api/proposals?${params.toString()}`);
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+
+        if (!cancelled) {
+          setProposals(data.proposals);
+          setTotal(data.total);
+          setPage(1);
+        }
+      } catch (err) {
+        console.error("Filter fetch error:", err);
+      } finally {
+        if (!cancelled) setFetching(false);
+      }
+    }
+
+    fetchFiltered();
+    return () => { cancelled = true; };
+  }, [filterKey, metro]);
 
   const loadMore = useCallback(async () => {
     setLoading(true);
@@ -32,6 +68,7 @@ export function ProposalList({ initialData, initialTotal, metro }: Props) {
       params.set("metro", metro);
       params.set("page", String(nextPage));
       params.set("limit", "20");
+      params.delete("view");
 
       const res = await fetch(`/api/proposals?${params.toString()}`);
       if (!res.ok) throw new Error("Failed to fetch");
@@ -48,6 +85,15 @@ export function ProposalList({ initialData, initialTotal, metro }: Props) {
   }, [page, metro, searchParams]);
 
   const hasMore = proposals.length < total;
+
+  if (fetching) {
+    return (
+      <div className="py-12 text-center text-[#64748b]">
+        <div className="w-8 h-8 border-3 border-[#3b82f6] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+        <p className="text-sm">Filtering proposals...</p>
+      </div>
+    );
+  }
 
   if (proposals.length === 0) {
     return (

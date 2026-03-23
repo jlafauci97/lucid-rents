@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-export const revalidate = 3600;
+export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   try {
@@ -34,7 +34,7 @@ export async function GET(request: Request) {
         apikey: supabaseKey,
         Prefer: "count=exact",
       },
-      next: { revalidate: 3600 },
+      cache: "no-store",
     });
 
     if (!res.ok) {
