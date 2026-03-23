@@ -4,7 +4,8 @@ import { MapPin, Building2, AlertTriangle, MessageSquare, Users, Siren } from "l
 import { LetterGrade } from "@/components/ui/LetterGrade";
 import { getLetterGrade, getGradeColor } from "@/lib/constants";
 import { buildingUrl, landlordUrl, canonicalUrl, cityPath, neighborhoodUrl, breadcrumbJsonLd } from "@/lib/seo";
-import { getNeighborhoodName, parseNeighborhoodSlug } from "@/lib/nyc-neighborhoods";
+import { parseNeighborhoodSlug } from "@/lib/nyc-neighborhoods";
+import { getNeighborhoodNameByCity } from "@/lib/neighborhoods";
 import { CITY_META } from "@/lib/cities";
 import type { City } from "@/lib/cities";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
@@ -20,9 +21,10 @@ export async function generateMetadata({
 }: {
   params: Promise<{ city: string; slug: string }>;
 }): Promise<Metadata> {
-  const { slug } = await params;
+  const { city: cityParam, slug } = await params;
+  const city = cityParam as City;
   const zipCode = parseNeighborhoodSlug(slug);
-  const name = getNeighborhoodName(zipCode);
+  const name = getNeighborhoodNameByCity(zipCode, city);
   const displayName = name ? `${name} (${zipCode})` : zipCode;
   const url = canonicalUrl(neighborhoodUrl(zipCode));
   return {
@@ -119,7 +121,7 @@ export default async function NeighborhoodPage({
   const { city: cityParam, slug } = await params;
   const city = cityParam as City;
   const zipCode = parseNeighborhoodSlug(slug);
-  const neighborhoodName = getNeighborhoodName(zipCode);
+  const neighborhoodName = getNeighborhoodNameByCity(zipCode, city);
 
   const [stats, crime, buildings] = await Promise.all([
     getNeighborhoodStats(zipCode),
@@ -175,8 +177,8 @@ export default async function NeighborhoodPage({
         "@context": "https://schema.org",
         "@type": "Place",
         name: neighborhoodName
-          ? `${neighborhoodName}, NYC (${zipCode})`
-          : `NYC Neighborhood ${zipCode}`,
+          ? `${neighborhoodName}, ${CITY_META[city].name} (${zipCode})`
+          : `${CITY_META[city].name} Neighborhood ${zipCode}`,
         address: {
           "@type": "PostalAddress",
           postalCode: zipCode,

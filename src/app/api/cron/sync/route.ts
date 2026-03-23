@@ -3819,7 +3819,7 @@ async function runLinkOnly(
         const tableErrors: string[] = [...chiErrors];
         let tableLinked = 0;
         try {
-          const cols = [idColumn, ...addressColumns].join(", ");
+          const cols = [idColumn, ...addressColumns, "latitude", "longitude"].join(", ");
           const primaryCol = addressColumns[addressColumns.length - 1];
           let allUnlinked: Record<string, unknown>[] = [];
           let offset = 0;
@@ -3844,7 +3844,9 @@ async function runLinkOnly(
             continue;
           }
 
+          // Build address -> record IDs map, also track first lat/lng per address for auto-creation
           const addrToIds = new Map<string, string[]>();
+          const addrToCoords = new Map<string, { lat: number; lng: number }>();
           for (const r of allUnlinked) {
             let raw: string;
             if (addressColumns.length > 1) {
@@ -3857,13 +3859,67 @@ async function runLinkOnly(
             if (normalized.length < 5) continue;
             if (!addrToIds.has(normalized)) addrToIds.set(normalized, []);
             addrToIds.get(normalized)!.push(String(r[idColumn]));
+            // Store first available coordinates for this address
+            if (!addrToCoords.has(normalized) && r.latitude && r.longitude) {
+              addrToCoords.set(normalized, { lat: parseFloat(String(r.latitude)), lng: parseFloat(String(r.longitude)) });
+            }
           }
 
           let matched = 0;
           let unmatched = 0;
+          let autoCreated = 0;
           for (const [addr, recordIds] of addrToIds) {
-            const buildingId = chicagoBuildingAddrMap.get(addr);
-            if (!buildingId) { unmatched++; continue; }
+            let buildingId = chicagoBuildingAddrMap.get(addr);
+
+            // Auto-create building if not found
+            if (!buildingId) {
+              const parts = addr.match(/^(\d+[-\d]*)\s+(.+)$/);
+              const houseNum = parts ? parts[1] : "";
+              const streetName = parts ? parts[2] : addr;
+              const fullAddr = `${addr}, CHICAGO, IL`;
+              const slug = generateBuildingSlug(fullAddr);
+              const coords = addrToCoords.get(addr);
+
+              const { data: newBuilding, error: createErr } = await supabase
+                .from("buildings")
+                .insert({
+                  full_address: fullAddr,
+                  house_number: houseNum,
+                  street_name: streetName,
+                  city: "Chicago",
+                  state: "IL",
+                  metro: "chicago",
+                  slug,
+                  latitude: coords?.lat ?? null,
+                  longitude: coords?.lng ?? null,
+                  violation_count: 0,
+                  complaint_count: 0,
+                  review_count: 0,
+                  overall_score: null,
+                })
+                .select("id")
+                .single();
+
+              if (createErr) {
+                // Likely duplicate slug — try to fetch existing
+                if (createErr.code === "23505") {
+                  const { data: existing } = await supabase
+                    .from("buildings")
+                    .select("id")
+                    .eq("slug", slug)
+                    .eq("metro", "chicago")
+                    .single();
+                  if (existing) buildingId = existing.id;
+                }
+                if (!buildingId) { unmatched++; continue; }
+              } else if (newBuilding?.id) {
+                buildingId = newBuilding.id;
+                autoCreated++;
+                // Add to map so subsequent tables can match without re-creating
+                chicagoBuildingAddrMap.set(addr, newBuilding.id);
+              }
+            }
+
             matched++;
 
             for (let i = 0; i < recordIds.length; i += 200) {
@@ -3879,9 +3935,9 @@ async function runLinkOnly(
                 tableErrors.push(`${label} link error: ${linkError.message}`);
               }
             }
-            allAffectedIds.add(buildingId);
+            allAffectedIds.add(buildingId!);
           }
-          tableErrors.push(`${label}: ${allUnlinked.length} unlinked, ${matched} addresses matched, ${unmatched} unmatched`);
+          tableErrors.push(`${label}: ${allUnlinked.length} unlinked, ${matched} matched, ${unmatched} unmatched, ${autoCreated} buildings auto-created`);
         } catch (err) {
           tableErrors.push(`${label} Chicago link error: ${String(err)}`);
         }
