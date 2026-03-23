@@ -39,6 +39,7 @@ type GeoJsonData = {
 const GEOJSON_FILE: Record<City, string> = {
   nyc: "/nyc-zipcodes.geojson",
   "los-angeles": "/la-zipcodes.geojson",
+  chicago: "/chicago-zipcodes.geojson",
 };
 
 function getColor(rent: number | undefined): string {

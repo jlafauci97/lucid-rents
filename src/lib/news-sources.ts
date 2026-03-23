@@ -116,6 +116,43 @@ export const NEWS_SOURCES: NewsSource[] = [
     defaultCategory: "tenant-rights",
     metro: "los-angeles",
   },
+  // --- Chicago sources ---
+  {
+    name: "Block Club Chicago",
+    slug: "block-club-chicago",
+    feedUrl: "https://blockclubchicago.org/feed/",
+    defaultCategory: "general",
+    metro: "chicago",
+  },
+  {
+    name: "Chicago Sun-Times",
+    slug: "chicago-sun-times",
+    feedUrl: "https://chicago.suntimes.com/rss/index.xml",
+    defaultCategory: "general",
+    metro: "chicago",
+  },
+  {
+    name: "Crain's Chicago Business",
+    slug: "crains-chicago",
+    feedUrl: "https://www.chicagobusiness.com/section/real-estate/rss",
+    defaultCategory: "rental-market",
+    alwaysRelevant: true,
+    metro: "chicago",
+  },
+  {
+    name: "South Side Weekly",
+    slug: "south-side-weekly",
+    feedUrl: "https://southsideweekly.com/feed/",
+    defaultCategory: "tenant-rights",
+    metro: "chicago",
+  },
+  {
+    name: "Chicago Reader",
+    slug: "chicago-reader",
+    feedUrl: "https://chicagoreader.com/feed/",
+    defaultCategory: "general",
+    metro: "chicago",
+  },
 ];
 
 /**
@@ -180,6 +217,20 @@ const RELEVANCE_KEYWORDS: string[] = [
   "inclusionary",
   "adus",
   "accessory dwelling",
+  // Chicago-specific keywords
+  "rlto",
+  "cdph",
+  "alderman",
+  "aldermanic",
+  "ward",
+  "cha",
+  "chicago housing authority",
+  "tif district",
+  "aro",
+  "affordable requirements",
+  "just cause",
+  "scofflaw",
+  "building court",
 ];
 
 /**

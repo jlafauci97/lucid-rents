@@ -38,6 +38,7 @@ type GeoJsonData = {
 const GEOJSON_FILES: Record<City, string | null> = {
   nyc: "/nyc-zipcodes.geojson",
   "los-angeles": "/la-zipcodes.geojson",
+  chicago: null,
 };
 
 // Green (high score) to Red (low score) color scale

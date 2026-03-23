@@ -60,6 +60,24 @@ const RENT_STAB_CONFIG: Record<City, RentStabConfig> = {
     jsonLdDescription:
       "Check if any Los Angeles building is covered by the Rent Stabilization Ordinance based on LAHD records.",
   },
+  chicago: {
+    title: "Chicago RLTO Protections Checker",
+    metaDescription:
+      "Check your Chicago apartment's RLTO protections — security deposit rights, just cause eviction coverage, and tenant ordinance compliance.",
+    headerDescription:
+      "Check if your apartment is protected under Chicago's Residential Landlord Tenant Ordinance (RLTO) and the Just Cause for Eviction Ordinance. Most residential rental units in Chicago are covered by the RLTO, which provides security deposit protections, notice requirements, and remedies for landlord violations.",
+    searchPlaceholder: "Search by address to check RLTO protections...",
+    dataSourceLabel: "City of Chicago / CDPH",
+    editorialTitle: "What Is the Chicago RLTO?",
+    editorialParagraphs: [
+      "The Chicago Residential Landlord Tenant Ordinance (RLTO) is one of the strongest tenant protection laws in the United States. It covers most residential rental units in Chicago and provides comprehensive protections including strict security deposit rules, notice requirements for rent increases and lease termination, and remedies when landlords violate the ordinance.",
+      "Under the RLTO, landlords must hold security deposits in federally insured interest-bearing accounts, provide receipts with bank details, and return the deposit with interest within 30 days of move-out with an itemized statement of any deductions. Violations of these rules can entitle tenants to double the deposit amount plus attorney fees.",
+      "In 2023, Chicago passed the Just Cause for Eviction Ordinance, which requires landlords to have a valid reason to evict tenants or refuse to renew leases. Note that Illinois state law preempts traditional rent control — Chicago cannot set limits on rent amounts. However, the RLTO and Just Cause ordinance together provide significant protections for renters.",
+    ],
+    jsonLdName: "Chicago RLTO Protections Checker",
+    jsonLdDescription:
+      "Check RLTO protections and just cause eviction coverage for any Chicago apartment.",
+  },
 };
 
 /* ---------------------------------------------------------------------------

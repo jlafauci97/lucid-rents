@@ -1,6 +1,6 @@
-export type City = "nyc" | "los-angeles";
+export type City = "nyc" | "los-angeles" | "chicago";
 
-export const VALID_CITIES: City[] = ["nyc", "los-angeles"];
+export const VALID_CITIES: City[] = ["nyc", "los-angeles", "chicago"];
 export const DEFAULT_CITY: City = "nyc";
 
 export interface CityMeta {
@@ -13,7 +13,7 @@ export interface CityMeta {
   /** Top-level geographic regions (boroughs for NYC, areas for LA) */
   regions: readonly string[];
   /** Primary parcel identifier field name */
-  parcelIdField: "bbl" | "apn";
+  parcelIdField: "bbl" | "apn" | "pin";
   /** Label for the regions concept (e.g. "Borough" or "Area") */
   regionLabel: string;
   /** Hero image filename in /public */
@@ -117,6 +117,85 @@ export const CITY_META: Record<City, CityMeta> = {
       "Southwest", "Topanga", "Van Nuys", "West LA", "West Valley", "Wilshire",
     ],
   },
+  chicago: {
+    name: "Chicago",
+    fullName: "Chicago",
+    state: "Illinois",
+    stateCode: "IL",
+    urlPrefix: "IL/Chicago",
+    regions: [
+      "Loop",
+      "South Loop",
+      "West Loop",
+      "River North",
+      "Gold Coast",
+      "Streeterville",
+      "Old Town",
+      "Lincoln Park",
+      "Lakeview",
+      "Wicker Park",
+      "Bucktown",
+      "Logan Square",
+      "Humboldt Park",
+      "Avondale",
+      "Lincoln Square",
+      "Uptown",
+      "Edgewater",
+      "Rogers Park",
+      "Hyde Park",
+      "Bronzeville",
+      "Woodlawn",
+      "South Shore",
+      "Chatham",
+      "Englewood",
+      "Auburn Gresham",
+      "Beverly",
+      "Pilsen",
+      "Bridgeport",
+      "Chinatown",
+      "Back of the Yards",
+      "Brighton Park",
+      "Austin",
+      "Garfield Park",
+      "North Lawndale",
+      "Irving Park",
+      "Portage Park",
+      "Jefferson Park",
+      "Belmont Cragin",
+      "South Chicago",
+      "Roseland",
+    ],
+    parcelIdField: "pin",
+    regionLabel: "Neighborhood",
+    heroImage: "/chicago-skyline.jpg",
+    center: { lat: 41.8781, lng: -87.6298 },
+    zoom: 11,
+    crimeSource: "CPD",
+    crimeAreas: [
+      "1st (Central)",
+      "2nd (Wentworth)",
+      "3rd (Grand Crossing)",
+      "4th (South Chicago)",
+      "5th (Calumet)",
+      "6th (Gresham)",
+      "7th (Englewood)",
+      "8th (Chicago Lawn)",
+      "9th (Deering)",
+      "10th (Ogden)",
+      "11th (Harrison)",
+      "12th (Near West)",
+      "14th (Shakespeare)",
+      "15th (Austin)",
+      "16th (Jefferson Park)",
+      "17th (Albany Park)",
+      "18th (Near North)",
+      "19th (Town Hall)",
+      "20th (Lincoln)",
+      "22nd (Morgan Park)",
+      "24th (Rogers Park)",
+      "25th (Grand Central)",
+    ],
+  },
 };
 
 /** URL prefix → internal city key mapping for middleware rewrites */
@@ -128,6 +207,7 @@ for (const [key, meta] of Object.entries(CITY_META)) {
 /** State code → city slug mapping for multi-segment URL detection */
 export const STATE_CITY_MAP: Record<string, Record<string, City>> = {
   CA: { "Los-Angeles": "los-angeles" },
+  IL: { Chicago: "chicago" },
 };
 
 export function isValidCity(s: string): s is City {

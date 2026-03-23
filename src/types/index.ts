@@ -12,6 +12,7 @@ export interface Building {
   bbl: string | null;
   bin: string | null;
   apn: string | null;
+  pin: string | null;
   borough: string;
   house_number: string | null;
   street_name: string;
@@ -48,6 +49,12 @@ export interface Building {
   soft_story_status: string | null;
   is_rso: boolean;
   fire_risk_zone: string | null;
+  ward: number | null;
+  community_area: string | null;
+  is_rlto_protected: boolean;
+  is_scofflaw: boolean;
+  rlto_violation_count: number;
+  lead_inspection_count: number;
   created_at: string;
   updated_at: string;
 }

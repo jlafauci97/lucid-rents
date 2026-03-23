@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { isValidCity } from "@/lib/cities";
 
 export interface ActivityItem {
-  type: "review" | "violation" | "complaint" | "litigation" | "dob_violation" | "crime" | "bedbug" | "eviction" | "la_eviction" | "tenant_buyout" | "permit" | "enforcement";
+  type: "review" | "violation" | "complaint" | "litigation" | "dob_violation" | "crime" | "bedbug" | "eviction" | "la_eviction" | "tenant_buyout" | "permit" | "enforcement" | "rlto_violation" | "lead_inspection";
   id: string;
   description: string;
   date: string;

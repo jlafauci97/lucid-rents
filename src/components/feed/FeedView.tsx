@@ -131,6 +131,8 @@ function sourceLabel(type: ActivityItem["type"], city: string): string {
     case "tenant_buyout": return "Tenant Buyout";
     case "permit": return "Building Permit";
     case "enforcement": return "LAHD Enforcement";
+    case "rlto_violation": return "RLTO Violation";
+    case "lead_inspection": return "Lead Inspection";
   }
 }
 
@@ -148,6 +150,8 @@ function sourceColor(type: ActivityItem["type"]): string {
     case "tenant_buyout": return "text-[#F97316]";
     case "permit": return "text-[#14B8A6]";
     case "enforcement": return "text-[#6366F1]";
+    case "rlto_violation": return "text-[#D97706]";
+    case "lead_inspection": return "text-[#059669]";
   }
 }
 

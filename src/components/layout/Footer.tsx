@@ -19,6 +19,13 @@ const DATA_SOURCES: Record<City, string[]> = {
     "LA County Assessor Data",
     "LAHD Soft-Story Inventory",
   ],
+  chicago: [
+    "Chicago Open Data - Building Violations",
+    "Chicago Open Data - 311 Requests",
+    "Chicago Open Data - CPD Crime",
+    "Cook County Assessor Data",
+    "Chicago Energy Benchmarking",
+  ],
 };
 
 export function Footer() {

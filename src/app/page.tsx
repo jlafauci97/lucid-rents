@@ -12,7 +12,7 @@ import { ActivityFeed } from "@/components/ActivityFeed";
 export const metadata: Metadata = {
   title: "Lucid Rents — Apartment Building Intelligence",
   description:
-    "Your next apartment has a history. Search any NYC or LA building to uncover violations, tenant complaints, crime stats, and honest reviews — before you sign.",
+    "Your next apartment has a history. Search any NYC, LA, or Chicago building to uncover violations, tenant complaints, crime stats, and honest reviews — before you sign.",
   alternates: { canonical: canonicalUrl("/") },
 };
 
@@ -48,6 +48,11 @@ const cities: { key: City; tagline: string; example: string }[] = [
     tagline: "Search violations, complaints, and reviews for any LA building.",
     example: "Try \"456 Sunset Blvd\" or \"90028\"",
   },
+  {
+    key: "chicago",
+    tagline: "Search violations, complaints, and reviews for any Chicago building.",
+    example: "Try \"1200 N Lake Shore Dr\" or \"60614\"",
+  },
 ];
 
 export default function HomePage() {
@@ -60,7 +65,7 @@ export default function HomePage() {
           name: "Lucid Rents",
           url: "https://lucidrents.com",
           description:
-            "Discover the truth about apartment buildings. Search building violations, tenant reviews, crime data, and more across New York City and Los Angeles.",
+            "Discover the truth about apartment buildings. Search building violations, tenant reviews, crime data, and more across New York City, Los Angeles, and Chicago.",
           potentialAction: {
             "@type": "SearchAction",
             target: {
@@ -96,7 +101,7 @@ export default function HomePage() {
           sizes="100vw"
         />
         <div className="absolute inset-0 bg-[#0F1D2E]/40" />
-        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-10 pb-8 sm:pb-12 text-center">
+        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-10 pb-8 sm:pb-12 text-center">
           <Image
             src="/lucid-rents-logo.png"
             alt="Lucid Rents"
@@ -117,7 +122,7 @@ export default function HomePage() {
           </p>
 
           {/* City Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-3xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {cities.map((c) => {
               const meta = CITY_META[c.key];
               return (
@@ -272,6 +277,12 @@ export default function HomePage() {
               className="inline-flex items-center justify-center px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-lg transition-colors border border-white/20"
             >
               Review an LA Building
+            </a>
+            <a
+              href={cityPath("/review/new", "chicago")}
+              className="inline-flex items-center justify-center px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-lg transition-colors border border-white/20"
+            >
+              Review a Chicago Building
             </a>
           </div>
         </div>

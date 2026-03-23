@@ -39,11 +39,13 @@ export async function generateMetadata({
 const searchPlaceholders: Record<City, string> = {
   nyc: "Enter any NYC address, zip code, or neighborhood...",
   "los-angeles": "Enter any LA address, zip code, or neighborhood...",
+  chicago: "Enter any Chicago address, zip code, or neighborhood...",
 };
 
 const searchExamples: Record<City, string> = {
   nyc: "Try \u201c123 Main Street Brooklyn\u201d or \u201c10001\u201d",
   "los-angeles": "Try \u201c456 Sunset Blvd\u201d or \u201c90028\u201d",
+  chicago: "Try \u201c1200 N Lake Shore Dr\u201d or \u201c60614\u201d",
 };
 
 export default async function CityHomePage({

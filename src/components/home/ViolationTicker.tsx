@@ -20,6 +20,8 @@ const typeIconColors: Record<ActivityItem['type'], string> = {
   tenant_buyout: 'text-orange-200',
   permit: 'text-teal-200',
   enforcement: 'text-indigo-200',
+  rlto_violation: 'text-orange-200',
+  lead_inspection: 'text-lime-200',
 };
 
 function TypeIcon({ type }: { type: ActivityItem['type'] }) {
@@ -50,6 +52,10 @@ function TypeIcon({ type }: { type: ActivityItem['type'] }) {
       return <FileCheck className={cls} />;
     case 'enforcement':
       return <ShieldAlert className={cls} />;
+    case 'rlto_violation':
+      return <Shield className={cls} />;
+    case 'lead_inspection':
+      return <AlertTriangle className={cls} />;
   }
 }
 
@@ -66,6 +72,8 @@ const typeLabels: Record<ActivityItem['type'], string> = {
   tenant_buyout: 'Tenant Buyout',
   permit: 'Building Permit',
   enforcement: 'Enforcement',
+  rlto_violation: 'RLTO Violation',
+  lead_inspection: 'Lead Inspection',
 };
 
 function formatDate(dateStr: string): string {

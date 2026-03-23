@@ -95,6 +95,13 @@ export function middleware(request: NextRequest) {
     url.pathname = `/CA/Los-Angeles${rest ? `/${rest}` : ""}`;
     return NextResponse.redirect(url, 301);
   }
+  // /chi/... → /IL/Chicago/...
+  if (firstSegment === "chi") {
+    const url = request.nextUrl.clone();
+    const rest = segments.slice(2).join("/");
+    url.pathname = `/IL/Chicago${rest ? `/${rest}` : ""}`;
+    return NextResponse.redirect(url, 301);
+  }
 
   // 3. Redirect bare /rankings to /nyc/worst-rated-buildings
   if (firstSegment === "rankings") {

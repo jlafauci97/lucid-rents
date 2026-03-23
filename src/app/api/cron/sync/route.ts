@@ -1955,6 +1955,29 @@ function buildLASodaUrl(
   return url;
 }
 
+/** Build a SODA API URL for Chicago Open Data portal. */
+function buildChicagoSodaUrl(
+  endpoint: string,
+  whereClause: string,
+  limit: number,
+  offset: number,
+  orderBy: string
+): string {
+  const appToken = process.env.CHICAGO_OPEN_DATA_APP_TOKEN;
+  let url =
+    `https://data.cityofchicago.org/resource/${endpoint}.json` +
+    `?$where=${encodeURIComponent(whereClause)}` +
+    `&$limit=${limit}` +
+    `&$offset=${offset}` +
+    `&$order=${encodeURIComponent(orderBy)}`;
+
+  if (appToken) {
+    url += `&$$app_token=${appToken}`;
+  }
+
+  return url;
+}
+
 // ---------------------------------------------------------------------------
 // LA Sync Functions — data.lacity.org SODA API
 // ---------------------------------------------------------------------------
@@ -2853,6 +2876,554 @@ async function syncLAHDViolationSummary(
 }
 
 // ---------------------------------------------------------------------------
+// Chicago Sync Functions — data.cityofchicago.org SODA API
+// ---------------------------------------------------------------------------
+
+/** Parse a Chicago address string into house_number + street_name. */
+function parseChicagoAddress(addr: string | null | undefined): { house_number: string | null; street_name: string | null } {
+  if (!addr) return { house_number: null, street_name: null };
+  const trimmed = addr.trim();
+  const match = trimmed.match(/^([0-9-]+)\s+(.+)/);
+  if (match) return { house_number: match[1], street_name: match[2] };
+  return { house_number: null, street_name: trimmed };
+}
+
+// Chicago crime category mapping
+const CHICAGO_VIOLENT_CRIMES = new Set([
+  "HOMICIDE", "ASSAULT", "BATTERY", "ROBBERY", "CRIM SEXUAL ASSAULT", "KIDNAPPING",
+]);
+const CHICAGO_PROPERTY_CRIMES = new Set([
+  "THEFT", "BURGLARY", "MOTOR VEHICLE THEFT", "ARSON",
+]);
+
+function categorizeChicagoCrime(primaryType: string | null | undefined): string | null {
+  if (!primaryType) return null;
+  const upper = primaryType.toUpperCase().trim();
+  if (CHICAGO_VIOLENT_CRIMES.has(upper)) return "violent";
+  if (CHICAGO_PROPERTY_CRIMES.has(upper)) return "property";
+  return "quality_of_life";
+}
+
+/**
+ * Sync Chicago Building Violations.
+ * Chicago Open Data endpoint: 22u3-xenr (Building Violations)
+ * Stores in dob_violations with metro='chicago'
+ */
+async function syncChicagoViolations(
+  supabase: ReturnType<typeof getSupabaseAdmin>
+): Promise<SyncResult> {
+  const lastSync = await getLastSyncDate(supabase, "chicago_violations");
+  const logId = await createSyncLog(supabase, "chicago_violations");
+  const syncStartTime = new Date().toISOString();
+
+  let totalAdded = 0;
+  let totalLinked = 0;
+  const errors: string[] = [];
+  const affectedBuildingIds = new Set<string>();
+
+  try {
+    let offset = 0;
+    let hasMore = true;
+    let pagesFetched = 0;
+
+    while (hasMore) {
+      const url = buildChicagoSodaUrl(
+        "22u3-xenr",
+        `violation_last_modified_date > '${lastSync}'`,
+        PAGE_SIZE,
+        offset,
+        "violation_last_modified_date ASC"
+      );
+
+      const res = await fetch(url);
+      if (!res.ok) {
+        const errText = await res.text();
+        errors.push(`Chicago Violations API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
+        break;
+      }
+
+      const records = await res.json();
+      if (!records || records.length === 0) { hasMore = false; break; }
+
+      const rows = records
+        .filter((r: Record<string, unknown>) => r.id)
+        .map((r: Record<string, unknown>) => {
+          const parsed = parseChicagoAddress(r.address as string | undefined);
+          return {
+            violation_id: `CHI-${r.id}`,
+            inspection_date: r.violation_date ? String(r.violation_date).slice(0, 10) : null,
+            violation_number: r.violation_code ? String(r.violation_code) : null,
+            nov_description: r.violation_description ? String(r.violation_description) : null,
+            status: r.violation_status ? String(r.violation_status) : null,
+            borough: "Chicago",
+            house_number: parsed.house_number,
+            street_name: parsed.street_name,
+            latitude: r.latitude ? parseFloat(String(r.latitude)) : null,
+            longitude: r.longitude ? parseFloat(String(r.longitude)) : null,
+            metro: "chicago",
+            imported_at: new Date().toISOString(),
+          };
+        });
+
+      if (rows.length > 0) {
+        totalAdded += await batchUpsert(supabase, "dob_violations", rows, "violation_id", errors, "Chicago Violations");
+      }
+
+      pagesFetched++;
+      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) { hasMore = false; } else { offset += PAGE_SIZE; }
+    }
+
+    try {
+      const linkResult = await linkByAddress(supabase, "dob_violations", "id", ["house_number", "street_name"], syncStartTime, errors, "Chicago Violations", 500, "chicago");
+      totalLinked = linkResult.linked;
+      for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
+    } catch (linkErr) {
+      errors.push(`Chicago Violations address linking error: ${String(linkErr)}`);
+    }
+
+    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
+  } catch (err) {
+    errors.push(`Chicago Violations fatal error: ${String(err)}`);
+    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
+  }
+
+  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+}
+
+/**
+ * Sync Chicago 311 Service Requests.
+ * Chicago Open Data endpoint: v6vf-nfxy (311 Service Requests)
+ * Stores in complaints_311 with metro='chicago'
+ */
+async function syncChicago311(
+  supabase: ReturnType<typeof getSupabaseAdmin>
+): Promise<SyncResult> {
+  const lastSync = await getLastSyncDate(supabase, "chicago_311");
+  const logId = await createSyncLog(supabase, "chicago_311");
+  const syncStartTime = new Date().toISOString();
+
+  let totalAdded = 0;
+  let totalLinked = 0;
+  const errors: string[] = [];
+  const affectedBuildingIds = new Set<string>();
+
+  try {
+    let offset = 0;
+    let hasMore = true;
+    let pagesFetched = 0;
+
+    while (hasMore) {
+      const url = buildChicagoSodaUrl(
+        "v6vf-nfxy",
+        `created_date > '${lastSync}'`,
+        PAGE_SIZE,
+        offset,
+        "created_date ASC"
+      );
+
+      const res = await fetch(url);
+      if (!res.ok) {
+        const errText = await res.text();
+        errors.push(`Chicago 311 API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
+        break;
+      }
+
+      const records = await res.json();
+      if (!records || records.length === 0) { hasMore = false; break; }
+
+      const rows = records
+        .filter((r: Record<string, unknown>) => r.sr_number)
+        .map((r: Record<string, unknown>) => ({
+          unique_key: `CHI311-${r.sr_number}`,
+          complaint_type: r.sr_type ? String(r.sr_type) : null,
+          status: r.status ? String(r.status) : null,
+          created_date: r.created_date ? String(r.created_date).slice(0, 10) : null,
+          closed_date: r.closed_date ? String(r.closed_date).slice(0, 10) : null,
+          incident_address: r.street_address ? String(r.street_address) : null,
+          borough: "Chicago",
+          latitude: r.latitude ? parseFloat(String(r.latitude)) : null,
+          longitude: r.longitude ? parseFloat(String(r.longitude)) : null,
+          metro: "chicago",
+          imported_at: new Date().toISOString(),
+        }));
+
+      if (rows.length > 0) {
+        totalAdded += await batchUpsert(supabase, "complaints_311", rows, "unique_key", errors, "Chicago 311", true);
+      }
+
+      pagesFetched++;
+      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) { hasMore = false; } else { offset += PAGE_SIZE; }
+    }
+
+    try {
+      const linkResult = await linkByAddress(supabase, "complaints_311", "unique_key", ["incident_address"], syncStartTime, errors, "Chicago 311", 500, "chicago");
+      totalLinked = linkResult.linked;
+      for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
+    } catch (linkErr) {
+      errors.push(`Chicago 311 address linking error: ${String(linkErr)}`);
+    }
+
+    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
+  } catch (err) {
+    errors.push(`Chicago 311 fatal error: ${String(err)}`);
+    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
+  }
+
+  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+}
+
+/**
+ * Sync CPD Crime Data.
+ * Chicago Open Data endpoint: ijzp-q8t2 (Crimes - 2001 to Present)
+ * Stores in nypd_complaints with metro='chicago'
+ */
+async function syncChicagoCrimes(
+  supabase: ReturnType<typeof getSupabaseAdmin>
+): Promise<SyncResult> {
+  const lastSync = await getLastSyncDate(supabase, "chicago_crimes");
+  const logId = await createSyncLog(supabase, "chicago_crimes");
+  const syncStartTime = new Date().toISOString();
+
+  let totalAdded = 0;
+  let totalLinked = 0;
+  const errors: string[] = [];
+  const affectedBuildingIds = new Set<string>();
+
+  try {
+    let offset = 0;
+    let hasMore = true;
+    let pagesFetched = 0;
+
+    while (hasMore) {
+      const url = buildChicagoSodaUrl(
+        "ijzp-q8t2",
+        `date > '${lastSync}'`,
+        PAGE_SIZE,
+        offset,
+        "date ASC"
+      );
+
+      const res = await fetch(url);
+      if (!res.ok) {
+        const errText = await res.text();
+        errors.push(`Chicago Crimes API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
+        break;
+      }
+
+      const records = await res.json();
+      if (!records || records.length === 0) { hasMore = false; break; }
+
+      const rows = records
+        .filter((r: Record<string, unknown>) => r.case_number)
+        .map((r: Record<string, unknown>) => {
+          const primaryType = r.primary_type ? String(r.primary_type) : null;
+          const description = r.description ? String(r.description) : null;
+          const offenseDesc = [primaryType, description].filter(Boolean).join(" - ");
+
+          return {
+            cmplnt_num: `CPD-${r.case_number}`,
+            cmplnt_date: r.date ? String(r.date).slice(0, 10) : null,
+            borough: "Chicago",
+            precinct: r.district ? String(r.district) : null,
+            offense_description: offenseDesc || null,
+            crime_category: categorizeChicagoCrime(primaryType),
+            latitude: r.latitude ? parseFloat(String(r.latitude)) : null,
+            longitude: r.longitude ? parseFloat(String(r.longitude)) : null,
+            metro: "chicago",
+            imported_at: new Date().toISOString(),
+          };
+        })
+        .filter((r: { latitude: number | null; longitude: number | null }) =>
+          !(r.latitude === 0 && r.longitude === 0)
+        );
+
+      if (rows.length > 0) {
+        totalAdded += await batchUpsert(supabase, "nypd_complaints", rows, "cmplnt_num", errors, "Chicago Crimes");
+      }
+
+      pagesFetched++;
+      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) { hasMore = false; } else { offset += PAGE_SIZE; }
+    }
+
+    // Backfill zip codes from lat/lon
+    try {
+      const { error: zipErr } = await supabase.rpc("backfill_crime_zip_codes", {
+        target_metro: "chicago",
+      });
+      if (zipErr) {
+        errors.push(`Chicago Crimes zip backfill error: ${zipErr.message}`);
+      }
+    } catch (zipBackfillErr) {
+      errors.push(`Chicago Crimes zip backfill fatal: ${String(zipBackfillErr)}`);
+    }
+  } catch (err) {
+    errors.push(`Chicago Crimes sync fatal: ${String(err)}`);
+  }
+
+  await finalizeSyncLog(
+    supabase,
+    logId,
+    errors.length > 0 ? "failed" : "completed",
+    totalAdded,
+    totalLinked,
+    errors
+  );
+  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+}
+
+/**
+ * Sync Chicago Building Permits.
+ * Chicago Open Data endpoint: ydr8-5enu (Building Permits)
+ * Stores in dob_permits with metro='chicago'
+ */
+async function syncChicagoPermits(
+  supabase: ReturnType<typeof getSupabaseAdmin>
+): Promise<SyncResult> {
+  const lastSync = await getLastSyncDate(supabase, "chicago_permits");
+  const logId = await createSyncLog(supabase, "chicago_permits");
+  const syncStartTime = new Date().toISOString();
+
+  let totalAdded = 0;
+  let totalLinked = 0;
+  const errors: string[] = [];
+  const affectedBuildingIds = new Set<string>();
+
+  try {
+    let offset = 0;
+    let hasMore = true;
+    let pagesFetched = 0;
+
+    while (hasMore) {
+      const url = buildChicagoSodaUrl(
+        "ydr8-5enu",
+        `issue_date > '${lastSync}'`,
+        PAGE_SIZE,
+        offset,
+        "issue_date ASC"
+      );
+
+      const res = await fetch(url);
+      if (!res.ok) {
+        const errText = await res.text();
+        errors.push(`Chicago Permits API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
+        break;
+      }
+
+      const records = await res.json();
+      if (!records || records.length === 0) { hasMore = false; break; }
+
+      const rows = records
+        .filter((r: Record<string, unknown>) => r.id)
+        .map((r: Record<string, unknown>) => {
+          const streetParts = [r.street_direction, r.street_name].filter(Boolean).map(String).join(" ").trim();
+          return {
+            job_number: `CHI-PERMIT-${r.id}`,
+            work_permit: r.id ? String(r.id) : null,
+            work_type: r.permit_type ? String(r.permit_type) : null,
+            permit_status: r.permit_status ? String(r.permit_status) : null,
+            issuance_date: r.issue_date ? String(r.issue_date).slice(0, 10) : null,
+            filing_date: r.issue_date ? String(r.issue_date).slice(0, 10) : null,
+            borough: "Chicago",
+            house_no: r.street_number ? String(r.street_number) : null,
+            street_name: streetParts || null,
+            job_description: r.work_description ? String(r.work_description) : null,
+            estimated_job_costs: r.reported_cost ? parseFloat(String(r.reported_cost)) : null,
+            latitude: r.latitude ? parseFloat(String(r.latitude)) : null,
+            longitude: r.longitude ? parseFloat(String(r.longitude)) : null,
+            metro: "chicago",
+            imported_at: new Date().toISOString(),
+          };
+        });
+
+      if (rows.length > 0) {
+        totalAdded += await batchUpsert(supabase, "dob_permits", rows, "job_number", errors, "Chicago Permits");
+      }
+
+      pagesFetched++;
+      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) { hasMore = false; } else { offset += PAGE_SIZE; }
+    }
+
+    try {
+      const linkResult = await linkByAddress(supabase, "dob_permits", "id", ["house_no", "street_name"], syncStartTime, errors, "Chicago Permits", 500, "chicago");
+      totalLinked = linkResult.linked;
+      for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
+    } catch (linkErr) {
+      errors.push(`Chicago Permits address linking error: ${String(linkErr)}`);
+    }
+
+    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
+  } catch (err) {
+    errors.push(`Chicago Permits fatal error: ${String(err)}`);
+    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
+  }
+
+  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+}
+
+/**
+ * Sync Chicago RLTO Violations.
+ * Chicago Open Data endpoint: xgbn-v72z (RLTO Violations)
+ * Stores in chicago_rlto_violations table
+ */
+async function syncChicagoRLTO(
+  supabase: ReturnType<typeof getSupabaseAdmin>
+): Promise<SyncResult> {
+  const lastSync = await getLastSyncDate(supabase, "chicago_rlto");
+  const logId = await createSyncLog(supabase, "chicago_rlto");
+  const syncStartTime = new Date().toISOString();
+
+  let totalAdded = 0;
+  let totalLinked = 0;
+  const errors: string[] = [];
+  const affectedBuildingIds = new Set<string>();
+
+  try {
+    let offset = 0;
+    let hasMore = true;
+    let pagesFetched = 0;
+
+    while (hasMore) {
+      const url = buildChicagoSodaUrl(
+        "xgbn-v72z",
+        `violation_date > '${lastSync}'`,
+        PAGE_SIZE,
+        offset,
+        "violation_date ASC"
+      );
+
+      const res = await fetch(url);
+      if (!res.ok) {
+        const errText = await res.text();
+        errors.push(`Chicago RLTO API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
+        break;
+      }
+
+      const records = await res.json();
+      if (!records || records.length === 0) { hasMore = false; break; }
+
+      const rows = records
+        .filter((r: Record<string, unknown>) => r.case_number)
+        .map((r: Record<string, unknown>) => ({
+          case_number: String(r.case_number),
+          violation_type: r.violation_type ? String(r.violation_type) : null,
+          violation_description: r.violation_description ? String(r.violation_description) : null,
+          violation_date: r.violation_date ? String(r.violation_date).slice(0, 10) : null,
+          status: r.status ? String(r.status) : null,
+          respondent: r.respondent ? String(r.respondent) : null,
+          address: r.address ? String(r.address) : null,
+          latitude: r.latitude ? parseFloat(String(r.latitude)) : null,
+          longitude: r.longitude ? parseFloat(String(r.longitude)) : null,
+          metro: "chicago",
+          imported_at: new Date().toISOString(),
+        }));
+
+      if (rows.length > 0) {
+        totalAdded += await batchUpsert(supabase, "chicago_rlto_violations", rows, "case_number", errors, "Chicago RLTO", true);
+      }
+
+      pagesFetched++;
+      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) { hasMore = false; } else { offset += PAGE_SIZE; }
+    }
+
+    try {
+      const linkResult = await linkByAddress(supabase, "chicago_rlto_violations", "id", "address", syncStartTime, errors, "Chicago RLTO", 500, "chicago", true, "address");
+      totalLinked = linkResult.linked;
+      for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
+    } catch (linkErr) {
+      errors.push(`Chicago RLTO address linking error: ${String(linkErr)}`);
+    }
+
+    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
+  } catch (err) {
+    errors.push(`Chicago RLTO fatal error: ${String(err)}`);
+    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
+  }
+
+  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+}
+
+/**
+ * Sync Chicago Lead Inspections.
+ * Chicago Open Data endpoint: v2z5-jyrq (Lead Inspections)
+ * Stores in chicago_lead_inspections table
+ */
+async function syncChicagoLead(
+  supabase: ReturnType<typeof getSupabaseAdmin>
+): Promise<SyncResult> {
+  const lastSync = await getLastSyncDate(supabase, "chicago_lead");
+  const logId = await createSyncLog(supabase, "chicago_lead");
+  const syncStartTime = new Date().toISOString();
+
+  let totalAdded = 0;
+  let totalLinked = 0;
+  const errors: string[] = [];
+  const affectedBuildingIds = new Set<string>();
+
+  try {
+    let offset = 0;
+    let hasMore = true;
+    let pagesFetched = 0;
+
+    while (hasMore) {
+      const url = buildChicagoSodaUrl(
+        "v2z5-jyrq",
+        `inspection_date > '${lastSync}'`,
+        PAGE_SIZE,
+        offset,
+        "inspection_date ASC"
+      );
+
+      const res = await fetch(url);
+      if (!res.ok) {
+        const errText = await res.text();
+        errors.push(`Chicago Lead API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
+        break;
+      }
+
+      const records = await res.json();
+      if (!records || records.length === 0) { hasMore = false; break; }
+
+      const rows = records
+        .filter((r: Record<string, unknown>) => r.inspection_id)
+        .map((r: Record<string, unknown>) => ({
+          inspection_id: String(r.inspection_id),
+          address: r.address ? String(r.address) : null,
+          inspection_date: r.inspection_date ? String(r.inspection_date).slice(0, 10) : null,
+          result: r.result ? String(r.result) : null,
+          risk_level: r.risk_assessment ? String(r.risk_assessment) : null,
+          hazard_type: r.hazard_type ? String(r.hazard_type) : null,
+          latitude: r.latitude ? parseFloat(String(r.latitude)) : null,
+          longitude: r.longitude ? parseFloat(String(r.longitude)) : null,
+          metro: "chicago",
+          imported_at: new Date().toISOString(),
+        }));
+
+      if (rows.length > 0) {
+        totalAdded += await batchUpsert(supabase, "chicago_lead_inspections", rows, "inspection_id", errors, "Chicago Lead", true);
+      }
+
+      pagesFetched++;
+      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) { hasMore = false; } else { offset += PAGE_SIZE; }
+    }
+
+    try {
+      const linkResult = await linkByAddress(supabase, "chicago_lead_inspections", "id", "address", syncStartTime, errors, "Chicago Lead", 500, "chicago", true, "address");
+      totalLinked = linkResult.linked;
+      for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
+    } catch (linkErr) {
+      errors.push(`Chicago Lead address linking error: ${String(linkErr)}`);
+    }
+
+    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
+  } catch (err) {
+    errors.push(`Chicago Lead fatal error: ${String(err)}`);
+    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
+  }
+
+  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+}
+
+// ---------------------------------------------------------------------------
 // Max duration for Vercel serverless functions (Pro max=300s)
 // ---------------------------------------------------------------------------
 export const maxDuration = 300;
@@ -2880,6 +3451,13 @@ const SOURCES: Record<string, (supabase: ReturnType<typeof getSupabaseAdmin>) =>
   "la-buyouts": syncLAHDTenantBuyouts,
   "la-ccris": syncLAHDCCRIS,
   "la-violation-summary": syncLAHDViolationSummary,
+  // Chicago sources
+  "chicago-violations": syncChicagoViolations,
+  "chicago-311": syncChicago311,
+  "chicago-crimes": syncChicagoCrimes,
+  "chicago-permits": syncChicagoPermits,
+  "chicago-rlto": syncChicagoRLTO,
+  "chicago-lead": syncChicagoLead,
 };
 
 // ---------------------------------------------------------------------------
@@ -2915,9 +3493,11 @@ async function runLinkOnly(
     : LINK_TABLES;
 
   const LA_ADDR_SOURCES = ["lahd", "ladbs", "la-311", "la-permits", "la-evictions", "la-buyouts", "la-ccris", "la-violation-summary"];
-  if (sourceParam && !tablesToLink && sourceParam !== "complaints" && !LA_ADDR_SOURCES.includes(sourceParam)) {
+  const CHICAGO_ADDR_SOURCES = ["chicago-violations", "chicago-311", "chicago-permits", "chicago-rlto", "chicago-lead"];
+  const isChicagoLink = sourceParam === "chicago" || (sourceParam && CHICAGO_ADDR_SOURCES.includes(sourceParam));
+  if (sourceParam && !tablesToLink && sourceParam !== "complaints" && !LA_ADDR_SOURCES.includes(sourceParam) && !isChicagoLink) {
     return NextResponse.json(
-      { error: `Unknown link source: ${sourceParam}. Valid: ${[...Object.keys(LINK_TABLES), "complaints", ...LA_ADDR_SOURCES].join(", ")}` },
+      { error: `Unknown link source: ${sourceParam}. Valid: ${[...Object.keys(LINK_TABLES), "complaints", ...LA_ADDR_SOURCES, "chicago", ...CHICAGO_ADDR_SOURCES].join(", ")}` },
       { status: 400 }
     );
   }
@@ -2937,53 +3517,91 @@ async function runLinkOnly(
     }
   }
 
-  // Link 311 complaints by address (generous time budget in link-only mode)
+  // Link NYC 311 complaints by address using in-memory batch matching.
+  // Same fast pattern as LA/Chicago: load NYC buildings once, normalize, match in bulk.
   if (!sourceParam || sourceParam === "complaints") {
     const complaintsErrors: string[] = [];
     let complaintsLinked = 0;
     try {
-      // Find unlinked 311 records from last 30 days
-      const linkCutoff = new Date();
-      linkCutoff.setDate(linkCutoff.getDate() - 30);
+      // Load NYC buildings into memory for fast address matching
+      const allBuildings: { id: string; full_address: string }[] = [];
+      let offset = 0;
+      while (true) {
+        const { data: batch } = await supabase
+          .from("buildings")
+          .select("id, full_address")
+          .eq("metro", "nyc")
+          .range(offset, offset + 10000 - 1);
+        if (!batch || batch.length === 0) break;
+        allBuildings.push(...batch);
+        if (batch.length < 10000) break;
+        offset += 10000;
+      }
 
-      const { data: unlinked } = await supabase
-        .from("complaints_311")
-        .select("unique_key, incident_address")
-        .is("building_id", null)
-        .not("incident_address", "is", null)
-        .gte("imported_at", linkCutoff.toISOString())
-        .limit(10000);
-
-      if (unlinked && unlinked.length > 0) {
-        // Group by address
-        const addressToKeys = new Map<string, string[]>();
-        for (const r of unlinked) {
-          const addr = (r.incident_address as string).trim().toUpperCase().replace(/\s+/g, " ");
-          if (!addr) continue;
-          if (!addressToKeys.has(addr)) addressToKeys.set(addr, []);
-          addressToKeys.get(addr)!.push(r.unique_key);
+      const nycBuildingAddrMap = new Map<string, string>();
+      for (const b of allBuildings) {
+        // Extract street portion (before first comma) and normalize
+        const street = b.full_address.split(",")[0]?.trim() || "";
+        const normalized = street.toUpperCase().replace(/[.,#]/g, "").replace(/\s+/g, " ").trim();
+        if (normalized.length >= 5) {
+          nycBuildingAddrMap.set(normalized, b.id);
         }
+      }
+      complaintsErrors.push(`Loaded ${allBuildings.length} NYC buildings, ${nycBuildingAddrMap.size} unique addresses`);
 
-        let lookupCount = 0;
-        const MAX_LOOKUPS = 200; // Much higher budget in link-only mode
+      if (nycBuildingAddrMap.size > 0) {
+        // Find unlinked NYC 311 records from last 30 days
+        const linkCutoff = new Date();
+        linkCutoff.setDate(linkCutoff.getDate() - 30);
 
-        for (const [address, uniqueKeys] of addressToKeys) {
-          if (lookupCount >= MAX_LOOKUPS) break;
-          // Stop if running low on time (250s of 300s max)
-          if (Date.now() - startTime > 250_000) {
-            complaintsErrors.push(`311 linking stopped at ${lookupCount} lookups (time budget)`);
+        let allUnlinked: { unique_key: string; incident_address: string }[] = [];
+        let uOffset = 0;
+        while (true) {
+          const { data: batch, error: fetchErr } = await supabase
+            .from("complaints_311")
+            .select("unique_key, incident_address")
+            .is("building_id", null)
+            .eq("metro", "nyc")
+            .not("incident_address", "is", null)
+            .gte("imported_at", linkCutoff.toISOString())
+            .range(uOffset, uOffset + 5000 - 1);
+          if (fetchErr) {
+            complaintsErrors.push(`NYC 311 fetch error: ${fetchErr.message}`);
             break;
           }
-          lookupCount++;
+          if (!batch || batch.length === 0) break;
+          allUnlinked = allUnlinked.concat(batch as { unique_key: string; incident_address: string }[]);
+          if (batch.length < 5000) break;
+          uOffset += 5000;
+        }
 
-          const { data: matchedBuildings } = await supabase
-            .from("buildings")
-            .select("id")
-            .ilike("full_address", `%${address}%`)
-            .limit(1);
+        if (allUnlinked.length > 0) {
+          // Group by normalized address
+          const addrToKeys = new Map<string, string[]>();
+          for (const r of allUnlinked) {
+            const normalized = (r.incident_address as string)
+              .trim().toUpperCase()
+              .replace(/[.,#]/g, "")
+              .replace(/\s+/g, " ")
+              .replace(/\s+(APT|UNIT|#|FL|FLOOR|STE|SUITE|RM|ROOM)\b.*$/i, "")
+              .trim();
+            if (normalized.length < 5) continue;
+            if (!addrToKeys.has(normalized)) addrToKeys.set(normalized, []);
+            addrToKeys.get(normalized)!.push(r.unique_key);
+          }
 
-          if (matchedBuildings && matchedBuildings.length > 0) {
-            const buildingId = matchedBuildings[0].id;
+          let matched = 0;
+          let unmatched = 0;
+          for (const [addr, uniqueKeys] of addrToKeys) {
+            if ((Date.now() - startTime) / 1000 > 250) {
+              complaintsErrors.push(`311 linking stopped at time budget (${matched} matched, ${unmatched} unmatched so far)`);
+              break;
+            }
+
+            const buildingId = nycBuildingAddrMap.get(addr);
+            if (!buildingId) { unmatched++; continue; }
+            matched++;
+
             for (let i = 0; i < uniqueKeys.length; i += 500) {
               const keyBatch = uniqueKeys.slice(i, i + 500);
               const { error: linkError } = await supabase
@@ -2994,11 +3612,14 @@ async function runLinkOnly(
               if (!linkError) {
                 complaintsLinked += keyBatch.length;
               } else {
-                complaintsErrors.push(`311 link error (${address}): ${linkError.message}`);
+                complaintsErrors.push(`311 link error (${addr}): ${linkError.message}`);
               }
             }
             allAffectedIds.add(buildingId);
           }
+          complaintsErrors.push(`NYC 311: ${allUnlinked.length} unlinked, ${matched} addresses matched, ${unmatched} unmatched`);
+        } else {
+          complaintsErrors.push(`NYC 311: no unlinked records found`);
         }
       }
     } catch (err) {
@@ -3145,6 +3766,135 @@ async function runLinkOnly(
     }
   }
 
+  // Link Chicago records by address using in-memory batch matching.
+  // Same pattern as LA: load Chicago buildings once, then match locally.
+  const chicagoAddrTables: { name: string; table: string; idColumn: string; addressColumns: string[]; label: string }[] = [
+    { name: "chicago-violations", table: "dob_violations", idColumn: "id", addressColumns: ["house_number", "street_name"], label: "Chicago Violations" },
+    { name: "chicago-311", table: "complaints_311", idColumn: "unique_key", addressColumns: ["incident_address"], label: "Chicago 311" },
+    { name: "chicago-permits", table: "dob_permits", idColumn: "id", addressColumns: ["house_no", "street_name"], label: "Chicago Permits" },
+    { name: "chicago-rlto", table: "chicago_rlto_violations", idColumn: "id", addressColumns: ["address"], label: "Chicago RLTO" },
+    { name: "chicago-lead", table: "chicago_lead_inspections", idColumn: "id", addressColumns: ["address"], label: "Chicago Lead" },
+  ];
+
+  const shouldLinkChicago = chicagoAddrTables.some(t => sourceParam === "chicago" || sourceParam === t.name) || !sourceParam;
+  if (shouldLinkChicago && (Date.now() - startTime) / 1000 < 200) {
+    const chiErrors: string[] = [];
+    let chicagoBuildingAddrMap: Map<string, string> | null = null;
+    try {
+      const allBuildings: { id: string; full_address: string }[] = [];
+      let offset = 0;
+      while (true) {
+        const { data: batch } = await supabase
+          .from("buildings")
+          .select("id, full_address")
+          .eq("metro", "chicago")
+          .range(offset, offset + 10000 - 1);
+        if (!batch || batch.length === 0) break;
+        allBuildings.push(...batch);
+        if (batch.length < 10000) break;
+        offset += 10000;
+      }
+
+      chicagoBuildingAddrMap = new Map<string, string>();
+      for (const b of allBuildings) {
+        const street = b.full_address.split(",")[0]?.trim() || "";
+        const normalized = street.toUpperCase().replace(/[.,#]/g, "").replace(/\s+/g, " ").trim();
+        if (normalized.length >= 5) {
+          chicagoBuildingAddrMap.set(normalized, b.id);
+        }
+      }
+      chiErrors.push(`Loaded ${allBuildings.length} Chicago buildings, ${chicagoBuildingAddrMap.size} unique addresses`);
+    } catch (err) {
+      chiErrors.push(`Failed to load Chicago buildings: ${String(err)}`);
+    }
+
+    if (chicagoBuildingAddrMap && chicagoBuildingAddrMap.size > 0) {
+      const linkCutoff = new Date();
+      linkCutoff.setDate(linkCutoff.getDate() - 30);
+
+      for (const { name, table, idColumn, addressColumns, label } of chicagoAddrTables) {
+        if (sourceParam && sourceParam !== "chicago" && sourceParam !== name) continue;
+        if ((Date.now() - startTime) / 1000 > 260) break;
+
+        const tableErrors: string[] = [...chiErrors];
+        let tableLinked = 0;
+        try {
+          const cols = [idColumn, ...addressColumns].join(", ");
+          const primaryCol = addressColumns[addressColumns.length - 1];
+          let allUnlinked: Record<string, unknown>[] = [];
+          let offset = 0;
+          while (true) {
+            const { data: batch } = await supabase
+              .from(table)
+              .select(cols)
+              .is("building_id", null)
+              .eq("metro", "chicago")
+              .not(primaryCol, "is", null)
+              .gte("imported_at", linkCutoff.toISOString())
+              .range(offset, offset + 5000 - 1);
+            if (!batch || batch.length === 0) break;
+            allUnlinked = allUnlinked.concat(batch as unknown as Record<string, unknown>[]);
+            if (batch.length < 5000) break;
+            offset += 5000;
+          }
+
+          if (allUnlinked.length === 0) {
+            tableErrors.push(`${label}: no unlinked records found`);
+            linkResults[name] = { linked: 0, errors: tableErrors };
+            continue;
+          }
+
+          const addrToIds = new Map<string, string[]>();
+          for (const r of allUnlinked) {
+            let raw: string;
+            if (addressColumns.length > 1) {
+              raw = addressColumns.map(c => String(r[c] || "").trim()).filter(Boolean).join(" ");
+            } else {
+              raw = String(r[addressColumns[0]] || "").trim();
+            }
+            const normalized = raw.toUpperCase().replace(/[.,#]/g, "").replace(/\s+/g, " ")
+              .replace(/\s+(APT|UNIT|#|FL|FLOOR|STE|SUITE|RM|ROOM)\b.*$/i, "").trim();
+            if (normalized.length < 5) continue;
+            if (!addrToIds.has(normalized)) addrToIds.set(normalized, []);
+            addrToIds.get(normalized)!.push(String(r[idColumn]));
+          }
+
+          let matched = 0;
+          let unmatched = 0;
+          for (const [addr, recordIds] of addrToIds) {
+            const buildingId = chicagoBuildingAddrMap.get(addr);
+            if (!buildingId) { unmatched++; continue; }
+            matched++;
+
+            for (let i = 0; i < recordIds.length; i += 200) {
+              const batch = recordIds.slice(i, i + 200);
+              const { error: linkError } = await supabase
+                .from(table)
+                .update({ building_id: buildingId })
+                .in(idColumn, batch);
+
+              if (!linkError) {
+                tableLinked += batch.length;
+              } else {
+                tableErrors.push(`${label} link error: ${linkError.message}`);
+              }
+            }
+            allAffectedIds.add(buildingId);
+          }
+          tableErrors.push(`${label}: ${allUnlinked.length} unlinked, ${matched} addresses matched, ${unmatched} unmatched`);
+        } catch (err) {
+          tableErrors.push(`${label} Chicago link error: ${String(err)}`);
+        }
+
+        const existing = linkResults[name];
+        linkResults[name] = {
+          linked: (existing?.linked ?? 0) + tableLinked,
+          errors: [...(existing?.errors ?? []), ...tableErrors],
+        };
+      }
+    }
+  }
+
   // Update building counts for all affected buildings
   let countErrors: string[] = [];
   if (allAffectedIds.size > 0 && (Date.now() - startTime) / 1000 < 260) {
@@ -3174,6 +3924,25 @@ async function runLinkOnly(
   }
 
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+
+  // Log link run to sync_log for monitoring
+  const totalLinked = Object.values(linkResults).reduce((sum, r) => sum + r.linked, 0);
+  const allErrors = [
+    ...errors,
+    ...countErrors,
+    ...Object.entries(linkResults).flatMap(([name, r]) => r.errors.map(e => `[${name}] ${e}`)),
+  ];
+  try {
+    await supabase.from("sync_log").insert({
+      sync_type: `link_${sourceParam || "all"}`,
+      status: "completed",
+      records_added: 0,
+      records_linked: totalLinked,
+      errors: allErrors.length > 0 ? allErrors : null,
+      started_at: syncStartTime,
+      completed_at: new Date().toISOString(),
+    });
+  } catch { /* best-effort logging */ }
 
   return NextResponse.json({
     success: true,

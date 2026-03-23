@@ -50,6 +50,19 @@ const ENERGY_CONFIG: Record<City, EnergyConfig> = {
     jsonLdDescription:
       "ENERGY STAR scores and energy benchmarking data for Los Angeles buildings, sourced from the EBEWE program.",
   },
+  chicago: {
+    pageTitle: "Chicago Energy Scores",
+    metaDescription:
+      "How energy-efficient is your building? See ENERGY STAR scores, utility costs, and emissions data for Chicago buildings from the Chicago Energy Benchmarking program.",
+    headerTitle: "Chicago Energy Scores",
+    headerDescription:
+      "See how energy-efficient Chicago buildings are. ENERGY STAR scores, energy use intensity (EUI), and greenhouse gas emissions from Chicago\u2019s Energy Benchmarking Ordinance data.",
+    programName: "CEB",
+    dataSourceLabel: "Chicago Energy Benchmarking",
+    jsonLdName: "Chicago Building Energy Scores",
+    jsonLdDescription:
+      "ENERGY STAR scores and energy benchmarking data for Chicago buildings, sourced from the Chicago Energy Benchmarking program.",
+  },
 };
 
 /* ---------------------------------------------------------------------------

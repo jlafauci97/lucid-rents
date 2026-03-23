@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { ChevronDown, ArrowLeftRight, ShieldCheck, ShieldAlert, Wrench, BarChart3, Construction, ClipboardList, Zap, TrainFront, Scale, Tent, FileText } from "lucide-react";
+import { ChevronDown, ArrowLeftRight, ShieldCheck, ShieldAlert, Wrench, BarChart3, Construction, ClipboardList, Zap, TrainFront, Scale, Tent, FileText, AlertTriangle, Home, Droplets, Flame } from "lucide-react";
 import { type City, DEFAULT_CITY, CITY_META } from "@/lib/cities";
 import { cityPath } from "@/lib/seo";
 
@@ -84,20 +84,50 @@ const tools: ToolItem[] = [
     label: "Tenant Rights",
     description: "Know your rights as a tenant",
   },
+  {
+    path: "/problem-landlords",
+    icon: AlertTriangle,
+    label: "Problem Landlords",
+    description: "Building code scofflaw list & fines",
+    cities: ["chicago"],
+  },
+  {
+    path: "/affordable-housing",
+    icon: Home,
+    label: "Affordable Housing",
+    description: "ARO affordable units tracker",
+    cities: ["chicago"],
+  },
+  {
+    path: "/lead-safety",
+    icon: Droplets,
+    label: "Lead Safety",
+    description: "Lead paint inspection results & risk map",
+    cities: ["chicago"],
+  },
+  {
+    path: "/heating-tracker",
+    icon: Flame,
+    label: "Heating Tracker",
+    description: "No-heat complaints & winter safety",
+    cities: ["chicago"],
+  },
 ];
 
 function getToolLabel(tool: ToolItem, city: City): string {
   if (tool.path === "/rent-stabilization") {
-    return city === "los-angeles" ? "RSO Checker" : tool.label;
+    if (city === "los-angeles") return "RSO Checker";
+    if (city === "chicago") return "RLTO Checker";
+    return tool.label;
   }
   return tool.label;
 }
 
 function getToolDescription(tool: ToolItem, city: City): string {
   if (tool.path === "/rent-stabilization") {
-    return city === "los-angeles"
-      ? "Check if a building is under LA's Rent Stabilization Ordinance"
-      : tool.description;
+    if (city === "los-angeles") return "Check if a building is under LA's Rent Stabilization Ordinance";
+    if (city === "chicago") return "Check RLTO protections and just cause eviction coverage";
+    return tool.description;
   }
   return tool.description;
 }

@@ -122,6 +122,8 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
     });
 
   const isLA = city === "los-angeles";
+  const isChicago = city === "chicago";
+  const isNYC = city === "nyc";
   const emptyHpdLit = [] as HpdLitigation[];
   const emptyDobVio = [] as DobViolation[];
   const emptyBedbugs = [] as BedBugReport[];
@@ -131,10 +133,10 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
   const [violations, complaints, litigations, dobViolations, bedbugs, evictions, permits, energyData, reviews, units, violationSummaries, rents, amenities, marketListings, rentHistory, monitorStatus, saveStatus, neighborhoodRentsRaw] = await Promise.all([
     safe(supabase.from("hpd_violations").select("*").eq("building_id", buildingId).order("inspection_date", { ascending: false }).limit(20), [] as HpdViolation[]),
     safe(supabase.from("complaints_311").select("*").eq("building_id", buildingId).order("created_date", { ascending: false }).limit(20), [] as Complaint311[]),
-    isLA ? Promise.resolve(emptyHpdLit) : safe(supabase.from("hpd_litigations").select("*").eq("building_id", buildingId).order("case_open_date", { ascending: false }).limit(20), emptyHpdLit),
-    isLA ? Promise.resolve(emptyDobVio) : safe(supabase.from("dob_violations").select("*").eq("building_id", buildingId).order("issue_date", { ascending: false }).limit(20), emptyDobVio),
-    isLA ? Promise.resolve(emptyBedbugs) : safe(supabase.from("bedbug_reports").select("*").eq("building_id", buildingId).order("filing_date", { ascending: false }).limit(20), emptyBedbugs),
-    isLA ? Promise.resolve(emptyEvictions) : safe(supabase.from("evictions").select("*").eq("building_id", buildingId).order("executed_date", { ascending: false }).limit(20), emptyEvictions),
+    isNYC ? safe(supabase.from("hpd_litigations").select("*").eq("building_id", buildingId).order("case_open_date", { ascending: false }).limit(20), emptyHpdLit) : Promise.resolve(emptyHpdLit),
+    isNYC ? safe(supabase.from("dob_violations").select("*").eq("building_id", buildingId).order("issue_date", { ascending: false }).limit(20), emptyDobVio) : Promise.resolve(emptyDobVio),
+    isNYC ? safe(supabase.from("bedbug_reports").select("*").eq("building_id", buildingId).order("filing_date", { ascending: false }).limit(20), emptyBedbugs) : Promise.resolve(emptyBedbugs),
+    isNYC ? safe(supabase.from("evictions").select("*").eq("building_id", buildingId).order("executed_date", { ascending: false }).limit(20), emptyEvictions) : Promise.resolve(emptyEvictions),
     safe(supabase.from("dob_permits").select("*").eq("building_id", buildingId).order("issued_date", { ascending: false }).limit(20), [] as DobPermit[]),
     safe(supabase.from("energy_benchmarks").select("*").eq("building_id", buildingId).order("report_year", { ascending: false }).limit(1), [] as EnergyBenchmark[]),
     safe(supabase.from("reviews").select(`*, profile:profiles(id, display_name, avatar_url), category_ratings:review_category_ratings(*, category:review_categories(slug, name, icon)), unit:units(unit_number)`).eq("building_id", buildingId).eq("status", "published").order("created_at", { ascending: false }).limit(10), []) as Promise<ReviewWithDetails[]>,
@@ -160,6 +162,19 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
     })(),
     null, // placeholder for saveStatus — extracted from authStatus below
     safe(supabase.from("building_rents").select("bedrooms, median_rent, buildings!inner(zip_code)").eq("buildings.zip_code", building.zip_code!).neq("building_id", buildingId), [] as { bedrooms: number; median_rent: number; buildings: { zip_code: string }[] }[]),
+  ]);
+
+  // Chicago-specific data fetches
+  const [chicagoRlto, chicagoLead, chicagoScofflaw] = await Promise.all([
+    isChicago
+      ? safe(supabase.from("chicago_rlto_violations").select("*").eq("building_id", buildingId).order("violation_date", { ascending: false }).limit(50), [])
+      : Promise.resolve([]),
+    isChicago
+      ? safe(supabase.from("chicago_lead_inspections").select("*").eq("building_id", buildingId).order("inspection_date", { ascending: false }).limit(50), [])
+      : Promise.resolve([]),
+    isChicago
+      ? safe(supabase.from("chicago_scofflaws").select("*").eq("building_id", buildingId).limit(1), [])
+      : Promise.resolve([]),
   ]);
 
   const authStatus = monitorStatus as unknown as { monitored: boolean; saved: boolean };
@@ -353,11 +368,11 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
                         </dd>
                       </div>
                     )}
-                  {(building.bbl || building.apn) && (
+                  {(building.bbl || building.apn || building.pin) && (
                     <div>
-                      <dt className="text-[#94a3b8]">{building.apn ? "APN" : "BBL"}</dt>
+                      <dt className="text-[#94a3b8]">{building.pin ? "PIN" : building.apn ? "APN" : "BBL"}</dt>
                       <dd className="text-[#0F1D2E] font-mono text-xs">
-                        {building.apn || building.bbl}
+                        {building.pin || building.apn || building.bbl}
                       </dd>
                     </div>
                   )}
@@ -394,7 +409,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
               <EnergyScoreCard data={energyData[0] || null} />
             </div>
 
-            {/* Seismic & Fire Zones */}
+            {/* Seismic & Fire Zones (NYC / LA only) */}
             {isLA && building.latitude && building.longitude ? (
               <HazardZonesCard
                 latitude={building.latitude}
@@ -403,11 +418,60 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
                 softStoryStatus={building.soft_story_status}
                 city={city}
               />
-            ) : (
+            ) : isNYC ? (
               <SeismicSafetyCard
                 isSoftStory={building.is_soft_story}
                 softStoryStatus={building.soft_story_status}
               />
+            ) : null}
+
+            {/* Chicago Info */}
+            {isChicago && (
+              <Card>
+                <CardHeader>
+                  <h3 className="font-semibold text-[#0F1D2E]">Chicago Info</h3>
+                </CardHeader>
+                <CardContent>
+                  <dl className="space-y-3 text-sm">
+                    {building.is_rlto_protected != null && (
+                      <div>
+                        <dt className="text-[#94a3b8]">RLTO Protection</dt>
+                        <dd className="text-[#0F1D2E] font-medium">
+                          {building.is_rlto_protected ? (
+                            <span className="text-green-600">Protected</span>
+                          ) : (
+                            <span className="text-[#94a3b8]">Not covered</span>
+                          )}
+                        </dd>
+                      </div>
+                    )}
+                    {building.is_scofflaw != null && (
+                      <div>
+                        <dt className="text-[#94a3b8]">Scofflaw Status</dt>
+                        <dd className="text-[#0F1D2E] font-medium">
+                          {building.is_scofflaw ? (
+                            <span className="text-red-600">Scofflaw</span>
+                          ) : (
+                            <span className="text-green-600">Clear</span>
+                          )}
+                        </dd>
+                      </div>
+                    )}
+                    {building.ward && (
+                      <div>
+                        <dt className="text-[#94a3b8]">Ward</dt>
+                        <dd className="text-[#0F1D2E] font-medium">{building.ward}</dd>
+                      </div>
+                    )}
+                    {building.community_area && (
+                      <div>
+                        <dt className="text-[#94a3b8]">Community Area</dt>
+                        <dd className="text-[#0F1D2E] font-medium">{building.community_area}</dd>
+                      </div>
+                    )}
+                  </dl>
+                </CardContent>
+              </Card>
             )}
 
             {/* Nearby Transit */}

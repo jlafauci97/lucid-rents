@@ -38,10 +38,10 @@ function getTabs(city: City) {
     { key: "dob" as TabKey, label: `${agencies.building} Violations`, icon: HardHat, activeBg: "bg-blue-50 ring-1 ring-[#3B82F6]", activeText: "text-[#3B82F6]" },
     { key: "bedbugs" as TabKey, label: "Bedbugs", icon: Bug, activeBg: "bg-purple-50 ring-1 ring-[#9333EA]", activeText: "text-[#9333EA]" },
     { key: "evictions" as TabKey, label: "Evictions", icon: DoorOpen, activeBg: "bg-pink-50 ring-1 ring-[#EC4899]", activeText: "text-[#EC4899]" },
-    { key: "permits" as TabKey, label: city === "los-angeles" ? "LADBS Permits" : "Permits", icon: ClipboardList, activeBg: "bg-teal-50 ring-1 ring-[#0D9488]", activeText: "text-[#0D9488]" },
+    { key: "permits" as TabKey, label: city === "los-angeles" ? "LADBS Permits" : city === "chicago" ? "CDBS Permits" : "Permits", icon: ClipboardList, activeBg: "bg-teal-50 ring-1 ring-[#0D9488]", activeText: "text-[#0D9488]" },
   ];
-  // Filter out NYC-only tabs when viewing LA buildings
-  if (city === "los-angeles") {
+  // Filter out NYC-only tabs when viewing LA or Chicago buildings
+  if (city !== "nyc") {
     return allTabs.filter(tab => !NYC_ONLY_TABS.includes(tab.key));
   }
   return allTabs;

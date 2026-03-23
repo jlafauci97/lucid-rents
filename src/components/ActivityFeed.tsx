@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Shield, MessageSquare, Star, Scale, HardHat, Siren, Bug, DoorOpen, DollarSign, FileCheck, ShieldAlert } from "lucide-react";
+import { Shield, MessageSquare, Star, Scale, HardHat, Siren, Bug, DoorOpen, DollarSign, FileCheck, ShieldAlert, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import type { ActivityItem } from "@/app/api/activity/route";
 import { buildingUrl, cityPath } from "@/lib/seo";
@@ -97,6 +97,18 @@ function ActivityIcon({ type }: { type: ActivityItem["type"] }) {
           <ShieldAlert className="w-[18px] h-[18px] text-[#6366F1]" />
         </div>
       );
+    case "rlto_violation":
+      return (
+        <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center">
+          <ShieldAlert className="w-[18px] h-[18px] text-[#D97706]" />
+        </div>
+      );
+    case "lead_inspection":
+      return (
+        <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center">
+          <AlertTriangle className="w-[18px] h-[18px] text-[#059669]" />
+        </div>
+      );
   }
 }
 
@@ -126,6 +138,10 @@ function typeLabel(type: ActivityItem["type"]): string {
       return "Building Permit";
     case "enforcement":
       return "Enforcement";
+    case "rlto_violation":
+      return "RLTO Violation";
+    case "lead_inspection":
+      return "Lead Inspection";
   }
 }
 
@@ -154,6 +170,10 @@ function typeBadgeClasses(type: ActivityItem["type"]): string {
       return "bg-teal-50 text-[#14B8A6]";
     case "enforcement":
       return "bg-indigo-50 text-[#6366F1]";
+    case "rlto_violation":
+      return "bg-amber-50 text-[#D97706]";
+    case "lead_inspection":
+      return "bg-emerald-50 text-[#059669]";
   }
 }
 
