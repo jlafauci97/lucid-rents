@@ -17,7 +17,12 @@ import {
   NYC_ZIP_NEIGHBORHOODS,
   NYC_ZIP_BOROUGHS,
 } from "@/lib/nyc-neighborhoods";
+import {
+  searchLANeighborhoods,
+  LA_ZIP_NEIGHBORHOODS,
+} from "@/lib/la-neighborhoods";
 import { buildingUrl } from "@/lib/seo";
+import type { City } from "@/lib/cities";
 
 const PAGE_SIZE = 24;
 
@@ -48,6 +53,8 @@ interface TransitBuildingListProps {
   lineColor: string;
   lineTextColor: string;
   routeName: string;
+  city?: City;
+  rsLabel?: string;
 }
 
 export function TransitBuildingList({
@@ -57,11 +64,14 @@ export function TransitBuildingList({
   lineColor,
   lineTextColor,
   routeName,
+  city = "nyc",
+  rsLabel = "Rent Stabilized",
 }: TransitBuildingListProps) {
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
 
   const isSubway = lineType === "subway";
+  const isLA = city === "los-angeles";
   const Icon = isSubway ? TrainFront : Bus;
   const badgeColor = lineColor === "#FCCC0A" ? "#92400e" : lineColor;
   const badgeBg = `${lineColor}15`;
@@ -69,8 +79,15 @@ export function TransitBuildingList({
   // Resolve neighborhood matches for display chips (limited to 5)
   const neighborhoodMatches = useMemo(() => {
     if (query.trim().length < 2) return [];
+    if (isLA) {
+      return searchLANeighborhoods(query.trim(), 5).map((m) => ({
+        zipCode: m.zipCode,
+        name: m.name,
+        borough: m.region,
+      }));
+    }
     return searchNeighborhoods(query.trim(), 5);
-  }, [query]);
+  }, [query, isLA]);
 
   // Get ALL zip codes that match the query (no limit) for filtering
   const matchedZips = useMemo(() => {
@@ -80,18 +97,22 @@ export function TransitBuildingList({
     const zips = new Set<string>();
     const isDigits = /^\d+$/.test(q);
 
-    for (const [zip, name] of Object.entries(NYC_ZIP_NEIGHBORHOODS)) {
+    const zipMap = isLA ? LA_ZIP_NEIGHBORHOODS : NYC_ZIP_NEIGHBORHOODS;
+
+    for (const [zip, name] of Object.entries(zipMap)) {
       if (isDigits) {
         if (zip.startsWith(q)) zips.add(zip);
       } else {
-        // Match neighborhood name OR borough name
         if (name.toLowerCase().includes(q)) zips.add(zip);
-        const borough = NYC_ZIP_BOROUGHS[zip];
-        if (borough && borough.toLowerCase().includes(q)) zips.add(zip);
+        // NYC has borough lookup
+        if (!isLA) {
+          const borough = NYC_ZIP_BOROUGHS[zip];
+          if (borough && borough.toLowerCase().includes(q)) zips.add(zip);
+        }
       }
     }
     return zips;
-  }, [query]);
+  }, [query, isLA]);
 
   // Filter buildings
   const filtered = useMemo(() => {
@@ -106,7 +127,7 @@ export function TransitBuildingList({
       }
       // Match by zip code directly (partial match)
       if (zip && zip.startsWith(q)) return true;
-      // Match by address, borough, station name (substring)
+      // Match by address, borough/area, station name (substring)
       if (b.full_address.toLowerCase().includes(q)) return true;
       if (b.borough.toLowerCase().includes(q)) return true;
       if (b.nearest_station.toLowerCase().includes(q)) return true;
@@ -127,6 +148,8 @@ export function TransitBuildingList({
     setPage(1);
   }
 
+  const regionLabel = isLA ? "area" : "borough";
+
   return (
     <div>
       {/* Search input */}
@@ -137,7 +160,7 @@ export function TransitBuildingList({
             type="text"
             value={query}
             onChange={(e) => handleQueryChange(e.target.value)}
-            placeholder="Filter by neighborhood, zip code, or address..."
+            placeholder={`Filter by neighborhood, zip code, or address...`}
             className="w-full pl-10 pr-10 py-3 text-sm border border-[#e2e8f0] rounded-xl bg-white text-[#0F1D2E] placeholder:text-[#94a3b8] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/30 focus:border-[#3B82F6] transition-all"
           />
           {query && (
@@ -191,7 +214,7 @@ export function TransitBuildingList({
           {paged.map((building) => (
             <Link
               key={building.id}
-              href={buildingUrl(building)}
+              href={buildingUrl(building, city)}
               className="group bg-white border border-[#e2e8f0] rounded-xl p-4 hover:shadow-md hover:border-[#3B82F6]/40 transition-all"
             >
               <h3 className="font-semibold text-[#0F1D2E] group-hover:text-[#3B82F6] transition-colors truncate text-sm">
@@ -213,7 +236,7 @@ export function TransitBuildingList({
                   style={{ backgroundColor: badgeBg, color: badgeColor }}
                 >
                   <Icon className="w-3 h-3" />
-                  {building.nearest_station} \u00b7{" "}
+                  {building.nearest_station} &middot;{" "}
                   {building.station_distance_mi} mi
                 </span>
               </div>
@@ -253,7 +276,7 @@ export function TransitBuildingList({
                 ) : null}
                 {building.is_rent_stabilized && (
                   <span className="text-emerald-600 font-medium">
-                    Rent Stabilized
+                    {rsLabel}
                   </span>
                 )}
               </div>

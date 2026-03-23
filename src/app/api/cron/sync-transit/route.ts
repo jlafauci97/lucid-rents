@@ -160,6 +160,7 @@ async function upsertBatch(stops: TransitStop[]) {
     longitude: s.longitude,
     routes: s.routes,
     ada_accessible: s.ada_accessible,
+    metro: "nyc",
     updated_at: new Date().toISOString(),
   }));
 

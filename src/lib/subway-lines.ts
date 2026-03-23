@@ -7,6 +7,42 @@ export interface SubwayLine {
   group: string;
 }
 
+// ── LA Metro Rail Lines ─────────────────────────────────────────────
+export interface MetroLine {
+  letter: string;
+  name: string;
+  slug: string;
+  color: string;
+  textColor: string;
+  group: "Rail" | "BRT";
+  /** Route name used in transit_stops.routes (matches GTFS data) */
+  routeId: string;
+}
+
+export const LA_METRO_LINES: MetroLine[] = [
+  // Rail lines
+  { letter: "A", name: "A Line (Blue)", slug: "a-line", color: "#0072BC", textColor: "white", group: "Rail", routeId: "801" },
+  { letter: "B", name: "B Line (Red)", slug: "b-line", color: "#E3242B", textColor: "white", group: "Rail", routeId: "802" },
+  { letter: "C", name: "C Line (Green)", slug: "c-line", color: "#58A738", textColor: "white", group: "Rail", routeId: "803" },
+  { letter: "D", name: "D Line (Purple)", slug: "d-line", color: "#A05DA5", textColor: "white", group: "Rail", routeId: "804" },
+  { letter: "E", name: "E Line (Expo)", slug: "e-line", color: "#FDB913", textColor: "black", group: "Rail", routeId: "806" },
+  { letter: "K", name: "K Line (Crenshaw)", slug: "k-line", color: "#D29AD3", textColor: "black", group: "Rail", routeId: "807" },
+  { letter: "L", name: "L Line (Gold)", slug: "l-line", color: "#F5A12D", textColor: "black", group: "Rail", routeId: "805" },
+  // Bus Rapid Transit
+  { letter: "G", name: "G Line (Orange)", slug: "g-line", color: "#F58220", textColor: "black", group: "BRT", routeId: "901" },
+  { letter: "J", name: "J Line (Silver)", slug: "j-line", color: "#A1A3A4", textColor: "black", group: "BRT", routeId: "910" },
+];
+
+export function getMetroLineBySlug(slug: string): MetroLine | undefined {
+  return LA_METRO_LINES.find((l) => l.slug === slug);
+}
+
+export function getMetroLineByRouteId(routeId: string): MetroLine | undefined {
+  // Handle both raw route_id (e.g. "801-13196") and short name (e.g. "801")
+  const shortId = routeId.includes("-") ? routeId.split("-")[0] : routeId;
+  return LA_METRO_LINES.find((l) => l.routeId === routeId || l.routeId === shortId);
+}
+
 export const SUBWAY_LINES: SubwayLine[] = [
   // 1/2/3 (Red)
   { letter: "1", name: "1 Train", slug: "1-train", color: "#EE352E", textColor: "white", group: "1/2/3" },
@@ -68,4 +104,14 @@ export function busRouteFromSlug(slug: string | undefined): string | null {
     route = "Bx" + route.slice(2);
   }
   return route;
+}
+
+// ── LA Metro Bus route slug helpers ─────────────────────────────────
+export function laMetroBusSlug(routeName: string): string {
+  return `metro-${routeName.toLowerCase()}-bus`;
+}
+
+export function laMetroBusFromSlug(slug: string | undefined): string | null {
+  if (!slug || !slug.startsWith("metro-") || !slug.endsWith("-bus")) return null;
+  return slug.slice(6, -4).toUpperCase();
 }
