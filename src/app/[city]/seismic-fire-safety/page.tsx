@@ -454,7 +454,7 @@ export default async function SeismicFireSafetyPage({
                 geological and environmental factors — they do not guarantee that
                 a specific event will or will not occur at any location. This
                 guide is for informational purposes only and is not a
-                professional geological or fire safety assessment. For specific
+                professional geological or fire zone assessment. For specific
                 concerns about a building, consult a licensed engineer or contact
                 LADBS.
               </p>

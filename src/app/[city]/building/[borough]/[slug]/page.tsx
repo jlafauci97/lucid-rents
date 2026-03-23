@@ -393,7 +393,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
               <EnergyScoreCard data={energyData[0] || null} />
             </div>
 
-            {/* Seismic & Fire Safety */}
+            {/* Seismic & Fire Zones */}
             {isLA && building.latitude && building.longitude ? (
               <HazardZonesCard
                 latitude={building.latitude}

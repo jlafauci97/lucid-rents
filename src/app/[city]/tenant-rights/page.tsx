@@ -4,7 +4,6 @@ import {
   Scale,
   Phone,
   AlertTriangle,
-  ShieldAlert,
 } from "lucide-react";
 import { TENANT_RIGHTS_BY_CITY } from "@/lib/tenant-rights-data";
 import { CITY_META, type City } from "@/lib/cities";
@@ -87,23 +86,6 @@ export default async function TenantRightsPage({
                 </p>
               </Link>
             ))}
-            {/* Seismic & Fire Safety — dedicated page, LA only */}
-            {city === "los-angeles" && (
-              <Link
-                href={`/${city}/seismic-fire-safety`}
-                className="group bg-white rounded-xl border border-[#e2e8f0] hover:shadow-md hover:border-[#cbd5e1] transition-all p-6"
-              >
-                <div className="inline-flex items-center justify-center w-10 h-10 rounded-lg border bg-amber-50 text-amber-600 border-amber-200 mb-4">
-                  <ShieldAlert className="w-5 h-5" />
-                </div>
-                <h3 className="text-lg font-semibold text-[#0F1D2E] mb-2 group-hover:text-[#3B82F6] transition-colors">
-                  Seismic & Fire Zones
-                </h3>
-                <p className="text-sm text-gray-500 leading-relaxed">
-                  Check if your building is in an earthquake fault zone, liquefaction area, fire hazard zone, or needs seismic retrofitting.
-                </p>
-              </Link>
-            )}
           </div>
         </section>
 
