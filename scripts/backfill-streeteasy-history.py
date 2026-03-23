@@ -60,6 +60,43 @@ MAX_RETRIES = 3
 RETRY_DELAY = 5
 PAGE_DELAY = 4  # seconds between building fetches
 XLS_DELAY = 2   # seconds between XLS downloads
+PROGRESS_FILE = Path(__file__).parent / ".backfill-progress.json"
+PROGRESS_SAVE_INTERVAL = 10  # save every N buildings
+
+# ── PROGRESS TRACKING ─────────────────────────────────────────────────────
+_progress_lock = threading.Lock()
+_progress_done = set()
+_progress_counter = 0
+
+def load_progress():
+    """Load previously processed building IDs from progress file."""
+    global _progress_done
+    if PROGRESS_FILE.exists():
+        try:
+            data = json.loads(PROGRESS_FILE.read_text())
+            _progress_done = set(data.get("done", []))
+            print(f"Loaded progress: {len(_progress_done)} buildings already done (will skip)")
+        except Exception as e:
+            print(f"Warning: Could not load progress file: {e}")
+            _progress_done = set()
+
+def save_progress():
+    """Save progress to disk."""
+    with _progress_lock:
+        PROGRESS_FILE.write_text(json.dumps({"done": list(_progress_done)}))
+
+def mark_done(building_id: str):
+    """Mark a building as processed and periodically save."""
+    global _progress_counter
+    with _progress_lock:
+        _progress_done.add(building_id)
+        _progress_counter += 1
+        should_save = _progress_counter % PROGRESS_SAVE_INTERVAL == 0
+    if should_save:
+        save_progress()
+
+def is_done(building_id: str) -> bool:
+    return building_id in _progress_done
 
 # ── AMENITY CATEGORIZATION ──────────────────────────────────────────────────
 AMENITY_CATEGORIES = {
@@ -184,6 +221,8 @@ def fetch_page(url: str):
                 headless=True,
                 real_chrome=True,
                 network_idle=True,
+                block_images=True,
+                block_webfonts=True,
                 timeout=30000,
                 wait=5000,
             )
@@ -822,26 +861,35 @@ def main():
         print(f"Fetching buildings ({label}) for address-based StreetEasy lookup...")
 
         # Paginate through all matching buildings (Supabase max 1000 per request)
-        page_size = 1000
+        page_size = 500  # Smaller pages to avoid statement timeout
         offset = args.offset
         target_limit = args.limit or 0  # 0 = no limit
         all_rows = []
 
         while True:
-            query = supabase.table("buildings") \
-                .select("id,house_number,street_name,borough") \
-                .order("id")
-
-            if borough_filter:
-                query = query.eq("borough", borough_filter)
-            if args.min_units:
-                query = query.gte("residential_units", args.min_units)
-
             batch_size = min(page_size, target_limit - len(all_rows)) if target_limit else page_size
-            query = query.range(offset, offset + batch_size - 1)
 
-            result = query.execute()
-            if not result.data:
+            for db_attempt in range(3):
+                try:
+                    query = supabase.table("buildings") \
+                        .select("id,house_number,street_name,borough") \
+                        .order("id")
+
+                    if borough_filter:
+                        query = query.eq("borough", borough_filter)
+                    if args.min_units:
+                        query = query.gte("residential_units", args.min_units)
+
+                    query = query.range(offset, offset + batch_size - 1)
+                    result = query.execute()
+                    break
+                except Exception as e:
+                    print(f"  DB query timeout (attempt {db_attempt + 1}/3): {e}")
+                    time.sleep(5 * (db_attempt + 1))
+                    result = None
+            if result is None or not result.data:
+                if result is None:
+                    print("  DB query failed after 3 attempts, stopping.")
                 break
 
             all_rows.extend(result.data)
@@ -872,6 +920,7 @@ def main():
         return
 
     num_workers = max(1, args.workers)
+    load_progress()
     print(f"Found {len(buildings)} unique buildings to process")
     print(f"Workers: {num_workers}")
     print(f"Dry run: {args.dry_run}")
@@ -887,6 +936,8 @@ def main():
 
     def process_building(idx, slug, building_id):
         """Process a single building — designed to run in a thread."""
+        if is_done(building_id):
+            return  # Skip already-processed buildings
         url = building_page_url(slug)
         with lock:
             counters["done"] += 1
@@ -899,12 +950,14 @@ def main():
             print(f"  FAILED to fetch after {MAX_RETRIES} retries")
             with lock:
                 counters["fail"] += 1
+            # Don't mark failed as done — retry on next run
             return
 
         if page.status == 404:
             print(f"  Not found on StreetEasy (404)")
             with lock:
                 counters["404"] += 1
+            mark_done(building_id)  # No point retrying 404s
             return
 
         # Parse RSC data
@@ -924,6 +977,7 @@ def main():
             print(f"  No structured data found on page")
             with lock:
                 counters["skip"] += 1
+            mark_done(building_id)
             return
 
         # Process rental summary
@@ -958,6 +1012,7 @@ def main():
             counters["amenities"] += amenity_count
             if name_saved:
                 counters["names"] += 1
+        mark_done(building_id)
 
         # Print summary for this building
         info_parts = []
@@ -1015,6 +1070,7 @@ def main():
                 except Exception as e:
                     print(f"\nWorker error: {e}")
 
+    save_progress()  # Final save
     print(f"\n{'=' * 60}")
     print(f"SUMMARY")
     print(f"{'=' * 60}")
