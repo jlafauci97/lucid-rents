@@ -72,7 +72,7 @@ export function CitySwitcher() {
         <div className="absolute top-full left-0 mt-2 w-48 bg-[#1A2B3D] border border-white/10 rounded-lg shadow-xl overflow-hidden z-50">
           {VALID_CITIES.map((c) => {
             const isActive = c === city;
-            const href = isActive ? pathname : `/${c}`;
+            const href = isActive ? pathname : buildCityPath(pathname, city, c);
 
             return (
               <Link
@@ -116,7 +116,7 @@ export function MobileCitySwitcher() {
       <span className="text-xs text-gray-400 uppercase tracking-wider mr-1">City</span>
       {VALID_CITIES.map((c) => {
         const isActive = c === city;
-        const href = isActive ? pathname : `/${c}`;
+        const href = isActive ? pathname : buildCityPath(pathname, city, c);
 
         return (
           <Link
