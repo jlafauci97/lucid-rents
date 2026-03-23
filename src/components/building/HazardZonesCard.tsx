@@ -97,10 +97,10 @@ export function HazardZonesCard({
     );
   }
 
-  // No data or no hazards found + no soft-story — hide entirely
-  const hasActiveHazards = data && data.activeCount > 0;
-  if (!hasActiveHazards && !isSoftStory) return null;
+  // Always show for LA buildings so tenants see "all clear" status too
+  if (!data) return null;
 
+  const hasActiveHazards = data.activeCount > 0;
   const overallSafe = !hasActiveHazards && (!isSoftStory || softStoryStatus === "Retrofitted");
 
   return (
