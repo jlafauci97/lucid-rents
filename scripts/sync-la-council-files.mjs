@@ -15,7 +15,6 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { createClient } from "@supabase/supabase-js";
-import * as cheerio from "cheerio";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const envPath = path.join(__dirname, "..", ".env.local");
@@ -71,6 +70,18 @@ function normalizeLaStatus(raw) {
   return "active";
 }
 
+// Extract text after a label in the CFMS div layout:
+// <div class="reclabel">Label</div>\n<div class="rectext">Value</div>
+function extractField(html, label) {
+  const re = new RegExp(`<div[^>]*class="reclabel"[^>]*>[^<]*${label}[^<]*</div>\\s*<div[^>]*class="rectext"[^>]*>([^<]+)</div>`, "i");
+  const m = html.match(re);
+  return m ? m[1].trim() : null;
+}
+
+function stripHtml(str) {
+  return (str || "").replace(/<[^>]+>/g, "").trim();
+}
+
 async function scrapeCouncilFile(cfNumber) {
   const url = `https://cityclerk.lacity.org/lacityclerkconnect/index.cfm?fa=ccfi.viewrecord&cfnumber=${cfNumber}`;
   try {
@@ -79,31 +90,32 @@ async function scrapeCouncilFile(cfNumber) {
     });
     if (!res.ok) return null;
     const html = await res.text();
-    const $ = cheerio.load(html);
 
-    const title = $("td:contains('Title')").next("td").text().trim() ||
-                  $(".cfTitle").text().trim() ||
-                  $("h2").first().text().trim();
+    // Check for valid page (not empty or error)
+    if (html.includes("No records found") || html.length < 500) return null;
+
+    const title = extractField(html, "Title") ||
+                  extractField(html, "Subject");
     if (!title || title.length < 5) return null;
 
-    const mover = $("td:contains('Mover')").next("td").text().trim() ||
-                  $("td:contains('Initiated by')").next("td").text().trim() || null;
-    const dateReceived = $("td:contains('Date Received')").next("td").text().trim() ||
-                         $("td:contains('Introduced')").next("td").text().trim() || null;
-    const lastChanged = $("td:contains('Last Changed')").next("td").text().trim() || null;
-    const status = $("td:contains('Status')").next("td").text().trim() || null;
+    const mover = extractField(html, "Mover") ||
+                  extractField(html, "Initiated by") || null;
+    const dateReceived = extractField(html, "Date Received") ||
+                         extractField(html, "Introduced") || null;
+    const lastChanged = extractField(html, "Last Changed") || null;
+    const status = extractField(html, "Status") || null;
 
     let councilDistrict = null;
-    const cdMatch = title.match(/CD\s*(\d+)/i) || $("body").text().match(/Council District\s*(\d+)/i);
+    const cdMatch = title.match(/CD\s*(\d+)/i) || html.match(/Council District\s*(\d+)/i);
     if (cdMatch) councilDistrict = parseInt(cdMatch[1]);
 
     return {
       cfNumber,
-      title,
-      mover,
-      dateReceived: dateReceived ? parseDate(dateReceived) : null,
-      lastChanged: lastChanged ? parseDate(lastChanged) : null,
-      status,
+      title: stripHtml(title),
+      mover: mover ? stripHtml(mover) : null,
+      dateReceived: dateReceived ? parseDate(stripHtml(dateReceived)) : null,
+      lastChanged: lastChanged ? parseDate(stripHtml(lastChanged)) : null,
+      status: status ? stripHtml(status) : null,
       councilDistrict,
       sourceUrl: url,
     };
