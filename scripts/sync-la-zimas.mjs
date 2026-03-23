@@ -20,7 +20,7 @@ const envText = fs.readFileSync(envPath, "utf8");
 const env = {};
 for (const line of envText.split("\n")) {
   const m = line.match(/^([^#=]+)=(.*)$/);
-  if (m) env[m[1].trim()] = m[2].trim().replace(/^"|"$/g, "");
+  if (m) env[m[1].trim()] = m[2].trim().replace(/^"|"$/g, "").replace(/\\n/g, "");
 }
 
 const supabase = createClient(
