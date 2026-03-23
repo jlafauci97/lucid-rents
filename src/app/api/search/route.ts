@@ -42,6 +42,32 @@ export async function GET(req: NextRequest) {
 
   const supabase = await createClient();
 
+  // Use ranked search function for text queries to get proper relevance ordering
+  if (q) {
+    const { data, error } = await supabase.rpc("search_buildings_ranked", {
+      search_query: q,
+      city_filter: cityParam || null,
+      borough_filter: borough || null,
+      zip_filter: zip || null,
+      sort_by: sort || "relevance",
+      page_offset: offset,
+      page_limit: limit,
+    });
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    const buildings = (data || []).map((row: Record<string, unknown>) => {
+      const { total_count, ...building } = row;
+      return building;
+    });
+    const total = data?.[0]?.total_count ?? 0;
+
+    return NextResponse.json({ buildings, total, page });
+  }
+
+  // Non-text queries: browse by filters only
   let query = supabase
     .from("buildings")
     .select("*", { count: "exact" })
@@ -49,9 +75,6 @@ export async function GET(req: NextRequest) {
 
   if (cityParam) {
     query = query.eq("metro", cityParam);
-  }
-  if (q) {
-    query = query.textSearch("search_vector", q, { type: "websearch", config: "english" });
   }
   if (borough) {
     query = query.eq("borough", borough);

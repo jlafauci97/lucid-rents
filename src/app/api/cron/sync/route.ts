@@ -2414,7 +2414,7 @@ async function syncLAPDCrimeData(
 
 /**
  * Sync LADBS building permits.
- * LA Open Data endpoint: hbkd-qubn (LADBS Permits)
+ * LA Open Data endpoint: pi9x-tg5x (Building Permits Issued 2020+)
  * Equivalent of NYC DOB permits — stores in dob_permits with metro='los-angeles'
  */
 async function syncLAPermits(
@@ -2436,7 +2436,7 @@ async function syncLAPermits(
 
     while (hasMore) {
       const url = buildLASodaUrl(
-        "hbkd-qubn",
+        "pi9x-tg5x",
         `issue_date > '${lastSync}'`,
         PAGE_SIZE,
         offset,
@@ -2453,26 +2453,30 @@ async function syncLAPermits(
       if (!records || records.length === 0) { hasMore = false; break; }
 
       const rows = records
-        .filter((r: Record<string, unknown>) => r.permit_nbr || r.pcis_permit)
-        .map((r: Record<string, unknown>) => ({
-          job_number: `LADBS-${r.permit_nbr || r.pcis_permit}`,
-          permit_type: r.permit_type ? String(r.permit_type) : null,
-          permit_subtype: r.permit_sub_type ? String(r.permit_sub_type) : null,
-          work_type: r.work_description ? String(r.work_description) : null,
-          filing_date: r.issue_date ? String(r.issue_date).slice(0, 10) : null,
-          issuance_date: r.issue_date ? String(r.issue_date).slice(0, 10) : null,
-          expiration_date: r.expiration_date ? String(r.expiration_date).slice(0, 10) : null,
-          status: r.status ? String(r.status) : null,
-          borough: r.council_district ? `District ${r.council_district}` : "Los Angeles",
-          house_no: r.address ? String(r.address).match(/^(\d[\w-]*)\s/)?.[1] || null : null,
-          street_name: r.address ? String(r.address).replace(/^(\d[\w-]*)\s+/, "").trim() || null : null,
-          zip_code: r.zip_code ? String(r.zip_code).slice(0, 5) : null,
-          metro: "los-angeles",
-          imported_at: new Date().toISOString(),
-        }));
+        .filter((r: Record<string, unknown>) => r.permit_nbr)
+        .map((r: Record<string, unknown>) => {
+          const addr = r.primary_address ? String(r.primary_address) : "";
+          return {
+            work_permit: `LADBS-${r.permit_nbr}`,
+            work_type: r.permit_type ? String(r.permit_type) : null,
+            permit_status: r.status_desc ? String(r.status_desc) : null,
+            filing_reason: r.permit_sub_type ? String(r.permit_sub_type) : null,
+            issued_date: r.issue_date ? String(r.issue_date).slice(0, 10) : null,
+            job_description: r.work_desc ? String(r.work_desc).substring(0, 500) : null,
+            estimated_job_costs: r.valuation ? parseFloat(String(r.valuation)) : null,
+            borough: r.cpa ? String(r.cpa) : (r.apc ? String(r.apc) : "Los Angeles"),
+            house_no: addr.match(/^(\d[\w-]*)\s/)?.[1] || null,
+            street_name: addr.replace(/^\d[\w-]*\s+/, "").trim() || null,
+            zip_code: r.zip_code ? String(r.zip_code).slice(0, 5) : null,
+            latitude: r.lat ? parseFloat(String(r.lat)) : null,
+            longitude: r.lon ? parseFloat(String(r.lon)) : null,
+            metro: "los-angeles",
+            imported_at: new Date().toISOString(),
+          };
+        });
 
       if (rows.length > 0) {
-        totalAdded += await batchUpsert(supabase, "dob_permits", rows, "job_number", errors, "LA Permits");
+        totalAdded += await batchUpsert(supabase, "dob_permits", rows, "work_permit", errors, "LA Permits");
       }
 
       pagesFetched++;

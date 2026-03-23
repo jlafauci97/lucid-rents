@@ -327,12 +327,14 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
                       <dd className="text-[#0F1D2E] font-medium">
                         {building.owner_name}
                       </dd>
-                      <Link
-                        href={landlordUrl(building.owner_name)}
-                        className="text-xs text-[#3B82F6] hover:text-[#2563EB] font-medium mt-0.5 inline-block transition-colors"
-                      >
-                        View Portfolio &rarr;
-                      </Link>
+                      {building.owner_name !== "UNAVAILABLE OWNER" && (
+                        <Link
+                          href={landlordUrl(building.owner_name)}
+                          className="text-xs text-[#3B82F6] hover:text-[#2563EB] font-medium mt-0.5 inline-block transition-colors"
+                        >
+                          View Portfolio &rarr;
+                        </Link>
+                      )}
                     </div>
                   )}
                   {building.building_class && (
@@ -525,7 +527,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
         </div>
 
         {/* Same Landlord Buildings — cross-link within portfolio */}
-        {building.owner_name && (
+        {building.owner_name && building.owner_name !== "UNAVAILABLE OWNER" && (
           <div id="same-landlord" className="mt-8">
             <SameLandlordBuildings
               buildingId={buildingId}

@@ -26,6 +26,9 @@ export function BuildingHeader({ building, city = "nyc" }: BuildingHeaderProps) 
             <ScoreGauge score={score} size="lg" showLabel />
           </div>
           <div className="flex-1">
+            {building.name && (
+              <p className="text-sm font-medium text-[#3B82F6] mb-0.5">{building.name}</p>
+            )}
             <h1 className="text-2xl sm:text-3xl font-bold text-[#0F1D2E]">
               {building.full_address}
             </h1>

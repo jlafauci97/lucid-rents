@@ -120,14 +120,12 @@ async function main() {
           issue_date: r.violation_date ? String(r.violation_date).slice(0, 10) : null,
           violation_type: r.violation_code || null,
           description: r.violation_description || null,
-          status: r.violation_status || null,
           disposition_date: r.violation_status_date
             ? String(r.violation_status_date).slice(0, 10)
             : null,
+          disposition_comments: r.violation_status || null,
           house_number: parsed.house_number,
           street_name: parsed.street_name,
-          latitude: r.latitude ? parseFloat(r.latitude) : null,
-          longitude: r.longitude ? parseFloat(r.longitude) : null,
           metro: "chicago",
         };
       });

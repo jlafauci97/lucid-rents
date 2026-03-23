@@ -103,18 +103,21 @@ async function SearchResults({
   const limit = 20;
   const offset = (page - 1) * limit;
 
-  let query = supabase
-    .from("buildings")
-    .select("*", { count: "exact" })
-    .textSearch("search_vector", q, { type: "websearch", config: "english" })
-    .range(offset, offset + limit - 1);
+  const { data: rows } = await supabase.rpc("search_buildings_ranked", {
+    search_query: q,
+    city_filter: city || null,
+    borough_filter: borough || null,
+    zip_filter: zip || null,
+    sort_by: sort,
+    page_offset: offset,
+    page_limit: limit,
+  });
 
-  if (borough) query = query.eq("borough", borough);
-  if (zip) query = query.eq("zip_code", zip);
-
-  query = applySortOrder(query, sort);
-
-  const { data: buildings, count } = await query;
+  const buildings = (rows || []).map((row: Record<string, unknown>) => {
+    const { total_count, ...building } = row;
+    return building;
+  });
+  const count = (rows?.[0] as Record<string, unknown>)?.total_count as number ?? 0;
 
   if (!buildings || buildings.length === 0) {
     return (
