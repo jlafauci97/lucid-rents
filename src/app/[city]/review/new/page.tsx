@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { ReviewForm } from "@/components/review/ReviewForm";
+import { ReviewWizard } from "@/components/review/ReviewWizard";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -22,17 +22,35 @@ export default async function ReviewNewPage({ searchParams }: ReviewNewPageProps
 
   const params = await searchParams;
 
-  // Fetch categories for the form
   const { data: categories } = await supabase
     .from("review_categories")
     .select("id, slug, name")
     .order("display_order", { ascending: true });
 
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("display_name")
+    .eq("id", user.id)
+    .single();
+
+  let buildingAmenities: { amenity: string; category: string }[] = [];
+  if (params.building) {
+    const { data: amenities } = await supabase
+      .from("building_amenities")
+      .select("amenity, category")
+      .eq("building_id", params.building);
+    buildingAmenities = amenities || [];
+  }
+
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <ReviewForm
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <h1 className="text-2xl font-bold text-[#0F1D2E] mb-2">Submit a Review</h1>
+      <p className="text-sm text-[#64748b] mb-8">Your changes are automatically saved as you progress.</p>
+      <ReviewWizard
         preselectedBuildingId={params.building}
         categories={categories || []}
+        buildingAmenities={buildingAmenities}
+        userName={profile?.display_name || null}
       />
     </div>
   );
