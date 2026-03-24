@@ -5,13 +5,11 @@ import { NextRequest, NextResponse } from "next/server";
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
 
-  // Check auth
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Parse body
   const json = await req.json();
   const parsed = createReviewSchema.safeParse(json);
   if (!parsed.success) {
@@ -23,10 +21,9 @@ export async function POST(req: NextRequest) {
 
   const data = parsed.data;
 
-  // If unit_number provided but no unit_id, create or find unit
+  // Create or find unit
   let unitId = data.unit_id;
   if (!unitId && data.unit_number) {
-    // Check if unit exists
     const { data: existingUnit } = await supabase
       .from("units")
       .select("id")
@@ -37,13 +34,9 @@ export async function POST(req: NextRequest) {
     if (existingUnit) {
       unitId = existingUnit.id;
     } else {
-      // Create unit
       const { data: newUnit, error: unitError } = await supabase
         .from("units")
-        .insert({
-          building_id: data.building_id,
-          unit_number: data.unit_number,
-        })
+        .insert({ building_id: data.building_id, unit_number: data.unit_number })
         .select("id")
         .single();
 
@@ -54,6 +47,26 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Auto-calculate overall rating: mean of category ratings, rounded to nearest 0.5
+  const avgRating = data.category_ratings.reduce((sum, cr) => sum + cr.rating, 0) / data.category_ratings.length;
+  const overallRating = Math.round(avgRating * 2) / 2;
+
+  // Build reviewer display name from profile if preference is 'name'
+  let reviewerName: string | null = null;
+  if (data.reviewer_display_preference === "name") {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("display_name")
+      .eq("id", user.id)
+      .single();
+    if (profile?.display_name) {
+      const parts = profile.display_name.trim().split(/\s+/);
+      reviewerName = parts.length > 1
+        ? `${parts[0]} ${parts[parts.length - 1][0]}.`
+        : parts[0];
+    }
+  }
+
   // Create review
   const { data: review, error: reviewError } = await supabase
     .from("reviews")
@@ -61,13 +74,20 @@ export async function POST(req: NextRequest) {
       user_id: user.id,
       building_id: data.building_id,
       unit_id: unitId || null,
-      overall_rating: data.overall_rating,
+      reviewer_name: reviewerName,
+      overall_rating: overallRating,
       title: data.title,
       body: data.body,
-      move_in_date: data.move_in_date || null,
+      pro_tags: data.pro_tags,
+      con_tags: data.con_tags,
+      move_in_date: data.move_in_date,
       move_out_date: data.move_out_date || null,
-      rent_amount: data.rent_amount || null,
-      lease_type: data.lease_type || null,
+      rent_amount: data.rent_amount,
+      lease_type: data.lease_type,
+      landlord_name: data.landlord_name || null,
+      would_recommend: data.would_recommend,
+      is_pet_friendly: data.is_pet_friendly ?? null,
+      reviewer_display_preference: data.reviewer_display_preference,
     })
     .select("id")
     .single();
@@ -93,8 +113,42 @@ export async function POST(req: NextRequest) {
       .insert(ratingsToInsert);
 
     if (ratingsError) {
-      // Review was created but ratings failed - log but don't fail
       console.error("Failed to insert category ratings:", ratingsError);
+    }
+  }
+
+  // Insert photo records
+  if (data.photo_paths && data.photo_paths.length > 0) {
+    const photosToInsert = data.photo_paths.map((path) => ({
+      review_id: review.id,
+      storage_path: path,
+    }));
+
+    const { error: photosError } = await supabase
+      .from("review_photos")
+      .insert(photosToInsert);
+
+    if (photosError) {
+      console.error("Failed to insert review photos:", photosError);
+    }
+  }
+
+  // Insert amenity confirmations
+  if (data.amenities && data.amenities.length > 0) {
+    const amenitiesToInsert = data.amenities.map((a) => ({
+      review_id: review.id,
+      building_id: data.building_id,
+      amenity: a.amenity,
+      category: a.category,
+      confirmed: a.confirmed,
+    }));
+
+    const { error: amenitiesError } = await supabase
+      .from("review_amenities")
+      .insert(amenitiesToInsert);
+
+    if (amenitiesError) {
+      console.error("Failed to insert review amenities:", amenitiesError);
     }
   }
 
