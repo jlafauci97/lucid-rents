@@ -237,15 +237,18 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
         { name: shortAddress, url: buildingUrl(building, city) },
       ])} />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-2">
-        <Breadcrumbs
-          items={[
-            { label: "Home", href: "/" },
-            { label: "Buildings", href: cityPath("/buildings", city) },
-            { label: building.borough, href: cityPath(`/buildings/${boroughSlug}`, city) },
-            { label: shortAddress, href: buildingUrl(building, city) },
-          ]}
-        />
+      <div className="bg-[#0F1D2E]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-2">
+          <Breadcrumbs
+            items={[
+              { label: "Home", href: "/" },
+              { label: "Buildings", href: cityPath("/buildings", city) },
+              { label: building.borough, href: cityPath(`/buildings/${boroughSlug}`, city) },
+              { label: shortAddress, href: buildingUrl(building, city) },
+            ]}
+            variant="dark"
+          />
+        </div>
       </div>
 
       <BuildingHeader building={building} city={city} violationCount={effectiveViolationCount} />
