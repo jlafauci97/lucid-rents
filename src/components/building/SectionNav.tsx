@@ -137,8 +137,8 @@ export function SectionNav() {
       <div ref={sentinelRef} className="h-0" aria-hidden="true" />
 
       <nav
-        className={`sticky top-16 z-30 bg-white border-b border-[#e2e8f0] transition-shadow duration-200 ${
-          isSticky ? "shadow-md" : ""
+        className={`sticky top-16 z-30 bg-[#3B82F6] transition-shadow duration-200 ${
+          isSticky ? "shadow-lg shadow-blue-500/20" : ""
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -158,15 +158,15 @@ export function SectionNav() {
                   onClick={() => scrollToSection(section.id)}
                   className={`group shrink-0 flex items-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
                     isActive
-                      ? "bg-[#3B82F6]/10 text-[#3B82F6]"
-                      : "text-[#64748b] hover:bg-[#f1f5f9] hover:text-[#0F1D2E]"
+                      ? "bg-white/20 text-white"
+                      : "text-white/70 hover:bg-white/10 hover:text-white"
                   }`}
                 >
                   <Icon
                     className={`w-4 h-4 transition-colors ${
                       isActive
-                        ? "text-[#3B82F6]"
-                        : "text-[#94a3b8] group-hover:text-[#64748b]"
+                        ? "text-white"
+                        : "text-white/50 group-hover:text-white/80"
                     }`}
                   />
                   <span className="whitespace-nowrap">{section.label}</span>

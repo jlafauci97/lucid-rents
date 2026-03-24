@@ -69,7 +69,7 @@ export async function Navbar() {
                 </Link>
                 <Link
                   href="/register"
-                  className="text-sm bg-[#3B82F6] hover:bg-[#2563EB] text-[#0F1D2E] font-medium px-4 py-2 rounded-lg transition-colors"
+                  className="text-sm bg-[#3B82F6] hover:bg-[#2563EB] text-white font-semibold px-5 py-2 rounded-full transition-colors"
                 >
                   Sign Up
                 </Link>
