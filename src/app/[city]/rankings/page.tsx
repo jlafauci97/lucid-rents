@@ -5,24 +5,27 @@ import { buildingUrl, canonicalUrl } from "@/lib/seo";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { getRegions, getRegionLabel } from "@/lib/constants";
-import type { City } from "@/lib/cities";
+import { CITY_META, type City } from "@/lib/cities";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = {
-  title: "Worst Rated Buildings in NYC | Lucid Rents",
-  description:
-    "Which NYC buildings have the most problems? See the worst-rated buildings ranked by HPD violations and 311 complaints across all five boroughs.",
-  alternates: { canonical: canonicalUrl("/rankings") },
-  openGraph: {
-    title: "Worst Rated Buildings in NYC",
-    description:
-      "Which NYC buildings have the most problems? See the worst-rated buildings ranked by HPD violations and 311 complaints.",
-    url: canonicalUrl("/rankings"),
-    siteName: "Lucid Rents",
-    type: "website",
-    locale: "en_US",
-  },
-};
+export async function generateMetadata({ params }: RankingsPageProps): Promise<Metadata> {
+  const { city: cityParam } = await params;
+  const city = cityParam as City;
+  const { fullName } = CITY_META[city] || CITY_META.nyc;
+  return {
+    title: `Worst Rated Buildings in ${fullName} | Lucid Rents`,
+    description: `Which ${fullName} buildings have the most problems? See the worst-rated buildings ranked by violations and 311 complaints.`,
+    alternates: { canonical: canonicalUrl(`/${city}/rankings`) },
+    openGraph: {
+      title: `Worst Rated Buildings in ${fullName}`,
+      description: `Which ${fullName} buildings have the most problems? See the worst-rated buildings ranked by violations and 311 complaints.`,
+      url: canonicalUrl(`/${city}/rankings`),
+      siteName: "Lucid Rents",
+      type: "website",
+      locale: "en_US",
+    },
+  };
+}
 
 export const revalidate = 3600;
 
@@ -49,7 +52,8 @@ export default async function RankingsPage({ params: routeParams, searchParams }
     .from("buildings")
     .select(
       "id, full_address, borough, zip_code, slug, year_built, total_units, num_floors, owner_name, overall_score, review_count, violation_count, complaint_count"
-    );
+    )
+    .eq("metro", city);
 
   if (borough !== "all") {
     query = query.eq("borough", borough);
@@ -89,7 +93,7 @@ export default async function RankingsPage({ params: routeParams, searchParams }
           Worst Rated Buildings
         </h1>
         <p className="text-[#64748b] mt-2">
-          NYC buildings ranked by the most HPD violations, 311 complaints, and reported issues.
+          {CITY_META[city]?.fullName || "NYC"} buildings ranked by the most violations, 311 complaints, and reported issues.
         </p>
       </div>
 

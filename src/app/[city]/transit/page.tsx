@@ -131,6 +131,38 @@ export default async function TransitHubPage({ params }: { params: Promise<{ cit
   const city = isValidCity(cityParam) ? cityParam : "nyc";
   const meta = CITY_META[city];
   const isLA = city === "los-angeles";
+  const isChicago = city === "chicago";
+
+  // Chicago transit data not yet available — show coming soon
+  if (isChicago) {
+    return (
+      <AdSidebar>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="mb-8">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-blue-50 rounded-lg">
+                <TrainFront className="w-6 h-6 text-[#00A1DE]" />
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-[#0F1D2E]">
+                Apartments Near Transit
+              </h1>
+            </div>
+            <p className="text-[#64748b] text-sm sm:text-base max-w-3xl">
+              Find apartments within walking distance of CTA &lsquo;L&rsquo; train stations and bus stops across Chicago.
+            </p>
+          </div>
+          <div className="bg-white border border-[#e2e8f0] rounded-xl p-12 text-center">
+            <TrainFront className="w-12 h-12 text-[#cbd5e1] mx-auto mb-3" />
+            <h2 className="text-lg font-bold text-[#0F1D2E] mb-2">CTA Transit Data Coming Soon</h2>
+            <p className="text-sm text-[#64748b] max-w-md mx-auto">
+              We&apos;re working on importing CTA &lsquo;L&rsquo; train and bus stop data for Chicago.
+              Check back soon to find apartments near Red, Blue, Brown, Green, Orange, Pink, Purple, and Yellow line stations.
+            </p>
+          </div>
+        </div>
+      </AdSidebar>
+    );
+  }
 
   const supabase = await createClient();
 
