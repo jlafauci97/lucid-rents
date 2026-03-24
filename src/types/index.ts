@@ -2,7 +2,7 @@ import type { City } from "@/lib/cities";
 
 export type Borough = "Manhattan" | "Brooklyn" | "Queens" | "Bronx" | "Staten Island";
 
-export type LeaseType = "rent_stabilized" | "market_rate" | "rent_controlled" | "rso";
+export type LeaseType = "rent_stabilized" | "market_rate" | "rent_controlled" | "rso" | "rlto";
 
 export type ReviewStatus = "draft" | "published" | "flagged" | "removed";
 
@@ -123,9 +123,10 @@ export interface ReviewSubcategory {
 
 export interface Review {
   id: string;
-  user_id: string;
+  user_id: string | null;
   building_id: string;
   unit_id: string | null;
+  reviewer_name: string | null;
   overall_rating: number;
   title: string | null;
   body: string | null;
@@ -133,6 +134,12 @@ export interface Review {
   move_out_date: string | null;
   rent_amount: number | null;
   lease_type: LeaseType | null;
+  landlord_name: string | null;
+  would_recommend: boolean | null;
+  is_pet_friendly: boolean | null;
+  reviewer_display_preference: "name" | "anonymous";
+  pro_tags: string[];
+  con_tags: string[];
   status: ReviewStatus;
   helpful_count: number;
   created_at: string;
@@ -147,12 +154,30 @@ export interface ReviewCategoryRating {
   subcategory_flags: string[];
 }
 
+export interface ReviewPhoto {
+  id: string;
+  review_id: string;
+  storage_path: string;
+  created_at: string;
+}
+
+export interface ReviewAmenity {
+  id: string;
+  review_id: string;
+  building_id: string;
+  amenity: string;
+  category: string;
+  confirmed: boolean;
+  created_at: string;
+}
+
 export interface ReviewWithDetails extends Review {
   profile: Pick<Profile, "id" | "display_name" | "avatar_url">;
   category_ratings: (ReviewCategoryRating & {
     category: Pick<ReviewCategory, "slug" | "name" | "icon">;
   })[];
   unit: Pick<Unit, "unit_number"> | null;
+  photos?: ReviewPhoto[];
 }
 
 export interface HpdViolation {
