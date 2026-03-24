@@ -186,7 +186,7 @@ Dashboard shows a "Retry" button for `failed` drafts (starts a new workflow run 
 
 ## Cron Triggers (1 new multiplexed job)
 
-**Important:** The existing `vercel.json` already has 37 cron entries. Vercel Pro allows a maximum of 40. To preserve headroom, all marketing crons are consolidated into a single endpoint that fans out based on the current time.
+**Important:** The existing `vercel.json` already has 38 cron entries. Vercel Pro allows a maximum of 40. To preserve headroom, all marketing crons are consolidated into a single endpoint that fans out based on the current time.
 
 | Cron | Schedule | Endpoint | What it does |
 |------|----------|----------|--------------|
@@ -197,7 +197,7 @@ Dashboard shows a "Retry" button for `failed` drafts (starts a new workflow run 
 2. **At 0:00, 6:00, 12:00, 18:00 UTC** (checked via `new Date().getUTCHours()`): Also start content generation workflow run
 3. **At 0:00 UTC only:** Also start analytics pull workflow run
 
-This uses 1 cron slot instead of 3, leaving 2 slots of headroom. The route is still thin — it just calls `start(workflow)` for whichever workflows are due, then returns 200. All real work is in WDK.
+This uses 1 cron slot instead of 3, leaving 1 slot of headroom (38 existing + 1 marketing = 39 of 40 max). The ceiling is tight — future cron additions should consider consolidating existing jobs. The route is still thin — it just calls `start(workflow)` for whichever workflows are due, then returns 200. All real work is in WDK.
 
 ---
 
@@ -457,13 +457,13 @@ Descriptions are keyword-rich (200-500 chars). Target keywords per city:
 - Right panel: Platform variant tabs (IG, TikTok, X, LinkedIn, Pinterest, etc.) — each editable
 - Bottom panel: Video/image preview (playable/zoomable)
 - Source data section: Collapsible — shows what data generated this post with links to LucidRents pages
-- Action bar: `Approve & Publish` | `Edit` | `Reject` | `Reschedule`
+- Action bar: `Approve & Publish` | `Edit` | `Reject`
 
 **Batch action bar** (when 2+ drafts ready):
 ```
 3 drafts ready  ·  [ Review All ] [ Approve All ]
 ```
-"Approve All" triggers `resumeHook` for each. Publishes with 2-minute gaps to avoid spam detection.
+"Approve All" calls a single server-side endpoint (`POST /api/marketing/approve-batch`) that accepts an array of draft IDs. The endpoint sequences `resumeHook` calls server-side with enforced 2-minute delays between each (using `setTimeout` in a `waitUntil` block). This ensures the gaps are durable — the browser can close after clicking and publishing still completes in order.
 
 ### Reddit Tab
 
