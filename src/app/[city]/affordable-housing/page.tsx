@@ -5,6 +5,8 @@ import {
   ExternalLink,
   AlertCircle,
   ArrowUpDown,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { canonicalUrl, cityPath, buildingUrl } from "@/lib/seo";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
@@ -52,8 +54,8 @@ interface AffordableUnit {
   building: { slug: string; borough: string } | null;
 }
 
-async function fetchAffordableUnits(): Promise<AffordableUnit[]> {
-  const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/chicago_affordable_units?select=id,project_name,address,total_units,affordable_units,income_requirement,status,ward,latitude,longitude,building:buildings(slug,borough)&order=affordable_units.desc.nullslast&limit=500`;
+async function fetchAffordableUnits(offset: number, limit: number): Promise<AffordableUnit[]> {
+  const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/chicago_affordable_units?select=id,project_name,address,total_units,affordable_units,income_requirement,status,ward,latitude,longitude,building:buildings(slug,borough)&order=affordable_units.desc.nullslast&limit=${limit}&offset=${offset}`;
   const res = await fetch(url, {
     headers: {
       apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -79,10 +81,15 @@ async function fetchAffordableCount(): Promise<number> {
 
 export default async function AffordableHousingPage({
   params,
+  searchParams: searchParamsPromise,
 }: {
   params: Promise<{ city: string }>;
+  searchParams: Promise<{ page?: string }>;
 }) {
   const { city } = await params;
+  const searchParams = await searchParamsPromise;
+  const currentPage = parseInt(searchParams.page || "1", 10);
+  const pageSize = 50;
 
   if (city !== "chicago") {
     return (
@@ -109,10 +116,12 @@ export default async function AffordableHousingPage({
 
   if (!isValidCity(city)) return null;
 
+  const offset = (currentPage - 1) * pageSize;
   const [units, totalCount] = await Promise.all([
-    fetchAffordableUnits(),
+    fetchAffordableUnits(offset, pageSize),
     fetchAffordableCount(),
   ]);
+  const totalPages = Math.ceil(totalCount / pageSize);
 
   const totalAffordableUnits = units.reduce(
     (sum, u) => sum + (u.affordable_units || 0),
@@ -217,7 +226,7 @@ export default async function AffordableHousingPage({
             ARO Projects
           </h2>
           <p className="text-sm text-[#64748b] mb-4">
-            Showing {units.length.toLocaleString()} of{" "}
+            Showing {offset + 1}–{Math.min(offset + pageSize, totalCount).toLocaleString()} of{" "}
             {totalCount.toLocaleString()} projects, sorted by affordable unit
             count.
           </p>
@@ -318,6 +327,41 @@ export default async function AffordableHousingPage({
               </tbody>
             </table>
           </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4 pt-4 border-t border-[#e2e8f0]">
+              <span className="text-xs text-[#64748b]">
+                Page {currentPage} of {totalPages}
+              </span>
+              <div className="flex items-center gap-2">
+                {currentPage > 1 ? (
+                  <Link
+                    href={`/${city}/affordable-housing?page=${currentPage - 1}`}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e2e8f0] text-[#334155] hover:bg-[#f8fafc] transition-colors"
+                  >
+                    <ChevronLeft className="w-3 h-3" /> Previous
+                  </Link>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e2e8f0] text-[#334155] opacity-40 cursor-not-allowed">
+                    <ChevronLeft className="w-3 h-3" /> Previous
+                  </span>
+                )}
+                {currentPage < totalPages ? (
+                  <Link
+                    href={`/${city}/affordable-housing?page=${currentPage + 1}`}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e2e8f0] text-[#334155] hover:bg-[#f8fafc] transition-colors"
+                  >
+                    Next <ChevronRight className="w-3 h-3" />
+                  </Link>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e2e8f0] text-[#334155] opacity-40 cursor-not-allowed">
+                    Next <ChevronRight className="w-3 h-3" />
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
         </section>
 
         {/* Info cards */}

@@ -7,8 +7,10 @@ import {
   ArrowUpDown,
   CheckCircle2,
   XCircle,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
-import { canonicalUrl, cityPath } from "@/lib/seo";
+import { canonicalUrl, cityPath, buildingUrl } from "@/lib/seo";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
@@ -48,10 +50,11 @@ interface LeadInspection {
   risk_level: string | null;
   hazard_type: string | null;
   ward: number | null;
+  building: { slug: string; borough: string } | null;
 }
 
-async function fetchLeadInspections(): Promise<LeadInspection[]> {
-  const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/chicago_lead_inspections?select=id,address,inspection_date,result,risk_level,hazard_type,ward&order=inspection_date.desc.nullslast&limit=500`;
+async function fetchLeadInspections(offset: number, limit: number): Promise<LeadInspection[]> {
+  const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/chicago_lead_inspections?select=id,address,inspection_date,result,risk_level,hazard_type,ward,building:buildings(slug,borough)&order=inspection_date.desc.nullslast&limit=${limit}&offset=${offset}`;
   const res = await fetch(url, {
     headers: {
       apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -89,10 +92,15 @@ function isFail(result: string | null): boolean {
 
 export default async function LeadSafetyPage({
   params,
+  searchParams: searchParamsPromise,
 }: {
   params: Promise<{ city: string }>;
+  searchParams: Promise<{ page?: string }>;
 }) {
   const { city } = await params;
+  const searchParams = await searchParamsPromise;
+  const currentPage = parseInt(searchParams.page || "1", 10);
+  const pageSize = 50;
 
   if (city !== "chicago") {
     return (
@@ -119,10 +127,12 @@ export default async function LeadSafetyPage({
 
   if (!isValidCity(city)) return null;
 
+  const offset = (currentPage - 1) * pageSize;
   const [inspections, totalCount] = await Promise.all([
-    fetchLeadInspections(),
+    fetchLeadInspections(offset, pageSize),
     fetchLeadCount(),
   ]);
+  const totalPages = Math.ceil(totalCount / pageSize);
 
   const passCount = inspections.filter((i) => isPass(i.result)).length;
   const failCount = inspections.filter((i) => isFail(i.result)).length;
@@ -224,7 +234,7 @@ export default async function LeadSafetyPage({
             Inspection Results
           </h2>
           <p className="text-sm text-[#64748b] mb-4">
-            Showing {inspections.length.toLocaleString()} of{" "}
+            Showing {offset + 1}–{Math.min(offset + pageSize, totalCount).toLocaleString()} of{" "}
             {totalCount.toLocaleString()} inspections, most recent first.
           </p>
 
@@ -266,7 +276,16 @@ export default async function LeadSafetyPage({
                       className="border-b border-[#f1f5f9] hover:bg-[#f8fafc] transition-colors"
                     >
                       <td className="py-3 pr-4 font-medium text-[#0F1D2E]">
-                        {i.address}
+                        {i.building ? (
+                          <Link
+                            href={buildingUrl(i.building, "chicago")}
+                            className="text-[#2563EB] hover:text-[#1d4ed8] hover:underline"
+                          >
+                            {i.address}
+                          </Link>
+                        ) : (
+                          i.address
+                        )}
                       </td>
                       <td className="py-3 pr-4 text-[#64748b]">
                         {i.inspection_date
@@ -336,6 +355,41 @@ export default async function LeadSafetyPage({
               </tbody>
             </table>
           </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4 pt-4 border-t border-[#e2e8f0]">
+              <span className="text-xs text-[#64748b]">
+                Page {currentPage} of {totalPages}
+              </span>
+              <div className="flex items-center gap-2">
+                {currentPage > 1 ? (
+                  <Link
+                    href={`/${city}/lead-safety?page=${currentPage - 1}`}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e2e8f0] text-[#334155] hover:bg-[#f8fafc] transition-colors"
+                  >
+                    <ChevronLeft className="w-3 h-3" /> Previous
+                  </Link>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e2e8f0] text-[#334155] opacity-40 cursor-not-allowed">
+                    <ChevronLeft className="w-3 h-3" /> Previous
+                  </span>
+                )}
+                {currentPage < totalPages ? (
+                  <Link
+                    href={`/${city}/lead-safety?page=${currentPage + 1}`}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e2e8f0] text-[#334155] hover:bg-[#f8fafc] transition-colors"
+                  >
+                    Next <ChevronRight className="w-3 h-3" />
+                  </Link>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e2e8f0] text-[#334155] opacity-40 cursor-not-allowed">
+                    Next <ChevronRight className="w-3 h-3" />
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
         </section>
 
         {/* Info cards */}

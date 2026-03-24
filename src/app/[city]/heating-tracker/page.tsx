@@ -7,6 +7,8 @@ import {
   ArrowUpDown,
   Phone,
   Flame,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { canonicalUrl, cityPath } from "@/lib/seo";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
@@ -49,13 +51,11 @@ interface HeatingComplaint {
   descriptor: string | null;
 }
 
-async function fetchHeatingComplaints(): Promise<HeatingComplaint[]> {
+async function fetchHeatingComplaints(offset: number, limit: number): Promise<HeatingComplaint[]> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-  // Fetch heating-related 311 complaints for Chicago
-  // complaint_type or descriptor containing heat-related terms
-  const url = `${supabaseUrl}/rest/v1/complaints_311?select=id,address,created_date,status,complaint_type,descriptor&metro=eq.chicago&or=(complaint_type.ilike.*heat*,complaint_type.ilike.*BUILDING/HOUSING*,descriptor.ilike.*heat*,descriptor.ilike.*no heat*,descriptor.ilike.*furnace*,descriptor.ilike.*boiler*)&order=created_date.desc.nullslast&limit=500`;
+  const url = `${supabaseUrl}/rest/v1/complaints_311?select=id,address,created_date,status,complaint_type,descriptor&metro=eq.chicago&or=(complaint_type.ilike.*heat*,complaint_type.ilike.*BUILDING/HOUSING*,descriptor.ilike.*heat*,descriptor.ilike.*no heat*,descriptor.ilike.*furnace*,descriptor.ilike.*boiler*)&order=created_date.desc.nullslast&limit=${limit}&offset=${offset}`;
   const res = await fetch(url, {
     headers: {
       apikey: supabaseKey,
@@ -101,10 +101,15 @@ async function fetchRecentHeatingCount(): Promise<number> {
 
 export default async function HeatingTrackerPage({
   params,
+  searchParams: searchParamsPromise,
 }: {
   params: Promise<{ city: string }>;
+  searchParams: Promise<{ page?: string }>;
 }) {
   const { city } = await params;
+  const searchParams = await searchParamsPromise;
+  const currentPage = parseInt(searchParams.page || "1", 10);
+  const pageSize = 50;
 
   if (city !== "chicago") {
     return (
@@ -131,11 +136,13 @@ export default async function HeatingTrackerPage({
 
   if (!isValidCity(city)) return null;
 
+  const offset = (currentPage - 1) * pageSize;
   const [complaints, totalCount, recentCount] = await Promise.all([
-    fetchHeatingComplaints(),
+    fetchHeatingComplaints(offset, pageSize),
     fetchHeatingComplaintCount(),
     fetchRecentHeatingCount(),
   ]);
+  const totalPages = Math.ceil(totalCount / pageSize);
 
   // Find addresses with most complaints
   const addressCounts: Record<string, number> = {};
@@ -269,7 +276,7 @@ export default async function HeatingTrackerPage({
             Recent Heating Complaints
           </h2>
           <p className="text-sm text-[#64748b] mb-4">
-            Showing {complaints.length.toLocaleString()} of{" "}
+            Showing {offset + 1}–{Math.min(offset + pageSize, totalCount).toLocaleString()} of{" "}
             {totalCount.toLocaleString()} complaints, most recent first.
           </p>
 
@@ -349,6 +356,41 @@ export default async function HeatingTrackerPage({
               </tbody>
             </table>
           </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4 pt-4 border-t border-[#e2e8f0]">
+              <span className="text-xs text-[#64748b]">
+                Page {currentPage} of {totalPages}
+              </span>
+              <div className="flex items-center gap-2">
+                {currentPage > 1 ? (
+                  <Link
+                    href={`/${city}/heating-tracker?page=${currentPage - 1}`}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e2e8f0] text-[#334155] hover:bg-[#f8fafc] transition-colors"
+                  >
+                    <ChevronLeft className="w-3 h-3" /> Previous
+                  </Link>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e2e8f0] text-[#334155] opacity-40 cursor-not-allowed">
+                    <ChevronLeft className="w-3 h-3" /> Previous
+                  </span>
+                )}
+                {currentPage < totalPages ? (
+                  <Link
+                    href={`/${city}/heating-tracker?page=${currentPage + 1}`}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e2e8f0] text-[#334155] hover:bg-[#f8fafc] transition-colors"
+                  >
+                    Next <ChevronRight className="w-3 h-3" />
+                  </Link>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e2e8f0] text-[#334155] opacity-40 cursor-not-allowed">
+                    Next <ChevronRight className="w-3 h-3" />
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
         </section>
 
         {/* Info cards */}

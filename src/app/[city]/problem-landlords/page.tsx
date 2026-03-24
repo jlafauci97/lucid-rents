@@ -7,6 +7,8 @@ import {
   ArrowUpDown,
   ExternalLink,
   AlertCircle,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { canonicalUrl, cityPath, buildingUrl } from "@/lib/seo";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
@@ -51,8 +53,8 @@ interface Scofflaw {
   building: { slug: string; borough: string } | null;
 }
 
-async function fetchScofflaws(): Promise<Scofflaw[]> {
-  const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/chicago_scofflaws?select=id,respondent_name,address,unpaid_fines,violation_count,last_violation_date,ward,building:buildings(slug,borough)&order=unpaid_fines.desc&limit=500`;
+async function fetchScofflaws(offset: number, limit: number): Promise<Scofflaw[]> {
+  const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/chicago_scofflaws?select=id,respondent_name,address,unpaid_fines,violation_count,last_violation_date,ward,building:buildings(slug,borough)&order=unpaid_fines.desc&limit=${limit}&offset=${offset}`;
   const res = await fetch(url, {
     headers: {
       apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -87,10 +89,15 @@ function formatCurrency(amount: number): string {
 
 export default async function ProblemLandlordsPage({
   params,
+  searchParams: searchParamsPromise,
 }: {
   params: Promise<{ city: string }>;
+  searchParams: Promise<{ page?: string }>;
 }) {
   const { city } = await params;
+  const searchParams = await searchParamsPromise;
+  const currentPage = parseInt(searchParams.page || "1", 10);
+  const pageSize = 50;
 
   if (city !== "chicago") {
     return (
@@ -117,10 +124,12 @@ export default async function ProblemLandlordsPage({
 
   if (!isValidCity(city)) return null;
 
+  const offset = (currentPage - 1) * pageSize;
   const [scofflaws, totalCount] = await Promise.all([
-    fetchScofflaws(),
+    fetchScofflaws(offset, pageSize),
     fetchScofflawCount(),
   ]);
+  const totalPages = Math.ceil(totalCount / pageSize);
 
   const totalUnpaidFines = scofflaws.reduce(
     (sum, s) => sum + (s.unpaid_fines || 0),
@@ -211,8 +220,8 @@ export default async function ProblemLandlordsPage({
             Scofflaw List
           </h2>
           <p className="text-sm text-[#64748b] mb-4">
-            Sorted by unpaid fines (highest first). Showing top{" "}
-            {scofflaws.length.toLocaleString()} of{" "}
+            Sorted by unpaid fines (highest first). Showing{" "}
+            {offset + 1}–{Math.min(offset + pageSize, totalCount).toLocaleString()} of{" "}
             {totalCount.toLocaleString()}.
           </p>
 
@@ -300,6 +309,41 @@ export default async function ProblemLandlordsPage({
               </tbody>
             </table>
           </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4 pt-4 border-t border-[#e2e8f0]">
+              <span className="text-xs text-[#64748b]">
+                Page {currentPage} of {totalPages}
+              </span>
+              <div className="flex items-center gap-2">
+                {currentPage > 1 ? (
+                  <Link
+                    href={`/${city}/problem-landlords?page=${currentPage - 1}`}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e2e8f0] text-[#334155] hover:bg-[#f8fafc] transition-colors"
+                  >
+                    <ChevronLeft className="w-3 h-3" /> Previous
+                  </Link>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e2e8f0] text-[#334155] opacity-40 cursor-not-allowed">
+                    <ChevronLeft className="w-3 h-3" /> Previous
+                  </span>
+                )}
+                {currentPage < totalPages ? (
+                  <Link
+                    href={`/${city}/problem-landlords?page=${currentPage + 1}`}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e2e8f0] text-[#334155] hover:bg-[#f8fafc] transition-colors"
+                  >
+                    Next <ChevronRight className="w-3 h-3" />
+                  </Link>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e2e8f0] text-[#334155] opacity-40 cursor-not-allowed">
+                    Next <ChevronRight className="w-3 h-3" />
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
         </section>
 
         {/* Info cards */}
