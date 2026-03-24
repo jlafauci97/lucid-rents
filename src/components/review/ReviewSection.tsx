@@ -60,15 +60,15 @@ export function ReviewSection({
 
   return (
     <section id="reviews" className="scroll-mt-28">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
         <h2 className="text-xl font-bold text-[#0F1D2E]">
           Tenant Reviews ({reviews.length})
         </h2>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {headerActions}
           <MonitorButton buildingId={buildingId} initialMonitored={isMonitored} />
           <Link href={`${cityPath}/review/new?building=${buildingId}`}>
-            <Button size="sm">
+            <Button size="sm" className="whitespace-nowrap">
               <PenSquare className="w-4 h-4 mr-2" />
               Write Review
             </Button>
