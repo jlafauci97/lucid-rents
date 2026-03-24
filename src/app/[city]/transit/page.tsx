@@ -7,6 +7,7 @@ import { AdBlock } from "@/components/ui/AdBlock";
 import {
   SUBWAY_LINES,
   LA_METRO_LINES,
+  CTA_LINES as CTA_LINES_DATA,
   transitLineUrl,
   busRouteSlug,
   laMetroBusSlug,
@@ -133,17 +134,7 @@ export default async function TransitHubPage({ params }: { params: Promise<{ cit
   const isLA = city === "los-angeles";
   const isChicago = city === "chicago";
 
-  // CTA L line definitions for Chicago
-  const CTA_LINES = [
-    { name: "Red Line", color: "#C60C30", slug: "red-line" },
-    { name: "Blue Line", color: "#00A1DE", slug: "blue-line" },
-    { name: "Brown Line", color: "#62361B", slug: "brown-line" },
-    { name: "Green Line", color: "#009B3A", slug: "green-line" },
-    { name: "Orange Line", color: "#F9461C", slug: "orange-line" },
-    { name: "Pink Line", color: "#E27EA6", slug: "pink-line" },
-    { name: "Purple Line", color: "#522398", slug: "purple-line" },
-    { name: "Yellow Line", color: "#F9E300", slug: "yellow-line" },
-  ];
+  // CTA L lines from shared definition
 
   const supabase = await createClient();
 
@@ -241,17 +232,17 @@ export default async function TransitHubPage({ params }: { params: Promise<{ cit
             </h2>
             <div className="bg-white border border-[#e2e8f0] rounded-xl p-5 sm:p-6">
               <div className="flex flex-wrap gap-3">
-                {CTA_LINES.map((line) => (
+                {CTA_LINES_DATA.map((line) => (
                   <Link
                     key={line.slug}
-                    href={cityPath(`/transit/${line.slug}`, city)}
+                    href={transitLineUrl(line.slug, city)}
                     className="group flex items-center gap-2.5 px-4 py-2.5 rounded-lg border border-[#e2e8f0] hover:shadow-md hover:border-[#3B82F6]/40 transition-all bg-white"
                   >
                     <span
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
-                      style={{ backgroundColor: line.color }}
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                      style={{ backgroundColor: line.color, color: line.textColor }}
                     >
-                      {line.name.split(" ")[0].charAt(0)}
+                      {line.letter}
                     </span>
                     <span className="text-sm font-medium text-[#0F1D2E] group-hover:text-[#3B82F6] transition-colors">
                       {line.name}

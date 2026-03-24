@@ -37,6 +37,32 @@ export function getMetroLineBySlug(slug: string): MetroLine | undefined {
   return LA_METRO_LINES.find((l) => l.slug === slug);
 }
 
+// ── CTA L Lines (Chicago) ─────────────────────────────────────────
+export interface CTALine {
+  letter: string;
+  name: string;
+  slug: string;
+  color: string;
+  textColor: string;
+  /** Route name stored in transit_stops.routes */
+  routeName: string;
+}
+
+export const CTA_LINES: CTALine[] = [
+  { letter: "R", name: "Red Line", slug: "red-line", color: "#C60C30", textColor: "white", routeName: "Red" },
+  { letter: "B", name: "Blue Line", slug: "blue-line", color: "#00A1DE", textColor: "white", routeName: "Blue" },
+  { letter: "B", name: "Brown Line", slug: "brown-line", color: "#62361B", textColor: "white", routeName: "Brown" },
+  { letter: "G", name: "Green Line", slug: "green-line", color: "#009B3A", textColor: "white", routeName: "Green" },
+  { letter: "O", name: "Orange Line", slug: "orange-line", color: "#F9461C", textColor: "white", routeName: "Orange" },
+  { letter: "P", name: "Pink Line", slug: "pink-line", color: "#E27EA6", textColor: "black", routeName: "Pink" },
+  { letter: "P", name: "Purple Line", slug: "purple-line", color: "#522398", textColor: "white", routeName: "Purple" },
+  { letter: "Y", name: "Yellow Line", slug: "yellow-line", color: "#F9E300", textColor: "black", routeName: "Yellow" },
+];
+
+export function getCTALineBySlug(slug: string): CTALine | undefined {
+  return CTA_LINES.find((l) => l.slug === slug);
+}
+
 export function getMetroLineByRouteId(routeId: string): MetroLine | undefined {
   // Handle both raw route_id (e.g. "801-13196") and short name (e.g. "801")
   const shortId = routeId.includes("-") ? routeId.split("-")[0] : routeId;
