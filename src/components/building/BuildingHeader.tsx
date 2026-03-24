@@ -9,11 +9,13 @@ import type { Building } from "@/types";
 interface BuildingHeaderProps {
   building: Building;
   city?: City;
+  violationCount?: number;
 }
 
-export function BuildingHeader({ building, city = "nyc" }: BuildingHeaderProps) {
+export function BuildingHeader({ building, city = "nyc", violationCount }: BuildingHeaderProps) {
+  const vCount = violationCount ?? building.violation_count ?? 0;
   const score = building.overall_score ?? deriveScore(
-    building.violation_count || 0,
+    vCount,
     building.complaint_count || 0
   );
 
@@ -63,9 +65,9 @@ export function BuildingHeader({ building, city = "nyc" }: BuildingHeaderProps) 
                   {building.review_count} review{building.review_count !== 1 ? "s" : ""}
                 </Badge>
               )}
-              {building.violation_count > 0 && (
+              {vCount > 0 && (
                 <Badge variant="danger">
-                  {building.violation_count} violation{building.violation_count !== 1 ? "s" : ""}
+                  {vCount} violation{vCount !== 1 ? "s" : ""}
                 </Badge>
               )}
               {building.complaint_count > 0 && (

@@ -76,8 +76,12 @@ export async function generateMetadata({
   if (!building) return { title: "Building Not Found" };
 
   const title = `${building.full_address} | Lucid Rents`;
+  const isChicagoMeta = cityParam === "chicago";
+  const metaViolationCount = isChicagoMeta
+    ? (building.dob_violation_count || 0)
+    : (building.violation_count || 0);
   const descParts = [
-    `${building.violation_count} violations`,
+    `${metaViolationCount} violations`,
     `${building.complaint_count} complaints`,
   ];
   if (building.bedbug_report_count > 0) descParts.push(`${building.bedbug_report_count} bedbug reports`);
@@ -207,6 +211,12 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
   // Extract short address for breadcrumb
   const shortAddress = building.full_address.split(",")[0]?.trim() || building.full_address;
 
+  // For non-NYC cities, violation_count may be 0 because it tracks HPD violations only.
+  // Use dob_violation_count as the primary violation metric for Chicago.
+  const effectiveViolationCount = isChicago
+    ? (building.dob_violation_count || 0)
+    : (building.violation_count || 0);
+
   return (
     <AdSidebar>
     <div>
@@ -238,7 +248,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
         />
       </div>
 
-      <BuildingHeader building={building} city={city} />
+      <BuildingHeader building={building} city={city} violationCount={effectiveViolationCount} />
 
       <SectionNav />
 
@@ -250,7 +260,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
             <QuickSummary
               building={building}
               rents={rents}
-              violationCount={building.violation_count}
+              violationCount={effectiveViolationCount}
               complaintCount={building.complaint_count}
               bedbugCount={building.bedbug_report_count}
               evictionCount={building.eviction_count}
@@ -284,7 +294,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
 
             {/* Violation & Complaint Trends */}
             <div id="violation-trends" className="scroll-mt-28">
-              <ViolationTrend buildingId={buildingId} housingAgency={city === "los-angeles" ? "LAHD" : "HPD"} />
+              <ViolationTrend buildingId={buildingId} housingAgency={city === "los-angeles" ? "LAHD" : city === "chicago" ? "CDBS" : "HPD"} />
             </div>
 
             {/* Violations by Unit Breakdown */}

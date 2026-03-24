@@ -26,29 +26,31 @@ interface IssuesTabsProps {
   city?: City;
 }
 
-// NYC-only tabs that have no LA equivalent
-const NYC_ONLY_TABS: TabKey[] = ["litigations", "dob", "bedbugs", "evictions"];
+// Tabs available per city
+const CITY_TABS: Record<City, TabKey[]> = {
+  nyc: ["violations", "complaints", "litigations", "dob", "bedbugs", "evictions", "permits"],
+  chicago: ["dob", "complaints", "permits"],
+  "los-angeles": ["violations", "complaints", "permits"],
+};
 
 function getTabs(city: City) {
   const agencies = VIOLATION_AGENCIES[city] || VIOLATION_AGENCIES.nyc;
-  const allTabs = [
-    { key: "violations" as TabKey, label: `${agencies.housing} Violations`, icon: AlertTriangle, activeBg: "bg-red-50 ring-1 ring-[#EF4444]", activeText: "text-[#EF4444]" },
-    { key: "complaints" as TabKey, label: "311 Complaints", icon: MessageSquare, activeBg: "bg-amber-50 ring-1 ring-[#F59E0B]", activeText: "text-[#F59E0B]" },
-    { key: "litigations" as TabKey, label: `${agencies.housing} Litigations`, icon: Scale, activeBg: "bg-violet-50 ring-1 ring-[#8B5CF6]", activeText: "text-[#8B5CF6]" },
-    { key: "dob" as TabKey, label: `${agencies.building} Violations`, icon: HardHat, activeBg: "bg-blue-50 ring-1 ring-[#3B82F6]", activeText: "text-[#3B82F6]" },
-    { key: "bedbugs" as TabKey, label: "Bedbugs", icon: Bug, activeBg: "bg-purple-50 ring-1 ring-[#9333EA]", activeText: "text-[#9333EA]" },
-    { key: "evictions" as TabKey, label: "Evictions", icon: DoorOpen, activeBg: "bg-pink-50 ring-1 ring-[#EC4899]", activeText: "text-[#EC4899]" },
-    { key: "permits" as TabKey, label: city === "los-angeles" ? "LADBS Permits" : city === "chicago" ? "CDBS Permits" : "Permits", icon: ClipboardList, activeBg: "bg-teal-50 ring-1 ring-[#0D9488]", activeText: "text-[#0D9488]" },
-  ];
-  // Filter out NYC-only tabs when viewing LA or Chicago buildings
-  if (city !== "nyc") {
-    return allTabs.filter(tab => !NYC_ONLY_TABS.includes(tab.key));
-  }
-  return allTabs;
+  const allTabs: Record<TabKey, { key: TabKey; label: string; icon: typeof AlertTriangle; activeBg: string; activeText: string }> = {
+    violations: { key: "violations", label: `${agencies.housing} Violations`, icon: AlertTriangle, activeBg: "bg-red-50 ring-1 ring-[#EF4444]", activeText: "text-[#EF4444]" },
+    complaints: { key: "complaints", label: "311 Complaints", icon: MessageSquare, activeBg: "bg-amber-50 ring-1 ring-[#F59E0B]", activeText: "text-[#F59E0B]" },
+    litigations: { key: "litigations", label: `${agencies.housing} Litigations`, icon: Scale, activeBg: "bg-violet-50 ring-1 ring-[#8B5CF6]", activeText: "text-[#8B5CF6]" },
+    dob: { key: "dob", label: `${agencies.building} Violations`, icon: HardHat, activeBg: "bg-blue-50 ring-1 ring-[#3B82F6]", activeText: "text-[#3B82F6]" },
+    bedbugs: { key: "bedbugs", label: "Bedbugs", icon: Bug, activeBg: "bg-purple-50 ring-1 ring-[#9333EA]", activeText: "text-[#9333EA]" },
+    evictions: { key: "evictions", label: "Evictions", icon: DoorOpen, activeBg: "bg-pink-50 ring-1 ring-[#EC4899]", activeText: "text-[#EC4899]" },
+    permits: { key: "permits", label: city === "los-angeles" ? "LADBS Permits" : city === "chicago" ? "CDBS Permits" : "Permits", icon: ClipboardList, activeBg: "bg-teal-50 ring-1 ring-[#0D9488]", activeText: "text-[#0D9488]" },
+  };
+  const enabledKeys = CITY_TABS[city] || CITY_TABS.nyc;
+  return enabledKeys.map(k => allTabs[k]);
 }
 
 export function IssuesTabs({ violations, complaints, litigations, dobViolations, bedbugs, evictions, permits, city = DEFAULT_CITY }: IssuesTabsProps) {
-  const [activeTab, setActiveTab] = useState<TabKey>("violations");
+  const enabledTabs = CITY_TABS[city] || CITY_TABS.nyc;
+  const [activeTab, setActiveTab] = useState<TabKey>(enabledTabs[0]);
 
   const counts: Record<TabKey, number> = {
     violations: violations.length,
