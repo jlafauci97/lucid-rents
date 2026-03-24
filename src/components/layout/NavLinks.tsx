@@ -13,42 +13,42 @@ export function NavLinks() {
     <div className="hidden md:flex items-center gap-6">
       <Link
         href={cityPath("/search", city)}
-        className="flex items-center gap-2 text-sm font-semibold text-gray-300 hover:text-white transition-colors"
+        className="flex items-center gap-2 text-sm font-semibold text-white hover:text-white/80 transition-colors"
       >
         <Search className="w-4 h-4" />
         Search
       </Link>
       <Link
         href={cityPath("/worst-rated-buildings", city)}
-        className="flex items-center gap-2 text-sm font-semibold text-gray-300 hover:text-white transition-colors"
+        className="flex items-center gap-2 text-sm font-semibold text-white hover:text-white/80 transition-colors"
       >
         <BarChart3 className="w-4 h-4" />
         Building Rankings
       </Link>
       <Link
         href={cityPath("/landlords", city)}
-        className="flex items-center gap-2 text-sm font-semibold text-gray-300 hover:text-white transition-colors"
+        className="flex items-center gap-2 text-sm font-semibold text-white hover:text-white/80 transition-colors"
       >
         <Users className="w-4 h-4" />
         Landlords
       </Link>
       <Link
         href={cityPath("/crime", city)}
-        className="flex items-center gap-2 text-sm font-semibold text-gray-300 hover:text-white transition-colors"
+        className="flex items-center gap-2 text-sm font-semibold text-white hover:text-white/80 transition-colors"
       >
         <Siren className="w-4 h-4" />
         Crime
       </Link>
       <Link
         href={cityPath("/feed", city)}
-        className="flex items-center gap-2 text-sm font-semibold text-gray-300 hover:text-white transition-colors"
+        className="flex items-center gap-2 text-sm font-semibold text-white hover:text-white/80 transition-colors"
       >
         <Radio className="w-4 h-4" />
         Feed
       </Link>
       <Link
         href={cityPath("/news", city)}
-        className="flex items-center gap-2 text-sm font-semibold text-gray-300 hover:text-white transition-colors"
+        className="flex items-center gap-2 text-sm font-semibold text-white hover:text-white/80 transition-colors"
       >
         <Newspaper className="w-4 h-4" />
         News
@@ -56,7 +56,7 @@ export function NavLinks() {
       <NavDropdown city={city} />
       <Link
         href={cityPath("/review/new", city)}
-        className="flex items-center gap-2 text-sm font-semibold text-gray-300 hover:text-white transition-colors"
+        className="flex items-center gap-2 text-sm font-semibold text-white hover:text-white/80 transition-colors"
       >
         <PenSquare className="w-4 h-4" />
         Submit Review

@@ -150,7 +150,7 @@ export function NavDropdown({ city = DEFAULT_CITY }: { city?: City }) {
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors"
+        className="flex items-center gap-2 text-sm font-semibold text-white hover:text-white/80 transition-colors whitespace-nowrap"
       >
         <Wrench className="w-4 h-4" />
         Tenant Tools

@@ -37,14 +37,14 @@ export async function Navbar() {
               <div className="flex items-center gap-4">
                 <Link
                   href="/dashboard"
-                  className="flex items-center gap-2 text-sm font-semibold text-gray-300 hover:text-white transition-colors"
+                  className="flex items-center gap-2 text-sm font-semibold text-white hover:text-white/80 transition-colors"
                 >
                   <User className="w-4 h-4" />
                   Dashboard
                 </Link>
                 <Link
                   href="/dashboard/monitoring"
-                  className="flex items-center gap-2 text-sm font-semibold text-gray-300 hover:text-white transition-colors"
+                  className="flex items-center gap-2 text-sm font-semibold text-white hover:text-white/80 transition-colors"
                 >
                   <Bell className="w-4 h-4" />
                   Monitoring
@@ -52,7 +52,7 @@ export async function Navbar() {
                 <form action="/api/auth/signout" method="post">
                   <button
                     type="submit"
-                    className="flex items-center gap-2 text-sm font-semibold text-gray-300 hover:text-white transition-colors"
+                    className="flex items-center gap-2 text-sm font-semibold text-white hover:text-white/80 transition-colors"
                   >
                     <LogOut className="w-4 h-4" />
                     Sign Out
@@ -63,13 +63,13 @@ export async function Navbar() {
               <div className="flex items-center gap-3">
                 <Link
                   href="/login"
-                  className="text-sm font-semibold text-gray-300 hover:text-white transition-colors"
+                  className="text-sm font-semibold text-white hover:text-white/80 transition-colors"
                 >
                   Log In
                 </Link>
                 <Link
                   href="/register"
-                  className="text-sm bg-[#3B82F6] hover:bg-[#2563EB] text-white font-semibold px-5 py-2 rounded-full transition-colors"
+                  className="text-sm bg-[#3B82F6] hover:bg-[#2563EB] text-white font-semibold px-5 py-2 rounded-full transition-colors whitespace-nowrap"
                 >
                   Sign Up
                 </Link>
