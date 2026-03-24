@@ -35,7 +35,7 @@ export default async function BuildingRedirectPage({ params }: BuildingPageProps
     .limit(1)
     .maybeSingle();
 
-  if (building) {
+  if (building?.borough) {
     permanentRedirect(buildingUrl(building, city));
   }
 
@@ -47,7 +47,7 @@ export default async function BuildingRedirectPage({ params }: BuildingPageProps
     .limit(1)
     .maybeSingle();
 
-  if (fallback) {
+  if (fallback?.borough) {
     const fallbackCity = (fallback.metro === "los-angeles" ? "los-angeles" : fallback.metro === "chicago" ? "chicago" : "nyc") as City;
     permanentRedirect(buildingUrl(fallback, fallbackCity));
   }
