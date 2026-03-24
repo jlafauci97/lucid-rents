@@ -85,3 +85,57 @@ jobs:
         run: |
           PAGES="${{ github.event.inputs.pages || '5' }}"
           python scripts/scrape-compass.py --pages=$PAGES --borough="${{ matrix.borough }}"
+
+  backfill:
+    runs-on: ubuntu-latest
+    needs: scrape
+    if: always()
+    name: "Backfill PLUTO Data"
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: pip install supabase requests
+
+      - name: Backfill new buildings with NYC PLUTO data
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python scripts/backfill-new-buildings.py --days=1
+
+  backfill-names:
+    runs-on: ubuntu-latest
+    needs: backfill
+    if: always()
+    name: "Backfill Building Names"
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          pip install "scrapling[all]" supabase
+          playwright install --with-deps chromium
+          patchright install chromium
+          scrapling install
+
+      - name: Backfill building names from StreetEasy
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python scripts/backfill-building-names.py --min-units=50 --limit=50 --delay=5
