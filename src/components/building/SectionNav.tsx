@@ -112,19 +112,24 @@ export function SectionNav() {
     }, 800);
   }
 
-  // Scroll active tab into view in the nav bar
+  // Scroll active tab into view horizontally (without moving the page vertically)
   useEffect(() => {
     if (!navRef.current) return;
-    const activeBtn = navRef.current.querySelector(
+    const container = navRef.current;
+    const activeBtn = container.querySelector(
       `[data-section="${activeId}"]`
-    );
-    if (activeBtn) {
-      (activeBtn as HTMLElement).scrollIntoView({
-        behavior: "smooth",
-        block: "nearest",
-        inline: "center",
-      });
-    }
+    ) as HTMLElement | null;
+    if (!activeBtn) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const btnRect = activeBtn.getBoundingClientRect();
+    const scrollLeft =
+      container.scrollLeft +
+      (btnRect.left - containerRect.left) -
+      containerRect.width / 2 +
+      btnRect.width / 2;
+
+    container.scrollTo({ left: scrollLeft, behavior: "smooth" });
   }, [activeId]);
 
   const filtered = SECTIONS.filter((s) => existingSections.includes(s.id));
