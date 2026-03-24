@@ -1,63 +1,85 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import {
+  MessageSquare,
+  DollarSign,
+  Sparkles,
+  TrendingUp,
+  AlertTriangle,
+  MapPin,
+  Building2,
+  Train,
+  Shield,
+  GraduationCap,
+  TreePine,
+} from "lucide-react";
 
 const SECTIONS = [
-  { id: "reviews", label: "Reviews" },
-  { id: "rent", label: "Rent" },
-  { id: "amenities", label: "Amenities" },
-  { id: "violation-trends", label: "Violations" },
-  { id: "location", label: "Location" },
-  { id: "building-details", label: "Details" },
-  { id: "transit", label: "Transit" },
-  { id: "crime", label: "Crime" },
+  { id: "reviews", label: "Reviews", icon: MessageSquare },
+  { id: "rent", label: "Rent", icon: DollarSign },
+  { id: "amenities", label: "Amenities", icon: Sparkles },
+  { id: "violation-trends", label: "Trends", icon: TrendingUp },
+  { id: "violations", label: "Issues", icon: AlertTriangle },
+  { id: "location", label: "Map", icon: MapPin },
+  { id: "building-details", label: "Details", icon: Building2 },
+  { id: "transit", label: "Transit", icon: Train },
+  { id: "schools", label: "Schools", icon: GraduationCap },
+  { id: "recreation", label: "Parks", icon: TreePine },
+  { id: "crime", label: "Crime", icon: Shield },
 ] as const;
 
-const NAV_HEIGHT = 48; // height of this sticky nav
-const NAVBAR_HEIGHT = 64; // h-16 main navbar
+const NAV_HEIGHT = 56;
+const NAVBAR_HEIGHT = 64;
 const SCROLL_OFFSET = NAV_HEIGHT + NAVBAR_HEIGHT + 16;
 
 export function SectionNav() {
   const [activeId, setActiveId] = useState<string>("reviews");
-  const [visible, setVisible] = useState(false);
+  const [isSticky, setIsSticky] = useState(false);
   const [existingSections, setExistingSections] = useState<string[]>([]);
-  const navRef = useRef<HTMLElement>(null);
+  const navRef = useRef<HTMLDivElement>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
   const isClickScrolling = useRef(false);
 
   // On mount, determine which sections actually exist on the page
   useEffect(() => {
-    const found = SECTIONS.filter((s) => document.getElementById(s.id)).map((s) => s.id);
+    const found = SECTIONS.filter((s) => document.getElementById(s.id)).map(
+      (s) => s.id
+    );
     setExistingSections(found);
   }, []);
 
-  // Show nav after scrolling past BuildingHeader
+  // Track when nav becomes sticky using a sentinel element
   useEffect(() => {
-    function onScroll() {
-      // Show once scrolled past ~300px (roughly past BuildingHeader)
-      setVisible(window.scrollY > 300);
-    }
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    if (!sentinelRef.current) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsSticky(!entry.isIntersecting);
+      },
+      { threshold: 0 }
+    );
+    observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
   }, []);
 
   // IntersectionObserver to track active section
-  const handleIntersect = useCallback((entries: IntersectionObserverEntry[]) => {
-    if (isClickScrolling.current) return;
+  const handleIntersect = useCallback(
+    (entries: IntersectionObserverEntry[]) => {
+      if (isClickScrolling.current) return;
 
-    // Find the topmost visible section
-    const visibleEntries = entries.filter((e) => e.isIntersecting);
-    if (visibleEntries.length === 0) return;
+      const visibleEntries = entries.filter((e) => e.isIntersecting);
+      if (visibleEntries.length === 0) return;
 
-    // Pick the one closest to top of viewport
-    let closest = visibleEntries[0];
-    for (const entry of visibleEntries) {
-      if (entry.boundingClientRect.top < closest.boundingClientRect.top) {
-        closest = entry;
+      let closest = visibleEntries[0];
+      for (const entry of visibleEntries) {
+        if (entry.boundingClientRect.top < closest.boundingClientRect.top) {
+          closest = entry;
+        }
       }
-    }
-    setActiveId(closest.target.id);
-  }, []);
+      setActiveId(closest.target.id);
+    },
+    []
+  );
 
   useEffect(() => {
     if (existingSections.length === 0) return;
@@ -85,7 +107,6 @@ export function SectionNav() {
     const top = el.getBoundingClientRect().top + window.scrollY - SCROLL_OFFSET;
     window.scrollTo({ top, behavior: "smooth" });
 
-    // Re-enable observer after scroll settles
     setTimeout(() => {
       isClickScrolling.current = false;
     }, 800);
@@ -94,7 +115,9 @@ export function SectionNav() {
   // Scroll active tab into view in the nav bar
   useEffect(() => {
     if (!navRef.current) return;
-    const activeBtn = navRef.current.querySelector(`[data-section="${activeId}"]`);
+    const activeBtn = navRef.current.querySelector(
+      `[data-section="${activeId}"]`
+    );
     if (activeBtn) {
       (activeBtn as HTMLElement).scrollIntoView({
         behavior: "smooth",
@@ -109,30 +132,50 @@ export function SectionNav() {
   if (filtered.length === 0) return null;
 
   return (
-    <nav
-      ref={navRef}
-      className={`sticky top-16 z-30 bg-white border-b border-[#e2e8f0] transition-all duration-200 ${
-        visible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2 pointer-events-none"
-      }`}
-    >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex overflow-x-auto scrollbar-hide -mb-px" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
-          {filtered.map((section) => (
-            <button
-              key={section.id}
-              data-section={section.id}
-              onClick={() => scrollToSection(section.id)}
-              className={`shrink-0 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                activeId === section.id
-                  ? "border-[#3B82F6] text-[#3B82F6]"
-                  : "border-transparent text-[#64748b] hover:text-[#0F1D2E] hover:border-[#cbd5e1]"
-              }`}
-            >
-              {section.label}
-            </button>
-          ))}
+    <>
+      {/* Sentinel: when this scrolls out of view, the shadow appears */}
+      <div ref={sentinelRef} className="h-0" aria-hidden="true" />
+
+      <nav
+        className={`sticky top-16 z-30 bg-white border-b border-[#e2e8f0] transition-shadow duration-200 ${
+          isSticky ? "shadow-md" : ""
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div
+            ref={navRef}
+            className="flex overflow-x-auto -mb-px gap-1 py-1"
+            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+          >
+            {filtered.map((section) => {
+              const Icon = section.icon;
+              const isActive = activeId === section.id;
+
+              return (
+                <button
+                  key={section.id}
+                  data-section={section.id}
+                  onClick={() => scrollToSection(section.id)}
+                  className={`group shrink-0 flex items-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
+                    isActive
+                      ? "bg-[#3B82F6]/10 text-[#3B82F6]"
+                      : "text-[#64748b] hover:bg-[#f1f5f9] hover:text-[#0F1D2E]"
+                  }`}
+                >
+                  <Icon
+                    className={`w-4 h-4 transition-colors ${
+                      isActive
+                        ? "text-[#3B82F6]"
+                        : "text-[#94a3b8] group-hover:text-[#64748b]"
+                    }`}
+                  />
+                  <span className="whitespace-nowrap">{section.label}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+    </>
   );
 }
