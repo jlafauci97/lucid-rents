@@ -277,7 +277,7 @@ async function scoreRelevance(
   for (const candidate of subredditChecked) {
     try {
       const result = await generateText({
-        model: "anthropic/claude-sonnet-4.5" as never,
+        model: "anthropic/claude-sonnet-4.6" as never,
         system: `You are a relevance scorer for LucidRents, a rental intelligence platform. Score how relevant a Reddit thread is for a helpful, non-promotional reply that could mention lucidrents.com.
 
 Return ONLY a JSON object with this structure:
@@ -297,7 +297,7 @@ Scoring criteria:
 Title: ${candidate.title}
 Body: ${candidate.selftext.slice(0, 1000)}
 Score: ${candidate.score} | Comments: ${candidate.numComments}`,
-        maxTokens: 300,
+        maxOutputTokens: 300,
       });
 
       let parsed: {
@@ -429,7 +429,7 @@ async function draftReplies(
       const subredditTone = getSubredditTone(thread.subreddit);
 
       const result = await generateText({
-        model: "anthropic/claude-sonnet-4.5" as never,
+        model: "anthropic/claude-sonnet-4.6" as never,
         system:
           REDDIT_SYSTEM_PROMPT +
           `\n\nSUBREDDIT TONE for r/${thread.subreddit}: ${subredditTone}`,
@@ -442,7 +442,7 @@ ${buildingContext}
 Write a helpful Reddit reply. Lead with value. Be genuine. If there is relevant building data above, weave it in naturally. Only mention lucidrents.com if it fits as a natural next step (e.g., "you can look up any building's violation history at lucidrents.com").
 
 Reply:`,
-        maxTokens: 800,
+        maxOutputTokens: 800,
       });
 
       drafts.push({

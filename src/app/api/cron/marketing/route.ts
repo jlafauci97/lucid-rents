@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { start } from "workflow/api";
-import { contentWorkflow } from "@/workflows/marketing-content";
-import { redditMonitorWorkflow } from "@/workflows/marketing-reddit";
+import { contentWorkflow } from "../../../../../workflows/marketing-content";
+import { redditMonitorWorkflow } from "../../../../../workflows/marketing-reddit";
 import { listDrafts, upsertAnalytics } from "@/lib/marketing/supabase-queries";
 import { getPostAnalytics } from "@/lib/marketing/post-bridge";
 

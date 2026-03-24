@@ -91,7 +91,7 @@ async function initDraft(): Promise<{ draftId: string }> {
 
   const meta = getWorkflowMetadata();
   const draft = await createDraft({
-    workflowRunId: meta.runId,
+    workflowRunId: meta.workflowRunId,
     contentType: "landlord_expose", // placeholder, updated in saveDraft
   });
 
@@ -459,10 +459,10 @@ IMPORTANT:
 - Bluesky has 0 hashtags allowed.`;
 
   const result = await generateText({
-    model: "anthropic/claude-sonnet-4.5" as never,
+    model: "anthropic/claude-sonnet-4.6" as never,
     system: systemPrompt,
     prompt: userPrompt,
-    maxTokens: 4000,
+    maxOutputTokens: 4000,
   });
 
   // Parse the JSON response
@@ -838,7 +838,7 @@ async function handleFailure(
         stepName,
         error,
         draftId,
-        workflowRunId: meta.runId,
+        workflowRunId: meta.workflowRunId,
         contentType,
         baseUrl,
       }),
