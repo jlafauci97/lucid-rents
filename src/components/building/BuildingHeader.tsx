@@ -70,13 +70,22 @@ export function BuildingHeader({ building, city = "nyc", violationCount }: Build
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div className="flex flex-col md:flex-row md:items-center gap-5">
           {/* Score shield */}
-          <div className="shrink-0">
-            <div
-              className="w-16 h-16 rounded-2xl bg-[#3B82F6] flex flex-col items-center justify-center"
-              style={{ boxShadow: "0 8px 25px rgba(59,130,246,0.25)" }}
+          <div className="shrink-0 relative" style={{ width: 64, height: 76 }}>
+            <svg
+              viewBox="0 0 64 76"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-full h-full"
+              style={{ filter: "drop-shadow(0 4px 15px rgba(59,130,246,0.3))" }}
             >
-              <span className="text-2xl font-bold text-white">{grade}</span>
-              <span className="text-[10px] font-semibold text-white/75 -mt-0.5">
+              <path
+                d="M32 2L4 14V34C4 54 32 72 32 72C32 72 60 54 60 34V14L32 2Z"
+                fill="#3B82F6"
+              />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ paddingBottom: 4 }}>
+              <span className="text-[26px] font-black text-white leading-none">{grade}</span>
+              <span className="text-[10px] font-bold text-white/70 -mt-0.5">
                 {score.toFixed(1)}
               </span>
             </div>
