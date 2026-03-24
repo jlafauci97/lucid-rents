@@ -6,7 +6,7 @@ import {
   AlertCircle,
   ArrowUpDown,
 } from "lucide-react";
-import { canonicalUrl, cityPath } from "@/lib/seo";
+import { canonicalUrl, cityPath, buildingUrl } from "@/lib/seo";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
@@ -49,10 +49,11 @@ interface AffordableUnit {
   ward: number | null;
   latitude: number | null;
   longitude: number | null;
+  building: { slug: string; borough: string } | null;
 }
 
 async function fetchAffordableUnits(): Promise<AffordableUnit[]> {
-  const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/chicago_affordable_units?select=id,project_name,address,total_units,affordable_units,income_requirement,status,ward,latitude,longitude&order=affordable_units.desc.nullslast&limit=500`;
+  const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/chicago_affordable_units?select=id,project_name,address,total_units,affordable_units,income_requirement,status,ward,latitude,longitude,building:buildings(slug,borough)&order=affordable_units.desc.nullslast&limit=500`;
   const res = await fetch(url, {
     headers: {
       apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -260,7 +261,18 @@ export default async function AffordableHousingPage({
                     <td className="py-3 pr-4 font-medium text-[#0F1D2E]">
                       {u.project_name || "\u2014"}
                     </td>
-                    <td className="py-3 pr-4 text-[#64748b]">{u.address}</td>
+                    <td className="py-3 pr-4">
+                      {u.building ? (
+                        <Link
+                          href={buildingUrl(u.building, "chicago")}
+                          className="text-[#2563EB] hover:text-[#1d4ed8] hover:underline font-medium"
+                        >
+                          {u.address}
+                        </Link>
+                      ) : (
+                        <span className="text-[#64748b]">{u.address}</span>
+                      )}
+                    </td>
                     <td className="py-3 pr-4 text-right text-[#0F1D2E]">
                       {u.total_units?.toLocaleString() ?? "\u2014"}
                     </td>

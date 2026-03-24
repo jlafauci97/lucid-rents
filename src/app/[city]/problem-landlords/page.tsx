@@ -8,7 +8,7 @@ import {
   ExternalLink,
   AlertCircle,
 } from "lucide-react";
-import { canonicalUrl, cityPath } from "@/lib/seo";
+import { canonicalUrl, cityPath, buildingUrl } from "@/lib/seo";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
@@ -48,10 +48,11 @@ interface Scofflaw {
   violation_count: number;
   last_violation_date: string | null;
   ward: number | null;
+  building: { slug: string; borough: string } | null;
 }
 
 async function fetchScofflaws(): Promise<Scofflaw[]> {
-  const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/chicago_scofflaws?select=id,respondent_name,address,unpaid_fines,violation_count,last_violation_date,ward&order=unpaid_fines.desc&limit=500`;
+  const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/chicago_scofflaws?select=id,respondent_name,address,unpaid_fines,violation_count,last_violation_date,ward,building:buildings(slug,borough)&order=unpaid_fines.desc&limit=500`;
   const res = await fetch(url, {
     headers: {
       apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -251,7 +252,18 @@ export default async function ProblemLandlordsPage({
                     <td className="py-3 pr-4 font-medium text-[#0F1D2E]">
                       {s.respondent_name}
                     </td>
-                    <td className="py-3 pr-4 text-[#64748b]">{s.address}</td>
+                    <td className="py-3 pr-4">
+                      {s.building ? (
+                        <Link
+                          href={buildingUrl(s.building, "chicago")}
+                          className="text-[#2563EB] hover:text-[#1d4ed8] hover:underline font-medium"
+                        >
+                          {s.address}
+                        </Link>
+                      ) : (
+                        <span className="text-[#64748b]">{s.address}</span>
+                      )}
+                    </td>
                     <td className="py-3 pr-4 text-right font-semibold text-[#DC2626]">
                       {formatCurrency(s.unpaid_fines || 0)}
                     </td>
