@@ -133,36 +133,17 @@ export default async function TransitHubPage({ params }: { params: Promise<{ cit
   const isLA = city === "los-angeles";
   const isChicago = city === "chicago";
 
-  // Chicago transit data not yet available — show coming soon
-  if (isChicago) {
-    return (
-      <AdSidebar>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="mb-8">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-blue-50 rounded-lg">
-                <TrainFront className="w-6 h-6 text-[#00A1DE]" />
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-[#0F1D2E]">
-                Apartments Near Transit
-              </h1>
-            </div>
-            <p className="text-[#64748b] text-sm sm:text-base max-w-3xl">
-              Find apartments within walking distance of CTA &lsquo;L&rsquo; train stations and bus stops across Chicago.
-            </p>
-          </div>
-          <div className="bg-white border border-[#e2e8f0] rounded-xl p-12 text-center">
-            <TrainFront className="w-12 h-12 text-[#cbd5e1] mx-auto mb-3" />
-            <h2 className="text-lg font-bold text-[#0F1D2E] mb-2">CTA Transit Data Coming Soon</h2>
-            <p className="text-sm text-[#64748b] max-w-md mx-auto">
-              We&apos;re working on importing CTA &lsquo;L&rsquo; train and bus stop data for Chicago.
-              Check back soon to find apartments near Red, Blue, Brown, Green, Orange, Pink, Purple, and Yellow line stations.
-            </p>
-          </div>
-        </div>
-      </AdSidebar>
-    );
-  }
+  // CTA L line definitions for Chicago
+  const CTA_LINES = [
+    { name: "Red Line", color: "#C60C30", slug: "red-line" },
+    { name: "Blue Line", color: "#00A1DE", slug: "blue-line" },
+    { name: "Brown Line", color: "#62361B", slug: "brown-line" },
+    { name: "Green Line", color: "#009B3A", slug: "green-line" },
+    { name: "Orange Line", color: "#F9461C", slug: "orange-line" },
+    { name: "Pink Line", color: "#E27EA6", slug: "pink-line" },
+    { name: "Purple Line", color: "#522398", slug: "purple-line" },
+    { name: "Yellow Line", color: "#F9E300", slug: "yellow-line" },
+  ];
 
   const supabase = await createClient();
 
@@ -208,7 +189,7 @@ export default async function TransitHubPage({ params }: { params: Promise<{ cit
   const laBRTLines = LA_METRO_LINES.filter((l) => l.group === "BRT");
 
   // Colors
-  const accentColor = isLA ? "#E3242B" : "#0039A6";
+  const accentColor = isChicago ? "#00A1DE" : isLA ? "#E3242B" : "#0039A6";
 
   return (
     <AdSidebar>
@@ -243,14 +224,45 @@ export default async function TransitHubPage({ params }: { params: Promise<{ cit
             </h1>
           </div>
           <p className="text-[#64748b] text-sm sm:text-base max-w-3xl">
-            {isLA
-              ? "Find apartments within walking distance of LA Metro Rail stations and bus stops. Click any line or route to browse nearby buildings."
-              : "Find apartments within walking distance of NYC subway stations and bus stops. Click any line or route to browse nearby buildings."}
+            {isChicago
+              ? "Find apartments within walking distance of CTA 'L' train stations across Chicago. Click any line to browse nearby buildings."
+              : isLA
+                ? "Find apartments within walking distance of LA Metro Rail stations and bus stops. Click any line or route to browse nearby buildings."
+                : "Find apartments within walking distance of NYC subway stations and bus stops. Click any line or route to browse nearby buildings."}
           </p>
         </div>
 
         {/* Rail section */}
-        {isLA ? (
+        {isChicago ? (
+          <section className="mb-10">
+            <h2 className="text-lg font-bold text-[#0F1D2E] mb-4 flex items-center gap-2">
+              <TrainFront className="w-5 h-5 text-[#00A1DE]" />
+              CTA &lsquo;L&rsquo; Lines
+            </h2>
+            <div className="bg-white border border-[#e2e8f0] rounded-xl p-5 sm:p-6">
+              <div className="flex flex-wrap gap-3">
+                {CTA_LINES.map((line) => (
+                  <Link
+                    key={line.slug}
+                    href={cityPath(`/transit/${line.slug}`, city)}
+                    className="group flex items-center gap-2.5 px-4 py-2.5 rounded-lg border border-[#e2e8f0] hover:shadow-md hover:border-[#3B82F6]/40 transition-all bg-white"
+                  >
+                    <span
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+                      style={{ backgroundColor: line.color }}
+                    >
+                      {line.name.split(" ")[0].charAt(0)}
+                    </span>
+                    <span className="text-sm font-medium text-[#0F1D2E] group-hover:text-[#3B82F6] transition-colors">
+                      {line.name}
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-[#94a3b8] group-hover:text-[#3B82F6]" />
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </section>
+        ) : isLA ? (
           <>
             {/* LA Metro Rail Lines */}
             <section className="mb-10">
