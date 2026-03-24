@@ -18,7 +18,8 @@ export function ZipRentTable({ data }: { data: ZipRentRow[] }) {
   const [sortBy, setSortBy] = useState<"median_rent" | "zip_code">("median_rent");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
-  const normalizeBorough = (b: string) => {
+  const normalizeBorough = (b: string | null) => {
+    if (!b) return "Unknown";
     if (b === "STATEN ISLAND") return "Staten Island";
     // Handle multi-word names like "NORTH HOLLYWOOD" → "North Hollywood"
     return b
