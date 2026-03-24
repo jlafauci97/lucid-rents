@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Search, AlertTriangle, Users, Siren, Radio, Newspaper, PenSquare } from "lucide-react";
+import { Search, BarChart3, Users, Siren, Radio, Newspaper, PenSquare } from "lucide-react";
 import { cityPath } from "@/lib/seo";
 import { useCityFromPath } from "@/lib/city-context";
 import { NavDropdown } from "./NavDropdown";
@@ -22,8 +22,8 @@ export function NavLinks() {
         href={cityPath("/worst-rated-buildings", city)}
         className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors"
       >
-        <AlertTriangle className="w-4 h-4" />
-        Worst Buildings
+        <BarChart3 className="w-4 h-4" />
+        Building Rankings
       </Link>
       <Link
         href={cityPath("/landlords", city)}

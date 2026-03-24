@@ -136,10 +136,10 @@ export async function BoroughExploreLinks({ borough, boroughSlug, city = "nyc" }
         <div className="flex flex-wrap gap-3">
           <Link
             href={`${cityPath("/worst-rated-buildings", city)}?borough=${encodeURIComponent(borough)}`}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-red-50 text-[#ef4444] border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-blue-50 text-[#3B82F6] border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
           >
-            <AlertTriangle className="w-4 h-4" />
-            Worst Rated in {borough}
+            <ShieldAlert className="w-4 h-4" />
+            Rankings in {borough}
           </Link>
           <Link
             href={cityPath("/landlords", city)}
