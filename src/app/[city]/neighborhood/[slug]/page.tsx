@@ -309,7 +309,7 @@ export default async function NeighborhoodPage({
             <h2 className="text-lg font-bold text-[#0F1D2E] mb-3">Most Flagged Buildings</h2>
             <div className="space-y-2">
               {buildings.map((b: { id: string; full_address: string; borough: string; slug: string; overall_score: number | null; violation_count: number; complaint_count: number; review_count: number }) => (
-                <Link key={b.id} href={buildingUrl(b)}>
+                <Link key={b.id} href={buildingUrl(b, city)}>
                   <div className="bg-white rounded-xl border border-[#e2e8f0] p-4 hover:border-[#3B82F6] transition-colors flex items-center gap-3">
                     <LetterGrade score={b.overall_score} size="sm" />
                     <div className="min-w-0 flex-1">

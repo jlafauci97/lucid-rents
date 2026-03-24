@@ -41,8 +41,8 @@ export async function generateMetadata({
 export const revalidate = 86400;
 
 interface Scofflaw {
-  id: number;
-  respondent: string;
+  id: string;
+  respondent_name: string;
   address: string;
   unpaid_fines: number;
   violation_count: number;
@@ -51,7 +51,7 @@ interface Scofflaw {
 }
 
 async function fetchScofflaws(): Promise<Scofflaw[]> {
-  const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/chicago_scofflaws?select=id,respondent,address,unpaid_fines,violation_count,last_violation_date,ward&order=unpaid_fines.desc&limit=500`;
+  const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/chicago_scofflaws?select=id,respondent_name,address,unpaid_fines,violation_count,last_violation_date,ward&order=unpaid_fines.desc&limit=500`;
   const res = await fetch(url, {
     headers: {
       apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -249,7 +249,7 @@ export default async function ProblemLandlordsPage({
                     className="border-b border-[#f1f5f9] hover:bg-[#f8fafc] transition-colors"
                   >
                     <td className="py-3 pr-4 font-medium text-[#0F1D2E]">
-                      {s.respondent}
+                      {s.respondent_name}
                     </td>
                     <td className="py-3 pr-4 text-[#64748b]">{s.address}</td>
                     <td className="py-3 pr-4 text-right font-semibold text-[#DC2626]">

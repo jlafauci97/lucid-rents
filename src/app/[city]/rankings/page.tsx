@@ -179,7 +179,7 @@ export default async function RankingsPage({ params: routeParams, searchParams }
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <Link href={buildingUrl(building)} className="group">
+                        <Link href={buildingUrl(building, city)} className="group">
                           <p className="text-sm font-medium text-[#0F1D2E] group-hover:text-[#3B82F6] transition-colors truncate max-w-xs">
                             {building.full_address}
                           </p>

@@ -45,18 +45,23 @@ interface BuildingSlugPageProps {
 }
 
 // cache() deduplicates across generateMetadata + page render in the same request
-const getBuilding = cache(async (boroughSlug: string, slug: string) => {
+const getBuilding = cache(async (boroughSlug: string, slug: string, metro?: string) => {
   const borough = SLUG_TO_BOROUGH[boroughSlug];
   if (!borough) return null;
 
   const supabase = await createClient();
-  // Use borough + slug + limit(1) instead of .single() to handle duplicate slugs
-  const { data } = await supabase
+  // Use borough + slug + metro + limit(1) instead of .single() to handle duplicate slugs
+  let query = supabase
     .from("buildings")
     .select("*")
     .eq("slug", slug)
-    .eq("borough", borough)
-    .limit(1);
+    .eq("borough", borough);
+
+  if (metro) {
+    query = query.eq("metro", metro);
+  }
+
+  const { data } = await query.limit(1);
 
   if (!data || data.length === 0) return null;
   return data[0] as Building;
@@ -66,7 +71,7 @@ export async function generateMetadata({
   params,
 }: BuildingSlugPageProps): Promise<Metadata> {
   const { city: cityParam, borough, slug } = await params;
-  const building = await getBuilding(borough, slug);
+  const building = await getBuilding(borough, slug, cityParam);
 
   if (!building) return { title: "Building Not Found" };
 
@@ -79,7 +84,7 @@ export async function generateMetadata({
   if (building.eviction_count > 0) descParts.push(`${building.eviction_count} evictions`);
   const cityName = CITY_META[cityParam as keyof typeof CITY_META]?.name || "NYC";
   const description = `Thinking about ${building.full_address}? Check ${descParts.join(", ")}, and real tenant reviews before you sign a lease.`;
-  const url = canonicalUrl(buildingUrl(building));
+  const url = canonicalUrl(buildingUrl(building, cityParam as import("@/lib/cities").City));
 
   return {
     title,
@@ -104,7 +109,7 @@ export async function generateMetadata({
 export default async function BuildingSlugPage({ params }: BuildingSlugPageProps) {
   const { city: cityParam, borough: boroughSlug, slug } = await params;
   const city = (cityParam || "nyc") as import("@/lib/cities").City;
-  const building = await getBuilding(boroughSlug, slug);
+  const building = await getBuilding(boroughSlug, slug, city);
 
   if (!building) notFound();
 
@@ -219,7 +224,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
         { name: "Home", url: "/" },
         { name: "Buildings", url: cityPath("/buildings", city) },
         { name: building.borough, url: cityPath(`/buildings/${boroughSlug}`, city) },
-        { name: shortAddress, url: buildingUrl(building) },
+        { name: shortAddress, url: buildingUrl(building, city) },
       ])} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-2">
@@ -228,7 +233,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
             { label: "Home", href: "/" },
             { label: "Buildings", href: cityPath("/buildings", city) },
             { label: building.borough, href: cityPath(`/buildings/${boroughSlug}`, city) },
-            { label: shortAddress, href: buildingUrl(building) },
+            { label: shortAddress, href: buildingUrl(building, city) },
           ]}
         />
       </div>
@@ -260,14 +265,14 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
               headerActions={
                 <>
                   <SaveButton buildingId={buildingId} initialSaved={isSaved} />
-                  <ShareButton address={shortAddress} url={canonicalUrl(buildingUrl(building))} />
+                  <ShareButton address={shortAddress} url={canonicalUrl(buildingUrl(building, city))} />
                 </>
               }
             />
 
             {/* Rent History */}
             <div id="rent" className="scroll-mt-28">
-              <MarketListings listings={marketListings} amenities={amenities} rentHistory={rentHistory} buildingUrl={buildingUrl(building)} />
+              <MarketListings listings={marketListings} amenities={amenities} rentHistory={rentHistory} buildingUrl={buildingUrl(building, city)} />
             </div>
 
             {/* Building Amenities */}
@@ -532,6 +537,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
             <SameLandlordBuildings
               buildingId={buildingId}
               ownerName={building.owner_name}
+              city={city}
             />
           </div>
         )}
@@ -543,6 +549,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
               buildingId={buildingId}
               zipCode={building.zip_code}
               borough={building.borough}
+              city={city}
             />
           </div>
         )}

@@ -342,7 +342,7 @@ export default async function CrimeZipPage({
                     }) => (
                       <Link
                         key={b.id}
-                        href={buildingUrl(b)}
+                        href={buildingUrl(b, city)}
                         className="block p-3 rounded-lg border border-[#e2e8f0] hover:border-[#3B82F6] hover:bg-[#f8fafc] transition-colors"
                       >
                         <p className="text-sm font-medium text-[#0F1D2E] truncate">

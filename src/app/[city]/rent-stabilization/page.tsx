@@ -186,7 +186,8 @@ export default async function RentStabilizationPage({
   const order = sp.order || "desc";
 
   const isLA = city === "los-angeles";
-  const metro = isLA ? "los-angeles" : "nyc";
+  const isChicago = city === "chicago";
+  const metro = isLA ? "los-angeles" : isChicago ? "chicago" : "nyc";
   const [stats, buildings] = await Promise.all([
     getBoroughStats(metro),
     getStabilizedBuildings(metro, borough || undefined),
@@ -444,7 +445,7 @@ export default async function RentStabilizationPage({
                       >
                         <td className="px-4 py-3">
                           <Link
-                            href={buildingUrl(row)}
+                            href={buildingUrl(row, city)}
                             className="text-sm font-semibold text-[#2563EB] hover:text-[#1d4ed8] hover:underline"
                           >
                             {row.full_address}
