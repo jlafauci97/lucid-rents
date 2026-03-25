@@ -6,6 +6,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { SocialAuthButtons } from "@/components/auth/SocialAuthButtons";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -77,6 +78,19 @@ export default function RegisterPage() {
         </div>
 
         <div className="bg-white rounded-xl border border-[#e2e8f0] p-8">
+          <SocialAuthButtons />
+
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-[#e2e8f0]" />
+            </div>
+            <div className="relative flex justify-center text-xs">
+              <span className="bg-white px-2 text-[#94a3b8]">
+                or sign up with email
+              </span>
+            </div>
+          </div>
+
           <form onSubmit={handleRegister} className="space-y-4">
             <Input
               label="Display Name"
