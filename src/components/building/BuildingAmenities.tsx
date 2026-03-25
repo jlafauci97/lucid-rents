@@ -137,7 +137,7 @@ export function BuildingAmenities({ amenities }: BuildingAmenitiesProps) {
           })}
         </div>
         <p className="text-[10px] text-[#94a3b8] mt-3">
-          Data from StreetEasy, Rent.com & Zillow
+          Data from StreetEasy, Rent.com, Zillow, Zumper & other sources
         </p>
       </CardContent>
     </Card>

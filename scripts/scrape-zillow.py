@@ -673,7 +673,7 @@ def upsert_rents(building_id: str, rent_by_beds: dict) -> int:
     return len(rows)
 
 
-def upsert_amenities(building_id: str, amenities: list[str]) -> int:
+def upsert_amenities(building_id: str, amenities: list[str], metro: str = "nyc") -> int:
     """Upsert amenity data for a building."""
     if not amenities:
         return 0
@@ -693,6 +693,7 @@ def upsert_amenities(building_id: str, amenities: list[str]) -> int:
             "amenity": normalized,
             "category": categorize_amenity(a),
             "scraped_at": now,
+            "metro": metro,
         })
 
     try:
@@ -1023,7 +1024,7 @@ def main():
 
                     # Upsert all data for this building
                     rents_added = upsert_rents(building_id, listing["rent_by_beds"])
-                    amenities_added = upsert_amenities(building_id, listing["amenities"])
+                    amenities_added = upsert_amenities(building_id, listing["amenities"], metro)
                     listing_saved = upsert_listing(building_id, listing)
 
                     # Link to specific unit if we have a unit number
