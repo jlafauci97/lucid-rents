@@ -57,7 +57,8 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
   // Count total matching landlords
   let countQuery = supabase
     .from("landlord_stats")
-    .select("id", { count: "exact", head: true });
+    .select("id", { count: "exact", head: true })
+    .eq("metro", cityParam);
 
   if (search) {
     countQuery = countQuery.ilike("name", `%${search}%`);
@@ -71,6 +72,7 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
   let query = supabase
     .from("landlord_stats")
     .select("name,slug,building_count,total_violations,total_complaints,total_litigations,total_dob_violations,avg_score,worst_building_id,worst_building_address,worst_building_violations")
+    .eq("metro", cityParam)
     .order(sortCol, { ascending: false })
     .range(offset, offset + limit - 1);
 

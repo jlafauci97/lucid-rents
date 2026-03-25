@@ -27,10 +27,10 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
   };
 }
 
-async function FeedStats() {
+async function FeedStats({ city }: { city: import("@/lib/cities").City }) {
   const supabase = await createClient();
 
-  const { data } = await supabase.rpc("data_snapshot_counts").single();
+  const { data } = await supabase.rpc("data_snapshot_counts", { p_metro: city }).single();
 
   const counts = data as {
     hpd_violations_count: number;
@@ -78,6 +78,7 @@ async function TrendingBuildings({ city }: { city: import("@/lib/cities").City }
   const { data: buildings } = await supabase
     .from("buildings")
     .select("id, full_address, borough, slug, violation_count, complaint_count")
+    .eq("metro", city)
     .order("violation_count", { ascending: false })
     .limit(5);
 
@@ -145,7 +146,7 @@ export default async function FeedPage({ params }: { params: Promise<{ city: str
 
         {/* Sidebar — sticky */}
         <aside className="hidden lg:block space-y-6 sticky top-20 self-start">
-          <FeedStats />
+          <FeedStats city={cityParam as import("@/lib/cities").City} />
           <AdBlock adSlot="FEED_SIDEBAR" adFormat="rectangle" />
           <TrendingBuildings city={cityParam as import("@/lib/cities").City} />
           <FeedSourceLabel />

@@ -50,13 +50,16 @@ export default async function NewsPage({
 
   const supabase = await createClient();
 
+  const metro = cityParam;
   const { count } = await supabase
     .from("news_articles")
-    .select("id", { count: "exact", head: true });
+    .select("id", { count: "exact", head: true })
+    .eq("metro", metro);
 
   const { data: articles } = await supabase
     .from("news_articles")
     .select("*")
+    .eq("metro", metro)
     .order("published_at", { ascending: false })
     .range(offset, offset + PER_PAGE - 1);
 
