@@ -69,11 +69,7 @@ export default async function Image({
     ],
   };
 
-  const siteUrl =
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    (process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : "https://lucidrents.com");
+  const siteUrl = "https://lucidrents.com";
 
   if (!building) {
     return new ImageResponse(
@@ -319,10 +315,10 @@ export default async function Image({
         >
           <div
             style={{
-              fontSize: 16,
+              fontSize: 28,
               fontWeight: 700,
               color: "#3B82F6",
-              letterSpacing: 5,
+              letterSpacing: 6,
               textTransform: "uppercase",
               display: "flex",
             }}
