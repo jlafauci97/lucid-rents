@@ -676,6 +676,7 @@ def upsert_rents(building_id: str, rent_by_beds: dict) -> int:
         history_rows.append({
             "building_id": building_id,
             "source": SOURCE,
+            "unit_number": "",
             "bedrooms": beds,
             "rent": median,
             "sqft": data.get("sqft_min"),
@@ -740,6 +741,8 @@ def create_building(listing: dict) -> str | None:
 
     borough = listing.get("borough", "Manhattan")
     street = addr.split(",")[0].strip() if "," in addr else addr
+    # Strip unit/apt numbers that leak from listing addresses
+    street = normalize_address(street)
     parts = street.split(None, 1)
     house_number = parts[0].upper() if parts else ""
     street_name = parts[1].upper() if len(parts) > 1 else ""
@@ -775,6 +778,7 @@ def create_building(listing: dict) -> str | None:
         "permit_count": 0,
         "sidewalk_shed_count": 0,
         "lead_violation_count": 0,
+        "metro": "nyc",
     }
 
     try:

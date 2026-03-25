@@ -102,7 +102,7 @@ export async function GET() {
   try {
     const lastSync = await getLastSyncDate();
     const whereClause = lastSync
-      ? `createddate > '${lastSync}'`
+      ? `createddate > '${lastSync.slice(0, 19)}'`
       : undefined;
 
     let totalSynced = 0;

@@ -3,11 +3,13 @@
 Scrape rent + amenity data from StreetEasy and Zillow using Scrapling.
 
 Usage:
-  python3 scripts/scrape-rents.py                        # scrape next 50 buildings
-  python3 scripts/scrape-rents.py --borough=Manhattan    # filter by borough
-  python3 scripts/scrape-rents.py --limit=100            # change batch size
-  python3 scripts/scrape-rents.py --source=streeteasy    # only StreetEasy
-  python3 scripts/scrape-rents.py --source=zillow        # only Zillow
+  python3 scripts/scrape-rents.py                             # scrape next 50 NYC buildings
+  python3 scripts/scrape-rents.py --metro=los-angeles         # scrape LA buildings
+  python3 scripts/scrape-rents.py --metro=chicago             # scrape Chicago buildings
+  python3 scripts/scrape-rents.py --borough=Manhattan         # filter by borough
+  python3 scripts/scrape-rents.py --limit=100                 # change batch size
+  python3 scripts/scrape-rents.py --source=streeteasy         # only StreetEasy (NYC only)
+  python3 scripts/scrape-rents.py --source=zillow             # only Zillow
 
 Requires: pip3 install "scrapling[stealth]" supabase && scrapling install
 """
@@ -25,6 +27,8 @@ from datetime import datetime, timezone
 def load_env_local():
     env_path = os.path.join(os.path.dirname(__file__), "..", ".env.local")
     env = {}
+    if not os.path.exists(env_path):
+        return {}
     with open(env_path, "r") as f:
         for line in f:
             line = line.strip()
@@ -55,6 +59,7 @@ supabase = create_client(SUPABASE_URL, SERVICE_KEY)
 parser = argparse.ArgumentParser(description="Scrape rent + amenity data")
 parser.add_argument("--limit", type=int, default=50)
 parser.add_argument("--borough", type=str, default="")
+parser.add_argument("--metro", type=str, default="nyc", choices=["nyc", "los-angeles", "chicago"])
 parser.add_argument("--source", type=str, default="", choices=["", "streeteasy", "zillow"])
 args = parser.parse_args()
 
@@ -489,12 +494,14 @@ def upsert_amenities(building_id, amenity_rows):
 # ── MAIN ────────────────────────────────────────────────────────────────────
 
 def main():
-    print(f"Scraping rents -- limit={LIMIT}, borough={BOROUGH or 'all'}, source={SOURCE or 'both'}")
+    metro = args.metro
+    print(f"Scraping rents -- metro={metro}, limit={LIMIT}, borough={BOROUGH or 'all'}, source={SOURCE or 'both'}")
 
     # Fetch buildings ordered by review count
     query = supabase.table("buildings") \
         .select("id, full_address, borough, zip_code, slug, residential_units") \
         .gt("residential_units", 0) \
+        .eq("metro", metro) \
         .order("review_count", desc=True) \
         .limit(LIMIT)
 

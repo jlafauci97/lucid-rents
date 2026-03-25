@@ -141,13 +141,19 @@ def main():
     parser.add_argument("--limit", type=int, default=500, help="Max buildings to process")
     parser.add_argument("--dry-run", action="store_true", help="Preview without DB writes")
     parser.add_argument("--delay", type=float, default=3.0, help="Seconds between fetches")
+    parser.add_argument("--metro", type=str, default="nyc", help="Metro to backfill (default: nyc)")
     args = parser.parse_args()
 
-    print(f"Fetching NYC buildings with {args.min_units}+ units and no name...")
+    if args.metro != "nyc":
+        print(f"Name backfill not yet implemented for {args.metro}")
+        print("StreetEasy is NYC-only; other metros need a different data source.")
+        sys.exit(0)
+
+    print(f"Fetching {args.metro} buildings with {args.min_units}+ units and no name...")
 
     result = supabase.table("buildings") \
         .select("id, house_number, street_name, borough, full_address, total_units") \
-        .eq("metro", "nyc") \
+        .eq("metro", args.metro) \
         .is_("name", "null") \
         .gte("total_units", args.min_units) \
         .not_.is_("house_number", "null") \
