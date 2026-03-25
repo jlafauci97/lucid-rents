@@ -13,6 +13,7 @@ export interface Building {
   bin: string | null;
   apn: string | null;
   pin: string | null;
+  folio_number: string | null;
   borough: string;
   house_number: string | null;
   street_name: string;
@@ -56,6 +57,12 @@ export interface Building {
   is_scofflaw: boolean;
   rlto_violation_count: number;
   lead_inspection_count: number;
+  flood_zone: string | null;
+  forty_year_recert_status: string | null;
+  forty_year_recert_due_date: string | null;
+  is_condo: boolean;
+  condo_association: string | null;
+  unsafe_structure_count: number;
   created_at: string;
   updated_at: string;
 }

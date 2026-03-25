@@ -63,6 +63,19 @@ const ENERGY_CONFIG: Record<City, EnergyConfig> = {
     jsonLdDescription:
       "ENERGY STAR scores and energy benchmarking data for Chicago buildings, sourced from the Chicago Energy Benchmarking program.",
   },
+  miami: {
+    pageTitle: "Miami Energy Scores",
+    metaDescription:
+      "How energy-efficient is your building? See ENERGY STAR scores, utility costs, and emissions data for Miami-Dade buildings.",
+    headerTitle: "Miami Energy Scores",
+    headerDescription:
+      "See how energy-efficient Miami-Dade buildings are. ENERGY STAR scores, energy use intensity (EUI), and greenhouse gas emissions data for Miami multifamily buildings.",
+    programName: "MDE",
+    dataSourceLabel: "Miami-Dade Energy Benchmarking",
+    jsonLdName: "Miami Building Energy Scores",
+    jsonLdDescription:
+      "ENERGY STAR scores and energy benchmarking data for Miami-Dade buildings.",
+  },
 };
 
 /* ---------------------------------------------------------------------------

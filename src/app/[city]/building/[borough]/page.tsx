@@ -48,7 +48,7 @@ export default async function BuildingRedirectPage({ params }: BuildingPageProps
     .maybeSingle();
 
   if (fallback?.borough) {
-    const fallbackCity = (fallback.metro === "los-angeles" ? "los-angeles" : fallback.metro === "chicago" ? "chicago" : "nyc") as City;
+    const fallbackCity = (fallback.metro === "los-angeles" ? "los-angeles" : fallback.metro === "chicago" ? "chicago" : fallback.metro === "miami" ? "miami" : "nyc") as City;
     permanentRedirect(buildingUrl(fallback, fallbackCity));
   }
 

@@ -76,7 +76,7 @@ export async function generateMetadata({
   if (!building) return { title: "Building Not Found" };
 
   const title = `${building.full_address} | Lucid Rents`;
-  const isChicagoMeta = cityParam === "chicago";
+  const isChicagoMeta = cityParam === "chicago" || cityParam === "miami";
   const metaViolationCount = isChicagoMeta
     ? (building.dob_violation_count || 0)
     : (building.violation_count || 0);
@@ -132,6 +132,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
 
   const isLA = city === "los-angeles";
   const isChicago = city === "chicago";
+  const isMiami = city === "miami";
   const isNYC = city === "nyc";
   const emptyHpdLit = [] as HpdLitigation[];
   const emptyDobVio = [] as DobViolation[];
@@ -297,7 +298,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
 
             {/* Violation & Complaint Trends */}
             <div id="violation-trends" className="scroll-mt-28">
-              <ViolationTrend buildingId={buildingId} housingAgency={city === "los-angeles" ? "LAHD" : city === "chicago" ? "CDBS" : "HPD"} />
+              <ViolationTrend buildingId={buildingId} housingAgency={city === "los-angeles" ? "LAHD" : city === "chicago" ? "CDBS" : city === "miami" ? "RER" : "HPD"} />
             </div>
 
             {/* Violations by Unit Breakdown */}

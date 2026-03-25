@@ -100,7 +100,7 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
           Landlord Directory
         </h1>
         <p className="text-[#64748b] mt-2">
-          Search NYC landlords by name and explore their building portfolios, violations, and complaint histories.
+          Search {CITY_META[cityParam as City]?.fullName || "NYC"} landlords by name and explore their building portfolios, violations, and complaint histories.
         </p>
       </div>
 

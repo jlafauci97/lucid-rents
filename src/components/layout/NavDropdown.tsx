@@ -118,6 +118,7 @@ function getToolLabel(tool: ToolItem, city: City): string {
   if (tool.path === "/rent-stabilization") {
     if (city === "los-angeles") return "RSO Checker";
     if (city === "chicago") return "RLTO Checker";
+    if (city === "miami") return "Tenant Protections";
     return tool.label;
   }
   return tool.label;
@@ -127,6 +128,7 @@ function getToolDescription(tool: ToolItem, city: City): string {
   if (tool.path === "/rent-stabilization") {
     if (city === "los-angeles") return "Check if a building is under LA's Rent Stabilization Ordinance";
     if (city === "chicago") return "Check RLTO protections and just cause eviction coverage";
+    if (city === "miami") return "Learn about Florida tenant protections and condo safety";
     return tool.description;
   }
   return tool.description;

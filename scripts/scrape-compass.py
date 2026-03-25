@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
 """
-Scrape rent data from compass.com for NYC's five boroughs using Scrapling.
+Scrape rent data from compass.com for NYC, LA, and Chicago metros using Scrapling.
 
 Uses StealthyFetcher with real_chrome=True to bypass anti-bot protection,
 then extracts structured JSON from the embedded window.uc.sharedReactAppProps
 payload containing listing data.
 
 Usage:
-    python3 scripts/scrape-compass.py                        # all boroughs, 5 pages each
-    python3 scripts/scrape-compass.py --borough=Manhattan    # single borough
-    python3 scripts/scrape-compass.py --pages=10             # more pages per borough
-    python3 scripts/scrape-compass.py --dry-run              # preview without DB writes
+    python3 scripts/scrape-compass.py                              # NYC (default), all boroughs, 5 pages each
+    python3 scripts/scrape-compass.py --metro=los-angeles          # LA metro areas
+    python3 scripts/scrape-compass.py --metro=chicago              # Chicago metro areas
+    python3 scripts/scrape-compass.py --borough=Manhattan          # single area within metro
+    python3 scripts/scrape-compass.py --metro=los-angeles --borough="Santa Monica"
+    python3 scripts/scrape-compass.py --pages=10                   # more pages per area
+    python3 scripts/scrape-compass.py --dry-run                    # preview without DB writes
 """
 
 import json
@@ -49,12 +52,55 @@ from supabase import create_client
 supabase = create_client(SUPABASE_URL, SERVICE_KEY)
 
 # ── CONSTANTS ────────────────────────────────────────────────────────────────
-BOROUGH_URLS = {
-    "Manhattan": "https://www.compass.com/homes-for-rent/manhattan-ny/",
-    "Brooklyn": "https://www.compass.com/homes-for-rent/brooklyn-ny/",
-    "Queens": "https://www.compass.com/homes-for-rent/queens-ny/",
-    "Bronx": "https://www.compass.com/homes-for-rent/bronx-ny/",
-    "Staten Island": "https://www.compass.com/homes-for-rent/staten-island-ny/",
+METRO_AREA_URLS = {
+    "nyc": {
+        "Manhattan": "https://www.compass.com/homes-for-rent/manhattan-ny/",
+        "Brooklyn": "https://www.compass.com/homes-for-rent/brooklyn-ny/",
+        "Queens": "https://www.compass.com/homes-for-rent/queens-ny/",
+        "Bronx": "https://www.compass.com/homes-for-rent/bronx-ny/",
+        "Staten Island": "https://www.compass.com/homes-for-rent/staten-island-ny/",
+    },
+    "los-angeles": {
+        "Los Angeles": "https://www.compass.com/homes-for-rent/los-angeles-ca/",
+        "West Hollywood": "https://www.compass.com/homes-for-rent/west-hollywood-ca/",
+        "Santa Monica": "https://www.compass.com/homes-for-rent/santa-monica-ca/",
+        "Culver City": "https://www.compass.com/homes-for-rent/culver-city-ca/",
+        "Glendale": "https://www.compass.com/homes-for-rent/glendale-ca/",
+        "Burbank": "https://www.compass.com/homes-for-rent/burbank-ca/",
+        "Pasadena": "https://www.compass.com/homes-for-rent/pasadena-ca/",
+        "Long Beach": "https://www.compass.com/homes-for-rent/long-beach-ca/",
+    },
+    "chicago": {
+        "Chicago": "https://www.compass.com/homes-for-rent/chicago-il/",
+        "Lincoln Park": "https://www.compass.com/homes-for-rent/lincoln-park-chicago-il/",
+        "Lakeview": "https://www.compass.com/homes-for-rent/lakeview-chicago-il/",
+        "Wicker Park": "https://www.compass.com/homes-for-rent/wicker-park-chicago-il/",
+        "Logan Square": "https://www.compass.com/homes-for-rent/logan-square-chicago-il/",
+        "River North": "https://www.compass.com/homes-for-rent/river-north-chicago-il/",
+        "Gold Coast": "https://www.compass.com/homes-for-rent/gold-coast-chicago-il/",
+        "Evanston": "https://www.compass.com/homes-for-rent/evanston-il/",
+        "Oak Park": "https://www.compass.com/homes-for-rent/oak-park-il/",
+    },
+    "miami": {
+        "Miami": "https://www.compass.com/homes-for-rent/miami-fl/",
+        "Brickell": "https://www.compass.com/homes-for-rent/brickell-miami-fl/",
+        "Miami Beach": "https://www.compass.com/homes-for-rent/miami-beach-fl/",
+        "Coral Gables": "https://www.compass.com/homes-for-rent/coral-gables-fl/",
+        "Coconut Grove": "https://www.compass.com/homes-for-rent/coconut-grove-miami-fl/",
+        "Wynwood": "https://www.compass.com/homes-for-rent/wynwood-miami-fl/",
+        "Doral": "https://www.compass.com/homes-for-rent/doral-fl/",
+        "Aventura": "https://www.compass.com/homes-for-rent/aventura-fl/",
+    },
+}
+
+# Backward compatibility
+BOROUGH_URLS = METRO_AREA_URLS["nyc"]
+
+METRO_INFO = {
+    "nyc": {"city": "New York", "state": "NY"},
+    "los-angeles": {"city": "Los Angeles", "state": "CA"},
+    "chicago": {"city": "Chicago", "state": "IL"},
+    "miami": {"city": "Miami", "state": "FL"},
 }
 
 MAX_RETRIES = 3
@@ -157,6 +203,7 @@ def normalize_address(address: str) -> str:
 
 
 CITY_TO_BOROUGH = {
+    # NYC
     "new york": "Manhattan",
     "manhattan": "Manhattan",
     "brooklyn": "Brooklyn",
@@ -172,16 +219,56 @@ CITY_TO_BOROUGH = {
     "forest hills": "Queens",
     "rego park": "Queens",
     "staten island": "Staten Island",
+    # Los Angeles
+    "los angeles": "Los Angeles",
+    "west hollywood": "West Hollywood",
+    "santa monica": "Santa Monica",
+    "culver city": "Culver City",
+    "glendale": "Glendale",
+    "burbank": "Burbank",
+    "pasadena": "Pasadena",
+    "long beach": "Long Beach",
+    "beverly hills": "Los Angeles",
+    "silver lake": "Los Angeles",
+    "echo park": "Los Angeles",
+    "koreatown": "Los Angeles",
+    "hollywood": "Los Angeles",
+    # Chicago
+    "chicago": "Chicago",
+    "lincoln park": "Lincoln Park",
+    "lakeview": "Lakeview",
+    "wicker park": "Wicker Park",
+    "logan square": "Logan Square",
+    "river north": "River North",
+    "gold coast": "Gold Coast",
+    "evanston": "Evanston",
+    "oak park": "Oak Park",
+    "bucktown": "Wicker Park",
+    "old town": "Lincoln Park",
+    "streeterville": "River North",
+    "loop": "Chicago",
+    "south loop": "Chicago",
+    "west loop": "Chicago",
+    # Miami
+    "miami": "Miami",
+    "miami beach": "Miami Beach",
+    "coral gables": "Coral Gables",
+    "doral": "Doral",
+    "aventura": "Aventura",
+    "coconut grove": "Coconut Grove",
+    "brickell": "Brickell",
+    "wynwood": "Wynwood",
 }
 
 
-def detect_borough(listing: dict, default_borough: str = "Manhattan") -> str:
+def detect_borough(listing: dict, default_area: str = "Manhattan") -> str:
     address = listing.get("address", "").lower()
     for key, boro in CITY_TO_BOROUGH.items():
         if key in address:
             return boro
 
     zc = listing.get("zip_code", "")
+    # NYC zip codes
     if zc.startswith("100") or zc.startswith("101") or zc.startswith("102"):
         return "Manhattan"
     if zc.startswith("112") or zc.startswith("113") or zc.startswith("114"):
@@ -192,8 +279,14 @@ def detect_borough(listing: dict, default_borough: str = "Manhattan") -> str:
         return "Queens"
     if zc.startswith("103"):
         return "Staten Island"
+    # LA zip codes (900xx-961xx)
+    if zc.startswith("900") or zc.startswith("901") or zc.startswith("902") or zc.startswith("906") or zc.startswith("910") or zc.startswith("911") or zc.startswith("912") or zc.startswith("913") or zc.startswith("914") or zc.startswith("915") or zc.startswith("916") or zc.startswith("917") or zc.startswith("918"):
+        return "Los Angeles"
+    # Chicago zip codes (606xx-608xx)
+    if zc.startswith("606") or zc.startswith("607") or zc.startswith("608"):
+        return "Chicago"
 
-    return default_borough
+    return default_area
 
 
 def generate_slug(full_address: str) -> str:
@@ -750,6 +843,7 @@ def upsert_rents(building_id: str, rent_by_beds: dict) -> int:
         history_rows.append({
             "building_id": building_id,
             "source": SOURCE,
+            "unit_number": "",
             "bedrooms": beds,
             "rent": median,
             "sqft": data.get("sqft_min"),
@@ -805,7 +899,7 @@ def upsert_amenities(building_id: str, amenities: list[str]) -> int:
         return 0
 
 
-def create_building(listing: dict) -> str | None:
+def create_building(listing: dict, metro: str = "nyc") -> str | None:
     addr = listing.get("address", "")
     if not addr:
         return None
@@ -817,7 +911,10 @@ def create_building(listing: dict) -> str | None:
     street_name = parts[1].upper() if len(parts) > 1 else ""
     zip_code = listing.get("zip_code", "")
 
-    full_address = f"{street.upper()}, {borough}, NY"
+    info = METRO_INFO.get(metro, METRO_INFO["nyc"])
+    state = info["state"]
+
+    full_address = f"{street.upper()}, {borough}, {state}"
     if zip_code:
         full_address += f", {zip_code}"
 
@@ -828,10 +925,11 @@ def create_building(listing: dict) -> str | None:
         "house_number": house_number,
         "street_name": street_name,
         "borough": borough,
-        "city": "New York",
-        "state": "NY",
+        "city": info["city"],
+        "state": state,
         "zip_code": zip_code or None,
         "slug": slug,
+        "metro": metro,
         "latitude": listing.get("latitude"),
         "longitude": listing.get("longitude"),
         "overall_score": 0,
@@ -913,14 +1011,17 @@ def upsert_listing(building_id: str, listing: dict) -> bool:
 
 # ── MAIN ─────────────────────────────────────────────────────────────────────
 def main():
-    parser = argparse.ArgumentParser(description="Scrape compass.com for NYC rent data")
-    parser.add_argument("--borough", type=str, default="", help="Single borough to scrape")
-    parser.add_argument("--pages", type=int, default=5, help="Pages per borough")
+    parser = argparse.ArgumentParser(description="Scrape compass.com for rent data")
+    parser.add_argument("--metro", type=str, default="nyc", choices=["nyc", "los-angeles", "chicago", "miami"], help="Metro area")
+    parser.add_argument("--borough", type=str, default="", help="Single borough/area to scrape")
+    parser.add_argument("--pages", type=int, default=5, help="Pages per area")
     parser.add_argument("--dry-run", action="store_true", help="Preview without writing to DB")
     parser.add_argument("--start-page", type=int, default=1, help="Starting page number")
     args = parser.parse_args()
 
-    boroughs = {args.borough: BOROUGH_URLS[args.borough]} if args.borough else BOROUGH_URLS
+    metro = args.metro
+    area_urls = METRO_AREA_URLS.get(metro, BOROUGH_URLS)
+    boroughs = {args.borough: area_urls[args.borough]} if args.borough else area_urls
     max_pages = args.pages
     dry_run = args.dry_run
 
@@ -932,7 +1033,7 @@ def main():
     total_listings_saved = 0
     total_listings = 0
 
-    print(f"Scraping compass.com — boroughs={list(boroughs.keys())}, pages={max_pages}, dry_run={dry_run}")
+    print(f"Scraping compass.com — metro={metro}, areas={list(boroughs.keys())}, pages={max_pages}, dry_run={dry_run}")
     print(f"Start time: {datetime.now()}\n")
 
     for borough, base_url in boroughs.items():
@@ -976,7 +1077,7 @@ def main():
                     total_matched += 1
                     label = "MATCHED"
                 else:
-                    building_id = create_building(listing)
+                    building_id = create_building(listing, metro=metro)
                     if building_id:
                         total_created += 1
                         label = "CREATED"

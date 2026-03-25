@@ -76,12 +76,13 @@ async function getBoroughStats(): Promise<BoroughStats[]> {
 
 export default async function BuildingsIndexPage({ params }: { params: Promise<{ city: string }> }) {
   const { city } = await params;
+  const meta = CITY_META[city as City] || CITY_META.nyc;
   const stats = await getBoroughStats();
 
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "ItemList",
-    name: "NYC Borough Building Directories",
+    name: `${meta.fullName} Building Directories`,
     numberOfItems: stats.length,
     itemListElement: stats.map((s, i) => ({
       "@type": "ListItem",
@@ -97,10 +98,10 @@ export default async function BuildingsIndexPage({ params }: { params: Promise<{
       <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Buildings", href: cityPath("/buildings", city as City) }]} />
 
       <h1 className="text-3xl font-bold text-[#0F1D2E] mt-6 mb-2">
-        NYC Buildings Directory
+        {meta.fullName} Buildings Directory
       </h1>
       <p className="text-[#64748b] mb-8">
-        Browse apartment buildings across all five NYC boroughs. View violations, complaints, and tenant reviews.
+        Browse apartment buildings across {meta.fullName}. View violations, complaints, and tenant reviews.
       </p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

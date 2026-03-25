@@ -64,6 +64,14 @@ function getPermitLabels(city: City) {
       dataSource: "CDBS Permits",
     };
   }
+  if (city === "miami") {
+    return {
+      agency,
+      agencyFull: "Miami-Dade Regulatory & Economic Resources",
+      regionLabel: CITY_META[city].regionLabel,
+      dataSource: "Miami-Dade Permits",
+    };
+  }
   return {
     agency,
     agencyFull: "Department of Buildings",
@@ -79,7 +87,7 @@ export default async function PermitsPage({ params }: { params: Promise<{ city: 
   const city = citySlug as City;
   const meta = CITY_META[city];
   const labels = getPermitLabels(city);
-  const metro = city === "los-angeles" ? "los-angeles" : city === "chicago" ? "chicago" : "nyc";
+  const metro = city;
 
   const [stats, zipData, typeData, recentPermits] = await Promise.all([
     fetchRpc("permit_stats", { p_metro: metro }),

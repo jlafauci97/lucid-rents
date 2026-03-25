@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
 """
-Scrape rent and amenity data from zumper.com for NYC's five boroughs using Scrapling.
+Scrape rent and amenity data from zumper.com for NYC, LA, and Chicago metros
+using Scrapling.
 
 Uses StealthyFetcher with real_chrome=True to bypass anti-bot protection,
 then extracts structured JSON-LD (ApartmentComplex items) from page source.
 
 Usage:
-    python3 scripts/scrape-zumper.py                        # all boroughs, 5 pages each
-    python3 scripts/scrape-zumper.py --borough=Manhattan    # single borough
-    python3 scripts/scrape-zumper.py --pages=10             # more pages per borough
-    python3 scripts/scrape-zumper.py --dry-run              # preview without DB writes
+    python3 scripts/scrape-zumper.py                              # NYC (default), all areas, 5 pages each
+    python3 scripts/scrape-zumper.py --metro=los-angeles          # LA metro
+    python3 scripts/scrape-zumper.py --metro=chicago              # Chicago metro
+    python3 scripts/scrape-zumper.py --borough=Manhattan          # single area within metro
+    python3 scripts/scrape-zumper.py --metro=chicago --borough=Loop
+    python3 scripts/scrape-zumper.py --pages=10                   # more pages per area
+    python3 scripts/scrape-zumper.py --dry-run                    # preview without DB writes
 """
 
 import json
@@ -48,12 +52,63 @@ from supabase import create_client
 supabase = create_client(SUPABASE_URL, SERVICE_KEY)
 
 # ── CONSTANTS ────────────────────────────────────────────────────────────────
-BOROUGH_URLS = {
-    "Manhattan": "https://www.zumper.com/apartments-for-rent/manhattan-ny",
-    "Brooklyn": "https://www.zumper.com/apartments-for-rent/brooklyn-ny",
-    "Queens": "https://www.zumper.com/apartments-for-rent/queens-ny",
-    "Bronx": "https://www.zumper.com/apartments-for-rent/bronx-ny",
-    "Staten Island": "https://www.zumper.com/apartments-for-rent/staten-island-ny",
+METRO_AREA_URLS = {
+    "nyc": {
+        "Manhattan": "https://www.zumper.com/apartments-for-rent/manhattan-ny",
+        "Brooklyn": "https://www.zumper.com/apartments-for-rent/brooklyn-ny",
+        "Queens": "https://www.zumper.com/apartments-for-rent/queens-ny",
+        "Bronx": "https://www.zumper.com/apartments-for-rent/bronx-ny",
+        "Staten Island": "https://www.zumper.com/apartments-for-rent/staten-island-ny",
+    },
+    "los-angeles": {
+        "Downtown LA": "https://www.zumper.com/apartments-for-rent/los-angeles-ca",
+        "Hollywood": "https://www.zumper.com/apartments-for-rent/hollywood-los-angeles-ca",
+        "West Hollywood": "https://www.zumper.com/apartments-for-rent/west-hollywood-ca",
+        "Santa Monica": "https://www.zumper.com/apartments-for-rent/santa-monica-ca",
+        "Silver Lake": "https://www.zumper.com/apartments-for-rent/silver-lake-los-angeles-ca",
+        "Culver City": "https://www.zumper.com/apartments-for-rent/culver-city-ca",
+        "Glendale": "https://www.zumper.com/apartments-for-rent/glendale-ca",
+        "Burbank": "https://www.zumper.com/apartments-for-rent/burbank-ca",
+        "Pasadena": "https://www.zumper.com/apartments-for-rent/pasadena-ca",
+        "Long Beach": "https://www.zumper.com/apartments-for-rent/long-beach-ca",
+        "Torrance": "https://www.zumper.com/apartments-for-rent/torrance-ca",
+    },
+    "chicago": {
+        "Loop": "https://www.zumper.com/apartments-for-rent/the-loop-chicago-il",
+        "Lincoln Park": "https://www.zumper.com/apartments-for-rent/lincoln-park-chicago-il",
+        "Lakeview": "https://www.zumper.com/apartments-for-rent/lakeview-chicago-il",
+        "Wicker Park": "https://www.zumper.com/apartments-for-rent/wicker-park-chicago-il",
+        "Logan Square": "https://www.zumper.com/apartments-for-rent/logan-square-chicago-il",
+        "River North": "https://www.zumper.com/apartments-for-rent/river-north-chicago-il",
+        "Gold Coast": "https://www.zumper.com/apartments-for-rent/gold-coast-chicago-il",
+        "Hyde Park": "https://www.zumper.com/apartments-for-rent/hyde-park-chicago-il",
+        "South Loop": "https://www.zumper.com/apartments-for-rent/south-loop-chicago-il",
+        "West Loop": "https://www.zumper.com/apartments-for-rent/west-loop-chicago-il",
+        "Uptown": "https://www.zumper.com/apartments-for-rent/uptown-chicago-il",
+        "Evanston": "https://www.zumper.com/apartments-for-rent/evanston-il",
+    },
+    "miami": {
+        "Miami": "https://www.zumper.com/apartments-for-rent/miami-fl",
+        "Brickell": "https://www.zumper.com/apartments-for-rent/brickell-miami-fl",
+        "Miami Beach": "https://www.zumper.com/apartments-for-rent/miami-beach-fl",
+        "Coral Gables": "https://www.zumper.com/apartments-for-rent/coral-gables-fl",
+        "Doral": "https://www.zumper.com/apartments-for-rent/doral-fl",
+        "Coconut Grove": "https://www.zumper.com/apartments-for-rent/coconut-grove-miami-fl",
+        "Wynwood": "https://www.zumper.com/apartments-for-rent/wynwood-miami-fl",
+        "Aventura": "https://www.zumper.com/apartments-for-rent/aventura-fl",
+        "Kendall": "https://www.zumper.com/apartments-for-rent/kendall-miami-fl",
+        "Edgewater": "https://www.zumper.com/apartments-for-rent/edgewater-miami-fl",
+    },
+}
+
+# Backward compatibility
+BOROUGH_URLS = METRO_AREA_URLS["nyc"]
+
+METRO_INFO = {
+    "nyc": {"city": "New York", "state": "NY"},
+    "los-angeles": {"city": "Los Angeles", "state": "CA"},
+    "chicago": {"city": "Chicago", "state": "IL"},
+    "miami": {"city": "Miami", "state": "FL"},
 }
 
 MAX_RETRIES = 3
@@ -166,7 +221,8 @@ def normalize_address(address: str) -> str:
 
 
 # ── BOROUGH DETECTION ────────────────────────────────────────────────────────
-CITY_TO_BOROUGH = {
+CITY_TO_AREA = {
+    # NYC
     "new york": "Manhattan",
     "manhattan": "Manhattan",
     "brooklyn": "Brooklyn",
@@ -182,24 +238,74 @@ CITY_TO_BOROUGH = {
     "forest hills": "Queens",
     "rego park": "Queens",
     "staten island": "Staten Island",
+    # LA
+    "los angeles": "Downtown LA",
+    "hollywood": "Hollywood",
+    "west hollywood": "West Hollywood",
+    "santa monica": "Santa Monica",
+    "silver lake": "Silver Lake",
+    "culver city": "Culver City",
+    "glendale": "Glendale",
+    "burbank": "Burbank",
+    "pasadena": "Pasadena",
+    "long beach": "Long Beach",
+    "torrance": "Torrance",
+    # Chicago
+    "chicago": "Loop",
+    "the loop": "Loop",
+    "lincoln park": "Lincoln Park",
+    "lakeview": "Lakeview",
+    "wicker park": "Wicker Park",
+    "logan square": "Logan Square",
+    "river north": "River North",
+    "gold coast": "Gold Coast",
+    "hyde park": "Hyde Park",
+    "south loop": "South Loop",
+    "west loop": "West Loop",
+    "uptown": "Uptown",
+    "evanston": "Evanston",
+    # Miami
+    "miami": "Brickell",
+    "miami beach": "Miami Beach",
+    "coral gables": "Coral Gables",
+    "doral": "Doral",
+    "coconut grove": "Coconut Grove",
+    "brickell": "Brickell",
+    "wynwood": "Wynwood",
+    "aventura": "Aventura",
+    "kendall": "Kendall",
+    "edgewater": "Edgewater",
 }
 
+# Keep old name for backward compat
+CITY_TO_BOROUGH = CITY_TO_AREA
 
-def detect_borough(listing: dict, default_borough: str = "Manhattan") -> str:
-    """Detect NYC borough from listing data."""
+
+GENERIC_CITY_NAMES = {"chicago", "los angeles", "new york", "new york city", "miami"}
+
+
+def detect_borough(listing: dict, default_area: str = "Manhattan") -> str:
+    """Detect area/borough from listing data (works for NYC, LA, Chicago)."""
     # Check locality
     locality = listing.get("locality", "").strip().lower()
-    if locality and locality in CITY_TO_BOROUGH:
-        return CITY_TO_BOROUGH[locality]
+
+    # If the city is a generic metro-level name and we have a specific default
+    # from the scrape URL, prefer the default to avoid misattribution.
+    if default_area and locality in GENERIC_CITY_NAMES:
+        return default_area
+
+    if locality and locality in CITY_TO_AREA:
+        return CITY_TO_AREA[locality]
 
     # Check address
     address = listing.get("address", "").lower()
-    for key, boro in CITY_TO_BOROUGH.items():
+    for key, area in CITY_TO_AREA.items():
         if key in address:
-            return boro
+            return area
 
     # Fall back to zip code prefix
     zc = listing.get("zip_code", "")
+    # NYC
     if zc.startswith("100") or zc.startswith("101") or zc.startswith("102"):
         return "Manhattan"
     if zc.startswith("112") or zc.startswith("113") or zc.startswith("114"):
@@ -210,8 +316,19 @@ def detect_borough(listing: dict, default_borough: str = "Manhattan") -> str:
         return "Queens"
     if zc.startswith("103"):
         return "Staten Island"
+    # LA (900xx-961xx)
+    if zc.startswith("900") or zc.startswith("901") or zc.startswith("902") \
+            or zc.startswith("903") or zc.startswith("904") or zc.startswith("906") \
+            or zc.startswith("907") or zc.startswith("908") or zc.startswith("910") \
+            or zc.startswith("911") or zc.startswith("912") or zc.startswith("913") \
+            or zc.startswith("914") or zc.startswith("915") or zc.startswith("916") \
+            or zc.startswith("917") or zc.startswith("918"):
+        return "Downtown LA"
+    # Chicago (606xx)
+    if zc.startswith("606"):
+        return "Loop"
 
-    return default_borough
+    return default_area
 
 
 def generate_slug(full_address: str) -> str:
@@ -670,6 +787,7 @@ def upsert_rents(building_id: str, rent_by_beds: dict) -> int:
         history_rows.append({
             "building_id": building_id,
             "source": SOURCE,
+            "unit_number": "",
             "bedrooms": beds,
             "rent": median,
             "sqft": data.get("sqft_min"),
@@ -725,7 +843,7 @@ def upsert_amenities(building_id: str, amenities: list[str]) -> int:
         return 0
 
 
-def create_building(listing: dict) -> str | None:
+def create_building(listing: dict, metro: str = "nyc") -> str | None:
     addr = listing.get("address", "")
     if not addr:
         return None
@@ -737,7 +855,11 @@ def create_building(listing: dict) -> str | None:
     street_name = parts[1].upper() if len(parts) > 1 else ""
     zip_code = listing.get("zip_code", "")
 
-    full_address = f"{street.upper()}, {borough}, NY"
+    info = METRO_INFO.get(metro, METRO_INFO["nyc"])
+    city = info["city"]
+    state = info["state"]
+
+    full_address = f"{street.upper()}, {borough}, {state}"
     if zip_code:
         full_address += f", {zip_code}"
 
@@ -748,10 +870,11 @@ def create_building(listing: dict) -> str | None:
         "house_number": house_number,
         "street_name": street_name,
         "borough": borough,
-        "city": "New York",
-        "state": "NY",
+        "city": city,
+        "state": state,
         "zip_code": zip_code or None,
         "slug": slug,
+        "metro": metro,
         "latitude": listing.get("latitude"),
         "longitude": listing.get("longitude"),
         "overall_score": 0,
@@ -833,14 +956,17 @@ def upsert_listing(building_id: str, listing: dict) -> bool:
 
 # ── MAIN ─────────────────────────────────────────────────────────────────────
 def main():
-    parser = argparse.ArgumentParser(description="Scrape zumper.com for NYC rent & amenity data")
-    parser.add_argument("--borough", type=str, default="", help="Single borough to scrape")
-    parser.add_argument("--pages", type=int, default=5, help="Pages per borough")
+    parser = argparse.ArgumentParser(description="Scrape zumper.com for rent & amenity data")
+    parser.add_argument("--metro", type=str, default="nyc", choices=["nyc", "los-angeles", "chicago", "miami"], help="Metro area")
+    parser.add_argument("--borough", type=str, default="", help="Single borough/area to scrape")
+    parser.add_argument("--pages", type=int, default=5, help="Pages per area")
     parser.add_argument("--dry-run", action="store_true", help="Preview without writing to DB")
     parser.add_argument("--start-page", type=int, default=1, help="Starting page number")
     args = parser.parse_args()
 
-    boroughs = {args.borough: BOROUGH_URLS[args.borough]} if args.borough else BOROUGH_URLS
+    metro = args.metro
+    area_urls = METRO_AREA_URLS.get(metro, BOROUGH_URLS)
+    boroughs = {args.borough: area_urls[args.borough]} if args.borough else area_urls
     max_pages = args.pages
     dry_run = args.dry_run
 
@@ -852,7 +978,7 @@ def main():
     total_listings_saved = 0
     total_listings = 0
 
-    print(f"Scraping zumper.com — boroughs={list(boroughs.keys())}, pages={max_pages}, dry_run={dry_run}")
+    print(f"Scraping zumper.com — metro={metro}, areas={list(boroughs.keys())}, pages={max_pages}, dry_run={dry_run}")
     print(f"Start time: {datetime.now()}\n")
 
     for borough, base_url in boroughs.items():
@@ -891,7 +1017,7 @@ def main():
                     total_matched += 1
                     label = "MATCHED"
                 else:
-                    building_id = create_building(listing)
+                    building_id = create_building(listing, metro=metro)
                     if building_id:
                         total_created += 1
                         label = "CREATED"

@@ -26,6 +26,14 @@ const DATA_SOURCES: Record<City, string[]> = {
     "Cook County Assessor Data",
     "Chicago Energy Benchmarking",
   ],
+  miami: [
+    "Miami-Dade Open Data - Code Violations",
+    "Miami-Dade Open Data - 311 Requests",
+    "Miami-Dade Open Data - MDPD Crime",
+    "Miami-Dade Property Appraiser",
+    "Miami-Dade 40-Year Recertification",
+    "FEMA Flood Zone Data",
+  ],
 };
 
 export function Footer() {

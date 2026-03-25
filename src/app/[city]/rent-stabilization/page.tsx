@@ -78,6 +78,24 @@ const RENT_STAB_CONFIG: Record<City, RentStabConfig> = {
     jsonLdDescription:
       "Check RLTO protections and just cause eviction coverage for any Chicago apartment.",
   },
+  miami: {
+    title: "Miami Tenant Protections Guide",
+    metaDescription:
+      "Florida has no rent control — learn what protections Miami tenants do have, including security deposit rules, notice requirements, and condo safety regulations.",
+    headerDescription:
+      "Florida state law preempts all local rent control, meaning Miami-Dade County and its municipalities cannot set limits on rent increases. However, Miami tenants still have protections under Florida Statute Chapter 83 (the Florida Residential Landlord and Tenant Act), including security deposit rules, habitability standards, and notice requirements.",
+    searchPlaceholder: "Search by address to check building protections...",
+    dataSourceLabel: "Miami-Dade Property Appraiser / RER",
+    editorialTitle: "What Protections Do Miami Tenants Have?",
+    editorialParagraphs: [
+      "Unlike NYC, LA, and Chicago, Florida law explicitly prohibits local governments from enacting rent control ordinances except in cases of a housing emergency declared by the governor. This means there are no rent stabilization protections for Miami tenants — landlords can raise rent by any amount with proper notice (typically 30 days for month-to-month, or at lease renewal).",
+      "Miami tenants are protected by the Florida Residential Landlord and Tenant Act (F.S. 83), which requires landlords to maintain the premises in compliance with building codes, provide functioning plumbing, heat, and hot water, and follow specific procedures for security deposit handling. Landlords must return deposits within 15-30 days of move-out with an itemized list of deductions.",
+      "After the 2021 Surfside condominium collapse, Miami-Dade County strengthened its 40-year building recertification requirements. Buildings 40 years or older (25 years in coastal zones) must undergo structural inspections and recertification. This is critical for tenants in older buildings — check your building's recertification status using the search above.",
+    ],
+    jsonLdName: "Miami Tenant Protections Guide",
+    jsonLdDescription:
+      "Learn about tenant protections for Miami apartments — no rent control in Florida but other key protections apply.",
+  },
 };
 
 /* ---------------------------------------------------------------------------

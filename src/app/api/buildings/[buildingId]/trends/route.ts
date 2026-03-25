@@ -63,7 +63,7 @@ export async function GET(
       .eq("id", buildingId)
       .single();
     const metro = buildingRow?.metro || "nyc";
-    const isChicago = metro === "chicago";
+    const isChicago = metro === "chicago" || metro === "miami";
 
     const fiveYearsAgo = new Date();
     fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);

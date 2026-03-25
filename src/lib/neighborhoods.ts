@@ -19,6 +19,11 @@ import {
   getChicagoNeighborhoodName,
   chicagoNeighborhoodPageSlug,
 } from "./chicago-neighborhoods";
+import {
+  searchMiamiNeighborhoods,
+  getMiamiNeighborhoodName,
+  miamiNeighborhoodPageSlug,
+} from "./miami-neighborhoods";
 
 export interface NeighborhoodResult {
   zipCode: string;
@@ -54,6 +59,13 @@ export function searchNeighborhoodsByCity(
       region: m.region,
     }));
   }
+  if (city === "miami") {
+    return searchMiamiNeighborhoods(query, limit).map((m) => ({
+      zipCode: m.zipCode,
+      name: m.name,
+      region: m.region,
+    }));
+  }
   return [];
 }
 
@@ -65,6 +77,7 @@ export function getNeighborhoodNameByCity(
   if (city === "nyc") return getNYCNeighborhoodName(zipCode);
   if (city === "los-angeles") return getLANeighborhoodName(zipCode);
   if (city === "chicago") return getChicagoNeighborhoodName(zipCode);
+  if (city === "miami") return getMiamiNeighborhoodName(zipCode);
   return null;
 }
 
@@ -76,5 +89,6 @@ export function neighborhoodPageSlugByCity(
   if (city === "nyc") return nycNeighborhoodPageSlug(zipCode);
   if (city === "los-angeles") return laNeighborhoodPageSlug(zipCode);
   if (city === "chicago") return chicagoNeighborhoodPageSlug(zipCode);
+  if (city === "miami") return miamiNeighborhoodPageSlug(zipCode);
   return zipCode;
 }

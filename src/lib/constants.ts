@@ -141,12 +141,16 @@ export const LEASE_TYPES_BY_CITY: Record<City, readonly { value: string; label: 
     { value: "market_rate", label: "Market Rate" },
     { value: "rlto", label: "RLTO Protected" },
   ],
+  miami: [
+    { value: "market_rate", label: "Market Rate" },
+  ],
 };
 
 /** Rent protection label per city */
 export function getRentProtectionLabel(city: City): string {
   if (city === "nyc") return "Rent Stabilized";
   if (city === "los-angeles") return "RSO Protected";
+  if (city === "miami") return "No Rent Control";
   return "RLTO Protected";
 }
 
@@ -257,10 +261,30 @@ export const CHICAGO_HOUSING_COMPLAINT_TYPES = [
   "LOCKOUT",
 ] as const;
 
+export const MIAMI_HOUSING_COMPLAINT_TYPES = [
+  "CODE VIOLATION",
+  "UNSAFE STRUCTURE",
+  "PLUMBING",
+  "ELECTRICAL",
+  "STRUCTURAL",
+  "MOLD/MILDEW",
+  "WATER DAMAGE",
+  "FLOOD DAMAGE",
+  "HURRICANE DAMAGE",
+  "PEST CONTROL",
+  "ELEVATOR",
+  "FIRE SAFETY",
+  "GENERAL MAINTENANCE",
+  "PARKING",
+  "NOISE",
+  "AC/HVAC",
+] as const;
+
 /** Get the complaint types for a given city */
 export function getComplaintTypes(city: City): readonly string[] {
   if (city === "nyc") return HOUSING_COMPLAINT_TYPES;
   if (city === "los-angeles") return LA_HOUSING_COMPLAINT_TYPES;
+  if (city === "miami") return MIAMI_HOUSING_COMPLAINT_TYPES;
   return CHICAGO_HOUSING_COMPLAINT_TYPES;
 }
 
@@ -269,6 +293,7 @@ export const VIOLATION_AGENCIES: Record<City, { housing: string; building: strin
   nyc: { housing: "HPD", building: "DOB", crime: "NYPD" },
   "los-angeles": { housing: "LAHD", building: "LADBS", crime: "LAPD" },
   chicago: { housing: "CDPH", building: "CDBS", crime: "CPD" },
+  miami: { housing: "RER", building: "RER", crime: "MDPD" },
 };
 
 export const REVIEW_PRO_TAGS = [

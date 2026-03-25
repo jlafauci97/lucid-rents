@@ -1,6 +1,6 @@
-export type City = "nyc" | "los-angeles" | "chicago";
+export type City = "nyc" | "los-angeles" | "chicago" | "miami";
 
-export const VALID_CITIES: City[] = ["nyc", "los-angeles", "chicago"];
+export const VALID_CITIES: City[] = ["nyc", "los-angeles", "chicago", "miami"];
 export const DEFAULT_CITY: City = "nyc";
 
 export interface CityMeta {
@@ -13,7 +13,7 @@ export interface CityMeta {
   /** Top-level geographic regions (boroughs for NYC, areas for LA) */
   regions: readonly string[];
   /** Primary parcel identifier field name */
-  parcelIdField: "bbl" | "apn" | "pin";
+  parcelIdField: "bbl" | "apn" | "pin" | "folio";
   /** Label for the regions concept (e.g. "Borough" or "Area") */
   regionLabel: string;
   /** Hero image filename in /public */
@@ -196,6 +196,67 @@ export const CITY_META: Record<City, CityMeta> = {
       "25th (Grand Central)",
     ],
   },
+  miami: {
+    name: "Miami",
+    fullName: "Miami",
+    state: "Florida",
+    stateCode: "FL",
+    urlPrefix: "FL/Miami",
+    regions: [
+      "Brickell",
+      "Downtown Miami",
+      "Wynwood",
+      "Edgewater",
+      "Midtown",
+      "Miami Beach",
+      "South Beach",
+      "North Beach",
+      "Coconut Grove",
+      "Coral Gables",
+      "Little Havana",
+      "Little Haiti",
+      "Allapattah",
+      "Overtown",
+      "Design District",
+      "Upper East Side",
+      "Morningside",
+      "Doral",
+      "Kendall",
+      "Hialeah",
+      "Aventura",
+      "Sunny Isles Beach",
+      "Coral Way",
+      "Flagami",
+      "Key Biscayne",
+      "North Miami",
+      "Palmetto Bay",
+      "Pinecrest",
+      "Cutler Bay",
+      "Miami Gardens",
+      "Sweetwater",
+      "Surfside",
+      "Bal Harbour",
+      "West Kendall",
+      "Fontainebleau",
+      "Liberty City",
+    ],
+    parcelIdField: "folio",
+    regionLabel: "Neighborhood",
+    heroImage: "/miami-skyline.jpg",
+    center: { lat: 25.7617, lng: -80.1918 },
+    zoom: 11,
+    crimeSource: "MDPD",
+    crimeAreas: [
+      "Midwest",
+      "North",
+      "South",
+      "Kendall",
+      "Intracoastal",
+      "Northside",
+      "Hammocks",
+      "Airport",
+    ],
+  },
 };
 
 /** URL prefix → internal city key mapping for middleware rewrites */
@@ -208,6 +269,7 @@ for (const [key, meta] of Object.entries(CITY_META)) {
 export const STATE_CITY_MAP: Record<string, Record<string, City>> = {
   CA: { "Los-Angeles": "los-angeles" },
   IL: { Chicago: "chicago" },
+  FL: { Miami: "miami" },
 };
 
 export function isValidCity(s: string): s is City {
