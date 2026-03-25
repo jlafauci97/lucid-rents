@@ -53,6 +53,11 @@ const cities: { key: City; tagline: string; example: string }[] = [
     tagline: "Search violations, complaints, and reviews for any Chicago building.",
     example: "Try \"1200 N Lake Shore Dr\" or \"60614\"",
   },
+  {
+    key: "miami",
+    tagline: "Search violations, complaints, and reviews for any Miami building.",
+    example: "Try \"1000 Brickell Ave\" or \"33131\"",
+  },
 ];
 
 export default function HomePage() {
@@ -65,7 +70,7 @@ export default function HomePage() {
           name: "Lucid Rents",
           url: "https://lucidrents.com",
           description:
-            "Discover the truth about apartment buildings. Search building violations, tenant reviews, crime data, and more across New York City, Los Angeles, and Chicago.",
+            "Discover the truth about apartment buildings. Search building violations, tenant reviews, crime data, and more across New York City, Los Angeles, Chicago, and Miami.",
           potentialAction: {
             "@type": "SearchAction",
             target: {
@@ -122,7 +127,7 @@ export default function HomePage() {
           </p>
 
           {/* City Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
             {cities.map((c) => {
               const meta = CITY_META[c.key];
               return (
