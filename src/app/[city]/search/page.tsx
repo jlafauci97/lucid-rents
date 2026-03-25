@@ -10,6 +10,7 @@ import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { createClient } from "@/lib/supabase/server";
 import type { Building } from "@/types";
+import { normalizeAddressQuery } from "@/lib/address-normalization";
 import { cityPath, canonicalUrl } from "@/lib/seo";
 import type { Metadata } from "next";
 
@@ -103,8 +104,10 @@ async function SearchResults({
   const limit = 20;
   const offset = (page - 1) * limit;
 
+  const { abbreviated, expanded } = normalizeAddressQuery(q);
   const { data: rows } = await supabase.rpc("search_buildings_ranked", {
-    search_query: q,
+    search_query: abbreviated,
+    search_query_alt: abbreviated !== expanded ? expanded : null,
     city_filter: city || null,
     borough_filter: borough || null,
     zip_filter: zip || null,

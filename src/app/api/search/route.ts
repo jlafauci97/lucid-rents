@@ -1,4 +1,5 @@
 import { isValidCity } from "@/lib/cities";
+import { normalizeAddressQuery } from "@/lib/address-normalization";
 import { createClient } from "@/lib/supabase/server";
 import { searchSchema } from "@/lib/validators";
 import { NextRequest, NextResponse } from "next/server";
@@ -44,8 +45,10 @@ export async function GET(req: NextRequest) {
 
   // Use ranked search function for text queries to get proper relevance ordering
   if (q) {
+    const { abbreviated, expanded } = normalizeAddressQuery(q);
     const { data, error } = await supabase.rpc("search_buildings_ranked", {
-      search_query: q,
+      search_query: abbreviated,
+      search_query_alt: abbreviated !== expanded ? expanded : null,
       city_filter: cityParam || null,
       borough_filter: borough || null,
       zip_filter: zip || null,
