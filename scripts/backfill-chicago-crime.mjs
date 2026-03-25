@@ -135,9 +135,10 @@ async function main() {
         return {
           cmplnt_num: `CHI-${r.case_number}`,
           cmplnt_date: r.date ? String(r.date).slice(0, 10) : null,
+          borough: "Chicago",
           precinct: r.district || null,
           offense_description: desc || null,
-          law_category: crimeCategory(r.primary_type),
+          crime_category: crimeCategory(r.primary_type),
           latitude: r.latitude ? parseFloat(r.latitude) : null,
           longitude: r.longitude ? parseFloat(r.longitude) : null,
           metro: "chicago",
