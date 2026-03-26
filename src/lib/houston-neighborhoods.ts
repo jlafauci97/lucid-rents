@@ -148,9 +148,6 @@ export const HOUSTON_ZIP_NEIGHBORHOODS: Record<string, string> = {
   "77505": "Pasadena",
   "77506": "Pasadena",
   "77536": "Deer Park",
-
-  // ── Timbergrove / Lazybrook ───────────────────────────────────
-  "77092": "Garden Oaks",
 };
 
 /** Neighborhood -> region mapping for Houston areas */
