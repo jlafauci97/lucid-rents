@@ -618,7 +618,6 @@ async function generateVideo(
   const videoId = await submitTextToVideo({
     prompt: script,
     duration: videoType === "avatar" ? 12 : 5,
-    resolution: "1080p",
     aspectRatio: videoType === "avatar" ? "16:9" : "9:16",
   });
 
