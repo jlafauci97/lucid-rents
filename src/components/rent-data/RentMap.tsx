@@ -41,6 +41,7 @@ const GEOJSON_FILE: Record<City, string> = {
   "los-angeles": "/la-zipcodes.geojson",
   chicago: "/chicago-zipcodes.geojson",
   miami: "/miami-zipcodes.geojson",
+  houston: "/houston-zipcodes.geojson",
 };
 
 function getColor(rent: number | undefined): string {

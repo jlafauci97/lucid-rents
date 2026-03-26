@@ -96,6 +96,24 @@ const RENT_STAB_CONFIG: Record<City, RentStabConfig> = {
     jsonLdDescription:
       "Learn about tenant protections for Miami apartments — no rent control in Florida but other key protections apply.",
   },
+  houston: {
+    title: "Houston Tenant Protections Guide",
+    metaDescription:
+      "Texas has no rent control — learn what protections Houston tenants do have, including security deposit rules, notice requirements, and habitability standards.",
+    headerDescription:
+      "Texas state law preempts all local rent control, meaning Houston and other Texas cities cannot set limits on rent increases. However, Houston tenants still have protections under Texas Property Code Chapter 92, including security deposit rules, habitability standards, and notice requirements for lease termination.",
+    searchPlaceholder: "Search by address to check building protections...",
+    dataSourceLabel: "HCAD / City of Houston",
+    editorialTitle: "What Protections Do Houston Tenants Have?",
+    editorialParagraphs: [
+      "Texas law explicitly prohibits local governments from enacting rent control ordinances. This means there are no rent stabilization protections for Houston tenants — landlords can raise rent by any amount with proper notice (typically 30 days for month-to-month, or at lease renewal for fixed-term leases).",
+      "Houston tenants are protected by the Texas Property Code (Chapter 92), which requires landlords to make a diligent effort to repair conditions that materially affect the health or safety of an ordinary tenant, provide functioning smoke detectors, and follow specific procedures for security deposit handling. Landlords must return deposits within 30 days of move-out with an itemized list of deductions.",
+      "Houston is particularly vulnerable to flooding and hurricane damage. Tenants should check whether their building is in a FEMA-designated flood zone and understand their rights regarding habitability after storm damage. Landlords are required to disclose known flood risks, and tenants may have the right to terminate a lease if a property becomes substantially uninhabitable due to flood damage.",
+    ],
+    jsonLdName: "Houston Tenant Protections Guide",
+    jsonLdDescription:
+      "Learn about tenant protections for Houston apartments — no rent control in Texas but other key protections apply.",
+  },
 };
 
 /* ---------------------------------------------------------------------------

@@ -27,6 +27,7 @@ const ENERGY_LINK_LABEL: Record<City, string> = {
   "los-angeles": "LA Energy Scores",
   chicago: "Chicago Energy Scores",
   miami: "Miami Energy Scores",
+  houston: "Houston Energy Scores",
 };
 
 export function EnergyScoreCard({ data, city }: EnergyScoreCardProps) {

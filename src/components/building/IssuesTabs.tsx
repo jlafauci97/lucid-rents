@@ -34,6 +34,7 @@ const CITY_TABS: Record<City, TabKey[]> = {
   chicago: ["dob", "complaints", "permits"],
   "los-angeles": ["violations", "complaints", "permits"],
   miami: ["violations", "complaints", "permits"],
+  houston: ["violations", "complaints", "permits"],
 };
 
 function getTabs(city: City) {

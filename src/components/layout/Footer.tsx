@@ -31,6 +31,13 @@ const DATA_SOURCES: Record<City, string[]> = {
     "Miami-Dade 40-Year Recertification",
     "FEMA Flood Zone Data",
   ],
+  houston: [
+    "Houston Open Data - Code Violations",
+    "Houston Open Data - 311 Requests",
+    "Houston Open Data - HPD Crime",
+    "HCAD Property Data",
+    "FEMA Flood Zone Data",
+  ],
 };
 
 export function Footer({ city = "nyc" as City }: { city?: City }) {
