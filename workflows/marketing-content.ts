@@ -30,9 +30,9 @@ import {
 import { publishToAllPlatforms } from "@/lib/marketing/post-bridge";
 import {
   submitTextToVideo,
-  checkVideoStatus,
-  downloadVideo as downloadNanoBananaVideo,
-} from "@/lib/marketing/nano-banana";
+  checkTaskStatus,
+  downloadVideo as downloadKlingVideo,
+} from "@/lib/marketing/kling";
 import { searchTrends } from "@/lib/marketing/xpoz";
 
 // Brand voice
@@ -611,7 +611,7 @@ async function generateVideo(
     return [];
   }
 
-  const tool = "nano_banana";
+  const tool = "kling";
 
   emitEvent({ type: "video_generating", videoType, tool });
 
@@ -631,7 +631,7 @@ async function generateVideo(
   for (let attempt = 1; attempt <= MAX_POLLS; attempt++) {
     await new Promise((resolve) => setTimeout(resolve, 30_000));
 
-    const status = await checkVideoStatus(videoId);
+    const status = await checkTaskStatus(videoId);
 
     console.log(
       JSON.stringify({ step: "generateVideo", event: "poll", attempt, status: status.status })
@@ -652,7 +652,7 @@ async function generateVideo(
   }
 
   // Download and upload to Blob
-  const videoBuffer = await downloadNanoBananaVideo(videoUrl);
+  const videoBuffer = await downloadKlingVideo(videoUrl);
 
   const timestamp = Date.now();
   const blobResult = await put(
