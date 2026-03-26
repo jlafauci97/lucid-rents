@@ -42,6 +42,7 @@ const searchPlaceholders: Record<City, string> = {
   "los-angeles": "Enter any LA address, zip code, or neighborhood...",
   chicago: "Enter any Chicago address, zip code, or neighborhood...",
   miami: "Enter any Miami address, zip code, or neighborhood...",
+  houston: "Enter any Houston address, zip code, or neighborhood...",
 };
 
 const searchExamples: Record<City, string> = {
@@ -49,6 +50,7 @@ const searchExamples: Record<City, string> = {
   "los-angeles": "Try \u201c456 Sunset Blvd\u201d or \u201c90028\u201d",
   chicago: "Try \u201c1200 N Lake Shore Dr\u201d or \u201c60614\u201d",
   miami: "Try \u201c1000 Brickell Ave\u201d or \u201c33131\u201d",
+  houston: "Try \u201c1500 Hermann Dr\u201d or \u201c77004\u201d",
 };
 
 export default async function CityHomePage({
