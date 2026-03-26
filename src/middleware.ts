@@ -27,6 +27,20 @@ const CITY_ROUTES = new Set([
   "apartments-near",
 ]);
 
+const PRODUCTION_HOST = "lucidrents.com";
+
+function isProduction(request: NextRequest): boolean {
+  return request.headers.get("host")?.replace(/:\d+$/, "") === PRODUCTION_HOST;
+}
+
+/** On non-production deployments, tag the response with noindex so search engines skip it. */
+function withNoindex(response: NextResponse, request: NextRequest): NextResponse {
+  if (!isProduction(request)) {
+    response.headers.set("X-Robots-Tag", "noindex");
+  }
+  return response;
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -61,7 +75,7 @@ export function middleware(request: NextRequest) {
       const response = NextResponse.rewrite(url, {
         request: { headers: requestHeaders },
       });
-      return response;
+      return withNoindex(response, request);
     }
   }
 
@@ -84,7 +98,7 @@ export function middleware(request: NextRequest) {
     }
     const requestHeaders = new Headers(request.headers);
     requestHeaders.set("x-city", firstSegment);
-    return NextResponse.next({ request: { headers: requestHeaders } });
+    return withNoindex(NextResponse.next({ request: { headers: requestHeaders } }), request);
   }
 
   // 2. Redirect shorthand city slugs to canonical URLs
@@ -132,7 +146,7 @@ export function middleware(request: NextRequest) {
   // 5. Everything else (homepage, api, auth, dashboard, about, privacy, terms) — pass through
   const fallbackHeaders = new Headers(request.headers);
   fallbackHeaders.set("x-city", "nyc");
-  return NextResponse.next({ request: { headers: fallbackHeaders } });
+  return withNoindex(NextResponse.next({ request: { headers: fallbackHeaders } }), request);
 }
 
 export const config = {
