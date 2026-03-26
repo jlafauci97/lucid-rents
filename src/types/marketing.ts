@@ -16,6 +16,9 @@ export type MarketingDraftStatus =
 
 export type MarketingVideoType = "avatar" | "data_viz" | "viral_character" | "none";
 
+/** Which AI video tool generates the video. */
+export type MarketingVideoTool = "nano_banana" | "remotion";
+
 export type MarketingRedditStatus =
   | "detected"
   | "draft_ready"

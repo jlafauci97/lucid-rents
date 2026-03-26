@@ -244,6 +244,14 @@ export interface DobViolation {
   imported_at: string;
 }
 
+export interface LahdViolationSummary {
+  id: string;
+  building_id: string;
+  violation_type: string;
+  violations_cited: number;
+  violations_cleared: number;
+}
+
 export interface Complaint311 {
   id: string;
   building_id: string | null;

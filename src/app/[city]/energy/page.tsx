@@ -5,7 +5,9 @@ import { isValidCity, CITY_META, type City } from "@/lib/cities";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { EnergyMap } from "@/components/energy/EnergyMap";
-import { ScoreDistribution } from "@/components/energy/ScoreDistribution";
+import dynamic from "next/dynamic";
+
+const ScoreDistribution = dynamic(() => import("@/components/energy/ScoreDistribution").then(m => m.ScoreDistribution));
 import { EnergyTable } from "@/components/energy/EnergyTable";
 
 /* ---------------------------------------------------------------------------

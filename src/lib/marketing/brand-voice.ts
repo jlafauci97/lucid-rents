@@ -35,6 +35,12 @@ export const PINTEREST_BOARDS: Record<string, string[]> = {
     "Landlord Red Flags",
     "Apartment Hunting Checklist",
   ],
+  miami: [
+    "Miami Renter's Guide",
+    "Miami Rental Market Data",
+    "Landlord Red Flags",
+    "Apartment Hunting Checklist",
+  ],
 };
 
 // ===== PINTEREST SEO KEYWORDS =====
@@ -62,6 +68,15 @@ export const PINTEREST_KEYWORDS: Record<string, string[]> = {
     "RLTO",
     "Chicago tenant rights",
     "Chicago renting tips",
+  ],
+  miami: [
+    "Miami apartments",
+    "Miami condo violations",
+    "Miami renter tips",
+    "South Florida rental market",
+    "Miami tenant rights",
+    "Miami flood zone apartments",
+    "Miami 40 year recertification",
   ],
 };
 
@@ -129,7 +144,7 @@ export function getContentTypePrompt(type: MarketingContentType): string {
 
     news_reaction: `Create a post that adds LucidRents data context to a trending housing news story. Focus on: what the story is, what our data shows about the issue, why it matters for renters. Don't just summarize the news — add value with data.`,
 
-    viral_humor: `Create a funny, absurdist post where an AI character (a fruit, vegetable, or everyday object) discovers housing data from LucidRents. The character should be shocked, outraged, or hilariously concerned by the data. The data must be REAL (from source_data). The humor comes from the contrast between a silly character and serious housing issues. Think: "An AI strawberry reads your landlord's violation history and is NOT happy." Keep it short, punchy, and shareable.`,
+    viral_humor: `Create a funny, absurdist post featuring Lucid the Lizard — the LucidRents mascot. Lucid is a wide-eyed, expressive cartoon lizard who discovers shocking housing data. The character should be outraged, confused, or hilariously concerned by the data. The data must be REAL (from source_data). The humor comes from the contrast between a cute lizard character and serious housing issues. Think: "Lucid the Lizard reads your landlord's violation history and his tail falls off." Use Lucid the Lizard for at least 50% of viral humor posts. For variety, also rotate in other characters (strawberry, avocado, orange, or whatever's trending). Keep it short, punchy, and shareable. Video is generated via Nano Banana — write prompts that specify character appearance and expression clearly.`,
   };
   return prompts[type];
 }
@@ -152,6 +167,9 @@ export function getSubredditTone(subreddit: string): string {
     Tenant: "Supportive and advocacy-oriented. This community rallies around tenant rights.",
     renters: "Casual and supportive. Mix of experienced and new renters.",
     personalfinance: "Numbers-first. This sub respects data and financial analysis.",
+    Miami: "Warm and helpful. Miami has a mix of transplants and locals — be welcoming.",
+    askmiami: "Friendly and practical. Many newcomers asking about moving to Miami.",
+    FloridaRenters: "Supportive. Florida tenant law is complex — be clear and specific.",
   };
   return tones[subreddit] || "Helpful and informative. Match the community's existing tone.";
 }
@@ -162,6 +180,7 @@ export const TARGET_SUBREDDITS = {
   nyc: ["NYCapartments", "AskNYC", "nycrentals", "NYCinfohub"],
   "los-angeles": ["AskLosAngeles", "LosAngeles", "LArentals"],
   chicago: ["chicago", "chicagoapartments"],
+  miami: ["Miami", "askmiami", "FloridaRenters"],
   general: ["realestate", "FirstTimeHomeBuyer", "Tenant", "renters", "personalfinance"],
 };
 
@@ -181,6 +200,10 @@ export const REDDIT_KEYWORDS = [
   "moving to nyc",
   "moving to la",
   "moving to chicago",
+  "moving to miami",
+  "flood zone",
+  "40 year recertification",
+  "condo inspection",
   "bad landlord",
   "slumlord",
   "mold",
@@ -194,3 +217,18 @@ export const REDDIT_KEYWORDS = [
   "apartment advice",
   "renter tips",
 ];
+
+// ===== LUCID THE LIZARD — MASCOT CHARACTER =====
+
+/** Base prompt for Lucid the Lizard video generation (Nano Banana). */
+export const LUCID_LIZARD_PROMPT =
+  "A cute, wide-eyed cartoon lizard character named Lucid with bright green skin, big expressive eyes, and a slightly curled tail. Lucid is sitting at a desk looking at a computer screen displaying housing data. Lucid's expression is";
+
+/** Emotion variants appended to LUCID_LIZARD_PROMPT based on content type. */
+export const LUCID_EMOTIONS: Record<string, string> = {
+  shocked: "jaw-dropped, eyes bulging, tail standing straight up in disbelief",
+  outraged: "angry with tiny fists clenched, tail twitching furiously",
+  confused: "head tilted sideways, one eye squinting, tail curled into a question mark",
+  horrified: "covering eyes with hands but peeking through fingers, tail wrapped around the chair",
+  excited: "jumping up from the chair, tail wagging like a dog, huge smile",
+};

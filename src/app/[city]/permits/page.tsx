@@ -7,7 +7,9 @@ import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { PermitMap } from "@/components/permits/PermitMap";
 import { PermitTable } from "@/components/permits/PermitTable";
-import { WorkTypeBreakdown } from "@/components/permits/WorkTypeBreakdown";
+import dynamic from "next/dynamic";
+
+const WorkTypeBreakdown = dynamic(() => import("@/components/permits/WorkTypeBreakdown").then(m => m.WorkTypeBreakdown));
 
 export async function generateMetadata({ params }: { params: Promise<{ city: string }> }): Promise<Metadata> {
   const { city } = await params;

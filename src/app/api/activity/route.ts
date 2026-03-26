@@ -1,6 +1,23 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient as createServerClient } from "@/lib/supabase/server";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { isValidCity } from "@/lib/cities";
+
+// Use service-role admin client for the activity feed API.
+// The default anon role has a 3-second statement timeout which causes
+// queries on large tables (complaints_311: 2.6M rows, etc.) to silently
+// fail, resulting in empty feed results.
+function getAdminClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (url && key) {
+    return createSupabaseClient(url, key, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+  }
+  // Fallback to cookie-based client if service role key not available (local dev)
+  return null;
+}
 
 export const maxDuration = 30;
 
@@ -49,7 +66,7 @@ export async function GET(request: Request) {
 
     // When fetching all types, limit each source to keep total response time under control.
     // A single-filter request can afford more rows since only one query runs.
-    const perSourceLimit = filter === "all" ? 2000 : 10000;
+    const perSourceLimit = filter === "all" ? 300 : 2000;
 
     // --- Check cache ---
     const cacheKey = `${filter}:${cityParam || "nyc"}`;
@@ -62,7 +79,8 @@ export async function GET(request: Request) {
     }
 
     // --- Fresh fetch ---
-    const supabase = await createClient();
+    // Prefer admin client (no 3s anon timeout) with fallback to cookie client
+    const supabase = getAdminClient() ?? await createServerClient();
 
     // Snap cutoff to midnight UTC so every request today gets the same boundary
     const cutoff = new Date();
@@ -331,9 +349,10 @@ export async function GET(request: Request) {
     }[];
 
     // Log failed queries but continue with the ones that succeeded
+    const sourceNames = ["reviews", "violations", "complaints_311", "litigations", "dob_violations", "crime", "bedbugs", "evictions", "la_evictions", "buyouts", "permits", "enforcement"];
     for (let i = 0; i < results.length; i++) {
       if (results[i].error) {
-        console.error(`Activity feed query ${i} failed:`, results[i].error);
+        console.error(`Activity feed query [${sourceNames[i] || i}] failed:`, results[i].error);
         results[i].data = null; // Treat failed queries as empty
       }
     }

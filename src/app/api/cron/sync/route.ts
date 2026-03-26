@@ -86,6 +86,10 @@ function parseDate(raw: string | undefined | null): string | null {
   if (isNaN(parsed.getTime())) return null;
   const year = parsed.getFullYear();
   if (year < 1900 || year > 2100) return null;
+  // Reject dates more than 1 year in the future (bad source data)
+  const oneYearFromNow = new Date();
+  oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+  if (parsed > oneYearFromNow) return null;
   return normalized;
 }
 
@@ -1081,7 +1085,7 @@ async function syncHPDLitigations(supabase: ReturnType<typeof getSupabaseAdmin>)
           bbl: r.bbl || null,
           case_type: r.casetype || null,
           case_status: r.casestatus || null,
-          case_open_date: r.caseopendate ? r.caseopendate.slice(0, 10) : null,
+          case_open_date: parseDate(r.caseopendate),
           case_close_date: r.caseclosedate ? r.caseclosedate.slice(0, 10) : null,
           case_judgment: r.casejudgment || null,
           penalty: r.penalty || null,

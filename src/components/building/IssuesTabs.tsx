@@ -3,13 +3,14 @@
 import { useState } from "react";
 import { AlertTriangle, MessageSquare, Scale, HardHat, Bug, DoorOpen, ClipboardList } from "lucide-react";
 import { ViolationTimeline } from "./ViolationTimeline";
+import { ViolationSummaryTable } from "./ViolationSummaryTable";
 import { ComplaintTimeline } from "./ComplaintTimeline";
 import { LitigationTimeline } from "./LitigationTimeline";
 import { DobViolationTimeline } from "./DobViolationTimeline";
 import { BedBugTimeline } from "./BedBugTimeline";
 import { EvictionTimeline } from "./EvictionTimeline";
 import { PermitTimeline } from "./PermitTimeline";
-import type { HpdViolation, Complaint311, HpdLitigation, DobViolation, BedBugReport, Eviction, DobPermit } from "@/types";
+import type { HpdViolation, Complaint311, HpdLitigation, DobViolation, BedBugReport, Eviction, DobPermit, LahdViolationSummary } from "@/types";
 import { type City, DEFAULT_CITY } from "@/lib/cities";
 import { VIOLATION_AGENCIES } from "@/lib/constants";
 
@@ -23,6 +24,7 @@ interface IssuesTabsProps {
   bedbugs: BedBugReport[];
   evictions: Eviction[];
   permits: DobPermit[];
+  lahdViolationSummary?: LahdViolationSummary[];
   city?: City;
 }
 
@@ -49,12 +51,12 @@ function getTabs(city: City) {
   return enabledKeys.map(k => allTabs[k]);
 }
 
-export function IssuesTabs({ violations, complaints, litigations, dobViolations, bedbugs, evictions, permits, city = DEFAULT_CITY }: IssuesTabsProps) {
+export function IssuesTabs({ violations, complaints, litigations, dobViolations, bedbugs, evictions, permits, lahdViolationSummary = [], city = DEFAULT_CITY }: IssuesTabsProps) {
   const enabledTabs = CITY_TABS[city] || CITY_TABS.nyc;
   const [activeTab, setActiveTab] = useState<TabKey>(enabledTabs[0]);
 
   const counts: Record<TabKey, number> = {
-    violations: violations.length,
+    violations: city === "los-angeles" ? lahdViolationSummary.length : violations.length,
     complaints: complaints.length,
     litigations: litigations.length,
     dob: dobViolations.length,
@@ -92,7 +94,11 @@ export function IssuesTabs({ violations, complaints, litigations, dobViolations,
         const agencies = VIOLATION_AGENCIES[city] || VIOLATION_AGENCIES.nyc;
         return (
           <>
-            {activeTab === "violations" && <ViolationTimeline violations={violations} agencyLabel={agencies.housing} />}
+            {activeTab === "violations" && (
+              city === "los-angeles"
+                ? <ViolationSummaryTable violations={lahdViolationSummary} agencyLabel={agencies.housing} />
+                : <ViolationTimeline violations={violations} agencyLabel={agencies.housing} />
+            )}
             {activeTab === "complaints" && <ComplaintTimeline complaints={complaints} />}
             {activeTab === "litigations" && <LitigationTimeline litigations={litigations} agencyLabel={agencies.housing} />}
             {activeTab === "dob" && <DobViolationTimeline violations={dobViolations} agencyLabel={agencies.building} />}

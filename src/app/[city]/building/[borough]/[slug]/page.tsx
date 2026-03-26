@@ -4,7 +4,11 @@ import { createClient } from "@/lib/supabase/server";
 import { BuildingHeader } from "@/components/building/BuildingHeader";
 import { QuickSummary } from "@/components/building/QuickSummary";
 import { IssuesTabs } from "@/components/building/IssuesTabs";
-import { ViolationTrend } from "@/components/building/ViolationTrend";
+import dynamic from "next/dynamic";
+
+const ViolationTrend = dynamic(() => import("@/components/building/ViolationTrend").then(m => m.ViolationTrend), {
+  loading: () => <div className="bg-white rounded-xl border border-[#e2e8f0] p-6"><div className="h-6 w-48 bg-[#e2e8f0] rounded animate-pulse mb-4" /><div className="h-[300px] bg-[#f8fafc] rounded-lg animate-pulse" /></div>,
+});
 import { ViolationsByUnit } from "@/components/building/ViolationsByUnit";
 import { ReviewSection } from "@/components/review/ReviewSection";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
@@ -35,7 +39,7 @@ import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { TrackBuildingView } from "@/components/building/TrackBuildingView";
 import { cache } from "react";
-import type { Building, HpdViolation, Complaint311, HpdLitigation, DobViolation, BedBugReport, Eviction, DobPermit, EnergyBenchmark, ReviewWithDetails } from "@/types";
+import type { Building, HpdViolation, Complaint311, HpdLitigation, DobViolation, BedBugReport, Eviction, DobPermit, EnergyBenchmark, ReviewWithDetails, LahdViolationSummary } from "@/types";
 import type { Metadata } from "next";
 
 export const revalidate = 86400; // 24h ISR
@@ -140,7 +144,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
   const emptyEvictions = [] as Eviction[];
 
   // Fetch all data in parallel — skip NYC-only tables for LA buildings
-  const [violations, complaints, litigations, dobViolations, bedbugs, evictions, permits, energyData, reviews, units, violationSummaries, rents, amenities, marketListings, rentHistory, monitorStatus, saveStatus, neighborhoodRentsRaw] = await Promise.all([
+  const [violations, complaints, litigations, dobViolations, bedbugs, evictions, permits, energyData, reviews, units, violationSummaries, rents, amenities, marketListings, rentHistory, monitorStatus, saveStatus, neighborhoodRentsRaw, lahdViolationSummary] = await Promise.all([
     safe(supabase.from("hpd_violations").select("*").eq("building_id", buildingId).order("inspection_date", { ascending: false }).limit(20), [] as HpdViolation[]),
     safe(supabase.from("complaints_311").select("*").eq("building_id", buildingId).order("created_date", { ascending: false }).limit(20), [] as Complaint311[]),
     isNYC ? safe(supabase.from("hpd_litigations").select("*").eq("building_id", buildingId).order("case_open_date", { ascending: false }).limit(20), emptyHpdLit) : Promise.resolve(emptyHpdLit),
@@ -151,7 +155,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
     safe(supabase.from("energy_benchmarks").select("*").eq("building_id", buildingId).order("report_year", { ascending: false }).limit(1), [] as EnergyBenchmark[]),
     safe(supabase.from("reviews").select(`*, profile:profiles(id, display_name, avatar_url), category_ratings:review_category_ratings(*, category:review_categories(slug, name, icon)), unit:units(unit_number)`).eq("building_id", buildingId).eq("status", "published").order("created_at", { ascending: false }).limit(10), []) as Promise<ReviewWithDetails[]>,
     safe(supabase.from("units").select("*").eq("building_id", buildingId).order("unit_number", { ascending: true }), []),
-    safe(supabase.from("hpd_violations").select("id, apartment, class, status, inspection_date, nov_description").eq("building_id", buildingId).order("inspection_date", { ascending: false }).limit(10000), []),
+    safe(supabase.from("hpd_violations").select("id, apartment, class, status, inspection_date, nov_description").eq("building_id", buildingId).order("inspection_date", { ascending: false }).limit(500), []),
     safe(supabase.from("building_rents").select("bedrooms, min_rent, max_rent, median_rent, listing_count, source").eq("building_id", buildingId), []),
     safe(supabase.from("building_amenities").select("amenity, category, source").eq("building_id", buildingId), []),
     safe(supabase.from("building_listings").select("*").eq("building_id", buildingId), []),
@@ -172,6 +176,9 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
     })(),
     null, // placeholder for saveStatus — extracted from authStatus below
     safe(supabase.from("building_rents").select("bedrooms, median_rent, buildings!inner(zip_code)").eq("buildings.zip_code", building.zip_code!).neq("building_id", buildingId), [] as { bedrooms: number; median_rent: number; buildings: { zip_code: string }[] }[]),
+    isLA
+      ? safe(supabase.from("lahd_violation_summary").select("id, building_id, violation_type, violations_cited, violations_cleared").eq("building_id", buildingId).order("violations_cited", { ascending: false }).limit(50), [] as LahdViolationSummary[])
+      : Promise.resolve([] as LahdViolationSummary[]),
   ]);
 
   // Chicago-specific data fetches
@@ -314,7 +321,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
 
             {/* Violations & Complaints Tabs */}
             <div id="violations" className="scroll-mt-28">
-              <IssuesTabs violations={violations} complaints={complaints} litigations={litigations} dobViolations={dobViolations} bedbugs={bedbugs} evictions={evictions} permits={permits} city={city} />
+              <IssuesTabs violations={violations} complaints={complaints} litigations={litigations} dobViolations={dobViolations} bedbugs={bedbugs} evictions={evictions} permits={permits} lahdViolationSummary={lahdViolationSummary} city={city} />
             </div>
 
             {/* Building Location Map */}

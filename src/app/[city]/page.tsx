@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { SearchBar } from "@/components/search/SearchBar";
 import { ActivityFeed } from "@/components/ActivityFeed";
@@ -122,7 +123,9 @@ export default async function CityHomePage({
         {/* Stats */}
         <section className="border-b border-[#e2e8f0]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <LiveStats metro={city} />
+            <Suspense fallback={<div className="grid grid-cols-2 md:grid-cols-4 gap-6">{[...Array(4)].map((_, i) => <div key={i} className="text-center"><div className="w-8 h-8 bg-[#e2e8f0] rounded mx-auto mb-2 animate-pulse" /><div className="h-7 w-20 bg-[#e2e8f0] rounded mx-auto mb-1 animate-pulse" /><div className="h-4 w-24 bg-[#e2e8f0] rounded mx-auto animate-pulse" /></div>)}</div>}>
+              <LiveStats metro={city} />
+            </Suspense>
           </div>
         </section>
 

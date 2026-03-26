@@ -1,9 +1,6 @@
-"use client";
-
 import Link from "next/link";
 import { type City, CITY_META } from "@/lib/cities";
 import { cityPath } from "@/lib/seo";
-import { useCityFromPath } from "@/lib/city-context";
 
 const DATA_SOURCES: Record<City, string[]> = {
   nyc: [
@@ -36,8 +33,7 @@ const DATA_SOURCES: Record<City, string[]> = {
   ],
 };
 
-export function Footer() {
-  const city = useCityFromPath();
+export function Footer({ city = "nyc" as City }: { city?: City }) {
   const cityName = CITY_META[city]?.fullName || "New York City";
   return (
     <footer className="bg-[#0F1D2E] text-gray-400 mt-auto">
@@ -50,6 +46,11 @@ export function Footer() {
             <p className="text-sm">
               Know your {cityName} apartment before you sign. Real data, real reviews,
               real transparency.
+            </p>
+            <p className="text-sm mt-3">
+              <a href="mailto:Admin@lucidrents.com" className="hover:text-white transition-colors">
+                Admin@lucidrents.com
+              </a>
             </p>
           </div>
           <div>

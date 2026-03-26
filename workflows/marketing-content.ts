@@ -29,15 +29,10 @@ import {
 // External API clients
 import { publishToAllPlatforms } from "@/lib/marketing/post-bridge";
 import {
-  submitAvatarVideo,
+  submitTextToVideo,
   checkVideoStatus,
-  downloadVideo as downloadHeygenVideo,
-} from "@/lib/marketing/heygen";
-import {
-  submitCharacterVideo,
-  checkTaskStatus,
-  downloadVideo as downloadKlingVideo,
-} from "@/lib/marketing/kling";
+  downloadVideo as downloadNanoBananaVideo,
+} from "@/lib/marketing/nano-banana";
 import { searchTrends } from "@/lib/marketing/xpoz";
 
 // Brand voice
@@ -616,42 +611,27 @@ async function generateVideo(
     return [];
   }
 
-  let jobId: string;
-  let tool: string;
-
-  if (videoType === "avatar") {
-    tool = "heygen";
-    jobId = await submitAvatarVideo({
-      script,
-      avatarId: process.env.HEYGEN_AVATAR_ID || "default",
-    });
-  } else {
-    // viral_character
-    tool = "kling";
-    jobId = await submitCharacterVideo({ prompt: script });
-  }
+  const tool = "nano_banana";
 
   emitEvent({ type: "video_generating", videoType, tool });
 
-  console.log(JSON.stringify({ step: "generateVideo", event: "submitted", tool, jobId }));
+  const videoId = await submitTextToVideo({
+    prompt: script,
+    duration: videoType === "avatar" ? 12 : 5,
+    resolution: "1080p",
+    aspectRatio: videoType === "avatar" ? "16:9" : "9:16",
+  });
 
-  // Return jobId + tool for polling in a separate step
-  // We need to poll, but sleep() must be called in workflow context.
-  // So we do the polling here inside the step using standard awaits.
+  console.log(JSON.stringify({ step: "generateVideo", event: "submitted", tool, videoId }));
+
+  // Poll for completion
   const MAX_POLLS = 20;
   let videoUrl: string | undefined;
 
   for (let attempt = 1; attempt <= MAX_POLLS; attempt++) {
-    // Wait 30 seconds between polls
     await new Promise((resolve) => setTimeout(resolve, 30_000));
 
-    let status: { status: string; videoUrl?: string; error?: string };
-
-    if (tool === "heygen") {
-      status = await checkVideoStatus(jobId);
-    } else {
-      status = await checkTaskStatus(jobId);
-    }
+    const status = await checkVideoStatus(videoId);
 
     console.log(
       JSON.stringify({ step: "generateVideo", event: "poll", attempt, status: status.status })
@@ -672,10 +652,7 @@ async function generateVideo(
   }
 
   // Download and upload to Blob
-  const videoBuffer =
-    tool === "heygen"
-      ? await downloadHeygenVideo(videoUrl)
-      : await downloadKlingVideo(videoUrl);
+  const videoBuffer = await downloadNanoBananaVideo(videoUrl);
 
   const timestamp = Date.now();
   const blobResult = await put(

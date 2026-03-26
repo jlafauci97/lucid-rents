@@ -256,10 +256,18 @@ def extract_rsc_data(page) -> dict:
     h1_els = page.css("h1")
     if h1_els and len(h1_els) > 0:
         name = h1_els[0].text.strip()
-        # Only use if it's a real name (not just an address)
-        # Building names are things like "The Max", "The Danby", "Chelsea29"
-        # Skip if it starts with a number (likely just an address)
-        if name and not re.match(r'^\d', name):
+        # Use if it's a real building name (not just a plain address).
+        # Building names include "The Max", "21 West End", "Chelsea29".
+        # Skip if it looks like a plain address: starts with digits followed
+        # by a street type (e.g. "123 West 45th Street") but keep branded
+        # names that start with numbers (e.g. "21 West End", "180 Water").
+        is_plain_address = bool(re.match(
+            r'^\d+[\-\s]?\d*\s+(East|West|North|South|E\.?|W\.?|N\.?|S\.?)?\s*\d*\s*'
+            r'(Street|St\.?|Avenue|Ave\.?|Boulevard|Blvd\.?|Road|Rd\.?|Drive|Dr\.?|'
+            r'Place|Pl\.?|Lane|Ln\.?|Court|Ct\.?|Way|Terrace|Ter\.?)\b',
+            name, re.IGNORECASE
+        ))
+        if name and not is_plain_address:
             data["building_name"] = name
 
     # Get all script tags
@@ -877,6 +885,9 @@ def main():
 
                     if borough_filter:
                         query = query.eq("borough", borough_filter)
+                    else:
+                        # StreetEasy is NYC-only — skip non-NYC boroughs
+                        query = query.in_("borough", ["Manhattan", "Brooklyn", "Queens", "Bronx", "Staten Island"])
                     if args.min_units:
                         query = query.gte("residential_units", args.min_units)
 

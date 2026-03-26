@@ -208,7 +208,7 @@ function Section({
 
 // --- Password Gate ---
 
-const ADMIN_PASSWORD = "baseball";
+const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_MC_PASSWORD ?? "";
 const STORAGE_KEY = "mc_auth";
 
 function PasswordGate({ onUnlock }: { onUnlock: () => void }) {

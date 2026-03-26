@@ -6,7 +6,9 @@ import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { ScaffoldingMap } from "@/components/scaffolding/ScaffoldingMap";
 import { ScaffoldingTable } from "@/components/scaffolding/ScaffoldingTable";
-import { BoroughBreakdown } from "@/components/scaffolding/BoroughBreakdown";
+import dynamic from "next/dynamic";
+
+const BoroughBreakdown = dynamic(() => import("@/components/scaffolding/BoroughBreakdown").then(m => m.BoroughBreakdown));
 
 export async function generateMetadata({ params }: { params: Promise<{ city: string }> }): Promise<Metadata> {
   const { city } = await params;

@@ -14,7 +14,9 @@ import {
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { LetterGrade } from "@/components/ui/LetterGrade";
-import { LandlordViolationTrend } from "@/components/landlord/LandlordViolationTrend";
+import dynamic from "next/dynamic";
+
+const LandlordViolationTrend = dynamic(() => import("@/components/landlord/LandlordViolationTrend").then(m => m.LandlordViolationTrend));
 import { LandlordPortfolioSummary } from "@/components/landlord/LandlordPortfolioSummary";
 import { LandlordActionLinks } from "@/components/landlord/LandlordActionLinks";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";

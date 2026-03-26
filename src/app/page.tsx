@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalUrl, cityPath } from "@/lib/seo";
 import { CITY_META, type City } from "@/lib/cities";
@@ -127,34 +128,33 @@ export default function HomePage() {
           </p>
 
           {/* City Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+          <div className="flex justify-center gap-8 sm:gap-10 lg:gap-14 flex-wrap max-w-5xl mx-auto">
             {cities.map((c) => {
               const meta = CITY_META[c.key];
               return (
                 <Link
                   key={c.key}
                   href={cityPath("/", c.key)}
-                  className="group relative rounded-2xl overflow-hidden border border-white/10 hover:border-white/30 transition-all hover:scale-[1.02]"
+                  className="group flex flex-col items-center transition-transform hover:-translate-y-1.5"
                 >
-                  <Image
-                    src={meta.heroImage}
-                    alt={`${meta.fullName} skyline`}
-                    width={600}
-                    height={340}
-                    className="w-full h-[200px] sm:h-[220px] object-cover"
-                    priority
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-                  <div className="absolute bottom-0 left-0 right-0 p-5 text-left">
-                    <h2 className="text-2xl font-bold mb-1">
-                      {meta.fullName}
-                    </h2>
-                    <p className="text-sm text-white/70 mb-3">{c.tagline}</p>
-                    <span className="inline-flex items-center gap-1 text-sm font-medium text-[#3B82F6] group-hover:text-white transition-colors">
-                      Explore {meta.name}
-                      <ArrowRight className="w-4 h-4" />
-                    </span>
+                  <div className="w-[140px] h-[140px] sm:w-[170px] sm:h-[170px] rounded-full overflow-hidden border-[3px] border-white/15 group-hover:border-blue-500/60 group-hover:shadow-[0_0_30px_rgba(59,130,246,0.2)] transition-all relative">
+                    <Image
+                      src={meta.heroImage}
+                      alt={`${meta.fullName} skyline`}
+                      width={400}
+                      height={400}
+                      className="w-full h-full object-cover"
+                      sizes="(max-width: 640px) 140px, 170px"
+                    />
+                    <div className="absolute inset-0 bg-[radial-gradient(circle,transparent_40%,rgba(0,0,0,0.3)_100%)] rounded-full" />
                   </div>
+                  <h2 className="mt-4 text-lg font-bold">
+                    {meta.fullName}
+                  </h2>
+                  <span className="mt-1 inline-flex items-center gap-1 text-[13px] font-medium text-[#3B82F6] group-hover:text-white transition-colors">
+                    Explore {meta.name}
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </span>
                 </Link>
               );
             })}
@@ -168,7 +168,9 @@ export default function HomePage() {
       {/* Stats */}
       <section className="border-b border-[#e2e8f0]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <LiveStats />
+          <Suspense fallback={<div className="grid grid-cols-2 md:grid-cols-4 gap-6">{[...Array(4)].map((_, i) => <div key={i} className="text-center"><div className="w-8 h-8 bg-[#e2e8f0] rounded mx-auto mb-2 animate-pulse" /><div className="h-7 w-20 bg-[#e2e8f0] rounded mx-auto mb-1 animate-pulse" /><div className="h-4 w-24 bg-[#e2e8f0] rounded mx-auto animate-pulse" /></div>)}</div>}>
+            <LiveStats />
+          </Suspense>
         </div>
       </section>
 
