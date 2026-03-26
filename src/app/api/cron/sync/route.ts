@@ -603,6 +603,88 @@ async function linkByAddress(
 }
 
 // ---------------------------------------------------------------------------
+// Link records to buildings by APN (normalizes dashes)
+// Used for LA data where violation APNs lack dashes but building APNs have them
+// ---------------------------------------------------------------------------
+async function linkByApn(
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+  table: string,
+  idColumn: string,
+  apnColumn: string,
+  errors: string[],
+  label: string,
+  metro: string,
+  batchSize = 5000
+): Promise<{ linked: number; affectedBuildingIds: Set<string> }> {
+  let linked = 0;
+  const affectedBuildingIds = new Set<string>();
+
+  // Fetch unlinked records that have an APN
+  let allUnlinked: Record<string, unknown>[] = [];
+  let offset = 0;
+  while (true) {
+    const { data: batch } = await supabase
+      .from(table)
+      .select(`${idColumn}, ${apnColumn}`)
+      .is("building_id", null)
+      .not(apnColumn, "is", null)
+      .eq("metro", metro)
+      .range(offset, offset + batchSize - 1);
+
+    if (!batch || batch.length === 0) break;
+    allUnlinked = allUnlinked.concat(batch as unknown as Record<string, unknown>[]);
+    if (batch.length < batchSize) break;
+    offset += batchSize;
+  }
+
+  if (allUnlinked.length === 0) return { linked, affectedBuildingIds };
+
+  // Group record IDs by APN
+  const apnToIds = new Map<string, string[]>();
+  for (const r of allUnlinked) {
+    const apn = String(r[apnColumn] || "").trim();
+    if (!apn) continue;
+    if (!apnToIds.has(apn)) apnToIds.set(apn, []);
+    apnToIds.get(apn)!.push(String(r[idColumn]));
+  }
+
+  // Look up buildings by APN — try both raw APN and dashed format (XXXX-XXX-XXX)
+  for (const [apn, recordIds] of apnToIds) {
+    // Try formatted APN with dashes: 10-digit LA APNs → XXXX-XXX-XXX
+    const dashedApn = apn.length === 10
+      ? `${apn.slice(0, 4)}-${apn.slice(4, 7)}-${apn.slice(7, 10)}`
+      : apn;
+
+    const { data: matched } = await supabase
+      .from("buildings")
+      .select("id")
+      .eq("metro", metro)
+      .or(`apn.eq.${apn},apn.eq.${dashedApn}`)
+      .limit(1);
+
+    if (!matched || matched.length === 0) continue;
+
+    const buildingId = matched[0].id;
+    for (let i = 0; i < recordIds.length; i += 200) {
+      const batch = recordIds.slice(i, i + 200);
+      const { error: linkError } = await supabase
+        .from(table)
+        .update({ building_id: buildingId })
+        .in(idColumn, batch);
+
+      if (!linkError) {
+        linked += batch.length;
+      } else {
+        errors.push(`${label} APN link error: ${linkError.message}`);
+      }
+    }
+    affectedBuildingIds.add(buildingId);
+  }
+
+  return { linked, affectedBuildingIds };
+}
+
+// ---------------------------------------------------------------------------
 // Sync result type
 // ---------------------------------------------------------------------------
 interface SyncResult {
@@ -634,8 +716,8 @@ interface HPDRawRecord {
   [key: string]: unknown;
 }
 
-async function syncHPDViolations(supabase: ReturnType<typeof getSupabaseAdmin>): Promise<SyncResult> {
-  const lastSync = await getLastSyncDate(supabase, "hpd_violations");
+async function syncHPDViolations(supabase: ReturnType<typeof getSupabaseAdmin>, sinceOverride?: string): Promise<SyncResult> {
+  const lastSync = sinceOverride || await getLastSyncDate(supabase, "hpd_violations");
   const logId = await createSyncLog(supabase, "hpd_violations");
   const syncStartTime = new Date().toISOString();
 
@@ -2868,12 +2950,22 @@ async function syncLAHDViolationSummary(
       if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) { hasMore = false; } else { offset += PAGE_SIZE; }
     }
 
+    // Link by APN first (most reliable — normalizes dash format mismatch)
+    try {
+      const apnResult = await linkByApn(supabase, "lahd_violation_summary", "id", "apn", errors, "LAHD ViolSummary", "los-angeles");
+      totalLinked += apnResult.linked;
+      for (const id of apnResult.affectedBuildingIds) affectedBuildingIds.add(id);
+    } catch (linkErr) {
+      errors.push(`LAHD ViolSummary APN linking error: ${String(linkErr)}`);
+    }
+
+    // Then link remaining by address (catches records where APN didn't match)
     try {
       const linkResult = await linkByAddress(supabase, "lahd_violation_summary", "id", "address", syncStartTime, errors, "LAHD ViolSummary", 500, "los-angeles", true, "address");
-      totalLinked = linkResult.linked;
+      totalLinked += linkResult.linked;
       for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
     } catch (linkErr) {
-      errors.push(`LAHD ViolSummary linking error: ${String(linkErr)}`);
+      errors.push(`LAHD ViolSummary address linking error: ${String(linkErr)}`);
     }
 
     await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
@@ -3809,7 +3901,8 @@ async function syncMiamiRecertifications(
 export const maxDuration = 300;
 
 // Source registry — maps query param to sync function
-const SOURCES: Record<string, (supabase: ReturnType<typeof getSupabaseAdmin>) => Promise<SyncResult>> = {
+// The optional second arg (sinceOverride) lets callers pass ?since=YYYY-MM-DD to backfill historical data.
+const SOURCES: Record<string, (supabase: ReturnType<typeof getSupabaseAdmin>, sinceOverride?: string) => Promise<SyncResult>> = {
   // NYC sources
   hpd: syncHPDViolations,
   complaints: sync311Complaints,
@@ -4608,6 +4701,8 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const sourceParam = searchParams.get("source");
   const mode = searchParams.get("mode"); // "link" = link-only, null = full sync
+  const sinceParam = searchParams.get("since"); // optional: override start date e.g. ?since=2024-01-01
+  const sinceOverride = sinceParam ? toSodaDate(new Date(sinceParam).toISOString()) : undefined;
 
   try {
     const supabase = getSupabaseAdmin();
@@ -4621,7 +4716,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Determine which sources to sync
-    let sourcesToRun: [string, (supabase: ReturnType<typeof getSupabaseAdmin>) => Promise<SyncResult>][];
+    let sourcesToRun: [string, (supabase: ReturnType<typeof getSupabaseAdmin>, sinceOverride?: string) => Promise<SyncResult>][];
 
     if (sourceParam) {
       const fn = SOURCES[sourceParam];
@@ -4641,7 +4736,7 @@ export async function GET(req: NextRequest) {
     const allAffectedIds = new Set<string>();
 
     for (const [name, syncFn] of sourcesToRun) {
-      const result = await syncFn(supabase);
+      const result = await syncFn(supabase, sinceOverride);
       results[name] = result;
       for (const id of result.affectedBuildingIds) {
         allAffectedIds.add(id);
