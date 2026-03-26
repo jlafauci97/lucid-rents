@@ -1040,12 +1040,14 @@ async function syncHPDLitigations(supabase: ReturnType<typeof getSupabaseAdmin>)
     let pagesFetched = 0;
 
     while (hasMore) {
+      // Query by caseopendate OR :updated_at to catch records with null caseopendate
+      // (many recent litigations have null caseopendate in the API)
       const url = buildSodaUrl(
         "59kj-x8nc",
-        `caseopendate > '${lastSync}'`,
+        `(caseopendate > '${lastSync}' OR (caseopendate IS NULL AND :updated_at > '${lastSync}'))`,
         PAGE_SIZE,
         offset,
-        "caseopendate ASC"
+        ":updated_at ASC"
       );
 
       const res = await fetch(url);
@@ -1346,16 +1348,19 @@ async function syncNYPDComplaints(supabase: ReturnType<typeof getSupabaseAdmin>)
     // Instead, update crime_count on buildings that share a zip code with new crimes.
     // Batched: count per zip, then bulk-update all buildings in that zip at once.
     try {
-      // Get distinct zip codes from recently synced crimes
+      // Get distinct zip codes from recently synced NYC crimes only
+      // (nypd_complaints also stores Chicago/Houston/LA data with metro column)
       const { data: recentZips } = await supabase
         .from("nypd_complaints")
         .select("zip_code")
         .not("zip_code", "is", null)
         .gte("imported_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+        .or("metro.is.null,metro.eq.nyc")
         .limit(50000);
 
       if (recentZips && recentZips.length > 0) {
-        const uniqueZips = [...new Set(recentZips.map((r) => r.zip_code).filter(Boolean))] as string[];
+        // Filter to NYC zips (start with 1) to avoid processing Chicago (606xx) / Houston (770xx) zips
+        const uniqueZips = [...new Set(recentZips.map((r) => r.zip_code).filter((z): z is string => !!z && z.startsWith("1")))];
 
         const oneYearAgo = new Date();
         oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
