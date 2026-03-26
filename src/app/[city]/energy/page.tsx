@@ -78,6 +78,19 @@ const ENERGY_CONFIG: Record<City, EnergyConfig> = {
     jsonLdDescription:
       "ENERGY STAR scores and energy benchmarking data for Miami-Dade buildings.",
   },
+  houston: {
+    pageTitle: "Houston Energy Scores",
+    metaDescription:
+      "How energy-efficient is your building? See ENERGY STAR scores, utility costs, and emissions data for Houston buildings.",
+    headerTitle: "Houston Energy Scores",
+    headerDescription:
+      "See how energy-efficient Houston buildings are. ENERGY STAR scores, energy use intensity (EUI), and greenhouse gas emissions data for Houston multifamily buildings.",
+    programName: "HEBE",
+    dataSourceLabel: "Houston Energy Benchmarking",
+    jsonLdName: "Houston Building Energy Scores",
+    jsonLdDescription:
+      "ENERGY STAR scores and energy benchmarking data for Houston buildings.",
+  },
 };
 
 /* ---------------------------------------------------------------------------
