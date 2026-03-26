@@ -847,27 +847,11 @@ interface Complaint311RawRecord {
 async function sync311Complaints(supabase: ReturnType<typeof getSupabaseAdmin>): Promise<SyncResult> {
   const fnStart = Date.now();
 
-  // 311 uses a 1-day overlap instead of the default 3-day (high volume table)
-  const { data: lastSyncData } = await supabase
-    .from("sync_log")
-    .select("completed_at")
-    .eq("sync_type", "complaints_311")
-    .eq("status", "completed")
-    .order("completed_at", { ascending: false })
-    .limit(1)
-    .single();
-
-  let lastSync: string;
-  if (lastSyncData?.completed_at) {
-    const syncDate = new Date(lastSyncData.completed_at);
-    syncDate.setDate(syncDate.getDate() - 1); // 1-day overlap (not 3)
-    syncDate.setUTCHours(0, 0, 0, 0);
-    lastSync = toSodaDate(syncDate.toISOString());
-  } else {
-    const d = new Date();
-    d.setDate(d.getDate() - 1); // First sync: 1 day ago
-    lastSync = toSodaDate(d.toISOString());
-  }
+  // Use 7-day overlap (same as getLastSyncDate) to catch delayed data
+  // publishing. NYC Open Data publishes 311 data with a 2-3 day lag.
+  // With ignoreDuplicates (ON CONFLICT DO NOTHING), re-fetching existing
+  // records is cheap — they get skipped without updating.
+  const lastSync = await getLastSyncDate(supabase, "complaints_311");
   const logId = await createSyncLog(supabase, "complaints_311");
 
   let totalAdded = 0;
@@ -1280,29 +1264,8 @@ interface NYPDRawRecord {
 }
 
 async function syncNYPDComplaints(supabase: ReturnType<typeof getSupabaseAdmin>): Promise<SyncResult> {
-  // For initial sync, use 1 year lookback (NYPD data may lag behind current date)
-  const { data: lastSyncData } = await supabase
-    .from("sync_log")
-    .select("completed_at")
-    .eq("sync_type", "nypd_complaints")
-    .eq("status", "completed")
-    .order("completed_at", { ascending: false })
-    .limit(1)
-    .single();
-
-  let lastSync: string;
-  if (lastSyncData?.completed_at) {
-    // Subtract 3 days for data publishing lag (same as getLastSyncDate)
-    const syncDate = new Date(lastSyncData.completed_at);
-    syncDate.setDate(syncDate.getDate() - 3);
-    syncDate.setUTCHours(0, 0, 0, 0);
-    lastSync = toSodaDate(syncDate.toISOString());
-  } else {
-    // First sync: go back 3 days (keeps within 60s function limit)
-    const d = new Date();
-    d.setDate(d.getDate() - 3);
-    lastSync = toSodaDate(d.toISOString());
-  }
+  // Use standard 7-day overlap to catch delayed data publishing
+  const lastSync = await getLastSyncDate(supabase, "nypd_complaints");
 
   const logId = await createSyncLog(supabase, "nypd_complaints");
 
