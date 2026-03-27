@@ -191,7 +191,7 @@ export default function HomePage() {
               cities
             </p>
           </div>
-          <ActivityFeed />
+          <ActivityFeed allCities />
         </div>
       </section>
 
