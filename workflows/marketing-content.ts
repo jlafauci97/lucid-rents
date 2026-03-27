@@ -615,59 +615,75 @@ async function generateVideo(
 
   emitEvent({ type: "video_generating", videoType, tool });
 
-  const videoId = await submitTextToVideo({
-    prompt: script,
-    duration: videoType === "avatar" ? 12 : 5,
-    aspectRatio: videoType === "avatar" ? "16:9" : "9:16",
-  });
+  try {
+    const videoId = await submitTextToVideo({
+      prompt: script,
+      duration: videoType === "avatar" ? 12 : 5,
+      aspectRatio: videoType === "avatar" ? "16:9" : "9:16",
+    });
 
-  console.log(JSON.stringify({ step: "generateVideo", event: "submitted", tool, videoId }));
+    console.log(JSON.stringify({ step: "generateVideo", event: "submitted", tool, videoId }));
 
-  // Poll for completion
-  const MAX_POLLS = 20;
-  let videoUrl: string | undefined;
+    // Poll for completion
+    const MAX_POLLS = 20;
+    let videoUrl: string | undefined;
 
-  for (let attempt = 1; attempt <= MAX_POLLS; attempt++) {
-    await new Promise((resolve) => setTimeout(resolve, 30_000));
+    for (let attempt = 1; attempt <= MAX_POLLS; attempt++) {
+      await new Promise((resolve) => setTimeout(resolve, 30_000));
 
-    const status = await checkTaskStatus(videoId);
+      const status = await checkTaskStatus(videoId);
 
-    console.log(
-      JSON.stringify({ step: "generateVideo", event: "poll", attempt, status: status.status })
+      console.log(
+        JSON.stringify({ step: "generateVideo", event: "poll", attempt, status: status.status })
+      );
+
+      if (status.status === "completed" && status.videoUrl) {
+        videoUrl = status.videoUrl;
+        break;
+      }
+
+      if (status.status === "failed") {
+        console.log(JSON.stringify({ step: "generateVideo", event: "generation_failed", error: status.error }));
+        return []; // Don't retry — video failed, proceed without video
+      }
+    }
+
+    if (!videoUrl) {
+      console.log(JSON.stringify({ step: "generateVideo", event: "timeout", polls: MAX_POLLS }));
+      return []; // Timed out — proceed without video
+    }
+
+    // Download and upload to Blob
+    const videoBuffer = await downloadKlingVideo(videoUrl);
+
+    const timestamp = Date.now();
+    const blobResult = await put(
+      `marketing/videos/${draftId}-${timestamp}.mp4`,
+      videoBuffer,
+      { access: "public" }
     );
 
-    if (status.status === "completed" && status.videoUrl) {
-      videoUrl = status.videoUrl;
-      break;
+    const durationMs = Date.now() - t0;
+    emitEvent({ type: "video_complete", mediaUrl: blobResult.url, durationMs });
+
+    console.log(
+      JSON.stringify({ step: "generateVideo", event: "done", url: blobResult.url, ms: durationMs })
+    );
+
+    return [blobResult.url];
+  } catch (err) {
+    // Don't retry on billing/auth errors — they're permanent
+    const msg = err instanceof Error ? err.message : String(err);
+    const isPermanent = msg.includes("401") || msg.includes("429") || msg.includes("balance") || msg.includes("access key");
+    console.log(JSON.stringify({ step: "generateVideo", event: "error", permanent: isPermanent, error: msg }));
+
+    if (isPermanent) {
+      return []; // Skip video, don't waste credits retrying
     }
 
-    if (status.status === "failed") {
-      throw new RetryableError(`Video generation failed (${tool}): ${status.error ?? "unknown"}`);
-    }
+    // Only retry on transient errors (network issues, etc.)
+    throw new RetryableError(`Video generation error (${tool}): ${msg}`);
   }
-
-  if (!videoUrl) {
-    throw new RetryableError(`Video generation timed out after ${MAX_POLLS} polls (${tool})`);
-  }
-
-  // Download and upload to Blob
-  const videoBuffer = await downloadKlingVideo(videoUrl);
-
-  const timestamp = Date.now();
-  const blobResult = await put(
-    `marketing/videos/${draftId}-${timestamp}.mp4`,
-    videoBuffer,
-    { access: "public" }
-  );
-
-  const durationMs = Date.now() - t0;
-  emitEvent({ type: "video_complete", mediaUrl: blobResult.url, durationMs });
-
-  console.log(
-    JSON.stringify({ step: "generateVideo", event: "done", url: blobResult.url, ms: durationMs })
-  );
-
-  return [blobResult.url];
 }
 
 // ---------------------------------------------------------------------------
