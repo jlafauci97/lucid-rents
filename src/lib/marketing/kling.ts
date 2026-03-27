@@ -1,6 +1,7 @@
 import { SignJWT } from "jose";
 
 const KLING_API_URL = "https://api.klingai.com/v1";
+const KLING_MODEL = "kling-v2-6"; // latest model
 
 /**
  * Creates a JWT token for Kling AI API authentication.
@@ -59,9 +60,11 @@ export async function submitTextToVideo(params: {
   aspectRatio?: string;
 }): Promise<string> {
   const payload = {
+    model_name: KLING_MODEL,
     prompt: params.prompt,
-    duration: params.duration ?? 5,
+    duration: String(params.duration ?? 5),
     aspect_ratio: params.aspectRatio ?? "16:9",
+    mode: "std",
   };
 
   const response = await klingRequest("POST", "/videos/text2video", payload);
@@ -92,7 +95,6 @@ export async function submitImageToVideo(params: {
   imageUrl: string;
   prompt: string;
   duration?: number;
-  aspectRatio?: string;
 }): Promise<string> {
   // Download image and convert to raw base64 (no data URI prefix)
   // Kling requires PNG/JPG only, raw base64 string
@@ -103,11 +105,17 @@ export async function submitImageToVideo(params: {
   const imgBuffer = await imgRes.arrayBuffer();
   const rawBase64 = Buffer.from(imgBuffer).toString("base64");
 
+  // Kling image2video payload — note:
+  // - model_name is REQUIRED
+  // - duration must be a STRING ("5" or "10")
+  // - aspect_ratio is NOT a valid field for image2video
+  // - mode is required ("std" or "pro")
   const payload = {
+    model_name: KLING_MODEL,
     image: rawBase64,
     prompt: params.prompt,
-    duration: params.duration ?? 5,
-    aspect_ratio: params.aspectRatio ?? "9:16",
+    duration: String(params.duration ?? 5),
+    mode: "std",
   };
 
   const response = await klingRequest("POST", "/videos/image2video", payload);
@@ -131,16 +139,20 @@ export async function submitImageToVideo(params: {
 
 /**
  * Checks the processing status of a Kling AI video generation task.
+ * Works for both text2video and image2video tasks.
  * Poll this until status is "completed" or "failed".
  */
-export async function checkTaskStatus(taskId: string): Promise<{
+export async function checkTaskStatus(
+  taskId: string,
+  type: "text2video" | "image2video" = "text2video"
+): Promise<{
   status: "processing" | "completed" | "failed";
   videoUrl?: string;
   error?: string;
 }> {
   const response = await klingRequest(
     "GET",
-    `/videos/text2video/${taskId}`
+    `/videos/${type}/${taskId}`
   );
 
   if (!response.ok) {

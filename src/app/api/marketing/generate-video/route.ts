@@ -79,7 +79,6 @@ export async function POST(req: NextRequest) {
           imageUrl: LUCID_REFERENCE_IMAGE_URL,
           prompt: videoPrompt,
           duration: 5,
-          aspectRatio: "9:16",
         });
       } else {
         taskId = await submitTextToVideo({
@@ -106,7 +105,8 @@ export async function POST(req: NextRequest) {
       await new Promise((r) => setTimeout(r, 10_000)); // 10s between polls
 
       try {
-        const status = await checkTaskStatus(taskId);
+        const pollType = vType === "viral_character" ? "image2video" : "text2video";
+        const status = await checkTaskStatus(taskId, pollType);
 
         if (status.status === "completed" && status.videoUrl) {
           videoUrl = status.videoUrl;
