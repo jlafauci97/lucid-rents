@@ -154,17 +154,15 @@ export function ReviewModal({ draft, onClose, onActionComplete }: ReviewModalPro
               {(videoUrl || pinterestImage) && (
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-[#0F1D2E]">
-                    Media
+                    Media Preview
                   </label>
                   {videoUrl && (
-                    <a
-                      href={videoUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-[#3B82F6] hover:underline break-all"
-                    >
-                      {videoUrl}
-                    </a>
+                    <video
+                      src={videoUrl}
+                      controls
+                      className="w-full rounded-lg border border-[#e2e8f0] bg-black"
+                      style={{ maxHeight: "320px" }}
+                    />
                   )}
                   {pinterestImage && (
                     <img
@@ -173,6 +171,16 @@ export function ReviewModal({ draft, onClose, onActionComplete }: ReviewModalPro
                       className="max-w-full max-h-48 rounded-lg border border-[#e2e8f0]"
                     />
                   )}
+                </div>
+              )}
+              {!videoUrl && !pinterestImage && draft.video_type !== "none" && (
+                <div className="rounded-lg border border-dashed border-[#e2e8f0] bg-gray-50 p-4 text-center">
+                  <p className="text-sm text-[#64748b]">
+                    Video type: <span className="font-medium">{draft.video_type}</span>
+                  </p>
+                  <p className="text-xs text-[#94a3b8] mt-1">
+                    {draft.status === "generating" ? "Video is being generated..." : "No video generated for this draft"}
+                  </p>
                 </div>
               )}
 
