@@ -5,7 +5,9 @@ import { RefreshCw, MessageSquare, ExternalLink } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
-import type { MarketingRedditThread } from "@/types/marketing";
+import type { MarketingRedditThread, MarketingRedditStatus } from "@/types/marketing";
+
+type RedditFilter = "draft_ready" | "approved" | "replied" | "skipped" | "all";
 
 function formatRelativeTime(isoDate: string): string {
   const diff = Date.now() - new Date(isoDate).getTime();
@@ -17,15 +19,25 @@ function formatRelativeTime(isoDate: string): string {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
+const REDDIT_FILTERS: { key: RedditFilter; label: string }[] = [
+  { key: "draft_ready", label: "Pending" },
+  { key: "approved", label: "Approved" },
+  { key: "replied", label: "Replied" },
+  { key: "skipped", label: "Skipped" },
+  { key: "all", label: "All" },
+];
+
 export function RedditTab() {
   const [threads, setThreads] = useState<MarketingRedditThread[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<RedditFilter>("draft_ready");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [editedReplies, setEditedReplies] = useState<Record<string, string>>({});
 
   const fetchThreads = useCallback(async () => {
     try {
-      const res = await fetch("/api/marketing/reddit?status=draft_ready");
+      const params = filter !== "all" ? `?status=${filter}` : "";
+      const res = await fetch(`/api/marketing/reddit${params}`);
       const data = await res.json();
       setThreads(data.threads ?? []);
       // Initialize edited replies
@@ -39,7 +51,7 @@ export function RedditTab() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [filter]);
 
   useEffect(() => {
     fetchThreads();
@@ -78,24 +90,27 @@ export function RedditTab() {
     );
   }
 
-  if (threads.length === 0) {
-    return (
-      <Card>
-        <CardContent className="py-16 text-center">
-          <MessageSquare className="h-10 w-10 mx-auto text-[#e2e8f0] mb-3" />
-          <p className="text-[#64748b]">No Reddit threads awaiting review</p>
-        </CardContent>
-      </Card>
-    );
-  }
+  const isReadOnly = filter !== "draft_ready";
 
   return (
     <div className="space-y-4">
+      {/* Filter tabs */}
       <div className="flex items-center justify-between">
-        <p className="text-sm text-[#64748b]">
-          {threads.length} thread{threads.length !== 1 ? "s" : ""} awaiting
-          review
-        </p>
+        <div className="flex gap-1">
+          {REDDIT_FILTERS.map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => { setFilter(key); setLoading(true); }}
+              className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                filter === key
+                  ? "bg-[#0F1D2E] text-white"
+                  : "bg-gray-100 text-[#64748b] hover:bg-gray-200"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
         <Button
           variant="ghost"
           size="sm"
@@ -104,9 +119,22 @@ export function RedditTab() {
             fetchThreads();
           }}
         >
-          <RefreshCw className="h-4 w-4" />
+          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
         </Button>
       </div>
+
+      {threads.length === 0 && !loading && (
+        <Card>
+          <CardContent className="py-16 text-center">
+            <MessageSquare className="h-10 w-10 mx-auto text-[#e2e8f0] mb-3" />
+            <p className="text-[#64748b]">
+              {filter === "draft_ready"
+                ? "No Reddit threads awaiting review"
+                : `No ${filter === "all" ? "" : filter} threads`}
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {threads.map((thread) => (
         <Card key={thread.id}>
@@ -159,38 +187,53 @@ export function RedditTab() {
               </div>
             )}
 
-            {/* Editable reply */}
-            <textarea
-              value={editedReplies[thread.id] ?? thread.draft_reply ?? ""}
-              onChange={(e) =>
-                setEditedReplies((prev) => ({
-                  ...prev,
-                  [thread.id]: e.target.value,
-                }))
-              }
-              rows={4}
-              className="w-full rounded-lg border border-[#e2e8f0] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6] resize-y"
-            />
+            {/* Reply */}
+            {isReadOnly ? (
+              <div className="rounded-lg bg-gray-50 border border-[#e2e8f0] px-3 py-2 text-sm text-[#0F1D2E] whitespace-pre-wrap">
+                {thread.draft_reply ?? "No reply"}
+              </div>
+            ) : (
+              <textarea
+                value={editedReplies[thread.id] ?? thread.draft_reply ?? ""}
+                onChange={(e) =>
+                  setEditedReplies((prev) => ({
+                    ...prev,
+                    [thread.id]: e.target.value,
+                  }))
+                }
+                rows={4}
+                className="w-full rounded-lg border border-[#e2e8f0] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6] resize-y"
+              />
+            )}
 
-            {/* Actions */}
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleAction(thread.id, "skip")}
-                loading={actionLoading === thread.id}
-              >
-                Skip
-              </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => handleAction(thread.id, "approve")}
-                loading={actionLoading === thread.id}
-              >
-                Approve
-              </Button>
-            </div>
+            {/* Actions — only on pending tab */}
+            {!isReadOnly && (
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleAction(thread.id, "skip")}
+                  loading={actionLoading === thread.id}
+                >
+                  Skip
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => handleAction(thread.id, "approve")}
+                  loading={actionLoading === thread.id}
+                >
+                  Approve
+                </Button>
+              </div>
+            )}
+
+            {/* Status + timestamp for non-pending */}
+            {isReadOnly && thread.replied_at && (
+              <p className="text-xs text-[#64748b]">
+                Replied {formatRelativeTime(thread.replied_at)}
+              </p>
+            )}
           </CardContent>
         </Card>
       ))}
