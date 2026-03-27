@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle, X, ChevronDown, ChevronRight } from "lucide-react";
+import { CheckCircle, X, ChevronDown, ChevronRight, Film, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import type {
@@ -39,6 +39,9 @@ export function ReviewModal({ draft, onClose, onActionComplete }: ReviewModalPro
   const [activePlatform, setActivePlatform] = useState<PlatformKey>("instagram");
   const [loading, setLoading] = useState(false);
   const [showSource, setShowSource] = useState(false);
+  const [generatingVideo, setGeneratingVideo] = useState(false);
+  const [videoError, setVideoError] = useState<string | null>(null);
+  const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
 
   function updateVariantCaption(platform: PlatformKey, value: string) {
     setVariants((prev) => {
@@ -105,8 +108,32 @@ export function ReviewModal({ draft, onClose, onActionComplete }: ReviewModalPro
     }
   }
 
+  async function handleGenerateVideo(videoType: "viral_character" | "avatar") {
+    setGeneratingVideo(true);
+    setVideoError(null);
+
+    try {
+      const res = await fetch("/api/marketing/generate-video", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ draftId: draft.id, videoType }),
+      });
+      const data = await res.json();
+
+      if (data.ok) {
+        setGeneratedVideoUrl(data.videoUrl);
+      } else {
+        setVideoError(data.error ?? "Video generation failed");
+      }
+    } catch {
+      setVideoError("Network error — try again");
+    } finally {
+      setGeneratingVideo(false);
+    }
+  }
+
   const activeVariant = variants[activePlatform];
-  const videoUrl = draft.media_urls?.find(
+  const videoUrl = generatedVideoUrl ?? draft.media_urls?.find(
     (u) => u.includes(".mp4") || u.includes("video")
   );
   const pinterestImage = (variants.pinterest as PinterestVariant | undefined)?.image_url;
@@ -173,14 +200,61 @@ export function ReviewModal({ draft, onClose, onActionComplete }: ReviewModalPro
                   )}
                 </div>
               )}
-              {!videoUrl && !pinterestImage && draft.video_type !== "none" && (
-                <div className="rounded-lg border border-dashed border-[#e2e8f0] bg-gray-50 p-4 text-center">
-                  <p className="text-sm text-[#64748b]">
-                    Video type: <span className="font-medium">{draft.video_type}</span>
-                  </p>
-                  <p className="text-xs text-[#94a3b8] mt-1">
-                    {draft.status === "generating" ? "Video is being generated..." : "No video generated for this draft"}
-                  </p>
+              {!videoUrl && !pinterestImage && (
+                <div className="rounded-lg border border-dashed border-[#e2e8f0] bg-gray-50 p-4">
+                  {generatingVideo ? (
+                    <div className="flex items-center gap-3 justify-center">
+                      <div className="h-8 w-8 rounded-full border-2 border-purple-200 border-t-purple-500 animate-spin" />
+                      <div className="text-left">
+                        <p className="text-sm font-medium text-[#0F1D2E]">
+                          Generating video with Kling AI...
+                        </p>
+                        <p className="text-xs text-[#64748b]">
+                          This takes 1-3 minutes. You can edit text while waiting.
+                        </p>
+                      </div>
+                    </div>
+                  ) : videoError ? (
+                    <div className="text-center space-y-2">
+                      <p className="text-sm text-red-600">{videoError}</p>
+                      <div className="flex gap-2 justify-center">
+                        <button
+                          onClick={() => handleGenerateVideo("viral_character")}
+                          className="text-xs text-[#3B82F6] hover:underline"
+                        >
+                          Try again
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center space-y-3">
+                      <Film className="h-8 w-8 text-[#94a3b8] mx-auto" />
+                      <p className="text-sm text-[#64748b]">
+                        No video yet — generate one to preview before publishing
+                      </p>
+                      <div className="flex gap-2 justify-center">
+                        <Button
+                          variant="outline"
+                          onClick={() => handleGenerateVideo("viral_character")}
+                          disabled={generatingVideo}
+                        >
+                          <Film className="h-3.5 w-3.5 mr-1" />
+                          Lucid the Lizard
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => handleGenerateVideo("avatar")}
+                          disabled={generatingVideo}
+                        >
+                          <Film className="h-3.5 w-3.5 mr-1" />
+                          Avatar Narration
+                        </Button>
+                      </div>
+                      <p className="text-[10px] text-[#94a3b8]">
+                        Uses 1 Kling AI credit · Takes 1-3 minutes
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
 
