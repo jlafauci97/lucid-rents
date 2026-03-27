@@ -13,7 +13,7 @@ import { ActivityFeed } from "@/components/ActivityFeed";
 export const metadata: Metadata = {
   title: "Lucid Rents — Apartment Building Intelligence",
   description:
-    "Your next apartment has a history. Search any NYC, LA, or Chicago building to uncover violations, tenant complaints, crime stats, and honest reviews — before you sign.",
+    "Your next apartment has a history. Search any NYC, LA, Chicago, Miami, or Houston building to uncover violations, tenant complaints, crime stats, and honest reviews — before you sign.",
   alternates: { canonical: canonicalUrl("/") },
 };
 
@@ -59,6 +59,11 @@ const cities: { key: City; tagline: string; example: string }[] = [
     tagline: "Search violations, complaints, and reviews for any Miami building.",
     example: "Try \"1000 Brickell Ave\" or \"33131\"",
   },
+  {
+    key: "houston",
+    tagline: "Search violations, complaints, and reviews for any Houston building.",
+    example: "Try \"1600 Main St\" or \"77002\"",
+  },
 ];
 
 export default function HomePage() {
@@ -71,7 +76,7 @@ export default function HomePage() {
           name: "Lucid Rents",
           url: "https://lucidrents.com",
           description:
-            "Discover the truth about apartment buildings. Search building violations, tenant reviews, crime data, and more across New York City, Los Angeles, Chicago, and Miami.",
+            "Discover the truth about apartment buildings. Search building violations, tenant reviews, crime data, and more across New York City, Los Angeles, Chicago, Miami, and Houston.",
           potentialAction: {
             "@type": "SearchAction",
             target: {
@@ -128,7 +133,7 @@ export default function HomePage() {
           </p>
 
           {/* City Cards */}
-          <div className="flex justify-center gap-8 sm:gap-10 lg:gap-14 flex-wrap max-w-5xl mx-auto">
+          <div className="flex justify-center gap-6 sm:gap-8 lg:gap-12 flex-wrap max-w-5xl mx-auto">
             {cities.map((c) => {
               const meta = CITY_META[c.key];
               return (
@@ -137,14 +142,14 @@ export default function HomePage() {
                   href={cityPath("/", c.key)}
                   className="group flex flex-col items-center transition-transform hover:-translate-y-1.5"
                 >
-                  <div className="w-[140px] h-[140px] sm:w-[170px] sm:h-[170px] rounded-full overflow-hidden border-[3px] border-white/15 group-hover:border-blue-500/60 group-hover:shadow-[0_0_30px_rgba(59,130,246,0.2)] transition-all relative">
+                  <div className="w-[110px] h-[110px] sm:w-[150px] sm:h-[150px] rounded-full overflow-hidden border-[3px] border-white/15 group-hover:border-blue-500/60 group-hover:shadow-[0_0_30px_rgba(59,130,246,0.2)] transition-all relative">
                     <Image
                       src={meta.heroImage}
                       alt={`${meta.fullName} skyline`}
                       width={400}
                       height={400}
                       className="w-full h-full object-cover"
-                      sizes="(max-width: 640px) 140px, 170px"
+                      sizes="(max-width: 640px) 110px, 150px"
                     />
                     <div className="absolute inset-0 bg-[radial-gradient(circle,transparent_40%,rgba(0,0,0,0.3)_100%)] rounded-full" />
                   </div>
