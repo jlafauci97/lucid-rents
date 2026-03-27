@@ -47,7 +47,7 @@ async function klingRequest(
  * to maintain visual consistency across all mascot videos.
  */
 export const LUCID_REFERENCE_IMAGE_URL =
-  `${process.env.NEXT_PUBLIC_BASE_URL ?? "https://lucidrents.com"}/lucid-the-lizard-reference.webp`;
+  `${process.env.NEXT_PUBLIC_BASE_URL ?? "https://lucidrents.com"}/lucid-the-lizard-reference.png`;
 
 /**
  * Submits a text-to-video generation job to Kling AI.
@@ -94,20 +94,9 @@ export async function submitImageToVideo(params: {
   duration?: number;
   aspectRatio?: string;
 }): Promise<string> {
-  // Kling requires base64-encoded image, not a URL
-  const imageResponse = await fetch(params.imageUrl);
-  if (!imageResponse.ok) {
-    throw new Error(`Failed to download reference image from ${params.imageUrl} (HTTP ${imageResponse.status})`);
-  }
-  const imageBuffer = await imageResponse.arrayBuffer();
-  const base64Image = Buffer.from(imageBuffer).toString("base64");
-
-  // Detect content type for the data URI prefix
-  const contentType = imageResponse.headers.get("content-type") ?? "image/webp";
-  const dataUri = `data:${contentType};base64,${base64Image}`;
-
+  // Kling accepts a plain URL (fetches server-side) — must be PNG or JPG (no webp)
   const payload = {
-    image: dataUri,
+    image: params.imageUrl,
     prompt: params.prompt,
     duration: params.duration ?? 5,
     aspect_ratio: params.aspectRatio ?? "9:16",
