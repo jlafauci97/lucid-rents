@@ -94,8 +94,20 @@ export async function submitImageToVideo(params: {
   duration?: number;
   aspectRatio?: string;
 }): Promise<string> {
+  // Kling requires base64-encoded image, not a URL
+  const imageResponse = await fetch(params.imageUrl);
+  if (!imageResponse.ok) {
+    throw new Error(`Failed to download reference image from ${params.imageUrl} (HTTP ${imageResponse.status})`);
+  }
+  const imageBuffer = await imageResponse.arrayBuffer();
+  const base64Image = Buffer.from(imageBuffer).toString("base64");
+
+  // Detect content type for the data URI prefix
+  const contentType = imageResponse.headers.get("content-type") ?? "image/webp";
+  const dataUri = `data:${contentType};base64,${base64Image}`;
+
   const payload = {
-    image: params.imageUrl,
+    image: dataUri,
     prompt: params.prompt,
     duration: params.duration ?? 5,
     aspect_ratio: params.aspectRatio ?? "9:16",
