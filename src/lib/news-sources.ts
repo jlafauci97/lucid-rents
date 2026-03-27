@@ -186,6 +186,37 @@ export const NEWS_SOURCES: NewsSource[] = [
     defaultCategory: "general",
     metro: "miami",
   },
+  // --- Houston sources ---
+  {
+    name: "Houston Chronicle",
+    slug: "houston-chronicle",
+    feedUrl: "https://www.houstonchronicle.com/rss/feed/Houston-News-702.php",
+    defaultCategory: "general",
+    metro: "houston",
+  },
+  {
+    name: "Houston Public Media",
+    slug: "houston-public-media",
+    feedUrl: "https://www.houstonpublicmedia.org/feed/",
+    defaultCategory: "general",
+    metro: "houston",
+  },
+  {
+    name: "Swamplot",
+    slug: "swamplot",
+    feedUrl: "https://swamplot.com/feed/",
+    defaultCategory: "rental-market",
+    alwaysRelevant: true,
+    metro: "houston",
+  },
+  {
+    name: "The Real Deal Houston",
+    slug: "real-deal-houston",
+    feedUrl: "https://therealdeal.com/houston/feed/",
+    defaultCategory: "rental-market",
+    alwaysRelevant: true,
+    metro: "houston",
+  },
 ];
 
 /**
@@ -270,6 +301,25 @@ const RELEVANCE_KEYWORDS: string[] = [
   "condo association",
   "hoa",
   "special assessment",
+  // Houston-specific keywords
+  "hcad",
+  "harris county",
+  "houston housing",
+  "no zoning",
+  "super neighborhood",
+  "dangerous building",
+  "stagnant water",
+  "harvey",
+  "bayou",
+  "floodplain",
+  "flood control",
+  "hcfcd",
+  "montrose",
+  "heights",
+  "galleria",
+  "energy corridor",
+  "medical center",
+  "midtown houston",
   // Chicago-specific keywords
   "rlto",
   "cdph",

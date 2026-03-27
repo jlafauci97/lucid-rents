@@ -123,6 +123,13 @@ export function middleware(request: NextRequest) {
     url.pathname = `/FL/Miami${rest ? `/${rest}` : ""}`;
     return NextResponse.redirect(url, 301);
   }
+  // /hou/... → /TX/Houston/...
+  if (firstSegment === "hou") {
+    const url = request.nextUrl.clone();
+    const rest = segments.slice(2).join("/");
+    url.pathname = `/TX/Houston${rest ? `/${rest}` : ""}`;
+    return NextResponse.redirect(url, 301);
+  }
 
   // 3. Redirect bare /rankings to /nyc/worst-rated-buildings
   if (firstSegment === "rankings") {

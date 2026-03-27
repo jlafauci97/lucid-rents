@@ -1,6 +1,6 @@
-export type City = "nyc" | "los-angeles" | "chicago" | "miami";
+export type City = "nyc" | "los-angeles" | "chicago" | "miami" | "houston";
 
-export const VALID_CITIES: City[] = ["nyc", "los-angeles", "chicago", "miami"];
+export const VALID_CITIES: City[] = ["nyc", "los-angeles", "chicago", "miami", "houston"];
 export const DEFAULT_CITY: City = "nyc";
 
 export interface CityMeta {
@@ -13,7 +13,7 @@ export interface CityMeta {
   /** Top-level geographic regions (boroughs for NYC, areas for LA) */
   regions: readonly string[];
   /** Primary parcel identifier field name */
-  parcelIdField: "bbl" | "apn" | "pin" | "folio";
+  parcelIdField: "bbl" | "apn" | "pin" | "folio" | "hcad_account";
   /** Label for the regions concept (e.g. "Borough" or "Area") */
   regionLabel: string;
   /** Hero image filename in /public */
@@ -257,6 +257,86 @@ export const CITY_META: Record<City, CityMeta> = {
       "Airport",
     ],
   },
+  houston: {
+    name: "Houston",
+    fullName: "Houston",
+    state: "Texas",
+    stateCode: "TX",
+    urlPrefix: "TX/Houston",
+    regions: [
+      "Downtown",
+      "Midtown",
+      "Montrose",
+      "Heights",
+      "River Oaks",
+      "Upper Kirby",
+      "Galleria",
+      "Museum District",
+      "Medical Center",
+      "Rice Village",
+      "West University",
+      "Bellaire",
+      "Meyerland",
+      "Memorial",
+      "Spring Branch",
+      "Katy",
+      "Energy Corridor",
+      "Westchase",
+      "Sharpstown",
+      "Gulfton",
+      "Third Ward",
+      "East End",
+      "Second Ward",
+      "EaDo",
+      "Northside",
+      "Near Northside",
+      "Independence Heights",
+      "Oak Forest",
+      "Garden Oaks",
+      "Timbergrove",
+      "Lazybrook",
+      "Greenway",
+      "Braeswood",
+      "South Main",
+      "Pearland",
+      "Sugar Land",
+      "Clear Lake",
+      "Pasadena",
+      "Cypress",
+      "Humble",
+      "Kingwood",
+      "The Woodlands",
+    ],
+    parcelIdField: "hcad_account",
+    regionLabel: "Neighborhood",
+    heroImage: "/houston-skyline.jpg",
+    center: { lat: 29.7604, lng: -95.3698 },
+    zoom: 10,
+    crimeSource: "HPD",
+    crimeAreas: [
+      "1A0 (Central)",
+      "2A0 (South Central)",
+      "3B0 (Southeast)",
+      "4F0 (Southwest)",
+      "5F0 (North)",
+      "6B0 (Westside)",
+      "7C0 (Northeast)",
+      "8C0 (Northwest)",
+      "9H0 (Kingwood)",
+      "10H0 (Memorial)",
+      "11H0 (Clear Lake)",
+      "12D0 (Fondren)",
+      "13D0 (Beechnut)",
+      "14D0 (South Gessner)",
+      "15E0 (Westheimer)",
+      "16E0 (Spring)",
+      "17E0 (North Belt)",
+      "18F0 (Greenspoint)",
+      "19G0 (Eastside)",
+      "20G0 (Tidwell)",
+      "24D0 (Midwest)",
+    ],
+  },
 };
 
 /** URL prefix → internal city key mapping for middleware rewrites */
@@ -270,6 +350,7 @@ export const STATE_CITY_MAP: Record<string, Record<string, City>> = {
   CA: { "Los-Angeles": "los-angeles" },
   IL: { Chicago: "chicago" },
   FL: { Miami: "miami" },
+  TX: { Houston: "houston" },
 };
 
 export function isValidCity(s: string): s is City {
