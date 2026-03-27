@@ -48,6 +48,8 @@ export async function POST(req: NextRequest) {
 
     if (vType === "viral_character") {
       // Lucid the Lizard — pick emotion based on content
+      // IMPORTANT: Prompt must be purely VISUAL — no text, no captions, no data
+      // Kling hallucinates on-screen text if the prompt mentions any words/data
       const emotion =
         caption.toLowerCase().includes("horror") || caption.toLowerCase().includes("violation")
           ? "shocked"
@@ -55,11 +57,14 @@ export async function POST(req: NextRequest) {
           ? "outraged"
           : caption.toLowerCase().includes("confused") || caption.toLowerCase().includes("why")
           ? "confused"
-          : "shocked";
+          : "excited";
 
-      videoPrompt = `${LUCID_LIZARD_PROMPT} ${LUCID_EMOTIONS[emotion] ?? LUCID_EMOTIONS.shocked}. The lizard is reacting to: "${caption.slice(0, 100)}"`;
+      const emotionDesc = LUCID_EMOTIONS[emotion] ?? LUCID_EMOTIONS.shocked;
+
+      // Short, visual-only prompt — describes ACTIONS not text
+      videoPrompt = `The cute mint-green gecko lizard character ${emotionDesc}. The lizard looks directly at camera, reacts dramatically, then slowly turns back to stare at the laptop screen in disbelief. Pixar-style 3D animation, dark background, soft studio lighting. No text, no words, no letters on screen.`;
     } else if (vType === "avatar") {
-      videoPrompt = `A professional narrator presents housing data to camera. They say: "${caption.slice(0, 200)}". Clean studio background, warm lighting, trustworthy tone.`;
+      videoPrompt = `A confident young professional speaks directly to camera in a modern studio. They gesture naturally while talking, making eye contact. Clean white background, warm lighting, shallow depth of field. No text on screen.`;
     } else {
       return NextResponse.json({ ok: false, error: `Video type "${vType}" not supported for on-demand generation` }, { status: 400 });
     }
@@ -78,7 +83,8 @@ export async function POST(req: NextRequest) {
         taskId = await submitImageToVideo({
           imageUrl: LUCID_REFERENCE_IMAGE_URL,
           prompt: videoPrompt,
-          duration: 5,
+          negativePrompt: "text, words, letters, subtitles, captions, watermark, blurry, low quality, deformed",
+          duration: 10, // Kling max is 10s (only supports 5 or 10)
         });
       } else {
         taskId = await submitTextToVideo({

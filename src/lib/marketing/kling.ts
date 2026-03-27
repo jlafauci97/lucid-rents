@@ -94,6 +94,7 @@ export async function submitTextToVideo(params: {
 export async function submitImageToVideo(params: {
   imageUrl: string;
   prompt: string;
+  negativePrompt?: string;
   duration?: number;
 }): Promise<string> {
   // Download image and convert to raw base64 (no data URI prefix)
@@ -110,13 +111,16 @@ export async function submitImageToVideo(params: {
   // - duration must be a STRING ("5" or "10")
   // - aspect_ratio is NOT a valid field for image2video
   // - mode is required ("std" or "pro")
-  const payload = {
+  const payload: Record<string, unknown> = {
     model_name: KLING_MODEL,
     image: rawBase64,
     prompt: params.prompt,
     duration: String(params.duration ?? 5),
     mode: "std",
   };
+  if (params.negativePrompt) {
+    payload.negative_prompt = params.negativePrompt;
+  }
 
   const response = await klingRequest("POST", "/videos/image2video", payload);
 
