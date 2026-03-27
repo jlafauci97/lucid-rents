@@ -17,6 +17,7 @@ export async function GET(req: NextRequest) {
 
   const hour = new Date().getUTCHours();
   const minute = new Date().getUTCMinutes();
+  const force = req.nextUrl.searchParams.get("force") === "true";
   const started: string[] = [];
 
   try {
@@ -24,8 +25,8 @@ export async function GET(req: NextRequest) {
     await start(redditMonitorWorkflow, []);
     started.push("reddit-monitor");
 
-    // At content hours: content generation
-    if ([0, 6, 12, 18].includes(hour) && minute < 30) {
+    // At content hours (or forced): content generation
+    if (force || ([0, 6, 12, 18].includes(hour) && minute < 30)) {
       await start(contentWorkflow, []);
       started.push("content-generation");
     }
