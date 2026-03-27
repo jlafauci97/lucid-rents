@@ -41,9 +41,9 @@ const CONTENT_TYPE_LABELS: Record<string, string> = {
 };
 
 const VIDEO_TYPE_LABELS: Record<string, string> = {
-  avatar: "Nano Banana",
+  avatar: "Kling AI",
   data_viz: "Remotion",
-  viral_character: "Nano Banana",
+  viral_character: "Kling AI",
   none: "None",
 };
 
