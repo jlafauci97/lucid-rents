@@ -251,24 +251,25 @@ async function gatherSourceData(
     }
 
     case "building_horror": {
-      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      // Find buildings with the most violations — no date filter, just highest counts
       const { data: buildings } = await supabase
         .from("buildings")
-        .select("address, city, borough, violation_count, owner_name, zip_code")
-        .gte("updated_at", sevenDaysAgo)
+        .select("id, full_address, city, borough, violation_count, owner_name, zip_code, metro")
+        .gt("violation_count", 10)
         .order("violation_count", { ascending: false })
-        .limit(5);
+        .limit(20);
 
-      const building = buildings?.[0] ?? null;
+      // Pick a random one from top 20 to avoid repeating the same building
+      const building = buildings?.[Math.floor(Math.random() * (buildings?.length ?? 1))] ?? null;
       if (!building) {
-        throw new FatalError("No buildings with recent violations found");
+        throw new FatalError("No buildings with violations found");
       }
 
       // Get recent violations for this building
       const { data: violations } = await supabase
-        .from("violations")
-        .select("description, violation_type, inspection_date, status")
-        .eq("building_address", building.address)
+        .from("hpd_violations")
+        .select("nov_description, class, inspection_date, status")
+        .eq("building_id", building.id)
         .order("inspection_date", { ascending: false })
         .limit(10);
 
