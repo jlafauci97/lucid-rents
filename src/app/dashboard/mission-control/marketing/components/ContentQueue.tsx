@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { RefreshCw, Eye, CheckCircle } from "lucide-react";
+import { RefreshCw, Eye, CheckCircle, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -74,6 +74,7 @@ export function ContentQueue() {
   }, [fetchDrafts]);
 
   const draftCount = drafts.filter((d) => d.status === "draft").length;
+  const failedCount = drafts.filter((d) => d.status === "failed").length;
   const draftIds = drafts.filter((d) => d.status === "draft").map((d) => d.id);
 
   async function handleBatchApprove() {
@@ -122,16 +123,35 @@ export function ContentQueue() {
             </button>
           ))}
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => {
-            setLoading(true);
-            fetchDrafts();
-          }}
-        >
-          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-        </Button>
+        <div className="flex items-center gap-2">
+          {failedCount > 0 && (
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={async () => {
+                try {
+                  await fetch("/api/marketing/clear-failed", { method: "POST" });
+                  fetchDrafts();
+                } catch (err) {
+                  console.error("Clear failed error:", err);
+                }
+              }}
+            >
+              <Trash2 className="h-3.5 w-3.5 mr-1" />
+              Clear Failed ({failedCount})
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setLoading(true);
+              fetchDrafts();
+            }}
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+          </Button>
+        </div>
       </div>
 
       {/* Batch action bar */}

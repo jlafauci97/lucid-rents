@@ -72,6 +72,19 @@ export async function updateDraft(
   if (error) throw error;
 }
 
+/** Delete all drafts with status='failed'. */
+export async function clearFailedDrafts(): Promise<number> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("marketing_drafts")
+    .delete()
+    .eq("status", "failed")
+    .select("id");
+
+  if (error) throw error;
+  return data?.length ?? 0;
+}
+
 /** Get a single draft by ID. */
 export async function getDraft(id: string): Promise<MarketingDraft | null> {
   const supabase = createAdminClient();
