@@ -220,9 +220,12 @@ export const REDDIT_KEYWORDS = [
 
 // ===== LUCID THE LIZARD — MASCOT CHARACTER =====
 
-/** Base prompt for Lucid the Lizard video generation (Nano Banana). */
+/** Reference image path for Lucid the Lizard (served from /public). */
+export const LUCID_REFERENCE_IMAGE = "/lucid-the-lizard-reference.webp";
+
+/** Base prompt for Lucid the Lizard video generation (Kling AI). */
 export const LUCID_LIZARD_PROMPT =
-  "A cute, wide-eyed cartoon lizard character named Lucid with bright green skin, big expressive eyes, and a slightly curled tail. Lucid is sitting at a desk looking at a computer screen displaying housing data. Lucid's expression is";
+  "A 3D animated gecko-like lizard character with soft mint-green skin, oversized round bulging eyes with white sclera and small dark pupils, a friendly wide smile, smooth rounded body with stubby arms and small hands with visible fingers, a long curling dark-tipped tail. Pixar-style rendering, soft studio lighting against a dark background. The character is expressive and endearing, similar to a cartoon mascot. Lucid is";
 
 /** Emotion variants appended to LUCID_LIZARD_PROMPT based on content type. */
 export const LUCID_EMOTIONS: Record<string, string> = {

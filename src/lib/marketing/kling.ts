@@ -43,6 +43,13 @@ async function klingRequest(
 }
 
 /**
+ * URL to the Lucid the Lizard reference image, used for image-to-video
+ * to maintain visual consistency across all mascot videos.
+ */
+export const LUCID_REFERENCE_IMAGE_URL =
+  `${process.env.NEXT_PUBLIC_BASE_URL ?? "https://lucidrents.com"}/lucid-the-lizard-reference.webp`;
+
+/**
  * Submits a text-to-video generation job to Kling AI.
  * Returns the taskId which can be polled via checkTaskStatus.
  */
@@ -71,6 +78,43 @@ export async function submitTextToVideo(params: {
 
   if (!taskId) {
     throw new Error("Kling AI response did not include a task_id");
+  }
+
+  return taskId;
+}
+
+/**
+ * Submits an image-to-video generation job to Kling AI.
+ * Uses the Lucid the Lizard reference image for visual consistency.
+ * Returns the taskId which can be polled via checkTaskStatus.
+ */
+export async function submitImageToVideo(params: {
+  imageUrl: string;
+  prompt: string;
+  duration?: number;
+  aspectRatio?: string;
+}): Promise<string> {
+  const payload = {
+    image: params.imageUrl,
+    prompt: params.prompt,
+    duration: params.duration ?? 5,
+    aspect_ratio: params.aspectRatio ?? "9:16",
+  };
+
+  const response = await klingRequest("POST", "/videos/image2video", payload);
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(
+      `Kling AI image-to-video failed (HTTP ${response.status}): ${errorText}`
+    );
+  }
+
+  const data = (await response.json()) as { data?: { task_id?: string } };
+  const taskId = data.data?.task_id;
+
+  if (!taskId) {
+    throw new Error("Kling AI image-to-video response did not include a task_id");
   }
 
   return taskId;
