@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     const result = await generateText({
       model: "anthropic/claude-sonnet-4.6" as never,
       prompt: systemPrompt,
-      maxTokens: 4000,
+      maxOutputTokens: 4000,
     });
 
     // Parse the AI response

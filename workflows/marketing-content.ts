@@ -209,7 +209,7 @@ async function gatherSourceData(
       // Find owners with highest violation counts
       const { data: buildings } = await supabase
         .from("buildings")
-        .select("owner_name, violation_count, address, city")
+        .select("owner_name, violation_count, full_address, city")
         .not("owner_name", "is", null)
         .order("violation_count", { ascending: false })
         .limit(100);
@@ -227,7 +227,7 @@ async function gatherSourceData(
         const entry = ownerMap.get(name)!;
         entry.totalViolations += (b.violation_count as number) || 0;
         entry.buildings.push({
-          address: b.address as string,
+          address: b.full_address as string,
           violations: (b.violation_count as number) || 0,
         });
       }
@@ -282,30 +282,43 @@ async function gatherSourceData(
     }
 
     case "neighborhood_trend": {
-      const { data: rentData } = await supabase
+      // Get violation data from buildings
+      const { data: buildingData } = await supabase
         .from("buildings")
-        .select("zip_code, median_rent, violation_count, city")
+        .select("zip_code, violation_count, city")
         .not("zip_code", "is", null)
+        .gt("violation_count", 0)
+        .limit(500);
+
+      // Get rent data from building_rents table
+      const { data: rentRows } = await supabase
+        .from("building_rents")
+        .select("building_id, median_rent")
         .not("median_rent", "is", null)
         .limit(500);
+
+      // Build rent lookup by building_id
+      const rentByBuilding = new Map<string, number>();
+      for (const r of rentRows ?? []) {
+        rentByBuilding.set(r.building_id as string, r.median_rent as number);
+      }
 
       // Aggregate by zip
       const zipMap = new Map<
         string,
-        { totalRent: number; totalViolations: number; count: number; city: string }
+        { totalRent: number; rentCount: number; totalViolations: number; count: number; city: string }
       >();
-      for (const b of rentData ?? []) {
+      for (const b of buildingData ?? []) {
         const zip = b.zip_code as string;
         if (!zipMap.has(zip)) {
-          zipMap.set(zip, { totalRent: 0, totalViolations: 0, count: 0, city: b.city as string });
+          zipMap.set(zip, { totalRent: 0, rentCount: 0, totalViolations: 0, count: 0, city: b.city as string });
         }
         const entry = zipMap.get(zip)!;
-        entry.totalRent += (b.median_rent as number) || 0;
         entry.totalViolations += (b.violation_count as number) || 0;
         entry.count += 1;
       }
 
-      // Pick an interesting zip (high violations relative to rent)
+      // Pick an interesting zip (high violations per building)
       let picked = { zip: "", avgRent: 0, totalViolations: 0, buildingCount: 0, city: "" };
       let maxScore = 0;
       for (const [zip, data] of zipMap) {
@@ -315,7 +328,7 @@ async function gatherSourceData(
           maxScore = score;
           picked = {
             zip,
-            avgRent: Math.round(data.totalRent / data.count),
+            avgRent: data.rentCount > 0 ? Math.round(data.totalRent / data.rentCount) : 0,
             totalViolations: data.totalViolations,
             buildingCount: data.count,
             city: data.city,
@@ -347,7 +360,6 @@ async function gatherSourceData(
       const { data: articles } = await supabase
         .from("news_articles")
         .select("*")
-        .eq("processed", false)
         .order("published_at", { ascending: false })
         .limit(3);
 
@@ -369,7 +381,7 @@ async function gatherSourceData(
       // Pick a random interesting building
       const { data: buildings } = await supabase
         .from("buildings")
-        .select("address, city, violation_count, owner_name")
+        .select("full_address, city, violation_count, owner_name")
         .gte("violation_count", 20)
         .order("violation_count", { ascending: false })
         .limit(20);
@@ -377,17 +389,17 @@ async function gatherSourceData(
       const building =
         buildings?.[Math.floor(Math.random() * (buildings?.length ?? 1))] ?? null;
 
-      const characters = [
-        "a sentient strawberry",
-        "an AI-powered avocado",
-        "a concerned potato",
-        "a dramatic lemon",
-        "a horrified blueberry",
-        "an investigative banana",
-        "a shocked pineapple",
-        "a sarcastic mushroom",
-      ];
-      const character = characters[Math.floor(Math.random() * characters.length)];
+      // Lucid the Lizard is primary (50%+), with occasional guest characters
+      const lucidChance = Math.random();
+      const character =
+        lucidChance < 0.6
+          ? "Lucid the Lizard (the LucidRents mascot — a cute, wide-eyed mint-green gecko)"
+          : [
+              "a sentient strawberry",
+              "an AI-powered avocado",
+              "a concerned potato",
+              "a dramatic lemon",
+            ][Math.floor(Math.random() * 4)];
 
       sourceData = { building, character };
       break;
