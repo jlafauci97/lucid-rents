@@ -228,17 +228,32 @@ export function CreatePost() {
             </div>
           </div>
 
-          {/* Generate button */}
-          <Button
-            variant="primary"
-            onClick={handleGeneratePrompt}
-            loading={generatingPrompt}
-            disabled={!topic.trim()}
-            className="w-full"
-          >
-            <Sparkles className="h-4 w-4 mr-1" />
-            {generatingPrompt ? "Generating..." : "Generate Prompt with AI"}
-          </Button>
+          {/* Generating prompt status */}
+          {generatingPrompt ? (
+            <div className="flex items-center gap-3 p-4 rounded-lg bg-purple-50 border border-purple-200 animate-pulse">
+              <div className="relative">
+                <div className="h-8 w-8 rounded-full border-2 border-purple-200 border-t-purple-500 animate-spin" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-[#0F1D2E]">
+                  Crafting your prompt...
+                </p>
+                <p className="text-xs text-[#64748b]">
+                  AI is writing a creative brief based on your inputs.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <Button
+              variant="primary"
+              onClick={handleGeneratePrompt}
+              disabled={!topic.trim()}
+              className="w-full"
+            >
+              <Sparkles className="h-4 w-4 mr-1" />
+              Generate Prompt with AI
+            </Button>
+          )}
         </CardContent>
       </Card>
 
@@ -308,21 +323,40 @@ export function CreatePost() {
             </div>
           )}
 
+          {/* Generating status banner */}
+          {loading && (
+            <div className="flex items-center gap-3 p-4 rounded-lg bg-blue-50 border border-blue-200 animate-pulse">
+              <div className="relative">
+                <div className="h-8 w-8 rounded-full border-2 border-blue-200 border-t-[#3B82F6] animate-spin" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-[#0F1D2E]">
+                  Generating your draft...
+                </p>
+                <p className="text-xs text-[#64748b]">
+                  AI is creating captions for all 10 platforms. This takes 10-20 seconds.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Submit */}
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-[#64748b]">
-              Creates a draft for your review — nothing publishes until you approve.
-            </p>
-            <Button
-              variant="primary"
-              onClick={handleSubmit}
-              loading={loading}
-              disabled={!prompt.trim()}
-            >
-              <Send className="h-4 w-4 mr-1" />
-              Create Draft
-            </Button>
-          </div>
+          {!loading && (
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-[#64748b]">
+                Creates a draft for your review — nothing publishes until you approve.
+              </p>
+              <Button
+                variant="primary"
+                onClick={handleSubmit}
+                loading={loading}
+                disabled={!prompt.trim()}
+              >
+                <Send className="h-4 w-4 mr-1" />
+                Create Draft
+              </Button>
+            </div>
+          )}
 
           {/* Result message */}
           {result && (
