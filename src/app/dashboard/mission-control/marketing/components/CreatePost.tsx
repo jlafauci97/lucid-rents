@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Send,
   Sparkles,
@@ -9,6 +9,9 @@ import {
   ChevronDown,
   ChevronUp,
   RotateCcw,
+  History,
+  Trash2,
+  Copy,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -31,6 +34,37 @@ const VIDEO_OPTIONS: { value: MarketingVideoType; label: string }[] = [
 ];
 
 const CITIES = ["Any City", "NYC", "Los Angeles", "Chicago", "Miami", "Houston"];
+
+const HISTORY_KEY = "lucidrents_prompt_history";
+const MAX_HISTORY = 20;
+
+interface PromptHistoryEntry {
+  id: string;
+  topic: string;
+  prompt: string;
+  contentType: MarketingContentType;
+  city: string;
+  tone: string;
+  createdAt: string;
+}
+
+function loadHistory(): PromptHistoryEntry[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    return raw ? (JSON.parse(raw) as PromptHistoryEntry[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveHistory(entries: PromptHistoryEntry[]): void {
+  try {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(entries.slice(0, MAX_HISTORY)));
+  } catch {
+    // localStorage full or unavailable
+  }
+}
 
 const TONES = [
   "Informative & punchy",
@@ -66,6 +100,46 @@ export function CreatePost() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [history, setHistory] = useState<PromptHistoryEntry[]>([]);
+
+  // Load history on mount
+  useEffect(() => {
+    setHistory(loadHistory());
+  }, []);
+
+  const addToHistory = useCallback(
+    (generatedPrompt: string) => {
+      const entry: PromptHistoryEntry = {
+        id: crypto.randomUUID(),
+        topic,
+        prompt: generatedPrompt,
+        contentType,
+        city,
+        tone,
+        createdAt: new Date().toISOString(),
+      };
+      const updated = [entry, ...history].slice(0, MAX_HISTORY);
+      setHistory(updated);
+      saveHistory(updated);
+    },
+    [topic, contentType, city, tone, history]
+  );
+
+  function removeFromHistory(id: string) {
+    const updated = history.filter((h) => h.id !== id);
+    setHistory(updated);
+    saveHistory(updated);
+  }
+
+  function loadFromHistory(entry: PromptHistoryEntry) {
+    setTopic(entry.topic);
+    setPrompt(entry.prompt);
+    setContentType(entry.contentType);
+    setCity(entry.city);
+    setTone(entry.tone);
+    setShowHistory(false);
+  }
 
   async function handleGeneratePrompt() {
     if (!topic.trim()) return;
@@ -88,6 +162,7 @@ export function CreatePost() {
 
       if (data.ok) {
         setPrompt(data.prompt);
+        addToHistory(data.prompt);
       } else {
         setResult({ ok: false, message: data.error ?? "Failed to generate prompt" });
       }
@@ -256,6 +331,83 @@ export function CreatePost() {
           )}
         </CardContent>
       </Card>
+
+      {/* Prompt History */}
+      {history.length > 0 && (
+        <Card>
+          <CardContent className="space-y-3">
+            <button
+              onClick={() => setShowHistory(!showHistory)}
+              className="flex items-center justify-between w-full"
+            >
+              <div className="flex items-center gap-2">
+                <History className="h-4 w-4 text-[#64748b]" />
+                <span className="text-sm font-medium text-[#0F1D2E]">
+                  Prompt History
+                </span>
+                <span className="text-xs text-[#64748b] bg-gray-100 px-1.5 py-0.5 rounded-full">
+                  {history.length}
+                </span>
+              </div>
+              {showHistory ? (
+                <ChevronUp className="h-4 w-4 text-[#64748b]" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-[#64748b]" />
+              )}
+            </button>
+
+            {showHistory && (
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {history.map((entry) => (
+                  <div
+                    key={entry.id}
+                    className="group flex items-start gap-2 p-3 rounded-lg border border-[#e2e8f0] hover:border-[#3B82F6] hover:bg-blue-50/30 transition-colors"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-medium text-[#0F1D2E] truncate">
+                          {entry.topic}
+                        </span>
+                        <span className="text-[10px] text-[#64748b] bg-gray-100 px-1.5 py-0.5 rounded flex-shrink-0">
+                          {CONTENT_TYPES.find((t) => t.value === entry.contentType)?.emoji}{" "}
+                          {entry.city !== "Any City" ? entry.city : ""}
+                        </span>
+                      </div>
+                      <p className="text-xs text-[#64748b] line-clamp-2">
+                        {entry.prompt}
+                      </p>
+                      <p className="text-[10px] text-[#94a3b8] mt-1">
+                        {new Date(entry.createdAt).toLocaleDateString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                          hour: "numeric",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                    </div>
+                    <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                      <button
+                        onClick={() => loadFromHistory(entry)}
+                        className="p-1 rounded hover:bg-blue-100 text-[#3B82F6]"
+                        title="Use this prompt"
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={() => removeFromHistory(entry.id)}
+                        className="p-1 rounded hover:bg-red-100 text-red-400"
+                        title="Delete"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Step 2: Review & Create Draft */}
       <Card>
