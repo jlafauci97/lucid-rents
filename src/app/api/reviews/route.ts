@@ -21,7 +21,15 @@ export async function POST(req: NextRequest) {
 
   const data = parsed.data;
 
-  // Try to find or create unit (table may not exist yet — non-blocking)
+  // Parse bedrooms/bathrooms for units table (integer/numeric)
+  const bedroomsInt = data.bedrooms
+    ? data.bedrooms === "Studio" ? 0 : data.bedrooms === "5+" ? 5 : parseInt(data.bedrooms)
+    : null;
+  const bathroomsNum = data.bathrooms
+    ? data.bathrooms === "3+" ? 3 : parseFloat(data.bathrooms)
+    : null;
+
+  // Find or create unit
   let unitId = data.unit_id;
   if (!unitId && data.unit_number) {
     const { data: existingUnit } = await supabase
@@ -33,10 +41,25 @@ export async function POST(req: NextRequest) {
 
     if (existingUnit) {
       unitId = existingUnit.id;
+      // Update bedrooms/bathrooms if provided and not yet set
+      if (bedroomsInt !== null || bathroomsNum !== null) {
+        await supabase
+          .from("units")
+          .update({
+            ...(bedroomsInt !== null && { bedrooms: bedroomsInt }),
+            ...(bathroomsNum !== null && { bathrooms: bathroomsNum }),
+          })
+          .eq("id", existingUnit.id);
+      }
     } else {
       const { data: newUnit } = await supabase
         .from("units")
-        .insert({ building_id: data.building_id, unit_number: data.unit_number })
+        .insert({
+          building_id: data.building_id,
+          unit_number: data.unit_number,
+          bedrooms: bedroomsInt,
+          bathrooms: bathroomsNum,
+        })
         .select("id")
         .single();
 
@@ -150,6 +173,34 @@ export async function POST(req: NextRequest) {
 
     if (amenitiesError) {
       console.error("Failed to insert review amenities:", amenitiesError);
+    }
+  }
+
+  // Insert rent history from review data
+  if (data.unit_number && data.rent_amount) {
+    const { data: building } = await supabase
+      .from("buildings")
+      .select("metro")
+      .eq("id", data.building_id)
+      .single();
+
+    if (building?.metro) {
+      const { error: rentError } = await supabase
+        .from("unit_rent_history")
+        .insert({
+          building_id: data.building_id,
+          unit_number: data.unit_number,
+          bedrooms: bedroomsInt,
+          bathrooms: bathroomsNum,
+          rent: data.rent_amount,
+          source: "review",
+          observed_at: data.move_in_date,
+          metro: building.metro,
+        });
+
+      if (rentError) {
+        console.error("Failed to insert rent history:", rentError);
+      }
     }
   }
 
