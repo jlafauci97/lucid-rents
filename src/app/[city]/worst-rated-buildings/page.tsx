@@ -265,7 +265,7 @@ export default async function RankingsPage({ params: routeParams, searchParams }
                       <td className="px-4 py-3 hidden md:table-cell">
                         {building.owner_name ? (
                           <Link
-                            href={landlordUrl(building.owner_name)}
+                            href={landlordUrl(building.owner_name, city)}
                             className="text-xs text-[#64748b] hover:text-[#3B82F6] transition-colors truncate max-w-[200px] block"
                           >
                             {building.owner_name}

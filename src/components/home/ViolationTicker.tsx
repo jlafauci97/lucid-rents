@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { AlertTriangle, Shield, MessageSquare, Star, Scale, HardHat, Siren, Bug, DoorOpen, DollarSign, FileCheck, ShieldAlert } from 'lucide-react';
-import { BOROUGH_SLUGS, cityPath } from '@/lib/seo';
+import { buildingUrl, cityPath } from '@/lib/seo';
+import { isValidCity, DEFAULT_CITY, type City } from '@/lib/cities';
 import type { ActivityItem } from '@/app/api/activity/route';
 
 /** Icon color on the blue ticker background — lighter variants for readability */
@@ -82,15 +83,15 @@ function formatDate(dateStr: string): string {
 }
 
 function buildItemUrl(item: ActivityItem): string | null {
+  const city: City = item.metro && isValidCity(item.metro) ? item.metro : DEFAULT_CITY;
   if (item.type === 'crime' && item.zipCode) {
-    return cityPath(`/crime/${item.zipCode}`);
+    return cityPath(`/crime/${item.zipCode}`, city);
   }
   if (item.buildingSlug && item.borough) {
-    const boroughSlug = BOROUGH_SLUGS[item.borough] || item.borough.toLowerCase().replace(/\s+/g, '-');
-    return cityPath(`/building/${boroughSlug}/${item.buildingSlug}`);
+    return buildingUrl({ borough: item.borough, slug: item.buildingSlug }, city);
   }
   if (item.buildingId) {
-    return cityPath(`/building/${item.buildingId}`);
+    return cityPath(`/building/${item.buildingId}`, city);
   }
   return null;
 }
@@ -131,13 +132,22 @@ export function ViolationTicker({ metro }: ViolationTickerProps = {}) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const params = new URLSearchParams({ limit: "30" });
-    if (metro) params.set("city", metro);
     function fetchItems() {
+      const params = new URLSearchParams({ limit: "30" });
+      if (metro) params.set("city", metro);
       fetch(`/api/activity?${params}`)
         .then((res) => res.json())
         .then((data) => {
-          if (data.items) setItems(data.items);
+          if (data.items && data.items.length > 0) {
+            setItems(data.items);
+          } else if (metro) {
+            // City has no activity yet — fall back to all-city feed
+            return fetch(`/api/activity?limit=30`)
+              .then((res) => res.json())
+              .then((data) => {
+                if (data.items) setItems(data.items);
+              });
+          }
         })
         .catch(() => {})
         .finally(() => setLoading(false));
@@ -145,7 +155,7 @@ export function ViolationTicker({ metro }: ViolationTickerProps = {}) {
     fetchItems();
     const interval = setInterval(fetchItems, 4 * 60 * 60 * 1000); // refresh every 4 hours
     return () => clearInterval(interval);
-  }, []);
+  }, [metro]);
 
   if (loading) {
     return (

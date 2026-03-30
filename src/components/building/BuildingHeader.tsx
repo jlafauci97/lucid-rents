@@ -22,7 +22,7 @@ export function BuildingHeader({ building, city = "nyc", violationCount }: Build
   const meta = [
     building.borough && {
       icon: MapPin,
-      text: `${building.borough}, ${CITY_META[city].stateCode} ${building.zip_code}`,
+      text: `${building.borough}, ${CITY_META[(building.metro as City) || city]?.stateCode || CITY_META[city].stateCode} ${building.zip_code}`,
     },
     building.year_built && {
       icon: Calendar,

@@ -1,10 +1,14 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { BuildingHeader } from "@/components/building/BuildingHeader";
 import { QuickSummary } from "@/components/building/QuickSummary";
 import { IssuesTabs } from "@/components/building/IssuesTabs";
-import { ViolationTrend } from "@/components/building/ViolationTrend";
+import dynamic from "next/dynamic";
+
+const ViolationTrend = dynamic(() => import("@/components/building/ViolationTrend").then(m => m.ViolationTrend), {
+  loading: () => <div className="bg-white rounded-xl border border-[#e2e8f0] p-6"><div className="h-6 w-48 bg-[#e2e8f0] rounded animate-pulse mb-4" /><div className="h-[300px] bg-[#f8fafc] rounded-lg animate-pulse" /></div>,
+});
 import { ViolationsByUnit } from "@/components/building/ViolationsByUnit";
 import { ReviewSection } from "@/components/review/ReviewSection";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
@@ -29,13 +33,13 @@ import { SeismicSafetyCard } from "@/components/building/SeismicSafetyCard";
 import { HazardZonesCard } from "@/components/building/HazardZonesCard";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { SLUG_TO_BOROUGH, buildingUrl, canonicalUrl, buildingJsonLd, breadcrumbJsonLd, landlordUrl, cityPath } from "@/lib/seo";
-import { CITY_META } from "@/lib/cities";
+import { SLUG_TO_BOROUGH, regionFromSlug, buildingUrl, canonicalUrl, buildingJsonLd, breadcrumbJsonLd, landlordUrl, cityPath } from "@/lib/seo";
+import { CITY_META, VALID_CITIES, type City } from "@/lib/cities";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { TrackBuildingView } from "@/components/building/TrackBuildingView";
 import { cache } from "react";
-import type { Building, HpdViolation, Complaint311, HpdLitigation, DobViolation, BedBugReport, Eviction, DobPermit, EnergyBenchmark, ReviewWithDetails } from "@/types";
+import type { Building, HpdViolation, Complaint311, HpdLitigation, DobViolation, BedBugReport, Eviction, DobPermit, EnergyBenchmark, ReviewWithDetails, LahdViolationSummary } from "@/types";
 import type { Metadata } from "next";
 
 export const revalidate = 86400; // 24h ISR
@@ -45,41 +49,80 @@ interface BuildingSlugPageProps {
 }
 
 // cache() deduplicates across generateMetadata + page render in the same request
-const getBuilding = cache(async (boroughSlug: string, slug: string) => {
-  const borough = SLUG_TO_BOROUGH[boroughSlug];
-  if (!borough) return null;
+const getBuilding = cache(async (boroughSlug: string, slug: string, metro?: string) => {
+  // regionFromSlug checks CITY_META regions first, then falls back to title-casing
+  // so cities with boroughs not in the predefined regions list still work
+  const city = (metro || "nyc") as import("@/lib/cities").City;
+  const borough = regionFromSlug(boroughSlug, city);
 
   const supabase = await createClient();
-  // Use borough + slug + limit(1) instead of .single() to handle duplicate slugs
-  const { data } = await supabase
+  // Use borough + slug + metro + limit(1) instead of .single() to handle duplicate slugs
+  let query = supabase
     .from("buildings")
     .select("*")
     .eq("slug", slug)
-    .eq("borough", borough)
-    .limit(1);
+    .eq("borough", borough);
+
+  if (metro) {
+    query = query.eq("metro", metro);
+  }
+
+  const { data } = await query.limit(1);
 
   if (!data || data.length === 0) return null;
   return data[0] as Building;
+});
+
+function metroToCity(metro: string | null): import("@/lib/cities").City {
+  if (metro && VALID_CITIES.includes(metro as City)) return metro as City;
+  return "nyc";
+}
+
+/** Find a building by slug across all cities — used for cross-city redirects */
+const findBuildingAnywhere = cache(async (slug: string) => {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("buildings")
+    .select("borough, slug, metro")
+    .eq("slug", slug)
+    .limit(1);
+  return data?.[0] ?? null;
 });
 
 export async function generateMetadata({
   params,
 }: BuildingSlugPageProps): Promise<Metadata> {
   const { city: cityParam, borough, slug } = await params;
-  const building = await getBuilding(borough, slug);
+  const building = await getBuilding(borough, slug, cityParam);
 
-  if (!building) return { title: "Building Not Found" };
+  if (!building) {
+    // Check if the building exists under a different city — redirect will happen in the page component
+    const match = await findBuildingAnywhere(slug);
+    if (match) {
+      const correctCity = metroToCity(match.metro);
+      const url = canonicalUrl(buildingUrl(match, correctCity));
+      return {
+        title: "Redirecting…",
+        alternates: { canonical: url },
+      };
+    }
+    return { title: "Building Not Found" };
+  }
 
   const title = `${building.full_address} | Lucid Rents`;
+  const isChicagoMeta = cityParam === "chicago" || cityParam === "miami";
+  const metaViolationCount = isChicagoMeta
+    ? (building.dob_violation_count || 0)
+    : (building.violation_count || 0);
   const descParts = [
-    `${building.violation_count} violations`,
+    `${metaViolationCount} violations`,
     `${building.complaint_count} complaints`,
   ];
   if (building.bedbug_report_count > 0) descParts.push(`${building.bedbug_report_count} bedbug reports`);
   if (building.eviction_count > 0) descParts.push(`${building.eviction_count} evictions`);
   const cityName = CITY_META[cityParam as keyof typeof CITY_META]?.name || "NYC";
   const description = `Thinking about ${building.full_address}? Check ${descParts.join(", ")}, and real tenant reviews before you sign a lease.`;
-  const url = canonicalUrl(buildingUrl(building));
+  const url = canonicalUrl(buildingUrl(building, cityParam as import("@/lib/cities").City));
 
   return {
     title,
@@ -103,10 +146,24 @@ export async function generateMetadata({
 
 export default async function BuildingSlugPage({ params }: BuildingSlugPageProps) {
   const { city: cityParam, borough: boroughSlug, slug } = await params;
-  const city = (cityParam || "nyc") as import("@/lib/cities").City;
-  const building = await getBuilding(boroughSlug, slug);
+  const city = (cityParam || "nyc") as City;
+  let building = await getBuilding(boroughSlug, slug, city);
 
-  if (!building) notFound();
+  if (!building) {
+    // Building not found for this city — check if it exists under a different city and redirect
+    const match = await findBuildingAnywhere(slug);
+    if (match) {
+      const correctCity = metroToCity(match.metro);
+      redirect(buildingUrl(match, correctCity));
+    }
+    notFound();
+  }
+
+  // If the building's metro doesn't match the URL city, redirect to the correct city
+  const buildingCity = metroToCity(building.metro);
+  if (buildingCity !== city) {
+    redirect(buildingUrl(building, buildingCity));
+  }
 
   const supabase = await createClient();
   const buildingId = building.id;
@@ -122,24 +179,27 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
     });
 
   const isLA = city === "los-angeles";
+  const isChicago = city === "chicago";
+  const isMiami = city === "miami";
+  const isNYC = city === "nyc";
   const emptyHpdLit = [] as HpdLitigation[];
   const emptyDobVio = [] as DobViolation[];
   const emptyBedbugs = [] as BedBugReport[];
   const emptyEvictions = [] as Eviction[];
 
   // Fetch all data in parallel — skip NYC-only tables for LA buildings
-  const [violations, complaints, litigations, dobViolations, bedbugs, evictions, permits, energyData, reviews, units, violationSummaries, rents, amenities, marketListings, rentHistory, monitorStatus, saveStatus, neighborhoodRentsRaw] = await Promise.all([
+  const [violations, complaints, litigations, dobViolations, bedbugs, evictions, permits, energyData, reviews, units, violationSummaries, rents, amenities, marketListings, rentHistory, monitorStatus, saveStatus, neighborhoodRentsRaw, lahdViolationSummary] = await Promise.all([
     safe(supabase.from("hpd_violations").select("*").eq("building_id", buildingId).order("inspection_date", { ascending: false }).limit(20), [] as HpdViolation[]),
     safe(supabase.from("complaints_311").select("*").eq("building_id", buildingId).order("created_date", { ascending: false }).limit(20), [] as Complaint311[]),
-    isLA ? Promise.resolve(emptyHpdLit) : safe(supabase.from("hpd_litigations").select("*").eq("building_id", buildingId).order("case_open_date", { ascending: false }).limit(20), emptyHpdLit),
-    isLA ? Promise.resolve(emptyDobVio) : safe(supabase.from("dob_violations").select("*").eq("building_id", buildingId).order("issue_date", { ascending: false }).limit(20), emptyDobVio),
-    isLA ? Promise.resolve(emptyBedbugs) : safe(supabase.from("bedbug_reports").select("*").eq("building_id", buildingId).order("filing_date", { ascending: false }).limit(20), emptyBedbugs),
-    isLA ? Promise.resolve(emptyEvictions) : safe(supabase.from("evictions").select("*").eq("building_id", buildingId).order("executed_date", { ascending: false }).limit(20), emptyEvictions),
+    isNYC ? safe(supabase.from("hpd_litigations").select("*").eq("building_id", buildingId).order("case_open_date", { ascending: false }).limit(20), emptyHpdLit) : Promise.resolve(emptyHpdLit),
+    (isNYC || isChicago) ? safe(supabase.from("dob_violations").select("*").eq("building_id", buildingId).order("issue_date", { ascending: false }).limit(20), emptyDobVio) : Promise.resolve(emptyDobVio),
+    isNYC ? safe(supabase.from("bedbug_reports").select("*").eq("building_id", buildingId).order("filing_date", { ascending: false }).limit(20), emptyBedbugs) : Promise.resolve(emptyBedbugs),
+    isNYC ? safe(supabase.from("evictions").select("*").eq("building_id", buildingId).order("executed_date", { ascending: false }).limit(20), emptyEvictions) : Promise.resolve(emptyEvictions),
     safe(supabase.from("dob_permits").select("*").eq("building_id", buildingId).order("issued_date", { ascending: false }).limit(20), [] as DobPermit[]),
     safe(supabase.from("energy_benchmarks").select("*").eq("building_id", buildingId).order("report_year", { ascending: false }).limit(1), [] as EnergyBenchmark[]),
     safe(supabase.from("reviews").select(`*, profile:profiles(id, display_name, avatar_url), category_ratings:review_category_ratings(*, category:review_categories(slug, name, icon)), unit:units(unit_number)`).eq("building_id", buildingId).eq("status", "published").order("created_at", { ascending: false }).limit(10), []) as Promise<ReviewWithDetails[]>,
     safe(supabase.from("units").select("*").eq("building_id", buildingId).order("unit_number", { ascending: true }), []),
-    safe(supabase.from("hpd_violations").select("id, apartment, class, status, inspection_date, nov_description").eq("building_id", buildingId).order("inspection_date", { ascending: false }).limit(10000), []),
+    safe(supabase.from("hpd_violations").select("id, apartment, class, status, inspection_date, nov_description").eq("building_id", buildingId).order("inspection_date", { ascending: false }).limit(500), []),
     safe(supabase.from("building_rents").select("bedrooms, min_rent, max_rent, median_rent, listing_count, source").eq("building_id", buildingId), []),
     safe(supabase.from("building_amenities").select("amenity, category, source").eq("building_id", buildingId), []),
     safe(supabase.from("building_listings").select("*").eq("building_id", buildingId), []),
@@ -160,6 +220,22 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
     })(),
     null, // placeholder for saveStatus — extracted from authStatus below
     safe(supabase.from("building_rents").select("bedrooms, median_rent, buildings!inner(zip_code)").eq("buildings.zip_code", building.zip_code!).neq("building_id", buildingId), [] as { bedrooms: number; median_rent: number; buildings: { zip_code: string }[] }[]),
+    isLA
+      ? safe(supabase.from("lahd_violation_summary").select("id, building_id, violation_type, violations_cited, violations_cleared").eq("building_id", buildingId).order("violations_cited", { ascending: false }).limit(50), [] as LahdViolationSummary[])
+      : Promise.resolve([] as LahdViolationSummary[]),
+  ]);
+
+  // Chicago-specific data fetches
+  const [chicagoRlto, chicagoLead, chicagoScofflaw] = await Promise.all([
+    isChicago
+      ? safe(supabase.from("chicago_rlto_violations").select("*").eq("building_id", buildingId).order("violation_date", { ascending: false }).limit(50), [])
+      : Promise.resolve([]),
+    isChicago
+      ? safe(supabase.from("chicago_lead_inspections").select("*").eq("building_id", buildingId).order("inspection_date", { ascending: false }).limit(50), [])
+      : Promise.resolve([]),
+    isChicago
+      ? safe(supabase.from("chicago_scofflaws").select("*").eq("building_id", buildingId).limit(1), [])
+      : Promise.resolve([]),
   ]);
 
   const authStatus = monitorStatus as unknown as { monitored: boolean; saved: boolean };
@@ -187,6 +263,12 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
   // Extract short address for breadcrumb
   const shortAddress = building.full_address.split(",")[0]?.trim() || building.full_address;
 
+  // For non-NYC cities, violation_count may be 0 because it tracks HPD violations only.
+  // Use dob_violation_count as the primary violation metric for Chicago.
+  const effectiveViolationCount = isChicago
+    ? (building.dob_violation_count || 0)
+    : (building.violation_count || 0);
+
   return (
     <AdSidebar>
     <div>
@@ -204,21 +286,24 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
         { name: "Home", url: "/" },
         { name: "Buildings", url: cityPath("/buildings", city) },
         { name: building.borough, url: cityPath(`/buildings/${boroughSlug}`, city) },
-        { name: shortAddress, url: buildingUrl(building) },
+        { name: shortAddress, url: buildingUrl(building, city) },
       ])} />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-2">
-        <Breadcrumbs
-          items={[
-            { label: "Home", href: "/" },
-            { label: "Buildings", href: cityPath("/buildings", city) },
-            { label: building.borough, href: cityPath(`/buildings/${boroughSlug}`, city) },
-            { label: shortAddress, href: buildingUrl(building) },
-          ]}
-        />
+      <div className="bg-[#0F1D2E]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-2">
+          <Breadcrumbs
+            items={[
+              { label: "Home", href: "/" },
+              { label: "Buildings", href: cityPath("/buildings", city) },
+              { label: building.borough, href: cityPath(`/buildings/${boroughSlug}`, city) },
+              { label: shortAddress, href: buildingUrl(building, city) },
+            ]}
+            variant="dark"
+          />
+        </div>
       </div>
 
-      <BuildingHeader building={building} city={city} />
+      <BuildingHeader building={building} city={city} violationCount={effectiveViolationCount} />
 
       <SectionNav />
 
@@ -230,7 +315,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
             <QuickSummary
               building={building}
               rents={rents}
-              violationCount={building.violation_count}
+              violationCount={effectiveViolationCount}
               complaintCount={building.complaint_count}
               bedbugCount={building.bedbug_report_count}
               evictionCount={building.eviction_count}
@@ -245,14 +330,14 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
               headerActions={
                 <>
                   <SaveButton buildingId={buildingId} initialSaved={isSaved} />
-                  <ShareButton address={shortAddress} url={canonicalUrl(buildingUrl(building))} />
+                  <ShareButton address={shortAddress} url={canonicalUrl(buildingUrl(building, city))} />
                 </>
               }
             />
 
             {/* Rent History */}
             <div id="rent" className="scroll-mt-28">
-              <MarketListings listings={marketListings} amenities={amenities} rentHistory={rentHistory} buildingUrl={buildingUrl(building)} />
+              <MarketListings listings={marketListings} amenities={amenities} rentHistory={rentHistory} buildingUrl={buildingUrl(building, city)} />
               {marketListings.length === 0 && rents.length > 0 && (
                 <RentRangeCard rents={rents} />
               )}
@@ -267,7 +352,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
 
             {/* Violation & Complaint Trends */}
             <div id="violation-trends" className="scroll-mt-28">
-              <ViolationTrend buildingId={buildingId} housingAgency={city === "los-angeles" ? "LAHD" : "HPD"} />
+              <ViolationTrend buildingId={buildingId} housingAgency={city === "los-angeles" ? "LAHD" : city === "chicago" ? "CDBS" : city === "miami" ? "RER" : "HPD"} />
             </div>
 
             {/* Violations by Unit Breakdown */}
@@ -283,7 +368,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
 
             {/* Violations & Complaints Tabs */}
             <div id="violations" className="scroll-mt-28">
-              <IssuesTabs violations={violations} complaints={complaints} litigations={litigations} dobViolations={dobViolations} bedbugs={bedbugs} evictions={evictions} permits={permits} city={city} />
+              <IssuesTabs violations={violations} complaints={complaints} litigations={litigations} dobViolations={dobViolations} bedbugs={bedbugs} evictions={evictions} permits={permits} lahdViolationSummary={lahdViolationSummary} city={city} />
             </div>
 
             {/* Building Location Map */}
@@ -315,12 +400,14 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
                       <dd className="text-[#0F1D2E] font-medium">
                         {building.owner_name}
                       </dd>
-                      <Link
-                        href={landlordUrl(building.owner_name)}
-                        className="text-xs text-[#3B82F6] hover:text-[#2563EB] font-medium mt-0.5 inline-block transition-colors"
-                      >
-                        View Portfolio &rarr;
-                      </Link>
+                      {building.owner_name !== "UNAVAILABLE OWNER" && (
+                        <Link
+                          href={landlordUrl(building.owner_name)}
+                          className="text-xs text-[#3B82F6] hover:text-[#2563EB] font-medium mt-0.5 inline-block transition-colors"
+                        >
+                          View Portfolio &rarr;
+                        </Link>
+                      )}
                     </div>
                   )}
                   {building.building_class && (
@@ -356,11 +443,11 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
                         </dd>
                       </div>
                     )}
-                  {(building.bbl || building.apn) && (
+                  {(building.bbl || building.apn || building.pin) && (
                     <div>
-                      <dt className="text-[#94a3b8]">{building.apn ? "APN" : "BBL"}</dt>
+                      <dt className="text-[#94a3b8]">{building.pin ? "PIN" : building.apn ? "APN" : "BBL"}</dt>
                       <dd className="text-[#0F1D2E] font-mono text-xs">
-                        {building.apn || building.bbl}
+                        {building.pin || building.apn || building.bbl}
                       </dd>
                     </div>
                   )}
@@ -397,7 +484,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
               <EnergyScoreCard data={energyData[0] || null} />
             </div>
 
-            {/* Seismic & Fire Zones */}
+            {/* Seismic & Fire Zones (NYC / LA only) */}
             {isLA && building.latitude && building.longitude ? (
               <HazardZonesCard
                 latitude={building.latitude}
@@ -406,11 +493,60 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
                 softStoryStatus={building.soft_story_status}
                 city={city}
               />
-            ) : (
+            ) : isNYC ? (
               <SeismicSafetyCard
                 isSoftStory={building.is_soft_story}
                 softStoryStatus={building.soft_story_status}
               />
+            ) : null}
+
+            {/* Chicago Info */}
+            {isChicago && (
+              <Card>
+                <CardHeader>
+                  <h3 className="font-semibold text-[#0F1D2E]">Chicago Info</h3>
+                </CardHeader>
+                <CardContent>
+                  <dl className="space-y-3 text-sm">
+                    {building.is_rlto_protected != null && (
+                      <div>
+                        <dt className="text-[#94a3b8]">RLTO Protection</dt>
+                        <dd className="text-[#0F1D2E] font-medium">
+                          {building.is_rlto_protected ? (
+                            <span className="text-green-600">Protected</span>
+                          ) : (
+                            <span className="text-[#94a3b8]">Not covered</span>
+                          )}
+                        </dd>
+                      </div>
+                    )}
+                    {building.is_scofflaw != null && (
+                      <div>
+                        <dt className="text-[#94a3b8]">Scofflaw Status</dt>
+                        <dd className="text-[#0F1D2E] font-medium">
+                          {building.is_scofflaw ? (
+                            <span className="text-red-600">Scofflaw</span>
+                          ) : (
+                            <span className="text-green-600">Clear</span>
+                          )}
+                        </dd>
+                      </div>
+                    )}
+                    {building.ward && (
+                      <div>
+                        <dt className="text-[#94a3b8]">Ward</dt>
+                        <dd className="text-[#0F1D2E] font-medium">{building.ward}</dd>
+                      </div>
+                    )}
+                    {building.community_area && (
+                      <div>
+                        <dt className="text-[#94a3b8]">Community Area</dt>
+                        <dd className="text-[#0F1D2E] font-medium">{building.community_area}</dd>
+                      </div>
+                    )}
+                  </dl>
+                </CardContent>
+              </Card>
             )}
 
             {/* Nearby Transit */}
@@ -464,11 +600,12 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
         </div>
 
         {/* Same Landlord Buildings — cross-link within portfolio */}
-        {building.owner_name && (
+        {building.owner_name && building.owner_name !== "UNAVAILABLE OWNER" && (
           <div id="same-landlord" className="mt-8">
             <SameLandlordBuildings
               buildingId={buildingId}
               ownerName={building.owner_name}
+              city={city}
             />
           </div>
         )}
@@ -480,6 +617,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
               buildingId={buildingId}
               zipCode={building.zip_code}
               borough={building.borough}
+              city={city}
             />
           </div>
         )}

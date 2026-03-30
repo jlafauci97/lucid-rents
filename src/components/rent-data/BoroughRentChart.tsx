@@ -53,10 +53,13 @@ export function BoroughRentChart({ data, city = "nyc" }: { data: DataPoint[]; ci
       .join(b.includes("-") ? "-" : " ");
   };
 
+  // Filter out "Unknown" entries from the chart — they add noise without value
+  const filteredData = data.filter((d) => d.borough !== null && d.borough !== "");
+
   // Pivot: group by date, with one column per borough/area
   const dateMap = new Map<string, Record<string, number | string>>();
   const areaSet = new Set<string>();
-  for (const d of data) {
+  for (const d of filteredData) {
     const name = normalizeName(d.borough);
     areaSet.add(name);
     if (!dateMap.has(d.date)) {

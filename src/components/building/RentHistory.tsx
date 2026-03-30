@@ -198,10 +198,16 @@ function UnitRow({ group }: { group: UnitGroup }) {
   );
 }
 
+const INITIAL_VISIBLE = 5;
+
 export function RentHistory({ history }: RentHistoryProps) {
+  const [showAll, setShowAll] = useState(false);
+
   if (!history || history.length === 0) return null;
 
   const groups = groupByUnit(history);
+  const hasMore = groups.length > INITIAL_VISIBLE;
+  const visibleGroups = showAll ? groups : groups.slice(0, INITIAL_VISIBLE);
 
   // Most recent observation date across all entries
   const lastChecked = history.reduce((latest, entry) => {
@@ -225,10 +231,27 @@ export function RentHistory({ history }: RentHistoryProps) {
       </CardHeader>
       <CardContent>
         <div>
-          {groups.map((group) => (
+          {visibleGroups.map((group) => (
             <UnitRow key={group.key} group={group} />
           ))}
         </div>
+        {hasMore && (
+          <button
+            type="button"
+            onClick={() => setShowAll(!showAll)}
+            className="w-full flex items-center justify-center gap-1.5 py-2.5 mt-2 text-sm font-medium text-[#2563EB] hover:bg-[#f1f5f9] rounded-lg transition-colors"
+          >
+            {showAll ? (
+              <>
+                Show less <ChevronUp className="w-4 h-4" />
+              </>
+            ) : (
+              <>
+                Show {groups.length - INITIAL_VISIBLE} more units <ChevronDown className="w-4 h-4" />
+              </>
+            )}
+          </button>
+        )}
         <p className="text-[10px] text-[#94a3b8] mt-3">
           Based on listing data from StreetEasy, Rent.com, Zillow &
           Apartments.com

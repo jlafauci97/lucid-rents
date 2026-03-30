@@ -1004,7 +1004,7 @@ def save_progress(progress):
 def fetch_buildings_backfill(metro, limit, offset):
     """Fetch buildings that DON'T already have rent data, ordered by unit count."""
     # Use RPC or raw query to exclude buildings with existing rents
-    result = supabase.rpc("get_buildings_without_rents", {
+    result = supabase.rpc("get_buildings_without_real_rents", {
         "p_metro": metro,
         "p_borough": BOROUGH or None,
         "p_limit": limit,
