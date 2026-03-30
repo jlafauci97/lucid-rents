@@ -4,6 +4,18 @@ const nextConfig: NextConfig = {
   images: {
     formats: ["image/avif", "image/webp"],
   },
+  redirects: async () => [
+    {
+      source: "/dashboard/:path*",
+      destination: "/profile/:path*",
+      permanent: true,
+    },
+    {
+      source: "/dashboard",
+      destination: "/profile",
+      permanent: true,
+    },
+  ],
   rewrites: async () => ({
     beforeFiles: [
       // Sitemap index: /sitemap.xml → API route
