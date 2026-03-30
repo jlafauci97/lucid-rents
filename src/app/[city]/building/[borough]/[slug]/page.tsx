@@ -253,6 +253,9 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
             {/* Rent History */}
             <div id="rent" className="scroll-mt-28">
               <MarketListings listings={marketListings} amenities={amenities} rentHistory={rentHistory} buildingUrl={buildingUrl(building)} />
+              {marketListings.length === 0 && rents.length > 0 && (
+                <RentRangeCard rents={rents} />
+              )}
             </div>
 
             {/* Building Amenities */}
