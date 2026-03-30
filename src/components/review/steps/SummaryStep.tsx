@@ -9,6 +9,8 @@ import { createClient } from "@/lib/supabase/client";
 interface SummaryStepProps {
   building: Building;
   unitNumber: string;
+  bedrooms: string;
+  bathrooms: string;
   displayPreference: "name" | "anonymous";
   userName: string | null;
   categoryRatings: {
@@ -85,6 +87,8 @@ function SectionHeader({
 export function SummaryStep({
   building,
   unitNumber,
+  bedrooms,
+  bathrooms,
   displayPreference,
   userName,
   categoryRatings,
@@ -119,7 +123,11 @@ export function SummaryStep({
           <div className="space-y-1 text-sm text-[#0F1D2E]">
             <p>{building.full_address}</p>
             {unitNumber && (
-              <p className="text-[#64748b]">Unit {unitNumber}</p>
+              <p className="text-[#64748b]">
+                Unit {unitNumber}
+                {bedrooms && ` · ${bedrooms === "Studio" ? "Studio" : `${bedrooms} BR`}`}
+                {bathrooms && ` / ${bathrooms} BA`}
+              </p>
             )}
             <p className="text-[#64748b]">
               Posting as:{" "}

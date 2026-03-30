@@ -7,11 +7,18 @@ import { PillToggle } from "@/components/ui/PillToggle";
 import { useDebounce } from "@/hooks/useDebounce";
 import type { Building } from "@/types";
 
+const BEDROOM_OPTIONS = ["Studio", "1", "2", "3", "4", "5+"];
+const BATHROOM_OPTIONS = ["1", "1.5", "2", "2.5", "3", "3+"];
+
 interface BuildingStepProps {
   selectedBuilding: Building | null;
   onBuildingSelect: (building: Building | null) => void;
   unitNumber: string;
   onUnitNumberChange: (value: string) => void;
+  bedrooms: string;
+  onBedroomsChange: (value: string) => void;
+  bathrooms: string;
+  onBathroomsChange: (value: string) => void;
   isCurrentResident: boolean;
   onResidencyChange: (isCurrent: boolean) => void;
   displayPreference: "name" | "anonymous";
@@ -24,6 +31,10 @@ export function BuildingStep({
   onBuildingSelect,
   unitNumber,
   onUnitNumberChange,
+  bedrooms,
+  onBedroomsChange,
+  bathrooms,
+  onBathroomsChange,
   isCurrentResident,
   onResidencyChange,
   displayPreference,
@@ -147,6 +158,51 @@ export function BuildingStep({
         placeholder="e.g., 4B, 12A, Studio"
         required
       />
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-[#0F1D2E]">
+            Bedrooms *
+          </label>
+          <div className="flex flex-wrap gap-1.5">
+            {BEDROOM_OPTIONS.map((opt) => (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => onBedroomsChange(opt)}
+                className={`rounded-full px-3 py-1.5 text-sm font-medium border transition-colors ${
+                  bedrooms === opt
+                    ? "bg-[#3B82F6] text-white border-[#3B82F6]"
+                    : "border-[#e2e8f0] text-[#64748b] hover:bg-gray-50"
+                }`}
+              >
+                {opt === "Studio" ? "Studio" : `${opt} BR`}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-[#0F1D2E]">
+            Bathrooms *
+          </label>
+          <div className="flex flex-wrap gap-1.5">
+            {BATHROOM_OPTIONS.map((opt) => (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => onBathroomsChange(opt)}
+                className={`rounded-full px-3 py-1.5 text-sm font-medium border transition-colors ${
+                  bathrooms === opt
+                    ? "bg-[#3B82F6] text-white border-[#3B82F6]"
+                    : "border-[#e2e8f0] text-[#64748b] hover:bg-gray-50"
+                }`}
+              >
+                {opt} BA
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
 
       <PillToggle
         label="Residency Status"

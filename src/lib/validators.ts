@@ -29,6 +29,8 @@ export const createReviewSchema = z.object({
   building_id: z.string().uuid(),
   unit_id: z.string().uuid().optional(),
   unit_number: z.string().min(1).max(20),
+  bedrooms: z.string().max(10).optional(),
+  bathrooms: z.string().max(10).optional(),
   reviewer_display_preference: z.enum(["name", "anonymous"]),
   title: z.string().min(1).max(200),
   body: z.string().min(10).max(5000),

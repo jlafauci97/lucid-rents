@@ -65,6 +65,8 @@ export function ReviewWizard({
     null
   );
   const [unitNumber, setUnitNumber] = useState("");
+  const [bedrooms, setBedrooms] = useState("");
+  const [bathrooms, setBathrooms] = useState("");
   const [isCurrentResident, setIsCurrentResident] = useState(true);
   const [displayPreference, setDisplayPreference] = useState<
     "name" | "anonymous"
@@ -161,6 +163,8 @@ export function ReviewWizard({
       const draft = JSON.parse(saved);
 
       if (draft.unitNumber) setUnitNumber(draft.unitNumber);
+      if (draft.bedrooms) setBedrooms(draft.bedrooms);
+      if (draft.bathrooms) setBathrooms(draft.bathrooms);
       if (typeof draft.isCurrentResident === "boolean")
         setIsCurrentResident(draft.isCurrentResident);
       if (draft.displayPreference) setDisplayPreference(draft.displayPreference);
@@ -195,6 +199,8 @@ export function ReviewWizard({
         step,
         completedSteps,
         unitNumber,
+        bedrooms,
+        bathrooms,
         isCurrentResident,
         displayPreference,
         categoryRatings,
@@ -226,6 +232,8 @@ export function ReviewWizard({
     completedSteps,
     selectedBuilding?.id,
     unitNumber,
+    bedrooms,
+    bathrooms,
     isCurrentResident,
     displayPreference,
     categoryRatings,
@@ -248,7 +256,7 @@ export function ReviewWizard({
   function canProceed(s: number): boolean {
     switch (s) {
       case 0:
-        return !!selectedBuilding && unitNumber.trim().length > 0;
+        return !!selectedBuilding && unitNumber.trim().length > 0 && bedrooms.length > 0 && bathrooms.length > 0;
       case 1:
         return categoryRatings.some((cr) => cr.rating > 0);
       case 2:
@@ -325,6 +333,8 @@ export function ReviewWizard({
         body: JSON.stringify({
           building_id: selectedBuilding.id,
           unit_number: unitNumber || undefined,
+          bedrooms: bedrooms || undefined,
+          bathrooms: bathrooms || undefined,
           is_current_resident: isCurrentResident,
           reviewer_display_preference: displayPreference,
           title: title.trim(),
@@ -387,6 +397,10 @@ export function ReviewWizard({
             onBuildingSelect={handleBuildingSelect}
             unitNumber={unitNumber}
             onUnitNumberChange={setUnitNumber}
+            bedrooms={bedrooms}
+            onBedroomsChange={setBedrooms}
+            bathrooms={bathrooms}
+            onBathroomsChange={setBathrooms}
             isCurrentResident={isCurrentResident}
             onResidencyChange={setIsCurrentResident}
             displayPreference={displayPreference}
@@ -453,6 +467,8 @@ export function ReviewWizard({
           <SummaryStep
             building={selectedBuilding}
             unitNumber={unitNumber}
+            bedrooms={bedrooms}
+            bathrooms={bathrooms}
             displayPreference={displayPreference}
             userName={userName}
             categoryRatings={categoryRatings}

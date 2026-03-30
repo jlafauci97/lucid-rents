@@ -73,6 +73,8 @@ export async function POST(req: NextRequest) {
       user_id: user.id,
       building_id: data.building_id,
       unit_id: unitId || null,
+      bedrooms: data.bedrooms || null,
+      bathrooms: data.bathrooms || null,
       reviewer_name: reviewerName,
       overall_rating: overallRating,
       title: data.title,
