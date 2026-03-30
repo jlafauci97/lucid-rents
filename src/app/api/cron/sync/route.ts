@@ -3868,6 +3868,358 @@ async function syncMiamiRecertifications(
 }
 
 // ---------------------------------------------------------------------------
+// Houston Sync Functions — CKAN DataStore API + ArcGIS FeatureServer
+// ---------------------------------------------------------------------------
+
+/** Build a CKAN DataStore API URL for Houston Open Data portal. */
+function buildHoustonCkanUrl(
+  resourceId: string,
+  filters: string,
+  limit: number,
+  offset: number,
+  sort: string
+): string {
+  return (
+    `https://data.houstontx.gov/api/3/action/datastore_search` +
+    `?resource_id=${resourceId}` +
+    `&limit=${limit}` +
+    `&offset=${offset}` +
+    `&sort=${encodeURIComponent(sort)}` +
+    (filters ? `&filters=${encodeURIComponent(filters)}` : "")
+  );
+}
+
+/** Build an ArcGIS FeatureServer query URL for Houston HPD crime data. */
+function buildHoustonArcGISUrl(
+  baseUrl: string,
+  whereClause: string,
+  limit: number,
+  offset: number,
+  orderBy: string
+): string {
+  return (
+    `${baseUrl}/query` +
+    `?where=${encodeURIComponent(whereClause)}` +
+    `&outFields=*` +
+    `&resultRecordCount=${limit}` +
+    `&resultOffset=${offset}` +
+    `&orderByFields=${encodeURIComponent(orderBy)}` +
+    `&f=json`
+  );
+}
+
+/** Parse a Houston address string into house_number + street_name. */
+function parseHoustonAddress(addr: string | null | undefined): { house_number: string | null; street_name: string | null } {
+  if (!addr) return { house_number: null, street_name: null };
+  const trimmed = addr.trim();
+  const match = trimmed.match(/^([0-9-]+)\s+(.+)/);
+  if (match) return { house_number: match[1], street_name: match[2] };
+  return { house_number: null, street_name: trimmed };
+}
+
+// Houston crime category mapping (HPD NIBRS)
+const HOUSTON_VIOLENT_CRIMES = new Set([
+  "AGGRAVATED ASSAULT", "MURDER", "ROBBERY", "RAPE", "KIDNAPPING/ABDUCTION",
+  "SIMPLE ASSAULT", "INTIMIDATION",
+]);
+const HOUSTON_PROPERTY_CRIMES = new Set([
+  "BURGLARY/BREAKING AND ENTERING", "THEFT", "MOTOR VEHICLE THEFT", "ARSON",
+  "SHOPLIFTING", "THEFT FROM MOTOR VEHICLE", "THEFT FROM BUILDING",
+]);
+
+function categorizeHoustonCrime(nibrDesc: string | null | undefined): string | null {
+  if (!nibrDesc) return null;
+  const upper = nibrDesc.toUpperCase().trim();
+  if (HOUSTON_VIOLENT_CRIMES.has(upper)) return "violent";
+  for (const v of HOUSTON_VIOLENT_CRIMES) { if (upper.includes(v)) return "violent"; }
+  if (HOUSTON_PROPERTY_CRIMES.has(upper)) return "property";
+  for (const p of HOUSTON_PROPERTY_CRIMES) { if (upper.includes(p)) return "property"; }
+  if (upper.includes("DRUG") || upper.includes("NARCOTIC")) return "drug";
+  if (upper.includes("SEX")) return "sex_offense";
+  if (upper.includes("FRAUD") || upper.includes("FORGERY") || upper.includes("COUNTERFEIT")) return "fraud";
+  return "other";
+}
+
+/**
+ * Sync Houston Code Enforcement Violations.
+ * CKAN DataStore resource: 1446a3ec-2633-4cf1-b15d-6dae9a07c4ed
+ * Stores in dob_violations with metro='houston'
+ */
+async function syncHoustonViolations(
+  supabase: ReturnType<typeof getSupabaseAdmin>
+): Promise<SyncResult> {
+  const lastSync = await getLastSyncDate(supabase, "houston_violations");
+  const logId = await createSyncLog(supabase, "houston_violations");
+  const syncStartMs = Date.now();
+
+  let totalAdded = 0;
+  let totalLinked = 0;
+  const errors: string[] = [];
+  const affectedBuildingIds = new Set<string>();
+
+  try {
+    let offset = 0;
+    let hasMore = true;
+    let pagesFetched = 0;
+
+    while (hasMore) {
+      const url = buildHoustonCkanUrl(
+        "1446a3ec-2633-4cf1-b15d-6dae9a07c4ed",
+        "",
+        PAGE_SIZE,
+        offset,
+        "RecordCreateDate desc"
+      );
+
+      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+      if (!res.ok) {
+        const errText = await res.text();
+        errors.push(`Houston Violations API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
+        break;
+      }
+
+      const json = await res.json();
+      const records = json.result?.records || [];
+      if (records.length === 0) { hasMore = false; break; }
+
+      // Filter by date if we have a lastSync
+      const filteredRecords = lastSync
+        ? records.filter((r: Record<string, unknown>) => {
+            const d = r.RecordCreateDate ? String(r.RecordCreateDate) : null;
+            return d && d >= lastSync;
+          })
+        : records;
+
+      const rows = filteredRecords
+        .filter((r: Record<string, unknown>) => r.ViolationSubId || r.NPPRJID)
+        .map((r: Record<string, unknown>) => {
+          const parsed = parseHoustonAddress(r.Merged_Situs as string | undefined);
+          return {
+            violation_id: `HOU-${r.ViolationSubId || r.NPPRJID}`,
+            inspection_date: r.RecordCreateDate ? String(r.RecordCreateDate).slice(0, 10) : null,
+            nov_description: r.ShortDescription ? String(r.ShortDescription).trim() : null,
+            violation_number: r.Violation_Category ? String(r.Violation_Category) : null,
+            status: r.Project_Status ? String(r.Project_Status).trim() : null,
+            borough: "Houston",
+            house_number: parsed.house_number,
+            street_name: parsed.street_name,
+            latitude: null,
+            longitude: null,
+            metro: "houston",
+            imported_at: new Date().toISOString(),
+          };
+        });
+
+      if (rows.length > 0) {
+        totalAdded += await batchUpsert(supabase, "dob_violations", rows, "violation_id", errors, "Houston Violations");
+      }
+
+      pagesFetched++;
+      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES || isTimeBudgetExceeded(syncStartMs)) { hasMore = false; } else { offset += PAGE_SIZE; }
+    }
+
+    errors.push(`Houston Violations: linking deferred to dedicated link cron (${totalAdded} rows synced)`);
+    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
+  } catch (err) {
+    errors.push(`Houston Violations fatal error: ${String(err)}`);
+    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
+  }
+
+  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+}
+
+/**
+ * Sync Houston 311 Service Requests.
+ * ArcGIS FeatureServer: Houston311_RecentServiceRequests layer 4
+ * Stores in complaints_311 with metro='houston'
+ */
+async function syncHouston311(
+  supabase: ReturnType<typeof getSupabaseAdmin>
+): Promise<SyncResult> {
+  const logId = await createSyncLog(supabase, "houston_311");
+  const syncStartMs = Date.now();
+
+  let totalAdded = 0;
+  let totalLinked = 0;
+  const errors: string[] = [];
+  const affectedBuildingIds = new Set<string>();
+
+  try {
+    let offset = 0;
+    let hasMore = true;
+    let pagesFetched = 0;
+    const MAX_311_PAGE = 2000; // ArcGIS max record count
+
+    while (hasMore) {
+      const url = buildHoustonArcGISUrl(
+        "https://mycity2.houstontx.gov/gisweb01/rest/services/311/Houston311_RecentServiceRequests/FeatureServer/4",
+        "1=1",
+        MAX_311_PAGE,
+        offset,
+        "CreatedDate DESC"
+      );
+
+      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+      if (!res.ok) {
+        const errText = await res.text();
+        errors.push(`Houston 311 API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
+        break;
+      }
+
+      const json = await res.json();
+      const features = json.features || [];
+      if (features.length === 0) { hasMore = false; break; }
+
+      const records = features.map((f: { attributes: Record<string, unknown> }) => f.attributes);
+      const rows = records
+        .filter((r: Record<string, unknown>) => r.CaseNumber365 || r.CaseNumber)
+        .map((r: Record<string, unknown>) => ({
+          unique_key: `HOU311-${r.CaseNumber365 || r.CaseNumber}`,
+          complaint_type: r.Title ? String(r.Title) : null,
+          descriptor: r.CaseType ? String(r.CaseType) : null,
+          status: r.Status ? String(r.Status) : null,
+          created_date: r.CreatedDate ? new Date(Number(r.CreatedDate)).toISOString().slice(0, 10) : null,
+          closed_date: r.ClosedDate ? new Date(Number(r.ClosedDate)).toISOString().slice(0, 10) : null,
+          incident_address: r.IncidentAddress ? String(r.IncidentAddress) : null,
+          borough: "Houston",
+          latitude: r.Latitude ? parseFloat(String(r.Latitude)) : null,
+          longitude: r.Longitude ? parseFloat(String(r.Longitude)) : null,
+          metro: "houston",
+          imported_at: new Date().toISOString(),
+        }));
+
+      if (rows.length > 0) {
+        totalAdded += await batchUpsert(supabase, "complaints_311", rows, "unique_key", errors, "Houston 311", true);
+      }
+
+      pagesFetched++;
+      if (features.length < MAX_311_PAGE || pagesFetched >= MAX_PAGES || isTimeBudgetExceeded(syncStartMs)) { hasMore = false; } else { offset += MAX_311_PAGE; }
+    }
+
+    errors.push(`Houston 311: linking deferred to dedicated link cron (${totalAdded} rows synced)`);
+    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
+  } catch (err) {
+    errors.push(`Houston 311 fatal error: ${String(err)}`);
+    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
+  }
+
+  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+}
+
+/**
+ * Sync HPD Crime Incidents.
+ * ArcGIS FeatureServer: HPD_NIBRS_Yearly_Cases (layer 0 = most recent year)
+ * Stores in nypd_complaints with metro='houston'
+ */
+async function syncHoustonCrimes(
+  supabase: ReturnType<typeof getSupabaseAdmin>
+): Promise<SyncResult> {
+  const logId = await createSyncLog(supabase, "houston_crimes");
+  const syncStartMs = Date.now();
+
+  let totalAdded = 0;
+  let totalLinked = 0;
+  const errors: string[] = [];
+  const affectedBuildingIds = new Set<string>();
+
+  try {
+    // Use the recent crime reports endpoint (rolling 30-day window)
+    let offset = 0;
+    let hasMore = true;
+    let pagesFetched = 0;
+    const CRIME_PAGE = 2000;
+
+    // Layers 0-3 are Group A (Person, Property, Society) and Group B offenses
+    for (const layer of [0, 1, 2, 3]) {
+      offset = 0;
+      hasMore = true;
+      pagesFetched = 0;
+
+      while (hasMore) {
+        const url = buildHoustonArcGISUrl(
+          `https://mycity2.houstontx.gov/pubgis02/rest/services/HPD/NIBRS_Recent_Crime_Reports/FeatureServer/${layer}`,
+          "1=1",
+          CRIME_PAGE,
+          offset,
+          "USER_RMSOccurrenceDate DESC"
+        );
+
+        const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+        if (!res.ok) {
+          const errText = await res.text();
+          errors.push(`Houston Crimes layer ${layer} API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
+          break;
+        }
+
+        const json = await res.json();
+        const features = json.features || [];
+        if (features.length === 0) { hasMore = false; break; }
+
+        const records = features.map((f: { attributes: Record<string, unknown> }) => f.attributes);
+        const rows = records
+          .filter((r: Record<string, unknown>) => r.USER_Incident)
+          .map((r: Record<string, unknown>) => {
+            const nibrDesc = r.USER_NIBRSDescription ? String(r.USER_NIBRSDescription) : null;
+            const blockRange = r.USER_BlockRange ? String(r.USER_BlockRange) : "";
+            const streetName = r.USER_StreetName ? String(r.USER_StreetName) : "";
+            const streetType = r.USER_StreetType ? String(r.USER_StreetType) : "";
+            const suffix = r.USER_Suffix ? String(r.USER_Suffix) : "";
+            const fullAddress = [blockRange, streetName, streetType, suffix].filter(Boolean).join(" ").trim();
+
+            return {
+              cmplnt_num: `HPD-${r.USER_Incident}`,
+              cmplnt_date: r.USER_RMSOccurrenceDate ? new Date(Number(r.USER_RMSOccurrenceDate)).toISOString().slice(0, 10) : null,
+              borough: "Houston",
+              precinct: r.USER_District ? String(r.USER_District) : null,
+              offense_description: nibrDesc,
+              crime_category: categorizeHoustonCrime(nibrDesc),
+              latitude: null,
+              longitude: null,
+              zip_code: r.USER_ZIPCode ? String(r.USER_ZIPCode) : null,
+              metro: "houston",
+              imported_at: new Date().toISOString(),
+              incident_address: fullAddress || null,
+            };
+          });
+
+        if (rows.length > 0) {
+          totalAdded += await batchUpsert(supabase, "nypd_complaints", rows, "cmplnt_num", errors, `Houston Crimes L${layer}`);
+        }
+
+        pagesFetched++;
+        if (features.length < CRIME_PAGE || pagesFetched >= MAX_PAGES || isTimeBudgetExceeded(syncStartMs)) { hasMore = false; } else { offset += CRIME_PAGE; }
+      }
+
+      if (isTimeBudgetExceeded(syncStartMs)) break;
+    }
+
+    // Backfill zip codes from lat/lon if available
+    try {
+      const { error: zipErr } = await supabase.rpc("backfill_crime_zip_codes", {
+        target_metro: "houston",
+      });
+      if (zipErr) {
+        errors.push(`Houston Crimes zip backfill error: ${zipErr.message}`);
+      }
+    } catch (zipBackfillErr) {
+      errors.push(`Houston Crimes zip backfill fatal: ${String(zipBackfillErr)}`);
+    }
+  } catch (err) {
+    errors.push(`Houston Crimes sync fatal: ${String(err)}`);
+  }
+
+  await finalizeSyncLog(
+    supabase,
+    logId,
+    errors.some(e => e.includes("fatal")) ? "failed" : "completed",
+    totalAdded,
+    totalLinked,
+    errors
+  );
+  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+}
+
+// ---------------------------------------------------------------------------
 // Max duration for Vercel serverless functions (Pro max=300s)
 // ---------------------------------------------------------------------------
 export const maxDuration = 300;
@@ -3910,6 +4262,10 @@ const SOURCES: Record<string, (supabase: ReturnType<typeof getSupabaseAdmin>, si
   "miami-permits": syncMiamiPermits,
   "miami-unsafe": syncMiamiUnsafeStructures,
   "miami-recerts": syncMiamiRecertifications,
+  // Houston sources
+  "houston-violations": syncHoustonViolations,
+  "houston-311": syncHouston311,
+  "houston-crimes": syncHoustonCrimes,
 };
 
 // ---------------------------------------------------------------------------
@@ -3947,11 +4303,13 @@ async function runLinkOnly(
   const LA_ADDR_SOURCES = ["lahd", "ladbs", "la-311", "la-permits", "la-evictions", "la-buyouts", "la-ccris", "la-violation-summary"];
   const CHICAGO_ADDR_SOURCES = ["chicago-violations", "chicago-311", "chicago-permits", "chicago-rlto", "chicago-lead"];
   const MIAMI_ADDR_SOURCES = ["miami-violations", "miami-311", "miami-permits", "miami-unsafe", "miami-recerts"];
+  const HOUSTON_ADDR_SOURCES = ["houston-violations", "houston-311"];
   const isChicagoLink = sourceParam === "chicago" || (sourceParam && CHICAGO_ADDR_SOURCES.includes(sourceParam));
   const isMiamiLink = sourceParam === "miami" || (sourceParam && MIAMI_ADDR_SOURCES.includes(sourceParam));
-  if (sourceParam && !tablesToLink && sourceParam !== "complaints" && !LA_ADDR_SOURCES.includes(sourceParam) && !isChicagoLink && !isMiamiLink) {
+  const isHoustonLink = sourceParam === "houston" || (sourceParam && HOUSTON_ADDR_SOURCES.includes(sourceParam));
+  if (sourceParam && !tablesToLink && sourceParam !== "complaints" && !LA_ADDR_SOURCES.includes(sourceParam) && !isChicagoLink && !isMiamiLink && !isHoustonLink) {
     return NextResponse.json(
-      { error: `Unknown link source: ${sourceParam}. Valid: ${[...Object.keys(LINK_TABLES), "complaints", ...LA_ADDR_SOURCES, "chicago", ...CHICAGO_ADDR_SOURCES, "miami", ...MIAMI_ADDR_SOURCES].join(", ")}` },
+      { error: `Unknown link source: ${sourceParam}. Valid: ${[...Object.keys(LINK_TABLES), "complaints", ...LA_ADDR_SOURCES, "chicago", ...CHICAGO_ADDR_SOURCES, "miami", ...MIAMI_ADDR_SOURCES, "houston", ...HOUSTON_ADDR_SOURCES].join(", ")}` },
       { status: 400 }
     );
   }
@@ -4579,6 +4937,183 @@ async function runLinkOnly(
           tableErrors.push(`${label}: ${allUnlinked.length} unlinked, ${matched} matched, ${unmatched} unmatched, ${autoCreated} buildings auto-created`);
         } catch (err) {
           tableErrors.push(`${label} Miami link error: ${String(err)}`);
+        }
+
+        const existing = linkResults[name];
+        linkResults[name] = {
+          linked: (existing?.linked ?? 0) + tableLinked,
+          errors: [...(existing?.errors ?? []), ...tableErrors],
+        };
+      }
+    }
+  }
+
+  // Link Houston records by address using in-memory batch matching.
+  // Same pattern as Chicago/Miami: load Houston buildings once, then match locally.
+  const houstonAddrTables: { name: string; table: string; idColumn: string; addressColumns: string[]; label: string }[] = [
+    { name: "houston-violations", table: "dob_violations", idColumn: "id", addressColumns: ["house_number", "street_name"], label: "Houston Violations" },
+    { name: "houston-311", table: "complaints_311", idColumn: "unique_key", addressColumns: ["incident_address"], label: "Houston 311" },
+  ];
+
+  const shouldLinkHouston = houstonAddrTables.some(t => sourceParam === "houston" || sourceParam === t.name) || !sourceParam;
+  if (shouldLinkHouston && (Date.now() - startTime) / 1000 < 200) {
+    const houErrors: string[] = [];
+    let houstonBuildingAddrMap: Map<string, string> | null = null;
+    try {
+      const allBuildings: { id: string; full_address: string }[] = [];
+      let offset = 0;
+      while (true) {
+        const { data: batch } = await supabase
+          .from("buildings")
+          .select("id, full_address")
+          .eq("metro", "houston")
+          .range(offset, offset + 10000 - 1);
+        if (!batch || batch.length === 0) break;
+        allBuildings.push(...batch);
+        if (batch.length < 10000) break;
+        offset += 10000;
+      }
+
+      houstonBuildingAddrMap = new Map<string, string>();
+      for (const b of allBuildings) {
+        const street = b.full_address.split(",")[0]?.trim() || "";
+        const normalized = street.toUpperCase().replace(/[.,#]/g, "").replace(/\s+/g, " ").trim();
+        if (normalized.length >= 5) {
+          houstonBuildingAddrMap.set(normalized, b.id);
+        }
+      }
+      houErrors.push(`Loaded ${allBuildings.length} Houston buildings, ${houstonBuildingAddrMap.size} unique addresses`);
+    } catch (err) {
+      houErrors.push(`Failed to load Houston buildings: ${String(err)}`);
+    }
+
+    if (houstonBuildingAddrMap && houstonBuildingAddrMap.size > 0) {
+      const linkCutoff = new Date();
+      linkCutoff.setDate(linkCutoff.getDate() - 30);
+
+      for (const { name, table, idColumn, addressColumns, label } of houstonAddrTables) {
+        if (sourceParam && sourceParam !== "houston" && sourceParam !== name) continue;
+        if ((Date.now() - startTime) / 1000 > 260) break;
+
+        const tableErrors: string[] = [...houErrors];
+        let tableLinked = 0;
+        try {
+          const cols = [idColumn, ...addressColumns, "latitude", "longitude"].join(", ");
+          const primaryCol = addressColumns[addressColumns.length - 1];
+          let allUnlinked: Record<string, unknown>[] = [];
+          let offset = 0;
+          while (true) {
+            const { data: batch } = await supabase
+              .from(table)
+              .select(cols)
+              .is("building_id", null)
+              .eq("metro", "houston")
+              .not(primaryCol, "is", null)
+              .gte("imported_at", linkCutoff.toISOString())
+              .range(offset, offset + 5000 - 1);
+            if (!batch || batch.length === 0) break;
+            allUnlinked = allUnlinked.concat(batch as unknown as Record<string, unknown>[]);
+            if (batch.length < 5000) break;
+            offset += 5000;
+          }
+
+          if (allUnlinked.length === 0) {
+            tableErrors.push(`${label}: no unlinked records found`);
+            linkResults[name] = { linked: 0, errors: tableErrors };
+            continue;
+          }
+
+          const addrToIds = new Map<string, string[]>();
+          const addrToCoords = new Map<string, { lat: number; lng: number }>();
+          for (const r of allUnlinked) {
+            let raw: string;
+            if (addressColumns.length > 1) {
+              raw = addressColumns.map(c => String(r[c] || "").trim()).filter(Boolean).join(" ");
+            } else {
+              raw = String(r[addressColumns[0]] || "").trim();
+            }
+            const normalized = raw.toUpperCase().replace(/[.,#]/g, "").replace(/\s+/g, " ")
+              .replace(/\s+(APT|UNIT|#|FL|FLOOR|STE|SUITE|RM|ROOM)\b.*$/i, "").trim();
+            if (normalized.length < 5) continue;
+            if (!addrToIds.has(normalized)) addrToIds.set(normalized, []);
+            addrToIds.get(normalized)!.push(String(r[idColumn]));
+            if (!addrToCoords.has(normalized) && r.latitude && r.longitude) {
+              addrToCoords.set(normalized, { lat: parseFloat(String(r.latitude)), lng: parseFloat(String(r.longitude)) });
+            }
+          }
+
+          let matched = 0;
+          let unmatched = 0;
+          let autoCreated = 0;
+          for (const [addr, recordIds] of addrToIds) {
+            let buildingId = houstonBuildingAddrMap.get(addr);
+
+            if (!buildingId) {
+              const parts = addr.match(/^(\d+[-\d]*)\s+(.+)$/);
+              const houseNum = parts ? parts[1] : "";
+              const streetName = parts ? parts[2] : addr;
+              const fullAddr = `${addr}, HOUSTON, TX`;
+              const slug = generateBuildingSlug(fullAddr);
+              const coords = addrToCoords.get(addr);
+
+              const { data: newBuilding, error: createErr } = await supabase
+                .from("buildings")
+                .insert({
+                  full_address: fullAddr,
+                  house_number: houseNum,
+                  street_name: streetName,
+                  city: "Houston",
+                  state: "TX",
+                  metro: "houston",
+                  slug,
+                  latitude: coords?.lat ?? null,
+                  longitude: coords?.lng ?? null,
+                  violation_count: 0,
+                  complaint_count: 0,
+                  review_count: 0,
+                  overall_score: null,
+                })
+                .select("id")
+                .single();
+
+              if (createErr) {
+                if (createErr.code === "23505") {
+                  const { data: existing } = await supabase
+                    .from("buildings")
+                    .select("id")
+                    .eq("slug", slug)
+                    .eq("metro", "houston")
+                    .single();
+                  if (existing) buildingId = existing.id;
+                }
+                if (!buildingId) { unmatched++; continue; }
+              } else if (newBuilding?.id) {
+                buildingId = newBuilding.id;
+                autoCreated++;
+                houstonBuildingAddrMap.set(addr, newBuilding.id);
+              }
+            }
+
+            matched++;
+
+            for (let i = 0; i < recordIds.length; i += 200) {
+              const batch = recordIds.slice(i, i + 200);
+              const { error: linkError } = await supabase
+                .from(table)
+                .update({ building_id: buildingId })
+                .in(idColumn, batch);
+
+              if (!linkError) {
+                tableLinked += batch.length;
+              } else {
+                tableErrors.push(`${label} link error: ${linkError.message}`);
+              }
+            }
+            allAffectedIds.add(buildingId!);
+          }
+          tableErrors.push(`${label}: ${allUnlinked.length} unlinked, ${matched} matched, ${unmatched} unmatched, ${autoCreated} buildings auto-created`);
+        } catch (err) {
+          tableErrors.push(`${label} Houston link error: ${String(err)}`);
         }
 
         const existing = linkResults[name];

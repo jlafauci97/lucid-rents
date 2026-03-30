@@ -24,7 +24,7 @@ import {
 
 // --- Types ---
 
-type MetroFilter = "all" | "nyc" | "los-angeles";
+type MetroFilter = "all" | "nyc" | "los-angeles" | "chicago" | "miami" | "houston";
 
 interface SyncCheck {
   sync_type: string;
@@ -262,6 +262,9 @@ const METRO_TABS: { key: MetroFilter; label: string }[] = [
   { key: "all", label: "All Cities" },
   { key: "nyc", label: "NYC" },
   { key: "los-angeles", label: "Los Angeles" },
+  { key: "chicago", label: "Chicago" },
+  { key: "miami", label: "Miami" },
+  { key: "houston", label: "Houston" },
 ];
 
 export default function MissionControlPage() {

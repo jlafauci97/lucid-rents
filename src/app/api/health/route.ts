@@ -79,11 +79,32 @@ const syncTypeDefs: SyncTypeDef[] = [
   { type: "transit", schedule: "1st of month 9:00 AM UTC", category: "monthly", warnHours: 744, city: "all" },
   { type: "schools", schedule: "1st of month 9:30 AM UTC", category: "monthly", warnHours: 744, city: "all" },
   // LA syncs
-  { type: "lahd_violations", schedule: "Daily 5:00 AM UTC", category: "daily", warnHours: 26, city: "los-angeles" },
-  { type: "la_311_complaints", schedule: "Daily 5:10 AM UTC", category: "daily", warnHours: 26, city: "los-angeles" },
-  { type: "ladbs_violations", schedule: "Daily 5:20 AM UTC", category: "daily", warnHours: 26, city: "los-angeles" },
-  { type: "lapd_complaints", schedule: "Daily 5:30 AM UTC", category: "daily", warnHours: 26, city: "los-angeles" },
-  { type: "la_permits", schedule: "Daily 5:40 AM UTC", category: "daily", warnHours: 26, city: "los-angeles" },
+  { type: "lahd_violations", schedule: "Daily 10:00 AM UTC", category: "daily", warnHours: 26, city: "los-angeles" },
+  { type: "la_311_complaints", schedule: "Daily 10:15 AM UTC", category: "daily", warnHours: 26, city: "los-angeles" },
+  { type: "ladbs_violations", schedule: "Daily (link only)", category: "daily", warnHours: 26, city: "los-angeles" },
+  { type: "lapd_complaints", schedule: "Daily (link only)", category: "daily", warnHours: 26, city: "los-angeles" },
+  { type: "la_permits", schedule: "Daily 10:45 AM UTC", category: "daily", warnHours: 26, city: "los-angeles" },
+  { type: "la_evictions", schedule: "Daily 11:00 AM UTC", category: "daily", warnHours: 26, city: "los-angeles" },
+  { type: "la_buyouts", schedule: "Daily 11:15 AM UTC", category: "daily", warnHours: 26, city: "los-angeles" },
+  { type: "la_ccris", schedule: "Daily 11:30 AM UTC", category: "daily", warnHours: 26, city: "los-angeles" },
+  // Chicago syncs
+  { type: "chicago_violations", schedule: "Daily 2:00 PM UTC", category: "daily", warnHours: 26, city: "chicago" },
+  { type: "chicago_311", schedule: "Daily 2:15 PM UTC", category: "daily", warnHours: 26, city: "chicago" },
+  { type: "chicago_crimes", schedule: "Daily 2:30 PM UTC", category: "daily", warnHours: 26, city: "chicago" },
+  { type: "chicago_permits", schedule: "Daily 2:45 PM UTC", category: "daily", warnHours: 26, city: "chicago" },
+  { type: "chicago_rlto", schedule: "Daily 3:00 PM UTC", category: "daily", warnHours: 26, city: "chicago" },
+  { type: "chicago_lead", schedule: "Daily 3:15 PM UTC", category: "daily", warnHours: 26, city: "chicago" },
+  // Miami syncs
+  { type: "miami_violations", schedule: "Daily 5:00 PM UTC", category: "daily", warnHours: 26, city: "miami" },
+  { type: "miami_311", schedule: "Daily 5:15 PM UTC", category: "daily", warnHours: 26, city: "miami" },
+  { type: "miami_crimes", schedule: "Daily 5:30 PM UTC", category: "daily", warnHours: 26, city: "miami" },
+  { type: "miami_permits", schedule: "Daily 5:45 PM UTC", category: "daily", warnHours: 26, city: "miami" },
+  { type: "miami_unsafe", schedule: "Daily 6:00 PM UTC", category: "daily", warnHours: 26, city: "miami" },
+  { type: "miami_recerts", schedule: "Daily 6:15 PM UTC", category: "daily", warnHours: 26, city: "miami" },
+  // Houston syncs
+  { type: "houston_violations", schedule: "Daily 8:00 PM UTC", category: "daily", warnHours: 26, city: "houston" },
+  { type: "houston_311", schedule: "Daily 8:15 PM UTC", category: "daily", warnHours: 26, city: "houston" },
+  { type: "houston_crimes", schedule: "Daily 8:30 PM UTC", category: "daily", warnHours: 26, city: "houston" },
 ];
 
 interface TableDef {

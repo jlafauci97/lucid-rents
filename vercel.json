@@ -121,8 +121,100 @@
       "schedule": "0 11 1 * *"
     },
     {
+      "path": "/api/cron/sync?source=chicago-violations",
+      "schedule": "0 14 * * *"
+    },
+    {
+      "path": "/api/cron/sync?source=chicago-311",
+      "schedule": "15 14 * * *"
+    },
+    {
+      "path": "/api/cron/sync?source=chicago-crimes",
+      "schedule": "30 14 * * *"
+    },
+    {
+      "path": "/api/cron/sync?source=chicago-permits",
+      "schedule": "45 14 * * *"
+    },
+    {
+      "path": "/api/cron/sync?source=chicago-rlto",
+      "schedule": "0 15 * * *"
+    },
+    {
+      "path": "/api/cron/sync?source=chicago-lead",
+      "schedule": "15 15 * * *"
+    },
+    {
+      "path": "/api/cron/sync?mode=link&source=chicago-violations",
+      "schedule": "0 16 * * *"
+    },
+    {
+      "path": "/api/cron/sync?mode=link&source=chicago-311",
+      "schedule": "15 16 * * *"
+    },
+    {
+      "path": "/api/cron/sync?mode=link&source=chicago-permits",
+      "schedule": "30 16 * * *"
+    },
+    {
+      "path": "/api/cron/sync?source=miami-violations",
+      "schedule": "0 17 * * *"
+    },
+    {
+      "path": "/api/cron/sync?source=miami-311",
+      "schedule": "15 17 * * *"
+    },
+    {
+      "path": "/api/cron/sync?source=miami-crimes",
+      "schedule": "30 17 * * *"
+    },
+    {
+      "path": "/api/cron/sync?source=miami-permits",
+      "schedule": "45 17 * * *"
+    },
+    {
+      "path": "/api/cron/sync?source=miami-unsafe",
+      "schedule": "0 18 * * *"
+    },
+    {
+      "path": "/api/cron/sync?source=miami-recerts",
+      "schedule": "15 18 * * *"
+    },
+    {
+      "path": "/api/cron/sync?mode=link&source=miami-violations",
+      "schedule": "0 19 * * *"
+    },
+    {
+      "path": "/api/cron/sync?mode=link&source=miami-311",
+      "schedule": "15 19 * * *"
+    },
+    {
+      "path": "/api/cron/sync?mode=link&source=miami-permits",
+      "schedule": "30 19 * * *"
+    },
+    {
+      "path": "/api/cron/sync?source=houston-violations",
+      "schedule": "0 20 * * *"
+    },
+    {
+      "path": "/api/cron/sync?source=houston-311",
+      "schedule": "15 20 * * *"
+    },
+    {
+      "path": "/api/cron/sync?source=houston-crimes",
+      "schedule": "30 20 * * *"
+    },
+    {
+      "path": "/api/cron/sync?mode=link&source=houston-violations",
+      "schedule": "0 21 * * *"
+    },
+    {
+      "path": "/api/cron/sync?mode=link&source=houston-311",
+      "schedule": "15 21 * * *"
+    },
+    {
       "path": "/api/cron/health-check",
-      "schedule": "0 12 * * *"
+      "schedule": "0 22 * * *"
     }
   ]
 }
