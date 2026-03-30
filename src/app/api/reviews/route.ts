@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
 
   const data = parsed.data;
 
-  // Create or find unit
+  // Try to find or create unit (table may not exist yet — non-blocking)
   let unitId = data.unit_id;
   if (!unitId && data.unit_number) {
     const { data: existingUnit } = await supabase
@@ -34,16 +34,15 @@ export async function POST(req: NextRequest) {
     if (existingUnit) {
       unitId = existingUnit.id;
     } else {
-      const { data: newUnit, error: unitError } = await supabase
+      const { data: newUnit } = await supabase
         .from("units")
         .insert({ building_id: data.building_id, unit_number: data.unit_number })
         .select("id")
         .single();
 
-      if (unitError) {
-        return NextResponse.json({ error: "Failed to create unit" }, { status: 500 });
+      if (newUnit) {
+        unitId = newUnit.id;
       }
-      unitId = newUnit.id;
     }
   }
 
