@@ -20,6 +20,7 @@ import {
   ExternalLink,
   Lock,
   CalendarDays,
+  Link2,
 } from "lucide-react";
 
 // --- Types ---
@@ -87,6 +88,22 @@ interface HealthData {
   activity_feed: { status: string; details: string };
   sync_history: SyncHistoryEntry[];
   pages: PageCheck[];
+}
+
+interface LinkingEntry {
+  table: string;
+  label: string;
+  metro: string;
+  total: number;
+  linked: number;
+  unlinked: number;
+  link_pct: number;
+}
+
+interface LinkingData {
+  checked_at: string;
+  linking: LinkingEntry[];
+  critical: LinkingEntry[];
 }
 
 // --- Helpers ---
@@ -271,6 +288,7 @@ export default function MissionControlPage() {
   const [authed, setAuthed] = useState(false);
   const [metro, setMetro] = useState<MetroFilter>("all");
   const [health, setHealth] = useState<HealthData | null>(null);
+  const [linking, setLinking] = useState<LinkingData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
@@ -286,10 +304,17 @@ export default function MissionControlPage() {
     setError(null);
     try {
       const url = metro === "all" ? "/api/health" : `/api/health?metro=${metro}`;
-      const res = await fetch(url, { cache: "no-store" });
+      const [res, linkingRes] = await Promise.all([
+        fetch(url, { cache: "no-store" }),
+        fetch("/api/health/linking", { cache: "no-store" }),
+      ]);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       setHealth(data);
+      if (linkingRes.ok) {
+        const linkingData = await linkingRes.json();
+        setLinking(linkingData);
+      }
       setLastRefreshed(new Date());
     } catch (err) {
       setError(String(err));
@@ -417,6 +442,18 @@ export default function MissionControlPage() {
         </div>
       </div>
 
+      {/* Critical Linking Alert */}
+      {linking && linking.critical.length > 0 && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 -mt-2 mb-2">
+          <div className="flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
+            <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0" />
+            <span className="font-medium">
+              {linking.critical.length} data source{linking.critical.length !== 1 ? "s" : ""} ha{linking.critical.length !== 1 ? "ve" : "s"} critical linking gaps (&lt;50% linked)
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Summary Cards */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 -mt-4">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -469,7 +506,7 @@ export default function MissionControlPage() {
                 </thead>
                 <tbody className="divide-y divide-[#f1f5f9]">
                   {dailySyncs.map((sync) => (
-                    <SyncRow key={sync.sync_type} sync={sync} />
+                    <SyncRow key={sync.sync_type} sync={sync} syncHistory={health.sync_history} />
                   ))}
                 </tbody>
               </table>
@@ -498,7 +535,7 @@ export default function MissionControlPage() {
                 </thead>
                 <tbody className="divide-y divide-[#f1f5f9]">
                   {monthlySyncs.map((sync) => (
-                    <SyncRow key={sync.sync_type} sync={sync} />
+                    <SyncRow key={sync.sync_type} sync={sync} syncHistory={health.sync_history} />
                   ))}
                 </tbody>
               </table>
@@ -524,6 +561,65 @@ export default function MissionControlPage() {
             </div>
           </div>
         </Section>
+
+        {/* Linking Health */}
+        {linking && linking.linking.length > 0 && (
+          <Section
+            title="Linking Health"
+            icon={<Link2 className="w-5 h-5" />}
+            defaultOpen={false}
+            badge={
+              linking.critical.length > 0 ? (
+                <StatusBadge status="error" />
+              ) : (
+                <StatusBadge status="healthy" />
+              )
+            }
+          >
+            <div className="bg-white border border-[#e2e8f0] rounded-xl overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
+                      <th className="text-left px-4 py-2.5 text-xs font-semibold text-[#64748b] uppercase">Source</th>
+                      <th className="text-left px-4 py-2.5 text-xs font-semibold text-[#64748b] uppercase">City</th>
+                      <th className="text-right px-4 py-2.5 text-xs font-semibold text-[#64748b] uppercase">Total</th>
+                      <th className="text-right px-4 py-2.5 text-xs font-semibold text-[#64748b] uppercase">Linked</th>
+                      <th className="text-right px-4 py-2.5 text-xs font-semibold text-[#64748b] uppercase">Unlinked</th>
+                      <th className="text-right px-4 py-2.5 text-xs font-semibold text-[#64748b] uppercase">Link %</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#f1f5f9]">
+                    {linking.linking
+                      .filter((entry) => metro === "all" || entry.metro === metro)
+                      .map((entry) => (
+                        <tr key={`${entry.table}-${entry.metro}`} className="hover:bg-[#f8fafc]">
+                          <td className="px-4 py-2.5 font-medium text-[#0F1D2E]">{entry.label}</td>
+                          <td className="px-4 py-2.5 text-[#64748b]">{entry.metro}</td>
+                          <td className="px-4 py-2.5 text-right text-[#334155]">{entry.total.toLocaleString()}</td>
+                          <td className="px-4 py-2.5 text-right text-[#334155]">{entry.linked.toLocaleString()}</td>
+                          <td className="px-4 py-2.5 text-right text-[#334155]">{entry.unlinked.toLocaleString()}</td>
+                          <td className="px-4 py-2.5 text-right">
+                            <span
+                              className={`inline-block px-2 py-0.5 text-xs font-semibold rounded-full ${
+                                entry.link_pct >= 80
+                                  ? "bg-emerald-50 text-emerald-700"
+                                  : entry.link_pct >= 50
+                                    ? "bg-amber-50 text-amber-700"
+                                    : "bg-red-50 text-red-700"
+                              }`}
+                            >
+                              {entry.link_pct.toFixed(1)}%
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </Section>
+        )}
 
         {/* Database Tables */}
         <Section
@@ -687,49 +783,82 @@ function SectionBadge({ items }: { items: { status: string }[] }) {
   return <StatusBadge status="healthy" />;
 }
 
-function SyncRow({ sync }: { sync: SyncCheck }) {
+function SyncRow({ sync, syncHistory }: { sync: SyncCheck; syncHistory: SyncHistoryEntry[] }) {
+  const [expanded, setExpanded] = useState(false);
+  const hasError = !!sync.error_preview;
+
+  // Find matching sync_history entries for full error details
+  const matchingHistory = syncHistory.filter((h) => h.sync_type === sync.sync_type);
+  const allErrors = matchingHistory.flatMap((h) => h.errors ?? []);
+  const canExpand = hasError && allErrors.length > 0;
+
   return (
-    <tr className={`hover:bg-[#f8fafc] ${sync.status === "error" ? "bg-red-50/50" : ""}`}>
-      <td className="px-4 py-2.5">
-        <div className="flex items-center gap-2">
-          <StatusDot status={sync.status} />
-          <span className="font-medium text-[#0F1D2E]">
-            {friendlyName(sync.sync_type)}
-          </span>
-        </div>
-      </td>
-      <td className="px-4 py-2.5">
-        <StatusBadge status={sync.last_status || "unknown"} />
-      </td>
-      <td className="px-4 py-2.5 text-[#64748b]">
-        {sync.last_run ? (
-          <span title={formatDate(sync.last_run)}>
-            {timeAgo(sync.last_run)}
-            {sync.hours_since_sync !== null && (
-              <span className="text-xs ml-1 opacity-60">
-                ({sync.hours_since_sync}h)
-              </span>
+    <>
+      <tr
+        className={`hover:bg-[#f8fafc] ${sync.status === "error" ? "bg-red-50/50" : ""} ${canExpand ? "cursor-pointer" : ""}`}
+        onClick={canExpand ? () => setExpanded(!expanded) : undefined}
+      >
+        <td className="px-4 py-2.5">
+          <div className="flex items-center gap-2">
+            <StatusDot status={sync.status} />
+            <span className="font-medium text-[#0F1D2E]">
+              {friendlyName(sync.sync_type)}
+            </span>
+          </div>
+        </td>
+        <td className="px-4 py-2.5">
+          <StatusBadge status={sync.last_status || "unknown"} />
+        </td>
+        <td className="px-4 py-2.5 text-[#64748b]">
+          {sync.last_run ? (
+            <span title={formatDate(sync.last_run)}>
+              {timeAgo(sync.last_run)}
+              {sync.hours_since_sync !== null && (
+                <span className="text-xs ml-1 opacity-60">
+                  ({sync.hours_since_sync}h)
+                </span>
+              )}
+            </span>
+          ) : (
+            <span className="text-red-500">Never</span>
+          )}
+        </td>
+        <td className="px-4 py-2.5 text-[#94a3b8] text-xs font-mono hidden sm:table-cell">
+          {sync.schedule}
+        </td>
+        <td className="px-4 py-2.5 text-right text-[#334155]">
+          <span className="font-medium">{sync.records_added.toLocaleString()}</span>
+          {sync.records_linked > 0 && (
+            <span className="text-xs text-[#94a3b8] ml-1">
+              +{sync.records_linked.toLocaleString()} linked
+            </span>
+          )}
+        </td>
+        <td className="px-4 py-2.5 text-xs text-red-600 max-w-[300px] hidden lg:table-cell">
+          <div className="flex items-center gap-1">
+            {canExpand && (
+              expanded ? (
+                <ChevronDown className="w-3 h-3 flex-shrink-0 text-red-400" />
+              ) : (
+                <ChevronRight className="w-3 h-3 flex-shrink-0 text-red-400" />
+              )
             )}
-          </span>
-        ) : (
-          <span className="text-red-500">Never</span>
-        )}
-      </td>
-      <td className="px-4 py-2.5 text-[#94a3b8] text-xs font-mono hidden sm:table-cell">
-        {sync.schedule}
-      </td>
-      <td className="px-4 py-2.5 text-right text-[#334155]">
-        <span className="font-medium">{sync.records_added.toLocaleString()}</span>
-        {sync.records_linked > 0 && (
-          <span className="text-xs text-[#94a3b8] ml-1">
-            +{sync.records_linked.toLocaleString()} linked
-          </span>
-        )}
-      </td>
-      <td className="px-4 py-2.5 text-xs text-red-600 max-w-[300px] truncate hidden lg:table-cell">
-        {sync.error_preview || "\u2014"}
-      </td>
-    </tr>
+            <span className="truncate">{sync.error_preview || "\u2014"}</span>
+          </div>
+        </td>
+      </tr>
+      {expanded && canExpand && (
+        <tr>
+          <td colSpan={6} className="px-4 py-3 bg-red-50/30 border-t border-red-100">
+            <div className="max-h-48 overflow-y-auto rounded-lg bg-[#1e293b] p-3">
+              <pre className="text-xs text-red-300 font-mono whitespace-pre-wrap break-words">
+                {allErrors.join("\n\n")}
+              </pre>
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
   );
 }
 
