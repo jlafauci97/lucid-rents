@@ -3,10 +3,12 @@ import { BarChart3 } from "lucide-react";
 import { canonicalUrl, cityPath } from "@/lib/seo";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
-import { CitywideTrendChart } from "@/components/rent-data/CitywideTrendChart";
-import { BoroughRentChart } from "@/components/rent-data/BoroughRentChart";
+import dynamic from "next/dynamic";
 import { ZipRentTable } from "@/components/rent-data/ZipRentTable";
-import { RGBChart } from "@/components/rent-data/RGBChart";
+
+const CitywideTrendChart = dynamic(() => import("@/components/rent-data/CitywideTrendChart").then(m => m.CitywideTrendChart));
+const BoroughRentChart = dynamic(() => import("@/components/rent-data/BoroughRentChart").then(m => m.BoroughRentChart));
+const RGBChart = dynamic(() => import("@/components/rent-data/RGBChart").then(m => m.RGBChart));
 import { RentMap } from "@/components/rent-data/RentMap";
 import { type City, CITY_META } from "@/lib/cities";
 

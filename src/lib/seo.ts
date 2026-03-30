@@ -42,7 +42,7 @@ export function buildingUrl(
   b: { borough: string; slug: string },
   city: City = DEFAULT_CITY
 ): string {
-  const bSlug = regionSlug(b.borough);
+  const bSlug = b.borough ? regionSlug(b.borough) : "unknown";
   return `/${CITY_META[city].urlPrefix}/building/${bSlug}/${b.slug}`;
 }
 

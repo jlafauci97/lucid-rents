@@ -1,19 +1,94 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Suspense } from "react";
 import { User, LogOut, Bell } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { CitySwitcher } from "./CitySwitcher";
 import { NavLinks } from "./NavLinks";
 import { MobileMenu } from "./MobileMenu";
 
-export async function Navbar() {
+async function AuthSection() {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   return (
-    <nav className="bg-[#0F1D2E] text-white sticky top-0 z-50">
+    <>
+      <div className="hidden md:flex items-center gap-4">
+        {user ? (
+          <div className="flex items-center gap-4">
+            <Link
+              href="/dashboard"
+              className="flex items-center gap-2 text-sm font-semibold text-white hover:text-white/80 transition-colors"
+            >
+              <User className="w-4 h-4" />
+              Dashboard
+            </Link>
+            <Link
+              href="/dashboard/monitoring"
+              className="flex items-center gap-2 text-sm font-semibold text-white hover:text-white/80 transition-colors"
+            >
+              <Bell className="w-4 h-4" />
+              Monitoring
+            </Link>
+            <form action="/api/auth/signout" method="post">
+              <button
+                type="submit"
+                className="flex items-center gap-2 text-sm font-semibold text-white hover:text-white/80 transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                Sign Out
+              </button>
+            </form>
+          </div>
+        ) : (
+          <div className="flex items-center gap-3">
+            <Link
+              href="/login"
+              className="text-sm font-semibold text-white hover:text-white/80 transition-colors"
+            >
+              Log In
+            </Link>
+            <Link
+              href="/register"
+              className="text-sm bg-[#3B82F6] hover:bg-[#2563EB] text-white font-semibold px-5 py-2 rounded-full transition-colors whitespace-nowrap"
+            >
+              Sign Up
+            </Link>
+          </div>
+        )}
+      </div>
+      <MobileMenu isLoggedIn={!!user} />
+    </>
+  );
+}
+
+function AuthFallback() {
+  return (
+    <>
+      <div className="hidden md:flex items-center gap-3">
+        <Link
+          href="/login"
+          className="text-sm font-semibold text-white hover:text-white/80 transition-colors"
+        >
+          Log In
+        </Link>
+        <Link
+          href="/register"
+          className="text-sm bg-[#3B82F6] hover:bg-[#2563EB] text-white font-semibold px-5 py-2 rounded-full transition-colors whitespace-nowrap"
+        >
+          Sign Up
+        </Link>
+      </div>
+      <MobileMenu isLoggedIn={false} />
+    </>
+  );
+}
+
+export function Navbar() {
+  return (
+    <nav className="bg-[#0F1D2E] text-white sticky top-0 z-50 border-b border-white/90">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-8">
@@ -32,51 +107,9 @@ export async function Navbar() {
             </div>
             <NavLinks />
           </div>
-          <div className="hidden md:flex items-center gap-4">
-            {user ? (
-              <div className="flex items-center gap-4">
-                <Link
-                  href="/dashboard"
-                  className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors"
-                >
-                  <User className="w-4 h-4" />
-                  Dashboard
-                </Link>
-                <Link
-                  href="/dashboard/monitoring"
-                  className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors"
-                >
-                  <Bell className="w-4 h-4" />
-                  Monitoring
-                </Link>
-                <form action="/api/auth/signout" method="post">
-                  <button
-                    type="submit"
-                    className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    Sign Out
-                  </button>
-                </form>
-              </div>
-            ) : (
-              <div className="flex items-center gap-3">
-                <Link
-                  href="/login"
-                  className="text-sm text-gray-300 hover:text-white transition-colors"
-                >
-                  Log In
-                </Link>
-                <Link
-                  href="/register"
-                  className="text-sm bg-[#3B82F6] hover:bg-[#2563EB] text-[#0F1D2E] font-medium px-4 py-2 rounded-lg transition-colors"
-                >
-                  Sign Up
-                </Link>
-              </div>
-            )}
-          </div>
-          <MobileMenu isLoggedIn={!!user} />
+          <Suspense fallback={<AuthFallback />}>
+            <AuthSection />
+          </Suspense>
         </div>
       </div>
     </nav>

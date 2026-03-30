@@ -57,7 +57,8 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
   // Count total matching landlords
   let countQuery = supabase
     .from("landlord_stats")
-    .select("id", { count: "exact", head: true });
+    .select("id", { count: "exact", head: true })
+    .eq("metro", cityParam);
 
   if (search) {
     countQuery = countQuery.ilike("name", `%${search}%`);
@@ -71,6 +72,7 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
   let query = supabase
     .from("landlord_stats")
     .select("name,slug,building_count,total_violations,total_complaints,total_litigations,total_dob_violations,avg_score,worst_building_id,worst_building_address,worst_building_violations")
+    .eq("metro", cityParam)
     .order(sortCol, { ascending: false })
     .range(offset, offset + limit - 1);
 
@@ -100,7 +102,7 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
           Landlord Directory
         </h1>
         <p className="text-[#64748b] mt-2">
-          Search NYC landlords by name and explore their building portfolios, violations, and complaint histories.
+          Search {CITY_META[cityParam as City]?.fullName || "NYC"} landlords by name and explore their building portfolios, violations, and complaint histories.
         </p>
       </div>
 

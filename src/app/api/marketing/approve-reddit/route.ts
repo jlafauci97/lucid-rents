@@ -47,31 +47,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Thread not found" }, { status: 404 });
     }
 
-    if (action === "approve") {
-      // Update with edited reply if provided, mark as replied (user will paste manually)
-      await updateRedditThread(threadId, {
-        status: "replied",
-        ...(editedReply ? { draftReply: editedReply } : {}),
-        repliedAt: new Date().toISOString(),
-      });
+    const hookToken = thread.hook_token;
+    if (!hookToken) {
+      return NextResponse.json(
+        { error: "Thread has no pending approval hook" },
+        { status: 409 }
+      );
+    }
 
-      // If a WDK hook exists, resume it too
-      if (thread.hook_token) {
-        try {
-          await resumeHook(thread.hook_token, { approved: true, editedReply });
-        } catch {
-          // Hook may have expired or not exist — that's fine for manual flow
-        }
-      }
+    if (action === "approve") {
+      await updateRedditThread(threadId, { status: "approved" });
+      await resumeHook(hookToken, {
+        approved: true,
+        editedReply,
+      });
     } else {
+      // skip
       await updateRedditThread(threadId, { status: "skipped" });
-      if (thread.hook_token) {
-        try {
-          await resumeHook(thread.hook_token, { approved: false });
-        } catch {
-          // Hook may have expired
-        }
-      }
+      await resumeHook(hookToken, { approved: false });
     }
 
     return NextResponse.json({ ok: true });

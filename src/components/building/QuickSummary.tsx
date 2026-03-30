@@ -28,6 +28,8 @@ function getWorstIssue(counts: {
   bedbugs: number;
   evictions: number;
 }) {
+  // Bed bug reports are excluded — the HPD data tracks filing compliance,
+  // not actual infestations, so it would be misleading as a top concern.
   const issues = [
     {
       label: "Violations",
@@ -40,12 +42,6 @@ function getWorstIssue(counts: {
       count: counts.complaints,
       icon: MessageSquareWarning,
       weight: 0.8,
-    },
-    {
-      label: "Bed Bugs",
-      count: counts.bedbugs,
-      icon: Bug,
-      weight: 3,
     },
     {
       label: "Evictions",

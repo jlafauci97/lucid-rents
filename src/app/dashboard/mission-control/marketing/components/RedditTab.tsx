@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { RefreshCw, MessageSquare, ExternalLink, Clipboard, CheckCircle } from "lucide-react";
+import { RefreshCw, MessageSquare, ExternalLink } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -33,7 +33,6 @@ export function RedditTab() {
   const [filter, setFilter] = useState<RedditFilter>("draft_ready");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [editedReplies, setEditedReplies] = useState<Record<string, string>>({});
-  const [copied, setCopied] = useState<string | null>(null);
 
   const fetchThreads = useCallback(async () => {
     try {
@@ -209,58 +208,23 @@ export function RedditTab() {
 
             {/* Actions — only on pending tab */}
             {!isReadOnly && (
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  {copied === thread.id && (
-                    <span className="flex items-center gap-1 text-xs text-emerald-600">
-                      <CheckCircle className="h-3.5 w-3.5" />
-                      Copied! Paste in Reddit
-                    </span>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleAction(thread.id, "skip")}
-                    loading={actionLoading === thread.id}
-                  >
-                    Skip
-                  </Button>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={async () => {
-                      const reply = editedReplies[thread.id] ?? thread.draft_reply ?? "";
-                      // Copy reply to clipboard
-                      try {
-                        await navigator.clipboard.writeText(reply);
-                        setCopied(thread.id);
-                        setTimeout(() => setCopied(null), 5000);
-                      } catch {
-                        // Fallback for clipboard API failure
-                        const textarea = document.createElement("textarea");
-                        textarea.value = reply;
-                        document.body.appendChild(textarea);
-                        textarea.select();
-                        document.execCommand("copy");
-                        document.body.removeChild(textarea);
-                        setCopied(thread.id);
-                        setTimeout(() => setCopied(null), 5000);
-                      }
-                      // Open thread in new tab
-                      if (thread.url) {
-                        window.open(thread.url, "_blank");
-                      }
-                      // Mark as replied in our DB
-                      handleAction(thread.id, "approve");
-                    }}
-                    loading={actionLoading === thread.id}
-                  >
-                    <Clipboard className="h-3.5 w-3.5 mr-1" />
-                    Copy & Open Thread
-                  </Button>
-                </div>
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleAction(thread.id, "skip")}
+                  loading={actionLoading === thread.id}
+                >
+                  Skip
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => handleAction(thread.id, "approve")}
+                  loading={actionLoading === thread.id}
+                >
+                  Approve
+                </Button>
               </div>
             )}
 

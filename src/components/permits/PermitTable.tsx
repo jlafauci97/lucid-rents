@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { ArrowUpDown } from "lucide-react";
+import { ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { getRegions, getRegionLabel, VIOLATION_AGENCIES } from "@/lib/constants";
 import { useCity } from "@/lib/city-context";
 import { buildingUrl } from "@/lib/seo";
@@ -32,6 +32,8 @@ function formatCost(cost: number | null): string {
   return `$${cost.toLocaleString()}`;
 }
 
+const PAGE_SIZE = 50;
+
 export function PermitTable({ data }: { data: PermitRow[] }) {
   const city = useCity();
   const regionLabel = getRegionLabel(city);
@@ -41,6 +43,7 @@ export function PermitTable({ data }: { data: PermitRow[] }) {
   const [workType, setWorkType] = useState("");
   const [sortBy, setSortBy] = useState<"issued_date" | "estimated_job_costs">("issued_date");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [page, setPage] = useState(1);
 
   // Extract unique work types for filter
   const workTypes = useMemo(() => {
@@ -74,6 +77,14 @@ export function PermitTable({ data }: { data: PermitRow[] }) {
     return rows;
   }, [data, borough, workType, sortBy, sortDir]);
 
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  const handleFilterChange = (setter: (v: string) => void) => (v: string) => {
+    setter(v);
+    setPage(1);
+  };
+
   function toggleSort(col: "issued_date" | "estimated_job_costs") {
     if (sortBy === col) {
       setSortDir((d) => (d === "desc" ? "asc" : "desc"));
@@ -96,7 +107,7 @@ export function PermitTable({ data }: { data: PermitRow[] }) {
       {/* Filters */}
       <div className="flex flex-wrap gap-2 mb-4">
         <button
-          onClick={() => setBorough("")}
+          onClick={() => handleFilterChange(setBorough)("")}
           className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
             !borough
               ? "bg-[#0F1D2E] text-white"
@@ -108,7 +119,7 @@ export function PermitTable({ data }: { data: PermitRow[] }) {
         {getRegions(city).map((b) => (
           <button
             key={b}
-            onClick={() => setBorough(b)}
+            onClick={() => handleFilterChange(setBorough)(b)}
             className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
               borough === b
                 ? "bg-[#0F1D2E] text-white"
@@ -124,7 +135,7 @@ export function PermitTable({ data }: { data: PermitRow[] }) {
       <div className="mb-4">
         <select
           value={workType}
-          onChange={(e) => setWorkType(e.target.value)}
+          onChange={(e) => handleFilterChange(setWorkType)(e.target.value)}
           className="text-sm border border-[#e2e8f0] rounded-lg px-3 py-2 text-[#0F1D2E] bg-white"
         >
           <option value="">All Work Types</option>
@@ -172,7 +183,7 @@ export function PermitTable({ data }: { data: PermitRow[] }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-[#e2e8f0]">
-            {filtered.slice(0, 100).map((row) => (
+            {paginated.map((row) => (
               <tr key={row.work_permit} className="hover:bg-[#f8fafc] transition-colors">
                 <td className="px-4 py-3 text-sm font-semibold text-[#0F1D2E]">
                   {row.building_slug && row.building_borough ? (
@@ -213,9 +224,33 @@ export function PermitTable({ data }: { data: PermitRow[] }) {
         </table>
       </div>
 
-      <p className="text-xs text-[#94a3b8] mt-3">
-        Showing {Math.min(filtered.length, 100)} of {filtered.length} permits. Data: {dataSource} Permits.
-      </p>
+      {/* Pagination */}
+      <div className="flex items-center justify-between mt-4">
+        <p className="text-xs text-[#94a3b8]">
+          Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length} permits. Data: {dataSource} Permits.
+        </p>
+        {totalPages > 1 && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e2e8f0] text-[#334155] hover:bg-[#f8fafc] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronLeft className="w-3 h-3" /> Previous
+            </button>
+            <span className="text-xs text-[#64748b]">
+              Page {page} of {totalPages}
+            </span>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e2e8f0] text-[#334155] hover:bg-[#f8fafc] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              Next <ChevronRight className="w-3 h-3" />
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

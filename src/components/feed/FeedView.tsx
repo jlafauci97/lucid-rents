@@ -7,6 +7,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type { ActivityItem } from "@/app/api/activity/route";
 import { buildingUrl, cityPath } from "@/lib/seo";
 import { useCity } from "@/lib/city-context";
+import type { City } from "@/lib/cities";
+
+/** Resolve the City key from a metro/db value. */
+function metroToCity(metro?: string): City {
+  if (metro && metro !== "nyc") return metro as City;
+  return "nyc";
+}
 
 type FilterType = "all" | "violations" | "complaints" | "reviews" | "litigations" | "dob_violations" | "crime" | "bedbugs" | "evictions" | "la_eviction" | "tenant_buyout" | "permit" | "enforcement";
 
@@ -131,6 +138,8 @@ function sourceLabel(type: ActivityItem["type"], city: string): string {
     case "tenant_buyout": return "Tenant Buyout";
     case "permit": return "Building Permit";
     case "enforcement": return "LAHD Enforcement";
+    case "rlto_violation": return "RLTO Violation";
+    case "lead_inspection": return "Lead Inspection";
   }
 }
 
@@ -148,6 +157,8 @@ function sourceColor(type: ActivityItem["type"]): string {
     case "tenant_buyout": return "text-[#F97316]";
     case "permit": return "text-[#14B8A6]";
     case "enforcement": return "text-[#6366F1]";
+    case "rlto_violation": return "text-[#D97706]";
+    case "lead_inspection": return "text-[#059669]";
   }
 }
 
@@ -197,12 +208,12 @@ function SkeletonCard() {
 
 /** Compact feed card — address inline, no gray box */
 function FeedCard({ item }: { item: ActivityItem }) {
-  const city = useCity();
+  const itemCity = metroToCity(item.metro);
   const href = item.type === "crime" && item.zipCode
-    ? cityPath(`/crime/${item.zipCode}`, city)
+    ? cityPath(`/crime/${item.zipCode}`, itemCity)
     : item.buildingSlug
-      ? buildingUrl({ borough: item.borough, slug: item.buildingSlug }, city)
-      : cityPath(`/building/${item.buildingId}`, city);
+      ? buildingUrl({ borough: item.borough, slug: item.buildingSlug }, itemCity)
+      : cityPath(`/building/${item.buildingId}`, itemCity);
 
   const address = item.buildingAddress
     ? `${item.buildingAddress}${item.borough ? `, ${item.borough}` : ""}`
@@ -218,7 +229,7 @@ function FeedCard({ item }: { item: ActivityItem }) {
         {/* Meta row: source + severity + time + address */}
         <div className="flex items-center gap-1.5 flex-wrap text-[13px]">
           <span className={`font-semibold ${sourceColor(item.type)}`}>
-            {sourceLabel(item.type, city)}
+            {sourceLabel(item.type, itemCity)}
           </span>
           {item.violationClass && (
             <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded font-mono tracking-wide ${severityChipClasses(item.violationClass)}`}>

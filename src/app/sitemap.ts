@@ -260,7 +260,7 @@ async function generateBuildingSitemap(
   if (!buildings || buildings.length === 0) return [];
 
   return buildings.map((b) => ({
-    url: `${BASE_URL}${buildingUrl(b, (b.metro === "los-angeles" ? "los-angeles" : "nyc") as City)}`,
+    url: `${BASE_URL}${buildingUrl(b, (b.metro === "los-angeles" ? "los-angeles" : b.metro === "chicago" ? "chicago" : b.metro === "miami" ? "miami" : b.metro === "houston" ? "houston" : "nyc") as City)}`,
     lastModified: b.updated_at ? new Date(b.updated_at) : undefined,
     changeFrequency: "weekly" as const,
     priority: 0.6,

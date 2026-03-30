@@ -327,6 +327,9 @@ export function SearchBar({
                   >
                     <MapPin className="w-5 h-5 text-[#94a3b8] mt-0.5 shrink-0" />
                     <div className="min-w-0">
+                      {building.name && (
+                        <p className="text-xs font-medium text-[#3B82F6]">{building.name}</p>
+                      )}
                       <p className="text-sm font-medium text-[#0F1D2E] truncate">
                         {building.full_address}
                       </p>

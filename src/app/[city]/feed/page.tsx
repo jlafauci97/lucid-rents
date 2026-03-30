@@ -27,10 +27,10 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
   };
 }
 
-async function FeedStats() {
+async function FeedStats({ city }: { city: import("@/lib/cities").City }) {
   const supabase = await createClient();
 
-  const { data } = await supabase.rpc("data_snapshot_counts").single();
+  const { data } = await supabase.rpc("data_snapshot_counts", { p_metro: city }).single();
 
   const counts = data as {
     hpd_violations_count: number;
@@ -72,12 +72,13 @@ async function FeedStats() {
   );
 }
 
-async function TrendingBuildings({ city }: { city: string }) {
+async function TrendingBuildings({ city }: { city: import("@/lib/cities").City }) {
   const supabase = await createClient();
 
   const { data: buildings } = await supabase
     .from("buildings")
     .select("id, full_address, borough, slug, violation_count, complaint_count")
+    .eq("metro", city)
     .order("violation_count", { ascending: false })
     .limit(5);
 
@@ -95,7 +96,7 @@ async function TrendingBuildings({ city }: { city: string }) {
         {buildings.map((b, i) => (
           <Link
             key={b.id}
-            href={buildingUrl(b)}
+            href={buildingUrl(b, city)}
             className="flex items-start gap-3 px-4 py-3 hover:bg-[#f8fafc] transition-colors group"
           >
             <span className="text-xs font-bold text-[#94a3b8] mt-0.5 w-4">{i + 1}</span>
@@ -145,9 +146,9 @@ export default async function FeedPage({ params }: { params: Promise<{ city: str
 
         {/* Sidebar — sticky */}
         <aside className="hidden lg:block space-y-6 sticky top-20 self-start">
-          <FeedStats />
+          <FeedStats city={cityParam as import("@/lib/cities").City} />
           <AdBlock adSlot="FEED_SIDEBAR" adFormat="rectangle" />
-          <TrendingBuildings city={cityParam} />
+          <TrendingBuildings city={cityParam as import("@/lib/cities").City} />
           <FeedSourceLabel />
         </aside>
       </div>

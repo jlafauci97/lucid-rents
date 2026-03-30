@@ -6,7 +6,6 @@ import {
   Menu,
   X,
   Search,
-  AlertTriangle,
   Users,
   Siren,
 
@@ -44,7 +43,7 @@ interface NavLink {
 
 const primaryLinks: NavLink[] = [
   { path: "/search", icon: Search, label: "Search" },
-  { path: "/worst-rated-buildings", icon: AlertTriangle, label: "Worst Buildings" },
+  { path: "/worst-rated-buildings", icon: BarChart3, label: "Building Rankings" },
   { path: "/landlords", icon: Users, label: "Landlords" },
   { path: "/crime", icon: Siren, label: "Crime" },
   { path: "/review/new", icon: PenSquare, label: "Submit Review" },
