@@ -157,7 +157,7 @@ async function main() {
           city: "Chicago",
           state: "IL",
           metro: "chicago",
-          slug: generateSlug(`${addrStr}-chicago-il`),
+          slug: generateSlug(addrStr),
           latitude: r.latitude ? parseFloat(r.latitude) : null,
           longitude: r.longitude ? parseFloat(r.longitude) : null,
           violation_count: 0,

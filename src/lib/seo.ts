@@ -73,7 +73,11 @@ export function canonicalUrl(path: string): string {
 }
 
 export function generateBuildingSlug(fullAddress: string): string {
-  return fullAddress
+  // Use only the street address (before first comma) to keep slugs
+  // consistent across all cities. City/state suffixes are not needed
+  // since queries always filter by metro as well.
+  const streetOnly = fullAddress.split(",")[0].trim();
+  return streetOnly
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-+|-+$)/g, "");
