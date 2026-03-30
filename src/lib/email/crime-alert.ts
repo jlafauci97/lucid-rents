@@ -112,7 +112,7 @@ export function buildCrimeAlertHtml(data: CrimeAlertData): string {
         <a href="${data.baseUrl}" style="color: #3B82F6; text-decoration: none;">Lucid Rents</a>.
       </p>
       <p style="margin: 8px 0 0; color: #94a3b8; font-size: 12px;">
-        <a href="${data.baseUrl}/dashboard/monitoring" style="color: #64748b; text-decoration: none;">
+        <a href="${data.baseUrl}/profile" style="color: #64748b; text-decoration: none;">
           Manage alert settings
         </a>
       </p>

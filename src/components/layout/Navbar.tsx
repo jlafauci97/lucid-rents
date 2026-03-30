@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
-import { User, LogOut, Bell } from "lucide-react";
+import { User, LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { CitySwitcher } from "./CitySwitcher";
 import { NavLinks } from "./NavLinks";
@@ -19,18 +19,11 @@ async function AuthSection() {
         {user ? (
           <div className="flex items-center gap-4">
             <Link
-              href="/dashboard"
+              href="/profile"
               className="flex items-center gap-2 text-sm font-semibold text-white hover:text-white/80 transition-colors"
             >
               <User className="w-4 h-4" />
-              Dashboard
-            </Link>
-            <Link
-              href="/dashboard/monitoring"
-              className="flex items-center gap-2 text-sm font-semibold text-white hover:text-white/80 transition-colors"
-            >
-              <Bell className="w-4 h-4" />
-              Monitoring
+              Profile
             </Link>
             <form action="/api/auth/signout" method="post">
               <button

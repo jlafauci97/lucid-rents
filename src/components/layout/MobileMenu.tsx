@@ -21,7 +21,6 @@ import {
   TrainFront,
   Scale,
   User,
-  Bell,
   LogOut,
 } from "lucide-react";
 import { type City } from "@/lib/cities";
@@ -115,20 +114,12 @@ export function MobileMenu({ isLoggedIn }: MobileMenuProps) {
             {isLoggedIn ? (
               <>
                 <Link
-                  href="/dashboard"
+                  href="/profile"
                   onClick={() => setOpen(false)}
                   className="flex items-center gap-3 px-3 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
                 >
                   <User className="w-4 h-4" />
-                  Dashboard
-                </Link>
-                <Link
-                  href="/dashboard/monitoring"
-                  onClick={() => setOpen(false)}
-                  className="flex items-center gap-3 px-3 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
-                >
-                  <Bell className="w-4 h-4" />
-                  Monitoring
+                  Profile
                 </Link>
                 <form action="/api/auth/signout" method="post">
                   <button

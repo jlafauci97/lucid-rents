@@ -94,7 +94,7 @@ export function buildMarketingAlertHtml(data: MarketingAlertData): string {
 
       <!-- CTA -->
       <div style="text-align: center; margin-top: 24px;">
-        <a href="${data.baseUrl}/dashboard/mission-control/marketing" style="display: inline-block; background-color: #0F1D2E; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 600;">
+        <a href="${data.baseUrl}/profile/mission-control/marketing" style="display: inline-block; background-color: #0F1D2E; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 600;">
           View Mission Control
         </a>
       </div>
@@ -107,7 +107,7 @@ export function buildMarketingAlertHtml(data: MarketingAlertData): string {
         <a href="${data.baseUrl}" style="color: #3B82F6; text-decoration: none;">Lucid Rents</a>.
       </p>
       <p style="margin: 8px 0 0; color: #94a3b8; font-size: 12px;">
-        <a href="${data.baseUrl}/dashboard/mission-control/marketing" style="color: #64748b; text-decoration: none;">
+        <a href="${data.baseUrl}/profile/mission-control/marketing" style="color: #64748b; text-decoration: none;">
           Manage alert settings
         </a>
       </p>

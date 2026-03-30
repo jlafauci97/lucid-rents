@@ -48,7 +48,7 @@ interface RpcCheck {
 interface PageCheck {
   path: string;
   label: string;
-  category: "public" | "data" | "dashboard";
+  category: "public" | "data" | "dashboard" | "profile";
   city?: City | "all";
 }
 
@@ -181,11 +181,9 @@ const pages: PageCheck[] = [
   { path: "/CA/Los-Angeles/rent-data", label: "Rent Data", category: "data", city: "los-angeles" },
   { path: "/CA/Los-Angeles/compare", label: "Compare", category: "data", city: "los-angeles" },
   // Dashboard (shared)
-  { path: "/dashboard", label: "Dashboard", category: "dashboard", city: "all" },
-  { path: "/dashboard/monitoring", label: "Monitoring", category: "dashboard", city: "all" },
-  { path: "/dashboard/reviews", label: "My Reviews", category: "dashboard", city: "all" },
-  { path: "/dashboard/saved", label: "Saved Buildings", category: "dashboard", city: "all" },
-  { path: "/dashboard/settings", label: "Settings", category: "dashboard", city: "all" },
+  { path: "/profile", label: "Profile", category: "profile", city: "all" },
+  { path: "/profile/saved", label: "Saved Buildings", category: "profile", city: "all" },
+  { path: "/profile/settings", label: "Settings", category: "profile", city: "all" },
 ];
 
 export async function GET(request: NextRequest) {

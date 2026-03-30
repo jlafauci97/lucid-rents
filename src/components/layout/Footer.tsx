@@ -128,7 +128,7 @@ export function Footer({ city = "nyc" as City }: { city?: City }) {
             {" · "}
             <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
             {" · "}
-            <Link href="/dashboard/mission-control" className="text-gray-600 hover:text-gray-400 transition-colors">Admin</Link>
+            <Link href="/profile/mission-control" className="text-gray-600 hover:text-gray-400 transition-colors">Admin</Link>
           </p>
         </div>
       </div>

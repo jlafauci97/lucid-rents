@@ -18,7 +18,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/api/", "/dashboard/", "/review/new", "/_next/static/media/"],
+      disallow: ["/api/", "/profile/", "/review/new", "/_next/static/media/"],
     },
     sitemap: "https://lucidrents.com/sitemap.xml",
   };
