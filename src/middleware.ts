@@ -27,20 +27,6 @@ const CITY_ROUTES = new Set([
   "apartments-near",
 ]);
 
-const PRODUCTION_HOST = "lucidrents.com";
-
-function isProduction(request: NextRequest): boolean {
-  return request.headers.get("host")?.replace(/:\d+$/, "") === PRODUCTION_HOST;
-}
-
-/** On non-production deployments, tag the response with noindex so search engines skip it. */
-function withNoindex(response: NextResponse, request: NextRequest): NextResponse {
-  if (!isProduction(request)) {
-    response.headers.set("X-Robots-Tag", "noindex");
-  }
-  return response;
-}
-
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -75,7 +61,7 @@ export function middleware(request: NextRequest) {
       const response = NextResponse.rewrite(url, {
         request: { headers: requestHeaders },
       });
-      return withNoindex(response, request);
+      return response;
     }
   }
 
@@ -98,7 +84,7 @@ export function middleware(request: NextRequest) {
     }
     const requestHeaders = new Headers(request.headers);
     requestHeaders.set("x-city", firstSegment);
-    return withNoindex(NextResponse.next({ request: { headers: requestHeaders } }), request);
+    return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
   // 2. Redirect shorthand city slugs to canonical URLs
@@ -107,27 +93,6 @@ export function middleware(request: NextRequest) {
     const url = request.nextUrl.clone();
     const rest = segments.slice(2).join("/");
     url.pathname = `/CA/Los-Angeles${rest ? `/${rest}` : ""}`;
-    return NextResponse.redirect(url, 301);
-  }
-  // /chi/... → /IL/Chicago/...
-  if (firstSegment === "chi") {
-    const url = request.nextUrl.clone();
-    const rest = segments.slice(2).join("/");
-    url.pathname = `/IL/Chicago${rest ? `/${rest}` : ""}`;
-    return NextResponse.redirect(url, 301);
-  }
-  // /mia/... → /FL/Miami/...
-  if (firstSegment === "mia") {
-    const url = request.nextUrl.clone();
-    const rest = segments.slice(2).join("/");
-    url.pathname = `/FL/Miami${rest ? `/${rest}` : ""}`;
-    return NextResponse.redirect(url, 301);
-  }
-  // /hou/... → /TX/Houston/...
-  if (firstSegment === "hou") {
-    const url = request.nextUrl.clone();
-    const rest = segments.slice(2).join("/");
-    url.pathname = `/TX/Houston${rest ? `/${rest}` : ""}`;
     return NextResponse.redirect(url, 301);
   }
 
@@ -153,7 +118,7 @@ export function middleware(request: NextRequest) {
   // 5. Everything else (homepage, api, auth, dashboard, about, privacy, terms) — pass through
   const fallbackHeaders = new Headers(request.headers);
   fallbackHeaders.set("x-city", "nyc");
-  return withNoindex(NextResponse.next({ request: { headers: fallbackHeaders } }), request);
+  return NextResponse.next({ request: { headers: fallbackHeaders } });
 }
 
 export const config = {

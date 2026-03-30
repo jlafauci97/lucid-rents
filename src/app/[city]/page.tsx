@@ -1,7 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { SearchBar } from "@/components/search/SearchBar";
 import { ActivityFeed } from "@/components/ActivityFeed";
@@ -40,17 +39,11 @@ export async function generateMetadata({
 const searchPlaceholders: Record<City, string> = {
   nyc: "Enter any NYC address, zip code, or neighborhood...",
   "los-angeles": "Enter any LA address, zip code, or neighborhood...",
-  chicago: "Enter any Chicago address, zip code, or neighborhood...",
-  miami: "Enter any Miami address, zip code, or neighborhood...",
-  houston: "Enter any Houston address, zip code, or neighborhood...",
 };
 
 const searchExamples: Record<City, string> = {
   nyc: "Try \u201c123 Main Street Brooklyn\u201d or \u201c10001\u201d",
   "los-angeles": "Try \u201c456 Sunset Blvd\u201d or \u201c90028\u201d",
-  chicago: "Try \u201c1200 N Lake Shore Dr\u201d or \u201c60614\u201d",
-  miami: "Try \u201c1000 Brickell Ave\u201d or \u201c33131\u201d",
-  houston: "Try \u201c1500 Hermann Dr\u201d or \u201c77004\u201d",
 };
 
 export default async function CityHomePage({
@@ -125,9 +118,7 @@ export default async function CityHomePage({
         {/* Stats */}
         <section className="border-b border-[#e2e8f0]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <Suspense fallback={<div className="grid grid-cols-2 md:grid-cols-4 gap-6">{[...Array(4)].map((_, i) => <div key={i} className="text-center"><div className="w-8 h-8 bg-[#e2e8f0] rounded mx-auto mb-2 animate-pulse" /><div className="h-7 w-20 bg-[#e2e8f0] rounded mx-auto mb-1 animate-pulse" /><div className="h-4 w-24 bg-[#e2e8f0] rounded mx-auto animate-pulse" /></div>)}</div>}>
-              <LiveStats metro={city} />
-            </Suspense>
+            <LiveStats metro={city} />
           </div>
         </section>
 

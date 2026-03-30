@@ -1,28 +1,9 @@
 import { NextResponse } from "next/server";
-import { createClient as createServerClient } from "@/lib/supabase/server";
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase/server";
 import { isValidCity } from "@/lib/cities";
 
-// Use service-role admin client for the activity feed API.
-// The default anon role has a 3-second statement timeout which causes
-// queries on large tables (complaints_311: 2.6M rows, etc.) to silently
-// fail, resulting in empty feed results.
-function getAdminClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (url && key) {
-    return createSupabaseClient(url, key, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
-  }
-  // Fallback to cookie-based client if service role key not available (local dev)
-  return null;
-}
-
-export const maxDuration = 30;
-
 export interface ActivityItem {
-  type: "review" | "violation" | "complaint" | "litigation" | "dob_violation" | "crime" | "bedbug" | "eviction" | "la_eviction" | "tenant_buyout" | "permit" | "enforcement" | "rlto_violation" | "lead_inspection";
+  type: "review" | "violation" | "complaint" | "litigation" | "dob_violation" | "crime" | "bedbug" | "eviction" | "la_eviction" | "tenant_buyout" | "permit" | "enforcement";
   id: string;
   description: string;
   date: string;
@@ -38,12 +19,10 @@ export interface ActivityItem {
 }
 
 /** Map city slug to the metro column value used in the database.
- *  NYC records have metro='nyc'; LA records have metro='los-angeles'.
- *  Returns null when no city is provided (fetch all metros). */
-function cityToMetro(city: string | null): string | null {
-  if (!city) return null; // all cities
-  if (city === "nyc") return "nyc";
-  return city; // "los-angeles", "chicago", etc. match directly
+ *  NYC records have metro='nyc'; LA records have metro='los-angeles'. */
+function cityToMetro(city: string | null): string {
+  if (!city || city === "nyc") return "nyc";
+  return city; // "los-angeles" matches the metro column directly
 }
 
 // ---------------------------------------------------------------------------
@@ -66,12 +45,8 @@ export async function GET(request: Request) {
 
     const metro = cityToMetro(cityParam);
 
-    // When fetching all types, limit each source to keep total response time under control.
-    // A single-filter request can afford more rows since only one query runs.
-    const perSourceLimit = filter === "all" ? 300 : 2000;
-
     // --- Check cache ---
-    const cacheKey = `${filter}:${cityParam || "all"}`;
+    const cacheKey = `${filter}:${cityParam || "nyc"}`;
     const cached = cache.get(cacheKey);
     if (cached && Date.now() - cached.ts < CACHE_TTL) {
       const offset = (page - 1) * limit;
@@ -81,8 +56,7 @@ export async function GET(request: Request) {
     }
 
     // --- Fresh fetch ---
-    // Prefer admin client (no 3s anon timeout) with fallback to cookie client
-    const supabase = getAdminClient() ?? await createServerClient();
+    const supabase = await createClient();
 
     // Snap cutoff to midnight UTC so every request today gets the same boundary
     const cutoff = new Date();
@@ -100,80 +74,73 @@ export async function GET(request: Request) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const promises: PromiseLike<any>[] = [];
 
-    // Helper: conditionally apply metro filter (skip when fetching all cities)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    function withMetro<T extends { eq: (col: string, val: string) => T }>(query: T): T {
-      return metro ? query.eq("metro", metro) : query;
-    }
-
-    // Conditionally fetch based on filter — scoped to metro (city) when provided
+    // Conditionally fetch based on filter — scoped to metro (city)
     if (filter === "all" || filter === "reviews") {
-      const q = supabase
-        .from("reviews")
-        .select("id, title, overall_rating, created_at, building_id, metro, buildings(full_address, borough, slug)")
-        .not("building_id", "is", null);
       promises.push(
-        withMetro(q)
+        supabase
+          .from("reviews")
+          .select("id, title, overall_rating, created_at, building_id, metro, buildings(full_address, borough, slug)")
+          .not("building_id", "is", null)
+          .eq("metro", metro)
           .gte("created_at", cutoffDate)
           .lte("created_at", maxDate)
           .order("created_at", { ascending: false })
           .order("id", { ascending: false })
-          .limit(perSourceLimit)
+          .limit(10000)
       );
     } else {
       promises.push(Promise.resolve({ data: null, error: null }));
     }
 
     if (filter === "all" || filter === "violations") {
-      const q = supabase
-        .from("hpd_violations")
-        .select("id, class, nov_description, inspection_date, building_id, metro, buildings(full_address, borough, slug)")
-        .not("building_id", "is", null);
       promises.push(
-        withMetro(q)
+        supabase
+          .from("hpd_violations")
+          .select("id, class, nov_description, inspection_date, building_id, metro, buildings(full_address, borough, slug)")
+          .not("building_id", "is", null)
+          .eq("metro", metro)
           .gte("inspection_date", cutoffDate.slice(0, 10))
           .lte("inspection_date", maxDateShort)
           .order("inspection_date", { ascending: false })
           .order("id", { ascending: false })
-          .limit(perSourceLimit)
+          .limit(10000)
       );
     } else {
       promises.push(Promise.resolve({ data: null, error: null }));
     }
 
     if (filter === "all" || filter === "complaints") {
-      const q = supabase
-        .from("complaints_311")
-        .select("id, complaint_type, descriptor, created_date, building_id, metro, buildings(full_address, borough, slug)")
-        .not("building_id", "is", null);
       promises.push(
-        withMetro(q)
+        supabase
+          .from("complaints_311")
+          .select("id, complaint_type, descriptor, created_date, building_id, metro, buildings(full_address, borough, slug)")
+          .not("building_id", "is", null)
+          .eq("metro", metro)
           .gte("created_date", cutoffDate)
           .lte("created_date", maxDate)
           .order("created_date", { ascending: false })
           .order("id", { ascending: false })
-          .limit(perSourceLimit)
+          .limit(10000)
       );
     } else {
       promises.push(Promise.resolve({ data: null, error: null }));
     }
 
     if (filter === "all" || filter === "litigations") {
-      // Litigations are NYC-only; skip for non-NYC single-city requests
-      if (!metro || metro === "nyc") {
-        const q = supabase
-          .from("hpd_litigations")
-          .select("id, case_type, case_status, respondent, case_open_date, building_id, metro, buildings(full_address, borough, slug)")
-          .not("building_id", "is", null)
-          .not("case_open_date", "is", null)
-          .eq("metro", "nyc");
+      // Litigations are NYC-only; skip for LA
+      if (metro === "nyc") {
         promises.push(
-          q
+          supabase
+            .from("hpd_litigations")
+            .select("id, case_type, case_status, respondent, case_open_date, building_id, metro, buildings(full_address, borough, slug)")
+            .not("building_id", "is", null)
+            .not("case_open_date", "is", null)
+            .eq("metro", metro)
             .gte("case_open_date", cutoffDate.slice(0, 10))
             .lte("case_open_date", maxDateShort)
             .order("case_open_date", { ascending: false })
             .order("id", { ascending: false })
-            .limit(perSourceLimit)
+            .limit(10000)
         );
       } else {
         promises.push(Promise.resolve({ data: null, error: null }));
@@ -183,36 +150,36 @@ export async function GET(request: Request) {
     }
 
     if (filter === "all" || filter === "dob_violations") {
-      const q = supabase
-        .from("dob_violations")
-        .select("id, violation_type, description, issue_date, building_id, metro, buildings(full_address, borough, slug)")
-        .not("building_id", "is", null)
-        .not("issue_date", "is", null);
       promises.push(
-        withMetro(q)
+        supabase
+          .from("dob_violations")
+          .select("id, violation_type, description, issue_date, building_id, metro, buildings(full_address, borough, slug)")
+          .not("building_id", "is", null)
+          .not("issue_date", "is", null)
+          .eq("metro", metro)
           .gte("issue_date", cutoffDate.slice(0, 10))
           .lte("issue_date", maxDateShort)
           .order("issue_date", { ascending: false })
           .order("id", { ascending: false })
-          .limit(perSourceLimit)
+          .limit(10000)
       );
     } else {
       promises.push(Promise.resolve({ data: null, error: null }));
     }
 
     if (filter === "all" || filter === "crime") {
-      const q = supabase
-        .from("nypd_complaints")
-        .select("id, offense_description, pd_description, crime_category, law_category, cmplnt_date, borough, zip_code, metro")
-        .in("crime_category", ["violent", "property"])
-        .not("cmplnt_date", "is", null);
       promises.push(
-        withMetro(q)
+        supabase
+          .from("nypd_complaints")
+          .select("id, offense_description, pd_description, crime_category, law_category, cmplnt_date, borough, zip_code, metro")
+          .in("crime_category", ["violent", "property"])
+          .not("cmplnt_date", "is", null)
+          .eq("metro", metro)
           .gte("cmplnt_date", cutoffDate.slice(0, 10))
           .lte("cmplnt_date", maxDateShort)
           .order("cmplnt_date", { ascending: false })
           .order("id", { ascending: false })
-          .limit(perSourceLimit)
+          .limit(10000)
       );
     } else {
       promises.push(Promise.resolve({ data: null, error: null }));
@@ -220,19 +187,19 @@ export async function GET(request: Request) {
 
     if (filter === "all" || filter === "bedbugs") {
       // Bedbugs are NYC-only
-      if (!metro || metro === "nyc") {
+      if (metro === "nyc") {
         promises.push(
           supabase
             .from("bedbug_reports")
             .select("id, infested_dwelling_unit_count, filing_date, building_id, metro, buildings(full_address, borough, slug)")
             .not("building_id", "is", null)
             .not("filing_date", "is", null)
-            .eq("metro", "nyc")
+            .eq("metro", metro)
             .gte("filing_date", cutoffDate.slice(0, 10))
             .lte("filing_date", maxDateShort)
             .order("filing_date", { ascending: false })
             .order("id", { ascending: false })
-            .limit(perSourceLimit)
+            .limit(10000)
         );
       } else {
         promises.push(Promise.resolve({ data: null, error: null }));
@@ -243,19 +210,19 @@ export async function GET(request: Request) {
 
     if (filter === "all" || filter === "evictions") {
       // Evictions are NYC-only
-      if (!metro || metro === "nyc") {
+      if (metro === "nyc") {
         promises.push(
           supabase
             .from("evictions")
             .select("id, eviction_address, executed_date, borough, building_id, metro, buildings(full_address, borough, slug)")
             .not("building_id", "is", null)
             .not("executed_date", "is", null)
-            .eq("metro", "nyc")
+            .eq("metro", metro)
             .gte("executed_date", cutoffDate.slice(0, 10))
             .lte("executed_date", maxDateShort)
             .order("executed_date", { ascending: false })
             .order("id", { ascending: false })
-            .limit(perSourceLimit)
+            .limit(10000)
         );
       } else {
         promises.push(Promise.resolve({ data: null, error: null }));
@@ -266,18 +233,17 @@ export async function GET(request: Request) {
 
     // LAHD Evictions (LA-only)
     if (filter === "all" || filter === "la_eviction") {
-      if (!metro || metro === "los-angeles") {
+      if (metro === "los-angeles") {
         promises.push(
           supabase
             .from("lahd_evictions")
             .select("id, eviction_category, notice_type, notice_date, received_date, address, building_id, metro, buildings(full_address, borough, slug)")
             .not("building_id", "is", null)
-            .eq("metro", "los-angeles")
             .gte("received_date", cutoffDate.slice(0, 10))
             .lte("received_date", maxDateShort)
             .order("received_date", { ascending: false })
             .order("id", { ascending: false })
-            .limit(perSourceLimit)
+            .limit(10000)
         );
       } else {
         promises.push(Promise.resolve({ data: null, error: null }));
@@ -288,19 +254,18 @@ export async function GET(request: Request) {
 
     // LAHD Tenant Buyouts (LA-only)
     if (filter === "all" || filter === "tenant_buyout") {
-      if (!metro || metro === "los-angeles") {
+      if (metro === "los-angeles") {
         promises.push(
           supabase
             .from("lahd_tenant_buyouts")
             .select("id, disclosure_date, compensation_amount, address, building_id, metro, buildings(full_address, borough, slug)")
             .not("building_id", "is", null)
             .not("disclosure_date", "is", null)
-            .eq("metro", "los-angeles")
             .gte("disclosure_date", cutoffDate.slice(0, 10))
             .lte("disclosure_date", maxDateShort)
             .order("disclosure_date", { ascending: false })
             .order("id", { ascending: false })
-            .limit(perSourceLimit)
+            .limit(10000)
         );
       } else {
         promises.push(Promise.resolve({ data: null, error: null }));
@@ -311,19 +276,19 @@ export async function GET(request: Request) {
 
     // LA Building Permits
     if (filter === "all" || filter === "permit") {
-      if (!metro || metro === "los-angeles") {
+      if (metro === "los-angeles") {
         promises.push(
           supabase
             .from("dob_permits")
             .select("id, work_permit, permit_status, work_type, job_description, issued_date, borough, building_id, metro, buildings(full_address, borough, slug)")
             .not("building_id", "is", null)
             .not("issued_date", "is", null)
-            .eq("metro", "los-angeles")
+            .eq("metro", metro)
             .gte("issued_date", cutoffDate.slice(0, 10))
             .lte("issued_date", maxDateShort)
             .order("issued_date", { ascending: false })
             .order("id", { ascending: false })
-            .limit(perSourceLimit)
+            .limit(10000)
         );
       } else {
         promises.push(Promise.resolve({ data: null, error: null }));
@@ -334,19 +299,18 @@ export async function GET(request: Request) {
 
     // LAHD CCRIS Enforcement Cases (LA-only)
     if (filter === "all" || filter === "enforcement") {
-      if (!metro || metro === "los-angeles") {
+      if (metro === "los-angeles") {
         promises.push(
           supabase
             .from("lahd_ccris_cases")
             .select("id, case_type, start_date, total_complaints, open_complaints, address, building_id, metro, buildings(full_address, borough, slug)")
             .not("building_id", "is", null)
             .not("start_date", "is", null)
-            .eq("metro", "los-angeles")
             .gte("start_date", cutoffDate.slice(0, 10))
             .lte("start_date", maxDateShort)
             .order("start_date", { ascending: false })
             .order("id", { ascending: false })
-            .limit(perSourceLimit)
+            .limit(10000)
         );
       } else {
         promises.push(Promise.resolve({ data: null, error: null }));
@@ -361,10 +325,9 @@ export async function GET(request: Request) {
     }[];
 
     // Log failed queries but continue with the ones that succeeded
-    const sourceNames = ["reviews", "violations", "complaints_311", "litigations", "dob_violations", "crime", "bedbugs", "evictions", "la_evictions", "buyouts", "permits", "enforcement"];
     for (let i = 0; i < results.length; i++) {
       if (results[i].error) {
-        console.error(`Activity feed query [${sourceNames[i] || i}] failed:`, results[i].error);
+        console.error(`Activity feed query ${i} failed:`, results[i].error);
         results[i].data = null; // Treat failed queries as empty
       }
     }
@@ -388,7 +351,6 @@ export async function GET(request: Request) {
           borough: building.borough,
           buildingSlug: building.slug,
           rating: r.overall_rating as number,
-          metro: r.metro as string,
         });
       }
     }
@@ -412,7 +374,6 @@ export async function GET(request: Request) {
           borough: building.borough,
           buildingSlug: building.slug,
           violationClass: v.class as string,
-          metro: v.metro as string,
         });
       }
     }
@@ -434,7 +395,6 @@ export async function GET(request: Request) {
           buildingAddress: building.full_address,
           borough: building.borough,
           buildingSlug: building.slug,
-          metro: c.metro as string,
         });
       }
     }
@@ -457,7 +417,6 @@ export async function GET(request: Request) {
           buildingAddress: building.full_address,
           borough: building.borough,
           buildingSlug: building.slug,
-          metro: l.metro as string,
         });
       }
     }
@@ -479,7 +438,6 @@ export async function GET(request: Request) {
           buildingAddress: building.full_address,
           borough: building.borough,
           buildingSlug: building.slug,
-          metro: d.metro as string,
         });
       }
     }
@@ -500,7 +458,6 @@ export async function GET(request: Request) {
           borough: (cr.borough as string) || "",
           crimeCategory: cr.crime_category as string,
           zipCode: cr.zip_code as string,
-          metro: cr.metro as string,
         });
       }
     }
@@ -521,7 +478,6 @@ export async function GET(request: Request) {
           buildingAddress: building.full_address,
           borough: building.borough,
           buildingSlug: building.slug,
-          metro: b.metro as string,
         });
       }
     }
@@ -540,7 +496,6 @@ export async function GET(request: Request) {
           buildingAddress: building.full_address,
           borough: building.borough,
           buildingSlug: building.slug,
-          metro: e.metro as string,
         });
       }
     }
@@ -562,7 +517,6 @@ export async function GET(request: Request) {
           buildingAddress: building.full_address,
           borough: building.borough,
           buildingSlug: building.slug,
-          metro: e.metro as string,
         });
       }
     }
@@ -585,7 +539,6 @@ export async function GET(request: Request) {
           buildingAddress: building.full_address,
           borough: building.borough,
           buildingSlug: building.slug,
-          metro: b.metro as string,
         });
       }
     }
@@ -609,7 +562,6 @@ export async function GET(request: Request) {
           buildingAddress: building.full_address,
           borough: building.borough,
           buildingSlug: building.slug,
-          metro: p.metro as string,
         });
       }
     }
@@ -633,7 +585,6 @@ export async function GET(request: Request) {
           buildingAddress: building.full_address,
           borough: building.borough,
           buildingSlug: building.slug,
-          metro: c.metro as string,
         });
       }
     }

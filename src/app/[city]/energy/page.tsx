@@ -5,9 +5,7 @@ import { isValidCity, CITY_META, type City } from "@/lib/cities";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { EnergyMap } from "@/components/energy/EnergyMap";
-import dynamic from "next/dynamic";
-
-const ScoreDistribution = dynamic(() => import("@/components/energy/ScoreDistribution").then(m => m.ScoreDistribution));
+import { ScoreDistribution } from "@/components/energy/ScoreDistribution";
 import { EnergyTable } from "@/components/energy/EnergyTable";
 
 /* ---------------------------------------------------------------------------
@@ -51,45 +49,6 @@ const ENERGY_CONFIG: Record<City, EnergyConfig> = {
     jsonLdName: "LA Building Energy Scores",
     jsonLdDescription:
       "ENERGY STAR scores and energy benchmarking data for Los Angeles buildings, sourced from the EBEWE program.",
-  },
-  chicago: {
-    pageTitle: "Chicago Energy Scores",
-    metaDescription:
-      "How energy-efficient is your building? See ENERGY STAR scores, utility costs, and emissions data for Chicago buildings from the Chicago Energy Benchmarking program.",
-    headerTitle: "Chicago Energy Scores",
-    headerDescription:
-      "See how energy-efficient Chicago buildings are. ENERGY STAR scores, energy use intensity (EUI), and greenhouse gas emissions from Chicago\u2019s Energy Benchmarking Ordinance data.",
-    programName: "CEB",
-    dataSourceLabel: "Chicago Energy Benchmarking",
-    jsonLdName: "Chicago Building Energy Scores",
-    jsonLdDescription:
-      "ENERGY STAR scores and energy benchmarking data for Chicago buildings, sourced from the Chicago Energy Benchmarking program.",
-  },
-  miami: {
-    pageTitle: "Miami Energy Scores",
-    metaDescription:
-      "How energy-efficient is your building? See ENERGY STAR scores, utility costs, and emissions data for Miami-Dade buildings.",
-    headerTitle: "Miami Energy Scores",
-    headerDescription:
-      "See how energy-efficient Miami-Dade buildings are. ENERGY STAR scores, energy use intensity (EUI), and greenhouse gas emissions data for Miami multifamily buildings.",
-    programName: "MDE",
-    dataSourceLabel: "Miami-Dade Energy Benchmarking",
-    jsonLdName: "Miami Building Energy Scores",
-    jsonLdDescription:
-      "ENERGY STAR scores and energy benchmarking data for Miami-Dade buildings.",
-  },
-  houston: {
-    pageTitle: "Houston Energy Scores",
-    metaDescription:
-      "How energy-efficient is your building? See ENERGY STAR scores, utility costs, and emissions data for Houston buildings.",
-    headerTitle: "Houston Energy Scores",
-    headerDescription:
-      "See how energy-efficient Houston buildings are. ENERGY STAR scores, energy use intensity (EUI), and greenhouse gas emissions data for Houston multifamily buildings.",
-    programName: "HEBE",
-    dataSourceLabel: "Houston Energy Benchmarking",
-    jsonLdName: "Houston Building Energy Scores",
-    jsonLdDescription:
-      "ENERGY STAR scores and energy benchmarking data for Houston buildings.",
   },
 };
 

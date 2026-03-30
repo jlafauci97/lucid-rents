@@ -4,8 +4,7 @@ import { MapPin, Building2, AlertTriangle, MessageSquare, Users, Siren } from "l
 import { LetterGrade } from "@/components/ui/LetterGrade";
 import { getLetterGrade, getGradeColor } from "@/lib/constants";
 import { buildingUrl, landlordUrl, canonicalUrl, cityPath, neighborhoodUrl, breadcrumbJsonLd } from "@/lib/seo";
-import { parseNeighborhoodSlug } from "@/lib/nyc-neighborhoods";
-import { getNeighborhoodNameByCity } from "@/lib/neighborhoods";
+import { getNeighborhoodName, parseNeighborhoodSlug } from "@/lib/nyc-neighborhoods";
 import { CITY_META } from "@/lib/cities";
 import type { City } from "@/lib/cities";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
@@ -21,10 +20,9 @@ export async function generateMetadata({
 }: {
   params: Promise<{ city: string; slug: string }>;
 }): Promise<Metadata> {
-  const { city: cityParam, slug } = await params;
-  const city = cityParam as City;
+  const { slug } = await params;
   const zipCode = parseNeighborhoodSlug(slug);
-  const name = getNeighborhoodNameByCity(zipCode, city);
+  const name = getNeighborhoodName(zipCode);
   const displayName = name ? `${name} (${zipCode})` : zipCode;
   const url = canonicalUrl(neighborhoodUrl(zipCode));
   return {
@@ -121,7 +119,7 @@ export default async function NeighborhoodPage({
   const { city: cityParam, slug } = await params;
   const city = cityParam as City;
   const zipCode = parseNeighborhoodSlug(slug);
-  const neighborhoodName = getNeighborhoodNameByCity(zipCode, city);
+  const neighborhoodName = getNeighborhoodName(zipCode);
 
   const [stats, crime, buildings] = await Promise.all([
     getNeighborhoodStats(zipCode),
@@ -177,8 +175,8 @@ export default async function NeighborhoodPage({
         "@context": "https://schema.org",
         "@type": "Place",
         name: neighborhoodName
-          ? `${neighborhoodName}, ${CITY_META[city].name} (${zipCode})`
-          : `${CITY_META[city].name} Neighborhood ${zipCode}`,
+          ? `${neighborhoodName}, NYC (${zipCode})`
+          : `NYC Neighborhood ${zipCode}`,
         address: {
           "@type": "PostalAddress",
           postalCode: zipCode,
@@ -309,7 +307,7 @@ export default async function NeighborhoodPage({
             <h2 className="text-lg font-bold text-[#0F1D2E] mb-3">Most Flagged Buildings</h2>
             <div className="space-y-2">
               {buildings.map((b: { id: string; full_address: string; borough: string; slug: string; overall_score: number | null; violation_count: number; complaint_count: number; review_count: number }) => (
-                <Link key={b.id} href={buildingUrl(b, city)}>
+                <Link key={b.id} href={buildingUrl(b)}>
                   <div className="bg-white rounded-xl border border-[#e2e8f0] p-4 hover:border-[#3B82F6] transition-colors flex items-center gap-3">
                     <LetterGrade score={b.overall_score} size="sm" />
                     <div className="min-w-0 flex-1">

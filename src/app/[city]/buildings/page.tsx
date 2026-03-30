@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Building2, AlertTriangle, MessageSquare, Users, ShieldAlert, MapPin, TrendingDown } from "lucide-react";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { BOROUGH_SLUGS, regionSlug, canonicalUrl, cityPath } from "@/lib/seo";
+import { BOROUGH_SLUGS, canonicalUrl, cityPath } from "@/lib/seo";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
 import type { Metadata } from "next";
 
@@ -34,17 +34,16 @@ interface BoroughStats {
   total_complaints: number;
 }
 
-async function getBoroughStats(city: City): Promise<BoroughStats[]> {
+async function getBoroughStats(): Promise<BoroughStats[]> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-  const cityMeta = CITY_META[city] || CITY_META.nyc;
-  const boroughs = [...cityMeta.regions];
+  const boroughs = Object.keys(BOROUGH_SLUGS);
   const stats: BoroughStats[] = [];
 
   for (const borough of boroughs) {
     const res = await fetch(
-      `${supabaseUrl}/rest/v1/buildings?select=id,violation_count,complaint_count&borough=eq.${encodeURIComponent(borough)}&metro=eq.${encodeURIComponent(city)}&limit=50000`,
+      `${supabaseUrl}/rest/v1/buildings?select=id,violation_count,complaint_count&borough=eq.${encodeURIComponent(borough)}&limit=50000`,
       {
         headers: { apikey: supabaseKey, Prefer: "count=exact" },
         next: { revalidate: 3600 },
@@ -77,19 +76,18 @@ async function getBoroughStats(city: City): Promise<BoroughStats[]> {
 
 export default async function BuildingsIndexPage({ params }: { params: Promise<{ city: string }> }) {
   const { city } = await params;
-  const meta = CITY_META[city as City] || CITY_META.nyc;
-  const stats = await getBoroughStats(city as City);
+  const stats = await getBoroughStats();
 
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "ItemList",
-    name: `${meta.fullName} Building Directories`,
+    name: "NYC Borough Building Directories",
     numberOfItems: stats.length,
     itemListElement: stats.map((s, i) => ({
       "@type": "ListItem",
       position: i + 1,
       name: `${s.borough} Buildings`,
-      url: canonicalUrl(cityPath(`/buildings/${regionSlug(s.borough)}`, city as City)),
+      url: canonicalUrl(cityPath(`/buildings/${BOROUGH_SLUGS[s.borough]}`, city as City)),
     })),
   };
 
@@ -99,15 +97,15 @@ export default async function BuildingsIndexPage({ params }: { params: Promise<{
       <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Buildings", href: cityPath("/buildings", city as City) }]} />
 
       <h1 className="text-3xl font-bold text-[#0F1D2E] mt-6 mb-2">
-        {meta.fullName} Buildings Directory
+        NYC Buildings Directory
       </h1>
       <p className="text-[#64748b] mb-8">
-        Browse apartment buildings across {meta.fullName}. View violations, complaints, and tenant reviews.
+        Browse apartment buildings across all five NYC boroughs. View violations, complaints, and tenant reviews.
       </p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {stats.map((s) => (
-          <Link key={s.borough} href={cityPath(`/buildings/${regionSlug(s.borough)}`, city as City)}>
+          <Link key={s.borough} href={cityPath(`/buildings/${BOROUGH_SLUGS[s.borough]}`, city as City)}>
             <Card hover>
               <CardContent className="p-6">
                 <h2 className="text-xl font-bold text-[#0F1D2E] mb-4">

@@ -1,17 +1,15 @@
 #!/usr/bin/env python3
 """
-Scrape rent and amenity data from rent.com for NYC, LA, and Chicago using Scrapling.
+Scrape rent and amenity data from rent.com for NYC's five boroughs using Scrapling.
 
 Uses StealthyFetcher with real_chrome=True to bypass anti-bot protection,
 then extracts structured JSON from Next.js __NEXT_DATA__ payload.
 
 Usage:
-    python3 scripts/scrape-rent-com.py                            # all NYC boroughs, 5 pages each
-    python3 scripts/scrape-rent-com.py --metro=los-angeles        # all LA areas
-    python3 scripts/scrape-rent-com.py --metro=chicago            # all Chicago areas
-    python3 scripts/scrape-rent-com.py --borough=Manhattan        # single borough/area
-    python3 scripts/scrape-rent-com.py --pages=20                 # more pages per area
-    python3 scripts/scrape-rent-com.py --dry-run                  # preview without DB writes
+    python3 scripts/scrape-rent-com.py                        # all boroughs, 5 pages each
+    python3 scripts/scrape-rent-com.py --borough=Manhattan    # single borough
+    python3 scripts/scrape-rent-com.py --pages=20             # more pages per borough
+    python3 scripts/scrape-rent-com.py --dry-run              # preview without DB writes
 """
 
 import json
@@ -48,75 +46,12 @@ from supabase import create_client
 supabase = create_client(SUPABASE_URL, SERVICE_KEY)
 
 # ── CONSTANTS ────────────────────────────────────────────────────────────────
-METRO_AREA_URLS = {
-    "nyc": {
-        "Manhattan": "https://www.rent.com/new-york/new-york-apartments",
-        "Brooklyn": "https://www.rent.com/new-york/brooklyn-apartments",
-        "Queens": "https://www.rent.com/new-york/queens-apartments",
-        "Bronx": "https://www.rent.com/new-york/bronx-apartments",
-        "Staten Island": "https://www.rent.com/new-york/staten-island-apartments",
-    },
-    "los-angeles": {
-        "Downtown LA": "https://www.rent.com/california/los-angeles-apartments",
-        "Hollywood": "https://www.rent.com/california/hollywood-apartments",
-        "West Hollywood": "https://www.rent.com/california/west-hollywood-apartments",
-        "Santa Monica": "https://www.rent.com/california/santa-monica-apartments",
-        "Culver City": "https://www.rent.com/california/culver-city-apartments",
-        "Glendale": "https://www.rent.com/california/glendale-apartments",
-        "Burbank": "https://www.rent.com/california/burbank-apartments",
-        "Pasadena": "https://www.rent.com/california/pasadena-apartments",
-        "Long Beach": "https://www.rent.com/california/long-beach-apartments",
-        "Inglewood": "https://www.rent.com/california/inglewood-apartments",
-        "Torrance": "https://www.rent.com/california/torrance-apartments",
-        "El Segundo": "https://www.rent.com/california/el-segundo-apartments",
-        "Redondo Beach": "https://www.rent.com/california/redondo-beach-apartments",
-        "Venice": "https://www.rent.com/california/los-angeles-apartments/neighborhoods/venice",
-        "Silver Lake": "https://www.rent.com/california/los-angeles-apartments/neighborhoods/silver-lake",
-        "Echo Park": "https://www.rent.com/california/los-angeles-apartments/neighborhoods/echo-park",
-        "Koreatown": "https://www.rent.com/california/los-angeles-apartments/neighborhoods/koreatown",
-        "North Hollywood": "https://www.rent.com/california/north-hollywood-apartments",
-        "Studio City": "https://www.rent.com/california/studio-city-apartments",
-        "Sherman Oaks": "https://www.rent.com/california/sherman-oaks-apartments",
-    },
-    "chicago": {
-        "Chicago": "https://www.rent.com/illinois/chicago-apartments",
-        "Loop": "https://www.rent.com/illinois/chicago-apartments/neighborhoods/loop",
-        "Lincoln Park": "https://www.rent.com/illinois/chicago-apartments/neighborhoods/lincoln-park",
-        "Lakeview": "https://www.rent.com/illinois/chicago-apartments/neighborhoods/lakeview",
-        "Wicker Park": "https://www.rent.com/illinois/chicago-apartments/neighborhoods/wicker-park",
-        "Logan Square": "https://www.rent.com/illinois/chicago-apartments/neighborhoods/logan-square",
-        "River North": "https://www.rent.com/illinois/chicago-apartments/neighborhoods/river-north",
-        "Gold Coast": "https://www.rent.com/illinois/chicago-apartments/neighborhoods/gold-coast",
-        "Hyde Park": "https://www.rent.com/illinois/chicago-apartments/neighborhoods/hyde-park",
-        "South Loop": "https://www.rent.com/illinois/chicago-apartments/neighborhoods/south-loop",
-        "West Loop": "https://www.rent.com/illinois/chicago-apartments/neighborhoods/west-loop",
-        "Evanston": "https://www.rent.com/illinois/evanston-apartments",
-        "Oak Park": "https://www.rent.com/illinois/oak-park-apartments",
-    },
-    "miami": {
-        "Miami": "https://www.rent.com/florida/miami-apartments",
-        "Brickell": "https://www.rent.com/florida/miami-apartments/neighborhoods/brickell",
-        "Downtown Miami": "https://www.rent.com/florida/miami-apartments/neighborhoods/downtown-miami",
-        "Wynwood": "https://www.rent.com/florida/miami-apartments/neighborhoods/wynwood",
-        "Miami Beach": "https://www.rent.com/florida/miami-apartments/neighborhoods/miami-beach",
-        "Coral Gables": "https://www.rent.com/florida/coral-gables-apartments",
-        "Coconut Grove": "https://www.rent.com/florida/miami-apartments/neighborhoods/coconut-grove",
-        "Doral": "https://www.rent.com/florida/doral-apartments",
-        "Kendall": "https://www.rent.com/florida/miami-apartments/neighborhoods/kendall",
-        "Aventura": "https://www.rent.com/florida/aventura-apartments",
-        "Edgewater": "https://www.rent.com/florida/miami-apartments/neighborhoods/edgewater",
-        "Little Havana": "https://www.rent.com/florida/miami-apartments/neighborhoods/little-havana",
-    },
-}
-
-# Backward compat
-BOROUGH_URLS = METRO_AREA_URLS["nyc"]
-
-METRO_INFO = {
-    "nyc": {"city": "New York", "state": "NY"},
-    "los-angeles": {"city": "Los Angeles", "state": "CA"},
-    "chicago": {"city": "Chicago", "state": "IL"},
-    "miami": {"city": "Miami", "state": "FL"},
+BOROUGH_URLS = {
+    "Manhattan": "https://www.rent.com/new-york/new-york-apartments",
+    "Brooklyn": "https://www.rent.com/new-york/brooklyn-apartments",
+    "Queens": "https://www.rent.com/new-york/queens-apartments",
+    "Bronx": "https://www.rent.com/new-york/bronx-apartments",
+    "Staten Island": "https://www.rent.com/new-york/staten-island-apartments",
 }
 
 MAX_RETRIES = 3
@@ -414,40 +349,33 @@ def extract_listings(data: dict) -> tuple[list[dict], int]:
 # ── BOROUGH DETECTION ────────────────────────────────────────────────────────
 # rent.com uses city names like "New York", "Brooklyn", "Bronx", etc.
 CITY_TO_BOROUGH = {
-    # NYC
-    "new york": "Manhattan", "manhattan": "Manhattan",
-    "brooklyn": "Brooklyn", "bronx": "Bronx",
-    "queens": "Queens", "long island city": "Queens",
-    "astoria": "Queens", "flushing": "Queens",
-    "jamaica": "Queens", "jackson heights": "Queens",
-    "woodside": "Queens", "sunnyside": "Queens",
-    "forest hills": "Queens", "rego park": "Queens",
+    "new york": "Manhattan",
+    "manhattan": "Manhattan",
+    "brooklyn": "Brooklyn",
+    "bronx": "Bronx",
+    "queens": "Queens",
+    "long island city": "Queens",
+    "astoria": "Queens",
+    "flushing": "Queens",
+    "jamaica": "Queens",
+    "jackson heights": "Queens",
+    "woodside": "Queens",
+    "sunnyside": "Queens",
+    "forest hills": "Queens",
+    "rego park": "Queens",
     "staten island": "Staten Island",
-    # LA
-    "los angeles": "Los Angeles", "la": "Los Angeles",
-    "hollywood": "Hollywood", "west hollywood": "West Hollywood",
-    "santa monica": "Santa Monica", "venice": "Venice",
-    "culver city": "Culver City", "glendale": "Glendale",
-    "burbank": "Burbank", "pasadena": "Pasadena",
-    "long beach": "Long Beach", "inglewood": "Inglewood",
-    "torrance": "Torrance", "el segundo": "El Segundo",
-    "redondo beach": "Redondo Beach",
-    # Chicago
-    "chicago": "Chicago", "evanston": "Evanston", "oak park": "Oak Park",
-    # Miami
-    "miami": "Miami", "miami beach": "Miami Beach", "coral gables": "Coral Gables",
-    "doral": "Doral", "hialeah": "Hialeah", "aventura": "Aventura",
-    "coconut grove": "Coconut Grove", "brickell": "Brickell", "wynwood": "Wynwood",
 }
 
 
-def detect_borough(listing: dict, default_area: str = "Manhattan") -> str:
-    """Detect borough/area from listing city/address."""
+def detect_borough(listing: dict) -> str:
+    """Detect NYC borough from listing city/address."""
     city = listing.get("address_full", "").split(",")
     if len(city) >= 2:
         city_name = city[1].strip().lower()
         if city_name in CITY_TO_BOROUGH:
             return CITY_TO_BOROUGH[city_name]
+    loc_city = (listing.get("latitude") and listing.get("longitude") and
+                listing.get("address_full", ""))
     # Fall back to zip code prefix
     zc = listing.get("zip_code", "")
     if zc.startswith("100") or zc.startswith("101") or zc.startswith("102"):
@@ -460,11 +388,7 @@ def detect_borough(listing: dict, default_area: str = "Manhattan") -> str:
         return "Queens"
     if zc.startswith("103"):
         return "Staten Island"
-    if zc.startswith("900") or zc.startswith("901") or zc.startswith("902"):
-        return "Los Angeles"
-    if zc.startswith("606") or zc.startswith("607") or zc.startswith("608"):
-        return "Chicago"
-    return default_area
+    return "Manhattan"  # default
 
 
 def generate_slug(full_address: str) -> str:
@@ -543,7 +467,6 @@ def upsert_rents(building_id: str, rent_by_beds: dict) -> int:
         history_rows.append({
             "building_id": building_id,
             "source": SOURCE,
-            "unit_number": "",
             "bedrooms": beds,
             "rent": median,
             "sqft": data.get("sqft_min"),
@@ -568,7 +491,7 @@ def upsert_rents(building_id: str, rent_by_beds: dict) -> int:
     return len(rows)
 
 
-def upsert_amenities(building_id: str, amenities: list[str], metro: str = "nyc") -> int:
+def upsert_amenities(building_id: str, amenities: list[str]) -> int:
     """Upsert amenity data for a building."""
     if not amenities:
         return 0
@@ -588,7 +511,6 @@ def upsert_amenities(building_id: str, amenities: list[str], metro: str = "nyc")
             "amenity": normalized,
             "category": categorize_amenity(a),
             "scraped_at": now,
-            "metro": metro,
         })
 
     try:
@@ -601,23 +523,21 @@ def upsert_amenities(building_id: str, amenities: list[str], metro: str = "nyc")
         return 0
 
 
-def create_building(listing: dict, metro: str = "nyc") -> str | None:
+def create_building(listing: dict) -> str | None:
     """Create a new building record from a rent.com listing. Returns building ID."""
     addr_full = listing.get("address_full", "")
     if not addr_full:
         return None
 
-    borough = detect_borough(listing, default_area=list(METRO_AREA_URLS.get(metro, BOROUGH_URLS).keys())[0])
+    borough = detect_borough(listing)
     street = addr_full.split(",")[0].strip() if "," in addr_full else addr_full
     parts = street.split(None, 1)
     house_number = parts[0].upper() if parts else ""
     street_name = parts[1].upper() if len(parts) > 1 else ""
     zip_code = listing.get("zip_code", "")
 
-    info = METRO_INFO.get(metro, METRO_INFO["nyc"])
-    state = info["state"]
-
-    full_address = f"{street.upper()}, {borough}, {state}"
+    # Build full_address in the same format as the sync: "400 W 61ST ST, Manhattan, NY, 10023"
+    full_address = f"{street.upper()}, {borough}, NY"
     if zip_code:
         full_address += f", {zip_code}"
 
@@ -628,11 +548,10 @@ def create_building(listing: dict, metro: str = "nyc") -> str | None:
         "house_number": house_number,
         "street_name": street_name,
         "borough": borough,
-        "city": info["city"],
-        "state": state,
+        "city": "New York",
+        "state": "NY",
         "zip_code": zip_code or None,
         "slug": slug,
-        "metro": metro,
         "latitude": listing.get("latitude"),
         "longitude": listing.get("longitude"),
         "overall_score": 0,
@@ -717,17 +636,14 @@ def upsert_listing(building_id: str, listing: dict) -> bool:
 
 # ── MAIN ─────────────────────────────────────────────────────────────────────
 def main():
-    parser = argparse.ArgumentParser(description="Scrape rent.com for rent & amenity data")
-    parser.add_argument("--metro", type=str, default="nyc", choices=["nyc", "los-angeles", "chicago", "miami"], help="Metro area")
-    parser.add_argument("--borough", type=str, default="", help="Single borough/area to scrape")
-    parser.add_argument("--pages", type=int, default=5, help="Pages per area (30 listings/page)")
+    parser = argparse.ArgumentParser(description="Scrape rent.com for NYC rent & amenity data")
+    parser.add_argument("--borough", type=str, default="", help="Single borough to scrape")
+    parser.add_argument("--pages", type=int, default=5, help="Pages per borough (30 listings/page)")
     parser.add_argument("--dry-run", action="store_true", help="Preview without writing to DB")
     parser.add_argument("--start-page", type=int, default=1, help="Starting page number")
     args = parser.parse_args()
 
-    metro = args.metro
-    area_urls = METRO_AREA_URLS.get(metro, BOROUGH_URLS)
-    boroughs = {args.borough: area_urls[args.borough]} if args.borough else area_urls
+    boroughs = {args.borough: BOROUGH_URLS[args.borough]} if args.borough else BOROUGH_URLS
     max_pages = args.pages
     dry_run = args.dry_run
 
@@ -739,7 +655,7 @@ def main():
     total_listings_saved = 0
     total_listings = 0
 
-    print(f"Scraping rent.com — metro={metro}, areas={list(boroughs.keys())}, pages={max_pages}, dry_run={dry_run}")
+    print(f"Scraping rent.com — boroughs={list(boroughs.keys())}, pages={max_pages}, dry_run={dry_run}")
     print(f"Start time: {datetime.now()}\n")
 
     for borough, base_url in boroughs.items():
@@ -782,7 +698,7 @@ def main():
                     label = "MATCHED"
                 else:
                     # Create new building
-                    building_id = create_building(listing, metro=metro)
+                    building_id = create_building(listing)
                     if building_id:
                         total_created += 1
                         label = "CREATED"
@@ -793,7 +709,7 @@ def main():
 
                 # Upsert all data for this building
                 rents_added = upsert_rents(building_id, listing["rent_by_beds"])
-                amenities_added = upsert_amenities(building_id, listing["amenities"], metro)
+                amenities_added = upsert_amenities(building_id, listing["amenities"])
                 listing_saved = upsert_listing(building_id, listing)
 
                 total_rents += rents_added

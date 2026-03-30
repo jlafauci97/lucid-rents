@@ -60,60 +60,6 @@ const RENT_STAB_CONFIG: Record<City, RentStabConfig> = {
     jsonLdDescription:
       "Check if any Los Angeles building is covered by the Rent Stabilization Ordinance based on LAHD records.",
   },
-  chicago: {
-    title: "Chicago RLTO Protections Checker",
-    metaDescription:
-      "Check your Chicago apartment's RLTO protections — security deposit rights, just cause eviction coverage, and tenant ordinance compliance.",
-    headerDescription:
-      "Check if your apartment is protected under Chicago's Residential Landlord Tenant Ordinance (RLTO) and the Just Cause for Eviction Ordinance. Most residential rental units in Chicago are covered by the RLTO, which provides security deposit protections, notice requirements, and remedies for landlord violations.",
-    searchPlaceholder: "Search by address to check RLTO protections...",
-    dataSourceLabel: "City of Chicago / CDPH",
-    editorialTitle: "What Is the Chicago RLTO?",
-    editorialParagraphs: [
-      "The Chicago Residential Landlord Tenant Ordinance (RLTO) is one of the strongest tenant protection laws in the United States. It covers most residential rental units in Chicago and provides comprehensive protections including strict security deposit rules, notice requirements for rent increases and lease termination, and remedies when landlords violate the ordinance.",
-      "Under the RLTO, landlords must hold security deposits in federally insured interest-bearing accounts, provide receipts with bank details, and return the deposit with interest within 30 days of move-out with an itemized statement of any deductions. Violations of these rules can entitle tenants to double the deposit amount plus attorney fees.",
-      "In 2023, Chicago passed the Just Cause for Eviction Ordinance, which requires landlords to have a valid reason to evict tenants or refuse to renew leases. Note that Illinois state law preempts traditional rent control — Chicago cannot set limits on rent amounts. However, the RLTO and Just Cause ordinance together provide significant protections for renters.",
-    ],
-    jsonLdName: "Chicago RLTO Protections Checker",
-    jsonLdDescription:
-      "Check RLTO protections and just cause eviction coverage for any Chicago apartment.",
-  },
-  miami: {
-    title: "Miami Tenant Protections Guide",
-    metaDescription:
-      "Florida has no rent control — learn what protections Miami tenants do have, including security deposit rules, notice requirements, and condo safety regulations.",
-    headerDescription:
-      "Florida state law preempts all local rent control, meaning Miami-Dade County and its municipalities cannot set limits on rent increases. However, Miami tenants still have protections under Florida Statute Chapter 83 (the Florida Residential Landlord and Tenant Act), including security deposit rules, habitability standards, and notice requirements.",
-    searchPlaceholder: "Search by address to check building protections...",
-    dataSourceLabel: "Miami-Dade Property Appraiser / RER",
-    editorialTitle: "What Protections Do Miami Tenants Have?",
-    editorialParagraphs: [
-      "Unlike NYC, LA, and Chicago, Florida law explicitly prohibits local governments from enacting rent control ordinances except in cases of a housing emergency declared by the governor. This means there are no rent stabilization protections for Miami tenants — landlords can raise rent by any amount with proper notice (typically 30 days for month-to-month, or at lease renewal).",
-      "Miami tenants are protected by the Florida Residential Landlord and Tenant Act (F.S. 83), which requires landlords to maintain the premises in compliance with building codes, provide functioning plumbing, heat, and hot water, and follow specific procedures for security deposit handling. Landlords must return deposits within 15-30 days of move-out with an itemized list of deductions.",
-      "After the 2021 Surfside condominium collapse, Miami-Dade County strengthened its 40-year building recertification requirements. Buildings 40 years or older (25 years in coastal zones) must undergo structural inspections and recertification. This is critical for tenants in older buildings — check your building's recertification status using the search above.",
-    ],
-    jsonLdName: "Miami Tenant Protections Guide",
-    jsonLdDescription:
-      "Learn about tenant protections for Miami apartments — no rent control in Florida but other key protections apply.",
-  },
-  houston: {
-    title: "Houston Tenant Protections Guide",
-    metaDescription:
-      "Texas has no rent control — learn what protections Houston tenants do have, including security deposit rules, notice requirements, and habitability standards.",
-    headerDescription:
-      "Texas state law preempts all local rent control, meaning Houston and other Texas cities cannot set limits on rent increases. However, Houston tenants still have protections under Texas Property Code Chapter 92, including security deposit rules, habitability standards, and notice requirements for lease termination.",
-    searchPlaceholder: "Search by address to check building protections...",
-    dataSourceLabel: "HCAD / City of Houston",
-    editorialTitle: "What Protections Do Houston Tenants Have?",
-    editorialParagraphs: [
-      "Texas law explicitly prohibits local governments from enacting rent control ordinances. This means there are no rent stabilization protections for Houston tenants — landlords can raise rent by any amount with proper notice (typically 30 days for month-to-month, or at lease renewal for fixed-term leases).",
-      "Houston tenants are protected by the Texas Property Code (Chapter 92), which requires landlords to make a diligent effort to repair conditions that materially affect the health or safety of an ordinary tenant, provide functioning smoke detectors, and follow specific procedures for security deposit handling. Landlords must return deposits within 30 days of move-out with an itemized list of deductions.",
-      "Houston is particularly vulnerable to flooding and hurricane damage. Tenants should check whether their building is in a FEMA-designated flood zone and understand their rights regarding habitability after storm damage. Landlords are required to disclose known flood risks, and tenants may have the right to terminate a lease if a property becomes substantially uninhabitable due to flood damage.",
-    ],
-    jsonLdName: "Houston Tenant Protections Guide",
-    jsonLdDescription:
-      "Learn about tenant protections for Houston apartments — no rent control in Texas but other key protections apply.",
-  },
 };
 
 /* ---------------------------------------------------------------------------
@@ -222,8 +168,7 @@ export default async function RentStabilizationPage({
   const order = sp.order || "desc";
 
   const isLA = city === "los-angeles";
-  const isChicago = city === "chicago";
-  const metro = isLA ? "los-angeles" : isChicago ? "chicago" : "nyc";
+  const metro = isLA ? "los-angeles" : "nyc";
   const [stats, buildings] = await Promise.all([
     getBoroughStats(metro),
     getStabilizedBuildings(metro, borough || undefined),
@@ -481,7 +426,7 @@ export default async function RentStabilizationPage({
                       >
                         <td className="px-4 py-3">
                           <Link
-                            href={buildingUrl(row, city)}
+                            href={buildingUrl(row)}
                             className="text-sm font-semibold text-[#2563EB] hover:text-[#1d4ed8] hover:underline"
                           >
                             {row.full_address}

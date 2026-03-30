@@ -1,7 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalUrl, cityPath } from "@/lib/seo";
 import { CITY_META, type City } from "@/lib/cities";
@@ -13,7 +12,7 @@ import { ActivityFeed } from "@/components/ActivityFeed";
 export const metadata: Metadata = {
   title: "Lucid Rents — Apartment Building Intelligence",
   description:
-    "Your next apartment has a history. Search any NYC, LA, Chicago, Miami, or Houston building to uncover violations, tenant complaints, crime stats, and honest reviews — before you sign.",
+    "Your next apartment has a history. Search any NYC or LA building to uncover violations, tenant complaints, crime stats, and honest reviews — before you sign.",
   alternates: { canonical: canonicalUrl("/") },
 };
 
@@ -49,21 +48,6 @@ const cities: { key: City; tagline: string; example: string }[] = [
     tagline: "Search violations, complaints, and reviews for any LA building.",
     example: "Try \"456 Sunset Blvd\" or \"90028\"",
   },
-  {
-    key: "chicago",
-    tagline: "Search violations, complaints, and reviews for any Chicago building.",
-    example: "Try \"1200 N Lake Shore Dr\" or \"60614\"",
-  },
-  {
-    key: "miami",
-    tagline: "Search violations, complaints, and reviews for any Miami building.",
-    example: "Try \"1000 Brickell Ave\" or \"33131\"",
-  },
-  {
-    key: "houston",
-    tagline: "Search violations, complaints, and reviews for any Houston building.",
-    example: "Try \"1600 Main St\" or \"77002\"",
-  },
 ];
 
 export default function HomePage() {
@@ -76,7 +60,7 @@ export default function HomePage() {
           name: "Lucid Rents",
           url: "https://lucidrents.com",
           description:
-            "Discover the truth about apartment buildings. Search building violations, tenant reviews, crime data, and more across New York City, Los Angeles, Chicago, Miami, and Houston.",
+            "Discover the truth about apartment buildings. Search building violations, tenant reviews, crime data, and more across New York City and Los Angeles.",
           potentialAction: {
             "@type": "SearchAction",
             target: {
@@ -112,7 +96,7 @@ export default function HomePage() {
           sizes="100vw"
         />
         <div className="absolute inset-0 bg-[#0F1D2E]/40" />
-        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-10 pb-8 sm:pb-12 text-center">
+        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-10 pb-8 sm:pb-12 text-center">
           <Image
             src="/lucid-rents-logo.png"
             alt="Lucid Rents"
@@ -133,33 +117,34 @@ export default function HomePage() {
           </p>
 
           {/* City Cards */}
-          <div className="flex justify-center gap-6 sm:gap-8 lg:gap-12 flex-wrap max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-3xl mx-auto">
             {cities.map((c) => {
               const meta = CITY_META[c.key];
               return (
                 <Link
                   key={c.key}
                   href={cityPath("/", c.key)}
-                  className="group flex flex-col items-center transition-transform hover:-translate-y-1.5"
+                  className="group relative rounded-2xl overflow-hidden border border-white/10 hover:border-white/30 transition-all hover:scale-[1.02]"
                 >
-                  <div className="w-[110px] h-[110px] sm:w-[150px] sm:h-[150px] rounded-full overflow-hidden border-[3px] border-white/15 group-hover:border-blue-500/60 group-hover:shadow-[0_0_30px_rgba(59,130,246,0.2)] transition-all relative">
-                    <Image
-                      src={meta.heroImage}
-                      alt={`${meta.fullName} skyline`}
-                      width={400}
-                      height={400}
-                      className="w-full h-full object-cover"
-                      sizes="(max-width: 640px) 110px, 150px"
-                    />
-                    <div className="absolute inset-0 bg-[radial-gradient(circle,transparent_40%,rgba(0,0,0,0.3)_100%)] rounded-full" />
+                  <Image
+                    src={meta.heroImage}
+                    alt={`${meta.fullName} skyline`}
+                    width={600}
+                    height={340}
+                    className="w-full h-[200px] sm:h-[220px] object-cover"
+                    priority
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 p-5 text-left">
+                    <h2 className="text-2xl font-bold mb-1">
+                      {meta.fullName}
+                    </h2>
+                    <p className="text-sm text-white/70 mb-3">{c.tagline}</p>
+                    <span className="inline-flex items-center gap-1 text-sm font-medium text-[#3B82F6] group-hover:text-white transition-colors">
+                      Explore {meta.name}
+                      <ArrowRight className="w-4 h-4" />
+                    </span>
                   </div>
-                  <h2 className="mt-4 text-lg font-bold">
-                    {meta.fullName}
-                  </h2>
-                  <span className="mt-1 inline-flex items-center gap-1 text-[13px] font-medium text-[#3B82F6] group-hover:text-white transition-colors">
-                    Explore {meta.name}
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </span>
                 </Link>
               );
             })}
@@ -173,9 +158,7 @@ export default function HomePage() {
       {/* Stats */}
       <section className="border-b border-[#e2e8f0]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <Suspense fallback={<div className="grid grid-cols-2 md:grid-cols-4 gap-6">{[...Array(4)].map((_, i) => <div key={i} className="text-center"><div className="w-8 h-8 bg-[#e2e8f0] rounded mx-auto mb-2 animate-pulse" /><div className="h-7 w-20 bg-[#e2e8f0] rounded mx-auto mb-1 animate-pulse" /><div className="h-4 w-24 bg-[#e2e8f0] rounded mx-auto animate-pulse" /></div>)}</div>}>
-            <LiveStats />
-          </Suspense>
+          <LiveStats />
         </div>
       </section>
 
@@ -191,7 +174,7 @@ export default function HomePage() {
               cities
             </p>
           </div>
-          <ActivityFeed allCities />
+          <ActivityFeed />
         </div>
       </section>
 
@@ -289,12 +272,6 @@ export default function HomePage() {
               className="inline-flex items-center justify-center px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-lg transition-colors border border-white/20"
             >
               Review an LA Building
-            </a>
-            <a
-              href={cityPath("/review/new", "chicago")}
-              className="inline-flex items-center justify-center px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-lg transition-colors border border-white/20"
-            >
-              Review a Chicago Building
             </a>
           </div>
         </div>

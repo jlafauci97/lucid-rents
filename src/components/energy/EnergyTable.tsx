@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowUpDown } from "lucide-react";
 import { getRegions, getRegionLabel } from "@/lib/constants";
 import { buildingUrl } from "@/lib/seo";
 import { useCity } from "@/lib/city-context";
@@ -30,14 +30,11 @@ interface EnergyTableProps {
   dataSourceLabel?: string;
 }
 
-const PAGE_SIZE = 50;
-
 export function EnergyTable({ data, dataSourceLabel }: EnergyTableProps) {
   const city = useCity();
   const [borough, setBorough] = useState("");
   const [sortBy, setSortBy] = useState<"energy_star_score" | "site_eui">("energy_star_score");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
-  const [page, setPage] = useState(1);
 
   const sourceLabel = dataSourceLabel || (city === "nyc" ? "NYC LL84 Energy Benchmarking" : "LA EBEWE Energy Benchmarking");
 
@@ -55,15 +52,6 @@ export function EnergyTable({ data, dataSourceLabel }: EnergyTableProps) {
 
     return rows;
   }, [data, borough, sortBy, sortDir]);
-
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-
-  // Reset page when filters change
-  const handleBoroughChange = (b: string) => {
-    setBorough(b);
-    setPage(1);
-  };
 
   function toggleSort(col: "energy_star_score" | "site_eui") {
     if (sortBy === col) {
@@ -87,7 +75,7 @@ export function EnergyTable({ data, dataSourceLabel }: EnergyTableProps) {
       {/* Region Filters */}
       <div className="flex flex-wrap gap-2 mb-4">
         <button
-          onClick={() => handleBoroughChange("")}
+          onClick={() => setBorough("")}
           className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
             !borough
               ? "bg-[#0F1D2E] text-white"
@@ -99,7 +87,7 @@ export function EnergyTable({ data, dataSourceLabel }: EnergyTableProps) {
         {getRegions(city).map((b) => (
           <button
             key={b}
-            onClick={() => handleBoroughChange(b)}
+            onClick={() => setBorough(b)}
             className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
               borough === b
                 ? "bg-[#0F1D2E] text-white"
@@ -144,7 +132,7 @@ export function EnergyTable({ data, dataSourceLabel }: EnergyTableProps) {
             </tr>
           </thead>
           <tbody className="divide-y divide-[#e2e8f0]">
-            {paginated.map((row, i) => (
+            {filtered.slice(0, 100).map((row, i) => (
               <tr key={i} className="hover:bg-[#f8fafc] transition-colors">
                 <td className="px-4 py-3 text-sm">
                   {row.building_slug && row.building_borough ? (
@@ -183,33 +171,9 @@ export function EnergyTable({ data, dataSourceLabel }: EnergyTableProps) {
         </table>
       </div>
 
-      {/* Pagination */}
-      <div className="flex items-center justify-between mt-4">
-        <p className="text-xs text-[#94a3b8]">
-          Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length} buildings. Data: {sourceLabel}.
-        </p>
-        {totalPages > 1 && (
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e2e8f0] text-[#334155] hover:bg-[#f8fafc] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            >
-              <ChevronLeft className="w-3 h-3" /> Previous
-            </button>
-            <span className="text-xs text-[#64748b]">
-              Page {page} of {totalPages}
-            </span>
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e2e8f0] text-[#334155] hover:bg-[#f8fafc] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            >
-              Next <ChevronRight className="w-3 h-3" />
-            </button>
-          </div>
-        )}
-      </div>
+      <p className="text-xs text-[#94a3b8] mt-3">
+        Showing {Math.min(filtered.length, 100)} of {filtered.length} buildings. Data: {sourceLabel}.
+      </p>
     </div>
   );
 }

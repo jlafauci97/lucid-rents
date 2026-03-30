@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { Sora } from "next/font/google";
-import { Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
@@ -9,8 +8,8 @@ import { CookieConsent } from "@/components/ui/CookieConsent";
 
 const GA_MEASUREMENT_ID = "G-FS7Q3PF982";
 
-const sora = Sora({
-  variable: "--font-sora",
+const geistSans = Geist({
+  variable: "--font-geist-sans",
   subsets: ["latin"],
 });
 
@@ -81,8 +80,7 @@ export default async function RootLayout({
         `}
       </Script>
       <body
-        className={`${sora.variable} ${geistMono.variable} antialiased`}
-        style={{ fontFamily: "var(--font-sora), system-ui, sans-serif" }}
+        className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}
       >
         <Navbar />
         <main className="min-h-[calc(100vh-64px-200px)]">{children}</main>

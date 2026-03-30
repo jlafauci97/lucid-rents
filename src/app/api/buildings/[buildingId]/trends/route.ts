@@ -56,37 +56,18 @@ export async function GET(
     const { buildingId } = await params;
     const supabase = await createClient();
 
-    // Look up the building's metro to decide which violation table to query
-    const { data: buildingRow } = await supabase
-      .from("buildings")
-      .select("metro")
-      .eq("id", buildingId)
-      .single();
-    const metro = buildingRow?.metro || "nyc";
-    const isChicago = metro === "chicago" || metro === "miami";
-
     const fiveYearsAgo = new Date();
     fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
     const cutoffDate = fiveYearsAgo.toISOString().split("T")[0];
 
-    // For Chicago, use dob_violations (issue_date) instead of hpd_violations
-    const violationsQuery = isChicago
-      ? supabase
-          .from("dob_violations")
-          .select("issue_date")
-          .eq("building_id", buildingId)
-          .gte("issue_date", cutoffDate)
-          .not("issue_date", "is", null)
-      : supabase
-          .from("hpd_violations")
-          .select("inspection_date")
-          .eq("building_id", buildingId)
-          .gte("inspection_date", cutoffDate)
-          .not("inspection_date", "is", null);
-
     // Fetch violations and complaints in parallel
     const [violationsRes, complaintsRes] = await Promise.all([
-      violationsQuery,
+      supabase
+        .from("hpd_violations")
+        .select("inspection_date")
+        .eq("building_id", buildingId)
+        .gte("inspection_date", cutoffDate)
+        .not("inspection_date", "is", null),
       supabase
         .from("complaints_311")
         .select("created_date")
@@ -125,11 +106,9 @@ export async function GET(
     }
 
     // Count violations per month
-    const dateField = isChicago ? "issue_date" : "inspection_date";
     for (const row of violationsRes.data || []) {
-      const dateVal = (row as Record<string, string>)[dateField];
-      if (!dateVal) continue;
-      const key = getMonthKey(dateVal);
+      if (!row.inspection_date) continue;
+      const key = getMonthKey(row.inspection_date);
       const entry = monthMap.get(key);
       if (entry) {
         entry.violations++;

@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { AlertTriangle, Building2, MapPin, ChevronLeft, ChevronRight, Users, Trophy, BarChart3 } from "lucide-react";
+import { AlertTriangle, Building2, MapPin, ChevronLeft, ChevronRight, Users } from "lucide-react";
 import Link from "next/link";
 import { buildingUrl, canonicalUrl, cityPath, landlordUrl } from "@/lib/seo";
 import { AdSidebar } from "@/components/ui/AdSidebar";
@@ -10,27 +10,19 @@ import type { Metadata } from "next";
 
 export async function generateMetadata({
   params,
-  searchParams,
 }: {
   params: Promise<{ city: string }>;
-  searchParams: Promise<{ mode?: string }>;
 }): Promise<Metadata> {
   const { city } = await params;
-  const { mode } = await searchParams;
   if (!isValidCity(city)) return {};
   const meta = CITY_META[city];
-  const isBest = mode === "best";
-  const label = isBest ? "Best Rated Buildings" : "Worst Rated Buildings";
-  const desc = isBest
-    ? `Top-rated ${meta.fullName} buildings with the best reviews and fewest violations.`
-    : `These ${meta.fullName} buildings have the most violations and complaints. Check the list before you sign a lease.`;
   return {
-    title: `${label} in ${meta.fullName} | Lucid Rents`,
-    description: desc,
+    title: `Worst Rated Buildings in ${meta.fullName} | Lucid Rents`,
+    description: `These ${meta.fullName} buildings have the most violations and complaints. Check the list before you sign a lease.`,
     alternates: { canonical: canonicalUrl(cityPath("/worst-rated-buildings", city)) },
     openGraph: {
-      title: `${label} in ${meta.fullName}`,
-      description: desc,
+      title: `Worst Rated Buildings in ${meta.fullName}`,
+      description: `These ${meta.fullName} buildings have the most violations and complaints. Check the list before you sign a lease.`,
       url: canonicalUrl(cityPath("/worst-rated-buildings", city)),
       siteName: "Lucid Rents",
       type: "website",
@@ -43,7 +35,7 @@ export const revalidate = 3600;
 
 interface RankingsPageProps {
   params: Promise<{ city: string }>;
-  searchParams: Promise<{ borough?: string; sort?: string; page?: string; mode?: string }>;
+  searchParams: Promise<{ borough?: string; sort?: string; page?: string }>;
 }
 
 export default async function RankingsPage({ params: routeParams, searchParams }: RankingsPageProps) {
@@ -55,8 +47,6 @@ export default async function RankingsPage({ params: routeParams, searchParams }
   const borough = params.borough || "all";
   const sortBy = params.sort || "violations";
   const page = parseInt(params.page || "1", 10);
-  const mode = params.mode || "worst";
-  const isBest = mode === "best";
   const limit = 25;
   const offset = (page - 1) * limit;
 
@@ -76,14 +66,7 @@ export default async function RankingsPage({ params: routeParams, searchParams }
     query = query.eq("borough", borough);
   }
 
-  if (isBest) {
-    // Best buildings: highest rated with reviews, fewest violations
-    query = query
-      .gt("overall_score", 0)
-      .gt("review_count", 0)
-      .order("overall_score", { ascending: false })
-      .order("review_count", { ascending: false });
-  } else if (sortBy === "violations") {
+  if (sortBy === "violations") {
     query = query.gt("violation_count", 0).order("violation_count", { ascending: false });
   } else if (sortBy === "complaints") {
     query = query.gt("complaint_count", 0).order("complaint_count", { ascending: false });
@@ -101,7 +84,7 @@ export default async function RankingsPage({ params: routeParams, searchParams }
   const buildings = rawBuildings?.slice(0, limit) || [];
 
   function buildUrl(overrides: Record<string, string>) {
-    const base: Record<string, string> = { borough, sort: sortBy, page: String(page), mode };
+    const base: Record<string, string> = { borough, sort: sortBy, page: String(page) };
     const merged = { ...base, ...overrides };
     const qs = new URLSearchParams(merged).toString();
     return `${cityPath("/worst-rated-buildings", city)}?${qs}`;
@@ -113,40 +96,12 @@ export default async function RankingsPage({ params: routeParams, searchParams }
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-[#0F1D2E]">
-          <BarChart3 className="inline w-8 h-8 text-[#3B82F6] mr-2 -mt-1" />
-          Building Rankings
+          <AlertTriangle className="inline w-8 h-8 text-[#ef4444] mr-2 -mt-1" />
+          Worst Rated Buildings
         </h1>
         <p className="text-[#64748b] mt-2">
-          {isBest
-            ? `Top-rated ${CITY_META[city].fullName} buildings with the best reviews and fewest issues.`
-            : `${CITY_META[city].fullName} buildings ranked by the most violations, 311 complaints, and reported issues.`}
+          {CITY_META[city].fullName} buildings ranked by the most violations, 311 complaints, and reported issues.
         </p>
-      </div>
-
-      {/* Mode toggle */}
-      <div className="flex gap-0 mb-6 w-fit rounded-lg border border-[#e2e8f0] overflow-hidden">
-        <Link
-          href={buildUrl({ mode: "worst", page: "1" })}
-          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors ${
-            !isBest
-              ? "bg-red-500 text-white"
-              : "bg-white text-[#64748b] hover:bg-red-50"
-          }`}
-        >
-          <AlertTriangle className="w-4 h-4" />
-          Worst Buildings
-        </Link>
-        <Link
-          href={buildUrl({ mode: "best", page: "1" })}
-          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors ${
-            isBest
-              ? "bg-green-500 text-white"
-              : "bg-white text-[#64748b] hover:bg-green-50"
-          }`}
-        >
-          <Trophy className="w-4 h-4" />
-          Best Buildings
-        </Link>
       </div>
 
       {/* Filters */}
@@ -168,27 +123,25 @@ export default async function RankingsPage({ params: routeParams, searchParams }
           ))}
         </div>
 
-        {/* Sort options — only show for worst mode */}
-        {!isBest && (
-          <div className="flex gap-2 sm:ml-auto">
-            {[
-              { key: "violations", label: "Violations" },
-              { key: "complaints", label: "Complaints" },
-            ].map((opt) => (
-              <Link
-                key={opt.key}
-                href={buildUrl({ sort: opt.key, page: "1" })}
-                className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${
-                  sortBy === opt.key
-                    ? "bg-[#3B82F6] text-white border-[#3B82F6] font-medium"
-                    : "bg-white text-[#64748b] border-[#e2e8f0] hover:border-[#94a3b8]"
-                }`}
-              >
-                Sort by {opt.label}
-              </Link>
-            ))}
-          </div>
-        )}
+        {/* Sort options */}
+        <div className="flex gap-2 sm:ml-auto">
+          {[
+            { key: "violations", label: "Violations" },
+            { key: "complaints", label: "Complaints" },
+          ].map((opt) => (
+            <Link
+              key={opt.key}
+              href={buildUrl({ sort: opt.key, page: "1" })}
+              className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${
+                sortBy === opt.key
+                  ? "bg-[#3B82F6] text-white border-[#3B82F6] font-medium"
+                  : "bg-white text-[#64748b] border-[#e2e8f0] hover:border-[#94a3b8]"
+              }`}
+            >
+              Sort by {opt.label}
+            </Link>
+          ))}
+        </div>
       </div>
 
       {/* Results count */}
@@ -215,25 +168,12 @@ export default async function RankingsPage({ params: routeParams, searchParams }
                   <th className="text-left text-xs font-semibold text-[#64748b] uppercase tracking-wider px-4 py-3 hidden md:table-cell">
                     Owner
                   </th>
-                  {isBest ? (
-                    <>
-                      <th className="text-center text-xs font-semibold text-[#64748b] uppercase tracking-wider px-4 py-3">
-                        Rating
-                      </th>
-                      <th className="text-center text-xs font-semibold text-[#64748b] uppercase tracking-wider px-4 py-3">
-                        Reviews
-                      </th>
-                    </>
-                  ) : (
-                    <>
-                      <th className="text-center text-xs font-semibold text-[#64748b] uppercase tracking-wider px-4 py-3">
-                        Violations
-                      </th>
-                      <th className="text-center text-xs font-semibold text-[#64748b] uppercase tracking-wider px-4 py-3">
-                        Complaints
-                      </th>
-                    </>
-                  )}
+                  <th className="text-center text-xs font-semibold text-[#64748b] uppercase tracking-wider px-4 py-3">
+                    Violations
+                  </th>
+                  <th className="text-center text-xs font-semibold text-[#64748b] uppercase tracking-wider px-4 py-3">
+                    Complaints
+                  </th>
                   <th className="text-center text-xs font-semibold text-[#64748b] uppercase tracking-wider px-4 py-3 hidden sm:table-cell">
                     Units
                   </th>
@@ -245,7 +185,7 @@ export default async function RankingsPage({ params: routeParams, searchParams }
                   return (
                     <tr key={building.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-4 py-3">
-                        <span className={`text-sm font-bold ${rank <= 3 ? (isBest ? "text-green-500" : "text-[#ef4444]") : "text-[#94a3b8]"}`}>
+                        <span className={`text-sm font-bold ${rank <= 3 ? "text-[#ef4444]" : "text-[#94a3b8]"}`}>
                           {rank}
                         </span>
                       </td>
@@ -274,45 +214,28 @@ export default async function RankingsPage({ params: routeParams, searchParams }
                           <p className="text-xs text-[#64748b]">—</p>
                         )}
                       </td>
-                      {isBest ? (
-                        <>
-                          <td className="px-4 py-3 text-center">
-                            <span className="inline-flex items-center gap-1 text-sm font-semibold text-green-600">
-                              {building.overall_score ? `${building.overall_score.toFixed(1)}★` : "—"}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <span className="text-sm font-semibold text-[#64748b]">
-                              {building.review_count || 0}
-                            </span>
-                          </td>
-                        </>
-                      ) : (
-                        <>
-                          <td className="px-4 py-3 text-center">
-                            <span className={`inline-flex items-center gap-1 text-sm font-semibold ${
-                              building.violation_count > 50
-                                ? "text-[#ef4444]"
-                                : building.violation_count > 10
-                                ? "text-[#f97316]"
-                                : "text-[#64748b]"
-                            }`}>
-                              {building.violation_count.toLocaleString()}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <span className={`text-sm font-semibold ${
-                              building.complaint_count > 50
-                                ? "text-[#ef4444]"
-                                : building.complaint_count > 10
-                                ? "text-[#f97316]"
-                                : "text-[#64748b]"
-                            }`}>
-                              {building.complaint_count.toLocaleString()}
-                            </span>
-                          </td>
-                        </>
-                      )}
+                      <td className="px-4 py-3 text-center">
+                        <span className={`inline-flex items-center gap-1 text-sm font-semibold ${
+                          building.violation_count > 50
+                            ? "text-[#ef4444]"
+                            : building.violation_count > 10
+                            ? "text-[#f97316]"
+                            : "text-[#64748b]"
+                        }`}>
+                          {building.violation_count.toLocaleString()}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className={`text-sm font-semibold ${
+                          building.complaint_count > 50
+                            ? "text-[#ef4444]"
+                            : building.complaint_count > 10
+                            ? "text-[#f97316]"
+                            : "text-[#64748b]"
+                        }`}>
+                          {building.complaint_count.toLocaleString()}
+                        </span>
+                      </td>
                       <td className="px-4 py-3 text-center hidden sm:table-cell">
                         <span className="text-sm text-[#64748b]">
                           {building.total_units || "—"}

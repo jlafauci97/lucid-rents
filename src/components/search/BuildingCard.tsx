@@ -32,9 +32,6 @@ export function BuildingCard({ building }: BuildingCardProps) {
               <ScoreGauge score={score} size="sm" />
             </div>
             <div className="flex-1 min-w-0">
-              {building.name && (
-                <p className="text-xs font-medium text-[#3B82F6] mb-0.5">{building.name}</p>
-              )}
               <h3 className="text-base font-semibold text-[#0F1D2E] truncate pr-8">
                 {building.full_address}
               </h3>

@@ -35,8 +35,7 @@ export async function generateMetadata({ params }: UnitPageProps): Promise<Metad
 }
 
 export default async function UnitPage({ params }: UnitPageProps) {
-  const { city: cityParam, borough: buildingId, unitId } = await params;
-  const city = (cityParam || "nyc") as City;
+  const { borough: buildingId, unitId } = await params;
   const supabase = await createClient();
 
   // Fetch unit first (need unit_number for violation query)
@@ -84,7 +83,7 @@ export default async function UnitPage({ params }: UnitPageProps) {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Back link */}
       <Link
-        href={buildingUrl(building, city)}
+        href={buildingUrl(building)}
         className="inline-flex items-center gap-1.5 text-sm text-[#64748b] hover:text-[#3B82F6] transition-colors mb-6"
       >
         <ArrowLeft className="w-4 h-4" />
@@ -222,7 +221,7 @@ export default async function UnitPage({ params }: UnitPageProps) {
             </CardHeader>
             <CardContent>
               <Link
-                href={buildingUrl(building, city)}
+                href={buildingUrl(building)}
                 className="flex items-start gap-3 group"
               >
                 <Building2 className="w-5 h-5 text-[#3B82F6] mt-0.5 flex-shrink-0" />

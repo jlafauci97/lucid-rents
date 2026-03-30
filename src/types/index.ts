@@ -2,7 +2,7 @@ import type { City } from "@/lib/cities";
 
 export type Borough = "Manhattan" | "Brooklyn" | "Queens" | "Bronx" | "Staten Island";
 
-export type LeaseType = "rent_stabilized" | "market_rate" | "rent_controlled" | "rso" | "rlto";
+export type LeaseType = "rent_stabilized" | "market_rate" | "rent_controlled" | "rso";
 
 export type ReviewStatus = "draft" | "published" | "flagged" | "removed";
 
@@ -12,8 +12,6 @@ export interface Building {
   bbl: string | null;
   bin: string | null;
   apn: string | null;
-  pin: string | null;
-  folio_number: string | null;
   borough: string;
   house_number: string | null;
   street_name: string;
@@ -29,7 +27,6 @@ export interface Building {
   building_class: string | null;
   land_use: string | null;
   owner_name: string | null;
-  name: string | null;
   slug: string;
   overall_score: number | null;
   review_count: number;
@@ -51,18 +48,6 @@ export interface Building {
   soft_story_status: string | null;
   is_rso: boolean;
   fire_risk_zone: string | null;
-  ward: number | null;
-  community_area: string | null;
-  is_rlto_protected: boolean;
-  is_scofflaw: boolean;
-  rlto_violation_count: number;
-  lead_inspection_count: number;
-  flood_zone: string | null;
-  forty_year_recert_status: string | null;
-  forty_year_recert_due_date: string | null;
-  is_condo: boolean;
-  condo_association: string | null;
-  unsafe_structure_count: number;
   created_at: string;
   updated_at: string;
 }
@@ -130,10 +115,9 @@ export interface ReviewSubcategory {
 
 export interface Review {
   id: string;
-  user_id: string | null;
+  user_id: string;
   building_id: string;
   unit_id: string | null;
-  reviewer_name: string | null;
   overall_rating: number;
   title: string | null;
   body: string | null;
@@ -141,12 +125,6 @@ export interface Review {
   move_out_date: string | null;
   rent_amount: number | null;
   lease_type: LeaseType | null;
-  landlord_name: string | null;
-  would_recommend: boolean | null;
-  is_pet_friendly: boolean | null;
-  reviewer_display_preference: "name" | "anonymous";
-  pro_tags: string[];
-  con_tags: string[];
   status: ReviewStatus;
   helpful_count: number;
   created_at: string;
@@ -161,30 +139,12 @@ export interface ReviewCategoryRating {
   subcategory_flags: string[];
 }
 
-export interface ReviewPhoto {
-  id: string;
-  review_id: string;
-  storage_path: string;
-  created_at: string;
-}
-
-export interface ReviewAmenity {
-  id: string;
-  review_id: string;
-  building_id: string;
-  amenity: string;
-  category: string;
-  confirmed: boolean;
-  created_at: string;
-}
-
 export interface ReviewWithDetails extends Review {
   profile: Pick<Profile, "id" | "display_name" | "avatar_url">;
   category_ratings: (ReviewCategoryRating & {
     category: Pick<ReviewCategory, "slug" | "name" | "icon">;
   })[];
   unit: Pick<Unit, "unit_number"> | null;
-  photos?: ReviewPhoto[];
 }
 
 export interface HpdViolation {
@@ -242,14 +202,6 @@ export interface DobViolation {
   house_number: string | null;
   street_name: string | null;
   imported_at: string;
-}
-
-export interface LahdViolationSummary {
-  id: string;
-  building_id: string;
-  violation_type: string;
-  violations_cited: number;
-  violations_cleared: number;
 }
 
 export interface Complaint311 {

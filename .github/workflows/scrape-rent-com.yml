@@ -22,28 +22,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          # NYC boroughs (parallel)
-          - metro: nyc
-            area: Manhattan
-          - metro: nyc
-            area: Brooklyn
-          - metro: nyc
-            area: Queens
-          - metro: nyc
-            area: Bronx
-          - metro: nyc
-            area: "Staten Island"
-          # LA (single job, scrapes all areas)
-          - metro: los-angeles
-            area: all
-          # Chicago (single job, scrapes all areas)
-          - metro: chicago
-            area: all
-          # Miami (single job, scrapes all areas)
-          - metro: miami
-            area: all
-    name: "Scrape ${{ matrix.metro }} - ${{ matrix.area }}"
+        borough: [Manhattan, Brooklyn, Queens, Bronx, "Staten Island"]
+    name: "${{ matrix.borough }}"
 
     steps:
       - name: Checkout
@@ -68,7 +48,7 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           PAGES="${{ github.event.inputs.pages || '3' }}"
-          if [ "${{ matrix.area }}" = "all" ]; then python scripts/scrape-rent-com.py --pages=$PAGES --metro=${{ matrix.metro }}; else python scripts/scrape-rent-com.py --pages=$PAGES --metro=${{ matrix.metro }} --borough="${{ matrix.area }}"; fi
+          python scripts/scrape-rent-com.py --pages=$PAGES --borough="${{ matrix.borough }}"
 
       - name: Scrape Zillow
         if: ${{ github.event.inputs.source == 'all' || github.event.inputs.source == 'zillow' || github.event_name == 'schedule' }}
@@ -77,16 +57,16 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           PAGES="${{ github.event.inputs.pages || '3' }}"
-          if [ "${{ matrix.area }}" = "all" ]; then python scripts/scrape-zillow.py --pages=$PAGES --metro=${{ matrix.metro }}; else python scripts/scrape-zillow.py --pages=$PAGES --metro=${{ matrix.metro }} --borough="${{ matrix.area }}"; fi
+          python scripts/scrape-zillow.py --pages=$PAGES --borough="${{ matrix.borough }}"
 
       - name: Scrape StreetEasy
-        if: ${{ matrix.metro == 'nyc' && (github.event.inputs.source == 'all' || github.event.inputs.source == 'streeteasy' || github.event_name == 'schedule') }}
+        if: ${{ github.event.inputs.source == 'all' || github.event.inputs.source == 'streeteasy' || github.event_name == 'schedule' }}
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           PAGES="${{ github.event.inputs.pages || '25' }}"
-          python scripts/scrape-streeteasy.py --pages=$PAGES --borough="${{ matrix.area }}"
+          python scripts/scrape-streeteasy.py --pages=$PAGES --borough="${{ matrix.borough }}"
 
       - name: Scrape Zumper
         if: ${{ github.event.inputs.source == 'all' || github.event.inputs.source == 'zumper' || github.event_name == 'schedule' }}
@@ -95,7 +75,7 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           PAGES="${{ github.event.inputs.pages || '5' }}"
-          if [ "${{ matrix.area }}" = "all" ]; then python scripts/scrape-zumper.py --pages=$PAGES --metro=${{ matrix.metro }}; else python scripts/scrape-zumper.py --pages=$PAGES --metro=${{ matrix.metro }} --borough="${{ matrix.area }}"; fi
+          python scripts/scrape-zumper.py --pages=$PAGES --borough="${{ matrix.borough }}"
 
       - name: Scrape Compass
         if: ${{ github.event.inputs.source == 'all' || github.event.inputs.source == 'compass' || github.event_name == 'schedule' }}
@@ -104,58 +84,4 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           PAGES="${{ github.event.inputs.pages || '5' }}"
-          if [ "${{ matrix.area }}" = "all" ]; then python scripts/scrape-compass.py --pages=$PAGES --metro=${{ matrix.metro }}; else python scripts/scrape-compass.py --pages=$PAGES --metro=${{ matrix.metro }} --borough="${{ matrix.area }}"; fi
-
-  backfill:
-    runs-on: ubuntu-latest
-    needs: scrape
-    if: always()
-    name: "Backfill PLUTO Data"
-    timeout-minutes: 30
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-
-      - name: Install dependencies
-        run: pip install supabase requests
-
-      - name: Backfill new buildings with NYC PLUTO data
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: python scripts/backfill-new-buildings.py --days=1
-
-  backfill-names:
-    runs-on: ubuntu-latest
-    needs: backfill
-    if: always()
-    name: "Backfill Building Names"
-    timeout-minutes: 60
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-
-      - name: Install dependencies
-        run: |
-          pip install "scrapling[all]" supabase
-          playwright install --with-deps chromium
-          patchright install chromium
-          scrapling install
-
-      - name: Backfill building names from StreetEasy
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: python scripts/backfill-building-names.py --min-units=50 --limit=50 --delay=5
+          python scripts/scrape-compass.py --pages=$PAGES --borough="${{ matrix.borough }}"

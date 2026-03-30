@@ -1,156 +1,93 @@
-import Link from "next/link";
-import { MapPin, Building2, Calendar, Layers, Users, ShieldCheck, AlertTriangle, MessageSquareWarning, Bug, Gavel } from "lucide-react";
-import { getLetterGrade, deriveScore } from "@/lib/constants";
+import { MapPin, Building2, Calendar, Layers, Users, ShieldCheck } from "lucide-react";
+import { ScoreGauge } from "@/components/ui/ScoreGauge";
+import { LetterGrade } from "@/components/ui/LetterGrade";
+import { Badge } from "@/components/ui/Badge";
+import { deriveScore } from "@/lib/constants";
 import { CITY_META, type City } from "@/lib/cities";
-import { landlordUrl } from "@/lib/seo";
 import type { Building } from "@/types";
 
 interface BuildingHeaderProps {
   building: Building;
   city?: City;
-  violationCount?: number;
 }
 
-export function BuildingHeader({ building, city = "nyc", violationCount }: BuildingHeaderProps) {
-  const vCount = violationCount ?? building.violation_count ?? 0;
+export function BuildingHeader({ building, city = "nyc" }: BuildingHeaderProps) {
   const score = building.overall_score ?? deriveScore(
-    vCount,
+    building.violation_count || 0,
     building.complaint_count || 0
   );
-  const grade = getLetterGrade(score);
-
-  const meta = [
-    building.borough && {
-      icon: MapPin,
-      text: `${building.borough}, ${CITY_META[city].stateCode} ${building.zip_code}`,
-    },
-    building.year_built && {
-      icon: Calendar,
-      text: `Built ${building.year_built}`,
-    },
-    building.num_floors && {
-      icon: Layers,
-      text: `${building.num_floors} floor${building.num_floors !== 1 ? "s" : ""}`,
-    },
-    building.total_units && {
-      icon: Building2,
-      text: `${building.total_units} unit${building.total_units !== 1 ? "s" : ""}`,
-    },
-  ].filter(Boolean) as { icon: typeof MapPin; text: string }[];
-
-  const stats = [
-    vCount > 0 && {
-      icon: AlertTriangle,
-      count: vCount,
-      label: "violation",
-      colorClass: "text-red-400 bg-red-500/10 border-red-500/20",
-    },
-    building.complaint_count > 0 && {
-      icon: MessageSquareWarning,
-      count: building.complaint_count,
-      label: "complaint",
-      colorClass: "text-amber-400 bg-amber-500/10 border-amber-500/20",
-    },
-    building.bedbug_report_count > 0 && {
-      icon: Bug,
-      count: building.bedbug_report_count,
-      label: "bedbug report",
-      colorClass: "text-red-400 bg-red-500/10 border-red-500/20",
-    },
-    building.eviction_count > 0 && {
-      icon: Gavel,
-      count: building.eviction_count,
-      label: "eviction",
-      colorClass: "text-red-400 bg-red-500/10 border-red-500/20",
-    },
-  ].filter(Boolean) as { icon: typeof AlertTriangle; count: number; label: string; colorClass: string }[];
 
   return (
-    <div className="bg-[#0F1D2E]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <div className="flex flex-col md:flex-row md:items-center gap-5">
-          {/* Score shield */}
-          <div className="shrink-0 relative" style={{ width: 64, height: 76 }}>
-            <svg
-              viewBox="0 0 64 76"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-full h-full"
-              style={{ filter: "drop-shadow(0 4px 15px rgba(59,130,246,0.3))" }}
-            >
-              <path
-                d="M32 2L4 14V34C4 54 32 72 32 72C32 72 60 54 60 34V14L32 2Z"
-                fill="#3B82F6"
-              />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ paddingBottom: 4 }}>
-              <span className="text-[26px] font-black text-white leading-none">{grade}</span>
-              <span className="text-[10px] font-bold text-white/70 -mt-0.5">
-                {score.toFixed(1)}
-              </span>
-            </div>
+    <div className="bg-white border-b border-[#e2e8f0]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex flex-col md:flex-row md:items-start gap-6">
+          <div className="flex items-center gap-3">
+            <LetterGrade score={score} size="lg" />
+            <ScoreGauge score={score} size="lg" showLabel />
           </div>
-
-          {/* Info */}
-          <div className="flex-1 min-w-0">
-            {/* Building name */}
-            {building.name && (
-              <p className="text-xs font-semibold text-[#60a5fa] uppercase tracking-widest mb-1">
-                {building.name}
-              </p>
-            )}
-
-            {/* Address */}
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-tight">
+          <div className="flex-1">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#0F1D2E]">
               {building.full_address}
             </h1>
-
-            {/* Meta details — white text */}
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2">
-              {meta.map(({ icon: Icon, text }) => (
-                <span
-                  key={text}
-                  className="inline-flex items-center gap-1.5 text-sm text-white/70"
-                >
-                  <Icon className="w-3.5 h-3.5 text-white/50" />
-                  {text}
+            <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-[#64748b]">
+              <span className="flex items-center gap-1">
+                <MapPin className="w-4 h-4" />
+                {building.borough}, {CITY_META[city].stateCode} {building.zip_code}
+              </span>
+              {building.year_built && (
+                <span className="flex items-center gap-1">
+                  <Calendar className="w-4 h-4" />
+                  Built {building.year_built}
                 </span>
-              ))}
+              )}
+              {building.num_floors && (
+                <span className="flex items-center gap-1">
+                  <Layers className="w-4 h-4" />
+                  {building.num_floors} floor{building.num_floors !== 1 ? "s" : ""}
+                </span>
+              )}
+              {building.total_units && (
+                <span className="flex items-center gap-1">
+                  <Building2 className="w-4 h-4" />
+                  {building.total_units} unit{building.total_units !== 1 ? "s" : ""}
+                </span>
+              )}
             </div>
-
-            {/* Stats + badges row */}
-            <div className="flex flex-wrap items-center gap-2 mt-3">
-              {stats.map(({ icon: Icon, count, label, colorClass }) => (
-                <span
-                  key={label}
-                  className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold border ${colorClass}`}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  {count.toLocaleString()} {label}{count !== 1 ? "s" : ""}
-                </span>
-              ))}
-
+            <div className="flex flex-wrap gap-2 mt-3">
               {building.review_count > 0 && (
-                <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold text-blue-400 bg-blue-500/10 border border-blue-500/20">
-                  <Users className="w-3.5 h-3.5" />
+                <Badge variant="info">
+                  <Users className="w-3 h-3 mr-1" />
                   {building.review_count} review{building.review_count !== 1 ? "s" : ""}
-                </span>
+                </Badge>
               )}
-
+              {building.violation_count > 0 && (
+                <Badge variant="danger">
+                  {building.violation_count} violation{building.violation_count !== 1 ? "s" : ""}
+                </Badge>
+              )}
+              {building.complaint_count > 0 && (
+                <Badge variant="warning">
+                  {building.complaint_count} complaint{building.complaint_count !== 1 ? "s" : ""}
+                </Badge>
+              )}
+              {building.bedbug_report_count > 0 && (
+                <Badge variant="danger">
+                  {building.bedbug_report_count} bedbug report{building.bedbug_report_count !== 1 ? "s" : ""}
+                </Badge>
+              )}
+              {building.eviction_count > 0 && (
+                <Badge variant="danger">
+                  {building.eviction_count} eviction{building.eviction_count !== 1 ? "s" : ""}
+                </Badge>
+              )}
               {building.is_rent_stabilized && (
-                <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">
-                  <ShieldCheck className="w-3.5 h-3.5" />
+                <Badge variant="success">
+                  <ShieldCheck className="w-3 h-3 mr-1" />
                   Rent Stabilized
-                </span>
+                </Badge>
               )}
-
               {building.owner_name && (
-                <Link
-                  href={landlordUrl(building.owner_name)}
-                  className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium text-[#94a3b8] bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
-                >
-                  Owner: {building.owner_name}
-                </Link>
+                <Badge variant="default">Owner: {building.owner_name}</Badge>
               )}
             </div>
           </div>

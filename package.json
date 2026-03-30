@@ -6,20 +6,14 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "remotion:studio": "remotion studio remotion/index.ts",
-    "remotion:render": "remotion render remotion/index.ts"
+    "lint": "next lint"
   },
   "dependencies": {
-    "@ai-sdk/react": "^3.0.139",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.49.1",
-    "@vercel/blob": "^2.3.1",
-    "@workflow/ai": "^4.1.0-beta.57",
-    "ai": "^6.0.137",
     "cheerio": "^1.2.0",
+    "fflate": "^0.8.2",
     "geist": "^1.3.1",
-    "jose": "^6.2.2",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.468.0",
     "next": "^16.2.1",
@@ -29,18 +23,14 @@
     "recharts": "^2.15.0",
     "resend": "^4.1.2",
     "rss-parser": "^3.13.0",
-    "workflow": "^4.2.0-beta.71",
-    "zod": "^3.25.76"
+    "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@remotion/cli": "^4.0.438",
-    "@remotion/renderer": "^4.0.438",
     "@tailwindcss/postcss": "^4.0.0",
     "@types/leaflet": "^1.9.14",
     "@types/node": "^22.10.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "remotion": "^4.0.438",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.7.0"
   }

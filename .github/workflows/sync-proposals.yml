@@ -59,7 +59,3 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: node scripts/sync-la-zimas.mjs
-
-      # TODO: Chicago proposal sync scripts not yet implemented.
-      # When available, add steps for sync-chicago-council.mjs, etc.
-      # Remember to add 'chicago_council' (or similar) to the source input options above.

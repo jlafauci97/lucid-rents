@@ -10,13 +10,6 @@ import { NEWS_CATEGORIES } from "@/lib/news-sources";
 import { SUBWAY_LINES, transitLineUrl } from "@/lib/subway-lines";
 
 const BASE_URL = "https://lucidrents.com";
-
-function metroToCity(metro: string): City {
-  if (metro === "los-angeles") return "los-angeles";
-  if (metro === "chicago") return "chicago";
-  if (metro === "miami") return "miami";
-  return "nyc";
-}
 const ITEMS_PER_SITEMAP = 10000;
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -229,33 +222,29 @@ async function generateStaticSitemap(): Promise<SitemapEntry[]> {
     }
   }
 
-  // Neighborhood + crime pages by zip code (per city)
+  // Neighborhood + crime pages by zip code
   const zipData = await supabaseFetch<
-    { zip_code: string; metro: string; updated_at: string | null }[]
-  >("buildings?select=zip_code,metro,updated_at&zip_code=not.is.null&limit=10000");
+    { zip_code: string; updated_at: string | null }[]
+  >("buildings?select=zip_code,updated_at&zip_code=not.is.null&limit=10000");
 
   if (zipData) {
-    // Track latest update per (zip, city) pair
-    const zipCityLastMod = new Map<string, Date>();
+    const zipLastMod = new Map<string, Date>();
     for (const b of zipData) {
       if (!b.zip_code) continue;
-      const city = metroToCity(b.metro);
-      const key = `${city}:${b.zip_code}`;
       const d = b.updated_at ? new Date(b.updated_at) : now;
-      const existing = zipCityLastMod.get(key);
-      if (!existing || d > existing) zipCityLastMod.set(key, d);
+      const existing = zipLastMod.get(b.zip_code);
+      if (!existing || d > existing) zipLastMod.set(b.zip_code, d);
     }
 
-    for (const [key, lastMod] of zipCityLastMod) {
-      const [city, zip] = key.split(":") as [City, string];
+    for (const [zip, lastMod] of zipLastMod) {
       entries.push({
-        url: `${BASE_URL}${neighborhoodUrl(zip, city)}`,
+        url: `${BASE_URL}${neighborhoodUrl(zip)}`,
         lastModified: lastMod,
         changeFrequency: "weekly",
         priority: 0.7,
       });
       entries.push({
-        url: `${BASE_URL}${cityPath(`/crime/${zip}`, city)}`,
+        url: `${BASE_URL}${cityPath(`/crime/${zip}`)}`,
         lastModified: lastMod,
         changeFrequency: "weekly",
         priority: 0.6,
@@ -331,7 +320,7 @@ async function generateBuildingSitemap(
   if (!buildings || buildings.length === 0) return [];
 
   return buildings.map((b) => ({
-    url: `${BASE_URL}${buildingUrl(b, metroToCity(b.metro))}`,
+    url: `${BASE_URL}${buildingUrl(b, (b.metro === "los-angeles" ? "los-angeles" : "nyc") as City)}`,
     lastModified: b.updated_at ? new Date(b.updated_at) : undefined,
     changeFrequency: "weekly",
     priority: 0.6,

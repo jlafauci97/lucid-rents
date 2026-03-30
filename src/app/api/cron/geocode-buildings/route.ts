@@ -12,11 +12,6 @@ const BATCH_SIZE = 200; // buildings per call — keeps within timeout
  * Call repeatedly with ?offset=0, 200, 400, etc. until done=true.
  */
 export async function GET(request: NextRequest) {
-  const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   const offset = parseInt(request.nextUrl.searchParams.get("offset") || "0");
   const supabase = createAdminClient();
 

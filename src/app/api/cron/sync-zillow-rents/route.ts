@@ -31,93 +31,39 @@ function getNycBorough(zip: string): string | null {
   return ZIP_BOROUGH[zip] || null;
 }
 
-/** LA metro identifier in Zillow CSV */
-const LA_METRO_PREFIX = "Los Angeles-Long Beach-Anaheim";
-
-interface RentRow {
-  zip_code: string;
-  borough: string;
-  date: string;
-  median_rent: number;
-  metro: string;
-}
-
 /**
- * Parse a single CSV line, handling quoted fields (e.g. "Los Angeles-Long Beach-Anaheim, CA").
+ * Parse the wide-format Zillow CSV into rows of (zip_code, borough, date, median_rent).
  */
-function parseCsvLine(line: string): string[] {
-  const fields: string[] = [];
-  let current = "";
-  let inQuotes = false;
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i];
-    if (ch === '"') {
-      inQuotes = !inQuotes;
-    } else if (ch === "," && !inQuotes) {
-      fields.push(current.trim());
-      current = "";
-    } else {
-      current += ch;
-    }
-  }
-  fields.push(current.trim());
-  return fields;
-}
-
-/**
- * Parse the wide-format Zillow CSV into rows for both NYC and LA.
- */
-function parseZoriCsv(text: string): RentRow[] {
+function parseZoriCsv(
+  text: string
+): { zip_code: string; borough: string; date: string; median_rent: number }[] {
   const lines = text.split("\n").filter((l) => l.trim());
   if (lines.length < 2) return [];
 
-  const headers = parseCsvLine(lines[0]);
+  const headers = lines[0].split(",");
   const zipIdx = headers.findIndex(
-    (h) => h.toLowerCase() === "regionname"
-  );
-  const metroIdx = headers.findIndex(
-    (h) => h.toLowerCase() === "metro"
-  );
-  const cityIdx = headers.findIndex(
-    (h) => h.toLowerCase() === "city"
+    (h) => h.trim().toLowerCase() === "regionname"
   );
   if (zipIdx === -1) return [];
 
-  // Date columns start after the metadata columns
+  // Date columns start after the metadata columns (first column matching YYYY-MM-DD pattern)
   const dateStartIdx = headers.findIndex((h) =>
-    /^\d{4}-\d{2}-\d{2}$/.test(h)
+    /^\d{4}-\d{2}-\d{2}$/.test(h.trim())
   );
   if (dateStartIdx === -1) return [];
 
-  const dateHeaders = headers.slice(dateStartIdx);
-  const rows: RentRow[] = [];
+  const dateHeaders = headers.slice(dateStartIdx).map((h) => h.trim());
+  const rows: { zip_code: string; borough: string; date: string; median_rent: number }[] = [];
 
   for (let i = 1; i < lines.length; i++) {
-    const cols = parseCsvLine(lines[i]);
-    const zip = cols[zipIdx];
+    const cols = lines[i].split(",");
+    const zip = cols[zipIdx]?.trim();
     if (!zip) continue;
-
-    const metro = metroIdx >= 0 ? cols[metroIdx] : "";
-    const city = cityIdx >= 0 ? cols[cityIdx] : "";
-
-    // Determine if NYC or LA
-    let borough: string | null = null;
-    let metroKey = "";
-
-    const nycBorough = getNycBorough(zip);
-    if (nycBorough) {
-      borough = nycBorough;
-      metroKey = "nyc";
-    } else if (metro.startsWith(LA_METRO_PREFIX)) {
-      // Use city name as area, uppercase to match building data convention
-      borough = city ? city.toUpperCase() : "LOS ANGELES";
-      metroKey = "los-angeles";
-    }
-
+    const borough = getNycBorough(zip);
     if (!borough) continue;
 
     for (let j = 0; j < dateHeaders.length; j++) {
-      const val = cols[dateStartIdx + j];
+      const val = cols[dateStartIdx + j]?.trim();
       if (!val || val === "") continue;
       const rent = parseFloat(val);
       if (isNaN(rent)) continue;
@@ -127,7 +73,6 @@ function parseZoriCsv(text: string): RentRow[] {
         borough,
         date: dateHeaders[j],
         median_rent: Math.round(rent * 100) / 100,
-        metro: metroKey,
       });
     }
   }
@@ -150,18 +95,15 @@ export async function GET() {
     }
     const csvText = await res.text();
 
-    // 2. Parse and filter to NYC + LA zips
+    // 2. Parse and filter to NYC zips
     const rows = parseZoriCsv(csvText);
 
     if (rows.length === 0) {
       return NextResponse.json({
         ok: true,
-        message: "No matching zip code data found in ZORI CSV",
+        message: "No NYC zip code data found in ZORI CSV",
       });
     }
-
-    const nycRows = rows.filter((r) => r.metro === "nyc");
-    const laRows = rows.filter((r) => r.metro === "los-angeles");
 
     // 3. Upsert in batches
     let totalUpserted = 0;
@@ -183,10 +125,7 @@ export async function GET() {
     return NextResponse.json({
       ok: true,
       duration_seconds: parseFloat(elapsed),
-      nyc_zips: new Set(nycRows.map((r) => r.zip_code)).size,
-      la_zips: new Set(laRows.map((r) => r.zip_code)).size,
-      nyc_rows: nycRows.length,
-      la_rows: laRows.length,
+      nyc_zips_matched: new Set(rows.map((r) => r.zip_code)).size,
       rows_upserted: totalUpserted,
       errors: errors.length > 0 ? errors : undefined,
     });

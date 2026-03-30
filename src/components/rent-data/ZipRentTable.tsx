@@ -18,15 +18,10 @@ export function ZipRentTable({ data }: { data: ZipRentRow[] }) {
   const [sortBy, setSortBy] = useState<"median_rent" | "zip_code">("median_rent");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
-  const normalizeBorough = (b: string | null) => {
-    if (!b) return "Unknown";
-    if (b === "STATEN ISLAND") return "Staten Island";
-    // Handle multi-word names like "NORTH HOLLYWOOD" → "North Hollywood"
-    return b
-      .split(/[\s-]+/)
-      .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-      .join(b.includes("-") ? "-" : " ");
-  };
+  const normalizeBorough = (b: string) =>
+    b === "STATEN ISLAND"
+      ? "Staten Island"
+      : b.charAt(0).toUpperCase() + b.slice(1).toLowerCase();
 
   const filtered = useMemo(() => {
     let rows = borough

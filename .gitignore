@@ -1,6 +1,5 @@
 node_modules/
 .next/
-.remotion-bundle/
 .env
 .env.local
 .env.*.local

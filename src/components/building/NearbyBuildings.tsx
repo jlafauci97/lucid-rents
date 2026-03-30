@@ -7,7 +7,6 @@ interface NearbyBuildingsProps {
   buildingId: string;
   zipCode: string | null;
   borough: string;
-  city?: import("@/lib/cities").City;
 }
 
 function letterGrade(score: number | null): { letter: string; color: string; bg: string } {
@@ -22,7 +21,7 @@ function letterGrade(score: number | null): { letter: string; color: string; bg:
   return { letter: "F", color: "#991b1b", bg: "#fee2e2" };
 }
 
-export async function NearbyBuildings({ buildingId, zipCode, borough, city }: NearbyBuildingsProps) {
+export async function NearbyBuildings({ buildingId, zipCode, borough }: NearbyBuildingsProps) {
   if (!zipCode) return null;
 
   const supabase = await createClient();
@@ -49,7 +48,7 @@ export async function NearbyBuildings({ buildingId, zipCode, borough, city }: Ne
           return (
             <Link
               key={b.id}
-              href={buildingUrl(b, city)}
+              href={buildingUrl(b)}
               className="group bg-white border border-[#e2e8f0] rounded-xl p-4 hover:shadow-md hover:border-[#3B82F6]/40 transition-all"
             >
               <div className="flex items-start gap-3">

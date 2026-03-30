@@ -102,7 +102,7 @@
     },
     {
       "path": "/api/cron/sync?source=la-ccris",
-      "schedule": "35 11 * * *"
+      "schedule": "30 11 * * *"
     },
     {
       "path": "/api/cron/sync?mode=link&source=la-evictions",
@@ -117,84 +117,12 @@
       "schedule": "20 13 * * *"
     },
     {
-      "path": "/api/cron/sync?mode=link&source=la-violation-summary",
-      "schedule": "25 13 * * *"
-    },
-    {
       "path": "/api/cron/sync?source=la-soft-story",
-      "schedule": "30 11 1 * *"
-    },
-    {
-      "path": "/api/cron/sync?source=chicago-violations",
-      "schedule": "0 14 * * *"
-    },
-    {
-      "path": "/api/cron/sync?source=chicago-311",
-      "schedule": "15 14 * * *"
-    },
-    {
-      "path": "/api/cron/sync?source=chicago-crimes",
-      "schedule": "30 14 * * *"
-    },
-    {
-      "path": "/api/cron/sync?source=chicago-permits",
-      "schedule": "45 14 * * *"
-    },
-    {
-      "path": "/api/cron/sync?source=chicago-rlto",
-      "schedule": "0 15 * * *"
-    },
-    {
-      "path": "/api/cron/sync?source=chicago-lead",
-      "schedule": "15 15 * * *"
-    },
-    {
-      "path": "/api/cron/sync?mode=link&source=chicago",
-      "schedule": "30 15 * * *"
-    },
-    {
-      "path": "/api/cron/sync-encampments",
-      "schedule": "45 13 * * *"
-    },
-    {
-      "path": "/api/cron/sync?source=miami-violations",
-      "schedule": "0 16 * * *"
-    },
-    {
-      "path": "/api/cron/sync?source=miami-311",
-      "schedule": "15 16 * * *"
-    },
-    {
-      "path": "/api/cron/sync?source=miami-crimes",
-      "schedule": "30 16 * * *"
-    },
-    {
-      "path": "/api/cron/sync?source=miami-permits",
-      "schedule": "45 16 * * *"
-    },
-    {
-      "path": "/api/cron/sync?source=miami-unsafe",
-      "schedule": "0 17 * * *"
-    },
-    {
-      "path": "/api/cron/sync?source=miami-recerts",
-      "schedule": "15 17 * * *"
-    },
-    {
-      "path": "/api/cron/sync?mode=link&source=miami",
-      "schedule": "30 17 * * *"
+      "schedule": "0 11 1 * *"
     },
     {
       "path": "/api/cron/health-check",
       "schedule": "0 12 * * *"
-    },
-    {
-      "path": "/api/cron/marketing",
-      "schedule": "*/30 * * * *"
-    },
-    {
-      "path": "/api/cron/sync-summary",
-      "schedule": "0 18 * * *"
     }
   ]
 }

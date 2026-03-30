@@ -11,7 +11,6 @@ import { AdBlock } from "@/components/ui/AdBlock";
 import {
   getLineBySlug,
   getMetroLineBySlug,
-  getCTALineBySlug,
   transitLineUrl,
   busRouteFromSlug,
   laMetroBusFromSlug,
@@ -54,21 +53,6 @@ interface LineInfo {
 }
 
 function parseLineSlug(slug: string, city: City): LineInfo | null {
-  if (city === "chicago") {
-    // CTA L lines
-    const ctaLine = getCTALineBySlug(slug);
-    if (ctaLine) {
-      return {
-        type: "subway",
-        routeName: ctaLine.routeName,
-        displayName: ctaLine.name,
-        color: ctaLine.color,
-        textColor: ctaLine.textColor,
-      };
-    }
-    return null;
-  }
-
   if (city === "los-angeles") {
     // LA Metro Rail lines
     const metroLine = getMetroLineBySlug(slug);

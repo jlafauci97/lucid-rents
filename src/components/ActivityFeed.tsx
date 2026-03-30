@@ -1,18 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Shield, MessageSquare, Star, Scale, HardHat, Siren, Bug, DoorOpen, DollarSign, FileCheck, ShieldAlert, AlertTriangle } from "lucide-react";
+import { Shield, MessageSquare, Star, Scale, HardHat, Siren, Bug, DoorOpen, DollarSign, FileCheck, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import type { ActivityItem } from "@/app/api/activity/route";
 import { buildingUrl, cityPath } from "@/lib/seo";
 import { useCity } from "@/lib/city-context";
-import { CITY_META, type City } from "@/lib/cities";
-
-/** Resolve the City key from a metro/db value (e.g. "los-angeles" → "los-angeles", "nyc" → "nyc"). */
-function metroToCity(metro?: string): City {
-  if (metro && metro !== "nyc") return metro as City;
-  return "nyc";
-}
+import { CITY_META } from "@/lib/cities";
 
 function timeAgo(dateString: string): string {
   const date = new Date(dateString);
@@ -103,18 +97,6 @@ function ActivityIcon({ type }: { type: ActivityItem["type"] }) {
           <ShieldAlert className="w-[18px] h-[18px] text-[#6366F1]" />
         </div>
       );
-    case "rlto_violation":
-      return (
-        <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center">
-          <ShieldAlert className="w-[18px] h-[18px] text-[#D97706]" />
-        </div>
-      );
-    case "lead_inspection":
-      return (
-        <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center">
-          <AlertTriangle className="w-[18px] h-[18px] text-[#059669]" />
-        </div>
-      );
   }
 }
 
@@ -144,10 +126,6 @@ function typeLabel(type: ActivityItem["type"]): string {
       return "Building Permit";
     case "enforcement":
       return "Enforcement";
-    case "rlto_violation":
-      return "RLTO Violation";
-    case "lead_inspection":
-      return "Lead Inspection";
   }
 }
 
@@ -176,10 +154,6 @@ function typeBadgeClasses(type: ActivityItem["type"]): string {
       return "bg-teal-50 text-[#14B8A6]";
     case "enforcement":
       return "bg-indigo-50 text-[#6366F1]";
-    case "rlto_violation":
-      return "bg-amber-50 text-[#D97706]";
-    case "lead_inspection":
-      return "bg-emerald-50 text-[#059669]";
   }
 }
 
@@ -196,7 +170,7 @@ function SkeletonItem() {
   );
 }
 
-export function ActivityFeed({ allCities = false }: { allCities?: boolean } = {}) {
+export function ActivityFeed() {
   const city = useCity();
   const [items, setItems] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -205,8 +179,7 @@ export function ActivityFeed({ allCities = false }: { allCities?: boolean } = {}
   useEffect(() => {
     async function fetchActivity() {
       try {
-        const url = allCities ? "/api/activity" : `/api/activity?city=${city}`;
-        const res = await fetch(url);
+        const res = await fetch(`/api/activity?city=${city}`);
         if (!res.ok) throw new Error("Failed to fetch");
         const data = await res.json();
         setItems(data.items ?? []);
@@ -219,7 +192,7 @@ export function ActivityFeed({ allCities = false }: { allCities?: boolean } = {}
     fetchActivity();
     const interval = setInterval(fetchActivity, 4 * 60 * 60 * 1000); // refresh every 4 hours
     return () => clearInterval(interval);
-  }, [city, allCities]);
+  }, [city]);
 
   return (
     <div className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm overflow-hidden">
@@ -235,7 +208,7 @@ export function ActivityFeed({ allCities = false }: { allCities?: boolean } = {}
           </h3>
         </div>
         <span className="text-xs text-[#64748b]">
-          {allCities ? "All cities" : `Across ${CITY_META[city].name}`}
+          Across {CITY_META[city].name}
         </span>
       </div>
 
@@ -272,7 +245,7 @@ export function ActivityFeed({ allCities = false }: { allCities?: boolean } = {}
           items.map((item) => (
             <Link
               key={`${item.type}-${item.id}`}
-              href={(() => { const itemCity = metroToCity(item.metro); return item.type === "crime" && item.zipCode ? cityPath(`/crime/${item.zipCode}`, itemCity) : item.buildingSlug ? buildingUrl({ borough: item.borough, slug: item.buildingSlug }, itemCity) : cityPath(`/building/${item.buildingId}`, itemCity); })()}
+              href={item.type === "crime" && item.zipCode ? cityPath(`/crime/${item.zipCode}`, city) : item.buildingSlug ? buildingUrl({ borough: item.borough, slug: item.buildingSlug }, city) : cityPath(`/building/${item.buildingId}`, city)}
               className="block px-5 py-4 hover:bg-[#EFF6FF] transition-colors"
             >
               <div className="flex items-start gap-3">

@@ -71,13 +71,11 @@ export default async function BoroughPage({ params, searchParams }: BoroughPageP
       supabase
         .from("buildings")
         .select("id", { count: "exact", head: true })
-        .eq("borough", borough)
-        .eq("metro", cityParam),
+        .eq("borough", borough),
       supabase
         .from("buildings")
         .select("*")
         .eq("borough", borough)
-        .eq("metro", cityParam)
         .order(sortColumn, { ascending, nullsFirst: false })
         .range(offset, offset + PAGE_SIZE - 1),
     ]);
@@ -99,7 +97,7 @@ export default async function BoroughPage({ params, searchParams }: BoroughPageP
       "@type": "ListItem",
       position: offset + i + 1,
       name: b.full_address,
-      url: canonicalUrl(buildingUrl(b, cityParam as import("@/lib/cities").City)),
+      url: canonicalUrl(buildingUrl(b)),
     })),
   };
 

@@ -137,25 +137,11 @@ export const LEASE_TYPES_BY_CITY: Record<City, readonly { value: string; label: 
     { value: "market_rate", label: "Market Rate" },
     { value: "rso", label: "RSO (Rent Stabilized)" },
   ],
-  chicago: [
-    { value: "market_rate", label: "Market Rate" },
-    { value: "rlto", label: "RLTO Protected" },
-  ],
-  miami: [
-    { value: "market_rate", label: "Market Rate" },
-  ],
-  houston: [
-    { value: "market_rate", label: "Market Rate" },
-  ],
 };
 
 /** Rent protection label per city */
 export function getRentProtectionLabel(city: City): string {
-  if (city === "nyc") return "Rent Stabilized";
-  if (city === "los-angeles") return "RSO Protected";
-  if (city === "miami") return "No Rent Control";
-  if (city === "houston") return "No Rent Control";
-  return "RLTO Protected";
+  return city === "nyc" ? "Rent Stabilized" : "RSO Protected";
 }
 
 export const SCORE_COLORS = {
@@ -247,183 +233,13 @@ export const LA_HOUSING_COMPLAINT_TYPES = [
   "FIRE SAFETY",
 ] as const;
 
-export const CHICAGO_HOUSING_COMPLAINT_TYPES = [
-  "BUILDING/HOUSING",
-  "RODENT/PEST",
-  "GARBAGE/RECYCLING",
-  "PLUMBING",
-  "ELECTRICAL",
-  "HEATING",
-  "STRUCTURAL",
-  "MOLD/MILDEW",
-  "WATER DAMAGE",
-  "SAFETY/SECURITY",
-  "NOISE",
-  "ELEVATOR",
-  "FIRE SAFETY",
-  "LEAD PAINT",
-  "LOCKOUT",
-] as const;
-
-export const MIAMI_HOUSING_COMPLAINT_TYPES = [
-  "CODE VIOLATION",
-  "UNSAFE STRUCTURE",
-  "PLUMBING",
-  "ELECTRICAL",
-  "STRUCTURAL",
-  "MOLD/MILDEW",
-  "WATER DAMAGE",
-  "FLOOD DAMAGE",
-  "HURRICANE DAMAGE",
-  "PEST CONTROL",
-  "ELEVATOR",
-  "FIRE SAFETY",
-  "GENERAL MAINTENANCE",
-  "PARKING",
-  "NOISE",
-  "AC/HVAC",
-] as const;
-
-export const HOUSTON_HOUSING_COMPLAINT_TYPES = [
-  "CODE VIOLATION",
-  "DANGEROUS BUILDING",
-  "PLUMBING",
-  "ELECTRICAL",
-  "STRUCTURAL",
-  "MOLD/MILDEW",
-  "WATER DAMAGE",
-  "FLOOD DAMAGE",
-  "PEST CONTROL",
-  "AC/HVAC",
-  "GENERAL MAINTENANCE",
-  "PARKING",
-  "NOISE",
-  "FIRE SAFETY",
-  "SWIMMING POOL",
-  "WEEDY LOT",
-  "STAGNANT WATER",
-] as const;
-
 /** Get the complaint types for a given city */
 export function getComplaintTypes(city: City): readonly string[] {
-  if (city === "nyc") return HOUSING_COMPLAINT_TYPES;
-  if (city === "los-angeles") return LA_HOUSING_COMPLAINT_TYPES;
-  if (city === "miami") return MIAMI_HOUSING_COMPLAINT_TYPES;
-  if (city === "houston") return HOUSTON_HOUSING_COMPLAINT_TYPES;
-  return CHICAGO_HOUSING_COMPLAINT_TYPES;
+  return city === "nyc" ? HOUSING_COMPLAINT_TYPES : LA_HOUSING_COMPLAINT_TYPES;
 }
 
 /** City-specific violation agency labels */
 export const VIOLATION_AGENCIES: Record<City, { housing: string; building: string; crime: string }> = {
   nyc: { housing: "HPD", building: "DOB", crime: "NYPD" },
   "los-angeles": { housing: "LAHD", building: "LADBS", crime: "LAPD" },
-  chicago: { housing: "CDPH", building: "CDBS", crime: "CPD" },
-  miami: { housing: "RER", building: "RER", crime: "MDPD" },
-  houston: { housing: "HND", building: "PWE", crime: "HPD" },
 };
-
-export const REVIEW_PRO_TAGS = [
-  "Great management",
-  "Quiet building",
-  "Good natural light",
-  "Responsive maintenance",
-  "Pet friendly",
-  "Clean common areas",
-  "Good water pressure",
-  "Reliable heat",
-  "Nice neighbors",
-  "Safe neighborhood",
-  "Close to subway",
-  "Close to grocery stores",
-  "Spacious apartments",
-  "Good closet space",
-  "Updated kitchen",
-  "Updated bathroom",
-  "In-unit laundry",
-  "Laundry in building",
-  "Doorman building",
-  "Package room",
-  "Elevator building",
-  "Roof access",
-  "Outdoor space",
-  "Gym in building",
-  "Bike storage",
-  "Storage available",
-  "Parking available",
-  "Good cell reception",
-  "Fast internet options",
-  "Hardwood floors",
-  "High ceilings",
-  "Central AC",
-  "Dishwasher",
-  "Good value for price",
-  "Fair rent increases",
-  "Flexible lease terms",
-  "Easy move-in process",
-  "Good building security",
-  "Well-maintained lobby",
-  "Clean hallways",
-  "Good trash management",
-  "Recycling available",
-  "Live-in super",
-  "Quick repairs",
-  "New appliances",
-  "Soundproof walls",
-  "Great views",
-  "Lots of outlets",
-  "Good ventilation",
-  "No pest issues",
-] as const;
-
-export const REVIEW_CON_TAGS = [
-  "Thin walls",
-  "Creaky floors",
-  "Pest issues",
-  "Slow maintenance",
-  "Noisy neighbors",
-  "Loud street noise",
-  "Poor water pressure",
-  "Unreliable heat",
-  "No AC",
-  "Drafty windows",
-  "Paint peeling",
-  "Water damage",
-  "Mold or mildew",
-  "Cracks in walls",
-  "Uneven floors",
-  "Small kitchen",
-  "Outdated appliances",
-  "No dishwasher",
-  "No laundry in building",
-  "No elevator",
-  "Package theft",
-  "Poor building security",
-  "Dirty common areas",
-  "Bad trash management",
-  "Rodents",
-  "Cockroaches",
-  "Bed bugs",
-  "Ants",
-  "Unresponsive management",
-  "Rude management",
-  "Unfair rent increases",
-  "Hard to get deposit back",
-  "Hidden fees",
-  "Poor lighting in hallways",
-  "Broken buzzer/intercom",
-  "Slow elevator",
-  "No storage",
-  "No bike storage",
-  "No outdoor space",
-  "Bad cell reception",
-  "Limited internet options",
-  "Noisy pipes",
-  "Leaky faucets",
-  "Low ceilings",
-  "Not enough outlets",
-  "Poor ventilation",
-  "Smells from neighbors",
-  "Construction noise",
-  "Upstairs stomping",
-  "Unsafe neighborhood",
-] as const;

@@ -14,9 +14,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { LetterGrade } from "@/components/ui/LetterGrade";
-import dynamic from "next/dynamic";
-
-const LandlordViolationTrend = dynamic(() => import("@/components/landlord/LandlordViolationTrend").then(m => m.LandlordViolationTrend));
+import { LandlordViolationTrend } from "@/components/landlord/LandlordViolationTrend";
 import { LandlordPortfolioSummary } from "@/components/landlord/LandlordPortfolioSummary";
 import { LandlordActionLinks } from "@/components/landlord/LandlordActionLinks";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
@@ -30,7 +28,7 @@ import type { Metadata } from "next";
 export const revalidate = 0; // force-dynamic to prevent caching 404s from query timeouts
 
 interface LandlordPageProps {
-  params: Promise<{ city: string; name: string }>;
+  params: Promise<{ name: string }>;
 }
 
 const BUILDING_SELECT =
@@ -105,8 +103,7 @@ export async function generateMetadata({
 export default async function LandlordDetailPage({
   params,
 }: LandlordPageProps) {
-  const { city: cityParam, name } = await params;
-  const city = (cityParam || "nyc") as import("@/lib/cities").City;
+  const { name } = await params;
   const supabase = await createClient();
 
   const [buildings, cityAvgResult] = await Promise.all([
@@ -298,7 +295,7 @@ export default async function LandlordDetailPage({
             {buildings.slice(0, 3).map((b) => {
               const score = b.overall_score ?? deriveScore(b.violation_count || 0, b.complaint_count || 0);
               return (
-                <Link key={b.id} href={buildingUrl(b, city)}>
+                <Link key={b.id} href={buildingUrl(b)}>
                   <div className="bg-white rounded-xl border-2 border-red-100 hover:border-red-200 p-4 transition-colors">
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <p className="text-sm font-semibold text-[#0F1D2E] truncate">{b.full_address}</p>
@@ -341,7 +338,7 @@ export default async function LandlordDetailPage({
         {buildings.map((building) => {
           const score = building.overall_score ?? deriveScore(building.violation_count || 0, building.complaint_count || 0);
           return (
-            <Link key={building.id} href={buildingUrl(building, city)}>
+            <Link key={building.id} href={buildingUrl(building)}>
               <Card hover className="h-full">
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between gap-3 mb-3">

@@ -8,8 +8,6 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-import { NextRequest } from "next/server";
-
 const BATCH_SIZE = 500;
 const API_PAGE_SIZE = 1000;
 const LA_API_PAGE_SIZE = 2000;
@@ -239,12 +237,7 @@ async function fetchLASchools(): Promise<SchoolRow[]> {
 
 // ---------- handler ----------
 
-export async function GET(request: NextRequest) {
-  const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export async function GET() {
   try {
     const [nycSchools, laSchools] = await Promise.all([
       fetchNYCSchools(),

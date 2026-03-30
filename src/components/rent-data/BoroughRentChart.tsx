@@ -43,8 +43,7 @@ export function BoroughRentChart({ data, city = "nyc" }: { data: DataPoint[]; ci
   }
 
   // Normalize borough/area names to title case
-  const normalizeName = (b: string | null) => {
-    if (!b) return "Unknown";
+  const normalizeName = (b: string) => {
     if (b === "STATEN ISLAND") return "Staten Island";
     // Handle multi-word names like "NORTH HOLLYWOOD" → "North Hollywood"
     return b

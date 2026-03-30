@@ -328,149 +328,6 @@ STATEN_ISLAND = [
     ("Bay Terrace SI", "bay-terrace-staten-island-new-york-ny"),
 ]
 
-# ── LOS ANGELES NEIGHBORHOODS ───────────────────────────────────────────────
-LA_DOWNTOWN = [
-    ("Downtown LA", "downtown-los-angeles-ca"),
-    ("Arts District", "arts-district-los-angeles-ca"),
-    ("Little Tokyo", "little-tokyo-los-angeles-ca"),
-    ("Chinatown", "chinatown-los-angeles-ca"),
-]
-
-LA_HOLLYWOOD = [
-    ("Hollywood", "hollywood-los-angeles-ca"),
-    ("West Hollywood", "west-hollywood-ca"),
-    ("Hollywood Hills", "hollywood-hills-los-angeles-ca"),
-    ("East Hollywood", "east-hollywood-los-angeles-ca"),
-    ("North Hollywood", "north-hollywood-los-angeles-ca"),
-]
-
-LA_WESTSIDE = [
-    ("Santa Monica", "santa-monica-ca"),
-    ("Venice", "venice-los-angeles-ca"),
-    ("Mar Vista", "mar-vista-los-angeles-ca"),
-    ("Culver City", "culver-city-ca"),
-    ("Westwood", "westwood-los-angeles-ca"),
-    ("Brentwood", "brentwood-los-angeles-ca"),
-    ("Beverly Hills", "beverly-hills-ca"),
-    ("West LA", "west-los-angeles-los-angeles-ca"),
-    ("Marina Del Rey", "marina-del-rey-ca"),
-    ("El Segundo", "el-segundo-ca"),
-]
-
-LA_CENTRAL = [
-    ("Koreatown", "koreatown-los-angeles-ca"),
-    ("Silver Lake", "silver-lake-los-angeles-ca"),
-    ("Echo Park", "echo-park-los-angeles-ca"),
-    ("Los Feliz", "los-feliz-los-angeles-ca"),
-    ("Mid-Wilshire", "mid-wilshire-los-angeles-ca"),
-    ("Hancock Park", "hancock-park-los-angeles-ca"),
-    ("Fairfax", "fairfax-los-angeles-ca"),
-]
-
-LA_VALLEY = [
-    ("Sherman Oaks", "sherman-oaks-los-angeles-ca"),
-    ("Studio City", "studio-city-los-angeles-ca"),
-    ("Encino", "encino-los-angeles-ca"),
-    ("Van Nuys", "van-nuys-los-angeles-ca"),
-    ("Woodland Hills", "woodland-hills-los-angeles-ca"),
-    ("Burbank", "burbank-ca"),
-    ("Glendale", "glendale-ca"),
-    ("Pasadena", "pasadena-ca"),
-]
-
-LA_SOUTH_BAY = [
-    ("Long Beach", "long-beach-ca"),
-    ("Torrance", "torrance-ca"),
-    ("Redondo Beach", "redondo-beach-ca"),
-    ("Hermosa Beach", "hermosa-beach-ca"),
-    ("Inglewood", "inglewood-ca"),
-    ("Hawthorne", "hawthorne-ca"),
-]
-
-# ── CHICAGO NEIGHBORHOODS ───────────────────────────────────────────────────
-CHICAGO_NORTH = [
-    ("Lincoln Park", "lincoln-park-chicago-il"),
-    ("Lakeview", "lakeview-chicago-il"),
-    ("Wrigleyville", "wrigleyville-chicago-il"),
-    ("Lincoln Square", "lincoln-square-chicago-il"),
-    ("Uptown", "uptown-chicago-il"),
-    ("Edgewater", "edgewater-chicago-il"),
-    ("Rogers Park", "rogers-park-chicago-il"),
-    ("Andersonville", "andersonville-chicago-il"),
-    ("Ravenswood", "ravenswood-chicago-il"),
-]
-
-CHICAGO_CENTRAL = [
-    ("Loop", "the-loop-chicago-il"),
-    ("River North", "river-north-chicago-il"),
-    ("Gold Coast", "gold-coast-chicago-il"),
-    ("Streeterville", "streeterville-chicago-il"),
-    ("South Loop", "south-loop-chicago-il"),
-    ("West Loop", "west-loop-chicago-il"),
-    ("Old Town", "old-town-chicago-il"),
-    ("Near North Side", "near-north-side-chicago-il"),
-]
-
-CHICAGO_WEST = [
-    ("Wicker Park", "wicker-park-chicago-il"),
-    ("Bucktown", "bucktown-chicago-il"),
-    ("Logan Square", "logan-square-chicago-il"),
-    ("Humboldt Park", "humboldt-park-chicago-il"),
-    ("Ukrainian Village", "ukrainian-village-chicago-il"),
-    ("West Town", "west-town-chicago-il"),
-    ("Pilsen", "pilsen-chicago-il"),
-]
-
-CHICAGO_SOUTH = [
-    ("Hyde Park", "hyde-park-chicago-il"),
-    ("Bronzeville", "bronzeville-chicago-il"),
-    ("Kenwood", "kenwood-chicago-il"),
-    ("Bridgeport", "bridgeport-chicago-il"),
-]
-
-CHICAGO_SUBURBS = [
-    ("Evanston", "evanston-il"),
-    ("Oak Park", "oak-park-il"),
-    ("Skokie", "skokie-il"),
-]
-
-MIAMI_CENTRAL = [
-    ("Brickell", "brickell-miami-fl"),
-    ("Downtown Miami", "downtown-miami-fl"),
-    ("Edgewater", "edgewater-miami-fl"),
-    ("Wynwood", "wynwood-miami-fl"),
-    ("Little Havana", "little-havana-miami-fl"),
-    ("Overtown", "overtown-miami-fl"),
-]
-
-MIAMI_BEACH = [
-    ("Miami Beach", "miami-beach-fl"),
-    ("South Beach", "south-beach-miami-beach-fl"),
-    ("North Beach", "north-beach-miami-beach-fl"),
-    ("Surfside", "surfside-fl"),
-    ("Bal Harbour", "bal-harbour-fl"),
-    ("Sunny Isles Beach", "sunny-isles-beach-fl"),
-    ("Aventura", "aventura-fl"),
-]
-
-MIAMI_SOUTH = [
-    ("Coral Gables", "coral-gables-fl"),
-    ("Coconut Grove", "coconut-grove-miami-fl"),
-    ("Kendall", "kendall-miami-fl"),
-    ("Pinecrest", "pinecrest-fl"),
-    ("South Miami", "south-miami-fl"),
-    ("Homestead", "homestead-fl"),
-]
-
-MIAMI_NORTH = [
-    ("Doral", "doral-fl"),
-    ("Hialeah", "hialeah-fl"),
-    ("Miami Gardens", "miami-gardens-fl"),
-    ("North Miami", "north-miami-fl"),
-    ("North Miami Beach", "north-miami-beach-fl"),
-]
-
-# ── ALL AREAS BY METRO ──────────────────────────────────────────────────────
 ALL_BOROUGHS = {
     "Manhattan": MANHATTAN,
     "Brooklyn": BROOKLYN,
@@ -479,68 +336,22 @@ ALL_BOROUGHS = {
     "Staten Island": STATEN_ISLAND,
 }
 
-LA_AREAS = {
-    "Downtown LA": LA_DOWNTOWN,
-    "Hollywood": LA_HOLLYWOOD,
-    "Westside": LA_WESTSIDE,
-    "Central LA": LA_CENTRAL,
-    "San Fernando Valley": LA_VALLEY,
-    "South Bay": LA_SOUTH_BAY,
-}
-
-CHICAGO_AREAS = {
-    "North Side": CHICAGO_NORTH,
-    "Central": CHICAGO_CENTRAL,
-    "West Side": CHICAGO_WEST,
-    "South Side": CHICAGO_SOUTH,
-    "Suburbs": CHICAGO_SUBURBS,
-}
-
-MIAMI_AREAS = {
-    "Central": MIAMI_CENTRAL,
-    "Beach": MIAMI_BEACH,
-    "South": MIAMI_SOUTH,
-    "North": MIAMI_NORTH,
-}
-
-METRO_NEIGHBORHOODS = {
-    "nyc": ALL_BOROUGHS,
-    "los-angeles": LA_AREAS,
-    "chicago": CHICAGO_AREAS,
-    "miami": MIAMI_AREAS,
-}
-
 
 def get_url(slug: str) -> str:
     return f"{BASE}/{slug}/rentals/"
 
 
 def get_all_neighborhoods() -> list[dict]:
-    """Return flat list of all neighborhoods with metro, borough, name, slug, url."""
+    """Return flat list of all neighborhoods with borough, name, slug, url."""
     results = []
-    # NYC boroughs
     for borough, neighborhoods in ALL_BOROUGHS.items():
         for name, slug in neighborhoods:
             results.append({
-                "metro": "nyc",
                 "borough": borough,
                 "name": name,
                 "slug": slug,
                 "url": get_url(slug),
             })
-    # Other metros (LA, Chicago)
-    for metro, areas in METRO_NEIGHBORHOODS.items():
-        if metro == "nyc":
-            continue  # already handled above
-        for area_name, neighborhoods in areas.items():
-            for name, slug in neighborhoods:
-                results.append({
-                    "metro": metro,
-                    "borough": area_name,
-                    "name": name,
-                    "slug": slug,
-                    "url": get_url(slug),
-                })
     return results
 
 

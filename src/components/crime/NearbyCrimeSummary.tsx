@@ -68,7 +68,7 @@ export function NearbyCrimeSummary({ zipCode }: NearbyCrimeSummaryProps) {
           </h3>
         </div>
         <p className="text-xs text-[#64748b] mt-0.5">
-          Zip code {zipCode} — last 2 years
+          Zip code {zipCode} — last 12 months
         </p>
       </CardHeader>
       <CardContent>

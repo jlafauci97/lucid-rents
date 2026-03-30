@@ -1,17 +1,15 @@
 #!/usr/bin/env python3
 """
-Scrape rent data from zillow.com for NYC, LA, and Chicago neighborhoods using Scrapling.
+Scrape rent data from zillow.com for NYC neighborhoods using Scrapling.
 
 Uses StealthyFetcher with real_chrome=True to bypass anti-bot protection,
 then extracts structured JSON from Next.js __NEXT_DATA__ payload.
 
-Scrapes neighborhood-by-neighborhood to bypass Zillow's 820-result
+Scrapes neighborhood-by-neighborhood (283 total) to bypass Zillow's 820-result
 cap per search, capturing far more listings than borough-level scraping.
 
 Usage:
-    python3 scripts/scrape-zillow.py                              # all NYC neighborhoods, 20 pages each
-    python3 scripts/scrape-zillow.py --metro=los-angeles          # all LA neighborhoods
-    python3 scripts/scrape-zillow.py --metro=chicago              # all Chicago neighborhoods
+    python3 scripts/scrape-zillow.py                              # all neighborhoods, 20 pages each
     python3 scripts/scrape-zillow.py --borough=Manhattan          # all Manhattan neighborhoods
     python3 scripts/scrape-zillow.py --neighborhood="Upper East Side"  # single neighborhood
     python3 scripts/scrape-zillow.py --pages=5                    # limit pages per neighborhood
@@ -59,15 +57,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from importlib import import_module
 _nbhd_mod = import_module("zillow-neighborhoods")
 ALL_BOROUGHS = _nbhd_mod.ALL_BOROUGHS
-METRO_NEIGHBORHOODS = _nbhd_mod.METRO_NEIGHBORHOODS
 get_url = _nbhd_mod.get_url
-
-METRO_INFO = {
-    "nyc": {"city": "New York", "state": "NY"},
-    "los-angeles": {"city": "Los Angeles", "state": "CA"},
-    "chicago": {"city": "Chicago", "state": "IL"},
-    "miami": {"city": "Miami", "state": "FL"},
-}
 
 MAX_RETRIES = 3
 RETRY_DELAY = 5  # seconds between retries
@@ -223,53 +213,59 @@ def parse_unit_number(address_street: str) -> str | None:
 
 # ── BOROUGH DETECTION ────────────────────────────────────────────────────────
 CITY_TO_BOROUGH = {
-    # NYC
-    "new york": "Manhattan", "manhattan": "Manhattan",
-    "brooklyn": "Brooklyn", "bronx": "Bronx",
-    "queens": "Queens", "long island city": "Queens",
-    "astoria": "Queens", "flushing": "Queens",
-    "jamaica": "Queens", "jackson heights": "Queens",
-    "woodside": "Queens", "sunnyside": "Queens",
-    "forest hills": "Queens", "rego park": "Queens",
+    "new york": "Manhattan",
+    "manhattan": "Manhattan",
+    "brooklyn": "Brooklyn",
+    "bronx": "Bronx",
+    "queens": "Queens",
+    "long island city": "Queens",
+    "astoria": "Queens",
+    "flushing": "Queens",
+    "jamaica": "Queens",
+    "jackson heights": "Queens",
+    "woodside": "Queens",
+    "sunnyside": "Queens",
+    "forest hills": "Queens",
+    "rego park": "Queens",
     "staten island": "Staten Island",
-    "arverne": "Queens", "far rockaway": "Queens",
-    "woodhaven": "Queens", "ridgewood": "Queens",
-    "bayside": "Queens", "elmhurst": "Queens",
-    "corona": "Queens", "kew gardens": "Queens",
-    "ozone park": "Queens", "howard beach": "Queens",
-    "fresh meadows": "Queens", "whitestone": "Queens",
-    "college point": "Queens", "maspeth": "Queens",
-    "middle village": "Queens", "glendale queens": "Queens",
-    "east elmhurst": "Queens", "south ozone park": "Queens",
-    "south richmond hill": "Queens", "richmond hill": "Queens",
-    "springfield gardens": "Queens", "laurelton": "Queens",
-    "rosedale": "Queens", "cambria heights": "Queens",
-    "st. albans": "Queens", "hollis": "Queens",
-    "floral park": "Queens", "little neck": "Queens",
-    "douglaston": "Queens", "glen oaks": "Queens",
-    "bellerose": "Queens", "briarwood": "Queens",
-    # LA
-    "los angeles": "Los Angeles", "hollywood": "Hollywood",
-    "west hollywood": "West Hollywood", "santa monica": "Santa Monica",
-    "culver city": "Culver City", "glendale": "Glendale",
-    "burbank": "Burbank", "pasadena": "Pasadena",
-    "long beach": "Long Beach", "inglewood": "Inglewood",
-    "torrance": "Torrance", "el segundo": "El Segundo",
-    "redondo beach": "Redondo Beach", "hermosa beach": "Hermosa Beach",
-    "beverly hills": "Beverly Hills", "venice": "Venice",
-    "marina del rey": "Marina Del Rey",
-    # Chicago
-    "chicago": "Chicago", "evanston": "Evanston", "oak park": "Oak Park",
-    "skokie": "Skokie",
-    # Miami
-    "miami": "Miami", "miami beach": "Miami Beach", "coral gables": "Coral Gables",
-    "doral": "Doral", "hialeah": "Hialeah", "aventura": "Aventura",
-    "coconut grove": "Coconut Grove", "brickell": "Brickell", "wynwood": "Wynwood",
+    "arverne": "Queens",
+    "far rockaway": "Queens",
+    "woodhaven": "Queens",
+    "ridgewood": "Queens",
+    "bayside": "Queens",
+    "elmhurst": "Queens",
+    "corona": "Queens",
+    "kew gardens": "Queens",
+    "ozone park": "Queens",
+    "howard beach": "Queens",
+    "fresh meadows": "Queens",
+    "whitestone": "Queens",
+    "college point": "Queens",
+    "maspeth": "Queens",
+    "middle village": "Queens",
+    "glendale": "Queens",
+    "woodside": "Queens",
+    "east elmhurst": "Queens",
+    "south ozone park": "Queens",
+    "south richmond hill": "Queens",
+    "richmond hill": "Queens",
+    "springfield gardens": "Queens",
+    "laurelton": "Queens",
+    "rosedale": "Queens",
+    "cambria heights": "Queens",
+    "st. albans": "Queens",
+    "hollis": "Queens",
+    "floral park": "Queens",
+    "little neck": "Queens",
+    "douglaston": "Queens",
+    "glen oaks": "Queens",
+    "bellerose": "Queens",
+    "briarwood": "Queens",
 }
 
 
-def detect_borough(listing: dict, default_area: str = "Manhattan") -> str:
-    """Detect borough/area from listing city/address."""
+def detect_borough(listing: dict) -> str:
+    """Detect NYC borough from listing city/address."""
     city = listing.get("address_city", "").strip().lower()
     if city and city in CITY_TO_BOROUGH:
         return CITY_TO_BOROUGH[city]
@@ -294,11 +290,7 @@ def detect_borough(listing: dict, default_area: str = "Manhattan") -> str:
         return "Queens"
     if zc.startswith("103"):
         return "Staten Island"
-    if zc.startswith("900") or zc.startswith("901") or zc.startswith("902"):
-        return "Los Angeles"
-    if zc.startswith("606") or zc.startswith("607") or zc.startswith("608"):
-        return "Chicago"
-    return default_area
+    return "Manhattan"  # default
 
 
 def generate_slug(full_address: str) -> str:
@@ -648,7 +640,6 @@ def upsert_rents(building_id: str, rent_by_beds: dict) -> int:
         history_rows.append({
             "building_id": building_id,
             "source": SOURCE,
-            "unit_number": "",
             "bedrooms": beds,
             "rent": median,
             "sqft": data.get("sqft_min"),
@@ -673,7 +664,7 @@ def upsert_rents(building_id: str, rent_by_beds: dict) -> int:
     return len(rows)
 
 
-def upsert_amenities(building_id: str, amenities: list[str], metro: str = "nyc") -> int:
+def upsert_amenities(building_id: str, amenities: list[str]) -> int:
     """Upsert amenity data for a building."""
     if not amenities:
         return 0
@@ -693,7 +684,6 @@ def upsert_amenities(building_id: str, amenities: list[str], metro: str = "nyc")
             "amenity": normalized,
             "category": categorize_amenity(a),
             "scraped_at": now,
-            "metro": metro,
         })
 
     try:
@@ -706,7 +696,7 @@ def upsert_amenities(building_id: str, amenities: list[str], metro: str = "nyc")
         return 0
 
 
-def create_building(listing: dict, metro: str = "nyc") -> str | None:
+def create_building(listing: dict) -> str | None:
     """Create a new building record from a Zillow listing. Returns building ID."""
     street = listing.get("address_street", "")
     if not street:
@@ -718,10 +708,8 @@ def create_building(listing: dict, metro: str = "nyc") -> str | None:
     street_name = parts[1] if len(parts) > 1 else ""
     zip_code = listing.get("zip_code", "")
 
-    info = METRO_INFO.get(metro, METRO_INFO["nyc"])
-    state = info["state"]
-
-    full_address = f"{street.upper()}, {borough}, {state}"
+    # Build full_address in the same format as the sync: "23-10 42ND RD, Queens, NY, 11101"
+    full_address = f"{street.upper()}, {borough}, NY"
     if zip_code:
         full_address += f", {zip_code}"
 
@@ -732,11 +720,10 @@ def create_building(listing: dict, metro: str = "nyc") -> str | None:
         "house_number": house_number,
         "street_name": street_name,
         "borough": borough,
-        "city": info["city"],
-        "state": state,
+        "city": "New York",
+        "state": "NY",
         "zip_code": zip_code or None,
         "slug": slug,
-        "metro": metro,
         "latitude": listing.get("latitude"),
         "longitude": listing.get("longitude"),
         "overall_score": 0,
@@ -898,40 +885,36 @@ def upsert_unit_listing(building_id: str, unit_id: str, unit_number: str,
 
 # ── MAIN ─────────────────────────────────────────────────────────────────────
 def main():
-    parser = argparse.ArgumentParser(description="Scrape zillow.com for rent data by neighborhood")
-    parser.add_argument("--metro", type=str, default="nyc", choices=["nyc", "los-angeles", "chicago", "miami"], help="Metro area")
-    parser.add_argument("--borough", type=str, default="", help="Single borough/area to scrape")
+    parser = argparse.ArgumentParser(description="Scrape zillow.com for NYC rent data by neighborhood")
+    parser.add_argument("--borough", type=str, default="", help="Single borough to scrape")
     parser.add_argument("--neighborhood", type=str, default="", help="Single neighborhood name (e.g. 'Upper East Side')")
     parser.add_argument("--pages", type=int, default=20, help="Max pages per neighborhood (41 listings/page)")
     parser.add_argument("--dry-run", action="store_true", help="Preview without writing to DB")
     parser.add_argument("--start-index", type=int, default=0, help="Skip first N neighborhoods (for resuming)")
     args = parser.parse_args()
 
-    metro = args.metro
-    metro_areas = METRO_NEIGHBORHOODS.get(metro, ALL_BOROUGHS)
-
     # Build neighborhood list
     neighborhoods = []
     if args.neighborhood:
         # Find specific neighborhood
-        for area, nbhds in metro_areas.items():
+        for borough, nbhds in ALL_BOROUGHS.items():
             for name, slug in nbhds:
                 if name.lower() == args.neighborhood.lower():
-                    neighborhoods.append((area, name, slug))
+                    neighborhoods.append((borough, name, slug))
                     break
         if not neighborhoods:
-            print(f"ERROR: Neighborhood '{args.neighborhood}' not found in {metro}")
+            print(f"ERROR: Neighborhood '{args.neighborhood}' not found")
             sys.exit(1)
     elif args.borough:
-        if args.borough not in metro_areas:
-            print(f"ERROR: Area '{args.borough}' not found. Choose from: {list(metro_areas.keys())}")
+        if args.borough not in ALL_BOROUGHS:
+            print(f"ERROR: Borough '{args.borough}' not found. Choose from: {list(ALL_BOROUGHS.keys())}")
             sys.exit(1)
-        for name, slug in metro_areas[args.borough]:
+        for name, slug in ALL_BOROUGHS[args.borough]:
             neighborhoods.append((args.borough, name, slug))
     else:
-        for area, nbhds in metro_areas.items():
+        for borough, nbhds in ALL_BOROUGHS.items():
             for name, slug in nbhds:
-                neighborhoods.append((area, name, slug))
+                neighborhoods.append((borough, name, slug))
 
     max_pages = args.pages
     dry_run = args.dry_run
@@ -951,7 +934,7 @@ def main():
     neighborhoods_scraped = 0
     neighborhoods_empty = 0
 
-    print(f"Scraping zillow.com — metro={metro}, {len(neighborhoods)} neighborhoods, max {max_pages} pages each, dry_run={dry_run}")
+    print(f"Scraping zillow.com — {len(neighborhoods)} neighborhoods, max {max_pages} pages each, dry_run={dry_run}")
     if args.start_index > 0:
         print(f"Resuming from index {args.start_index}")
     print(f"Start time: {datetime.now()}\n")
@@ -1013,7 +996,7 @@ def main():
                         label = "MATCHED"
                     else:
                         # Create new building
-                        building_id = create_building(listing, metro=metro)
+                        building_id = create_building(listing)
                         if building_id:
                             total_created += 1
                             label = "CREATED"
@@ -1024,7 +1007,7 @@ def main():
 
                     # Upsert all data for this building
                     rents_added = upsert_rents(building_id, listing["rent_by_beds"])
-                    amenities_added = upsert_amenities(building_id, listing["amenities"], metro)
+                    amenities_added = upsert_amenities(building_id, listing["amenities"])
                     listing_saved = upsert_listing(building_id, listing)
 
                     # Link to specific unit if we have a unit number

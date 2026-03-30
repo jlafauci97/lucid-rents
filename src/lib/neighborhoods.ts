@@ -14,21 +14,6 @@ import {
   getLANeighborhoodName,
   laNeighborhoodPageSlug,
 } from "./la-neighborhoods";
-import {
-  searchChicagoNeighborhoods,
-  getChicagoNeighborhoodName,
-  chicagoNeighborhoodPageSlug,
-} from "./chicago-neighborhoods";
-import {
-  searchMiamiNeighborhoods,
-  getMiamiNeighborhoodName,
-  miamiNeighborhoodPageSlug,
-} from "./miami-neighborhoods";
-import {
-  searchHoustonNeighborhoods,
-  getHoustonNeighborhoodName,
-  houstonNeighborhoodPageSlug,
-} from "./houston-neighborhoods";
 
 export interface NeighborhoodResult {
   zipCode: string;
@@ -57,27 +42,6 @@ export function searchNeighborhoodsByCity(
       region: m.region,
     }));
   }
-  if (city === "chicago") {
-    return searchChicagoNeighborhoods(query, limit).map((m) => ({
-      zipCode: m.zipCode,
-      name: m.name,
-      region: m.region,
-    }));
-  }
-  if (city === "miami") {
-    return searchMiamiNeighborhoods(query, limit).map((m) => ({
-      zipCode: m.zipCode,
-      name: m.name,
-      region: m.region,
-    }));
-  }
-  if (city === "houston") {
-    return searchHoustonNeighborhoods(query, limit).map((m) => ({
-      zipCode: m.zipCode,
-      name: m.name,
-      region: m.region,
-    }));
-  }
   return [];
 }
 
@@ -88,9 +52,6 @@ export function getNeighborhoodNameByCity(
 ): string | null {
   if (city === "nyc") return getNYCNeighborhoodName(zipCode);
   if (city === "los-angeles") return getLANeighborhoodName(zipCode);
-  if (city === "chicago") return getChicagoNeighborhoodName(zipCode);
-  if (city === "miami") return getMiamiNeighborhoodName(zipCode);
-  if (city === "houston") return getHoustonNeighborhoodName(zipCode);
   return null;
 }
 
@@ -101,8 +62,5 @@ export function neighborhoodPageSlugByCity(
 ): string {
   if (city === "nyc") return nycNeighborhoodPageSlug(zipCode);
   if (city === "los-angeles") return laNeighborhoodPageSlug(zipCode);
-  if (city === "chicago") return chicagoNeighborhoodPageSlug(zipCode);
-  if (city === "miami") return miamiNeighborhoodPageSlug(zipCode);
-  if (city === "houston") return houstonNeighborhoodPageSlug(zipCode);
   return zipCode;
 }

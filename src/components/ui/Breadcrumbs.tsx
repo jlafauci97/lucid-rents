@@ -10,29 +10,26 @@ interface BreadcrumbItem {
 
 interface BreadcrumbsProps {
   items: BreadcrumbItem[];
-  variant?: "light" | "dark";
 }
 
-export function Breadcrumbs({ items, variant = "light" }: BreadcrumbsProps) {
-  const isDark = variant === "dark";
-
+export function Breadcrumbs({ items }: BreadcrumbsProps) {
   return (
     <>
       <JsonLd data={breadcrumbJsonLd(items.map((i) => ({ name: i.label, url: i.href })))} />
-      <nav aria-label="Breadcrumb" className={`flex items-center gap-1 text-sm ${isDark ? "text-white/50" : "text-[#64748b]"}`}>
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-sm text-[#64748b]">
         {items.map((item, i) => {
           const isLast = i === items.length - 1;
           return (
             <span key={item.href} className="flex items-center gap-1">
-              {i > 0 && <ChevronRight className={`w-3.5 h-3.5 ${isDark ? "text-white/30" : "text-[#94a3b8]"}`} />}
+              {i > 0 && <ChevronRight className="w-3.5 h-3.5 text-[#94a3b8]" />}
               {isLast ? (
-                <span className={`font-medium truncate max-w-[200px] ${isDark ? "text-white" : "text-[#0F1D2E]"}`}>
+                <span className="text-[#0F1D2E] font-medium truncate max-w-[200px]">
                   {item.label}
                 </span>
               ) : (
                 <Link
                   href={item.href}
-                  className={`transition-colors ${isDark ? "hover:text-white" : "hover:text-[#3B82F6]"}`}
+                  className="hover:text-[#3B82F6] transition-colors"
                 >
                   {item.label}
                 </Link>

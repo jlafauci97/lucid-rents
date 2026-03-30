@@ -9,10 +9,8 @@ import { CITY_META } from "@/lib/cities";
 import type { City } from "@/lib/cities";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
-import dynamic from "next/dynamic";
-
-const CrimeTrend = dynamic(() => import("@/components/crime/CrimeTrend").then(m => m.CrimeTrend));
-const CrimeCategoryBreakdown = dynamic(() => import("@/components/crime/CrimeCategoryBreakdown").then(m => m.CrimeCategoryBreakdown));
+import { CrimeTrend } from "@/components/crime/CrimeTrend";
+import { CrimeCategoryBreakdown } from "@/components/crime/CrimeCategoryBreakdown";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import {
@@ -174,7 +172,7 @@ export default async function CrimeZipPage({
           </div>
         </div>
         <p className="text-[#64748b] text-sm">
-          {CITY_META[city].crimeSource} crime data for the last 2 years
+          {CITY_META[city].crimeSource} crime data for the last 12 months
         </p>
       </div>
 
@@ -344,7 +342,7 @@ export default async function CrimeZipPage({
                     }) => (
                       <Link
                         key={b.id}
-                        href={buildingUrl(b, city)}
+                        href={buildingUrl(b)}
                         className="block p-3 rounded-lg border border-[#e2e8f0] hover:border-[#3B82F6] hover:bg-[#f8fafc] transition-colors"
                       >
                         <p className="text-sm font-medium text-[#0F1D2E] truncate">

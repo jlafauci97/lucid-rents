@@ -43,11 +43,6 @@ const ROUTES_TO_CHECK = [
   "/CA/Los-Angeles/landlords",
   "/CA/Los-Angeles/building/lincoln-heights/2312-n-griffin-ave-los-angeles-ca-90031",
   "/CA/Los-Angeles/building/downtown/100-n-santa-fe-ave-los-angeles-ca-90012",
-  // Chicago
-  "/IL/Chicago/search",
-  "/IL/Chicago/buildings",
-  "/IL/Chicago/worst-rated-buildings",
-  "/IL/Chicago/landlords",
 ];
 
 interface RouteResult {
@@ -60,7 +55,8 @@ interface RouteResult {
 export async function GET(request: Request) {
   // Verify cron secret to prevent unauthorized access
   const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  const cronSecret = process.env.CRON_SECRET;
+  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
