@@ -54,22 +54,14 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
   };
   const sortCol = sortColumns[sortBy] || "total_violations";
 
-  // Count total matching landlords
+  // Run count + paginated data in parallel
+  const offset = (page - 1) * limit;
+
   let countQuery = supabase
     .from("landlord_stats")
     .select("id", { count: "exact", head: true })
     .eq("metro", cityParam);
-
-  if (search) {
-    countQuery = countQuery.ilike("name", `%${search}%`);
-  }
-
-  const { count: total } = await countQuery;
-  const totalPages = Math.ceil((total || 0) / limit);
-
-  // Fetch paginated results
-  const offset = (page - 1) * limit;
-  let query = supabase
+  let dataQuery = supabase
     .from("landlord_stats")
     .select("name,slug,building_count,total_violations,total_complaints,total_litigations,total_dob_violations,avg_score,worst_building_id,worst_building_address,worst_building_violations")
     .eq("metro", cityParam)
@@ -77,10 +69,12 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
     .range(offset, offset + limit - 1);
 
   if (search) {
-    query = query.ilike("name", `%${search}%`);
+    countQuery = countQuery.ilike("name", `%${search}%`);
+    dataQuery = dataQuery.ilike("name", `%${search}%`);
   }
 
-  const { data: landlords } = await query;
+  const [{ count: total }, { data: landlords }] = await Promise.all([countQuery, dataQuery]);
+  const totalPages = Math.ceil((total || 0) / limit);
 
   function buildUrl(overrides: Record<string, string>) {
     const base: Record<string, string> = { search, sort: sortBy, page: String(page) };

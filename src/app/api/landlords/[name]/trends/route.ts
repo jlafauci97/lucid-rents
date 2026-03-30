@@ -46,14 +46,22 @@ export async function GET(
 ) {
   try {
     const { name } = await params;
-    const ownerName = decodeURIComponent(name);
     const supabase = await createClient();
 
-    // Get building IDs for this landlord
+    // Look up exact owner name from slug first, fall back to decoded name
+    const { data: statsRows } = await supabase
+      .from("landlord_stats")
+      .select("name")
+      .eq("slug", name)
+      .limit(1);
+
+    const ownerName = statsRows?.[0]?.name || decodeURIComponent(name);
+
+    // Get building IDs for this landlord (exact match, uses index)
     const { data: buildings } = await supabase
       .from("buildings")
       .select("id")
-      .ilike("owner_name", ownerName);
+      .eq("owner_name", ownerName);
 
     if (!buildings || buildings.length === 0) {
       return NextResponse.json({ months: [], trend: "stable" });
@@ -117,7 +125,11 @@ export async function GET(
     const trend = calculateTrend(months);
     const response: TrendResponse = { months, trend };
 
-    return NextResponse.json(response);
+    return NextResponse.json(response, {
+      headers: {
+        "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
+      },
+    });
   } catch (error) {
     console.error("Landlord trends API error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
