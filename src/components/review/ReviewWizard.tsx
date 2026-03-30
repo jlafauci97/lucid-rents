@@ -326,7 +326,7 @@ export function ReviewWizard({
           building_id: selectedBuilding.id,
           unit_number: unitNumber || undefined,
           is_current_resident: isCurrentResident,
-          display_preference: displayPreference,
+          reviewer_display_preference: displayPreference,
           title: title.trim(),
           body: body.trim(),
           category_ratings: categoryRatings
