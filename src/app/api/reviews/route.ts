@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
 
   // Auto-calculate overall rating: mean of category ratings, rounded to nearest 0.5
   const avgRating = data.category_ratings.reduce((sum, cr) => sum + cr.rating, 0) / data.category_ratings.length;
-  const overallRating = Math.round(avgRating * 2) / 2;
+  const overallRating = Math.round(avgRating);
 
   // Build reviewer display name from profile if preference is 'name'
   let reviewerName: string | null = null;
