@@ -44,29 +44,6 @@ import type { Metadata } from "next";
 
 export const revalidate = 86400; // 24h ISR
 
-// Pre-render the most-visited buildings at build time so first visitors get instant loads
-export async function generateStaticParams() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!supabaseUrl || !supabaseKey) return [];
-
-  try {
-    const res = await fetch(
-      `${supabaseUrl}/rest/v1/buildings?select=metro,borough,slug&order=review_count.desc&limit=500`,
-      { headers: { apikey: supabaseKey } }
-    );
-    if (!res.ok) return [];
-    const buildings = await res.json();
-    return buildings.map((b: { metro: string | null; borough: string; slug: string }) => ({
-      city: b.metro || "nyc",
-      borough: (b.borough || "").toLowerCase().replace(/\s+/g, "-"),
-      slug: b.slug,
-    }));
-  } catch {
-    return [];
-  }
-}
-
 interface BuildingSlugPageProps {
   params: Promise<{ city: string; borough: string; slug: string }>;
 }
