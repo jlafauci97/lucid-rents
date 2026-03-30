@@ -3025,23 +3025,20 @@ async function syncChicagoViolations(
         .map((r: Record<string, unknown>) => {
           const parsed = parseChicagoAddress(r.address as string | undefined);
           return {
-            violation_id: `CHI-${r.id}`,
-            inspection_date: r.violation_date ? String(r.violation_date).slice(0, 10) : null,
-            violation_number: r.violation_code ? String(r.violation_code) : null,
-            nov_description: r.violation_description ? String(r.violation_description) : null,
-            status: r.violation_status ? String(r.violation_status) : null,
+            isn_dob_bis_vio: `CHI-${r.id}`,
+            issue_date: r.violation_date ? String(r.violation_date).slice(0, 10) : null,
+            violation_type: r.violation_code ? String(r.violation_code) : null,
+            description: r.violation_description ? String(r.violation_description) : null,
             borough: "Chicago",
             house_number: parsed.house_number,
             street_name: parsed.street_name,
-            latitude: r.latitude ? parseFloat(String(r.latitude)) : null,
-            longitude: r.longitude ? parseFloat(String(r.longitude)) : null,
             metro: "chicago",
             imported_at: new Date().toISOString(),
           };
         });
 
       if (rows.length > 0) {
-        totalAdded += await batchUpsert(supabase, "dob_violations", rows, "violation_id", errors, "Chicago Violations");
+        totalAdded += await batchUpsert(supabase, "dob_violations", rows, "isn_dob_bis_vio", errors, "Chicago Violations");
       }
 
       pagesFetched++;
@@ -3291,12 +3288,10 @@ async function syncChicagoPermits(
         .map((r: Record<string, unknown>) => {
           const streetParts = [r.street_direction, r.street_name].filter(Boolean).map(String).join(" ").trim();
           return {
-            job_number: `CHI-PERMIT-${r.id}`,
-            work_permit: r.id ? String(r.id) : null,
+            work_permit: r.id ? `CHI-PERMIT-${r.id}` : null,
             work_type: r.permit_type ? String(r.permit_type) : null,
             permit_status: r.permit_status ? String(r.permit_status) : null,
-            issuance_date: r.issue_date ? String(r.issue_date).slice(0, 10) : null,
-            filing_date: r.issue_date ? String(r.issue_date).slice(0, 10) : null,
+            issued_date: r.issue_date ? String(r.issue_date).slice(0, 10) : null,
             borough: "Chicago",
             house_no: r.street_number ? String(r.street_number) : null,
             street_name: streetParts || null,
@@ -3310,7 +3305,7 @@ async function syncChicagoPermits(
         });
 
       if (rows.length > 0) {
-        totalAdded += await batchUpsert(supabase, "dob_permits", rows, "job_number", errors, "Chicago Permits");
+        totalAdded += await batchUpsert(supabase, "dob_permits", rows, "work_permit", errors, "Chicago Permits");
       }
 
       pagesFetched++;
@@ -3534,22 +3529,19 @@ async function syncMiamiViolations(
           const parsed = parseMiamiAddress(r.ADDRESS as string | undefined);
           const caseDate = r.CASE_DATE ? new Date(Number(r.CASE_DATE)).toISOString().slice(0, 10) : null;
           return {
-            violation_id: `MIA-${r.CASE_NUM}`,
-            inspection_date: caseDate,
-            nov_description: r.PROBLEM_DESC ? String(r.PROBLEM_DESC).trim() : null,
-            status: r.STAT_DESC ? String(r.STAT_DESC).trim() : null,
+            isn_dob_bis_vio: `MIA-${r.CASE_NUM}`,
+            issue_date: caseDate,
+            description: r.PROBLEM_DESC ? String(r.PROBLEM_DESC).trim() : null,
             borough: "Miami-Dade",
             house_number: parsed.house_number,
             street_name: parsed.street_name,
-            latitude: null,
-            longitude: null,
             metro: "miami",
             imported_at: new Date().toISOString(),
           };
         });
 
       if (rows.length > 0) {
-        totalAdded += await batchUpsert(supabase, "dob_violations", rows, "violation_id", errors, "Miami Violations");
+        totalAdded += await batchUpsert(supabase, "dob_violations", rows, "isn_dob_bis_vio", errors, "Miami Violations");
       }
 
       pagesFetched++;
@@ -3995,23 +3987,20 @@ async function syncHoustonViolations(
         .map((r: Record<string, unknown>) => {
           const parsed = parseHoustonAddress(r.Merged_Situs as string | undefined);
           return {
-            violation_id: `HOU-${r.ViolationSubId || r.NPPRJID}`,
-            inspection_date: r.RecordCreateDate ? String(r.RecordCreateDate).slice(0, 10) : null,
-            nov_description: r.ShortDescription ? String(r.ShortDescription).trim() : null,
-            violation_number: r.Violation_Category ? String(r.Violation_Category) : null,
-            status: r.Project_Status ? String(r.Project_Status).trim() : null,
+            isn_dob_bis_vio: `HOU-${r.ViolationSubId || r.NPPRJID}`,
+            issue_date: r.RecordCreateDate ? String(r.RecordCreateDate).slice(0, 10) : null,
+            description: r.ShortDescription ? String(r.ShortDescription).trim() : null,
+            violation_type: r.Violation_Category ? String(r.Violation_Category) : null,
             borough: "Houston",
             house_number: parsed.house_number,
             street_name: parsed.street_name,
-            latitude: null,
-            longitude: null,
             metro: "houston",
             imported_at: new Date().toISOString(),
           };
         });
 
       if (rows.length > 0) {
-        totalAdded += await batchUpsert(supabase, "dob_violations", rows, "violation_id", errors, "Houston Violations");
+        totalAdded += await batchUpsert(supabase, "dob_violations", rows, "isn_dob_bis_vio", errors, "Houston Violations");
       }
 
       pagesFetched++;
