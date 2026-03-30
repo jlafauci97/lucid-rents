@@ -744,7 +744,7 @@ async function syncHPDViolations(supabase: ReturnType<typeof getSupabaseAdmin>, 
         "inspectiondate ASC"
       );
 
-      const res = await fetch(url);
+      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
       if (!res.ok) {
         const errText = await res.text();
         errors.push(`HPD API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
@@ -883,7 +883,7 @@ async function sync311Complaints(supabase: ReturnType<typeof getSupabaseAdmin>):
         "created_date ASC"
       ) + `&$select=${encodeURIComponent(COMPLAINTS_SELECT)}`;
 
-      const res = await fetch(url);
+      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
       if (!res.ok) {
         const errText = await res.text();
         errors.push(`311 API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
@@ -1050,7 +1050,7 @@ async function syncHPDLitigations(supabase: ReturnType<typeof getSupabaseAdmin>)
         ":updated_at ASC"
       );
 
-      const res = await fetch(url);
+      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
       if (!res.ok) {
         const errText = await res.text();
         errors.push(`HPD Litigations API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
@@ -1160,7 +1160,7 @@ async function syncDOBViolations(supabase: ReturnType<typeof getSupabaseAdmin>):
         "issue_date ASC"
       );
 
-      const res = await fetch(url);
+      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
       if (!res.ok) {
         const errText = await res.text();
         errors.push(`DOB Violations API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
@@ -1290,7 +1290,7 @@ async function syncNYPDComplaints(supabase: ReturnType<typeof getSupabaseAdmin>)
         "cmplnt_fr_dt ASC"
       );
 
-      const res = await fetch(url);
+      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
       if (!res.ok) {
         const errText = await res.text();
         errors.push(`NYPD API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
@@ -1448,7 +1448,7 @@ async function syncBedBugReports(supabase: ReturnType<typeof getSupabaseAdmin>):
         "filing_date ASC"
       );
 
-      const res = await fetch(url);
+      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
       if (!res.ok) {
         const errText = await res.text();
         errors.push(`Bedbug API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
@@ -1560,7 +1560,7 @@ async function syncEvictions(supabase: ReturnType<typeof getSupabaseAdmin>): Pro
         "executed_date ASC"
       );
 
-      const res = await fetch(url);
+      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
       if (!res.ok) {
         const errText = await res.text();
         errors.push(`Evictions API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
@@ -1744,7 +1744,7 @@ async function syncSidewalkSheds(supabase: ReturnType<typeof getSupabaseAdmin>):
         "issuance_date ASC"
       );
 
-      const res = await fetch(url);
+      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
       if (!res.ok) {
         const errText = await res.text();
         errors.push(`Sheds API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
@@ -1869,7 +1869,7 @@ async function syncDobPermits(supabase: ReturnType<typeof getSupabaseAdmin>): Pr
         "issued_date ASC"
       );
 
-      const res = await fetch(url);
+      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
       if (!res.ok) {
         const errText = await res.text();
         errors.push(`Permits API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
@@ -2147,7 +2147,7 @@ async function syncLAHDViolations(
         "adddttm ASC"
       );
 
-      const res = await fetch(url);
+      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
       if (!res.ok) {
         errors.push(`LAHD API error (offset ${offset}): ${res.status}`);
         break;
@@ -2168,7 +2168,6 @@ async function syncLAHDViolations(
           borough: r.apc ? String(r.apc) : "Los Angeles",
           house_number: r.stno ? String(r.stno) : null,
           street_name: [r.predir, r.stname, r.suffix].filter(Boolean).map(String).join(" ").trim() || null,
-          zip_code: r.zip ? String(r.zip).replace(/-.*/, "").slice(0, 5) : null,
           metro: "los-angeles",
           imported_at: new Date().toISOString(),
         }));
@@ -2231,7 +2230,7 @@ async function syncLA311Complaints(
         "createddate ASC"
       );
 
-      const res = await fetch(url);
+      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
       if (!res.ok) {
         errors.push(`LA 311 API error (offset ${offset}): ${res.status}`);
         break;
@@ -2323,7 +2322,7 @@ async function syncLADBSViolations(
         "adddttm ASC"
       );
 
-      const res = await fetch(url);
+      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
       if (!res.ok) {
         errors.push(`LADBS API error (offset ${offset}): ${res.status}`);
         break;
@@ -2405,7 +2404,7 @@ async function syncLAPDCrimeData(
         "date_occ ASC"
       );
 
-      const res = await fetch(url);
+      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
       if (!res.ok) {
         const errText = await res.text();
         errors.push(`LAPD API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
@@ -2515,7 +2514,7 @@ async function syncLAPermits(
         "issue_date ASC"
       );
 
-      const res = await fetch(url);
+      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
       if (!res.ok) {
         errors.push(`LA Permits API error (offset ${offset}): ${res.status}`);
         break;
@@ -2598,7 +2597,7 @@ async function syncLASoftStory(
         "pcis_permit ASC"
       );
 
-      const res = await fetch(url);
+      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
       if (!res.ok) { errors.push(`Soft-story API error: ${res.status}`); break; }
       const records = await res.json();
       if (!records || records.length === 0) break;
@@ -2667,7 +2666,7 @@ async function syncLAHDEvictions(
         "received ASC"
       );
 
-      const res = await fetch(url);
+      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
       if (!res.ok) { errors.push(`LAHD Evictions API error (offset ${offset}): ${res.status}`); break; }
 
       const records = await res.json();
@@ -2750,7 +2749,7 @@ async function syncLAHDTenantBuyouts(
         "disclosure_fileddate ASC"
       );
 
-      const res = await fetch(url);
+      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
       if (!res.ok) { errors.push(`LAHD Buyouts API error (offset ${offset}): ${res.status}`); break; }
 
       const records = await res.json();
@@ -2822,7 +2821,7 @@ async function syncLAHDCCRIS(
         "start_date ASC"
       );
 
-      const res = await fetch(url);
+      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
       if (!res.ok) { errors.push(`LAHD CCRIS API error (offset ${offset}): ${res.status}`); break; }
 
       const records = await res.json();
@@ -2896,7 +2895,7 @@ async function syncLAHDViolationSummary(
         ":id"
       );
 
-      const res = await fetch(url);
+      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
       if (!res.ok) { errors.push(`LAHD Violation Summary API error (offset ${offset}): ${res.status}`); break; }
 
       const records = await res.json();
@@ -3010,7 +3009,7 @@ async function syncChicagoViolations(
         "violation_last_modified_date ASC"
       );
 
-      const res = await fetch(url);
+      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
       if (!res.ok) {
         const errText = await res.text();
         errors.push(`Chicago Violations API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
@@ -3173,7 +3172,7 @@ async function syncChicagoCrimes(
         "date ASC"
       );
 
-      const res = await fetch(url);
+      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
       if (!res.ok) {
         const errText = await res.text();
         errors.push(`Chicago Crimes API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
@@ -3274,7 +3273,7 @@ async function syncChicagoPermits(
         "issue_date ASC"
       );
 
-      const res = await fetch(url);
+      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
       if (!res.ok) {
         const errText = await res.text();
         errors.push(`Chicago Permits API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
@@ -3356,7 +3355,7 @@ async function syncChicagoRLTO(
         "violation_date ASC"
       );
 
-      const res = await fetch(url);
+      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
       if (!res.ok) {
         const errText = await res.text();
         errors.push(`Chicago RLTO API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
@@ -3512,7 +3511,7 @@ async function syncMiamiViolations(
         "CASE_DATE ASC"
       );
 
-      const res = await fetch(url);
+      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
       if (!res.ok) {
         const errText = await res.text();
         errors.push(`Miami Violations API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
@@ -3599,7 +3598,7 @@ async function syncMiami311(
         "OBJECTID ASC"
       );
 
-      const res = await fetch(url);
+      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
       if (!res.ok) {
         const errText = await res.text();
         errors.push(`Miami 311 API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
@@ -3702,7 +3701,7 @@ async function syncMiamiPermits(
         "OBJECTID ASC"
       );
 
-      const res = await fetch(url);
+      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
       if (!res.ok) {
         const errText = await res.text();
         errors.push(`Miami Permits API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
@@ -3792,7 +3791,7 @@ async function syncMiamiUnsafeStructures(
         "OPEN_DATE ASC"
       );
 
-      const res = await fetch(url);
+      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
       if (!res.ok) {
         const errText = await res.text();
         errors.push(`Miami Unsafe API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
