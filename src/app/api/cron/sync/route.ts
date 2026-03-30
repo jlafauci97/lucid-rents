@@ -2040,9 +2040,62 @@ function buildChicagoSodaUrl(
 // LA Sync Functions — data.lacity.org SODA API
 // ---------------------------------------------------------------------------
 
-// LA address matching: normalize address for matching against buildings table
+// ---------------------------------------------------------------------------
+// Shared address normalization for building linking across all cities.
+// Handles: city/state/zip suffixes, ordinal suffixes, address ranges,
+// street type abbreviations, directional words, apartment/unit suffixes.
+// ---------------------------------------------------------------------------
+const CITY_NAMES_BY_METRO: Record<string, string[]> = {
+  nyc: ["NEW YORK", "NY", "NYC", "MANHATTAN", "BROOKLYN", "QUEENS", "BRONX", "STATEN ISLAND"],
+  "los-angeles": ["LOS ANGELES"],
+  chicago: ["CHICAGO"],
+  miami: ["MIAMI", "MIAMI-DADE", "MIAMI DADE"],
+  houston: ["HOUSTON"],
+};
+const SYNC_STATE_NAMES = ["TEXAS", "CALIFORNIA", "FLORIDA", "ILLINOIS", "NEW YORK", "TX", "CA", "FL", "IL", "NY"];
+
+function normalizeAddressForLinking(addr: string, metro?: string): string {
+  if (!addr) return "";
+  let s = addr.toUpperCase().trim();
+  // Strip everything after first comma (city, state, zip)
+  const commaIdx = s.indexOf(",");
+  if (commaIdx > 0) s = s.substring(0, commaIdx).trim();
+  s = s.replace(/[.,#]/g, "");
+  s = s.replace(/\+/g, "").trim();
+  // Remove city names for this metro
+  if (metro && CITY_NAMES_BY_METRO[metro]) {
+    for (const cn of CITY_NAMES_BY_METRO[metro]) {
+      s = s.replace(new RegExp(`\\b${cn.replace(/\s+/g, "\\s+")}\\b`, "g"), "").trim();
+    }
+  }
+  // Remove state names
+  for (const st of SYNC_STATE_NAMES) {
+    s = s.replace(new RegExp(`\\b${st}\\b`, "g"), "").trim();
+  }
+  // Remove zip codes NOT at start (preserves 5-digit house numbers)
+  s = s.replace(/(?<=\s)\d{5}(-\d{4})?(\s|$)/g, "").trim();
+  s = s.replace(/\s+/g, " ").trim();
+  // Abbreviate street types
+  s = s.replace(/\bSTREET\b/g, "ST").replace(/\bAVENUE\b/g, "AVE").replace(/\bBOULEVARD\b/g, "BLVD")
+    .replace(/\bDRIVE\b/g, "DR").replace(/\bBL\b/g, "BLVD").replace(/\bPLACE\b/g, "PL").replace(/\bCOURT\b/g, "CT")
+    .replace(/\bLANE\b/g, "LN").replace(/\bROAD\b/g, "RD").replace(/\bTERRACE\b/g, "TER")
+    .replace(/\bCIRCLE\b/g, "CIR").replace(/\bPARKWAY\b/g, "PKWY").replace(/\bHIGHWAY\b/g, "HWY");
+  // Abbreviate directionals
+  s = s.replace(/\bNORTH\b/g, "N").replace(/\bSOUTH\b/g, "S").replace(/\bEAST\b/g, "E").replace(/\bWEST\b/g, "W")
+    .replace(/\bNORTHEAST\b/g, "NE").replace(/\bNORTHWEST\b/g, "NW")
+    .replace(/\bSOUTHEAST\b/g, "SE").replace(/\bSOUTHWEST\b/g, "SW");
+  // Remove ordinal suffixes: 138TH → 138
+  s = s.replace(/\b(\d+)(ST|ND|RD|TH)\b/g, "$1");
+  // Strip apartment/unit suffixes
+  s = s.replace(/\s+(APT|UNIT|#|FL|FLOOR|STE|SUITE|RM|ROOM)\b.*$/i, "");
+  // Handle address ranges: "4601 - 4621" → "4601"
+  s = s.replace(/^(\d+)\s*-\s*\d+\s+/, "$1 ");
+  return s.replace(/\s+/g, " ").trim();
+}
+
+// LA address matching (legacy wrapper)
 function normalizeLAAddress(addr: string): string {
-  return addr.toUpperCase().replace(/[.,#]/g, "").replace(/\s+/g, " ").trim();
+  return normalizeAddressForLinking(addr, "los-angeles");
 }
 
 // Link LA records to buildings by matching normalized address + zip
@@ -4342,8 +4395,7 @@ async function runLinkOnly(
       const nycBuildingAddrMap = new Map<string, string>();
       for (const b of allBuildings) {
         // Extract street portion (before first comma) and normalize
-        const street = b.full_address.split(",")[0]?.trim() || "";
-        const normalized = street.toUpperCase().replace(/[.,#]/g, "").replace(/\s+/g, " ").trim();
+        const normalized = normalizeAddressForLinking(b.full_address, "nyc");
         if (normalized.length >= 5) {
           nycBuildingAddrMap.set(normalized, b.id);
         }
@@ -4380,12 +4432,7 @@ async function runLinkOnly(
           // Group by normalized address
           const addrToKeys = new Map<string, string[]>();
           for (const r of allUnlinked) {
-            const normalized = (r.incident_address as string)
-              .trim().toUpperCase()
-              .replace(/[.,#]/g, "")
-              .replace(/\s+/g, " ")
-              .replace(/\s+(APT|UNIT|#|FL|FLOOR|STE|SUITE|RM|ROOM)\b.*$/i, "")
-              .trim();
+            const normalized = normalizeAddressForLinking(r.incident_address as string, "nyc");
             if (normalized.length < 5) continue;
             if (!addrToKeys.has(normalized)) addrToKeys.set(normalized, []);
             addrToKeys.get(normalized)!.push(r.unique_key);
@@ -4466,8 +4513,7 @@ async function runLinkOnly(
       // Key is the street portion before ", Los Angeles" normalized
       buildingAddrMap = new Map<string, string>();
       for (const b of allBuildings) {
-        const street = b.full_address.split(",")[0]?.trim() || "";
-        const normalized = street.toUpperCase().replace(/[.,#]/g, "").replace(/\s+/g, " ").trim();
+        const normalized = normalizeAddressForLinking(b.full_address, "los-angeles");
         if (normalized.length >= 5) {
           buildingAddrMap.set(normalized, b.id);
         }
@@ -4523,8 +4569,7 @@ async function runLinkOnly(
             } else {
               raw = String(r[addressColumns[0]] || "").trim();
             }
-            const normalized = raw.toUpperCase().replace(/[.,#]/g, "").replace(/\s+/g, " ")
-              .replace(/\s+(APT|UNIT|#|FL|FLOOR|STE|SUITE|RM|ROOM)\b.*$/i, "").trim();
+            const normalized = normalizeAddressForLinking(raw, "los-angeles");
             if (normalized.length < 5) continue;
             if (!addrToIds.has(normalized)) addrToIds.set(normalized, []);
             addrToIds.get(normalized)!.push(String(r[idColumn]));
@@ -4599,8 +4644,7 @@ async function runLinkOnly(
 
       chicagoBuildingAddrMap = new Map<string, string>();
       for (const b of allBuildings) {
-        const street = b.full_address.split(",")[0]?.trim() || "";
-        const normalized = street.toUpperCase().replace(/[.,#]/g, "").replace(/\s+/g, " ").trim();
+        const normalized = normalizeAddressForLinking(b.full_address, "chicago");
         if (normalized.length >= 5) {
           chicagoBuildingAddrMap.set(normalized, b.id);
         }
@@ -4656,8 +4700,7 @@ async function runLinkOnly(
             } else {
               raw = String(r[addressColumns[0]] || "").trim();
             }
-            const normalized = raw.toUpperCase().replace(/[.,#]/g, "").replace(/\s+/g, " ")
-              .replace(/\s+(APT|UNIT|#|FL|FLOOR|STE|SUITE|RM|ROOM)\b.*$/i, "").trim();
+            const normalized = normalizeAddressForLinking(raw, "chicago");
             if (normalized.length < 5) continue;
             if (!addrToIds.has(normalized)) addrToIds.set(normalized, []);
             addrToIds.get(normalized)!.push(String(r[idColumn]));
@@ -4690,6 +4733,7 @@ async function runLinkOnly(
                   street_name: streetName,
                   city: "Chicago",
                   state: "IL",
+                  borough: "Chicago",
                   metro: "chicago",
                   slug,
                   latitude: coords?.lat ?? null,
@@ -4784,8 +4828,7 @@ async function runLinkOnly(
 
       miamiBuildingAddrMap = new Map<string, string>();
       for (const b of allBuildings) {
-        const street = b.full_address.split(",")[0]?.trim() || "";
-        const normalized = street.toUpperCase().replace(/[.,#]/g, "").replace(/\s+/g, " ").trim();
+        const normalized = normalizeAddressForLinking(b.full_address, "miami");
         if (normalized.length >= 5) {
           miamiBuildingAddrMap.set(normalized, b.id);
         }
@@ -4841,8 +4884,7 @@ async function runLinkOnly(
             } else {
               raw = String(r[addressColumns[0]] || "").trim();
             }
-            const normalized = raw.toUpperCase().replace(/[.,#]/g, "").replace(/\s+/g, " ")
-              .replace(/\s+(APT|UNIT|#|FL|FLOOR|STE|SUITE|RM|ROOM)\b.*$/i, "").trim();
+            const normalized = normalizeAddressForLinking(raw, "miami");
             if (normalized.length < 5) continue;
             if (!addrToIds.has(normalized)) addrToIds.set(normalized, []);
             addrToIds.get(normalized)!.push(String(r[idColumn]));
@@ -4875,6 +4917,7 @@ async function runLinkOnly(
                   street_name: streetName,
                   city: "Miami",
                   state: "FL",
+                  borough: "Miami-Dade",
                   metro: "miami",
                   slug,
                   latitude: coords?.lat ?? null,
@@ -4967,8 +5010,7 @@ async function runLinkOnly(
 
       houstonBuildingAddrMap = new Map<string, string>();
       for (const b of allBuildings) {
-        const street = b.full_address.split(",")[0]?.trim() || "";
-        const normalized = street.toUpperCase().replace(/[.,#]/g, "").replace(/\s+/g, " ").trim();
+        const normalized = normalizeAddressForLinking(b.full_address, "houston");
         if (normalized.length >= 5) {
           houstonBuildingAddrMap.set(normalized, b.id);
         }
@@ -5023,8 +5065,7 @@ async function runLinkOnly(
             } else {
               raw = String(r[addressColumns[0]] || "").trim();
             }
-            const normalized = raw.toUpperCase().replace(/[.,#]/g, "").replace(/\s+/g, " ")
-              .replace(/\s+(APT|UNIT|#|FL|FLOOR|STE|SUITE|RM|ROOM)\b.*$/i, "").trim();
+            const normalized = normalizeAddressForLinking(raw, "houston");
             if (normalized.length < 5) continue;
             if (!addrToIds.has(normalized)) addrToIds.set(normalized, []);
             addrToIds.get(normalized)!.push(String(r[idColumn]));
@@ -5055,6 +5096,7 @@ async function runLinkOnly(
                   street_name: streetName,
                   city: "Houston",
                   state: "TX",
+                  borough: "Houston",
                   metro: "houston",
                   slug,
                   latitude: coords?.lat ?? null,
@@ -5248,6 +5290,15 @@ export async function GET(req: NextRequest) {
       countErrors = await updateBuildingCounts(supabase, allAffectedIds);
     } else if (allAffectedIds.size > 0) {
       countErrors.push(`Skipped building count update (${elapsedAfterSync.toFixed(1)}s elapsed, ${allAffectedIds.size} buildings)`);
+    }
+
+    // Refresh materialized views used by listing pages (fast: reads pre-computed stats)
+    if ((Date.now() - startTime) / 1000 < 260) {
+      try {
+        await supabase.rpc("refresh_borough_stats" as never);
+      } catch (mvErr) {
+        countErrors.push(`mv_borough_stats refresh error: ${String(mvErr)}`);
+      }
     }
 
     // Backfill slugs for any buildings missing them (skip if running low on time)

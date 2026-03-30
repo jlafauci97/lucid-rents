@@ -38,41 +38,29 @@ async function getBoroughStats(city: City): Promise<BoroughStats[]> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-  const cityMeta = CITY_META[city] || CITY_META.nyc;
-  const boroughs = [...cityMeta.regions];
-  const stats: BoroughStats[] = [];
-
-  for (const borough of boroughs) {
-    const res = await fetch(
-      `${supabaseUrl}/rest/v1/buildings?select=id,violation_count,complaint_count&borough=eq.${encodeURIComponent(borough)}&metro=eq.${encodeURIComponent(city)}&limit=50000`,
-      {
-        headers: { apikey: supabaseKey, Prefer: "count=exact" },
-        next: { revalidate: 3600 },
-      }
-    );
-
-    const countHeader = res.headers.get("content-range");
-    const total = countHeader ? parseInt(countHeader.split("/")[1] || "0") : 0;
-    const buildings = await res.json();
-
-    let totalViolations = 0;
-    let totalComplaints = 0;
-    if (Array.isArray(buildings)) {
-      for (const b of buildings) {
-        totalViolations += b.violation_count || 0;
-        totalComplaints += b.complaint_count || 0;
-      }
+  // Single RPC call replaces N sequential fetches of 50K+ rows each
+  const res = await fetch(
+    `${supabaseUrl}/rest/v1/rpc/borough_stats_by_city`,
+    {
+      method: "POST",
+      headers: {
+        apikey: supabaseKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ target_metro: city }),
+      next: { revalidate: 3600 },
     }
+  );
 
-    stats.push({
-      borough,
-      count: total || (Array.isArray(buildings) ? buildings.length : 0),
-      total_violations: totalViolations,
-      total_complaints: totalComplaints,
-    });
-  }
+  if (!res.ok) return [];
+  const data = await res.json();
 
-  return stats;
+  return (data || []).map((row: { borough: string; building_count: number; total_violations: number; total_complaints: number }) => ({
+    borough: row.borough,
+    count: Number(row.building_count),
+    total_violations: Number(row.total_violations),
+    total_complaints: Number(row.total_complaints),
+  }));
 }
 
 export default async function BuildingsIndexPage({ params }: { params: Promise<{ city: string }> }) {

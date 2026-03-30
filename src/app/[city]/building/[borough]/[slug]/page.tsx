@@ -44,6 +44,29 @@ import type { Metadata } from "next";
 
 export const revalidate = 86400; // 24h ISR
 
+// Pre-render the most-visited buildings at build time so first visitors get instant loads
+export async function generateStaticParams() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !supabaseKey) return [];
+
+  try {
+    const res = await fetch(
+      `${supabaseUrl}/rest/v1/buildings?select=metro,borough,slug&order=review_count.desc&limit=500`,
+      { headers: { apikey: supabaseKey } }
+    );
+    if (!res.ok) return [];
+    const buildings = await res.json();
+    return buildings.map((b: { metro: string | null; borough: string; slug: string }) => ({
+      city: b.metro || "nyc",
+      borough: (b.borough || "").toLowerCase().replace(/\s+/g, "-"),
+      slug: b.slug,
+    }));
+  } catch {
+    return [];
+  }
+}
+
 interface BuildingSlugPageProps {
   params: Promise<{ city: string; borough: string; slug: string }>;
 }
@@ -187,8 +210,8 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
   const emptyBedbugs = [] as BedBugReport[];
   const emptyEvictions = [] as Eviction[];
 
-  // Fetch all data in parallel — skip NYC-only tables for LA buildings
-  const [violations, complaints, litigations, dobViolations, bedbugs, evictions, permits, energyData, reviews, units, violationSummaries, rents, amenities, marketListings, rentHistory, monitorStatus, saveStatus, neighborhoodRentsRaw, lahdViolationSummary] = await Promise.all([
+  // Fetch all data in a single parallel batch — including city-specific queries
+  const [violations, complaints, litigations, dobViolations, bedbugs, evictions, permits, energyData, reviews, units, violationSummaries, rents, amenities, marketListings, rentHistory, monitorStatus, saveStatus, neighborhoodRentsRaw, lahdViolationSummary, chicagoRlto, chicagoLead, chicagoScofflaw] = await Promise.all([
     safe(supabase.from("hpd_violations").select("*").eq("building_id", buildingId).order("inspection_date", { ascending: false }).limit(20), [] as HpdViolation[]),
     safe(supabase.from("complaints_311").select("*").eq("building_id", buildingId).order("created_date", { ascending: false }).limit(20), [] as Complaint311[]),
     isNYC ? safe(supabase.from("hpd_litigations").select("*").eq("building_id", buildingId).order("case_open_date", { ascending: false }).limit(20), emptyHpdLit) : Promise.resolve(emptyHpdLit),
@@ -223,10 +246,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
     isLA
       ? safe(supabase.from("lahd_violation_summary").select("id, building_id, violation_type, violations_cited, violations_cleared").eq("building_id", buildingId).order("violations_cited", { ascending: false }).limit(50), [] as LahdViolationSummary[])
       : Promise.resolve([] as LahdViolationSummary[]),
-  ]);
-
-  // Chicago-specific data fetches
-  const [chicagoRlto, chicagoLead, chicagoScofflaw] = await Promise.all([
+    // Chicago-specific queries — merged into single Promise.all to avoid sequential await
     isChicago
       ? safe(supabase.from("chicago_rlto_violations").select("*").eq("building_id", buildingId).order("violation_date", { ascending: false }).limit(50), [])
       : Promise.resolve([]),

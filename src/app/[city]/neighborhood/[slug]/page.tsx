@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import Link from "next/link";
+import { cache } from "react";
 import { MapPin, Building2, AlertTriangle, MessageSquare, Users, Siren } from "lucide-react";
 import { LetterGrade } from "@/components/ui/LetterGrade";
 import { getLetterGrade, getGradeColor } from "@/lib/constants";
@@ -63,7 +64,8 @@ interface CrimeZipRow {
   quality_of_life: number;
 }
 
-async function getNeighborhoodStats(zipCode: string): Promise<NeighborhoodStats | null> {
+// cache() deduplicates calls between generateMetadata and page render
+const getNeighborhoodStats = cache(async function getNeighborhoodStats(zipCode: string): Promise<NeighborhoodStats | null> {
   const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/neighborhood_stats`;
   const res = await fetch(url, {
     method: "POST",
@@ -77,23 +79,24 @@ async function getNeighborhoodStats(zipCode: string): Promise<NeighborhoodStats 
   if (!res.ok) return null;
   const data = await res.json();
   return Array.isArray(data) ? data[0] : data;
-}
+});
 
-async function getCrimeData(zipCode: string): Promise<CrimeZipRow | null> {
-  const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/crime_by_zip`;
+const getCrimeData = cache(async function getCrimeData(zipCode: string): Promise<CrimeZipRow | null> {
+  // Use single-zip RPC instead of fetching ALL zip codes and filtering client-side
+  const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/crime_by_zip_single`;
   const res = await fetch(url, {
     method: "POST",
     headers: {
       apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({}),
+    body: JSON.stringify({ target_zip: zipCode }),
     next: { revalidate: 3600 },
   });
   if (!res.ok) return null;
-  const allData = await res.json();
-  return allData?.find((r: CrimeZipRow) => r.zip_code === zipCode) || null;
-}
+  const data = await res.json();
+  return Array.isArray(data) ? data[0] || null : data;
+});
 
 async function getTopBuildings(zipCode: string) {
   const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/buildings?zip_code=eq.${zipCode}&select=id,full_address,borough,slug,overall_score,violation_count,complaint_count,review_count,owner_name&order=violation_count.desc&limit=5`;
