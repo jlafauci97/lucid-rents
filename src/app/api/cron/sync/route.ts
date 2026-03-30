@@ -3199,6 +3199,7 @@ async function syncChicagoCrimes(
             crime_category: categorizeChicagoCrime(primaryType),
             latitude: r.latitude ? parseFloat(String(r.latitude)) : null,
             longitude: r.longitude ? parseFloat(String(r.longitude)) : null,
+            incident_address: r.block ? String(r.block) : null,
             metro: "chicago",
             imported_at: new Date().toISOString(),
           };
@@ -4290,9 +4291,9 @@ async function runLinkOnly(
     : LINK_TABLES;
 
   const LA_ADDR_SOURCES = ["lahd", "ladbs", "la-311", "la-permits", "la-evictions", "la-buyouts", "la-ccris", "la-violation-summary"];
-  const CHICAGO_ADDR_SOURCES = ["chicago-violations", "chicago-311", "chicago-permits", "chicago-rlto", "chicago-lead"];
+  const CHICAGO_ADDR_SOURCES = ["chicago-violations", "chicago-311", "chicago-crimes", "chicago-permits", "chicago-rlto", "chicago-lead"];
   const MIAMI_ADDR_SOURCES = ["miami-violations", "miami-311", "miami-permits", "miami-unsafe", "miami-recerts"];
-  const HOUSTON_ADDR_SOURCES = ["houston-violations", "houston-311"];
+  const HOUSTON_ADDR_SOURCES = ["houston-violations", "houston-311", "houston-crimes"];
   const isChicagoLink = sourceParam === "chicago" || (sourceParam && CHICAGO_ADDR_SOURCES.includes(sourceParam));
   const isMiamiLink = sourceParam === "miami" || (sourceParam && MIAMI_ADDR_SOURCES.includes(sourceParam));
   const isHoustonLink = sourceParam === "houston" || (sourceParam && HOUSTON_ADDR_SOURCES.includes(sourceParam));
@@ -4572,6 +4573,7 @@ async function runLinkOnly(
   const chicagoAddrTables: { name: string; table: string; idColumn: string; addressColumns: string[]; label: string }[] = [
     { name: "chicago-violations", table: "dob_violations", idColumn: "id", addressColumns: ["house_number", "street_name"], label: "Chicago Violations" },
     { name: "chicago-311", table: "complaints_311", idColumn: "unique_key", addressColumns: ["incident_address"], label: "Chicago 311" },
+    { name: "chicago-crimes", table: "nypd_complaints", idColumn: "id", addressColumns: ["incident_address"], label: "Chicago Crimes" },
     { name: "chicago-permits", table: "dob_permits", idColumn: "id", addressColumns: ["house_no", "street_name"], label: "Chicago Permits" },
     { name: "chicago-rlto", table: "chicago_rlto_violations", idColumn: "id", addressColumns: ["address"], label: "Chicago RLTO" },
     { name: "chicago-lead", table: "chicago_lead_inspections", idColumn: "id", addressColumns: ["address"], label: "Chicago Lead" },
@@ -4942,6 +4944,7 @@ async function runLinkOnly(
   const houstonAddrTables: { name: string; table: string; idColumn: string; addressColumns: string[]; label: string }[] = [
     { name: "houston-violations", table: "dob_violations", idColumn: "id", addressColumns: ["house_number", "street_name"], label: "Houston Violations" },
     { name: "houston-311", table: "complaints_311", idColumn: "unique_key", addressColumns: ["incident_address"], label: "Houston 311" },
+    { name: "houston-crimes", table: "nypd_complaints", idColumn: "id", addressColumns: ["incident_address"], label: "Houston Crimes" },
   ];
 
   const shouldLinkHouston = houstonAddrTables.some(t => sourceParam === "houston" || sourceParam === t.name) || !sourceParam;

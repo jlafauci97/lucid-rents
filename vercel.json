@@ -157,6 +157,10 @@
       "schedule": "30 16 * * *"
     },
     {
+      "path": "/api/cron/sync?mode=link&source=chicago-crimes",
+      "schedule": "45 16 * * *"
+    },
+    {
       "path": "/api/cron/sync?source=miami-violations",
       "schedule": "0 17 * * *"
     },
@@ -211,6 +215,10 @@
     {
       "path": "/api/cron/sync?mode=link&source=houston-311",
       "schedule": "15 21 * * *"
+    },
+    {
+      "path": "/api/cron/sync?mode=link&source=houston-crimes",
+      "schedule": "30 21 * * *"
     },
     {
       "path": "/api/cron/health-check",
