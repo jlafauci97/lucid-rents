@@ -37,6 +37,7 @@
   ],
   "exclude": [
     "node_modules",
-    "lucid-rents 2"
+    "lucid-rents 2",
+    "remotion"
   ]
 }
