@@ -16,12 +16,12 @@ export const metadata: Metadata = {
   title: "Rent Affordability Calculator — Can I Afford to Live Here? | Lucid Rents",
   description:
     "Find out how much rent you can actually afford. Enter your income and expenses, then discover which neighborhoods in NYC, LA, Chicago, Miami, or Houston fit your budget — backed by real rent data.",
-  alternates: { canonical: canonicalUrl("/rent-calculator") },
+  alternates: { canonical: canonicalUrl("/rent-affordability-calculator") },
   openGraph: {
     title: "Rent Affordability Calculator — Can I Afford to Live Here?",
     description:
       "Enter your income and expenses and discover which neighborhoods fit your budget. Powered by real rent data across 5 major U.S. cities.",
-    url: canonicalUrl("/rent-calculator"),
+    url: canonicalUrl("/rent-affordability-calculator"),
     siteName: "Lucid Rents",
     type: "website",
     locale: "en_US",

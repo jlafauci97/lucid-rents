@@ -36,7 +36,7 @@ const tools: ToolItem[] = [
     description: "Rent trends, prices & market data by area",
   },
   {
-    path: "/rent-calculator",
+    path: "/rent-affordability-calculator",
     icon: Calculator,
     label: "Rent Affordability Calculator",
     description: "See if you can afford to live in your dream neighborhood",

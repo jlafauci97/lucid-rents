@@ -64,7 +64,7 @@ export function ResultsStep({
     setError("");
     try {
       const res = await fetch(
-        `/api/rent-calculator?city=${city}&bedrooms=${bedrooms}`
+        `/api/rent-affordability-calculator?city=${city}&bedrooms=${bedrooms}`
       );
       if (!res.ok) throw new Error("Failed to fetch");
       const data: NeighborhoodMatch[] = await res.json();
