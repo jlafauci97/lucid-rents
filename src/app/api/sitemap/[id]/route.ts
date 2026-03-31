@@ -23,36 +23,35 @@ const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 /**
  * Individual sitemap: /sitemap/[id].xml
- * id=0          → static pages (neighborhoods, crime, transit, news — NO landlords)
- * id=1..L       → landlords in batches of 10,000
- * id=L+1..L+B   → buildings in batches of 10,000
+ *   0       → static pages
+ *   l-{N}   → landlord batch N
+ *   b-{N}   → building batch N
  */
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: rawId } = await params;
-  const id = parseInt(rawId.replace(/\.xml$/, ""), 10);
-
-  if (isNaN(id) || id < 0) {
-    return new NextResponse("Not Found", { status: 404 });
-  }
+  const cleanId = rawId.replace(/\.xml$/, "");
 
   let urls: SitemapEntry[];
 
-  if (id === 0) {
+  if (cleanId === "0") {
     urls = await generateStaticSitemap();
-  } else {
-    // Determine landlord/building boundary
-    const totalLandlords = await getCount("landlord_stats?select=name&limit=1&offset=0", "estimated");
-    const landlordSitemapCount = Math.ceil(totalLandlords / ITEMS_PER_SITEMAP);
-
-    if (id <= landlordSitemapCount) {
-      urls = await generateLandlordSitemap(id - 1);
-    } else {
-      const buildingBatchIndex = id - 1 - landlordSitemapCount;
-      urls = await generateBuildingSitemap(buildingBatchIndex);
+  } else if (cleanId.startsWith("l-")) {
+    const batchIndex = parseInt(cleanId.slice(2), 10);
+    if (isNaN(batchIndex) || batchIndex < 0) {
+      return new NextResponse("Not Found", { status: 404 });
     }
+    urls = await generateLandlordSitemap(batchIndex);
+  } else if (cleanId.startsWith("b-")) {
+    const batchIndex = parseInt(cleanId.slice(2), 10);
+    if (isNaN(batchIndex) || batchIndex < 0) {
+      return new NextResponse("Not Found", { status: 404 });
+    }
+    urls = await generateBuildingSitemap(batchIndex);
+  } else {
+    return new NextResponse("Not Found", { status: 404 });
   }
 
   if (urls.length === 0) {
@@ -120,19 +119,6 @@ async function supabaseFetch<T>(path: string): Promise<T | null> {
     return (await res.json()) as T;
   } catch {
     return null;
-  }
-}
-
-async function getCount(path: string, mode: "exact" | "estimated" = "exact"): Promise<number> {
-  try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-      headers: { apikey: SUPABASE_KEY, Prefer: `count=${mode}` },
-      next: { revalidate: 21600 },
-    });
-    const range = res.headers.get("content-range");
-    return range ? parseInt(range.split("/")[1] || "0", 10) : 0;
-  } catch {
-    return 0;
   }
 }
 

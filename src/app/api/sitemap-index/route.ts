@@ -5,10 +5,19 @@ const ITEMS_PER_SITEMAP = 10000;
 
 /**
  * Sitemap index: /sitemap.xml
- * Returns an XML sitemap index pointing to all sub-sitemaps.
- * Sitemap 0 = static pages (neighborhoods, crime, transit, news)
- * Sitemaps 1..L = landlords in batches of 10,000
- * Sitemaps L+1..L+B = buildings in batches of 10,000
+ *
+ * Layout:
+ *   /sitemap/0.xml         → static pages
+ *   /sitemap/l-0.xml       → landlord batch 0 (first 10K)
+ *   /sitemap/l-1.xml       → landlord batch 1
+ *   ...
+ *   /sitemap/b-0.xml       → building batch 0
+ *   /sitemap/b-1.xml       → building batch 1
+ *   ...
+ *
+ * The l- / b- prefix tells the child handler whether to query
+ * landlords or buildings, eliminating the need for a count query
+ * that can return different values per request.
  */
 export async function GET() {
   let totalBuildings = 0;
@@ -18,7 +27,6 @@ export async function GET() {
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
   try {
-    // Use count=estimated (pg_class.reltuples) — fast even on million-row tables.
     const [buildingRes, landlordRes] = await Promise.all([
       fetch(`${supabaseUrl}/rest/v1/buildings?select=id&limit=1&offset=0`, {
         headers: { apikey: supabaseKey, Prefer: "count=estimated" },
@@ -36,24 +44,40 @@ export async function GET() {
     const lCount = landlordRes.headers.get("content-range");
     if (lCount) totalLandlords = parseInt(lCount.split("/")[1] || "0", 10);
   } catch {
-    // If DB is unreachable, only emit the static sitemap (id=0)
+    // If DB is unreachable, only emit the static sitemap
   }
 
   const landlordSitemapCount = Math.ceil(totalLandlords / ITEMS_PER_SITEMAP);
   const buildingSitemapCount = Math.ceil(totalBuildings / ITEMS_PER_SITEMAP);
-  const totalSitemaps = 1 + landlordSitemapCount + buildingSitemapCount;
 
   const now = new Date().toISOString();
-  const sitemapEntries = Array.from({ length: totalSitemaps }, (_, i) =>
-    `  <sitemap>
-    <loc>${BASE_URL}/sitemap/${i}.xml</loc>
+  const entries: string[] = [];
+
+  // Static sitemap
+  entries.push(`  <sitemap>
+    <loc>${BASE_URL}/sitemap/0.xml</loc>
     <lastmod>${now}</lastmod>
-  </sitemap>`
-  ).join("\n");
+  </sitemap>`);
+
+  // Landlord sitemaps: l-0, l-1, ...
+  for (let i = 0; i < landlordSitemapCount; i++) {
+    entries.push(`  <sitemap>
+    <loc>${BASE_URL}/sitemap/l-${i}.xml</loc>
+    <lastmod>${now}</lastmod>
+  </sitemap>`);
+  }
+
+  // Building sitemaps: b-0, b-1, ...
+  for (let i = 0; i < buildingSitemapCount; i++) {
+    entries.push(`  <sitemap>
+    <loc>${BASE_URL}/sitemap/b-${i}.xml</loc>
+    <lastmod>${now}</lastmod>
+  </sitemap>`);
+  }
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${sitemapEntries}
+${entries.join("\n")}
 </sitemapindex>`;
 
   return new NextResponse(xml, {
