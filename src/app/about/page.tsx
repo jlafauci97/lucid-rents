@@ -75,8 +75,9 @@ export default function AboutPage() {
                 Tenant Tools
               </h3>
               <p className="text-xs text-[#64748b]">
-                Rent stabilization checker, building comparison, scaffolding
-                tracker, energy scores, and transit search — all free.
+                Rent affordability calculator, rent stabilization checker,
+                building comparison, energy scores, transit search, and more
+                — all free.
               </p>
             </div>
           </div>

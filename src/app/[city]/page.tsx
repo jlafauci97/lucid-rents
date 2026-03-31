@@ -20,6 +20,7 @@ import {
   Train,
   BarChart3,
   HardHat,
+  Calculator,
 } from "lucide-react";
 
 export async function generateMetadata({
@@ -202,6 +203,11 @@ export default async function CityHomePage({
                   href: cityPath("/permits", city),
                   icon: HardHat,
                   label: "Permits",
+                },
+                {
+                  href: "/rent-affordability-calculator",
+                  icon: Calculator,
+                  label: "Rent Calculator",
                 },
               ].map((item) => (
                 <Link
