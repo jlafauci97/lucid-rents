@@ -32,6 +32,27 @@ interface NeighborhoodRent {
   median_rent: number;
 }
 
+interface NearbySchool {
+  name: string;
+  grades: string | null;
+  distance: string;
+  walkMin: number;
+}
+
+interface NearbyTransitStop {
+  name: string;
+  routes: string[];
+  distance: string;
+  walkMin: number;
+}
+
+interface CrimeSummary {
+  total: number;
+  violent: number;
+  property: number;
+  quality_of_life: number;
+}
+
 const fmt = (n: number) => `$${n.toLocaleString()}`;
 
 const bedroomLabel = (b: number) =>
@@ -50,6 +71,9 @@ export function generateBuildingFAQ({
   energy,
   reviews,
   neighborhoodRents,
+  nearbySchools,
+  nearbyTransit,
+  crimeSummary,
 }: {
   building: Building;
   rents: BuildingRent[];
@@ -63,6 +87,9 @@ export function generateBuildingFAQ({
   energy: EnergyBenchmark | null;
   reviews: ReviewWithDetails[];
   neighborhoodRents: NeighborhoodRent[];
+  nearbySchools: Record<string, NearbySchool[]>;
+  nearbyTransit: Record<string, NearbyTransitStop[]>;
+  crimeSummary: CrimeSummary | null;
 }): FAQItem[] {
   const items: FAQItem[] = [];
   const addr = building.full_address;
@@ -301,38 +328,74 @@ export function generateBuildingFAQ({
 
   // --- Neighborhood & Location ---
 
-  // Schools (always show — generic answer pointing to the page)
-  items.push({
-    question: `What schools are near ${addr}?`,
-    answer: `${addr} is located in the ${building.zip_code || building.borough} area. Visit the building page on Lucid Rents to see nearby public schools, charter schools, and private schools with walking distances.`,
-  });
+  // Schools — use real data
+  const allSchools = Object.entries(nearbySchools).flatMap(([type, schools]) =>
+    schools.map((s) => ({ ...s, type }))
+  );
+  if (allSchools.length > 0) {
+    const schoolNames = allSchools.slice(0, 5).map((s) => {
+      const walkNote = s.walkMin > 0 ? ` (${s.walkMin} min walk)` : "";
+      return `${s.name}${walkNote}`;
+    });
+    const typeCount = Object.keys(nearbySchools).length;
+    const typeSummary = Object.entries(nearbySchools)
+      .map(([type, schools]) => {
+        const label = type.replace(/_/g, " ");
+        return `${schools.length} ${label}${schools.length !== 1 ? "s" : ""}`;
+      })
+      .join(", ");
+    items.push({
+      question: `What schools are near ${addr}?`,
+      answer: `There are ${allSchools.length} schools near ${addr}, including ${typeSummary}. Nearby schools include ${schoolNames.join(", ")}${allSchools.length > 5 ? ", and more" : ""}.`,
+    });
+  }
 
-  // Transit (always show)
-  items.push({
-    question: `What public transit is near ${addr}?`,
-    answer: `${addr} is located in ${building.borough}. Visit the building page on Lucid Rents to see nearby subway stations, bus routes, and bike-share stations with walking distances.`,
-  });
+  // Transit — use real data
+  const allTransit = Object.entries(nearbyTransit).flatMap(([type, stops]) =>
+    stops.map((s) => ({ ...s, type }))
+  );
+  if (allTransit.length > 0) {
+    const transitParts: string[] = [];
+    for (const [type, stops] of Object.entries(nearbyTransit)) {
+      if (stops.length === 0) continue;
+      const label = type === "citibike" ? "Citi Bike" : type === "subway" ? "subway" : type === "bus" ? "bus" : type === "ferry" ? "ferry" : type === "rail" ? "metro rail" : type;
+      const closest = stops[0];
+      const routeNote = closest.routes.length > 0 ? ` (${closest.routes.slice(0, 4).join(", ")})` : "";
+      transitParts.push(`${label}: ${closest.name}${routeNote}, ${closest.distance} away`);
+    }
+    items.push({
+      question: `What public transit is near ${addr}?`,
+      answer: `${addr} has ${allTransit.length} transit options nearby. The closest include: ${transitParts.join("; ")}.`,
+    });
+  }
 
-  // Crime / safety
-  if (building.crime_count > 0) {
+  // Crime / safety — use real summary data
+  if (crimeSummary && crimeSummary.total > 0) {
     items.push({
       question: `Is ${addr} safe? What is the crime rate nearby?`,
-      answer: `The ${building.zip_code} zip code where ${addr} is located has ${building.crime_count.toLocaleString()} crime incidents recorded in recent years. Visit the building page for a full breakdown by crime type, or check the neighborhood report card for ${building.zip_code}.`,
+      answer: `The ${building.zip_code} zip code where ${addr} is located had ${crimeSummary.total.toLocaleString()} crime incidents in the past 2 years, including ${crimeSummary.violent.toLocaleString()} violent crimes, ${crimeSummary.property.toLocaleString()} property crimes, and ${crimeSummary.quality_of_life.toLocaleString()} quality-of-life incidents. Check the neighborhood report card for ${building.zip_code} for full details.`,
+    });
+  } else if (building.crime_count > 0) {
+    items.push({
+      question: `Is ${addr} safe? What is the crime rate nearby?`,
+      answer: `The ${building.zip_code} zip code where ${addr} is located has ${building.crime_count.toLocaleString()} crime incidents on record. Check the neighborhood report card for ${building.zip_code} for a full breakdown by crime type.`,
     });
   }
 
   // --- Building Details ---
 
   // Year built / units
-  const details: string[] = [];
-  if (building.year_built) details.push(`built in ${building.year_built}`);
-  if (building.num_floors) details.push(`${building.num_floors} floor${building.num_floors !== 1 ? "s" : ""}`);
-  if (building.total_units) details.push(`${building.total_units} total unit${building.total_units !== 1 ? "s" : ""}`);
-  if (building.residential_units) details.push(`${building.residential_units} residential unit${building.residential_units !== 1 ? "s" : ""}`);
-  if (details.length > 0) {
+  const buildingDetails: string[] = [];
+  if (building.year_built) buildingDetails.push(`was built in ${building.year_built}`);
+  if (building.num_floors) buildingDetails.push(`has ${building.num_floors} floor${building.num_floors !== 1 ? "s" : ""}`);
+  if (building.total_units) buildingDetails.push(`contains ${building.total_units} total unit${building.total_units !== 1 ? "s" : ""}`);
+  if (building.residential_units && building.residential_units !== building.total_units) {
+    buildingDetails.push(`${building.residential_units} of which are residential`);
+  }
+  if (buildingDetails.length > 0) {
     items.push({
       question: `When was ${addr} built and how many units does it have?`,
-      answer: `${addr} was ${details.join(", ")}.`,
+      answer: `${addr} ${buildingDetails.join(", ")}.`,
     });
   }
 

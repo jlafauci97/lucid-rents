@@ -259,6 +259,64 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
     });
   })();
 
+  // Fetch schools, transit, and crime data for FAQ (server-side, in parallel)
+  const BBOX = 0.025;
+  const hasFaqCoords = building.latitude && building.longitude;
+  const [faqSchoolsRaw, faqTransitRaw, faqCrimeRaw] = await Promise.all([
+    hasFaqCoords
+      ? safe(supabase.from("nearby_schools").select("type, name, latitude, longitude, grades")
+          .gte("latitude", building.latitude! - BBOX).lte("latitude", building.latitude! + BBOX)
+          .gte("longitude", building.longitude! - BBOX).lte("longitude", building.longitude! + BBOX), [])
+      : Promise.resolve([]),
+    hasFaqCoords
+      ? safe(supabase.from("transit_stops").select("type, name, latitude, longitude, routes")
+          .gte("latitude", building.latitude! - BBOX).lte("latitude", building.latitude! + BBOX)
+          .gte("longitude", building.longitude! - BBOX).lte("longitude", building.longitude! + BBOX), [])
+      : Promise.resolve([]),
+    building.zip_code
+      ? safe(supabase.rpc("crime_zip_summary", { target_zip: building.zip_code, since_date: new Date(Date.now() - 2 * 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0], metro: city }), [])
+      : Promise.resolve([]),
+  ]);
+
+  // Process schools into grouped format
+  const faqSchools: Record<string, { name: string; grades: string | null; distance: string; walkMin: number }[]> = {};
+  const schoolLimits: Record<string, number> = { public_school: 3, charter_school: 2, private_school: 2, college: 2 };
+  if (hasFaqCoords) {
+    const R = 3958.8;
+    for (const s of (faqSchoolsRaw as { type: string; name: string; latitude: number; longitude: number; grades: string | null }[])) {
+      const dLat = ((Number(s.latitude) - building.latitude!) * Math.PI) / 180;
+      const dLng = ((Number(s.longitude) - building.longitude!) * Math.PI) / 180;
+      const a = Math.sin(dLat / 2) ** 2 + Math.cos((building.latitude! * Math.PI) / 180) * Math.cos((Number(s.latitude) * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+      const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      if (dist > 1.0) continue;
+      if (!faqSchools[s.type]) faqSchools[s.type] = [];
+      if (faqSchools[s.type].length >= (schoolLimits[s.type] || 3)) continue;
+      faqSchools[s.type].push({ name: s.name, grades: s.grades, distance: dist < 0.1 ? `${Math.round(dist * 5280)} ft` : `${dist.toFixed(1)} mi`, walkMin: Math.round(dist * 20) });
+    }
+  }
+
+  // Process transit into grouped format
+  const faqTransit: Record<string, { name: string; routes: string[]; distance: string; walkMin: number }[]> = {};
+  const transitLimits: Record<string, number> = { subway: 3, bus: 3, citibike: 3, ferry: 1 };
+  if (hasFaqCoords) {
+    const R = 3958.8;
+    for (const s of (faqTransitRaw as { type: string; name: string; latitude: number; longitude: number; routes: string[] }[])) {
+      const dLat = ((Number(s.latitude) - building.latitude!) * Math.PI) / 180;
+      const dLng = ((Number(s.longitude) - building.longitude!) * Math.PI) / 180;
+      const a = Math.sin(dLat / 2) ** 2 + Math.cos((building.latitude! * Math.PI) / 180) * Math.cos((Number(s.latitude) * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+      const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      if (dist > 1.5) continue;
+      if (!faqTransit[s.type]) faqTransit[s.type] = [];
+      if (faqTransit[s.type].length >= (transitLimits[s.type] || 3)) continue;
+      faqTransit[s.type].push({ name: s.name, routes: s.routes || [], distance: dist < 0.1 ? `${Math.round(dist * 5280)} ft` : `${dist.toFixed(1)} mi`, walkMin: Math.round(dist * 20) });
+    }
+  }
+
+  // Process crime summary
+  const faqCrime = Array.isArray(faqCrimeRaw) && faqCrimeRaw.length > 0
+    ? faqCrimeRaw[0] as { total: number; violent: number; property: number; quality_of_life: number }
+    : null;
+
   // Extract short address for breadcrumb
   const shortAddress = building.full_address.split(",")[0]?.trim() || building.full_address;
 
@@ -636,6 +694,9 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
             energy: energyData[0] || null,
             reviews,
             neighborhoodRents,
+            nearbySchools: faqSchools,
+            nearbyTransit: faqTransit,
+            crimeSummary: faqCrime,
           })}
           title={`Frequently Asked Questions About ${shortAddress}`}
         />
