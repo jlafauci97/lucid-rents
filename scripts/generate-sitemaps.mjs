@@ -259,28 +259,21 @@ async function main() {
   console.log(`  Generating ${landlordBatches} landlord sitemaps...`);
 
   let landlordUrls = 0;
-  const seenLandlords = new Set();
   const landlordTasks = Array.from({ length: landlordBatches }, (_, i) => async () => {
     const landlords = await rpcFetch("sitemap_landlord_batch", { p_batch_index: i });
     if (!landlords || landlords.length === 0) return;
-    const entries = landlords
-      .filter((l) => l.slug && l.slug !== "no-owner-found" && !seenLandlords.has(l.slug))
-      .map((l) => {
-        seenLandlords.add(l.slug);
-        return {
-          url: `${BASE_URL}/nyc/landlord/${l.slug}`,
-          lastmod: l.updated_at ? new Date(l.updated_at).toISOString() : undefined,
-          changefreq: "monthly",
-          priority: 0.5,
-        };
-      });
-    if (entries.length === 0) return;
+    const entries = landlords.map((l) => ({
+      url: `${BASE_URL}/nyc/landlord/${l.slug}`,
+      lastmod: l.updated_at ? new Date(l.updated_at).toISOString() : undefined,
+      changefreq: "monthly",
+      priority: 0.5,
+    }));
     writeFileSync(`${OUT_DIR}/l-${i}.xml`, buildSitemapXml(entries));
     indexEntries.push({ name: `l-${i}.xml`, lastmod: now });
     landlordUrls += entries.length;
   });
   await runBatches(landlordTasks, CONCURRENCY);
-  console.log(`  Landlords: ${landlordUrls.toLocaleString()} URLs across ${landlordBatches} files (deduped, ${seenLandlords.size} unique)`);
+  console.log(`  Landlords: ${landlordUrls.toLocaleString()} URLs across ${landlordBatches} files`);
 
   // Building sitemaps
   const [maxBuildingBatch] = await supabaseFetch("sitemap_building_cursors?select=batch_index&order=batch_index.desc&limit=1");
@@ -288,30 +281,21 @@ async function main() {
   console.log(`  Generating ${buildingBatches} building sitemaps...`);
 
   let buildingUrls = 0;
-  const seenBuildings = new Set();
   const buildingTasks = Array.from({ length: buildingBatches }, (_, i) => async () => {
     const buildings = await rpcFetch("sitemap_building_batch", { p_batch_index: i });
     if (!buildings || buildings.length === 0) return;
-    const entries = buildings
-      .filter((b) => {
-        const url = `${buildingUrl(b, metroToCity(b.metro))}`;
-        if (seenBuildings.has(url)) return false;
-        seenBuildings.add(url);
-        return true;
-      })
-      .map((b) => ({
-        url: `${BASE_URL}${buildingUrl(b, metroToCity(b.metro))}`,
-        lastmod: b.updated_at ? new Date(b.updated_at).toISOString() : undefined,
-        changefreq: "weekly",
-        priority: 0.6,
-      }));
-    if (entries.length === 0) return;
+    const entries = buildings.map((b) => ({
+      url: `${BASE_URL}${buildingUrl(b, metroToCity(b.metro))}`,
+      lastmod: b.updated_at ? new Date(b.updated_at).toISOString() : undefined,
+      changefreq: "weekly",
+      priority: 0.6,
+    }));
     writeFileSync(`${OUT_DIR}/b-${i}.xml`, buildSitemapXml(entries));
     indexEntries.push({ name: `b-${i}.xml`, lastmod: now });
     buildingUrls += entries.length;
   });
   await runBatches(buildingTasks, CONCURRENCY);
-  console.log(`  Buildings: ${buildingUrls.toLocaleString()} URLs across ${buildingBatches} files (deduped, ${seenBuildings.size} unique)`);
+  console.log(`  Buildings: ${buildingUrls.toLocaleString()} URLs across ${buildingBatches} files`);
 
   // Sitemap index
   indexEntries.sort((a, b) => {
