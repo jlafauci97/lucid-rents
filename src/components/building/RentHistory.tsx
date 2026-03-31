@@ -253,8 +253,7 @@ export function RentHistory({ history }: RentHistoryProps) {
           </button>
         )}
         <p className="text-[10px] text-[#94a3b8] mt-3">
-          Based on listing data from StreetEasy, Rent.com, Zillow &
-          Apartments.com
+          Based on listing data
         </p>
       </CardContent>
     </Card>

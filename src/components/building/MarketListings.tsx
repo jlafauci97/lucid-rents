@@ -325,7 +325,7 @@ export function MarketListings({ listings: rawListings, amenities, rentHistory =
                 </table>
               </div>
               <p className="text-[10px] text-[#94a3b8] mt-3">
-                Based on listing data from StreetEasy, Rent.com & Zillow
+                Based on listing data
               </p>
             </CardContent>
           </Card>

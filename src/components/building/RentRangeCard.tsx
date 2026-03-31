@@ -97,7 +97,7 @@ export function RentRangeCard({ rents }: RentRangeCardProps) {
         <p className="text-[10px] text-[#94a3b8] mt-3">
           {isEstimate
             ? "Based on HUD Fair Market Rent estimates for this ZIP code"
-            : "Based on recent listings from StreetEasy, Rent.com & Zillow"}
+            : "Based on recent listings"}
         </p>
       </CardContent>
     </Card>
