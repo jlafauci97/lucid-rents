@@ -328,27 +328,24 @@ async function generateLandlordSitemap(
 async function generateBuildingSitemap(
   batchIndex: number
 ): Promise<SitemapEntry[]> {
-  // Use keyset pagination via id range instead of OFFSET which times out
-  // on large tables. First fetch the min building id, then paginate by range.
-  // Each batch covers ITEMS_PER_SITEMAP ids starting from the Nth batch.
-  //
-  // Step 1: get the starting id for this batch by fetching 1 row at offset
-  // (batchIndex * ITEMS_PER_SITEMAP) — this is a single-row offset query
-  // which is much faster than fetching 10K rows at a large offset.
-  const skipCount = batchIndex * ITEMS_PER_SITEMAP;
-  const startRow = await supabaseFetch<{ id: string }[]>(
-    `buildings?select=id&order=id.asc&offset=${skipCount}&limit=1`
+  // Use an RPC to get the min building id, then use id-range batching.
+  // OFFSET-based queries time out on Supabase for large tables.
+  // Instead: fetch min(id), then each batch covers a range of IDs.
+  // Batch N fetches buildings where id is in [minId + N*10000, minId + (N+1)*10000).
+  const minIdRow = await supabaseFetch<{ id: string }[]>(
+    `buildings?select=id&order=id.asc&limit=1`
   );
 
-  if (!startRow || startRow.length === 0) return [];
+  if (!minIdRow || minIdRow.length === 0) return [];
 
-  const startId = startRow[0].id;
+  const minId = parseInt(minIdRow[0].id, 10);
+  const rangeStart = minId + batchIndex * ITEMS_PER_SITEMAP;
+  const rangeEnd = rangeStart + ITEMS_PER_SITEMAP;
 
-  // Step 2: fetch ITEMS_PER_SITEMAP buildings starting from that id
   const buildings = await supabaseFetch<
     { slug: string; borough: string; metro: string; updated_at: string | null }[]
   >(
-    `buildings?select=slug,borough,metro,updated_at&id=gte.${startId}&order=id.asc&limit=${ITEMS_PER_SITEMAP}`
+    `buildings?select=slug,borough,metro,updated_at&id=gte.${rangeStart}&id=lt.${rangeEnd}&order=id.asc&limit=${ITEMS_PER_SITEMAP}`
   );
 
   if (!buildings || buildings.length === 0) return [];

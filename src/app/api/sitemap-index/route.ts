@@ -11,18 +11,24 @@ const ITEMS_PER_SITEMAP = 10000;
  * Sitemaps L+1..L+B = buildings in batches of 10,000
  */
 export async function GET() {
-  let totalBuildings = 0;
   let totalLandlords = 0;
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
+  let buildingIdRange = 0;
+
   try {
-    // Use count=estimated (pg_class.reltuples) — fast even on million-row tables.
-    // count=exact can time out on large tables and return no content-range header.
-    const [buildingRes, landlordRes] = await Promise.all([
-      fetch(`${supabaseUrl}/rest/v1/buildings?select=id&limit=1&offset=0`, {
-        headers: { apikey: supabaseKey, Prefer: "count=estimated" },
+    // Fetch building min/max id and landlord count in parallel.
+    // Building sitemaps use id-range batching (not row count) because OFFSET
+    // queries time out on Supabase for large tables.
+    const [buildingMinRes, buildingMaxRes, landlordRes] = await Promise.all([
+      fetch(`${supabaseUrl}/rest/v1/buildings?select=id&order=id.asc&limit=1`, {
+        headers: { apikey: supabaseKey },
+        next: { revalidate: 21600 },
+      }),
+      fetch(`${supabaseUrl}/rest/v1/buildings?select=id&order=id.desc&limit=1`, {
+        headers: { apikey: supabaseKey },
         next: { revalidate: 21600 },
       }),
       fetch(`${supabaseUrl}/rest/v1/landlord_stats?select=name&limit=1&offset=0`, {
@@ -31,8 +37,15 @@ export async function GET() {
       }),
     ]);
 
-    const bCount = buildingRes.headers.get("content-range");
-    if (bCount) totalBuildings = parseInt(bCount.split("/")[1] || "0", 10);
+    const [minRows, maxRows] = await Promise.all([
+      buildingMinRes.json() as Promise<{ id: string }[]>,
+      buildingMaxRes.json() as Promise<{ id: string }[]>,
+    ]);
+    if (minRows?.[0] && maxRows?.[0]) {
+      const minId = parseInt(minRows[0].id, 10);
+      const maxId = parseInt(maxRows[0].id, 10);
+      buildingIdRange = maxId - minId + 1;
+    }
 
     const lCount = landlordRes.headers.get("content-range");
     if (lCount) totalLandlords = parseInt(lCount.split("/")[1] || "0", 10);
@@ -41,7 +54,7 @@ export async function GET() {
   }
 
   const landlordSitemapCount = Math.ceil(totalLandlords / ITEMS_PER_SITEMAP);
-  const buildingSitemapCount = Math.ceil(totalBuildings / ITEMS_PER_SITEMAP);
+  const buildingSitemapCount = Math.ceil(buildingIdRange / ITEMS_PER_SITEMAP);
   const totalSitemaps = 1 + landlordSitemapCount + buildingSitemapCount;
 
   const now = new Date().toISOString();
