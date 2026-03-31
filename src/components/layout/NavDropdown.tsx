@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { ChevronDown, ArrowLeftRight, ShieldCheck, ShieldAlert, Wrench, BarChart3, Construction, ClipboardList, Zap, TrainFront, Scale, Tent, FileText, AlertTriangle, Home, Droplets, Flame } from "lucide-react";
+import { ChevronDown, ArrowLeftRight, ShieldCheck, ShieldAlert, Wrench, BarChart3, Construction, ClipboardList, Zap, TrainFront, Scale, Tent, FileText, AlertTriangle, Home, Droplets, Flame, Calculator } from "lucide-react";
 import { type City, DEFAULT_CITY, CITY_META } from "@/lib/cities";
 import { cityPath } from "@/lib/seo";
 
@@ -12,6 +12,8 @@ interface ToolItem {
   label: string;
   description: string;
   cities?: City[];
+  /** When true, path is an absolute route (not city-prefixed) */
+  global?: boolean;
 }
 
 const tools: ToolItem[] = [
@@ -32,6 +34,13 @@ const tools: ToolItem[] = [
     icon: BarChart3,
     label: "Rent Data",
     description: "Rent trends, prices & market data by area",
+  },
+  {
+    path: "/rent-calculator",
+    icon: Calculator,
+    label: "Rent Affordability Calculator",
+    description: "See if you can afford to live in your dream neighborhood",
+    global: true,
   },
   {
     path: "/scaffolding",
@@ -166,7 +175,7 @@ export function NavDropdown({ city = DEFAULT_CITY }: { city?: City }) {
             .map((tool) => (
             <Link
               key={tool.path}
-              href={cityPath(tool.path, city)}
+              href={tool.global ? tool.path : cityPath(tool.path, city)}
               onClick={() => setOpen(false)}
               className="flex items-start gap-3 px-4 py-3 hover:bg-white/5 transition-colors"
             >

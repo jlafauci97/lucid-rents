@@ -8,7 +8,7 @@ import {
   Search,
   Users,
   Siren,
-
+  Calculator,
   Radio,
   Newspaper,
   PenSquare,
@@ -38,6 +38,8 @@ interface NavLink {
   label: string;
   laLabel?: string;
   cities?: City[];
+  /** When true, path is absolute (not city-prefixed) */
+  global?: boolean;
 }
 
 const primaryLinks: NavLink[] = [
@@ -53,6 +55,7 @@ const secondaryLinks: NavLink[] = [
   { path: "/feed", icon: Radio, label: "Feed" },
   { path: "/news", icon: Newspaper, label: "News" },
   { path: "/rent-data", icon: BarChart3, label: "Rent Data" },
+  { path: "/rent-calculator", icon: Calculator, label: "Rent Calculator", global: true },
   { path: "/rent-stabilization", icon: ShieldCheck, label: "Rent Stabilization", laLabel: "RSO Checker" },
   { path: "/transit", icon: TrainFront, label: "Near Transit" },
   { path: "/tenant-rights", icon: Scale, label: "Tenant Rights" },
@@ -85,7 +88,7 @@ export function MobileMenu({ isLoggedIn }: MobileMenuProps) {
               .map((link) => (
               <Link
                 key={link.path}
-                href={cityPath(link.path, city)}
+                href={link.global ? link.path : cityPath(link.path, city)}
                 onClick={() => setOpen(false)}
                 className="flex items-center gap-3 px-3 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
               >
@@ -100,7 +103,7 @@ export function MobileMenu({ isLoggedIn }: MobileMenuProps) {
               .map((link) => (
               <Link
                 key={link.path}
-                href={cityPath(link.path, city)}
+                href={link.global ? link.path : cityPath(link.path, city)}
                 onClick={() => setOpen(false)}
                 className="flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
               >

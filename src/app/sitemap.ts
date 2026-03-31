@@ -104,6 +104,7 @@ async function generateStaticSitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "/terms", freq: "monthly" as const, priority: 0.3 },
     { path: "/guides/nyc-tenant-rights", freq: "monthly" as const, priority: 0.7 },
     { path: "/guides/la-tenant-rights", freq: "monthly" as const, priority: 0.7 },
+    { path: "/rent-calculator", freq: "weekly" as const, priority: 0.8 },
   ];
   for (const page of rootPages) {
     entries.push({
