@@ -6,9 +6,10 @@ import { AdBlock } from "@/components/ui/AdBlock";
 import dynamic from "next/dynamic";
 import { ZipRentTable } from "@/components/rent-data/ZipRentTable";
 
-const CitywideTrendChart = dynamic(() => import("@/components/rent-data/CitywideTrendChart").then(m => m.CitywideTrendChart));
-const BoroughRentChart = dynamic(() => import("@/components/rent-data/BoroughRentChart").then(m => m.BoroughRentChart));
-const RGBChart = dynamic(() => import("@/components/rent-data/RGBChart").then(m => m.RGBChart));
+const ChartSkeleton = () => <div className="bg-white rounded-xl border border-[#e2e8f0] p-6"><div className="h-6 w-48 bg-[#e2e8f0] rounded animate-pulse mb-4" /><div className="h-[300px] bg-[#f8fafc] rounded-lg animate-pulse" /></div>;
+const CitywideTrendChart = dynamic(() => import("@/components/rent-data/CitywideTrendChart").then(m => m.CitywideTrendChart), { loading: ChartSkeleton });
+const BoroughRentChart = dynamic(() => import("@/components/rent-data/BoroughRentChart").then(m => m.BoroughRentChart), { loading: ChartSkeleton });
+const RGBChart = dynamic(() => import("@/components/rent-data/RGBChart").then(m => m.RGBChart), { loading: ChartSkeleton });
 import { RentMap } from "@/components/rent-data/RentMap";
 import { type City, CITY_META } from "@/lib/cities";
 

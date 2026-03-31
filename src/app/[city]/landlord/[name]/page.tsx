@@ -15,7 +15,9 @@ import {
 import { LetterGrade } from "@/components/ui/LetterGrade";
 import dynamic from "next/dynamic";
 
-const LandlordViolationTrend = dynamic(() => import("@/components/landlord/LandlordViolationTrend").then(m => m.LandlordViolationTrend));
+const LandlordViolationTrend = dynamic(() => import("@/components/landlord/LandlordViolationTrend").then(m => m.LandlordViolationTrend), {
+  loading: () => <div className="bg-white rounded-xl border border-[#e2e8f0] p-6"><div className="h-6 w-48 bg-[#e2e8f0] rounded animate-pulse mb-4" /><div className="h-[300px] bg-[#f8fafc] rounded-lg animate-pulse" /></div>,
+});
 import { LandlordActionLinks } from "@/components/landlord/LandlordActionLinks";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";

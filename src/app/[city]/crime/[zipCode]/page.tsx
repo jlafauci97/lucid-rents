@@ -11,8 +11,9 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
 import dynamic from "next/dynamic";
 
-const CrimeTrend = dynamic(() => import("@/components/crime/CrimeTrend").then(m => m.CrimeTrend));
-const CrimeCategoryBreakdown = dynamic(() => import("@/components/crime/CrimeCategoryBreakdown").then(m => m.CrimeCategoryBreakdown));
+const ChartSkeleton = () => <div className="bg-white rounded-xl border border-[#e2e8f0] p-6"><div className="h-6 w-48 bg-[#e2e8f0] rounded animate-pulse mb-4" /><div className="h-[300px] bg-[#f8fafc] rounded-lg animate-pulse" /></div>;
+const CrimeTrend = dynamic(() => import("@/components/crime/CrimeTrend").then(m => m.CrimeTrend), { loading: ChartSkeleton });
+const CrimeCategoryBreakdown = dynamic(() => import("@/components/crime/CrimeCategoryBreakdown").then(m => m.CrimeCategoryBreakdown), { loading: ChartSkeleton });
 import { FAQSection } from "@/components/seo/FAQSection";
 import { generateCrimeFAQ } from "@/lib/faq/area-faq";
 import { AdSidebar } from "@/components/ui/AdSidebar";

@@ -7,7 +7,9 @@ import { AdBlock } from "@/components/ui/AdBlock";
 import { EnergyMap } from "@/components/energy/EnergyMap";
 import dynamic from "next/dynamic";
 
-const ScoreDistribution = dynamic(() => import("@/components/energy/ScoreDistribution").then(m => m.ScoreDistribution));
+const ScoreDistribution = dynamic(() => import("@/components/energy/ScoreDistribution").then(m => m.ScoreDistribution), {
+  loading: () => <div className="bg-white rounded-xl border border-[#e2e8f0] p-6"><div className="h-6 w-48 bg-[#e2e8f0] rounded animate-pulse mb-4" /><div className="h-[300px] bg-[#f8fafc] rounded-lg animate-pulse" /></div>,
+});
 import { EnergyTable } from "@/components/energy/EnergyTable";
 
 /* ---------------------------------------------------------------------------

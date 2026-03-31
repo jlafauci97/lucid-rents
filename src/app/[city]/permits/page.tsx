@@ -9,7 +9,9 @@ import { PermitMap } from "@/components/permits/PermitMap";
 import { PermitTable } from "@/components/permits/PermitTable";
 import dynamic from "next/dynamic";
 
-const WorkTypeBreakdown = dynamic(() => import("@/components/permits/WorkTypeBreakdown").then(m => m.WorkTypeBreakdown));
+const WorkTypeBreakdown = dynamic(() => import("@/components/permits/WorkTypeBreakdown").then(m => m.WorkTypeBreakdown), {
+  loading: () => <div className="bg-white rounded-xl border border-[#e2e8f0] p-6"><div className="h-6 w-48 bg-[#e2e8f0] rounded animate-pulse mb-4" /><div className="h-[300px] bg-[#f8fafc] rounded-lg animate-pulse" /></div>,
+});
 
 export async function generateMetadata({ params }: { params: Promise<{ city: string }> }): Promise<Metadata> {
   const { city } = await params;

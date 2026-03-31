@@ -104,7 +104,7 @@ export default function HomePage() {
       {/* Hero */}
       <section className="relative text-white overflow-x-clip">
         <Image
-          src="/homepage-background.jpg"
+          src="/homepage-background.webp"
           alt="City skyline"
           fill
           className="object-cover object-center"
@@ -120,6 +120,7 @@ export default function HomePage() {
             height={200}
             className="mx-auto mb-1 h-[100px] sm:h-[120px] w-auto drop-shadow-lg"
             priority
+            fetchPriority="high"
           />
           <p className="text-xs sm:text-sm uppercase tracking-[0.2em] text-white/70 font-medium mb-2">
             A Rental Intelligence Platform

@@ -65,6 +65,8 @@ export function NewsCard({ article }: { article: NewsArticle }) {
               src={article.image_url}
               alt={`Thumbnail for ${article.title}`}
               className="w-full h-full object-cover"
+              width={140}
+              height={100}
               loading="lazy"
             />
           </div>
