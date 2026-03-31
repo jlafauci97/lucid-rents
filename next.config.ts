@@ -18,10 +18,8 @@ const nextConfig: NextConfig = {
   ],
   rewrites: async () => ({
     beforeFiles: [
-      // Sitemap index: /sitemap.xml → API route
-      { source: "/sitemap.xml", destination: "/api/sitemap-index" },
-      // Individual sitemaps: /sitemap/0.xml → API route (pass id with .xml suffix, stripped in handler)
-      { source: "/sitemap/:id.xml", destination: "/api/sitemap/:id" },
+      // Sitemap index: /sitemap.xml → static pre-generated file
+      { source: "/sitemap.xml", destination: "/sitemap/index.xml" },
     ],
   }),
   headers: async () => [
@@ -43,6 +41,14 @@ const nextConfig: NextConfig = {
           key: "Permissions-Policy",
           value: "camera=(), microphone=(), geolocation=(self)",
         },
+      ],
+    },
+    // Cache static sitemaps (regenerated at build time)
+    {
+      source: "/sitemap/:path*",
+      headers: [
+        { key: "Cache-Control", value: "public, max-age=86400, s-maxage=86400" },
+        { key: "Content-Type", value: "application/xml" },
       ],
     },
     // Cache static assets aggressively (fonts, images, JS/CSS bundles)

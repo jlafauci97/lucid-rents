@@ -1,5 +1,6 @@
 lucid-rents 2/
 .claude/
 .superpowers/
-scripts/
+scripts/*
+!scripts/generate-sitemaps.mjs
 docs/

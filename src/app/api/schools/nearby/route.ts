@@ -66,12 +66,13 @@ export async function GET(request: NextRequest) {
 
   if (city) {
     const metroMap: Record<string, string> = {
+      "los-angeles": "los-angeles",
       "CA/Los-Angeles": "los-angeles",
-      "IL/Chicago": "chicago",
-      "FL/Miami": "miami",
-      "TX/Houston": "houston",
+      "chicago": "chicago",
+      "miami": "miami",
+      "houston": "houston",
     };
-    const metro = metroMap[city] || city;
+    const metro = metroMap[city] || "nyc";
     query = query.eq("metro", metro);
   }
 

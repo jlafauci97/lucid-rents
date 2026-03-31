@@ -217,7 +217,7 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
                       </td>
                       <td className="px-4 py-3">
                         <Link
-                          href={landlordUrl(landlord.name)}
+                          href={landlordUrl(landlord.name, cityParam as City)}
                           className="group"
                         >
                           <p className="text-sm font-medium text-[#0F1D2E] group-hover:text-[#3B82F6] transition-colors">
@@ -297,7 +297,7 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
                       </td>
                       <td className="px-4 py-3 text-right hidden lg:table-cell">
                         <Link
-                          href={landlordUrl(landlord.name)}
+                          href={landlordUrl(landlord.name, cityParam as City)}
                           className="inline-flex items-center gap-1 text-sm text-[#3B82F6] hover:text-[#2563EB] font-medium transition-colors"
                         >
                           View Portfolio

@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { Building2, Database, Shield, Users } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "About Lucid Rents | NYC Apartment Transparency Platform",
+  title: "About Lucid Rents | Apartment Transparency Platform",
   description:
     "We built Lucid Rents so every renter gets the same intel that landlords and brokers already have — violations, reviews, crime data, and more. Always free.",
   alternates: { canonical: canonicalUrl("/about") },
@@ -16,7 +16,7 @@ export default function AboutPage() {
         About Lucid Rents
       </h1>
       <p className="text-sm text-[#94a3b8] mb-8">
-        Transparency for NYC renters
+        Transparency for renters
       </p>
 
       <div className="prose prose-slate max-w-none space-y-8 text-[#334155] text-sm leading-relaxed">
@@ -25,12 +25,13 @@ export default function AboutPage() {
             Our Mission
           </h2>
           <p>
-            Lucid Rents is a free platform built to help New York City renters
+            Lucid Rents is a free platform built to help renters
             make informed decisions before signing a lease. We believe every
             tenant deserves access to the same information that landlords,
             brokers, and property managers already have. By aggregating public
             records and community reviews into one easy-to-use tool, we aim to
-            level the playing field for millions of NYC renters.
+            level the playing field for millions of renters across NYC, Los
+            Angeles, Chicago, Miami, and Houston.
           </p>
         </section>
 
@@ -45,7 +46,8 @@ export default function AboutPage() {
                 Building Profiles
               </h3>
               <p className="text-xs text-[#64748b]">
-                Detailed pages for over 50,000 NYC buildings with violation
+                Detailed pages for over 1.8 million buildings across NYC,
+                Los Angeles, Chicago, Miami, and Houston with violation
                 histories, complaints, and tenant reviews.
               </p>
             </div>
@@ -55,8 +57,8 @@ export default function AboutPage() {
                 Public Data
               </h3>
               <p className="text-xs text-[#64748b]">
-                HPD violations, DOB violations, 311 complaints, NYPD crime
-                data, rent stabilization records, and more — updated daily.
+                Violations, complaints, crime data, rent stabilization
+                records, and more from city-specific agencies — updated daily.
               </p>
             </div>
             <div className="border border-[#e2e8f0] rounded-lg p-4">
@@ -88,40 +90,35 @@ export default function AboutPage() {
             Our Data Sources
           </h2>
           <p>
-            Lucid Rents aggregates publicly available data from official New
-            York City government sources, including:
+            Lucid Rents aggregates publicly available data from city-specific
+            government agencies across all five cities, including:
           </p>
           <ul className="list-disc list-inside space-y-1 mt-2">
             <li>
-              <strong>HPD Violations</strong> — NYC Department of Housing
-              Preservation and Development
+              <strong>NYC</strong> — HPD violations, DOB violations, 311
+              complaints, NYPD crime data, PLUTO tax lot data, rent
+              stabilization (RPIE filings), energy benchmarking, MTA transit
             </li>
             <li>
-              <strong>DOB Violations</strong> — NYC Department of Buildings
+              <strong>Los Angeles</strong> — LAHD code violations, LADBS
+              permits, LAPD crime data, LA County Assessor records, RSO status
             </li>
             <li>
-              <strong>311 Complaints</strong> — NYC 311 Service Requests
+              <strong>Chicago</strong> — CDPH violations, CDBS permits, CPD
+              crime data, Cook County Assessor records, RLTO protections
             </li>
             <li>
-              <strong>NYPD Crime Data</strong> — NYPD Complaint Data
+              <strong>Miami</strong> — Miami-Dade code violations, RER permits,
+              MDPD crime data, Property Appraiser records, building
+              recertification data
             </li>
             <li>
-              <strong>PLUTO</strong> — NYC Department of City Planning tax lot
-              data
-            </li>
-            <li>
-              <strong>Rent Stabilization</strong> — NYC Tax Commission RPIE
-              filings
-            </li>
-            <li>
-              <strong>Energy Scores</strong> — NYC Benchmarking (Local Law 84/133)
-            </li>
-            <li>
-              <strong>Transit Data</strong> — MTA GTFS static feeds
+              <strong>Houston</strong> — City of Houston permits, HPD crime
+              data, HCAD property records, flood zone data
             </li>
           </ul>
           <p className="mt-3">
-            All data is sourced from NYC Open Data and other official public
+            All data is sourced from official open data portals and public
             datasets. We sync our database daily to ensure information is as
             current as possible.
           </p>
