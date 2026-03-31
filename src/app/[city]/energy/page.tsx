@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Zap } from "lucide-react";
-import { canonicalUrl, cityPath } from "@/lib/seo";
+import { canonicalUrl, cityPath, cityBreadcrumbs } from "@/lib/seo";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { EnergyMap } from "@/components/energy/EnergyMap";
@@ -204,8 +205,10 @@ export default async function EnergyPage({ params }: { params: Promise<{ city: s
           }}
         />
 
+        <Breadcrumbs items={cityBreadcrumbs(city, { label: "Energy", href: cityPath("/energy", city) })} />
+
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-8 mt-4">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-emerald-50 rounded-lg">
               <Zap className="w-6 h-6 text-[#059669]" />

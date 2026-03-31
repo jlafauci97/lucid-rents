@@ -18,7 +18,16 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/api/", "/profile/", "/review/new", "/_next/static/media/"],
+      disallow: [
+        "/api/",
+        "/profile/",
+        "/review/new",      // legacy non-prefixed path
+        "/*/review/new",    // city-prefixed review pages (e.g. /nyc/review/new?building=...)
+        "/_next/static/media/",
+        "/*?ids=",          // compare pages with building IDs
+        "/compare",         // non-city-prefixed compare (redirects)
+        "/building/",       // non-city-prefixed building pages (redirects)
+      ],
     },
     sitemap: "https://lucidrents.com/sitemap.xml",
   };

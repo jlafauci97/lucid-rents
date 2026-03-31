@@ -97,7 +97,10 @@ export default function HomePage() {
           logo: "https://lucidrents.com/lucid-rents-logo.png",
           description:
             "A rental intelligence platform helping renters make informed decisions with building violations, tenant reviews, and public data.",
-          sameAs: [],
+          sameAs: [
+            "https://www.reddit.com/r/LucidRents/",
+            "https://twitter.com/lucidrents",
+          ],
         }}
       />
 

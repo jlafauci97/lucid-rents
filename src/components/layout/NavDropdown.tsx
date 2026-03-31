@@ -88,6 +88,24 @@ const tools: ToolItem[] = [
     description: "Legislation & land use under review",
   },
   {
+    path: "/tenant-tools",
+    icon: Wrench,
+    label: "Tenant Tools Hub",
+    description: "Templates, checklists & renter resources",
+  },
+  {
+    path: "/tenant-tools/templates",
+    icon: FileText,
+    label: "Letter Templates",
+    description: "Free downloadable tenant letter templates",
+  },
+  {
+    path: "/tenant-tools/checklist",
+    icon: ClipboardList,
+    label: "Pre-Move-In Checklist",
+    description: "Due diligence before you sign a lease",
+  },
+  {
     path: "/tenant-rights",
     icon: Scale,
     label: "Tenant Rights",

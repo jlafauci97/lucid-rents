@@ -1,17 +1,20 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Share2, Link2, Check } from "lucide-react";
+import { Share2, Link2, Check, Code2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { EmbedCodeModal } from "@/components/building/EmbedCodeModal";
 
 interface ShareButtonProps {
   address: string;
   url: string;
+  buildingId?: string;
 }
 
-export function ShareButton({ address, url }: ShareButtonProps) {
+export function ShareButton({ address, url, buildingId }: ShareButtonProps) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showEmbed, setShowEmbed] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -109,7 +112,20 @@ export function ShareButton({ address, url }: ShareButtonProps) {
             </svg>
             Share on Facebook
           </button>
+          {buildingId && (
+            <button
+              onClick={() => { setOpen(false); setShowEmbed(true); }}
+              className="flex items-center gap-2 w-full px-4 py-2 text-sm text-[#0F1D2E] hover:bg-gray-50 transition-colors"
+            >
+              <Code2 className="w-4 h-4 text-[#64748b]" />
+              Embed
+            </button>
+          )}
         </div>
+      )}
+
+      {showEmbed && buildingId && (
+        <EmbedCodeModal buildingId={buildingId} onClose={() => setShowEmbed(false)} />
       )}
     </div>
   );

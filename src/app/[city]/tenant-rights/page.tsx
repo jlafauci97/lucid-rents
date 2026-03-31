@@ -7,6 +7,8 @@ import {
 } from "lucide-react";
 import { TENANT_RIGHTS_BY_CITY } from "@/lib/tenant-rights-data";
 import { CITY_META, type City } from "@/lib/cities";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
+import { cityBreadcrumbs, canonicalUrl, cityPath } from "@/lib/seo";
 
 export async function generateMetadata({
   params,
@@ -42,7 +44,11 @@ export default async function TenantRightsPage({
       {/* Hero */}
       <div className="bg-[#0F1D2E] text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-          <div className="max-w-3xl">
+          <Breadcrumbs
+            items={cityBreadcrumbs(city as City, { label: "Tenant Rights", href: cityPath("/tenant-rights", city as City) })}
+            variant="dark"
+          />
+          <div className="max-w-3xl mt-6">
             <div className="flex items-center gap-2 text-blue-400 text-sm font-medium mb-3">
               <Scale className="w-4 h-4" />
               {config.heroTitle}

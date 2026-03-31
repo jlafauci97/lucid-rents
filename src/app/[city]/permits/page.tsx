@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { ClipboardList } from "lucide-react";
-import { canonicalUrl, cityPath } from "@/lib/seo";
+import { canonicalUrl, cityPath, cityBreadcrumbs } from "@/lib/seo";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { VIOLATION_AGENCIES } from "@/lib/constants";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
@@ -134,8 +135,10 @@ export default async function PermitsPage({ params }: { params: Promise<{ city: 
           }}
         />
 
+        <Breadcrumbs items={cityBreadcrumbs(city, { label: "Permits", href: cityPath("/permits", city) })} />
+
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-8 mt-4">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-teal-50 rounded-lg">
               <ClipboardList className="w-6 h-6 text-[#0D9488]" />

@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Siren, ArrowUpDown, MapPin } from "lucide-react";
-import { canonicalUrl, cityPath, neighborhoodUrl } from "@/lib/seo";
+import { canonicalUrl, cityPath, neighborhoodUrl, cityBreadcrumbs } from "@/lib/seo";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { getNeighborhoodName } from "@/lib/nyc-neighborhoods";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
 import { AdSidebar } from "@/components/ui/AdSidebar";
@@ -118,6 +119,7 @@ export default async function CrimePage({
   return (
     <AdSidebar>
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <Breadcrumbs items={cityBreadcrumbs(cityParam as City, { label: "Crime Data", href: cityPath("/crime", cityParam as City) })} />
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-2">

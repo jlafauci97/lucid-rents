@@ -8,7 +8,8 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { canonicalUrl, cityPath, buildingUrl } from "@/lib/seo";
+import { canonicalUrl, cityPath, buildingUrl, cityBreadcrumbs } from "@/lib/seo";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
@@ -164,8 +165,10 @@ export default async function AffordableHousingPage({
           }}
         />
 
+        <Breadcrumbs items={cityBreadcrumbs(city as City, { label: "Affordable Housing", href: cityPath("/affordable-housing", city as City) })} />
+
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-8 mt-4">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-emerald-50 rounded-lg">
               <Home className="w-6 h-6 text-[#059669]" />

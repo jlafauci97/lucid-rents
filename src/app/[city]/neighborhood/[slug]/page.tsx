@@ -16,6 +16,8 @@ import { AdBlock } from "@/components/ui/AdBlock";
 import { NeighborhoodRankCard } from "@/components/neighborhood/NeighborhoodRankCard";
 import { FAQSection } from "@/components/seo/FAQSection";
 import { generateNeighborhoodFAQ } from "@/lib/faq/area-faq";
+import { VibeCheck } from "@/components/neighborhood/VibeCheck";
+import { getNeighborhoodVibe } from "@/lib/neighborhood-vibes";
 
 export const revalidate = 3600;
 
@@ -349,6 +351,14 @@ export default async function NeighborhoodPage({
       </div>
 
       <AdBlock adSlot="NEIGHBORHOOD_BOTTOM" adFormat="horizontal" />
+
+      {/* Vibe Check */}
+      {(() => {
+        const vibe = getNeighborhoodVibe(city, zipCode);
+        return vibe ? (
+          <VibeCheck vibe={vibe} neighborhoodName={neighborhoodName || zipCode} />
+        ) : null;
+      })()}
 
       <FAQSection
         items={generateNeighborhoodFAQ({

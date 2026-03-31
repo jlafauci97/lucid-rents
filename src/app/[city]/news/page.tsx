@@ -1,8 +1,10 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
-import { canonicalUrl, breadcrumbJsonLd, cityPath } from "@/lib/seo";
+import { canonicalUrl, breadcrumbJsonLd, cityPath, cityBreadcrumbs } from "@/lib/seo";
 import { newsCollectionJsonLd } from "@/lib/seo";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
+import { type City, CITY_META } from "@/lib/cities";
 import { NEWS_CATEGORIES, type NewsCategory } from "@/lib/news-sources";
 import { NewsList } from "@/components/news/NewsList";
 import { CategoryIcon } from "@/components/news/CategoryIcon";
@@ -90,8 +92,10 @@ export default async function NewsPage({
           }}
         />
 
+        <Breadcrumbs items={cityBreadcrumbs(cityParam as City, { label: "News", href: cityPath("/news", cityParam as City) })} />
+
         {/* Header */}
-        <div className="mb-6">
+        <div className="mb-6 mt-4">
           <h1 className="text-2xl font-bold text-[#0F1D2E]">
             {cityName} Housing News
           </h1>

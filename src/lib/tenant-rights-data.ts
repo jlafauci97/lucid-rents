@@ -44,6 +44,7 @@ export interface TopicData {
   dosAndDonts: DoAndDont;
   resources: { name: string; url: string }[];
   helpline?: { name: string; phone: string };
+  faq?: { question: string; answer: string }[];
 }
 
 export interface CityTenantRightsConfig {
@@ -232,6 +233,28 @@ const nycTopics: Record<string, TopicData> = {
       { name: "Met Council on Housing", url: "https://www.metcouncilonhousing.org/" },
     ],
     helpline: { name: "DHCR Rent Info Line", phone: "(718) 739-6400" },
+    faq: [
+      {
+        question: "How do I know if my NYC apartment is rent stabilized?",
+        answer: "Request your apartment's rent history from DHCR at hcr.ny.gov or by calling (718) 739-6400. Your lease should also include a rent stabilization rider. Buildings built before 1974 with 6+ units are often stabilized.",
+      },
+      {
+        question: "Can my landlord raise my rent more than the stabilization guidelines allow?",
+        answer: "No — for rent-stabilized units, landlords can only raise rent by the percentages set annually by the NYC Rent Guidelines Board. Individual Apartment Improvements (IAIs) may allow limited additional increases, but these are strictly regulated.",
+      },
+      {
+        question: "What happens if my landlord illegally removes my apartment from rent stabilization?",
+        answer: "File a complaint with DHCR. You may be entitled to a rent overcharge refund going back up to 6 years, plus treble (triple) damages if the overcharge was willful. An attorney or Met Council can help you file.",
+      },
+      {
+        question: "Do I have to renew my rent-stabilized lease?",
+        answer: "You have 60 days to accept a renewal offer after your landlord sends it. You can choose a 1-year or 2-year term. Your landlord must send the offer 90–150 days before your lease expires.",
+      },
+      {
+        question: "Can my landlord convert my rent-stabilized apartment to market rate?",
+        answer: "Since the Housing Stability and Tenant Protection Act of 2019, apartments can no longer be deregulated through vacancy decontrol or luxury deregulation. Your unit should remain stabilized as long as the building qualifies.",
+      },
+    ],
   },
   "repairs-and-maintenance": {
     title: "Repairs & Maintenance",
@@ -282,6 +305,24 @@ const nycTopics: Record<string, TopicData> = {
       { name: "Housing Court Help Center", url: "https://www.nycourts.gov/courts/nyc/housing/help.shtml" },
     ],
     helpline: { name: "311 (NYC Complaints)", phone: "311" },
+    faq: [
+      {
+        question: "How do I file an HPD complaint for repairs?",
+        answer: "Call 311 or visit the HPD website to file a complaint online. An inspector will be sent to your apartment. Make sure to document the condition with photos before and after the inspection.",
+      },
+      {
+        question: "Can I withhold rent if my landlord refuses to make repairs?",
+        answer: "Yes, but you must follow a specific legal process. You can file a rent strike action in Housing Court or deposit rent into an escrow account while repairs are pending. Get legal advice before withholding rent.",
+      },
+      {
+        question: "What is a warranty of habitability?",
+        answer: "New York's Real Property Law Section 235-b guarantees every tenant a habitable apartment. This covers working heat, hot water, plumbing, and freedom from pests and hazards. It is implied in every lease regardless of what the lease says.",
+      },
+      {
+        question: "What are HPD violation classes?",
+        answer: "HPD violations are classified A (non-hazardous), B (hazardous), or C (immediately hazardous). Class C violations — like no heat, lead paint, or vermin infestations — require the fastest response from your landlord.",
+      },
+    ],
   },
   "eviction-protections": {
     title: "Eviction Protections",
@@ -332,6 +373,24 @@ const nycTopics: Record<string, TopicData> = {
       { name: "Housing Court Help Center", url: "https://www.nycourts.gov/courts/nyc/housing/help.shtml" },
     ],
     helpline: { name: "Housing Court Help", phone: "(646) 386-5554" },
+    faq: [
+      {
+        question: "Can a landlord evict me without going to court in NYC?",
+        answer: "No. A landlord must file in Housing Court and obtain a judgment before evicting you. Only a marshal can physically remove you, and only after a court order. A self-help eviction (changing locks, removing belongings) is illegal.",
+      },
+      {
+        question: "What is NYC's Right to Counsel program?",
+        answer: "NYC provides free legal representation to eligible tenants facing eviction in Housing Court. Eligibility is based on income and zip code. Call 311 or visit righttocounselnyc.org to apply.",
+      },
+      {
+        question: "How much notice must a landlord give before eviction?",
+        answer: "For month-to-month tenants: 30 days if you've lived there less than 1 year, 60 days for 1–2 years, and 90 days for more than 2 years. Rent-stabilized tenants have additional protections and must be offered renewal leases.",
+      },
+      {
+        question: "Can I be evicted for having unauthorized guests or a pet?",
+        answer: "Your landlord must go through Housing Court. You may have defenses depending on your lease and how long the guest has lived there. NYC's pet law also protects tenants who have kept a pet openly for 3+ months.",
+      },
+    ],
   },
   "security-deposits": {
     title: "Security Deposits",
@@ -381,6 +440,24 @@ const nycTopics: Record<string, TopicData> = {
       { name: "NYC Small Claims Court", url: "https://www.nycourts.gov/courts/nyc/smallclaims/" },
     ],
     helpline: { name: "AG Tenant Helpline", phone: "(800) 771-7755" },
+    faq: [
+      {
+        question: "What is the maximum security deposit a landlord can charge in NYC?",
+        answer: "Since 2019, landlords can charge a maximum of one month's rent as a security deposit, regardless of whether the apartment is rent-stabilized.",
+      },
+      {
+        question: "How long does a landlord have to return my security deposit?",
+        answer: "14 days after you vacate. They must provide an itemized statement of any deductions. Failure to return the deposit within 14 days may mean you forfeit the right to make any deductions.",
+      },
+      {
+        question: "What can a landlord deduct from my security deposit?",
+        answer: "Only unpaid rent and damages beyond normal wear and tear. Normal wear and tear (faded paint, small nail holes, worn carpet) is not a valid reason for deductions.",
+      },
+      {
+        question: "What should I do before moving out to protect my security deposit?",
+        answer: "Document the apartment's condition with photos and video. Clean thoroughly. Request a pre-move-out inspection with your landlord present. Get all agreements in writing.",
+      },
+    ],
   },
   "lease-renewals": {
     title: "Lease Renewals & Agreements",
@@ -428,6 +505,20 @@ const nycTopics: Record<string, TopicData> = {
     resources: [
       { name: "NYS DHCR – Lease Renewals", url: "https://hcr.ny.gov/rent-stabilization-0" },
       { name: "NYC Tenant Rights Guide (AG)", url: "https://ag.ny.gov/resources/individuals/tenants-rights" },
+    ],
+    faq: [
+      {
+        question: "Does my landlord have to renew my lease in NYC?",
+        answer: "For rent-stabilized tenants, yes — your landlord must offer a renewal. For market-rate tenants, the landlord is not required to renew but must give proper notice (30, 60, or 90 days depending on tenancy length).",
+      },
+      {
+        question: "What lease clauses are unenforceable in NYC?",
+        answer: "Clauses waiving the warranty of habitability, requiring you to pay legal fees if you win, forbidding guests entirely, or waiving your right to a security deposit return are unenforceable. Courts will strike these even if you signed them.",
+      },
+      {
+        question: "What happens if I stay past my lease expiration?",
+        answer: "Without a new agreement, you become a month-to-month tenant on the same terms. Your landlord can then seek to end the tenancy with proper notice. Rent-stabilized tenants must be offered a renewal, so this scenario mainly applies to market-rate apartments.",
+      },
     ],
   },
   harassment: {
@@ -478,6 +569,20 @@ const nycTopics: Record<string, TopicData> = {
       { name: "Met Council on Housing Hotline", url: "https://www.metcouncilonhousing.org/" },
     ],
     helpline: { name: "Met Council Hotline", phone: "(212) 979-0611" },
+    faq: [
+      {
+        question: "What counts as landlord harassment in NYC?",
+        answer: "NYC law defines harassment broadly: threats, refusing repairs to pressure you out, baseless court filings, disruptive construction, utility shutoffs, and unwanted buyout offers made with threats all qualify.",
+      },
+      {
+        question: "How do I report landlord harassment?",
+        answer: "File a complaint with HPD at nyc.gov/hpd. You can also sue your landlord in Housing Court under MDL Section 302-a for tenant harassment. Document every incident with dates, times, and witnesses.",
+      },
+      {
+        question: "Can I report harassment if I'm undocumented?",
+        answer: "Yes. NYC's tenant harassment protections apply to all tenants regardless of immigration status. Your landlord cannot threaten to report you to immigration authorities — that is itself a form of illegal harassment.",
+      },
+    ],
   },
   "heat-and-hot-water": {
     title: "Heat & Hot Water",
@@ -527,6 +632,20 @@ const nycTopics: Record<string, TopicData> = {
       { name: "311 Online", url: "https://portal.311.nyc.gov/" },
     ],
     helpline: { name: "311 (Emergency Heat)", phone: "311" },
+    faq: [
+      {
+        question: "What are NYC's legal heat requirements?",
+        answer: "From October 1 to May 31 (heating season), landlords must maintain at least 68°F during the day (6am–10pm) when outside temps drop below 55°F, and at least 62°F overnight. Hot water must be at least 120°F year-round.",
+      },
+      {
+        question: "What do I do if my heat goes out?",
+        answer: "Call 311 to file a complaint immediately. Document the temperature with photos showing a thermometer. HPD will send an inspector. For emergencies, HPD has 24/7 response for no-heat violations.",
+      },
+      {
+        question: "Can I get a rent reduction for lack of heat?",
+        answer: "Yes. You can apply to DHCR for a Reduction of Services if your landlord chronically fails to provide adequate heat. Your rent can be reduced until services are restored.",
+      },
+    ],
   },
   "bed-bugs-and-pests": {
     title: "Bed Bugs & Pests",
@@ -576,6 +695,20 @@ const nycTopics: Record<string, TopicData> = {
       { name: "NYC DOHMH Bed Bug Info", url: "https://www.nyc.gov/site/doh/health/health-topics/bedbugs.page" },
     ],
     helpline: { name: "311 (Pest Complaints)", phone: "311" },
+    faq: [
+      {
+        question: "Is my landlord responsible for exterminating bed bugs?",
+        answer: "Yes. NYC law requires landlords to remediate bed bug infestations. They must also provide bedbug infestation history for the previous year before you sign a lease.",
+      },
+      {
+        question: "What do I do if my landlord won't exterminate pests?",
+        answer: "File a complaint with 311 or HPD online. An inspector will assess the condition and issue a violation if warranted. You may also be able to use the rent reduction process through DHCR.",
+      },
+      {
+        question: "How do I check a building's bedbug history?",
+        answer: "NYC requires landlords to provide a one-year bedbug infestation history at lease signing. You can also search Lucid Rents — we display bedbug reports from HPD's bedbug disclosure database.",
+      },
+    ],
   },
   "illegal-apartments": {
     title: "Illegal Apartments",
@@ -623,6 +756,20 @@ const nycTopics: Record<string, TopicData> = {
     resources: [
       { name: "DOB NOW – Certificate of Occupancy", url: "https://a810-bisweb.nyc.gov/bisweb/bispi00.jsp" },
       { name: "Legal Aid Society", url: "https://legalaidnyc.org/" },
+    ],
+    faq: [
+      {
+        question: "Do I have tenant rights if I live in an illegal apartment?",
+        answer: "Yes. Even in an illegal unit, you have the right to habitable conditions and protection from illegal eviction. Your landlord cannot simply throw you out — they must go through Housing Court.",
+      },
+      {
+        question: "How do I check if my apartment is legal?",
+        answer: "Look up your building's Certificate of Occupancy on NYC's DOB NOW website (a810-bisweb.nyc.gov). It shows what the building is legally approved for. You can also check Lucid Rents for DOB violation history.",
+      },
+      {
+        question: "What happens if the city finds my apartment is illegal?",
+        answer: "The city will issue violations to your landlord, who is responsible for legalizing or vacating the unit. In some cases, the city may issue a vacate order, but tenants are typically given notice and assistance.",
+      },
     ],
   },
   retaliation: {
@@ -673,6 +820,20 @@ const nycTopics: Record<string, TopicData> = {
       { name: "Met Council on Housing", url: "https://www.metcouncilonhousing.org/" },
     ],
     helpline: { name: "AG Helpline", phone: "(800) 771-7755" },
+    faq: [
+      {
+        question: "What counts as landlord retaliation in NYC?",
+        answer: "Retaliation includes rent increases, eviction threats, service reductions, or lease non-renewals that happen after you filed a complaint, reported violations, or organized with other tenants.",
+      },
+      {
+        question: "How do I prove my landlord is retaliating?",
+        answer: "NYC law creates a presumption of retaliation if your landlord takes adverse action within 60 days of you exercising a legal right. Document everything: the date you filed a complaint and the date the retaliation started.",
+      },
+      {
+        question: "What can I do if my landlord is retaliating against me?",
+        answer: "You can raise retaliation as a defense in Housing Court if facing eviction. You can also sue your landlord for retaliation and seek damages. Contact the AG's office or a tenant attorney for help.",
+      },
+    ],
   },
 };
 
@@ -843,6 +1004,20 @@ const laTopics: Record<string, TopicData> = {
       { name: "SAJE (Strategic Actions for a Just Economy)", url: "https://www.saje.net/" },
     ],
     helpline: { name: "LAHD Rent Stabilization", phone: "(866) 557-7368" },
+    faq: [
+      {
+        question: "How do I know if my LA apartment is covered by the RSO?",
+        answer: "Look up your address on ZIMAS (zimas.lacity.org) or contact LAHD at (866) 557-7368. Generally, buildings built before October 1, 1978 with 2+ units are covered by the RSO.",
+      },
+      {
+        question: "How much can my landlord raise rent under LA's RSO?",
+        answer: "RSO rent increases are set annually by LAHD — typically 3–8% depending on CPI. Landlords can only increase rent once per 12-month period and must give 30 days written notice.",
+      },
+      {
+        question: "Can my landlord pass through utility cost increases to me?",
+        answer: "Yes, but only under limited circumstances and with LAHD approval. Landlords can apply for a Capital Improvement pass-through or a Utility Maintenance Expense pass-through, but these require documentation and approval.",
+      },
+    ],
   },
   "just-cause-eviction": {
     title: "Just Cause Eviction",
@@ -894,6 +1069,20 @@ const laTopics: Record<string, TopicData> = {
       { name: "Stay Housed LA", url: "https://www.stayhousedla.org/" },
     ],
     helpline: { name: "Legal Aid Foundation of LA", phone: "(800) 399-4529" },
+    faq: [
+      {
+        question: "What are the just causes for eviction under LA's ordinance?",
+        answer: "Legal just causes include non-payment of rent, lease violation, owner move-in, demolition, and substantial rehabilitation. A landlord cannot simply choose not to renew your lease without a valid just cause.",
+      },
+      {
+        question: "What notice is required before an LA eviction?",
+        answer: "3 days for non-payment or lease violations; 30 days for month-to-month tenancies of less than 1 year; 60 days for tenancies over 1 year. RSO tenants have additional protections.",
+      },
+      {
+        question: "Am I entitled to relocation assistance if I'm evicted in LA?",
+        answer: "RSO tenants evicted for a no-fault reason (owner move-in, demolition, etc.) are entitled to relocation assistance of 1–3 months' rent depending on how long you've lived there.",
+      },
+    ],
   },
   "repairs-and-habitability": {
     title: "Repairs & Habitability",
@@ -945,6 +1134,20 @@ const laTopics: Record<string, TopicData> = {
       { name: "Bet Tzedek – Habitability Issues", url: "https://www.bettzedek.org/" },
     ],
     helpline: { name: "311 (LA City Services)", phone: "311" },
+    faq: [
+      {
+        question: "What are my rights if my LA landlord refuses to make repairs?",
+        answer: "File a complaint with LAHD or call 311. California Civil Code 1942 also allows you to repair and deduct — hire a licensed contractor to fix the problem and deduct the cost from rent (up to one month's rent, once per 12 months).",
+      },
+      {
+        question: "What is California's implied warranty of habitability?",
+        answer: "Every residential lease in California includes an implied warranty of habitability. Landlords must maintain working plumbing, heating, weatherproofing, pest control, and structural safety. You cannot waive this right.",
+      },
+      {
+        question: "Can I withhold rent for uninhabitable conditions in LA?",
+        answer: "Yes, through a rent withholding or rent escrow process. However, you must follow strict legal procedures. Get legal advice before withholding rent to avoid being evicted for non-payment.",
+      },
+    ],
   },
   "relocation-assistance": {
     title: "Relocation Assistance",
@@ -996,6 +1199,16 @@ const laTopics: Record<string, TopicData> = {
       { name: "Housing Rights Center", url: "https://www.housingrightscenter.org/" },
     ],
     helpline: { name: "LAHD Rent Stabilization", phone: "(866) 557-7368" },
+    faq: [
+      {
+        question: "How much relocation assistance am I owed in LA?",
+        answer: "RSO tenants evicted for no-fault reasons receive 1 month's rent for tenancies under 3 years, 2 months for 3–9 years, and 3 months for 9+ years. Senior/disabled tenants receive an additional month.",
+      },
+      {
+        question: "What triggers the right to relocation assistance?",
+        answer: "No-fault evictions: owner move-in, relative move-in, substantial rehabilitation, demolition, or Ellis Act withdrawal. You don't get relocation assistance for evictions due to lease violations.",
+      },
+    ],
   },
   "ellis-act": {
     title: "Ellis Act Protections",
@@ -1047,6 +1260,16 @@ const laTopics: Record<string, TopicData> = {
       { name: "LA Tenants Union", url: "https://latenantsunion.org/" },
     ],
     helpline: { name: "LAHD Rent Stabilization", phone: "(866) 557-7368" },
+    faq: [
+      {
+        question: "What is the Ellis Act in LA?",
+        answer: "The Ellis Act is a California law allowing landlords to remove buildings from the rental market entirely. They must evict all tenants and cannot re-rent the units for 5–10 years. RSO tenants receive relocation assistance.",
+      },
+      {
+        question: "Can I return to my unit after an Ellis Act eviction?",
+        answer: "If the landlord re-offers the unit for rent within 5 years, they must offer it to you first at the original rent. You have 30 days to accept. Keep your address updated with LAHD after an Ellis Act eviction.",
+      },
+    ],
   },
   "security-deposits": {
     title: "Security Deposits",
@@ -1097,6 +1320,20 @@ const laTopics: Record<string, TopicData> = {
       { name: "LA Superior Court – Small Claims", url: "https://www.lacourt.org/division/smallclaims/smallclaims.aspx" },
     ],
     helpline: { name: "Housing Rights Center", phone: "(800) 477-5977" },
+    faq: [
+      {
+        question: "What is the security deposit limit in California?",
+        answer: "For unfurnished units, landlords can charge a maximum of 1 month's rent as a security deposit (since 2024, per AB 12). Furnished units allow up to 2 months. Pet deposits are no longer allowed separately.",
+      },
+      {
+        question: "How long does a California landlord have to return my deposit?",
+        answer: "21 days after you move out. They must provide an itemized statement of deductions. Failure to do so within 21 days may mean they forfeit the right to any deductions.",
+      },
+      {
+        question: "What can a CA landlord deduct from my security deposit?",
+        answer: "Unpaid rent, cleaning costs to restore the unit to move-in cleanliness, and damage beyond normal wear and tear. Landlords cannot charge for routine painting or carpet replacement if you lived there several years.",
+      },
+    ],
   },
   "earthquake-retrofit": {
     title: "Earthquake Retrofit Rights",
@@ -1148,6 +1385,16 @@ const laTopics: Record<string, TopicData> = {
       { name: "Legal Aid Foundation of Los Angeles", url: "https://lafla.org/" },
     ],
     helpline: { name: "LAHD Rent Stabilization", phone: "(866) 557-7368" },
+    faq: [
+      {
+        question: "What are my rights as a tenant in a soft-story retrofit building?",
+        answer: "Your landlord can pass through up to 50% of retrofit costs (max $38/month for RSO tenants). You cannot be permanently displaced — you have the right to return to your unit at the same rent after work is completed.",
+      },
+      {
+        question: "Is my building a soft-story building?",
+        answer: "You can check LAHD's soft-story building database at housing.lacity.gov, or search on Lucid Rents — we flag soft-story hazard zone status on building pages.",
+      },
+    ],
   },
   "harassment-and-retaliation": {
     title: "Harassment & Retaliation",
@@ -1199,6 +1446,20 @@ const laTopics: Record<string, TopicData> = {
       { name: "SAJE (Strategic Actions for a Just Economy)", url: "https://www.saje.net/" },
     ],
     helpline: { name: "Housing Rights Center", phone: "(800) 477-5977" },
+    faq: [
+      {
+        question: "What counts as landlord harassment in California?",
+        answer: "California Civil Code Section 1940.2 prohibits landlords from using force, threatening statements, or repeated acts to influence a tenant to vacate. LA's local ordinance adds further protections including disruptive construction and cash-for-keys pressure.",
+      },
+      {
+        question: "Is it retaliation if my landlord raises rent after I complained?",
+        answer: "It may be. California Civil Code 1942.5 creates a presumption of retaliation if adverse action occurs within 180 days of you exercising a legal right (filing a complaint, requesting repairs, etc.).",
+      },
+      {
+        question: "What can I do about landlord retaliation in LA?",
+        answer: "File a complaint with LAHD. You can also raise retaliation as a defense in eviction court, or sue your landlord under Civil Code 1942.5 for damages including punitive damages and attorney's fees.",
+      },
+    ],
   },
 };
 
@@ -1381,6 +1642,20 @@ const chicagoTopics: Record<string, TopicData> = {
       { name: "Lawyers' Committee for Better Housing", url: "https://www.lcbh.org/" },
     ],
     helpline: { name: "Metropolitan Tenants Organization", phone: "(773) 292-4988" },
+    faq: [
+      {
+        question: "Does the RLTO apply to my Chicago apartment?",
+        answer: "The RLTO applies to most Chicago rental units. Key exemptions include owner-occupied buildings with 6 or fewer units, approved religious organizations, and certain government-subsidized housing. If unsure, contact the Metropolitan Tenants Organization.",
+      },
+      {
+        question: "What rights does the RLTO give me as a Chicago tenant?",
+        answer: "The RLTO gives you the right to a habitable home, proper notice before entry, an itemized security deposit with interest, written receipts, disclosure of building violations, and remedies if your landlord violates these rules — including rent reduction and lease termination.",
+      },
+      {
+        question: "What happens if my Chicago landlord violates the RLTO?",
+        answer: "Depending on the violation, you may be entitled to terminate your lease, withhold rent, deduct repair costs, or sue for damages up to two months' rent plus attorney's fees. Document everything and consult a tenant attorney for your specific situation.",
+      },
+    ],
   },
   "repairs-and-maintenance": {
     title: "Repairs & Maintenance",
@@ -1431,6 +1706,20 @@ const chicagoTopics: Record<string, TopicData> = {
       { name: "Metropolitan Tenants Organization", url: "https://www.tenants-rights.org/" },
     ],
     helpline: { name: "311 (Chicago Services)", phone: "311" },
+    faq: [
+      {
+        question: "How do I file a building code complaint in Chicago?",
+        answer: "Call 311 or use the CHI 311 app/website to file a complaint. The Department of Buildings will send an inspector. Keep a copy of your complaint number and photograph the conditions before the inspection.",
+      },
+      {
+        question: "Can I repair and deduct in Chicago?",
+        answer: "Yes, under the RLTO. You can hire a licensed contractor to repair a condition that makes your unit uninhabitable, then deduct the cost from rent — up to $500 or half a month's rent (whichever is less). You must give the landlord 14 days written notice first.",
+      },
+      {
+        question: "Can I withhold rent for needed repairs in Chicago?",
+        answer: "You can withhold up to $500 or half a month's rent (whichever is less) after giving 14 days written notice. You must deposit the withheld amount into escrow. Get legal advice before doing this.",
+      },
+    ],
   },
   "just-cause-eviction": {
     title: "Just Cause Eviction",
@@ -1482,6 +1771,20 @@ const chicagoTopics: Record<string, TopicData> = {
       { name: "Legal Aid Chicago", url: "https://www.legalaidchicago.org/" },
     ],
     helpline: { name: "Lawyers' Committee for Better Housing", phone: "(312) 347-7600" },
+    faq: [
+      {
+        question: "What are the just causes for eviction in Chicago?",
+        answer: "Legal just causes include non-payment of rent, material lease violation, owner move-in (for buildings with 6 or fewer units), and substantial rehabilitation. Your landlord cannot refuse to renew your lease without stating a valid just cause.",
+      },
+      {
+        question: "How much notice does a Chicago landlord have to give before eviction?",
+        answer: "5 days for non-payment of rent; 10 days for lease violations; 30 days for other just causes. Written notice is required — verbal eviction notices are not legally valid.",
+      },
+      {
+        question: "Can I get help for a Chicago eviction case?",
+        answer: "Yes. The Lawyers' Committee for Better Housing and Legal Aid Chicago provide free legal help to low-income tenants facing eviction. Call (312) 347-7600 or go to Cook County Circuit Court's Help Center.",
+      },
+    ],
   },
   "security-deposits": {
     title: "Security Deposits",
@@ -1532,6 +1835,20 @@ const chicagoTopics: Record<string, TopicData> = {
       { name: "Lawyers' Committee for Better Housing", url: "https://www.lcbh.org/" },
     ],
     helpline: { name: "Metropolitan Tenants Organization", phone: "(773) 292-4988" },
+    faq: [
+      {
+        question: "Does the RLTO require Chicago landlords to pay interest on security deposits?",
+        answer: "Yes. Landlords holding a deposit for 6+ months must pay interest on it annually using the rate set by the City of Chicago. They must also provide a receipt and keep the deposit in a federally insured interest-bearing account.",
+      },
+      {
+        question: "How long does a Chicago landlord have to return my security deposit?",
+        answer: "30 days after you move out (or 30 days after they discover damage, if later). They must send an itemized statement of deductions. Failure to comply may entitle you to 2x the deposit amount plus attorney's fees.",
+      },
+      {
+        question: "What are the RLTO penalties if a landlord violates security deposit rules?",
+        answer: "If your landlord fails to hold the deposit properly, pay interest, or return it on time, you may be entitled to the entire deposit plus up to twice the deposit amount as a penalty, plus attorney's fees.",
+      },
+    ],
   },
   "lease-renewals": {
     title: "Lease Renewals",
@@ -1582,6 +1899,16 @@ const chicagoTopics: Record<string, TopicData> = {
       { name: "Legal Aid Chicago", url: "https://www.legalaidchicago.org/" },
     ],
     helpline: { name: "Metropolitan Tenants Organization", phone: "(773) 292-4988" },
+    faq: [
+      {
+        question: "Does my Chicago landlord have to offer me a lease renewal?",
+        answer: "Under Chicago's Just Cause ordinance, landlords cannot refuse to renew a lease without a valid just cause. They must provide notice of non-renewal: 30 days for tenancies under 6 months, 60 days for 6 months to 3 years, and 120 days for 3+ years.",
+      },
+      {
+        question: "What notice must a Chicago landlord give before entering my apartment?",
+        answer: "The RLTO requires at least 2 days written notice before entry except in emergencies. Repeated unauthorized entry can be grounds for lease termination and damages.",
+      },
+    ],
   },
   harassment: {
     title: "Tenant Harassment",
@@ -1682,6 +2009,16 @@ const chicagoTopics: Record<string, TopicData> = {
       { name: "Metropolitan Tenants Organization", url: "https://www.tenants-rights.org/" },
     ],
     helpline: { name: "311 (Chicago Services)", phone: "311" },
+    faq: [
+      {
+        question: "What are Chicago's heat requirements for landlords?",
+        answer: "From October 15 to June 1, landlords must maintain at least 68°F from 8:30am–10:30pm and 66°F from 10:30pm–8:30am. File a 311 complaint if your landlord fails to provide heat.",
+      },
+      {
+        question: "What can I do if my Chicago apartment has no heat?",
+        answer: "Call 311 immediately to file a complaint. Under the RLTO, you may also be entitled to repair and deduct or terminate your lease if the heat outage renders the unit uninhabitable.",
+      },
+    ],
   },
   "lead-paint": {
     title: "Lead Paint",
@@ -1732,6 +2069,16 @@ const chicagoTopics: Record<string, TopicData> = {
       { name: "Metropolitan Tenants Organization", url: "https://www.tenants-rights.org/" },
     ],
     helpline: { name: "CDPH Lead Program", phone: "(312) 747-LEAD" },
+    faq: [
+      {
+        question: "Does my Chicago landlord have to disclose lead paint?",
+        answer: "Yes. Federal law requires landlords of pre-1978 buildings to disclose known lead hazards before you sign a lease. Chicago's ordinance adds further requirements for buildings where children under 6 live.",
+      },
+      {
+        question: "What do I do if I suspect lead paint in my Chicago apartment?",
+        answer: "Contact CDPH at (312) 747-LEAD to request an inspection. If a hazard is confirmed, your landlord is required to remediate it. You can also ask your landlord to provide any existing lead inspection reports.",
+      },
+    ],
   },
   "bed-bugs-and-pests": {
     title: "Bed Bugs & Pests",
@@ -1782,6 +2129,16 @@ const chicagoTopics: Record<string, TopicData> = {
       { name: "Metropolitan Tenants Organization", url: "https://www.tenants-rights.org/" },
     ],
     helpline: { name: "311 (Chicago Services)", phone: "311" },
+    faq: [
+      {
+        question: "Is my Chicago landlord responsible for bed bug extermination?",
+        answer: "Yes. Under the RLTO and Chicago Municipal Code, landlords must exterminate pests at their own expense. They cannot charge tenants for bed bug treatment.",
+      },
+      {
+        question: "What do I do if my Chicago apartment has a pest infestation?",
+        answer: "Notify your landlord in writing immediately. If they don't respond within 14 days, file a complaint with 311. Under the RLTO, you may be able to terminate your lease or withhold rent for uninhabitable conditions.",
+      },
+    ],
   },
   retaliation: {
     title: "Retaliation Protections",
@@ -1832,6 +2189,16 @@ const chicagoTopics: Record<string, TopicData> = {
       { name: "Legal Aid Chicago", url: "https://www.legalaidchicago.org/" },
     ],
     helpline: { name: "Legal Aid Chicago", phone: "(312) 341-1070" },
+    faq: [
+      {
+        question: "What counts as retaliation under Chicago's RLTO?",
+        answer: "Retaliation includes rent increases, eviction proceedings, reduced services, or lease non-renewals taken within a certain period after you filed a complaint, reported violations, or organized with other tenants.",
+      },
+      {
+        question: "What are the penalties for landlord retaliation in Chicago?",
+        answer: "Under the RLTO, you can recover 2 months' rent plus attorney's fees from a landlord found to have retaliated against you. You can also terminate your lease and recover moving costs.",
+      },
+    ],
   },
 };
 

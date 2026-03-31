@@ -166,6 +166,18 @@ export function newsCollectionJsonLd(city: City = DEFAULT_CITY) {
   };
 }
 
+/** Build a standard [Home, {City}, ...trail] breadcrumb array for city pages */
+export function cityBreadcrumbs(
+  city: City,
+  ...trail: { label: string; href: string }[]
+): { label: string; href: string }[] {
+  return [
+    { label: "Home", href: "/" },
+    { label: CITY_META[city].name, href: cityPath("", city) },
+    ...trail,
+  ];
+}
+
 export function breadcrumbJsonLd(items: { name: string; url: string }[]) {
   return {
     "@context": "https://schema.org",

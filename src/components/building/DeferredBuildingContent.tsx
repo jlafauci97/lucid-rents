@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { ReviewSection } from "@/components/review/ReviewSection";
 import { ViolationsByUnit } from "@/components/building/ViolationsByUnit";
@@ -9,6 +10,7 @@ import { SaveButton } from "@/components/building/SaveButton";
 import { ShareButton } from "@/components/building/ShareButton";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { canonicalUrl, buildingUrl } from "@/lib/seo";
+import { Clock } from "lucide-react";
 import { BuildingLocationMap } from "@/components/building/BuildingLocationMap";
 import { ViolationTrend } from "@/components/building/ViolationTrend";
 import type { City } from "@/lib/cities";
@@ -122,6 +124,17 @@ export async function DeferredBuildingContent({ building, buildingId, city, rent
       {/* Violations & Complaints Tabs */}
       <div id="violations" className="scroll-mt-28">
         <IssuesTabs violations={violations} complaints={complaints} litigations={litigations} dobViolations={dobViolations} bedbugs={bedbugs} evictions={evictions} permits={permits} lahdViolationSummary={lahdViolationSummary} city={city} />
+      </div>
+
+      {/* Full Timeline Link */}
+      <div className="flex justify-end">
+        <Link
+          href={`${buildingUrl(building, city)}/timeline`}
+          className="inline-flex items-center gap-2 text-sm font-medium text-[#3B82F6] hover:text-[#2563EB] transition-colors"
+        >
+          <Clock className="w-4 h-4" />
+          View Full History Timeline
+        </Link>
       </div>
 
       {/* Building Location Map */}

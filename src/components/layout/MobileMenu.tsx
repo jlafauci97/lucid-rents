@@ -20,6 +20,7 @@ import {
   Zap,
   TrainFront,
   Scale,
+  FileText,
   User,
   LogOut,
 } from "lucide-react";
@@ -58,6 +59,8 @@ const secondaryLinks: NavLink[] = [
   { path: "/rent-affordability-calculator", icon: Calculator, label: "Rent Calculator", global: true },
   { path: "/rent-stabilization", icon: ShieldCheck, label: "Rent Stabilization", laLabel: "RSO Checker" },
   { path: "/transit", icon: TrainFront, label: "Near Transit" },
+  { path: "/tenant-tools/templates", icon: FileText, label: "Letter Templates" },
+  { path: "/tenant-tools/checklist", icon: ClipboardList, label: "Pre-Move-In Checklist" },
   { path: "/tenant-rights", icon: Scale, label: "Tenant Rights" },
   { path: "/permits", icon: ClipboardList, label: "Permits" },
   { path: "/energy", icon: Zap, label: "Energy Scores" },

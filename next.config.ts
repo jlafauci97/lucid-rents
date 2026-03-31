@@ -25,6 +25,14 @@ const nextConfig: NextConfig = {
     ],
   }),
   headers: async () => [
+    // Allow embed pages to be iframed by any domain
+    {
+      source: "/embed/:path*",
+      headers: [
+        { key: "X-Frame-Options", value: "ALLOWALL" },
+        { key: "Content-Security-Policy", value: "frame-ancestors *" },
+      ],
+    },
     {
       source: "/(.*)",
       headers: [

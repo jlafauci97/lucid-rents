@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Construction } from "lucide-react";
-import { canonicalUrl, cityPath } from "@/lib/seo";
-import { isValidCity, CITY_META } from "@/lib/cities";
+import { canonicalUrl, cityPath, cityBreadcrumbs } from "@/lib/seo";
+import { isValidCity, CITY_META, type City } from "@/lib/cities";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { ScaffoldingMap } from "@/components/scaffolding/ScaffoldingMap";
@@ -103,8 +104,10 @@ export default async function ScaffoldingPage() {
           }}
         />
 
+        <Breadcrumbs items={cityBreadcrumbs("nyc" as City, { label: "Scaffolding", href: cityPath("/scaffolding", "nyc" as City) })} />
+
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-8 mt-4">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-amber-50 rounded-lg">
               <Construction className="w-6 h-6 text-[#F59E0B]" />

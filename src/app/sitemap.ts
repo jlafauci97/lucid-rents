@@ -176,19 +176,24 @@ async function generateStaticSitemap(): Promise<MetadataRoute.Sitemap> {
 
   // Neighborhood + crime pages by zip code
   const zipData = await supabaseFetch<
-    { zip_code: string }[]
-  >("buildings?select=zip_code&zip_code=not.is.null&limit=10000");
+    { zip_code: string; metro: string }[]
+  >("buildings?select=zip_code,metro&zip_code=not.is.null&limit=10000");
 
   if (zipData) {
-    const uniqueZips = [...new Set(zipData.map((b) => b.zip_code).filter(Boolean))];
-    for (const zip of uniqueZips) {
+    const seen = new Set<string>();
+    for (const b of zipData) {
+      if (!b.zip_code || !b.metro) continue;
+      const key = `${b.metro}:${b.zip_code}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const city = b.metro as City;
       entries.push({
-        url: `${BASE_URL}${neighborhoodUrl(zip)}`,
+        url: `${BASE_URL}${neighborhoodUrl(b.zip_code, city)}`,
         changeFrequency: "weekly",
         priority: 0.7,
       });
       entries.push({
-        url: `${BASE_URL}${cityPath(`/crime/${zip}`)}`,
+        url: `${BASE_URL}${cityPath(`/crime/${b.zip_code}`, city)}`,
         changeFrequency: "weekly",
         priority: 0.6,
       });
@@ -231,15 +236,15 @@ async function generateLandlordSitemap(
   const offset = batchIndex * LANDLORDS_PER_SITEMAP;
 
   const landlords = await supabaseFetch<
-    { slug: string }[]
+    { slug: string; metro: string }[]
   >(
-    `landlord_stats?select=slug&order=name.asc&offset=${offset}&limit=${LANDLORDS_PER_SITEMAP}`
+    `landlord_stats?select=slug,metro&order=name.asc&offset=${offset}&limit=${LANDLORDS_PER_SITEMAP}`
   );
 
   if (!landlords || landlords.length === 0) return [];
 
   return landlords.map((l) => ({
-    url: `${BASE_URL}/nyc/landlord/${l.slug}`,
+    url: `${BASE_URL}/${CITY_META[(l.metro || "nyc") as City]?.urlPrefix || "nyc"}/landlord/${l.slug}`,
     changeFrequency: "monthly" as const,
     priority: 0.5,
   }));
@@ -261,7 +266,7 @@ async function generateBuildingSitemap(
   if (!buildings || buildings.length === 0) return [];
 
   return buildings.map((b) => ({
-    url: `${BASE_URL}${buildingUrl(b, (b.metro === "los-angeles" ? "los-angeles" : b.metro === "chicago" ? "chicago" : b.metro === "miami" ? "miami" : b.metro === "houston" ? "houston" : "nyc") as City)}`,
+    url: `${BASE_URL}${buildingUrl(b, (b.metro || "nyc") as City)}`,
     lastModified: b.updated_at ? new Date(b.updated_at) : undefined,
     changeFrequency: "weekly" as const,
     priority: 0.6,

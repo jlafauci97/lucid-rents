@@ -6,8 +6,9 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { ArrowLeftRight } from "lucide-react";
-import { canonicalUrl, cityPath } from "@/lib/seo";
-import { isValidCity, CITY_META } from "@/lib/cities";
+import { canonicalUrl, cityPath, cityBreadcrumbs } from "@/lib/seo";
+import { isValidCity, CITY_META, type City } from "@/lib/cities";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import type { Metadata } from "next";
 import type { Building } from "@/types";
 
@@ -18,14 +19,14 @@ interface ComparePageProps {
 
 export async function generateMetadata({ params }: ComparePageProps): Promise<Metadata> {
   const { city: cityParam } = await params;
-  const cityName = isValidCity(cityParam) ? CITY_META[cityParam].name : "NYC";
+  const cityName = isValidCity(cityParam) ? CITY_META[cityParam].fullName : "NYC";
   return {
-    title: `Compare ${cityName} Buildings`,
-    description: `Can't decide between apartments? Compare ${cityName} buildings side by side on violations, scores, reviews, and more.`,
+    title: `${cityName} Apartment Comparison Tool | Lucid Rents`,
+    description: `Compare ${cityName} apartments side by side — violations, scores, rent trends, reviews, and more. Make smarter rental decisions with real data.`,
     alternates: { canonical: canonicalUrl(cityPath("/compare", isValidCity(cityParam) ? cityParam : undefined)) },
     openGraph: {
-      title: `Compare ${cityName} Buildings`,
-      description: `Can't decide between apartments? Compare ${cityName} buildings side by side on violations, scores, reviews, and more.`,
+      title: `${cityName} Apartment Comparison Tool`,
+      description: `Compare ${cityName} apartments side by side — violations, scores, rent trends, and reviews. Make smarter rental decisions.`,
       url: canonicalUrl(cityPath("/compare", isValidCity(cityParam) ? cityParam : undefined)),
       siteName: "Lucid Rents",
       type: "website",
@@ -63,19 +64,20 @@ async function CompareContent({ params: paramsPromise, searchParams }: ComparePa
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <Breadcrumbs items={cityBreadcrumbs(cityParam as City, { label: "Compare Buildings", href: cityPath("/compare", cityParam as City) })} />
+
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-8 mt-4">
         <div className="flex items-center gap-3 mb-2">
           <div className="p-2 bg-blue-50 rounded-lg">
             <ArrowLeftRight className="w-6 h-6 text-[#3B82F6]" />
           </div>
           <h1 className="text-2xl font-bold text-[#0F1D2E]">
-            Compare Buildings
+            {cityName} Apartment Comparison
           </h1>
         </div>
         <p className="text-[#64748b] text-sm ml-[52px]">
-          Search and compare up to 3 {cityName} buildings side by side to find your
-          best option.
+          Compare up to 3 {cityName} apartments side by side on violations, scores, reviews, rent trends, and more — so you can rent with confidence.
         </p>
       </div>
 

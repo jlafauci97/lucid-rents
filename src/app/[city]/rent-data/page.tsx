@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import { BarChart3 } from "lucide-react";
-import { canonicalUrl, cityPath } from "@/lib/seo";
+import { canonicalUrl, cityPath, cityBreadcrumbs } from "@/lib/seo";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import dynamic from "next/dynamic";
@@ -107,8 +108,10 @@ export default async function RentDataPage({ params: routeParams }: { params: Pr
           }}
         />
 
+        <Breadcrumbs items={cityBreadcrumbs(city as City, { label: "Rent Data", href: cityPath("/rent-data", city as City) })} />
+
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-8 mt-4">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-blue-50 rounded-lg">
               <BarChart3 className="w-6 h-6 text-[#3B82F6]" />

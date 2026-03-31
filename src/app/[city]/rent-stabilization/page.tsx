@@ -2,7 +2,9 @@ import { Metadata } from "next";
 import Link from "next/link";
 import { ShieldCheck, ArrowUpDown, ExternalLink } from "lucide-react";
 import { SearchBar } from "@/components/search/SearchBar";
-import { canonicalUrl, buildingUrl, cityPath } from "@/lib/seo";
+import { canonicalUrl, buildingUrl, cityPath, cityBreadcrumbs } from "@/lib/seo";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
+import { FAQSection } from "@/components/seo/FAQSection";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
@@ -284,8 +286,10 @@ export default async function RentStabilizationPage({
           }}
         />
 
+        <Breadcrumbs items={cityBreadcrumbs(city, { label: "Rent Stabilization", href: cityPath("/rent-stabilization", city) })} />
+
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-8 mt-4">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-emerald-50 rounded-lg">
               <ShieldCheck className="w-6 h-6 text-[#10b981]" />
@@ -524,6 +528,39 @@ export default async function RentStabilizationPage({
         </section>
 
         <AdBlock adSlot="RENT_STAB_BOTTOM" adFormat="horizontal" />
+
+        {/* FAQ */}
+        <FAQSection
+          items={[
+            {
+              question: isLA ? "What is the LA Rent Stabilization Ordinance (RSO)?" : isChicago ? "What rent protections does Chicago have?" : "What is NYC rent stabilization?",
+              answer: cfg.editorialParagraphs[0],
+            },
+            {
+              question: isLA ? "What rights do RSO tenants have?" : isChicago ? "Which buildings are covered by Chicago rent protections?" : "What are your rights as a rent stabilized tenant?",
+              answer: cfg.editorialParagraphs[1],
+            },
+            {
+              question: "How do I check if my apartment is rent stabilized?",
+              answer: `Search your building's address above to instantly check ${isLA ? "RSO" : isChicago ? "rent ordinance" : "rent stabilization"} status based on public records. ${cfg.editorialParagraphs[2] ?? ""}`,
+            },
+            {
+              question: isLA ? "What are the annual RSO rent increase limits?" : "How much can a landlord raise rent on a stabilized apartment?",
+              answer: isLA
+                ? "LA's Housing Department sets annual RSO rent increase limits based on the Consumer Price Index (CPI). As of recent rulings, increases are capped at 3-8% per year. The exact rate depends on the year and any additional utility pass-throughs."
+                : isChicago
+                ? "Chicago does not have a citywide rent control law. Unlike NYC or LA, landlords in Chicago can raise rent by any amount as long as proper notice is given (typically 30 days for month-to-month, or according to lease terms)."
+                : "The NYC Rent Guidelines Board sets the maximum allowable rent increase each year for rent stabilized apartments. For 2023-2024, the increases were 3% for 1-year leases and 2.75% for the first year of 2-year leases.",
+            },
+            {
+              question: "What happens if a landlord illegally raises my rent?",
+              answer: isLA
+                ? "RSO tenants can file a complaint with the LA Housing Department if their landlord raises rent above the allowed amount. You may be entitled to a rent reduction and repayment of overcharges."
+                : "Tenants in rent stabilized apartments who are overcharged can file a rent overcharge complaint with the DHCR. If a rent overcharge is found, the landlord must reimburse the overcharged amount, plus interest, and may face penalties.",
+            },
+          ]}
+          title={`Frequently Asked Questions About ${isLA ? "LA RSO" : isChicago ? "Chicago Rent Protections" : "NYC Rent Stabilization"}`}
+        />
       </div>
     </AdSidebar>
   );

@@ -12,6 +12,8 @@ import { BoroughExploreLinks } from "@/components/seo/BoroughExploreLinks";
 import { FAQSection } from "@/components/seo/FAQSection";
 import { generateBoroughFAQ } from "@/lib/faq/area-faq";
 import { CITY_META } from "@/lib/cities";
+import { BestApartments } from "@/components/neighborhood/BestApartments";
+import { buildingUrl as buildingHref } from "@/lib/seo";
 import type { Building } from "@/types";
 import type { Metadata } from "next";
 
@@ -89,6 +91,52 @@ export default async function BoroughPage({ params, searchParams }: BoroughPageP
     buildingList = (buildingsRes.data || []) as Building[];
   } catch (err) {
     console.error("BoroughPage query error:", err);
+  }
+
+  // Fetch best apartments by price tier for this borough
+  let bestApartmentTiers: { label: string; max: number; buildings: { id: string; full_address: string; borough: string; slug: string; overall_score: number | null; median_rent: number; buildingUrl: string }[] }[] = [];
+  try {
+    const supabase = await createClient();
+    const PRICE_TIERS = [
+      { label: "$1.5K", max: 1500 },
+      { label: "$2K", max: 2000 },
+      { label: "$2.5K", max: 2500 },
+      { label: "$3K", max: 3000 },
+    ];
+    const { data: rentData } = await supabase
+      .from("building_rents")
+      .select("building_id, median_rent, buildings!inner(id, full_address, borough, slug, metro, overall_score)")
+      .eq("buildings.borough", borough)
+      .eq("buildings.metro", cityParam)
+      .gt("median_rent", 0)
+      .order("median_rent", { ascending: true })
+      .limit(500);
+
+    const cityVal = cityParam as import("@/lib/cities").City;
+    const seen = new Set<string>();
+    const allWithRent = ((rentData || []) as unknown as { building_id: string; median_rent: number; buildings: { id: string; full_address: string; borough: string; slug: string; metro: string; overall_score: number | null } }[])
+      .filter((r) => {
+        if (seen.has(r.building_id)) return false;
+        seen.add(r.building_id);
+        return true;
+      })
+      .map((r) => ({
+        id: r.buildings.id,
+        full_address: r.buildings.full_address,
+        borough: r.buildings.borough,
+        slug: r.buildings.slug,
+        overall_score: r.buildings.overall_score,
+        median_rent: r.median_rent,
+        buildingUrl: buildingHref(r.buildings, cityVal),
+      }))
+      .sort((a, b) => (b.overall_score ?? 0) - (a.overall_score ?? 0));
+
+    bestApartmentTiers = PRICE_TIERS.map((tier) => ({
+      ...tier,
+      buildings: allWithRent.filter((b) => b.median_rent <= tier.max).slice(0, 5),
+    }));
+  } catch {
+    // Non-critical
   }
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
@@ -181,6 +229,11 @@ export default async function BoroughPage({ params, searchParams }: BoroughPageP
           )}
         </div>
       )}
+      {/* Best Apartments by price tier */}
+      {bestApartmentTiers.some((t) => t.buildings.length > 0) && (
+        <BestApartments tiers={bestApartmentTiers} areaName={borough} />
+      )}
+
       {/* Cross-links: neighborhoods, landlords, explore */}
       <Suspense fallback={null}>
         <BoroughExploreLinks borough={borough} boroughSlug={boroughSlug} />

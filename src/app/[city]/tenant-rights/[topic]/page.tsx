@@ -10,6 +10,9 @@ import {
 } from "lucide-react";
 import { TENANT_RIGHTS_BY_CITY } from "@/lib/tenant-rights-data";
 import { CITY_META, type City } from "@/lib/cities";
+import { FAQSection } from "@/components/seo/FAQSection";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
+import { cityBreadcrumbs, cityPath } from "@/lib/seo";
 
 export async function generateMetadata({
   params,
@@ -48,9 +51,17 @@ export default async function TopicPage({
       {/* Header */}
       <div className="bg-[#0F1D2E] text-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
+          <Breadcrumbs
+            items={cityBreadcrumbs(
+              city as City,
+              { label: "Tenant Rights", href: cityPath("/tenant-rights", city as City) },
+              { label: topic.title, href: cityPath(`/tenant-rights/${slug}`, city as City) }
+            )}
+            variant="dark"
+          />
           <Link
             href={`/${city}/tenant-rights`}
-            className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors mb-6"
+            className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors mb-6 mt-4"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Tenant Rights
@@ -166,6 +177,13 @@ export default async function TopicPage({
                 </a>
               </div>
             </div>
+          </section>
+        )}
+
+        {/* FAQ */}
+        {topic.faq && topic.faq.length > 0 && (
+          <section className="mb-12">
+            <FAQSection items={topic.faq} />
           </section>
         )}
 
