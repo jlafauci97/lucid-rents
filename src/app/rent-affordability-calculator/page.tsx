@@ -1,16 +1,8 @@
 import { Metadata } from "next";
-import dynamic from "next/dynamic";
 import { Suspense } from "react";
 import { canonicalUrl } from "@/lib/seo";
 import { AffordabilityDisclaimer } from "@/components/rent-calculator/AffordabilityDisclaimer";
-
-const AffordabilityWizard = dynamic(
-  () =>
-    import("@/components/rent-calculator/AffordabilityWizard").then(
-      (m) => m.AffordabilityWizard
-    ),
-  { ssr: false }
-);
+import { AffordabilityWizardLoader } from "@/components/rent-calculator/AffordabilityWizardLoader";
 
 export const metadata: Metadata = {
   title: "Rent Affordability Calculator — Can I Afford to Live Here? | Lucid Rents",
@@ -27,14 +19,6 @@ export const metadata: Metadata = {
     locale: "en_US",
   },
 };
-
-function WizardSkeleton() {
-  return (
-    <div className="flex items-center justify-center py-20">
-      <div className="w-6 h-6 border-2 border-[#3B82F6] border-t-transparent rounded-full animate-spin" />
-    </div>
-  );
-}
 
 export default function RentCalculatorPage() {
   // JSON-LD: FAQPage schema for featured snippet opportunities
@@ -92,8 +76,14 @@ export default function RentCalculatorPage() {
 
       {/* Wizard */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-        <Suspense fallback={<WizardSkeleton />}>
-          <AffordabilityWizard />
+        <Suspense
+          fallback={
+            <div className="flex items-center justify-center py-20">
+              <div className="w-6 h-6 border-2 border-[#3B82F6] border-t-transparent rounded-full animate-spin" />
+            </div>
+          }
+        >
+          <AffordabilityWizardLoader />
         </Suspense>
 
         {/* Disclaimer */}
