@@ -328,24 +328,22 @@ async function generateLandlordSitemap(
 async function generateBuildingSitemap(
   batchIndex: number
 ): Promise<SitemapEntry[]> {
-  // Use an RPC to get the min building id, then use id-range batching.
-  // OFFSET-based queries time out on Supabase for large tables.
-  // Instead: fetch min(id), then each batch covers a range of IDs.
-  // Batch N fetches buildings where id is in [minId + N*10000, minId + (N+1)*10000).
-  const minIdRow = await supabaseFetch<{ id: string }[]>(
-    `buildings?select=id&order=id.asc&limit=1`
+  // OFFSET on multi-column SELECTs times out for large tables on Supabase.
+  // Two-step keyset pagination:
+  // 1. Fetch just the UUID at the target offset (single column = fast)
+  // 2. Fetch the full batch starting from that UUID
+  const skipCount = batchIndex * ITEMS_PER_SITEMAP;
+  const cursorRow = await supabaseFetch<{ id: string }[]>(
+    `buildings?select=id&order=id.asc&offset=${skipCount}&limit=1`
   );
 
-  if (!minIdRow || minIdRow.length === 0) return [];
+  if (!cursorRow || cursorRow.length === 0) return [];
 
-  const minId = parseInt(minIdRow[0].id, 10);
-  const rangeStart = minId + batchIndex * ITEMS_PER_SITEMAP;
-  const rangeEnd = rangeStart + ITEMS_PER_SITEMAP;
-
+  const cursorId = cursorRow[0].id;
   const buildings = await supabaseFetch<
     { slug: string; borough: string; metro: string; updated_at: string | null }[]
   >(
-    `buildings?select=slug,borough,metro,updated_at&id=gte.${rangeStart}&id=lt.${rangeEnd}&order=id.asc&limit=${ITEMS_PER_SITEMAP}`
+    `buildings?select=slug,borough,metro,updated_at&id=gte.${cursorId}&order=id.asc&limit=${ITEMS_PER_SITEMAP}`
   );
 
   if (!buildings || buildings.length === 0) return [];
