@@ -20,9 +20,12 @@ export function BuildingHeader({ building, city = "nyc", violationCount }: Build
   const grade = getLetterGrade(score);
 
   const meta = [
-    building.borough && {
+    (building.borough || building.zip_code) && {
       icon: MapPin,
-      text: `${building.borough}, ${CITY_META[(building.metro as City) || city]?.stateCode || CITY_META[city].stateCode} ${building.zip_code}`,
+      text: [
+        building.borough,
+        `${CITY_META[(building.metro as City) || city]?.stateCode || CITY_META[city].stateCode} ${building.zip_code || ""}`.trim(),
+      ].filter(Boolean).join(", "),
     },
     building.year_built && {
       icon: Calendar,

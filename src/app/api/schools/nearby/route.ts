@@ -65,10 +65,13 @@ export async function GET(request: NextRequest) {
     .lte("longitude", lng + BBOX_DEGREES);
 
   if (city) {
-    const metro =
-      city === "los-angeles" || city === "CA/Los-Angeles"
-        ? "los-angeles"
-        : "nyc";
+    const metroMap: Record<string, string> = {
+      "CA/Los-Angeles": "los-angeles",
+      "IL/Chicago": "chicago",
+      "FL/Miami": "miami",
+      "TX/Houston": "houston",
+    };
+    const metro = metroMap[city] || city;
     query = query.eq("metro", metro);
   }
 

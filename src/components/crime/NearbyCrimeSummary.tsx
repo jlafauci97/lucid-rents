@@ -25,7 +25,7 @@ export function NearbyCrimeSummary({ zipCode }: NearbyCrimeSummaryProps) {
   useEffect(() => {
     async function fetchSummary() {
       try {
-        const res = await fetch(`/api/crime/${zipCode}`);
+        const res = await fetch(`/api/crime/${zipCode}?city=${city}`);
         if (!res.ok) return;
         const json = await res.json();
         setSummary(json.summary);
@@ -37,7 +37,7 @@ export function NearbyCrimeSummary({ zipCode }: NearbyCrimeSummaryProps) {
     }
 
     fetchSummary();
-  }, [zipCode]);
+  }, [zipCode, city]);
 
   if (loading) {
     return (

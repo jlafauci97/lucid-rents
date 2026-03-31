@@ -98,7 +98,7 @@ export async function generateMetadata({
   }
 
   const title = `${building.full_address} | Lucid Rents`;
-  const isChicagoMeta = cityParam === "chicago" || cityParam === "miami";
+  const isChicagoMeta = cityParam === "chicago" || cityParam === "miami" || cityParam === "houston";
   const metaViolationCount = isChicagoMeta
     ? (building.dob_violation_count || 0)
     : (building.violation_count || 0);
@@ -207,6 +207,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
   const isLA = city === "los-angeles";
   const isChicago = city === "chicago";
   const isNYC = city === "nyc";
+  const isHouston = city === "houston";
 
   // Critical data only — just what's needed for above-the-fold content
   const [rents, energyData, neighborhoodRentsRaw] = await Promise.all([
@@ -237,7 +238,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
 
   // For non-NYC cities, violation_count may be 0 because it tracks HPD violations only.
   // Use dob_violation_count as the primary violation metric for Chicago.
-  const effectiveViolationCount = isChicago
+  const effectiveViolationCount = (isChicago || isHouston)
     ? (building.dob_violation_count || 0)
     : (building.violation_count || 0);
 
