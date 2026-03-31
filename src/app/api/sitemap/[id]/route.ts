@@ -297,12 +297,20 @@ async function generateStaticSitemap(): Promise<SitemapEntry[]> {
 async function generateLandlordSitemap(
   batchIndex: number
 ): Promise<SitemapEntry[]> {
-  const offset = batchIndex * ITEMS_PER_SITEMAP;
+  // Use two-step keyset pagination: fetch 1 row at offset to get cursor,
+  // then fetch the full batch from that cursor. Avoids timeout on large offsets.
+  const skipCount = batchIndex * ITEMS_PER_SITEMAP;
+  const startRow = await supabaseFetch<{ name: string }[]>(
+    `landlord_stats?select=name&order=name.asc&offset=${skipCount}&limit=1`
+  );
 
+  if (!startRow || startRow.length === 0) return [];
+
+  const startName = encodeURIComponent(startRow[0].name);
   const landlords = await supabaseFetch<
     { slug: string; updated_at: string | null }[]
   >(
-    `landlord_stats?select=slug,updated_at&order=name.asc&offset=${offset}&limit=${ITEMS_PER_SITEMAP}`
+    `landlord_stats?select=slug,updated_at&name=gte.${startName}&order=name.asc&limit=${ITEMS_PER_SITEMAP}`
   );
 
   if (!landlords || landlords.length === 0) return [];
@@ -320,12 +328,27 @@ async function generateLandlordSitemap(
 async function generateBuildingSitemap(
   batchIndex: number
 ): Promise<SitemapEntry[]> {
-  const offset = batchIndex * ITEMS_PER_SITEMAP;
+  // Use keyset pagination via id range instead of OFFSET which times out
+  // on large tables. First fetch the min building id, then paginate by range.
+  // Each batch covers ITEMS_PER_SITEMAP ids starting from the Nth batch.
+  //
+  // Step 1: get the starting id for this batch by fetching 1 row at offset
+  // (batchIndex * ITEMS_PER_SITEMAP) — this is a single-row offset query
+  // which is much faster than fetching 10K rows at a large offset.
+  const skipCount = batchIndex * ITEMS_PER_SITEMAP;
+  const startRow = await supabaseFetch<{ id: string }[]>(
+    `buildings?select=id&order=id.asc&offset=${skipCount}&limit=1`
+  );
 
+  if (!startRow || startRow.length === 0) return [];
+
+  const startId = startRow[0].id;
+
+  // Step 2: fetch ITEMS_PER_SITEMAP buildings starting from that id
   const buildings = await supabaseFetch<
     { slug: string; borough: string; metro: string; updated_at: string | null }[]
   >(
-    `buildings?select=slug,borough,metro,updated_at&order=id.asc&offset=${offset}&limit=${ITEMS_PER_SITEMAP}`
+    `buildings?select=slug,borough,metro,updated_at&id=gte.${startId}&order=id.asc&limit=${ITEMS_PER_SITEMAP}`
   );
 
   if (!buildings || buildings.length === 0) return [];
