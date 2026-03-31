@@ -44,7 +44,7 @@ export async function GET(
     urls = await generateStaticSitemap();
   } else {
     // Determine landlord/building boundary
-    const totalLandlords = await getCount("landlord_stats?select=name&limit=1&offset=0");
+    const totalLandlords = await getCount("landlord_stats?select=name&limit=1&offset=0", "estimated");
     const landlordSitemapCount = Math.ceil(totalLandlords / ITEMS_PER_SITEMAP);
 
     if (id <= landlordSitemapCount) {
@@ -123,10 +123,10 @@ async function supabaseFetch<T>(path: string): Promise<T | null> {
   }
 }
 
-async function getCount(path: string): Promise<number> {
+async function getCount(path: string, mode: "exact" | "estimated" = "exact"): Promise<number> {
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-      headers: { apikey: SUPABASE_KEY, Prefer: "count=exact" },
+      headers: { apikey: SUPABASE_KEY, Prefer: `count=${mode}` },
       next: { revalidate: 21600 },
     });
     const range = res.headers.get("content-range");

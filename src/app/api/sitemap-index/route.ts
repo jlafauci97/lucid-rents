@@ -18,13 +18,15 @@ export async function GET() {
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
   try {
+    // Use count=estimated (pg_class.reltuples) — fast even on million-row tables.
+    // count=exact can time out on large tables and return no content-range header.
     const [buildingRes, landlordRes] = await Promise.all([
       fetch(`${supabaseUrl}/rest/v1/buildings?select=id&limit=1&offset=0`, {
-        headers: { apikey: supabaseKey, Prefer: "count=exact" },
+        headers: { apikey: supabaseKey, Prefer: "count=estimated" },
         next: { revalidate: 21600 },
       }),
       fetch(`${supabaseUrl}/rest/v1/landlord_stats?select=name&limit=1&offset=0`, {
-        headers: { apikey: supabaseKey, Prefer: "count=exact" },
+        headers: { apikey: supabaseKey, Prefer: "count=estimated" },
         next: { revalidate: 21600 },
       }),
     ]);
