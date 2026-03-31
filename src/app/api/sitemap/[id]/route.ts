@@ -17,7 +17,6 @@ function metroToCity(metro: string): City {
   if (metro === "miami") return "miami";
   return "nyc";
 }
-const ITEMS_PER_SITEMAP = 10000;
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
@@ -113,6 +112,24 @@ async function supabaseFetch<T>(path: string): Promise<T | null> {
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
       headers: { apikey: SUPABASE_KEY },
+      next: { revalidate: 21600 },
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as T;
+  } catch {
+    return null;
+  }
+}
+
+async function rpcFetch<T>(fnName: string, params: Record<string, unknown>): Promise<T | null> {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fnName}`, {
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_KEY,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(params),
       next: { revalidate: 21600 },
     });
     if (!res.ok) return null;
@@ -283,12 +300,10 @@ async function generateStaticSitemap(): Promise<SitemapEntry[]> {
 async function generateLandlordSitemap(
   batchIndex: number
 ): Promise<SitemapEntry[]> {
-  const offset = batchIndex * ITEMS_PER_SITEMAP;
-  const landlords = await supabaseFetch<
+  // Uses pre-computed cursor table via RPC — no OFFSET needed
+  const landlords = await rpcFetch<
     { slug: string; updated_at: string | null }[]
-  >(
-    `landlord_stats?select=slug,updated_at&order=name.asc&offset=${offset}&limit=${ITEMS_PER_SITEMAP}`
-  );
+  >("sitemap_landlord_batch", { p_batch_index: batchIndex });
 
   if (!landlords || landlords.length === 0) return [];
 
@@ -305,23 +320,12 @@ async function generateLandlordSitemap(
 async function generateBuildingSitemap(
   batchIndex: number
 ): Promise<SitemapEntry[]> {
-  // OFFSET on multi-column SELECTs times out for large tables on Supabase.
-  // Two-step keyset pagination:
-  // 1. Fetch just the UUID at the target offset (single column = fast)
-  // 2. Fetch the full batch starting from that UUID
-  const skipCount = batchIndex * ITEMS_PER_SITEMAP;
-  const cursorRow = await supabaseFetch<{ id: string }[]>(
-    `buildings?select=id&order=id.asc&offset=${skipCount}&limit=1`
-  );
-
-  if (!cursorRow || cursorRow.length === 0) return [];
-
-  const cursorId = cursorRow[0].id;
-  const buildings = await supabaseFetch<
+  // Uses pre-computed cursor table via RPC — no OFFSET needed.
+  // Cursor table maps batch_index → starting UUID, then fetches
+  // 10K rows using WHERE id >= cursor (index range scan).
+  const buildings = await rpcFetch<
     { slug: string; borough: string; metro: string; updated_at: string | null }[]
-  >(
-    `buildings?select=slug,borough,metro,updated_at&id=gte.${cursorId}&order=id.asc&limit=${ITEMS_PER_SITEMAP}`
-  );
+  >("sitemap_building_batch", { p_batch_index: batchIndex });
 
   if (!buildings || buildings.length === 0) return [];
 
