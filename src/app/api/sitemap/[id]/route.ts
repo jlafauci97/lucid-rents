@@ -283,20 +283,11 @@ async function generateStaticSitemap(): Promise<SitemapEntry[]> {
 async function generateLandlordSitemap(
   batchIndex: number
 ): Promise<SitemapEntry[]> {
-  // Use two-step keyset pagination: fetch 1 row at offset to get cursor,
-  // then fetch the full batch from that cursor. Avoids timeout on large offsets.
-  const skipCount = batchIndex * ITEMS_PER_SITEMAP;
-  const startRow = await supabaseFetch<{ name: string }[]>(
-    `landlord_stats?select=name&order=name.asc&offset=${skipCount}&limit=1`
-  );
-
-  if (!startRow || startRow.length === 0) return [];
-
-  const startName = encodeURIComponent(startRow[0].name);
+  const offset = batchIndex * ITEMS_PER_SITEMAP;
   const landlords = await supabaseFetch<
     { slug: string; updated_at: string | null }[]
   >(
-    `landlord_stats?select=slug,updated_at&name=gte.${startName}&order=name.asc&limit=${ITEMS_PER_SITEMAP}`
+    `landlord_stats?select=slug,updated_at&order=name.asc&offset=${offset}&limit=${ITEMS_PER_SITEMAP}`
   );
 
   if (!landlords || landlords.length === 0) return [];
