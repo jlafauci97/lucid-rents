@@ -11,8 +11,8 @@ const ITEMS_PER_SITEMAP = 10000;
  * Sitemaps L+1..L+B = buildings in batches of 10,000
  */
 export async function GET() {
-  let totalBuildings = 1100000;
-  let totalLandlords = 620000;
+  let totalBuildings = 0;
+  let totalLandlords = 0;
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -30,12 +30,12 @@ export async function GET() {
     ]);
 
     const bCount = buildingRes.headers.get("content-range");
-    if (bCount) totalBuildings = parseInt(bCount.split("/")[1] || "1100000", 10);
+    if (bCount) totalBuildings = parseInt(bCount.split("/")[1] || "0", 10);
 
     const lCount = landlordRes.headers.get("content-range");
-    if (lCount) totalLandlords = parseInt(lCount.split("/")[1] || "620000", 10);
+    if (lCount) totalLandlords = parseInt(lCount.split("/")[1] || "0", 10);
   } catch {
-    // Fall back to estimates
+    // If DB is unreachable, only emit the static sitemap (id=0)
   }
 
   const landlordSitemapCount = Math.ceil(totalLandlords / ITEMS_PER_SITEMAP);

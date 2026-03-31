@@ -19,11 +19,11 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: "*",
       allow: "/",
       disallow: [
-        "/api/",
+        "/api/auth/",       // auth endpoints only
+        "/api/webhooks/",   // webhook endpoints
         "/profile/",
         "/review/new",      // legacy non-prefixed path
         "/*/review/new",    // city-prefixed review pages (e.g. /nyc/review/new?building=...)
-        "/_next/static/media/",
         "/*?ids=",          // compare pages with building IDs
         "/compare",         // non-city-prefixed compare (redirects)
         "/building/",       // non-city-prefixed building pages (redirects)
@@ -32,3 +32,7 @@ export default function robots(): MetadataRoute.Robots {
     sitemap: "https://lucidrents.com/sitemap.xml",
   };
 }
+
+// Note: llms.txt files are served at:
+// - https://lucidrents.com/llms.txt (concise overview for AI systems)
+// - https://lucidrents.com/llms-full.txt (detailed reference for AI systems)
