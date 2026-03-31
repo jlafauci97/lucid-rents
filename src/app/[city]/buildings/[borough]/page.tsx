@@ -9,6 +9,9 @@ import { SLUG_TO_BOROUGH, canonicalUrl, buildingUrl, cityPath } from "@/lib/seo"
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { BoroughExploreLinks } from "@/components/seo/BoroughExploreLinks";
+import { FAQSection } from "@/components/seo/FAQSection";
+import { generateBoroughFAQ } from "@/lib/faq/area-faq";
+import { CITY_META } from "@/lib/cities";
 import type { Building } from "@/types";
 import type { Metadata } from "next";
 
@@ -182,6 +185,15 @@ export default async function BoroughPage({ params, searchParams }: BoroughPageP
       <Suspense fallback={null}>
         <BoroughExploreLinks borough={borough} boroughSlug={boroughSlug} />
       </Suspense>
+
+      <FAQSection
+        items={generateBoroughFAQ({
+          borough,
+          total,
+          cityName: CITY_META[cityParam as keyof typeof CITY_META]?.name || "New York City",
+        })}
+        title={`Frequently Asked Questions About ${borough}`}
+      />
     </div>
     </AdSidebar>
   );

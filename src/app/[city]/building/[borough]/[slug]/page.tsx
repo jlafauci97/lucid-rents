@@ -38,6 +38,8 @@ import { CITY_META, VALID_CITIES, type City } from "@/lib/cities";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { TrackBuildingView } from "@/components/building/TrackBuildingView";
+import { FAQSection } from "@/components/seo/FAQSection";
+import { generateBuildingFAQ } from "@/lib/faq/building-faq";
 import { cache } from "react";
 import type { Building, HpdViolation, Complaint311, HpdLitigation, DobViolation, BedBugReport, Eviction, DobPermit, EnergyBenchmark, ReviewWithDetails, LahdViolationSummary } from "@/types";
 import type { Metadata } from "next";
@@ -618,6 +620,25 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
             />
           </div>
         )}
+
+        {/* FAQ — SEO-optimized Q&A section */}
+        <FAQSection
+          items={generateBuildingFAQ({
+            building,
+            rents,
+            amenities,
+            violations,
+            complaints,
+            litigations,
+            dobViolations,
+            evictions,
+            permits,
+            energy: energyData[0] || null,
+            reviews,
+            neighborhoodRents,
+          })}
+          title={`Frequently Asked Questions About ${shortAddress}`}
+        />
       </div>
     </div>
     </AdSidebar>

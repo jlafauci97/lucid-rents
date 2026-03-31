@@ -14,6 +14,8 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { NeighborhoodRankCard } from "@/components/neighborhood/NeighborhoodRankCard";
+import { FAQSection } from "@/components/seo/FAQSection";
+import { generateNeighborhoodFAQ } from "@/lib/faq/area-faq";
 
 export const revalidate = 3600;
 
@@ -347,6 +349,18 @@ export default async function NeighborhoodPage({
       </div>
 
       <AdBlock adSlot="NEIGHBORHOOD_BOTTOM" adFormat="horizontal" />
+
+      <FAQSection
+        items={generateNeighborhoodFAQ({
+          displayName: neighborhoodName ? `${neighborhoodName} (${zipCode})` : zipCode,
+          zipCode,
+          stats,
+          crime,
+          subGrades,
+          cityName: CITY_META[city].name,
+        })}
+        title={`Frequently Asked Questions About ${neighborhoodName || zipCode}`}
+      />
     </div>
     </AdSidebar>
   );
