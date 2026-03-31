@@ -118,27 +118,32 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Batch query crime counts per zip
+    // Single batched query for all zip codes (replaces N individual queries)
     const zipCrimeCounts = new Map<
       string,
       { total: number; violent: number; property: number; qualityOfLife: number }
     >();
 
-    for (const zip of allZips) {
+    if (allZips.size > 0) {
       const { data: crimes } = await supabase
         .from("nypd_complaints")
-        .select("crime_category")
-        .eq("zip_code", zip)
+        .select("zip_code, crime_category")
+        .in("zip_code", [...allZips])
         .gte("cmplnt_date", oneDayAgo);
 
-      if (crimes && crimes.length > 0) {
-        const counts = { total: crimes.length, violent: 0, property: 0, qualityOfLife: 0 };
+      if (crimes) {
         for (const c of crimes) {
+          const zip = c.zip_code;
+          if (!zip) continue;
+          if (!zipCrimeCounts.has(zip)) {
+            zipCrimeCounts.set(zip, { total: 0, violent: 0, property: 0, qualityOfLife: 0 });
+          }
+          const counts = zipCrimeCounts.get(zip)!;
+          counts.total++;
           if (c.crime_category === "violent") counts.violent++;
           else if (c.crime_category === "property") counts.property++;
           else counts.qualityOfLife++;
         }
-        zipCrimeCounts.set(zip, counts);
       }
     }
 

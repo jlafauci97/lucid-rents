@@ -5158,11 +5158,9 @@ async function runLinkOnly(
     }
   }
 
-  // Update building counts for all affected buildings
-  let countErrors: string[] = [];
-  if (allAffectedIds.size > 0 && (Date.now() - startTime) / 1000 < 260) {
-    countErrors = await updateBuildingCounts(supabase, allAffectedIds);
-  }
+  // Building counts are now maintained by INSERT/DELETE/UPDATE triggers
+  // (see migration 20260330100000_incremental_building_counts.sql)
+  const countErrors: string[] = [];
 
   // Backfill slugs
   let slugsBackfilled = 0;
@@ -5283,23 +5281,10 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Update aggregate counts only for affected buildings (skip if running low on time)
-    let countErrors: string[] = [];
-    const elapsedAfterSync = (Date.now() - startTime) / 1000;
-    if (elapsedAfterSync < 250) {
-      countErrors = await updateBuildingCounts(supabase, allAffectedIds);
-    } else if (allAffectedIds.size > 0) {
-      countErrors.push(`Skipped building count update (${elapsedAfterSync.toFixed(1)}s elapsed, ${allAffectedIds.size} buildings)`);
-    }
-
-    // Refresh materialized views used by listing pages (fast: reads pre-computed stats)
-    if ((Date.now() - startTime) / 1000 < 260) {
-      try {
-        await supabase.rpc("refresh_borough_stats" as never);
-      } catch (mvErr) {
-        countErrors.push(`mv_borough_stats refresh error: ${String(mvErr)}`);
-      }
-    }
+    // Building counts are now maintained by INSERT/DELETE/UPDATE triggers
+    // (see migration 20260330100000_incremental_building_counts.sql)
+    // Materialized view refresh moved to dedicated off-peak cron (/api/cron/refresh-stats)
+    const countErrors: string[] = [];
 
     // Backfill slugs for any buildings missing them (skip if running low on time)
     let slugsBackfilled = 0;
