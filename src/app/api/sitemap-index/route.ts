@@ -30,11 +30,11 @@ export async function GET() {
     const [buildingRes, landlordRes] = await Promise.all([
       fetch(`${supabaseUrl}/rest/v1/buildings?select=id&limit=1&offset=0`, {
         headers: { apikey: supabaseKey, Prefer: "count=estimated" },
-        next: { revalidate: 21600 },
+        cache: "no-store",
       }),
       fetch(`${supabaseUrl}/rest/v1/landlord_stats?select=name&limit=1&offset=0`, {
         headers: { apikey: supabaseKey, Prefer: "count=estimated" },
-        next: { revalidate: 21600 },
+        cache: "no-store",
       }),
     ]);
 
