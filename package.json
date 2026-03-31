@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "prebuild": "node scripts/generate-sitemaps.mjs",
+    "prebuild": "jiti scripts/generate-sitemaps.ts",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -39,6 +39,7 @@
     "@types/node": "^22.10.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "jiti": "^2.6.1",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.7.0"
   }
