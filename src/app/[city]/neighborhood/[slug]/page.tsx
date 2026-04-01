@@ -4,7 +4,7 @@ import { cache } from "react";
 import { MapPin, Building2, AlertTriangle, MessageSquare, Users, Siren } from "lucide-react";
 import { LetterGrade } from "@/components/ui/LetterGrade";
 import { getLetterGrade, getGradeColor } from "@/lib/constants";
-import { buildingUrl, buildingUrl as buildingHref, landlordUrl, canonicalUrl, cityPath, neighborhoodUrl, breadcrumbJsonLd } from "@/lib/seo";
+import { buildingUrl, landlordUrl, canonicalUrl, cityPath, neighborhoodUrl, breadcrumbJsonLd } from "@/lib/seo";
 import { parseNeighborhoodSlug } from "@/lib/nyc-neighborhoods";
 import { getNeighborhoodNameByCity } from "@/lib/neighborhoods";
 import { CITY_META } from "@/lib/cities";
@@ -18,8 +18,6 @@ import { FAQSection } from "@/components/seo/FAQSection";
 import { generateNeighborhoodFAQ } from "@/lib/faq/area-faq";
 import { VibeCheck } from "@/components/neighborhood/VibeCheck";
 import { getNeighborhoodVibe } from "@/lib/neighborhood-vibes";
-import { BestApartments } from "@/components/neighborhood/BestApartments";
-import { createClient } from "@/lib/supabase/server";
 
 export const revalidate = 3600;
 
@@ -137,51 +135,6 @@ export default async function NeighborhoodPage({
     getCrimeData(zipCode),
     getTopBuildings(zipCode),
   ]);
-
-  // Fetch best apartments by price tier for this zip code
-  const PRICE_TIERS = [
-    { label: "$1.5K", max: 1500 },
-    { label: "$2K", max: 2000 },
-    { label: "$2.5K", max: 2500 },
-    { label: "$3K", max: 3000 },
-  ];
-  let bestApartmentTiers: { label: string; max: number; buildings: { id: string; full_address: string; borough: string; slug: string; overall_score: number | null; median_rent: number; buildingUrl: string }[] }[] = [];
-  try {
-    const supabase = await createClient();
-    const { data: rentData } = await supabase
-      .from("building_rents")
-      .select("building_id, median_rent, buildings!inner(id, full_address, borough, slug, metro, overall_score, zip_code)")
-      .eq("buildings.zip_code", zipCode)
-      .eq("buildings.metro", city)
-      .gt("median_rent", 0)
-      .order("median_rent", { ascending: true })
-      .limit(500);
-
-    const seen = new Set<string>();
-    const allWithRent = ((rentData || []) as unknown as { building_id: string; median_rent: number; buildings: { id: string; full_address: string; borough: string; slug: string; metro: string; overall_score: number | null; zip_code: string } }[])
-      .filter((r) => {
-        if (seen.has(r.building_id)) return false;
-        seen.add(r.building_id);
-        return true;
-      })
-      .map((r) => ({
-        id: r.buildings.id,
-        full_address: r.buildings.full_address,
-        borough: r.buildings.borough,
-        slug: r.buildings.slug,
-        overall_score: r.buildings.overall_score,
-        median_rent: r.median_rent,
-        buildingUrl: buildingHref(r.buildings, city),
-      }))
-      .sort((a, b) => (b.overall_score ?? 0) - (a.overall_score ?? 0));
-
-    bestApartmentTiers = PRICE_TIERS.map((tier) => ({
-      ...tier,
-      buildings: allWithRent.filter((b) => b.median_rent <= tier.max).slice(0, 5),
-    }));
-  } catch {
-    // Non-critical
-  }
 
   if (!stats || stats.building_count === 0) {
     return (
@@ -406,11 +359,6 @@ export default async function NeighborhoodPage({
           <VibeCheck vibe={vibe} neighborhoodName={neighborhoodName || zipCode} />
         ) : null;
       })()}
-
-      <BestApartments
-        tiers={bestApartmentTiers}
-        areaName={neighborhoodName || zipCode}
-      />
 
       <FAQSection
         items={generateNeighborhoodFAQ({
