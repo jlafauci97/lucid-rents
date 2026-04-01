@@ -6,7 +6,7 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalUrl, cityPath } from "@/lib/seo";
 import { CITY_META, type City } from "@/lib/cities";
 import { FileSearch, Users, Shield, ArrowRight, Search, ClipboardList, CheckCircle2 } from "lucide-react";
-import { ViolationTicker } from "@/components/home/ViolationTicker";
+import { ViolationTickerServer } from "@/components/home/ViolationTickerServer";
 import { LiveStats } from "@/components/home/LiveStats";
 import { ActivityFeed } from "@/components/ActivityFeed";
 
@@ -172,7 +172,9 @@ export default function HomePage() {
       </section>
 
       {/* Violation Ticker */}
-      <ViolationTicker />
+      <Suspense fallback={<div className="bg-[#3B82F6] border-y border-blue-400/30 py-3 h-[52px]" />}>
+        <ViolationTickerServer />
+      </Suspense>
 
       {/* Stats */}
       <section className="border-b border-[#e2e8f0]">

@@ -50,7 +50,7 @@ function cityToMetro(city: string | null): string | null {
 // Server-side cache – guarantees stable pagination within the TTL window and
 // prevents Supabase from being hit on every page/filter/refresh request.
 // ---------------------------------------------------------------------------
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 const cache = new Map<string, { items: ActivityItem[]; ts: number }>();
 
 export async function GET(request: Request) {

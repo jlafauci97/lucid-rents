@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { categorizeCrime } from "@/lib/crime-categories";
 import { generateBuildingSlug } from "@/lib/seo";
 
@@ -5309,6 +5310,16 @@ export async function GET(req: NextRequest) {
       } catch (slugErr) {
         countErrors.push(`Slug backfill error: ${String(slugErr)}`);
       }
+    }
+
+    // Invalidate cached pages so fresh data is served immediately
+    try {
+      revalidatePath("/[city]", "page");
+      revalidatePath("/[city]/building/[borough]/[slug]", "page");
+      revalidatePath("/[city]/worst-rated-buildings", "page");
+      revalidatePath("/[city]/buildings/[borough]", "page");
+    } catch {
+      // revalidation is best-effort; don't fail the sync
     }
 
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);

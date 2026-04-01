@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
@@ -26,6 +27,16 @@ export async function GET(req: NextRequest) {
     await supabase.rpc("refresh_borough_stats" as never);
   } catch (err) {
     errors.push(`mv_borough_stats refresh error: ${String(err)}`);
+  }
+
+  // Invalidate borough/city pages after stats refresh
+  try {
+    revalidatePath("/[city]", "page");
+    revalidatePath("/[city]/buildings/[borough]", "page");
+    revalidatePath("/[city]/worst-rated-buildings", "page");
+    revalidatePath("/[city]/problem-landlords", "page");
+  } catch {
+    // revalidation is best-effort
   }
 
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);

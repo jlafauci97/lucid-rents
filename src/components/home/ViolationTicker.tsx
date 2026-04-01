@@ -125,37 +125,35 @@ function TickerItem({ item }: { item: ActivityItem }) {
 
 interface ViolationTickerProps {
   metro?: string;
+  initialItems?: ActivityItem[];
 }
 
-export function ViolationTicker({ metro }: ViolationTickerProps = {}) {
-  const [items, setItems] = useState<ActivityItem[]>([]);
-  const [loading, setLoading] = useState(true);
+export function ViolationTicker({ metro, initialItems }: ViolationTickerProps = {}) {
+  const [items, setItems] = useState<ActivityItem[]>(initialItems || []);
+  const [loading, setLoading] = useState(!initialItems || initialItems.length === 0);
 
   useEffect(() => {
-    function fetchItems() {
-      const params = new URLSearchParams({ limit: "30" });
-      if (metro) params.set("city", metro);
-      fetch(`/api/activity?${params}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.items && data.items.length > 0) {
-            setItems(data.items);
-          } else if (metro) {
-            // City has no activity yet — fall back to all-city feed
-            return fetch(`/api/activity?limit=30`)
-              .then((res) => res.json())
-              .then((data) => {
-                if (data.items) setItems(data.items);
-              });
-          }
-        })
-        .catch(() => {})
-        .finally(() => setLoading(false));
-    }
-    fetchItems();
-    const interval = setInterval(fetchItems, 4 * 60 * 60 * 1000); // refresh every 4 hours
-    return () => clearInterval(interval);
-  }, [metro]);
+    // Skip initial fetch if server provided data
+    if (initialItems && initialItems.length > 0) return;
+
+    const params = new URLSearchParams({ limit: "30" });
+    if (metro) params.set("city", metro);
+    fetch(`/api/activity?${params}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.items && data.items.length > 0) {
+          setItems(data.items);
+        } else if (metro) {
+          return fetch(`/api/activity?limit=30`)
+            .then((res) => res.json())
+            .then((data) => {
+              if (data.items) setItems(data.items);
+            });
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [metro, initialItems]);
 
   if (loading) {
     return (

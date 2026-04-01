@@ -2,6 +2,7 @@ import { isValidCity } from "@/lib/cities";
 import { normalizeAddressQuery } from "@/lib/address-normalization";
 import { createClient } from "@/lib/supabase/server";
 import { searchSchema } from "@/lib/validators";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { NextRequest, NextResponse } from "next/server";
 
 function applySortOrder(
@@ -24,6 +25,10 @@ function applySortOrder(
 }
 
 export async function GET(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0] ?? "anonymous";
+  const rl = await checkRateLimit(`search:${ip}`);
+  if (rl.limited) return rl.response;
+
   const params = Object.fromEntries(req.nextUrl.searchParams);
   const parsed = searchSchema.safeParse(params);
 

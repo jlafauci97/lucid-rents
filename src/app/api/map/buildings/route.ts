@@ -1,9 +1,14 @@
 import { NextResponse } from "next/server";
 import { deriveScore } from "@/lib/constants";
 import { isValidCity } from "@/lib/cities";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function GET(request: Request) {
   try {
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0] ?? "anonymous";
+    const rl = await checkRateLimit(`map:${ip}`);
+    if (rl.limited) return rl.response;
+
     const { searchParams } = new URL(request.url);
     const cityParam = searchParams.get("city");
     if (cityParam && !isValidCity(cityParam)) {
@@ -22,7 +27,7 @@ export async function GET(request: Request) {
 
     const centroidsRes = await fetch(centroidsUrl, {
       headers: { apikey: supabaseKey },
-      cache: "no-store",
+      next: { revalidate: 600 },
     });
     const centroids = await centroidsRes.json();
     const centroidMap = new Map<string, { lat: number; lon: number }>();
@@ -41,7 +46,7 @@ export async function GET(request: Request) {
 
     const buildingsRes = await fetch(url, {
       headers: { apikey: supabaseKey },
-      cache: "no-store",
+      next: { revalidate: 300 },
     });
     const buildings = await buildingsRes.json();
 

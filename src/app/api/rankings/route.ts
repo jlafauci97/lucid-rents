@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isValidCity } from "@/lib/cities";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function GET(request: NextRequest) {
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0] ?? "anonymous";
+  const rl = await checkRateLimit(`rankings:${ip}`);
+  if (rl.limited) return rl.response;
+
   const { searchParams } = new URL(request.url);
   const borough = searchParams.get("borough");
   const sortBy = searchParams.get("sort") || "violations";

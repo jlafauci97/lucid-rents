@@ -95,6 +95,31 @@ const nextConfig: NextConfig = {
         { key: "Cache-Control", value: "public, s-maxage=3600, stale-while-revalidate=86400" },
       ],
     },
+    // Cache search, rankings, and map API responses
+    {
+      source: "/api/search",
+      headers: [
+        { key: "Cache-Control", value: "public, s-maxage=300, stale-while-revalidate=3600" },
+      ],
+    },
+    {
+      source: "/api/rankings",
+      headers: [
+        { key: "Cache-Control", value: "public, s-maxage=600, stale-while-revalidate=3600" },
+      ],
+    },
+    {
+      source: "/api/map/:path*",
+      headers: [
+        { key: "Cache-Control", value: "public, s-maxage=300, stale-while-revalidate=1800" },
+      ],
+    },
+    {
+      source: "/api/activity",
+      headers: [
+        { key: "Cache-Control", value: "public, s-maxage=300, stale-while-revalidate=1800" },
+      ],
+    },
   ],
 };
 

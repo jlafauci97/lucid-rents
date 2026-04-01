@@ -7,7 +7,7 @@ import { SearchBar } from "@/components/search/SearchBar";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { LiveStats } from "@/components/home/LiveStats";
 import { NearbyBuildings } from "@/components/home/NearbyBuildings";
-import { ViolationTicker } from "@/components/home/ViolationTicker";
+import { ViolationTickerServer } from "@/components/home/ViolationTickerServer";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -121,7 +121,9 @@ export default async function CityHomePage({
         </section>
 
         {/* Violation Ticker */}
-        <ViolationTicker metro={city} />
+        <Suspense fallback={<div className="bg-[#3B82F6] border-y border-blue-400/30 py-3 h-[52px]" />}>
+          <ViolationTickerServer metro={city} />
+        </Suspense>
 
         {/* Stats */}
         <section className="border-b border-[#e2e8f0]">
