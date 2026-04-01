@@ -8,18 +8,22 @@ import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import type { Metadata } from "next";
 
-export async function generateMetadata({ params }: { params: Promise<{ city: string }> }): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: { params: Promise<{ city: string }>; searchParams: Promise<{ search?: string; sort?: string; page?: string }> }): Promise<Metadata> {
   const { city } = await params;
+  const { page: pageStr } = await searchParams;
   if (!isValidCity(city)) return {};
   const meta = CITY_META[city];
+  const page = parseInt(pageStr || "1", 10);
+  const url = canonicalUrl(cityPath("/landlords", city));
+
   return {
-    title: `Landlord Directory | ${meta.fullName} | Lucid Rents`,
+    title: `Landlord Directory${page > 1 ? ` — Page ${page}` : ""} | ${meta.fullName} | Lucid Rents`,
     description: `Look up any ${meta.fullName} landlord. See their full portfolio, violation history, and complaint record before you rent from them.`,
-    alternates: { canonical: canonicalUrl(cityPath("/landlords", city)) },
+    alternates: { canonical: url },
     openGraph: {
       title: `${meta.fullName} Landlord Directory`,
       description: `Look up any ${meta.fullName} landlord — see their portfolio, violations, and complaint history.`,
-      url: canonicalUrl(cityPath("/landlords", city)),
+      url,
       siteName: "Lucid Rents",
       type: "website",
       locale: "en_US",
@@ -76,6 +80,19 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
   const [{ count: total }, { data: landlords }] = await Promise.all([countQuery, dataQuery]);
   const totalPages = Math.ceil((total || 0) / limit);
 
+  // Pagination rel links for SEO
+  const basePath = cityPath("/landlords", cityParam as City);
+  const qsParts: string[] = [];
+  if (search) qsParts.push(`search=${encodeURIComponent(search)}`);
+  if (sortBy !== "violations") qsParts.push(`sort=${sortBy}`);
+  const qsBase = qsParts.length ? `${qsParts.join("&")}` : "";
+  const paginationPrevUrl = page > 1
+    ? canonicalUrl(`${basePath}?${qsBase ? qsBase + "&" : ""}${page === 2 ? "" : `page=${page - 1}`}`.replace(/[?&]$/, ""))
+    : null;
+  const paginationNextUrl = page < totalPages
+    ? canonicalUrl(`${basePath}?${qsBase ? qsBase + "&" : ""}page=${page + 1}`)
+    : null;
+
   function buildUrl(overrides: Record<string, string>) {
     const base: Record<string, string> = { search, sort: sortBy, page: String(page) };
     const merged = { ...base, ...overrides };
@@ -89,6 +106,8 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
   return (
     <AdSidebar>
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {paginationPrevUrl && <link rel="prev" href={paginationPrevUrl} />}
+      {paginationNextUrl && <link rel="next" href={paginationNextUrl} />}
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-[#0F1D2E]">

@@ -29,14 +29,19 @@ export const dynamicParams = true;
 
 export async function generateMetadata({
   params,
+  searchParams,
 }: BoroughPageProps): Promise<Metadata> {
   const { city, borough: boroughSlug } = await params;
+  const { page: pageStr, sort } = await searchParams;
   const borough = SLUG_TO_BOROUGH[boroughSlug];
   if (!borough) return { title: "Not Found" };
 
-  const title = `${borough} Buildings | Lucid Rents`;
+  const page = Math.max(1, parseInt(pageStr || "1"));
+  const title = `${borough} Buildings${page > 1 ? ` — Page ${page}` : ""} | Lucid Rents`;
   const description = `Apartment hunting in ${borough}? Browse every building with violation scores, complaint history, and real tenant reviews.`;
-  const url = canonicalUrl(cityPath(`/buildings/${boroughSlug}`, city as import("@/lib/cities").City));
+  const basePath = cityPath(`/buildings/${boroughSlug}`, city as import("@/lib/cities").City);
+  const sortSuffix = sort ? `&sort=${sort}` : "";
+  const url = canonicalUrl(page === 1 ? basePath : `${basePath}?page=${page}${sortSuffix}`);
 
   return {
     title,
@@ -140,6 +145,10 @@ export default async function BoroughPage({ params, searchParams }: BoroughPageP
   }
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
+  const basePath = cityPath(`/buildings/${boroughSlug}`, cityParam as import("@/lib/cities").City);
+  const sortSuffix = sort ? `&sort=${sort}` : "";
+  const prevUrl = page > 1 ? canonicalUrl(page === 2 ? `${basePath}${sort ? `?sort=${sort}` : ""}` : `${basePath}?page=${page - 1}${sortSuffix}`) : null;
+  const nextUrl = page < totalPages ? canonicalUrl(`${basePath}?page=${page + 1}${sortSuffix}`) : null;
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -157,6 +166,8 @@ export default async function BoroughPage({ params, searchParams }: BoroughPageP
   return (
     <AdSidebar>
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {prevUrl && <link rel="prev" href={prevUrl} />}
+      {nextUrl && <link rel="next" href={nextUrl} />}
       <JsonLd data={jsonLd} />
       <Breadcrumbs
         items={[
