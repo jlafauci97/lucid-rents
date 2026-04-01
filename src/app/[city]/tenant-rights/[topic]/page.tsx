@@ -12,7 +12,7 @@ import { TENANT_RIGHTS_BY_CITY } from "@/lib/tenant-rights-data";
 import { CITY_META, type City } from "@/lib/cities";
 import { FAQSection } from "@/components/seo/FAQSection";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
-import { cityBreadcrumbs, cityPath } from "@/lib/seo";
+import { cityBreadcrumbs, canonicalUrl, cityPath } from "@/lib/seo";
 
 export async function generateMetadata({
   params,
@@ -26,9 +26,21 @@ export async function generateMetadata({
   if (!topic) return { title: "Not Found" };
   const meta = CITY_META[city as City];
   const cityName = meta?.fullName ?? city;
+  const title = `${topic.title} — ${cityName} Tenant Rights | Lucid Rents`;
+  const description = topic.summary;
+  const url = canonicalUrl(cityPath(`/tenant-rights/${slug}`, city as City));
   return {
-    title: `${topic.title} — ${cityName} Tenant Rights | Lucid Rents`,
-    description: topic.summary,
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      title,
+      description,
+      url,
+      siteName: "Lucid Rents",
+      type: "website",
+      locale: "en_US",
+    },
   };
 }
 

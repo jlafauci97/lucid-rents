@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     template: "%s | Lucid Rents",
   },
   description:
-    "Don't sign a lease blind. Check any NYC or LA building for violations, bedbug history, evictions, and real tenant reviews — free.",
+    "Don't sign a lease blind. Check any NYC, LA, Chicago, Miami, or Houston building for violations, bedbug history, evictions, and real tenant reviews — free.",
   keywords: [
     "NYC apartments",
     "Los Angeles apartments",
@@ -35,6 +35,9 @@ export const metadata: Metadata = {
     "building violations",
     "NYC rentals",
     "LA rentals",
+    "Chicago apartments",
+    "Miami apartments",
+    "Houston apartments",
     "apartment search",
     "bedbug reports",
     "evictions",

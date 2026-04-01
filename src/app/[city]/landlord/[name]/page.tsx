@@ -86,8 +86,8 @@ export async function generateMetadata({
   const { name } = await params;
   const displayName = await lookupLandlordName(name);
 
-  const title = `${displayName} - Landlord Portfolio | Lucid Rents`;
-  const description = `Renting from ${displayName}? See every building they own, their violation history, and tenant complaints — all in one place.`;
+  const title = `${displayName} — Buildings, Violations & Tenant Reviews`;
+  const description = `Renting from ${displayName}? See every building they own, their full violation record, and real tenant reviews — all in one place.`;
   const url = canonicalUrl(landlordUrl(displayName));
 
   return {

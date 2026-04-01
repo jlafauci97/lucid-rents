@@ -20,9 +20,21 @@ export async function generateMetadata({
   if (!config) return { title: "Tenant Rights | Lucid Rents" };
   const meta = CITY_META[city as City];
   const cityName = meta?.fullName ?? city;
+  const title = `${cityName} Tenant Rights Guide | Lucid Rents`;
+  const description = `Don't let your landlord take advantage of you. Know your rights as a ${cityName} tenant — from rent increases to eviction protections.`;
+  const url = canonicalUrl(cityPath("/tenant-rights", city as City));
   return {
-    title: `${cityName} Tenant Rights Guide | Lucid Rents`,
-    description: `Don't let your landlord take advantage of you. Know your rights as a ${cityName} tenant — from rent increases to eviction protections.`,
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      title,
+      description,
+      url,
+      siteName: "Lucid Rents",
+      type: "website",
+      locale: "en_US",
+    },
   };
 }
 

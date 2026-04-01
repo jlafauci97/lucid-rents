@@ -95,6 +95,7 @@ export function buildingJsonLd(
     overall_score: number | null;
     review_count: number;
     slug: string;
+    updated_at?: string | null;
   },
   city: City = DEFAULT_CITY
 ) {
@@ -122,6 +123,9 @@ export function buildingJsonLd(
   if (building.total_units) {
     schema.numberOfAccommodationUnits = building.total_units;
   }
+  if (building.updated_at) {
+    schema.dateModified = building.updated_at;
+  }
   if (building.review_count > 0 && building.overall_score != null) {
     schema.aggregateRating = {
       "@type": "AggregateRating",
@@ -138,16 +142,21 @@ export function buildingJsonLd(
 export function landlordJsonLd(
   name: string,
   buildingCount: number,
-  city: City = DEFAULT_CITY
+  city: City = DEFAULT_CITY,
+  updatedAt?: string
 ) {
   const meta = CITY_META[city];
-  return {
+  const ld: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "Organization",
     name,
     url: canonicalUrl(landlordUrl(name, city)),
     description: `Property owner managing ${buildingCount} building${buildingCount !== 1 ? "s" : ""} in ${meta.fullName}`,
   };
+  if (updatedAt) {
+    ld.dateModified = updatedAt;
+  }
+  return ld;
 }
 
 export function newsCollectionJsonLd(city: City = DEFAULT_CITY) {

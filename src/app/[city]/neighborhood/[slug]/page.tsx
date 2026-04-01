@@ -33,11 +33,11 @@ export async function generateMetadata({
   const displayName = name ? `${name} (${zipCode})` : zipCode;
   const url = canonicalUrl(neighborhoodUrl(zipCode));
   return {
-    title: name ? `${name} Report Card (${zipCode})` : `Neighborhood Report Card: ${zipCode}`,
+    title: name ? `${name} Report Card (${zipCode}) — Building Grades & Crime Data` : `Neighborhood Report Card: ${zipCode} — Building Grades & Crime Data`,
     description: `Should you move to ${displayName}? See building grades, crime stats, top landlords, and violation density in one report card.`,
     alternates: { canonical: url },
     openGraph: {
-      title: name ? `${name} Report Card (${zipCode})` : `Neighborhood Report Card: ${zipCode}`,
+      title: name ? `${name} Report Card (${zipCode}) — Building Grades & Crime Data` : `Neighborhood Report Card: ${zipCode} — Building Grades & Crime Data`,
       description: `Should you move to ${displayName}? Building grades, crime stats, and landlord data in one report card.`,
       url,
       siteName: "Lucid Rents",

@@ -97,7 +97,10 @@ export async function generateMetadata({
     return { title: "Building Not Found" };
   }
 
-  const title = `${building.full_address} | Lucid Rents`;
+  const title =
+    building.review_count > 0 && building.overall_score != null
+      ? `${building.full_address} — Rated ${building.overall_score}/10 by Tenants`
+      : `${building.full_address} — Violations, Reviews & Building Score`;
   const isChicagoMeta = cityParam === "chicago" || cityParam === "miami" || cityParam === "houston";
   const metaViolationCount = isChicagoMeta
     ? (building.dob_violation_count || 0)
@@ -109,7 +112,7 @@ export async function generateMetadata({
   if (building.bedbug_report_count > 0) descParts.push(`${building.bedbug_report_count} bedbug reports`);
   if (building.eviction_count > 0) descParts.push(`${building.eviction_count} evictions`);
   const cityName = CITY_META[cityParam as keyof typeof CITY_META]?.name || "NYC";
-  const description = `Thinking about ${building.full_address}? Check ${descParts.join(", ")}, and real tenant reviews before you sign a lease.`;
+  const description = `${building.full_address} has ${descParts.join(" and ")}. Read tenant reviews, check bedbug history, and see the building score — free.`;
   const url = canonicalUrl(buildingUrl(building, cityParam as import("@/lib/cities").City));
 
   return {
@@ -121,7 +124,7 @@ export async function generateMetadata({
       description,
       url,
       siteName: "Lucid Rents",
-      type: "website",
+      type: "article",
       locale: "en_US",
     },
     twitter: {
@@ -210,12 +213,18 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
   const isHouston = city === "houston";
 
   // Critical data only — just what's needed for above-the-fold content
-  const [rents, energyData, neighborhoodRentsRaw] = await Promise.all([
+  const [rents, energyData, neighborhoodRentsRaw, deweyLatestRaw, deweyNeighborhoodLatestRaw] = await Promise.all([
     safe(supabase.from("building_rents").select("bedrooms, min_rent, max_rent, median_rent, listing_count, source").eq("building_id", buildingId), []),
     safe(supabase.from("energy_benchmarks").select("*").eq("building_id", buildingId).order("report_year", { ascending: false }).limit(1), [] as EnergyBenchmark[]),
     building.zip_code
       ? safe(supabase.from("building_rents").select("bedrooms, median_rent, buildings!inner(zip_code)").eq("buildings.zip_code", building.zip_code!).neq("building_id", buildingId), [] as { bedrooms: number; median_rent: number; buildings: { zip_code: string }[] }[])
       : Promise.resolve([] as { bedrooms: number; median_rent: number; buildings: { zip_code: string }[] }[]),
+    // Dewey: latest month building rents for above-the-fold badges
+    safe(supabase.from("dewey_building_rents").select("month, beds, median_rent, avg_price_per_sqft, listing_count").eq("building_id", buildingId).order("month", { ascending: false }).limit(10), [] as { month: string; beds: number; median_rent: number; avg_price_per_sqft: number; listing_count: number }[]),
+    // Dewey: latest month neighborhood rents for comparison
+    building.zip_code
+      ? safe(supabase.from("dewey_neighborhood_rents").select("month, beds, median_rent").eq("zip", building.zip_code).order("month", { ascending: false }).limit(10), [] as { month: string; beds: number; median_rent: number }[])
+      : Promise.resolve([] as { month: string; beds: number; median_rent: number }[]),
   ]);
 
   // Compute zip-level median rents per bedroom for neighborhood comparison
@@ -241,6 +250,69 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
   const effectiveViolationCount = (isChicago || isHouston)
     ? (building.dob_violation_count || 0)
     : (building.violation_count || 0);
+
+  // Dewey rent intelligence: compute above-the-fold metrics
+  const deweyMetrics = (() => {
+    if (!deweyLatestRaw || deweyLatestRaw.length === 0) return null;
+    // Find the latest month
+    const latestMonth = deweyLatestRaw[0]?.month;
+    if (!latestMonth) return null;
+    const latestRows = deweyLatestRaw.filter(r => r.month === latestMonth);
+    if (latestRows.length === 0) return null;
+
+    // Weighted median rent and price per sqft
+    let totalRent = 0, totalPsf = 0, totalWeight = 0, psfWeight = 0;
+    for (const r of latestRows) {
+      const w = r.listing_count || 1;
+      if (r.median_rent > 0) { totalRent += r.median_rent * w; totalWeight += w; }
+      if (r.avg_price_per_sqft > 0) { totalPsf += r.avg_price_per_sqft * w; psfWeight += w; }
+    }
+    const medianRent = totalWeight > 0 ? Math.round(totalRent / totalWeight) : undefined;
+    const pricePerSqft = psfWeight > 0 ? totalPsf / psfWeight : undefined;
+
+    // Neighborhood median for same month
+    const nhLatest = (deweyNeighborhoodLatestRaw || []).filter(r => r.month === latestMonth);
+    let nhTotalRent = 0, nhTotalWeight = 0;
+    for (const r of nhLatest) {
+      if (r.median_rent > 0) { nhTotalRent += r.median_rent; nhTotalWeight += 1; }
+    }
+    const neighborhoodMedianRent = nhTotalWeight > 0 ? Math.round(nhTotalRent / nhTotalWeight) : undefined;
+
+    // YoY rent change: compare latest month to 12 months prior
+    const latestDate = new Date(latestMonth + "-01");
+    const priorDate = new Date(latestDate);
+    priorDate.setFullYear(priorDate.getFullYear() - 1);
+    const priorMonth = priorDate.toISOString().slice(0, 7);
+    const priorRows = deweyLatestRaw.filter(r => r.month === priorMonth);
+    let rentChangeYoY: number | undefined;
+    if (priorRows.length > 0 && medianRent) {
+      let priorTotal = 0, priorW = 0;
+      for (const r of priorRows) {
+        const w = r.listing_count || 1;
+        if (r.median_rent > 0) { priorTotal += r.median_rent * w; priorW += w; }
+      }
+      if (priorW > 0) {
+        const priorMedian = priorTotal / priorW;
+        rentChangeYoY = ((medianRent - priorMedian) / priorMedian) * 100;
+      }
+    }
+
+    // Value grade
+    let valueGrade: string | undefined;
+    if (medianRent && neighborhoodMedianRent && neighborhoodMedianRent > 0) {
+      const diff = (medianRent - neighborhoodMedianRent) / neighborhoodMedianRent;
+      const qualityBonus = ((building.overall_score ?? 5) - 5) * 0.02;
+      const violationPenalty = Math.min((effectiveViolationCount) / 100, 0.1);
+      const adjustedDiff = diff - qualityBonus + violationPenalty;
+      if (adjustedDiff <= -0.15) valueGrade = "A";
+      else if (adjustedDiff <= -0.05) valueGrade = "B";
+      else if (adjustedDiff <= 0.05) valueGrade = "C";
+      else if (adjustedDiff <= 0.15) valueGrade = "D";
+      else valueGrade = "F";
+    }
+
+    return { medianRent, pricePerSqft, neighborhoodMedianRent, rentChangeYoY, valueGrade };
+  })();
 
   // Extract short address for breadcrumb
   const shortAddress = building.full_address.split(",")[0]?.trim() || building.full_address;
@@ -279,7 +351,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
         </div>
       </div>
 
-      <BuildingHeader building={building} city={city} violationCount={effectiveViolationCount} />
+      <BuildingHeader building={building} city={city} violationCount={effectiveViolationCount} valueGrade={deweyMetrics?.valueGrade} medianRent={deweyMetrics?.medianRent} pricePerSqft={deweyMetrics?.pricePerSqft} />
 
       <SectionNav />
 
@@ -295,6 +367,11 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
               complaintCount={building.complaint_count}
               bedbugCount={building.bedbug_report_count}
               evictionCount={building.eviction_count}
+              valueGrade={deweyMetrics?.valueGrade}
+              medianRent={deweyMetrics?.medianRent}
+              pricePerSqft={deweyMetrics?.pricePerSqft}
+              neighborhoodMedianRent={deweyMetrics?.neighborhoodMedianRent}
+              rentChangeYoY={deweyMetrics?.rentChangeYoY}
             />
 
             {/* Below-fold content streams in via Suspense */}

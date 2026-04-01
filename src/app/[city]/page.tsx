@@ -32,7 +32,7 @@ export async function generateMetadata({
   if (!isValidCity(city)) return {};
   const meta = CITY_META[city];
   return {
-    title: `${meta.fullName} Apartment Building Data | Lucid Rents`,
+    title: `${meta.fullName} Apartment Reviews & Building Reports — Free`,
     description: `Looking for an apartment in ${meta.fullName}? Search any building for violations, tenant reviews, crime data, and rent history — all free.`,
     alternates: { canonical: canonicalUrl(cityPath("/", city)) },
   };
