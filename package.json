@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "prebuild": "node scripts/generate-sitemaps.mjs || echo 'Sitemap generation failed (non-fatal)'",
     "build": "next build",
+    "generate-sitemaps": "node scripts/generate-sitemaps.mjs",
     "start": "next start",
     "lint": "next lint",
     "remotion:studio": "remotion studio remotion/index.ts",
