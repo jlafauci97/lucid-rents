@@ -141,12 +141,129 @@ async function dedupMetro(metro) {
   }
 }
 
-// Main
+// --- Task 6: Slug Disambiguation ---
+
+async function disambiguateSlugs(metro) {
+  console.log(`[${metro}] Disambiguating duplicate slugs...`);
+
+  const { data: slugDupes } = await supabase.rpc("get_duplicate_slugs", {
+    metro_filter: metro,
+  });
+
+  if (!slugDupes || slugDupes.length === 0) {
+    console.log(`[${metro}] No duplicate slugs found`);
+    return;
+  }
+
+  let fixed = 0;
+  for (const { slug, borough } of slugDupes) {
+    const { data: rows } = await supabase
+      .from("buildings")
+      .select("id, slug, overall_score, review_count")
+      .eq("slug", slug)
+      .eq("borough", borough)
+      .eq("metro", metro)
+      .order("review_count", { ascending: false })
+      .order("overall_score", { ascending: false, nullsFirst: false });
+
+    if (!rows || rows.length <= 1) continue;
+
+    // First row keeps the original slug; others get suffixes
+    for (let i = 1; i < rows.length; i++) {
+      const newSlug = `${slug}-lot-${i + 1}`;
+      await supabase
+        .from("buildings")
+        .update({ slug: newSlug })
+        .eq("id", rows[i].id);
+      fixed++;
+    }
+  }
+
+  console.log(`[${metro}] Disambiguated ${fixed} slugs`);
+}
+
+// --- Task 7: Pre-flight Verification ---
+
+async function verifyClean() {
+  console.log("\n=== PRE-FLIGHT VERIFICATION ===\n");
+  let clean = true;
+
+  // Check address-based duplicates per metro
+  for (const metro of ["nyc", "chicago", "los-angeles", "houston", "miami"]) {
+    const { data } = await supabase.rpc("get_duplicate_groups_batch", {
+      metro_filter: metro,
+      batch_limit: 10,
+    });
+    if (metro === "nyc") {
+      console.log(`[${metro}] ${data?.length || 0} address groups remaining (expected: condo lots only)`);
+    } else {
+      if (data && data.length > 0) {
+        console.error(`[${metro}] FAIL: duplicate groups still exist!`);
+        clean = false;
+      } else {
+        console.log(`[${metro}] PASS: no duplicates`);
+      }
+    }
+  }
+
+  // Check natural key duplicates
+  const keyChecks = [
+    { key: "apn", label: "APN" },
+    { key: "pin", label: "PIN" },
+    { key: "hcad_account", label: "HCAD" },
+    { key: "folio_number", label: "Folio" },
+  ];
+  for (const { key, label } of keyChecks) {
+    const { data } = await supabase.rpc("check_natural_key_dupes", { key_column: key });
+    if (data && data.length > 0) {
+      console.error(`${label} FAIL: ${data.length} duplicate natural keys found`);
+      clean = false;
+    } else {
+      console.log(`${label} PASS: no duplicates`);
+    }
+  }
+
+  // Check slug duplicates per metro+borough
+  for (const metro of ["nyc", "chicago", "los-angeles", "houston", "miami"]) {
+    const { data } = await supabase.rpc("get_duplicate_slugs", { metro_filter: metro });
+    if (data && data.length > 0) {
+      console.error(`[${metro}] slug FAIL: ${data.length} duplicate slug groups`);
+      clean = false;
+    } else {
+      console.log(`[${metro}] slug PASS`);
+    }
+  }
+
+  // Check NULL borough rows
+  const { count: nullBoroughCount } = await supabase
+    .from("buildings")
+    .select("*", { count: "exact", head: true })
+    .is("borough", null);
+  if (nullBoroughCount > 0) {
+    console.warn(`WARNING: ${nullBoroughCount} buildings have NULL borough — backfill before adding constraint`);
+    clean = false;
+  }
+
+  if (clean) {
+    console.log("\n✅ ALL CHECKS PASSED — safe to add unique constraints");
+  } else {
+    console.error("\n❌ VERIFICATION FAILED — fix issues before adding constraints");
+  }
+  return clean;
+}
+
+// --- Main ---
+
 const metroArg = process.argv[2];
 const verifyOnly = process.argv.includes("--verify");
 
 async function main() {
   console.log("Building dedup script starting...");
+
+  if (verifyOnly) {
+    await verifyClean();
+    return;
+  }
 
   const metros = metroArg && metroArg !== "--verify"
     ? [metroArg]
@@ -156,7 +273,16 @@ async function main() {
 
   await Promise.all(metros.map(metro => dedupMetro(metro)));
 
-  console.log("\nAll metros complete!");
+  // After dedup, disambiguate slugs for all metros
+  console.log("\nDisambiguating slugs...");
+  await Promise.all(metros.map(metro => disambiguateSlugs(metro)));
+
+  // Run verification
+  const clean = await verifyClean();
+  if (!clean) {
+    console.error("Manual intervention needed before adding constraints.");
+    process.exit(1);
+  }
 }
 
 main().catch(err => {
