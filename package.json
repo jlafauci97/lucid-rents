@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "prebuild": "node scripts/generate-sitemaps.mjs",
+    "prebuild": "node scripts/generate-sitemaps.mjs || echo 'Sitemap generation failed (non-fatal)'",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
