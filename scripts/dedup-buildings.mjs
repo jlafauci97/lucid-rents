@@ -1,10 +1,22 @@
 #!/usr/bin/env node
 import { createClient } from "@supabase/supabase-js";
 import { readFileSync, writeFileSync, existsSync } from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+// Load .env.local
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const envPath = path.join(__dirname, "..", ".env.local");
+const envText = readFileSync(envPath, "utf8");
+for (const line of envText.split("\n")) {
+  const m = line.match(/^([^#=]+)=(.*)$/);
+  if (m) process.env[m[1].trim()] = m[2].trim().replace(/^"|"$/g, "").replace(/\\n/g, "");
+}
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
+  process.env.SUPABASE_SERVICE_ROLE_KEY,
+  { db: { schema: "public" }, global: { headers: { "x-connection-pool": "direct" } } }
 );
 
 const BATCH_SIZE = 500;
@@ -78,24 +90,43 @@ async function dedupMetro(metro) {
   let noKeyGroups = progress.noKeyGroups || 0;
   let hasMore = true;
 
+  // Fetch all addresses for this metro sorted — find duplicates client-side
+  // This avoids the expensive GROUP BY that times out on large tables
+  let lastAddr = progress.lastAddress || "";
+
   while (hasMore) {
-    // Always OFFSET 0 because completed groups disappear from results
-    const { data: groups, error } = await supabase.rpc("get_duplicate_groups_batch", {
-      metro_filter: metro,
-      batch_limit: BATCH_SIZE,
-    });
-    if (error) throw new Error(`[${metro}] Failed to get groups: ${error.message}`);
+    // Fetch a page of buildings sorted by full_address, paginate via cursor
+    const { data: page, error } = await supabase
+      .from("buildings")
+      .select("id, full_address, city")
+      .eq("metro", metro)
+      .not("full_address", "is", null)
+      .gt("full_address", lastAddr)
+      .order("full_address", { ascending: true })
+      .limit(5000);
 
-    if (!groups || groups.length === 0) {
-      hasMore = false;
-      break;
+    if (error) throw new Error(`[${metro}] Failed to fetch page: ${error.message}`);
+    if (!page || page.length === 0) { hasMore = false; break; }
+
+    // Group by address to find duplicates in this page
+    const addrGroups = {};
+    for (const row of page) {
+      const key = row.full_address;
+      if (!addrGroups[key]) addrGroups[key] = [];
+      addrGroups[key].push(row);
     }
+    lastAddr = page[page.length - 1].full_address;
 
-    for (const group of groups) {
+    // Process duplicate groups
+    const dupeAddrs = Object.entries(addrGroups).filter(([, rows]) => rows.length > 1);
+    if (dupeAddrs.length === 0) continue;
+
+    for (const [addr, _] of dupeAddrs) {
+      // Fetch full rows for this duplicate group
       const { data: rows } = await supabase
         .from("buildings")
         .select("*")
-        .eq("full_address", group.full_address)
+        .eq("full_address", addr)
         .eq("metro", metro);
 
       if (!rows || rows.length <= 1) {
@@ -130,11 +161,11 @@ async function dedupMetro(metro) {
       totalProcessed++;
     }
 
-    saveProgress(metro, { completed: totalProcessed, deduped, noKeyGroups });
-    console.log(`[${metro}] ${totalProcessed} groups processed, ${deduped} rows removed`);
+    saveProgress(metro, { completed: totalProcessed, deduped, noKeyGroups, lastAddress: lastAddr });
+    console.log(`[${metro}] ${totalProcessed} groups processed, ${deduped} rows removed (cursor: ${lastAddr.substring(0, 30)}...)`);
   }
 
-  saveProgress(metro, { completed: totalProcessed, deduped, noKeyGroups, done: true });
+  saveProgress(metro, { completed: totalProcessed, deduped, noKeyGroups, lastAddress: lastAddr, done: true });
   console.log(`[${metro}] COMPLETE: ${deduped} duplicate rows removed from ${totalProcessed} groups`);
   if (noKeyGroups > 0) {
     console.log(`[${metro}] WARNING: ${noKeyGroups} groups had no natural key populated`);
