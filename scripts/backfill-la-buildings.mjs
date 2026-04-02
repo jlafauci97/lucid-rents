@@ -191,28 +191,49 @@ async function main() {
 
   console.log(`\nDeduped to ${addressMap.size} unique buildings. Upserting...`);
 
-  // Upsert in batches
+  // Upsert in batches using select-before-insert to prevent duplicates
   const buildings = Array.from(addressMap.values());
-  let inserted = 0;
+  const stats = { inserted: 0, updated: 0, errors: 0 };
 
   for (let i = 0; i < buildings.length; i += BATCH_SIZE) {
     const batch = buildings.slice(i, i + BATCH_SIZE);
-    const { error } = await supabase
-      .from("buildings")
-      .insert(batch);
 
-    if (error) {
-      console.error(`  Batch ${Math.floor(i / BATCH_SIZE) + 1} error:`, error.message);
-    } else {
-      inserted += batch.length;
+    for (const row of batch) {
+      const { data: existing } = await supabase
+        .from("buildings")
+        .select("id")
+        .eq("slug", row.slug)
+        .eq("metro", "los-angeles")
+        .eq("borough", row.borough)
+        .maybeSingle();
+
+      if (existing) {
+        // Update non-null fields from this row into the existing building
+        const updates = {};
+        for (const [key, val] of Object.entries(row)) {
+          if (val != null && key !== "slug" && key !== "id") updates[key] = val;
+        }
+        if (Object.keys(updates).length > 0) {
+          await supabase.from("buildings").update(updates).eq("id", existing.id);
+        }
+        stats.updated++;
+      } else {
+        const { error } = await supabase.from("buildings").insert(row);
+        if (error && error.code !== "23505") {
+          console.error("Insert error:", error.message);
+          stats.errors++;
+        } else {
+          stats.inserted++;
+        }
+      }
     }
 
     if ((i / BATCH_SIZE) % 10 === 0) {
-      console.log(`  Progress: ${inserted}/${buildings.length}`);
+      console.log(`  Progress: ${stats.inserted + stats.updated}/${buildings.length} (inserted: ${stats.inserted}, updated: ${stats.updated}, errors: ${stats.errors})`);
     }
   }
 
-  console.log(`\n✅ Total buildings upserted: ${inserted}`);
+  console.log(`\n✅ Done — inserted: ${stats.inserted}, updated: ${stats.updated}, errors: ${stats.errors}`);
 }
 
 main().catch((err) => {
