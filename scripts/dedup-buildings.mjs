@@ -113,7 +113,7 @@ async function dedupMetro(metro) {
         }
 
         for (const [bbl, bblRows] of Object.entries(bblGroups)) {
-          if (bblRows.length <= 1) continue;
+          if (bbl === "null" || bblRows.length <= 1) continue;
           const keeper = pickKeeper(bblRows, naturalKey);
           const loserIds = bblRows.filter(r => r.id !== keeper.id).map(r => r.id);
           await dedupGroup(keeper.id, loserIds, bblRows);

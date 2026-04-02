@@ -67,6 +67,7 @@ BEGIN
   IF merge_updates != '{}'::jsonb THEN
     UPDATE buildings
     SET
+      bbl = COALESCE(buildings.bbl, (merge_updates->>'bbl')),
       house_number = COALESCE(buildings.house_number, (merge_updates->>'house_number')),
       street_name = COALESCE(buildings.street_name, (merge_updates->>'street_name')),
       zip_code = COALESCE(buildings.zip_code, (merge_updates->>'zip_code')),
