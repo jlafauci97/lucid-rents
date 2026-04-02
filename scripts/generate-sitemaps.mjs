@@ -258,8 +258,11 @@ async function generateStaticSitemap() {
 
 // ─── Main ───────────────────────────────────────────────────────
 
+const SITEMAP_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes max for entire sitemap generation
+
 async function main() {
   const t0 = Date.now();
+  const isTimedOut = () => Date.now() - t0 > SITEMAP_TIMEOUT_MS;
   console.log("Generating static sitemaps...");
 
   rmSync(OUT_DIR, { recursive: true, force: true });
@@ -284,6 +287,10 @@ async function main() {
   let landlordEntries = [];
 
   while (true) {
+    if (isTimedOut()) {
+      console.warn(`  ⚠ Sitemap timeout reached — stopping landlord pagination early`);
+      break;
+    }
     const filter = landlordCursor
       ? `landlord_stats?select=name,slug,updated_at&name=gt.${encodeURIComponent(landlordCursor)}&order=name.asc&limit=1000`
       : `landlord_stats?select=name,slug,updated_at&order=name.asc&limit=1000`;
@@ -347,6 +354,11 @@ async function main() {
   const MAX_CONSECUTIVE_FAILURES = 3;
 
   while (!done) {
+    if (isTimedOut()) {
+      console.warn(`  ⚠ Sitemap timeout reached — stopping building pagination early`);
+      done = true;
+      break;
+    }
     let rows;
     for (let attempt = 0; attempt < 5; attempt++) {
       try {
