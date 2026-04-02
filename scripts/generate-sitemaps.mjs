@@ -320,8 +320,8 @@ async function fullGenerate() {
   while (true) {
     if (isTimedOut()) { console.warn(`  ⚠ Timeout — stopping landlord pagination early`); break; }
     const filter = landlordCursor
-      ? `landlord_stats?select=name,slug,updated_at&name=gt.${encodeURIComponent(landlordCursor)}&order=name.asc&limit=1000`
-      : `landlord_stats?select=name,slug,updated_at&order=name.asc&limit=1000`;
+      ? `landlord_stats?select=name,slug,updated_at,metro&name=gt.${encodeURIComponent(landlordCursor)}&order=name.asc&limit=1000`
+      : `landlord_stats?select=name,slug,updated_at,metro&order=name.asc&limit=1000`;
 
     let rows;
     try { rows = await supabaseFetch(filter); } catch (err) { console.error(`    Landlord page failed: ${err.message}`); break; }
@@ -329,7 +329,8 @@ async function fullGenerate() {
 
     for (const l of rows) {
       if (l.slug) {
-        landlordEntries.push({ url: `${BASE_URL}/nyc/landlord/${l.slug}`, lastmod: l.updated_at ? new Date(l.updated_at).toISOString() : undefined, changefreq: "monthly", priority: 0.5 });
+        const city = metroToCity(l.metro);
+        landlordEntries.push({ url: `${BASE_URL}/${CITY_META[city].urlPrefix}/landlord/${l.slug}`, lastmod: l.updated_at ? new Date(l.updated_at).toISOString() : undefined, changefreq: "monthly", priority: 0.5 });
       }
       if (landlordEntries.length >= 10000) {
         writeFileSync(`${OUT_DIR}/l-${landlordBatchIndex}.xml`, buildSitemapXml(landlordEntries));
@@ -493,7 +494,7 @@ async function incrementalGenerate() {
     while (!landlordDone) {
       let rows;
       try {
-        rows = await supabaseFetch(`landlord_stats?select=name,slug,updated_at&name=gt.${encodeURIComponent(landlordCursor)}&order=name.asc&limit=1000`);
+        rows = await supabaseFetch(`landlord_stats?select=name,slug,updated_at,metro&name=gt.${encodeURIComponent(landlordCursor)}&order=name.asc&limit=1000`);
       } catch (err) {
         console.warn(`    Landlord fetch failed: ${err.message}`);
         break;
@@ -502,7 +503,8 @@ async function incrementalGenerate() {
 
       for (const l of rows) {
         if (l.slug) {
-          landlordEntries.push({ url: `${BASE_URL}/nyc/landlord/${l.slug}`, lastmod: l.updated_at ? new Date(l.updated_at).toISOString() : undefined, changefreq: "monthly", priority: 0.5 });
+          const city = metroToCity(l.metro);
+          landlordEntries.push({ url: `${BASE_URL}/${CITY_META[city].urlPrefix}/landlord/${l.slug}`, lastmod: l.updated_at ? new Date(l.updated_at).toISOString() : undefined, changefreq: "monthly", priority: 0.5 });
         }
         if (landlordEntries.length >= 10000) {
           writeFileSync(`${OUT_DIR}/l-${landlordBatchIndex}.xml`, buildSitemapXml(landlordEntries));
