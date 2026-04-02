@@ -343,6 +343,9 @@ async function main() {
   let currentEntries = [];
   let done = false;
 
+  let consecutiveFailures = 0;
+  const MAX_CONSECUTIVE_FAILURES = 3;
+
   while (!done) {
     let rows;
     for (let attempt = 0; attempt < 5; attempt++) {
@@ -350,11 +353,21 @@ async function main() {
         rows = await supabaseFetch(
           `buildings?select=id,slug,borough,metro,updated_at&id=gt.${cursor}&order=id.asc&limit=${PAGE_SIZE}`
         );
+        consecutiveFailures = 0;
         break;
       } catch (err) {
-        if (attempt === 4) throw err;
-        console.log(`    Page retry ${attempt + 1}/5...`);
-        await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
+        if (attempt === 4) {
+          consecutiveFailures++;
+          console.warn(`    Building page failed after 5 retries (${consecutiveFailures}/${MAX_CONSECUTIVE_FAILURES} consecutive)`);
+          if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+            console.warn(`    ⚠ Too many consecutive failures — stopping building sitemap early`);
+            done = true;
+          }
+          rows = null;
+        } else {
+          console.log(`    Page retry ${attempt + 1}/5...`);
+          await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
+        }
       }
     }
 
