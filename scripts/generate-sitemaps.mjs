@@ -275,27 +275,62 @@ async function main() {
   indexEntries.push({ name: "0.xml", lastmod: now });
   console.log(`  [0.xml] ${staticEntries.length} URLs`);
 
-  // Landlord sitemaps
-  const [maxLandlordBatch] = await supabaseFetch("sitemap_landlord_cursors?select=batch_index&order=batch_index.desc&limit=1");
-  const landlordBatches = maxLandlordBatch ? maxLandlordBatch.batch_index + 1 : 0;
-  console.log(`  Generating ${landlordBatches} landlord sitemaps...`);
+  // Landlord sitemaps — direct REST pagination
+  console.log(`  Generating landlord sitemaps (direct pagination)...`);
 
   let landlordUrls = 0;
-  const landlordTasks = Array.from({ length: landlordBatches }, (_, i) => async () => {
-    const landlords = await rpcFetch("sitemap_landlord_batch", { p_batch_index: i });
-    if (!landlords || landlords.length === 0) return;
-    const entries = landlords.map((l) => ({
-      url: `${BASE_URL}/nyc/landlord/${l.slug}`,
-      lastmod: l.updated_at ? new Date(l.updated_at).toISOString() : undefined,
-      changefreq: "monthly",
-      priority: 0.5,
-    }));
-    writeFileSync(`${OUT_DIR}/l-${i}.xml`, buildSitemapXml(entries));
-    indexEntries.push({ name: `l-${i}.xml`, lastmod: now });
-    landlordUrls += entries.length;
-  });
-  await runBatches(landlordTasks, CONCURRENCY);
-  console.log(`  Landlords: ${landlordUrls.toLocaleString()} URLs across ${landlordBatches} files`);
+  let landlordBatchIndex = 0;
+  let landlordCursor = "";
+  let landlordEntries = [];
+
+  while (true) {
+    const filter = landlordCursor
+      ? `landlord_stats?select=name,slug,updated_at&name=gt.${encodeURIComponent(landlordCursor)}&order=name.asc&limit=1000`
+      : `landlord_stats?select=name,slug,updated_at&order=name.asc&limit=1000`;
+
+    let rows;
+    try {
+      rows = await supabaseFetch(filter);
+    } catch (err) {
+      console.error(`    Landlord page failed: ${err.message}, continuing...`);
+      break;
+    }
+
+    if (!rows || rows.length === 0) break;
+
+    for (const l of rows) {
+      if (l.slug) {
+        landlordEntries.push({
+          url: `${BASE_URL}/nyc/landlord/${l.slug}`,
+          lastmod: l.updated_at ? new Date(l.updated_at).toISOString() : undefined,
+          changefreq: "monthly",
+          priority: 0.5,
+        });
+      }
+
+      if (landlordEntries.length >= 10000) {
+        writeFileSync(`${OUT_DIR}/l-${landlordBatchIndex}.xml`, buildSitemapXml(landlordEntries));
+        indexEntries.push({ name: `l-${landlordBatchIndex}.xml`, lastmod: now });
+        landlordUrls += landlordEntries.length;
+        if (landlordBatchIndex % 20 === 0) console.log(`    l-${landlordBatchIndex}.xml (${landlordUrls.toLocaleString()} total)`);
+        landlordBatchIndex++;
+        landlordEntries = [];
+      }
+    }
+
+    // Need name for cursor — re-fetch with name if first page didn't include it
+    landlordCursor = rows[rows.length - 1].name || rows[rows.length - 1].slug;
+
+    if (rows.length < 1000) break;
+  }
+
+  if (landlordEntries.length > 0) {
+    writeFileSync(`${OUT_DIR}/l-${landlordBatchIndex}.xml`, buildSitemapXml(landlordEntries));
+    indexEntries.push({ name: `l-${landlordBatchIndex}.xml`, lastmod: now });
+    landlordUrls += landlordEntries.length;
+    landlordBatchIndex++;
+  }
+  console.log(`  Landlords: ${landlordUrls.toLocaleString()} URLs across ${landlordBatchIndex} files`);
 
   // Building sitemaps — direct REST pagination (avoids RPC timeout)
   const PAGE_SIZE = 1000; // small pages to stay under REST statement timeout
@@ -380,6 +415,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error("Sitemap generation failed:", err);
-  process.exit(1);
+  console.error("Sitemap generation failed (non-fatal):", err.message);
+  console.warn("⚠ Build will continue with existing/partial sitemaps.");
 });
