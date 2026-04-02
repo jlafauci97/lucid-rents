@@ -19,14 +19,13 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: "*",
       allow: "/",
       disallow: [
-        "/api/auth/",       // auth endpoints only
-        "/api/webhooks/",   // webhook endpoints
+        "/api/",            // all API endpoints
+        "/_next/",          // static JS/CSS chunks
         "/profile/",
         "/review/new",      // legacy non-prefixed path
         "/*/review/new",    // city-prefixed review pages (e.g. /nyc/review/new?building=...)
         "/*?ids=",          // compare pages with building IDs
         "/compare",         // non-city-prefixed compare (redirects)
-        "/building/",       // non-city-prefixed building pages (redirects)
       ],
     },
     sitemap: "https://lucidrents.com/sitemap.xml",
