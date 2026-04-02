@@ -180,32 +180,47 @@ async function main() {
 
   // Upsert in batches
   const buildings = Array.from(addressMap.values());
-  let inserted = 0;
+  const stats = { inserted: 0, updated: 0, errors: 0 };
 
   for (let i = 0; i < buildings.length; i += BATCH_SIZE) {
     const batch = buildings.slice(i, i + BATCH_SIZE);
-    const { error } = await supabase.from("buildings").insert(batch);
 
-    if (error) {
-      if (error.code === "23505") {
-        // Duplicate key — insert one by one to get non-duplicates through
-        for (const row of batch) {
-          const { error: singleErr } = await supabase.from("buildings").insert(row);
-          if (!singleErr) inserted++;
+    for (const row of batch) {
+      const { data: existing } = await supabase
+        .from("buildings")
+        .select("id")
+        .eq("slug", row.slug)
+        .eq("metro", "chicago")
+        .eq("borough", row.borough)
+        .maybeSingle();
+
+      if (existing) {
+        const updates = {};
+        for (const [key, val] of Object.entries(row)) {
+          if (val != null && key !== "slug" && key !== "id") updates[key] = val;
         }
+        if (Object.keys(updates).length > 0) {
+          await supabase.from("buildings").update(updates).eq("id", existing.id);
+        }
+        stats.updated++;
       } else {
-        console.error(`  Batch ${Math.floor(i / BATCH_SIZE) + 1} error:`, error.message);
+        const { error } = await supabase.from("buildings").insert(row);
+        if (error && error.code !== "23505") {
+          console.error("Insert error:", error.message);
+          stats.errors++;
+        } else {
+          stats.inserted++;
+        }
       }
-    } else {
-      inserted += batch.length;
     }
 
-    if (inserted % 1000 < BATCH_SIZE) {
-      console.log(`  Progress: ${inserted}/${buildings.length}`);
+    const done = Math.min(i + BATCH_SIZE, buildings.length);
+    if (done % 1000 < BATCH_SIZE || done === buildings.length) {
+      console.log(`  Progress: ${done}/${buildings.length} (inserted: ${stats.inserted}, updated: ${stats.updated}, errors: ${stats.errors})`);
     }
   }
 
-  console.log(`\nDone! Total buildings upserted: ${inserted}`);
+  console.log(`\nDone! inserted: ${stats.inserted}, updated: ${stats.updated}, errors: ${stats.errors}`);
 }
 
 main().catch((err) => {
