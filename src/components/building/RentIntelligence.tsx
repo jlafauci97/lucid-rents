@@ -1,5 +1,6 @@
 import { BarChart3, TrendingUp, TrendingDown, MapPin, Calendar, DollarSign, Snowflake, Sun } from "lucide-react";
 import { MarketListings } from "@/components/building/MarketListings";
+import { RentHistoryChart as RentHistoryChartClient } from "@/components/building/RentHistoryChart";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -385,7 +386,8 @@ export async function RentIntelligence({
 
       {/* Rent History Chart */}
       {hasRentData && (
-        <RentHistoryChart
+        <RentHistoryChartClient
+          buildingId={buildingId}
           buildingRents={buildingRents}
           neighborhoodRents={neighborhoodRents}
         />
@@ -433,59 +435,6 @@ export async function RentIntelligence({
 /* ------------------------------------------------------------------ */
 /*  Placeholder sub-components (to be implemented in their own files)  */
 /* ------------------------------------------------------------------ */
-
-/**
- * Placeholder for RentHistoryChart — renders a simple summary table
- * until the full chart component is built in ./RentHistoryChart.tsx
- */
-function RentHistoryChart({
-  buildingRents,
-  neighborhoodRents,
-}: {
-  buildingRents: RentIntelligenceProps["buildingRents"];
-  neighborhoodRents: RentIntelligenceProps["neighborhoodRents"];
-}) {
-  const beds = mostCommonBeds(buildingRents);
-  const filtered = buildingRents
-    .filter((r) => r.beds === beds)
-    .sort((a, b) => a.month.localeCompare(b.month));
-
-  const recent = filtered.slice(-6);
-
-  return (
-    <div className="rounded-xl bg-white border border-gray-100 shadow-sm p-4">
-      <h3 className="text-sm font-semibold text-[#0F1D2E] mb-3">
-        Rent History ({beds === 0 ? "Studio" : `${beds} Bed`})
-      </h3>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-gray-100">
-              <th className="text-left py-1.5 text-xs text-gray-500 font-medium">Month</th>
-              <th className="text-right py-1.5 text-xs text-gray-500 font-medium">Median</th>
-              <th className="text-right py-1.5 text-xs text-gray-500 font-medium">Range</th>
-              <th className="text-right py-1.5 text-xs text-gray-500 font-medium">Listings</th>
-            </tr>
-          </thead>
-          <tbody>
-            {recent.map((r) => (
-              <tr key={r.month} className="border-b border-gray-50 last:border-0">
-                <td className="py-1.5 text-gray-700">{r.month}</td>
-                <td className="py-1.5 text-right font-semibold text-[#0F1D2E]">
-                  {formatDollars(r.median_rent)}
-                </td>
-                <td className="py-1.5 text-right text-gray-500">
-                  {formatDollars(r.min_rent)}&ndash;{formatDollars(r.max_rent)}
-                </td>
-                <td className="py-1.5 text-right text-gray-400">{r.listing_count}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
 
 /**
  * Placeholder for ValueBreakdown — renders amenity premiums summary
