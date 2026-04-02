@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { MapPin, Building2, Calendar, Layers, Users, ShieldCheck, AlertTriangle, MessageSquareWarning, Bug, Gavel } from "lucide-react";
-import { getLetterGrade, deriveScore } from "@/lib/constants";
+import { MapPin, Building2, Calendar, Layers, Users, ShieldCheck, AlertTriangle, MessageSquareWarning, Bug, Gavel, DollarSign, Ruler } from "lucide-react";
+import { getLetterGrade, deriveScore, GRADE_COLORS, type LetterGrade } from "@/lib/constants";
 import { CITY_META, type City } from "@/lib/cities";
 import { landlordUrl } from "@/lib/seo";
 import type { Building } from "@/types";
@@ -9,9 +9,12 @@ interface BuildingHeaderProps {
   building: Building;
   city?: City;
   violationCount?: number;
+  valueGrade?: string | null;
+  medianRent?: number;
+  pricePerSqft?: number;
 }
 
-export function BuildingHeader({ building, city = "nyc", violationCount }: BuildingHeaderProps) {
+export function BuildingHeader({ building, city = "nyc", violationCount, valueGrade, medianRent, pricePerSqft }: BuildingHeaderProps) {
   const vCount = violationCount ?? building.violation_count ?? 0;
   const score = building.overall_score ?? deriveScore(
     vCount,
@@ -72,26 +75,51 @@ export function BuildingHeader({ building, city = "nyc", violationCount }: Build
     <div className="bg-[#0F1D2E]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div className="flex flex-col md:flex-row md:items-center gap-5">
-          {/* Score shield */}
-          <div className="shrink-0 relative" style={{ width: 64, height: 76 }}>
-            <svg
-              viewBox="0 0 64 76"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-full h-full"
-              style={{ filter: "drop-shadow(0 4px 15px rgba(59,130,246,0.3))" }}
-            >
-              <path
-                d="M32 2L4 14V34C4 54 32 72 32 72C32 72 60 54 60 34V14L32 2Z"
-                fill="#3B82F6"
-              />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ paddingBottom: 4 }}>
-              <span className="text-[26px] font-black text-white leading-none">{grade}</span>
-              <span className="text-[10px] font-bold text-white/70 -mt-0.5">
-                {score.toFixed(1)}
-              </span>
+          {/* Score shields */}
+          <div className="shrink-0 flex items-end gap-2">
+            {/* Main quality shield */}
+            <div className="relative" style={{ width: 64, height: 76 }}>
+              <svg
+                viewBox="0 0 64 76"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-full h-full"
+                style={{ filter: "drop-shadow(0 4px 15px rgba(59,130,246,0.3))" }}
+              >
+                <path
+                  d="M32 2L4 14V34C4 54 32 72 32 72C32 72 60 54 60 34V14L32 2Z"
+                  fill="#3B82F6"
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ paddingBottom: 4 }}>
+                <span className="text-[26px] font-black text-white leading-none">{grade}</span>
+                <span className="text-[10px] font-bold text-white/70 -mt-0.5">
+                  {score.toFixed(1)}
+                </span>
+              </div>
             </div>
+
+            {/* Value grade badge */}
+            {valueGrade && (
+              <div className="relative" style={{ width: 44, height: 52 }}>
+                <svg
+                  viewBox="0 0 64 76"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-full h-full"
+                  style={{ filter: `drop-shadow(0 2px 8px ${GRADE_COLORS[valueGrade as LetterGrade] || "#6b7280"}40)` }}
+                >
+                  <path
+                    d="M32 2L4 14V34C4 54 32 72 32 72C32 72 60 54 60 34V14L32 2Z"
+                    fill={GRADE_COLORS[valueGrade as LetterGrade] || "#6b7280"}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ paddingBottom: 3 }}>
+                  <span className="text-[18px] font-black text-white leading-none">{valueGrade}</span>
+                  <span className="text-[7px] font-bold text-white/80 -mt-0.5">Value</span>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Info */}
@@ -133,6 +161,20 @@ export function BuildingHeader({ building, city = "nyc", violationCount }: Build
                 </span>
               ))}
 
+              {medianRent != null && medianRent > 0 && (
+                <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">
+                  <DollarSign className="w-3.5 h-3.5" />
+                  ${medianRent.toLocaleString()} median
+                </span>
+              )}
+
+              {pricePerSqft != null && pricePerSqft > 0 && (
+                <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold text-violet-400 bg-violet-500/10 border border-violet-500/20">
+                  <Ruler className="w-3.5 h-3.5" />
+                  ${pricePerSqft.toFixed(2)}/sqft
+                </span>
+              )}
+
               {building.review_count > 0 && (
                 <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold text-blue-400 bg-blue-500/10 border border-blue-500/20">
                   <Users className="w-3.5 h-3.5" />
@@ -147,12 +189,20 @@ export function BuildingHeader({ building, city = "nyc", violationCount }: Build
                 </span>
               )}
 
+              {building.management_company && (
+                <Link
+                  href={landlordUrl(building.management_company)}
+                  className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium text-[#94a3b8] bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+                >
+                  Managed by: {building.management_company}
+                </Link>
+              )}
               {building.owner_name && (
                 <Link
                   href={landlordUrl(building.owner_name)}
                   className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium text-[#94a3b8] bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
                 >
-                  Owner: {building.owner_name}
+                  Property Owner: {building.owner_name}
                 </Link>
               )}
             </div>

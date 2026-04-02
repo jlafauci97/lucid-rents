@@ -253,6 +253,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
 
   // Dewey rent intelligence: compute above-the-fold metrics
   const deweyMetrics = (() => {
+    try {
     if (!deweyLatestRaw || deweyLatestRaw.length === 0) return null;
     // Find the latest month
     const latestMonth = deweyLatestRaw[0]?.month;
@@ -279,10 +280,11 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
     const neighborhoodMedianRent = nhTotalWeight > 0 ? Math.round(nhTotalRent / nhTotalWeight) : undefined;
 
     // YoY rent change: compare latest month to 12 months prior
-    const latestDate = new Date(latestMonth + "-01");
+    const latestDateStr = String(latestMonth).slice(0, 10); // "2024-07-01"
+    const latestDate = new Date(latestDateStr + "T00:00:00Z");
     const priorDate = new Date(latestDate);
     priorDate.setFullYear(priorDate.getFullYear() - 1);
-    const priorMonth = priorDate.toISOString().slice(0, 7);
+    const priorMonth = priorDate.toISOString().slice(0, 7) + "-01";
     const priorRows = deweyLatestRaw.filter(r => r.month === priorMonth);
     let rentChangeYoY: number | undefined;
     if (priorRows.length > 0 && medianRent) {
@@ -312,6 +314,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
     }
 
     return { medianRent, pricePerSqft, neighborhoodMedianRent, rentChangeYoY, valueGrade };
+    } catch (e) { return null; }
   })();
 
   // Extract short address for breadcrumb
@@ -601,13 +604,14 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
           </div>
         </div>
 
-        {/* Same Landlord Buildings — cross-link within portfolio */}
-        {building.owner_name && building.owner_name !== "UNAVAILABLE OWNER" && (
+        {/* Same Landlord / Management Company Buildings — cross-link within portfolio */}
+        {(building.management_company || (building.owner_name && building.owner_name !== "UNAVAILABLE OWNER")) && (
           <Suspense fallback={<BottomSkeleton />}>
             <div id="same-landlord" className="mt-8">
               <SameLandlordBuildings
                 buildingId={buildingId}
-                ownerName={building.owner_name}
+                ownerName={building.owner_name || ""}
+                managementCompany={building.management_company}
                 city={city}
               />
             </div>

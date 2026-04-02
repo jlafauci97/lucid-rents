@@ -53,6 +53,29 @@ interface CrimeSummary {
   quality_of_life: number;
 }
 
+interface RentHistoryData {
+  earliest: { month: string; rent: number };
+  latest: { month: string; rent: number };
+  covidLow?: { month: string; rent: number };
+}
+
+interface ValueData {
+  buildingMedian: number;
+  neighborhoodMedian: number;
+  valueGrade: string;
+}
+
+interface SqftData {
+  pricePerSqft: number;
+  percentile: number;
+}
+
+interface SeasonalData {
+  cheapestMonth: number;
+  expensiveMonth: number;
+  savingsPercent: number;
+}
+
 const fmt = (n: number) => `$${n.toLocaleString()}`;
 
 const bedroomLabel = (b: number) =>
@@ -74,6 +97,10 @@ export function generateBuildingFAQ({
   nearbySchools,
   nearbyTransit,
   crimeSummary,
+  rentHistory,
+  valueData,
+  sqftData,
+  seasonalData,
 }: {
   building: Building;
   rents: BuildingRent[];
@@ -90,6 +117,10 @@ export function generateBuildingFAQ({
   nearbySchools: Record<string, NearbySchool[]>;
   nearbyTransit: Record<string, NearbyTransitStop[]>;
   crimeSummary: CrimeSummary | null;
+  rentHistory?: RentHistoryData;
+  valueData?: ValueData;
+  sqftData?: SqftData;
+  seasonalData?: SeasonalData;
 }): FAQItem[] {
   const items: FAQItem[] = [];
   const addr = building.full_address;
@@ -155,6 +186,68 @@ export function generateBuildingFAQ({
     items.push({
       question: `Is ${addr} rent stabilized?`,
       answer: `Based on available records, ${addr} is not currently registered as rent stabilized. Rents at this building are likely set at market rate.`,
+    });
+  }
+
+  // --- Rent Intelligence ---
+
+  // Rent history / change over time
+  if (rentHistory) {
+    const cumChange =
+      ((rentHistory.latest.rent - rentHistory.earliest.rent) / rentHistory.earliest.rent) * 100;
+    const direction = cumChange >= 0 ? "increased" : "decreased";
+    const covidNote = rentHistory.covidLow
+      ? ` During COVID, rents dipped to ${fmt(rentHistory.covidLow.rent)} in ${rentHistory.covidLow.month} before recovering.`
+      : "";
+    items.push({
+      question: `How much has rent changed at ${addr}?`,
+      answer: `Rent at ${addr} has ${direction} by ${Math.abs(Math.round(cumChange))}% since ${rentHistory.earliest.month}, going from ${fmt(rentHistory.earliest.rent)} to ${fmt(rentHistory.latest.rent)} as of ${rentHistory.latest.month}.${covidNote}`,
+    });
+  }
+
+  // Overpriced vs neighborhood
+  if (valueData) {
+    const diff =
+      ((valueData.buildingMedian - valueData.neighborhoodMedian) / valueData.neighborhoodMedian) *
+      100;
+    const absDiff = Math.abs(Math.round(diff));
+    const comparison =
+      diff > 3
+        ? `${absDiff}% above the neighborhood median of ${fmt(valueData.neighborhoodMedian)}`
+        : diff < -3
+          ? `${absDiff}% below the neighborhood median of ${fmt(valueData.neighborhoodMedian)}`
+          : `in line with the neighborhood median of ${fmt(valueData.neighborhoodMedian)}`;
+    items.push({
+      question: `Is ${addr} overpriced compared to the neighborhood?`,
+      answer: `The median rent at ${addr} is ${fmt(valueData.buildingMedian)}, which is ${comparison}. Lucid Rents assigns this building a value grade of ${valueData.valueGrade}, which reflects how rent compares to the area average after adjusting for building quality and amenities.`,
+    });
+  }
+
+  // Price per square foot
+  if (sqftData) {
+    const percentileLabel =
+      sqftData.percentile >= 75
+        ? "in the top quartile (more expensive per sqft)"
+        : sqftData.percentile <= 25
+          ? "in the bottom quartile (more affordable per sqft)"
+          : "near the middle of the range";
+    items.push({
+      question: `What is the price per square foot at ${addr}?`,
+      answer: `The estimated price per square foot at ${addr} is $${sqftData.pricePerSqft.toFixed(2)}/sqft. This places it at the ${sqftData.percentile}th percentile in the neighborhood, ${percentileLabel} compared to nearby buildings.`,
+    });
+  }
+
+  // Cheapest time to rent
+  if (seasonalData) {
+    const monthNames = [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December",
+    ];
+    const cheapest = monthNames[seasonalData.cheapestMonth - 1] || `month ${seasonalData.cheapestMonth}`;
+    const expensive = monthNames[seasonalData.expensiveMonth - 1] || `month ${seasonalData.expensiveMonth}`;
+    items.push({
+      question: `When is the cheapest time to rent at ${addr}?`,
+      answer: `Based on historical listing data, ${cheapest} tends to be the most affordable month to sign a lease at ${addr}, while ${expensive} is typically the most expensive. Timing your move to ${cheapest} could save approximately ${seasonalData.savingsPercent}% compared to peak pricing.`,
     });
   }
 

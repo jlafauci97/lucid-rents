@@ -17,7 +17,8 @@ import {
 
 const SECTIONS = [
   { id: "reviews", label: "Reviews", icon: MessageSquare },
-  { id: "rent", label: "Rent", icon: DollarSign },
+  { id: "rent-intelligence", label: "Rent Intel", icon: DollarSign },
+  { id: "rent", label: "Listings", icon: DollarSign },
   { id: "amenities", label: "Amenities", icon: Sparkles },
   { id: "violation-trends", label: "Trends", icon: TrendingUp },
   { id: "violations", label: "Issues", icon: AlertTriangle },

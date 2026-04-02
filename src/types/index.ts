@@ -29,6 +29,7 @@ export interface Building {
   building_class: string | null;
   land_use: string | null;
   owner_name: string | null;
+  management_company: string | null;
   name: string | null;
   slug: string;
   overall_score: number | null;

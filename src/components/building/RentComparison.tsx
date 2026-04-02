@@ -18,6 +18,11 @@ interface RentComparisonProps {
   neighborhoodRents: NeighborhoodRent[];
   zipCode: string;
   borough: string;
+  historicalContext?: string;
+  rentTrajectory?: {
+    buildingYoY: number;
+    neighborhoodYoY: number;
+  };
 }
 
 const BED_LABELS: Record<number, string> = {
@@ -120,6 +125,8 @@ export function RentComparison({
   neighborhoodRents,
   zipCode,
   borough,
+  historicalContext,
+  rentTrajectory,
 }: RentComparisonProps) {
   if (!buildingRents || buildingRents.length === 0) {
     return null;
@@ -210,6 +217,33 @@ export function RentComparison({
               );
             })}
           </div>
+
+          {/* Historical context & trajectory */}
+          {(historicalContext || rentTrajectory) && (
+            <>
+              <div className="border-t border-[#e2e8f0]" />
+
+              {historicalContext && (
+                <p className="text-xs text-[#64748b]">{historicalContext}</p>
+              )}
+
+              {rentTrajectory && (() => {
+                const faster = rentTrajectory.buildingYoY > rentTrajectory.neighborhoodYoY;
+                const arrow = faster ? "\u2197" : "\u2198";
+                const label = faster
+                  ? "Rising faster than neighborhood"
+                  : "Rising slower than neighborhood";
+                const color = faster ? "text-red-600" : "text-emerald-600";
+                const sign = (v: number) => (v >= 0 ? `+${v}` : `${v}`);
+                return (
+                  <p className={`text-xs font-medium ${color}`}>
+                    Trajectory: {arrow} {label} ({sign(rentTrajectory.buildingYoY)}% vs{" "}
+                    {sign(rentTrajectory.neighborhoodYoY)}% YoY)
+                  </p>
+                );
+              })()}
+            </>
+          )}
 
           <p className="text-[10px] text-[#94a3b8]">
             Compared to median rents in {zipCode}, {borough}

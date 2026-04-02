@@ -10,7 +10,12 @@ import {
   Activity,
   Gavel,
   MessageSquareWarning,
+  Ruler,
+  TrendingUp,
+  TrendingDown,
+  Star,
 } from "lucide-react";
+import { GRADE_COLORS, type LetterGrade } from "@/lib/constants";
 import type { Building } from "@/types";
 
 interface QuickSummaryProps {
@@ -20,6 +25,11 @@ interface QuickSummaryProps {
   complaintCount: number;
   bedbugCount: number;
   evictionCount: number;
+  valueGrade?: string | null;
+  medianRent?: number;
+  pricePerSqft?: number;
+  neighborhoodMedianRent?: number;
+  rentChangeYoY?: number;
 }
 
 function getWorstIssue(counts: {
@@ -113,7 +123,22 @@ export function QuickSummary({
   complaintCount,
   bedbugCount,
   evictionCount,
+  valueGrade,
+  medianRent,
+  pricePerSqft,
+  neighborhoodMedianRent,
+  rentChangeYoY,
 }: QuickSummaryProps) {
+  const hasRentData = !!(valueGrade || medianRent || pricePerSqft || rentChangeYoY != null);
+
+  // Compute rent vs neighborhood context
+  let rentContext: string | null = null;
+  if (medianRent && neighborhoodMedianRent && neighborhoodMedianRent > 0) {
+    const diff = ((medianRent - neighborhoodMedianRent) / neighborhoodMedianRent) * 100;
+    const absDiff = Math.abs(Math.round(diff));
+    rentContext = diff < 0 ? `${absDiff}% below median` : diff > 0 ? `${absDiff}% above median` : "At area median";
+  }
+
   const worstIssue = getWorstIssue({
     violations: violationCount,
     complaints: complaintCount,
@@ -134,7 +159,7 @@ export function QuickSummary({
           Quick Summary
         </h3>
         <div className="grid grid-cols-2 gap-4">
-          {/* Worst Issue */}
+          {/* Row 1, Col 1: Top Concern / Quality Grade */}
           <div className={`rounded-lg p-3 ${colors.bg}`}>
             <div className="flex items-center gap-2 mb-1">
               <WorstIcon className={`w-4 h-4 ${colors.icon}`} />
@@ -152,54 +177,169 @@ export function QuickSummary({
             )}
           </div>
 
-          {/* Rent Range */}
-          <div className="rounded-lg p-3 bg-blue-50">
-            <div className="flex items-center gap-2 mb-1">
-              <DollarSign className="w-4 h-4 text-blue-500" />
-              <span className="text-xs font-medium text-[#64748b]">
-                Rent Range
-              </span>
-            </div>
-            <p className="text-sm font-semibold text-blue-700">
-              {rentRange || "No rent data"}
-            </p>
-          </div>
-
-          {/* Rent Stabilized */}
-          <div
-            className={`rounded-lg p-3 ${
-              isStabilized ? "bg-emerald-50" : "bg-gray-50"
-            }`}
-          >
-            <div className="flex items-center gap-2 mb-1">
-              {isStabilized ? (
-                <ShieldCheck className="w-4 h-4 text-emerald-500" />
-              ) : (
-                <ShieldX className="w-4 h-4 text-gray-400" />
+          {/* Row 1, Col 2: Value Grade (new) or Rent Range (fallback) */}
+          {hasRentData && valueGrade ? (
+            <div className="rounded-lg p-3" style={{ backgroundColor: `${GRADE_COLORS[valueGrade as LetterGrade] || "#6b7280"}15` }}>
+              <div className="flex items-center gap-2 mb-1">
+                <Star className="w-4 h-4" style={{ color: GRADE_COLORS[valueGrade as LetterGrade] || "#6b7280" }} />
+                <span className="text-xs font-medium text-[#64748b]">
+                  Value Grade
+                </span>
+              </div>
+              <p className="text-sm font-semibold" style={{ color: GRADE_COLORS[valueGrade as LetterGrade] || "#6b7280" }}>
+                {valueGrade}
+              </p>
+              {rentContext && (
+                <p className="text-xs text-[#64748b]">{rentContext}</p>
               )}
-              <span className="text-xs font-medium text-[#64748b]">
-                Rent Stabilized
-              </span>
             </div>
-            <p
-              className={`text-sm font-semibold ${
-                isStabilized ? "text-emerald-700" : "text-gray-500"
+          ) : (
+            <div className="rounded-lg p-3 bg-blue-50">
+              <div className="flex items-center gap-2 mb-1">
+                <DollarSign className="w-4 h-4 text-blue-500" />
+                <span className="text-xs font-medium text-[#64748b]">
+                  Rent Range
+                </span>
+              </div>
+              <p className="text-sm font-semibold text-blue-700">
+                {rentRange || "No rent data"}
+              </p>
+            </div>
+          )}
+
+          {/* Row 2, Col 1: Rent Range (when hasRentData) or Rent Stabilized (fallback) */}
+          {hasRentData ? (
+            <div className="rounded-lg p-3 bg-blue-50">
+              <div className="flex items-center gap-2 mb-1">
+                <DollarSign className="w-4 h-4 text-blue-500" />
+                <span className="text-xs font-medium text-[#64748b]">
+                  Rent Range
+                </span>
+              </div>
+              <p className="text-sm font-semibold text-blue-700">
+                {rentRange || "No rent data"}
+              </p>
+            </div>
+          ) : (
+            <div
+              className={`rounded-lg p-3 ${
+                isStabilized ? "bg-emerald-50" : "bg-gray-50"
               }`}
             >
-              {isStabilized ? "Yes" : "No"}
-            </p>
-          </div>
-
-          {/* Issue Density */}
-          <div className="rounded-lg p-3 bg-gray-50">
-            <div className="flex items-center gap-2 mb-1">
-              <Activity className="w-4 h-4 text-[#64748b]" />
-              <span className="text-xs font-medium text-[#64748b]">
-                Issue Density
-              </span>
+              <div className="flex items-center gap-2 mb-1">
+                {isStabilized ? (
+                  <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                ) : (
+                  <ShieldX className="w-4 h-4 text-gray-400" />
+                )}
+                <span className="text-xs font-medium text-[#64748b]">
+                  Rent Stabilized
+                </span>
+              </div>
+              <p
+                className={`text-sm font-semibold ${
+                  isStabilized ? "text-emerald-700" : "text-gray-500"
+                }`}
+              >
+                {isStabilized ? "Yes" : "No"}
+              </p>
             </div>
-            <Badge variant={concern.variant}>{concern.level}</Badge>
-          </div>
+          )}
+
+          {/* Row 2, Col 2: $/sqft (when hasRentData) or Issue Density (fallback) */}
+          {hasRentData && pricePerSqft ? (
+            <div className="rounded-lg p-3 bg-violet-50">
+              <div className="flex items-center gap-2 mb-1">
+                <Ruler className="w-4 h-4 text-violet-500" />
+                <span className="text-xs font-medium text-[#64748b]">
+                  $/sqft
+                </span>
+              </div>
+              <p className="text-sm font-semibold text-violet-700">
+                ${pricePerSqft.toFixed(2)}/sqft
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-lg p-3 bg-gray-50">
+              <div className="flex items-center gap-2 mb-1">
+                <Activity className="w-4 h-4 text-[#64748b]" />
+                <span className="text-xs font-medium text-[#64748b]">
+                  Issue Density
+                </span>
+              </div>
+              <Badge variant={concern.variant}>{concern.level}</Badge>
+            </div>
+          )}
+
+          {/* Row 3 (only when hasRentData) */}
+          {hasRentData && (
+            <>
+              {/* Row 3, Col 1: Rent Stabilized */}
+              <div
+                className={`rounded-lg p-3 ${
+                  isStabilized ? "bg-emerald-50" : "bg-gray-50"
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  {isStabilized ? (
+                    <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                  ) : (
+                    <ShieldX className="w-4 h-4 text-gray-400" />
+                  )}
+                  <span className="text-xs font-medium text-[#64748b]">
+                    Rent Stabilized
+                  </span>
+                </div>
+                <p
+                  className={`text-sm font-semibold ${
+                    isStabilized ? "text-emerald-700" : "text-gray-500"
+                  }`}
+                >
+                  {isStabilized ? "Yes" : "No"}
+                </p>
+              </div>
+
+              {/* Row 3, Col 2: Rent Trend */}
+              {rentChangeYoY != null ? (
+                <div className="rounded-lg p-3 bg-gray-50">
+                  <div className="flex items-center gap-2 mb-1">
+                    {rentChangeYoY > 0 ? (
+                      <TrendingUp className="w-4 h-4 text-red-500" />
+                    ) : rentChangeYoY < 0 ? (
+                      <TrendingDown className="w-4 h-4 text-emerald-500" />
+                    ) : (
+                      <Activity className="w-4 h-4 text-[#64748b]" />
+                    )}
+                    <span className="text-xs font-medium text-[#64748b]">
+                      Rent Trend (YoY)
+                    </span>
+                  </div>
+                  <p
+                    className={`text-sm font-semibold ${
+                      rentChangeYoY > 0
+                        ? "text-red-700"
+                        : rentChangeYoY < 0
+                          ? "text-emerald-700"
+                          : "text-gray-500"
+                    }`}
+                  >
+                    {rentChangeYoY > 0 ? "+" : ""}
+                    {rentChangeYoY.toFixed(1)}%
+                  </p>
+                </div>
+              ) : (
+                <div className="rounded-lg p-3 bg-gray-50">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Activity className="w-4 h-4 text-[#64748b]" />
+                    <span className="text-xs font-medium text-[#64748b]">
+                      Issue Density
+                    </span>
+                  </div>
+                  <Badge variant={concern.variant}>{concern.level}</Badge>
+                </div>
+              )}
+            </>
+          )}
         </div>
       </CardContent>
     </Card>
