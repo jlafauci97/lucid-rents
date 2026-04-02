@@ -8,11 +8,7 @@ import { TEMPLATES, getCityAgency, CATEGORY_COLORS } from "@/lib/tenant-template
 import { TemplateViewer } from "@/components/tenant-tools/TemplateViewer";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 
-export const dynamicParams = true;
-
-export function generateStaticParams() {
-  return TEMPLATES.map((t) => ({ slug: t.slug }));
-}
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params,
