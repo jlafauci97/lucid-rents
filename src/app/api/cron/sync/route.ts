@@ -203,40 +203,23 @@ async function findOrCreateBuilding(
   supabase: ReturnType<typeof getSupabaseAdmin>,
   slug: string,
   metro: string,
+  borough: string,
   buildingData: Record<string, unknown>
 ): Promise<string | null> {
-  // Try to find existing building by slug + metro
-  const { data: existing } = await supabase
+  const { data, error } = await supabase
     .from("buildings")
-    .select("id")
-    .eq("slug", slug)
-    .eq("metro", metro)
-    .maybeSingle();
-
-  if (existing) return existing.id;
-
-  // Insert new building
-  const { data: created, error } = await supabase
-    .from("buildings")
-    .insert(buildingData)
+    .upsert(
+      { ...buildingData, slug, metro, borough },
+      { onConflict: "metro,borough,slug" }
+    )
     .select("id")
     .single();
 
   if (error) {
-    // Handle race condition: another worker may have inserted
-    if (error.code === "23505") {
-      const { data: retry } = await supabase
-        .from("buildings")
-        .select("id")
-        .eq("slug", slug)
-        .eq("metro", metro)
-        .maybeSingle();
-      return retry?.id ?? null;
-    }
-    console.error(`Create building error (${metro}):`, error.message);
+    console.error(`Upsert building error (${metro}):`, error.message);
     return null;
   }
-  return created?.id ?? null;
+  return data?.id ?? null;
 }
 
 /** Get the last successful sync date for a given sync type.
@@ -4813,7 +4796,7 @@ async function runLinkOnly(
               const slug = generateBuildingSlug(fullAddr);
               const coords = addrToCoords.get(addr);
 
-              const createdId = await findOrCreateBuilding(supabase, slug, "chicago", {
+              const createdId = await findOrCreateBuilding(supabase, slug, "chicago", "Chicago", {
                 full_address: fullAddr,
                 house_number: houseNum,
                 street_name: streetName,
@@ -4976,7 +4959,7 @@ async function runLinkOnly(
               const slug = generateBuildingSlug(fullAddr);
               const coords = addrToCoords.get(addr);
 
-              const createdId = await findOrCreateBuilding(supabase, slug, "miami", {
+              const createdId = await findOrCreateBuilding(supabase, slug, "miami", "Miami-Dade", {
                 full_address: fullAddr,
                 house_number: houseNum,
                 street_name: streetName,
@@ -5134,7 +5117,7 @@ async function runLinkOnly(
               const slug = generateBuildingSlug(fullAddr);
               const coords = addrToCoords.get(addr);
 
-              const createdId = await findOrCreateBuilding(supabase, slug, "houston", {
+              const createdId = await findOrCreateBuilding(supabase, slug, "houston", "Houston", {
                 full_address: fullAddr,
                 house_number: houseNum,
                 street_name: streetName,
