@@ -367,12 +367,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://lucidrents.com/CA/Los-Angeles/building/long-beach/640-stanley-ave-90814</loc>
-    <lastmod>2026-04-02T14:20:31.848Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://lucidrents.com/nyc/building/queens/36-37-corporal-stone-st-queens-ny-11361</loc>
     <lastmod>2026-03-20T22:09:48.805Z</lastmod>
     <changefreq>weekly</changefreq>
@@ -1538,7 +1532,7 @@
   </url>
   <url>
     <loc>https://lucidrents.com/IL/Chicago/building/roseland/11921-s-wallace-st</loc>
-    <lastmod>2026-03-30T15:40:00.034Z</lastmod>
+    <lastmod>2026-04-02T21:02:46.491Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -1886,7 +1880,7 @@
   </url>
   <url>
     <loc>https://lucidrents.com/IL/Chicago/building/roseland/12117-s-la-salle-st</loc>
-    <lastmod>2026-03-30T15:41:25.522Z</lastmod>
+    <lastmod>2026-04-02T21:11:14.385Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -2193,12 +2187,6 @@
   <url>
     <loc>https://lucidrents.com/nyc/building/brooklyn/841-42-street-brooklyn-ny-11232</loc>
     <lastmod>2026-03-20T22:27:38.713Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://lucidrents.com/CA/Los-Angeles/building/los-angeles/712-n-hobart-blvd-90029</loc>
-    <lastmod>2026-04-02T14:03:51.733Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -6925,12 +6913,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://lucidrents.com/CA/Los-Angeles/building/van-nuys/6830-langdon-ave-91406</loc>
-    <lastmod>2026-04-02T15:15:23.028Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://lucidrents.com/nyc/building/queens/83-68-vietor-avenue-queens-ny-11373</loc>
     <lastmod>2026-03-20T23:41:52.381Z</lastmod>
     <changefreq>weekly</changefreq>
@@ -7609,12 +7591,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://lucidrents.com/CA/Los-Angeles/building/los-angeles/6548-w-86th-pl-90045</loc>
-    <lastmod>2026-04-02T14:31:24.175Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://lucidrents.com/CA/Los-Angeles/building/south-la/1350-w-florence-ave</loc>
     <lastmod>2026-03-30T15:58:02.202Z</lastmod>
     <changefreq>weekly</changefreq>
@@ -8061,12 +8037,6 @@
   <url>
     <loc>https://lucidrents.com/nyc/building/brooklyn/38-butler-street-brooklyn-ny-11231</loc>
     <lastmod>2026-03-20T22:27:31.787Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://lucidrents.com/CA/Los-Angeles/building/long-beach/724-n-park-ct-90813</loc>
-    <lastmod>2026-04-02T13:43:27.525Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -9585,12 +9555,6 @@
   <url>
     <loc>https://lucidrents.com/IL/Chicago/building/logan-square/2530-n-willetts-ct</loc>
     <lastmod>2026-03-30T15:56:24.665Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://lucidrents.com/IL/Chicago/building/pilsen/120-n-mozart-st</loc>
-    <lastmod>2026-03-30T15:33:14.967Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -12667,12 +12631,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://lucidrents.com/CA/Los-Angeles/building/van-nuys/7244-kester-ave-91405</loc>
-    <lastmod>2026-04-02T14:02:16.780Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://lucidrents.com/TX/Houston/building/houston/6904-brownsville-st</loc>
     <lastmod>2026-03-31T08:02:28.494Z</lastmod>
     <changefreq>weekly</changefreq>
@@ -13071,12 +13029,6 @@
   <url>
     <loc>https://lucidrents.com/FL/Miami/building/hollywood/10845-nw-3rd-ct</loc>
     <lastmod>2026-04-01T19:55:00.823Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://lucidrents.com/IL/Chicago/building/chinatown/116-e-35th-st</loc>
-    <lastmod>2026-03-30T15:40:00.034Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -13975,12 +13927,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://lucidrents.com/CA/Los-Angeles/building/los-angeles/632-w-84th-st</loc>
-    <lastmod>2026-04-01T19:13:10.014Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://lucidrents.com/nyc/building/bronx/3153-schuyler-place-bronx-ny-10461</loc>
     <lastmod>2026-03-25T21:04:27.515Z</lastmod>
     <changefreq>weekly</changefreq>
@@ -14115,12 +14061,6 @@
   <url>
     <loc>https://lucidrents.com/nyc/building/brooklyn/188-4-avenue-brooklyn-ny-11217</loc>
     <lastmod>2026-03-20T22:10:41.028Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://lucidrents.com/CA/Los-Angeles/building/canoga-park/6709-independence-ave</loc>
-    <lastmod>2026-04-01T19:51:54.651Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -14803,12 +14743,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://lucidrents.com/IL/Chicago/building/roseland/12015-s-wallace-st</loc>
-    <lastmod>2026-03-30T15:41:25.522Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://lucidrents.com/nyc/building/brooklyn/2283-west-1-street-brooklyn-ny-11223</loc>
     <lastmod>2026-03-20T22:21:20.972Z</lastmod>
     <changefreq>weekly</changefreq>
@@ -15337,12 +15271,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://lucidrents.com/CA/Los-Angeles/building/burbank/626-e-harvard-rd-91501</loc>
-    <lastmod>2026-04-02T14:03:05.408Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://lucidrents.com/CA/Los-Angeles/building/los-angeles/1329-e-22nd-st</loc>
     <lastmod>2026-03-30T18:06:38.390Z</lastmod>
     <changefreq>weekly</changefreq>
@@ -15483,12 +15411,6 @@
   <url>
     <loc>https://lucidrents.com/nyc/building/staten-island/3-3-street-staten-island-ny-10306</loc>
     <lastmod>2026-03-20T22:49:41.860Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://lucidrents.com/CA/Los-Angeles/building/van-nuys/6927-willis-ave</loc>
-    <lastmod>2026-04-01T19:13:10.514Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -16705,12 +16627,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://lucidrents.com/IL/Chicago/building/beverly/11628-s-aberdeen-st</loc>
-    <lastmod>2026-03-30T15:56:25.199Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://lucidrents.com/CA/Los-Angeles/building/los-angeles/3226-e-manitou-ave</loc>
     <lastmod>2026-03-30T18:07:10.675Z</lastmod>
     <changefreq>weekly</changefreq>
@@ -17703,12 +17619,6 @@
   <url>
     <loc>https://lucidrents.com/nyc/building/queens/159-25-100-street-queens-ny-11414</loc>
     <lastmod>2026-03-20T22:56:53.102Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://lucidrents.com/CA/Los-Angeles/building/long-beach/629-pine-ave</loc>
-    <lastmod>2026-04-01T19:11:41.679Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -20041,12 +19951,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://lucidrents.com/CA/Los-Angeles/building/reseda/6638-lindley-ave-91335</loc>
-    <lastmod>2026-04-02T14:22:48.123Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://lucidrents.com/IL/Chicago/building/englewood/5805-s-carpenter-st</loc>
     <lastmod>2026-03-30T15:56:25.663Z</lastmod>
     <changefreq>weekly</changefreq>
@@ -20151,12 +20055,6 @@
   <url>
     <loc>https://lucidrents.com/nyc/building/manhattan/405-e-57th-st</loc>
     <lastmod>2026-04-01T19:56:48.479Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://lucidrents.com/IL/Chicago/building/wicker-park/1215-w-erie-st</loc>
-    <lastmod>2026-03-30T15:27:46.032Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -21319,12 +21217,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://lucidrents.com/CA/Los-Angeles/building/rancho-palos-verdes/6925-abbottswood-dr</loc>
-    <lastmod>2026-04-01T19:11:43.528Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://lucidrents.com/CA/Los-Angeles/building/winnetka/20259-w-wyandotte-st</loc>
     <lastmod>2026-03-30T15:34:58.528Z</lastmod>
     <changefreq>weekly</changefreq>
@@ -21573,12 +21465,6 @@
   <url>
     <loc>https://lucidrents.com/FL/Miami/building/miami-dade/24876-sw-114-ave-miami-e205e843f66026ea2d535aa158ce2a58</loc>
     <lastmod>2026-04-02T18:34:30.874Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://lucidrents.com/CA/Los-Angeles/building/los-angeles/6536-franklin-ave-90028</loc>
-    <lastmod>2026-04-02T14:47:15.880Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -24391,12 +24277,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://lucidrents.com/IL/Chicago/building/beverly/1158-w-111th-st</loc>
-    <lastmod>2026-03-30T15:56:25.630Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://lucidrents.com/CA/Los-Angeles/building/los-angeles/3515-e-loosmore-st</loc>
     <lastmod>2026-03-30T15:32:51.263Z</lastmod>
     <changefreq>weekly</changefreq>
@@ -26533,12 +26413,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://lucidrents.com/CA/Los-Angeles/building/los-angeles/652-n-hayworth-ave</loc>
-    <lastmod>2026-04-01T19:55:48.877Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://lucidrents.com/FL/Miami/building/miami-dade/12974-sw-251-ter-miami-3b2e4c2bd56f06bebf3107b4df3c3832</loc>
     <lastmod>2026-03-26T01:45:00.893Z</lastmod>
     <changefreq>weekly</changefreq>
@@ -27345,12 +27219,6 @@
   <url>
     <loc>https://lucidrents.com/TX/Houston/building/houston/0-katy-fwy</loc>
     <lastmod>2026-03-31T13:34:52.606Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://lucidrents.com/CA/Los-Angeles/building/los-angeles/633-n-soto-st-90033</loc>
-    <lastmod>2026-04-02T15:01:05.776Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -28477,12 +28345,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://lucidrents.com/CA/Los-Angeles/building/los-angeles/680-s-berendo-st-90005</loc>
-    <lastmod>2026-04-02T14:56:32.145Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://lucidrents.com/FL/Miami/building/weston/659-vista-meadows-dr-33327</loc>
     <lastmod>2026-04-02T14:03:50.019Z</lastmod>
     <changefreq>weekly</changefreq>
@@ -29031,12 +28893,6 @@
   <url>
     <loc>https://lucidrents.com/IL/Chicago/building/chicago/2009-w-huron-st</loc>
     <lastmod>2026-04-01T18:41:16.583Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://lucidrents.com/IL/Chicago/building/huntley/11664-wembley-dr-60142</loc>
-    <lastmod>2026-04-02T13:56:14.360Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -29679,12 +29535,6 @@
   <url>
     <loc>https://lucidrents.com/CA/Los-Angeles/building/west-hollywood/960-n-san-vicente-blvd-90069</loc>
     <lastmod>2026-04-02T12:26:45.373Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://lucidrents.com/CA/Los-Angeles/building/glendale/659-salem-st-91203</loc>
-    <lastmod>2026-04-02T14:00:14.128Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -30633,12 +30483,6 @@
   <url>
     <loc>https://lucidrents.com/nyc/building/staten-island/335-clifton-avenue-staten-island-ny</loc>
     <lastmod>2026-03-27T17:10:29.542Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://lucidrents.com/CA/Los-Angeles/building/inglewood/715-marlborough-ave</loc>
-    <lastmod>2026-04-01T19:11:43.528Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -32828,7 +32672,7 @@
   </url>
   <url>
     <loc>https://lucidrents.com/IL/Chicago/building/roseland/11821-s-parnell-ave</loc>
-    <lastmod>2026-03-30T15:56:25.935Z</lastmod>
+    <lastmod>2026-04-02T21:00:25.952Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -34496,7 +34340,7 @@
   </url>
   <url>
     <loc>https://lucidrents.com/IL/Chicago/building/loop/121-w-wacker-dr</loc>
-    <lastmod>2026-03-30T15:40:52.763Z</lastmod>
+    <lastmod>2026-04-02T21:10:12.088Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -36247,12 +36091,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://lucidrents.com/CA/Los-Angeles/building/los-angeles/6500-san-vicente-blvd</loc>
-    <lastmod>2026-04-01T19:55:28.937Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://lucidrents.com/TX/Houston/building/houston/12039-green-coral-dr</loc>
     <lastmod>2026-04-01T18:39:00.975Z</lastmod>
     <changefreq>weekly</changefreq>
@@ -36555,12 +36393,6 @@
   <url>
     <loc>https://lucidrents.com/IL/Chicago/building/north-lawndale/1406-s-kenneth-ave</loc>
     <lastmod>2026-03-30T15:27:46.032Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://lucidrents.com/IL/Chicago/building/roseland/11575-s-perry-ave</loc>
-    <lastmod>2026-03-30T15:40:52.763Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -39313,12 +39145,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://lucidrents.com/IL/Chicago/building/lincoln-park/1151-w-lill-ave</loc>
-    <lastmod>2026-03-30T15:40:52.763Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://lucidrents.com/IL/Chicago/building/chicago/6116-n-winthrop-ave</loc>
     <lastmod>2026-04-02T13:41:10.014Z</lastmod>
     <changefreq>weekly</changefreq>
@@ -39387,12 +39213,6 @@
   <url>
     <loc>https://lucidrents.com/FL/Miami/building/miami-dade/12882-sw-87-ave-miami-44be33bb19d8e0c10dc6f3a323797bbf</loc>
     <lastmod>2026-03-31T04:42:25.804Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://lucidrents.com/CA/Los-Angeles/building/los-angeles/705-w-9th-st</loc>
-    <lastmod>2026-04-01T19:52:04.797Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -39603,12 +39423,6 @@
   <url>
     <loc>https://lucidrents.com/CA/Los-Angeles/building/torrance/22228-s-vermont-ave</loc>
     <lastmod>2026-04-01T19:56:14.705Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://lucidrents.com/CA/Los-Angeles/building/los-angeles/727-n-vendome-st-90026</loc>
-    <lastmod>2026-04-02T14:12:48.038Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -40785,12 +40599,6 @@
   <url>
     <loc>https://lucidrents.com/CA/Los-Angeles/building/los-angeles/1049-w-61st-st</loc>
     <lastmod>2026-03-30T18:13:37.808Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://lucidrents.com/CA/Los-Angeles/building/van-nuys/6924-vesper-ave</loc>
-    <lastmod>2026-04-01T19:12:09.589Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -42403,12 +42211,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://lucidrents.com/CA/Los-Angeles/building/glendale/709-granada-st-91205</loc>
-    <lastmod>2026-04-02T13:36:44.123Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://lucidrents.com/nyc/building/brooklyn/3078-brighton-02-street-brooklyn-ny-11235</loc>
     <lastmod>2026-03-20T22:16:45.200Z</lastmod>
     <changefreq>weekly</changefreq>
@@ -42458,7 +42260,7 @@
   </url>
   <url>
     <loc>https://lucidrents.com/IL/Chicago/building/roseland/11900-s-michigan-ave</loc>
-    <lastmod>2026-03-30T15:26:56.630Z</lastmod>
+    <lastmod>2026-04-02T21:02:13.418Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -42471,12 +42273,6 @@
   <url>
     <loc>https://lucidrents.com/nyc/building/brooklyn/364-harman-st</loc>
     <lastmod>2026-04-01T19:13:29.682Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://lucidrents.com/CA/Los-Angeles/building/van-nuys/6948-vesper-ave-91405</loc>
-    <lastmod>2026-04-02T14:43:00.888Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -44653,12 +44449,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://lucidrents.com/CA/Los-Angeles/building/hermosa-beach/703-4th-st-90254</loc>
-    <lastmod>2026-04-02T13:41:03.806Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://lucidrents.com/TX/Houston/building/houston/843-shawnee-st</loc>
     <lastmod>2026-03-31T04:43:14.387Z</lastmod>
     <changefreq>weekly</changefreq>
@@ -44715,12 +44505,6 @@
   <url>
     <loc>https://lucidrents.com/FL/Miami/building/fort-lauderdale/1344-nw-2nd-ave-33311</loc>
     <lastmod>2026-04-02T15:01:31.896Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://lucidrents.com/CA/Los-Angeles/building/los-angeles/6406-wynkoop-st</loc>
-    <lastmod>2026-04-01T19:55:23.544Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -47959,12 +47743,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://lucidrents.com/CA/Los-Angeles/building/los-angeles/7100-la-tijera-blvd</loc>
-    <lastmod>2026-04-01T19:53:30.670Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://lucidrents.com/nyc/building/queens/67-57-211-street-queens-ny-11364</loc>
     <lastmod>2026-03-20T22:55:29.472Z</lastmod>
     <changefreq>weekly</changefreq>
@@ -48339,12 +48117,6 @@
   <url>
     <loc>https://lucidrents.com/nyc/building/brooklyn/1454-40-street-brooklyn-ny-11218</loc>
     <lastmod>2026-03-20T22:38:07.407Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://lucidrents.com/CA/Los-Angeles/building/north-hollywood/7041-coldwater-canyon-ave</loc>
-    <lastmod>2026-04-01T19:56:44.074Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -49539,12 +49311,6 @@
   <url>
     <loc>https://lucidrents.com/nyc/building/brooklyn/549-east-17-street-brooklyn-ny-11226</loc>
     <lastmod>2026-03-20T22:38:07.375Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://lucidrents.com/CA/Los-Angeles/building/santa-monica/700-broadway-90401</loc>
-    <lastmod>2026-04-02T13:38:22.552Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -52365,12 +52131,6 @@
   <url>
     <loc>https://lucidrents.com/CA/Los-Angeles/building/fairfax/201-s-la-brea-ave</loc>
     <lastmod>2026-03-30T15:36:14.276Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://lucidrents.com/IL/Chicago/building/roseland/11907-s-indiana-ave</loc>
-    <lastmod>2026-03-30T15:34:17.882Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -56690,7 +56450,7 @@
   </url>
   <url>
     <loc>https://lucidrents.com/IL/Chicago/building/south-chicago/11903-s-torrence-ave</loc>
-    <lastmod>2026-03-30T15:41:25.522Z</lastmod>
+    <lastmod>2026-04-02T21:02:16.393Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -57657,12 +57417,6 @@
   <url>
     <loc>https://lucidrents.com/CA/Los-Angeles/building/los-angeles/1275-w-37th-dr</loc>
     <lastmod>2026-03-30T16:12:19.354Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://lucidrents.com/CA/Los-Angeles/building/los-angeles/6526-homewood-ave</loc>
-    <lastmod>2026-04-02T13:42:54.221Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -59997,6 +59751,252 @@
   <url>
     <loc>https://lucidrents.com/nyc/building/queens/220-07-kingsbury-avenue-queens-ny-11364</loc>
     <lastmod>2026-03-20T21:57:30.168Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://lucidrents.com/FL/Miami/building/miami-dade/12768-sw-266-ter-miami</loc>
+    <lastmod>2026-03-26T01:45:00.893Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://lucidrents.com/nyc/building/queens/114-90-227-street-queens-ny-11411</loc>
+    <lastmod>2026-03-20T22:53:57.474Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://lucidrents.com/IL/Chicago/building/lincoln-park/2110-n-hudson-ave</loc>
+    <lastmod>2026-03-30T15:35:31.326Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://lucidrents.com/IL/Chicago/building/chicago/5749-n-ridge-ave-60660</loc>
+    <lastmod>2026-04-02T15:10:53.910Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://lucidrents.com/IL/Chicago/building/lakeview/3239-n-kenmore-ave</loc>
+    <lastmod>2026-03-30T15:27:46.032Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://lucidrents.com/FL/Miami/building/miami-dade/7688-sw-105-pl-miami-2a8566ade7972cb7bfe7f26e42f511eb</loc>
+    <lastmod>2026-03-31T04:47:30.542Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://lucidrents.com/CA/Los-Angeles/building/los-angeles/2826-n-lincoln-park-ave</loc>
+    <lastmod>2026-03-30T18:02:52.597Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://lucidrents.com/IL/Chicago/building/avondale/3448-w-belle-plaine-ave</loc>
+    <lastmod>2026-03-30T15:53:10.681Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://lucidrents.com/nyc/building/bronx/2030-continental-ave</loc>
+    <lastmod>2026-04-01T18:41:03.820Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://lucidrents.com/FL/Miami/building/miami/11277-sw-189th-ter-33157</loc>
+    <lastmod>2026-04-02T14:32:13.203Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://lucidrents.com/nyc/building/brooklyn/243-nostrand-avenue-brooklyn-ny-11216</loc>
+    <lastmod>2026-03-26T01:55:05.739Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://lucidrents.com/IL/Chicago/building/logan-square/3531-w-palmer-st</loc>
+    <lastmod>2026-03-30T15:26:56.630Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://lucidrents.com/IL/Chicago/building/irving-park/4150-n-knox-ave</loc>
+    <lastmod>2026-03-30T15:27:46.032Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://lucidrents.com/FL/Miami/building/miami-dade/61-sw-97-pl----------------a-miami-efb9b5a1f5e320e7321cec8fdb1af9bd</loc>
+    <lastmod>2026-03-31T04:47:30.558Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://lucidrents.com/CA/Los-Angeles/building/echo-park/432-n-westlake-ave</loc>
+    <lastmod>2026-03-30T18:05:41.455Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://lucidrents.com/nyc/building/brooklyn/1807-kimball-street-brooklyn-ny-11234</loc>
+    <lastmod>2026-03-20T22:50:49.355Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://lucidrents.com/IL/Chicago/building/streeterville/101-e-delaware-pl</loc>
+    <lastmod>2026-04-02T18:13:02.280Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://lucidrents.com/nyc/building/brooklyn/5-7-avenue-brooklyn-ny-11217</loc>
+    <lastmod>2026-03-20T22:16:45.215Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://lucidrents.com/nyc/building/brooklyn/1353-49-street-brooklyn-ny-11219</loc>
+    <lastmod>2026-03-26T01:56:05.470Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://lucidrents.com/IL/Chicago/building/belmont-cragin/4702-w-armitage-ave</loc>
+    <lastmod>2026-03-30T15:56:30.875Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://lucidrents.com/FL/Miami/building/miami-dade/17310-sw-106-ave-miami-2383ee03c8a727d9aff72cc3c0d490c1</loc>
+    <lastmod>2026-03-31T04:47:30.598Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://lucidrents.com/nyc/building/brooklyn/2095-east-2-street-brooklyn-ny-11223</loc>
+    <lastmod>2026-03-26T04:28:16.037Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://lucidrents.com/nyc/building/queens/2-6062-69th-st</loc>
+    <lastmod>2026-04-01T19:11:30.116Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://lucidrents.com/TX/Houston/building/houston/8417-lenore-st</loc>
+    <lastmod>2026-03-31T04:43:37.195Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://lucidrents.com/IL/Chicago/building/englewood/6928-s-maplewood-ave</loc>
+    <lastmod>2026-03-30T15:56:13.261Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://lucidrents.com/FL/Miami/building/miami-dade/10850-westwood-lake-dr-miami-a9fd19a915f3277e61c33a7347d8627c</loc>
+    <lastmod>2026-03-31T04:47:30.650Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://lucidrents.com/TX/Houston/building/conroe/118-wickersham</loc>
+    <lastmod>2026-04-01T19:55:04.244Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://lucidrents.com/IL/Chicago/building/back-of-the-yards/2953-s-keeley-st</loc>
+    <lastmod>2026-03-30T15:56:30.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://lucidrents.com/nyc/building/brooklyn/10-4-street-brooklyn-ny-11231</loc>
+    <lastmod>2026-03-20T09:59:32.256Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://lucidrents.com/CA/Los-Angeles/building/west-la/1836-s-colby-ave</loc>
+    <lastmod>2026-03-30T15:58:02.202Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://lucidrents.com/IL/Chicago/building/chinatown/2300-s-michigan-ave</loc>
+    <lastmod>2026-03-30T15:58:34.623Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://lucidrents.com/nyc/building/manhattan/122-west-133-street-manhattan-ny-10030</loc>
+    <lastmod>2026-03-26T01:50:07.462Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://lucidrents.com/IL/Chicago/building/uptown/1630-w-wilson-ave</loc>
+    <lastmod>2026-03-30T15:56:30.894Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://lucidrents.com/nyc/building/brooklyn/1758-77-street-brooklyn-ny-11214</loc>
+    <lastmod>2026-03-20T22:51:23.090Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://lucidrents.com/nyc/building/jersey-city/2680-john-f-kennedy-blvd-7306</loc>
+    <lastmod>2026-04-02T15:12:49.934Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://lucidrents.com/TX/Houston/building/houston/470-maxey-rd</loc>
+    <lastmod>2026-03-31T08:27:31.948Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://lucidrents.com/nyc/building/queens/102-35-62-drive-queens-ny-11375</loc>
+    <lastmod>2026-03-20T22:19:46.922Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://lucidrents.com/CA/Los-Angeles/building/sherman-oaks/3808-beverly-ridge-dr</loc>
+    <lastmod>2026-04-01T19:53:38.980Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://lucidrents.com/nyc/building/queens/162-23-73-avenue-queens-ny-11366</loc>
+    <lastmod>2026-03-20T22:55:29.472Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://lucidrents.com/CA/Los-Angeles/building/baldwin-hills/4150-s-2nd-ave</loc>
+    <lastmod>2026-03-30T16:02:07.966Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://lucidrents.com/CA/Los-Angeles/building/los-angeles/145-e-103rd-st</loc>
+    <lastmod>2026-03-30T18:13:37.808Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>

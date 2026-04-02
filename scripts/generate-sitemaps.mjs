@@ -15,10 +15,10 @@ const CONCURRENCY = 2;
 const PROGRESS_FILE = "scripts/.sitemap-progress.json";
 const INCREMENTAL = process.argv.includes("--incremental");
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 if (!SUPABASE_URL || !SUPABASE_KEY) {
-  console.error("Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY");
+  console.error("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY/NEXT_PUBLIC_SUPABASE_ANON_KEY");
   process.exit(1);
 }
 
@@ -260,7 +260,7 @@ async function generateStaticSitemap() {
 
 // ─── Main ───────────────────────────────────────────────────────
 
-const SITEMAP_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes max for entire sitemap generation
+const SITEMAP_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes max for entire sitemap generation
 
 // ─── Progress helpers ──────────────────────────────────────────
 
