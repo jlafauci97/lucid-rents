@@ -281,49 +281,81 @@ export function MarketListings({ listings: rawListings, amenities, rentHistory =
               </div>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-[#e2e8f0]">
-                      <th className="text-left py-2 text-[#64748b] font-medium">Unit</th>
-                      <th className="text-left py-2 text-[#64748b] font-medium">Type</th>
-                      <th className="text-right py-2 text-[#64748b] font-medium">Rent</th>
-                      <th className="text-right py-2 text-[#64748b] font-medium hidden sm:table-cell">Sq Ft</th>
-                      <th className="text-right py-2 text-[#64748b] font-medium">As Of</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rentHistory
-                      .sort((a, b) => {
-                        // Sort by unit number (natural), then by date desc
-                        const unitCmp = (a.unit_number || "").localeCompare(b.unit_number || "", undefined, { numeric: true });
-                        if (unitCmp !== 0) return unitCmp;
-                        return b.observed_at.localeCompare(a.observed_at);
-                      })
-                      .map((entry) => (
-                        <tr key={entry.id} className="border-b border-[#f1f5f9] last:border-0">
-                          <td className="py-2.5 font-medium text-[#0F1D2E]">
-                            {entry.unit_number || "—"}
-                          </td>
-                          <td className="py-2.5 text-[#64748b]">
-                            {entry.bedrooms === 0 ? "Studio" : entry.bedrooms != null ? `${entry.bedrooms} Bed` : "—"}
-                          </td>
-                          <td className="py-2.5 text-right">
-                            <span className="font-semibold text-[#16a34a]">
-                              ${entry.rent.toLocaleString()}/mo
-                            </span>
-                          </td>
-                          <td className="py-2.5 text-right text-[#64748b] hidden sm:table-cell">
-                            {entry.sqft ? `${entry.sqft.toLocaleString()}` : "—"}
-                          </td>
-                          <td className="py-2.5 text-right text-[#64748b] text-xs">
-                            {new Date(entry.observed_at).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
+              {(() => {
+                // Group by bedroom type, sorted by bed count
+                const grouped = rentHistory.reduce<Record<number, RentHistoryRow[]>>((acc, row) => {
+                  const key = row.bedrooms ?? -1;
+                  (acc[key] ||= []).push(row);
+                  return acc;
+                }, {});
+                const sortedKeys = Object.keys(grouped).map(Number).sort((a, b) => a - b);
+
+                return (
+                  <div className="space-y-2">
+                    {sortedKeys.map((bedKey) => {
+                      const rows = grouped[bedKey].sort((a, b) => b.observed_at.localeCompare(a.observed_at));
+                      const label = bedKey === -1 ? "Unknown" : bedKey === 0 ? "Studio" : `${bedKey} Bed`;
+                      const rents = rows.map((r) => r.rent);
+                      const minRent = Math.min(...rents);
+                      const maxRent = Math.max(...rents);
+                      const rangeText = minRent === maxRent
+                        ? `$${minRent.toLocaleString()}/mo`
+                        : `$${minRent.toLocaleString()} – $${maxRent.toLocaleString()}/mo`;
+
+                      return (
+                        <details key={bedKey} className="group border border-[#e2e8f0] rounded-lg">
+                          <summary className="flex items-center justify-between cursor-pointer px-4 py-3 hover:bg-[#f8fafc] select-none list-none [&::-webkit-details-marker]:hidden">
+                            <div className="flex items-center gap-3">
+                              <span className="font-semibold text-[#0F1D2E]">{label}</span>
+                              <span className="text-xs text-[#64748b] bg-[#f1f5f9] px-2 py-0.5 rounded-full">
+                                {rows.length} {rows.length === 1 ? "listing" : "listings"}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span className="text-sm font-medium text-[#16a34a]">{rangeText}</span>
+                              <svg className="w-4 h-4 text-[#94a3b8] transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </div>
+                          </summary>
+                          <div className="overflow-x-auto border-t border-[#e2e8f0]">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="border-b border-[#e2e8f0]">
+                                  <th className="text-left py-2 px-4 text-[#64748b] font-medium">Unit</th>
+                                  <th className="text-right py-2 px-4 text-[#64748b] font-medium">Rent</th>
+                                  <th className="text-right py-2 px-4 text-[#64748b] font-medium hidden sm:table-cell">Sq Ft</th>
+                                  <th className="text-right py-2 px-4 text-[#64748b] font-medium">As Of</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {rows.map((entry) => (
+                                  <tr key={entry.id} className="border-b border-[#f1f5f9] last:border-0">
+                                    <td className="py-2.5 px-4 font-medium text-[#0F1D2E]">
+                                      {entry.unit_number || "—"}
+                                    </td>
+                                    <td className="py-2.5 px-4 text-right">
+                                      <span className="font-semibold text-[#16a34a]">
+                                        ${entry.rent.toLocaleString()}/mo
+                                      </span>
+                                    </td>
+                                    <td className="py-2.5 px-4 text-right text-[#64748b] hidden sm:table-cell">
+                                      {entry.sqft ? `${entry.sqft.toLocaleString()}` : "—"}
+                                    </td>
+                                    <td className="py-2.5 px-4 text-right text-[#64748b] text-xs">
+                                      {new Date(entry.observed_at).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </details>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
               <p className="text-[10px] text-[#94a3b8] mt-3">
                 Based on listing data
               </p>
