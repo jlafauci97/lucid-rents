@@ -2,7 +2,9 @@ import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { categorizeCrime } from "@/lib/crime-categories";
-import { generateBuildingSlug } from "@/lib/seo";
+import { generateBuildingSlug, buildingUrl, regionSlug } from "@/lib/seo";
+import { notifyIndexNow } from "@/lib/indexnow";
+import { type City, CITY_META } from "@/lib/cities";
 
 // ---------------------------------------------------------------------------
 // Supabase admin client (service role -- bypasses RLS, no cookies needed)
@@ -99,6 +101,49 @@ function isTimeBudgetExceeded(syncStartMs: number): boolean {
   return Date.now() - syncStartMs > SYNC_TIME_BUDGET_MS;
 }
 
+/**
+ * Look up affected buildings by ID and notify IndexNow about their URLs.
+ * Best-effort — errors are logged but never thrown.
+ */
+async function notifyIndexNowForBuildings(
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+  buildingIds: Set<string>
+): Promise<{ notified: number; error?: string }> {
+  if (buildingIds.size === 0) return { notified: 0 };
+  try {
+    const ids = [...buildingIds].slice(0, 10000); // IndexNow max 10k per request
+    const urls: string[] = [];
+
+    // Fetch building details in batches of 500 (Supabase .in() limit)
+    for (let i = 0; i < ids.length; i += 500) {
+      const batch = ids.slice(i, i + 500);
+      const { data } = await supabase
+        .from("buildings")
+        .select("metro, borough, slug")
+        .in("id", batch)
+        .not("slug", "is", null);
+
+      if (data) {
+        for (const b of data) {
+          const city = (b.metro || "nyc") as City;
+          if (CITY_META[city] && b.borough && b.slug) {
+            urls.push(buildingUrl({ borough: b.borough, slug: b.slug }, city));
+          }
+        }
+      }
+    }
+
+    if (urls.length > 0) {
+      await notifyIndexNow(urls);
+    }
+    return { notified: urls.length };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("IndexNow notify error:", msg);
+    return { notified: 0, error: msg };
+  }
+}
+
 /** Upsert rows in batches to avoid payload size limits.
  *  Use ignoreDuplicates=true for high-volume tables where existing records
  *  don't need updating (ON CONFLICT DO NOTHING — much faster).
@@ -150,6 +195,48 @@ async function batchUpsert(
 function toSodaDate(isoString: string): string {
   // SODA floating timestamps need format: YYYY-MM-DDTHH:MM:SS.sss (no Z)
   return isoString.replace("Z", "").replace(/\+00:00$/, "");
+}
+
+/** Select an existing building by slug+metro, or insert a new one.
+ *  Handles race conditions (23505 duplicate key) by retrying the SELECT. */
+async function findOrCreateBuilding(
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+  slug: string,
+  metro: string,
+  buildingData: Record<string, unknown>
+): Promise<string | null> {
+  // Try to find existing building by slug + metro
+  const { data: existing } = await supabase
+    .from("buildings")
+    .select("id")
+    .eq("slug", slug)
+    .eq("metro", metro)
+    .maybeSingle();
+
+  if (existing) return existing.id;
+
+  // Insert new building
+  const { data: created, error } = await supabase
+    .from("buildings")
+    .insert(buildingData)
+    .select("id")
+    .single();
+
+  if (error) {
+    // Handle race condition: another worker may have inserted
+    if (error.code === "23505") {
+      const { data: retry } = await supabase
+        .from("buildings")
+        .select("id")
+        .eq("slug", slug)
+        .eq("metro", metro)
+        .maybeSingle();
+      return retry?.id ?? null;
+    }
+    console.error(`Create building error (${metro}):`, error.message);
+    return null;
+  }
+  return created?.id ?? null;
 }
 
 /** Get the last successful sync date for a given sync type.
@@ -4726,45 +4813,24 @@ async function runLinkOnly(
               const slug = generateBuildingSlug(fullAddr);
               const coords = addrToCoords.get(addr);
 
-              const { data: newBuilding, error: createErr } = await supabase
-                .from("buildings")
-                .insert({
-                  full_address: fullAddr,
-                  house_number: houseNum,
-                  street_name: streetName,
-                  city: "Chicago",
-                  state: "IL",
-                  borough: "Chicago",
-                  metro: "chicago",
-                  slug,
-                  latitude: coords?.lat ?? null,
-                  longitude: coords?.lng ?? null,
-                  violation_count: 0,
-                  complaint_count: 0,
-                  review_count: 0,
-                  overall_score: null,
-                })
-                .select("id")
-                .single();
+              const createdId = await findOrCreateBuilding(supabase, slug, "chicago", {
+                full_address: fullAddr,
+                house_number: houseNum,
+                street_name: streetName,
+                city: "Chicago", state: "IL", borough: "Chicago", metro: "chicago",
+                slug,
+                latitude: coords?.lat ?? null,
+                longitude: coords?.lng ?? null,
+                violation_count: 0, complaint_count: 0, review_count: 0, overall_score: null,
+              });
 
-              if (createErr) {
-                // Likely duplicate slug — try to fetch existing
-                if (createErr.code === "23505") {
-                  const { data: existing } = await supabase
-                    .from("buildings")
-                    .select("id")
-                    .eq("slug", slug)
-                    .eq("metro", "chicago")
-                    .single();
-                  if (existing) buildingId = existing.id;
-                }
-                if (!buildingId) { unmatched++; continue; }
-              } else if (newBuilding?.id) {
-                buildingId = newBuilding.id;
+              if (!createdId) { unmatched++; continue; }
+              if (!chicagoBuildingAddrMap.has(addr)) {
                 autoCreated++;
                 // Add to map so subsequent tables can match without re-creating
-                chicagoBuildingAddrMap.set(addr, newBuilding.id);
+                chicagoBuildingAddrMap.set(addr, createdId);
               }
+              buildingId = createdId;
             }
 
             matched++;
@@ -4910,45 +4976,24 @@ async function runLinkOnly(
               const slug = generateBuildingSlug(fullAddr);
               const coords = addrToCoords.get(addr);
 
-              const { data: newBuilding, error: createErr } = await supabase
-                .from("buildings")
-                .insert({
-                  full_address: fullAddr,
-                  house_number: houseNum,
-                  street_name: streetName,
-                  city: "Miami",
-                  state: "FL",
-                  borough: "Miami-Dade",
-                  metro: "miami",
-                  slug,
-                  latitude: coords?.lat ?? null,
-                  longitude: coords?.lng ?? null,
-                  violation_count: 0,
-                  complaint_count: 0,
-                  review_count: 0,
-                  overall_score: null,
-                })
-                .select("id")
-                .single();
+              const createdId = await findOrCreateBuilding(supabase, slug, "miami", {
+                full_address: fullAddr,
+                house_number: houseNum,
+                street_name: streetName,
+                city: "Miami", state: "FL", borough: "Miami-Dade", metro: "miami",
+                slug,
+                latitude: coords?.lat ?? null,
+                longitude: coords?.lng ?? null,
+                violation_count: 0, complaint_count: 0, review_count: 0, overall_score: null,
+              });
 
-              if (createErr) {
-                // Likely duplicate slug — try to fetch existing
-                if (createErr.code === "23505") {
-                  const { data: existing } = await supabase
-                    .from("buildings")
-                    .select("id")
-                    .eq("slug", slug)
-                    .eq("metro", "miami")
-                    .single();
-                  if (existing) buildingId = existing.id;
-                }
-                if (!buildingId) { unmatched++; continue; }
-              } else if (newBuilding?.id) {
-                buildingId = newBuilding.id;
+              if (!createdId) { unmatched++; continue; }
+              if (!miamiBuildingAddrMap.has(addr)) {
                 autoCreated++;
                 // Add to map so subsequent tables can match without re-creating
-                miamiBuildingAddrMap.set(addr, newBuilding.id);
+                miamiBuildingAddrMap.set(addr, createdId);
               }
+              buildingId = createdId;
             }
 
             matched++;
@@ -5089,43 +5134,23 @@ async function runLinkOnly(
               const slug = generateBuildingSlug(fullAddr);
               const coords = addrToCoords.get(addr);
 
-              const { data: newBuilding, error: createErr } = await supabase
-                .from("buildings")
-                .insert({
-                  full_address: fullAddr,
-                  house_number: houseNum,
-                  street_name: streetName,
-                  city: "Houston",
-                  state: "TX",
-                  borough: "Houston",
-                  metro: "houston",
-                  slug,
-                  latitude: coords?.lat ?? null,
-                  longitude: coords?.lng ?? null,
-                  violation_count: 0,
-                  complaint_count: 0,
-                  review_count: 0,
-                  overall_score: null,
-                })
-                .select("id")
-                .single();
+              const createdId = await findOrCreateBuilding(supabase, slug, "houston", {
+                full_address: fullAddr,
+                house_number: houseNum,
+                street_name: streetName,
+                city: "Houston", state: "TX", borough: "Houston", metro: "houston",
+                slug,
+                latitude: coords?.lat ?? null,
+                longitude: coords?.lng ?? null,
+                violation_count: 0, complaint_count: 0, review_count: 0, overall_score: null,
+              });
 
-              if (createErr) {
-                if (createErr.code === "23505") {
-                  const { data: existing } = await supabase
-                    .from("buildings")
-                    .select("id")
-                    .eq("slug", slug)
-                    .eq("metro", "houston")
-                    .single();
-                  if (existing) buildingId = existing.id;
-                }
-                if (!buildingId) { unmatched++; continue; }
-              } else if (newBuilding?.id) {
-                buildingId = newBuilding.id;
+              if (!createdId) { unmatched++; continue; }
+              if (!houstonBuildingAddrMap.has(addr)) {
                 autoCreated++;
-                houstonBuildingAddrMap.set(addr, newBuilding.id);
+                houstonBuildingAddrMap.set(addr, createdId);
               }
+              buildingId = createdId;
             }
 
             matched++;
@@ -5206,6 +5231,9 @@ async function runLinkOnly(
     });
   } catch { /* best-effort logging */ }
 
+  // Notify search engines about updated building pages
+  const indexNowResult = await notifyIndexNowForBuildings(supabase, allAffectedIds);
+
   return NextResponse.json({
     success: true,
     mode: "link",
@@ -5215,6 +5243,7 @@ async function runLinkOnly(
     slugs_backfilled: slugsBackfilled,
     building_count_errors: countErrors,
     link_results: linkResults,
+    indexnow: indexNowResult,
     errors,
   });
 }
@@ -5322,6 +5351,9 @@ export async function GET(req: NextRequest) {
       // revalidation is best-effort; don't fail the sync
     }
 
+    // Notify search engines about updated building pages
+    const indexNowResult = await notifyIndexNowForBuildings(supabase, allAffectedIds);
+
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 
     // Build response
@@ -5334,6 +5366,7 @@ export async function GET(req: NextRequest) {
       buildings_updated: allAffectedIds.size,
       slugs_backfilled: slugsBackfilled,
       building_count_errors: countErrors,
+      indexnow: indexNowResult,
     };
 
     for (const [name, result] of Object.entries(results)) {
