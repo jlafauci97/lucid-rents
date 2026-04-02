@@ -64,18 +64,33 @@ async function main() {
       if (!bid) {
         const parts = addr.match(/^(\d+[-\d]*)\s+(.+)$/);
         const slug = generateSlug(addr);
-        const { data: nb, error: ce } = await supabase.from("buildings").insert({
-          full_address: `${addr}, MIAMI, FL`, house_number: parts?.[1] || "",
-          street_name: parts?.[2] || addr, city: "Miami", state: "FL", metro: "miami",
-          slug, violation_count: 0, complaint_count: 0, review_count: 0, overall_score: null,
-        }).select("id").single();
-        if (ce) {
-          if (ce.code === "23505") {
-            const { data: ex } = await supabase.from("buildings").select("id").eq("slug", slug).eq("metro", "miami").single();
-            if (ex) bid = ex.id;
-          }
-          if (!bid) { totalUnmatched++; continue; }
-        } else if (nb) { bid = nb.id; totalCreated++; addrMap.set(addr, nb.id); }
+
+        // Check if building already exists by slug + metro + borough
+        const { data: existing } = await supabase
+          .from("buildings")
+          .select("id")
+          .eq("slug", slug)
+          .eq("metro", "miami")
+          .eq("borough", "Miami-Dade")
+          .maybeSingle();
+
+        if (existing) {
+          bid = existing.id;
+        } else {
+          const { data: nb, error: ce } = await supabase.from("buildings").insert({
+            full_address: `${addr}, MIAMI, FL`, house_number: parts?.[1] || "",
+            street_name: parts?.[2] || addr, city: "Miami", state: "FL", metro: "miami",
+            borough: "Miami-Dade",
+            slug, violation_count: 0, complaint_count: 0, review_count: 0, overall_score: null,
+          }).select("id").single();
+          if (ce) {
+            if (ce.code === "23505") {
+              const { data: ex } = await supabase.from("buildings").select("id").eq("slug", slug).eq("metro", "miami").eq("borough", "Miami-Dade").single();
+              if (ex) bid = ex.id;
+            }
+            if (!bid) { totalUnmatched++; continue; }
+          } else if (nb) { bid = nb.id; totalCreated++; addrMap.set(addr, nb.id); }
+        }
       }
 
       for (let i = 0; i < keys.length; i += 500) {
