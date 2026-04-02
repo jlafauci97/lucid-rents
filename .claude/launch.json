@@ -3,8 +3,9 @@
   "configurations": [
     {
       "name": "dev",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeExecutable": "/Users/jesselafauci/.nvm/versions/node/v20.20.0/bin/node",
+      "env": { "PATH": "/Users/jesselafauci/.nvm/versions/node/v20.20.0/bin:/usr/bin:/bin:/usr/sbin:/sbin" },
+      "runtimeArgs": ["/Users/jesselafauci/.nvm/versions/node/v20.20.0/lib/node_modules/npm/bin/npm-cli.js", "run", "dev"],
       "port": 3000,
       "autoPort": true
     }
