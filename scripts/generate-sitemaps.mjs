@@ -11,7 +11,7 @@ import { writeFileSync, mkdirSync, rmSync } from "node:fs";
 
 const BASE_URL = "https://lucidrents.com";
 const OUT_DIR = "public/sitemap";
-const CONCURRENCY = 5;
+const CONCURRENCY = 2;
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -99,11 +99,29 @@ function metroToCity(metro) {
 // ─── Supabase helpers ───────────────────────────────────────────
 
 async function supabaseFetch(path) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    headers: { apikey: SUPABASE_KEY },
-  });
-  if (!res.ok) throw new Error(`Supabase ${res.status}: ${path}`);
-  return res.json();
+  for (let attempt = 0; attempt < 5; attempt++) {
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+        headers: { apikey: SUPABASE_KEY },
+      });
+      if (!res.ok) {
+        if (res.status >= 500 && attempt < 4) {
+          console.log(`    Retry ${attempt + 1}/5 for ${path.slice(0, 60)}...`);
+          await new Promise(r => setTimeout(r, 3000 * (attempt + 1)));
+          continue;
+        }
+        throw new Error(`Supabase ${res.status}: ${path}`);
+      }
+      return res.json();
+    } catch (err) {
+      if (attempt < 4 && (err.message?.includes("500") || err.cause?.code === "UND_ERR_SOCKET")) {
+        console.log(`    Retry ${attempt + 1}/5 for ${path.slice(0, 60)}...`);
+        await new Promise(r => setTimeout(r, 3000 * (attempt + 1)));
+        continue;
+      }
+      throw err;
+    }
+  }
 }
 
 async function rpcFetch(fn, params) {
@@ -221,10 +239,14 @@ async function generateStaticSitemap() {
     entries.push({ url: `${BASE_URL}${cityPath(`/crime/${zip}`, city)}`, lastmod, changefreq: "weekly", priority: 0.6 });
   }
 
-  // News articles
-  const articles = await supabaseFetch("news_articles?select=slug,published_at&order=published_at.desc&limit=1000");
-  for (const a of articles) {
-    entries.push({ url: `${BASE_URL}${cityPath(`/news/${a.slug}`)}`, lastmod: new Date(a.published_at).toISOString(), changefreq: "monthly", priority: 0.5 });
+  // News articles (non-fatal — skip if Supabase errors)
+  try {
+    const articles = await supabaseFetch("news_articles?select=slug,published_at&order=published_at.desc&limit=1000");
+    for (const a of articles) {
+      entries.push({ url: `${BASE_URL}${cityPath(`/news/${a.slug}`)}`, lastmod: new Date(a.published_at).toISOString(), changefreq: "monthly", priority: 0.5 });
+    }
+  } catch (e) {
+    console.warn(`  ⚠ Skipping news articles in sitemap: ${e.message}`);
   }
 
   for (const city of VALID_CITIES) {
@@ -275,27 +297,69 @@ async function main() {
   await runBatches(landlordTasks, CONCURRENCY);
   console.log(`  Landlords: ${landlordUrls.toLocaleString()} URLs across ${landlordBatches} files`);
 
-  // Building sitemaps
-  const [maxBuildingBatch] = await supabaseFetch("sitemap_building_cursors?select=batch_index&order=batch_index.desc&limit=1");
-  const buildingBatches = maxBuildingBatch ? maxBuildingBatch.batch_index + 1 : 0;
-  console.log(`  Generating ${buildingBatches} building sitemaps...`);
+  // Building sitemaps — direct REST pagination (avoids RPC timeout)
+  const PAGE_SIZE = 1000; // small pages to stay under REST statement timeout
+  const URLS_PER_FILE = 10000;
+  console.log(`  Generating building sitemaps (direct pagination)...`);
 
   let buildingUrls = 0;
-  const buildingTasks = Array.from({ length: buildingBatches }, (_, i) => async () => {
-    const buildings = await rpcFetch("sitemap_building_batch", { p_batch_index: i });
-    if (!buildings || buildings.length === 0) return;
-    const entries = buildings.map((b) => ({
-      url: `${BASE_URL}${buildingUrl(b, metroToCity(b.metro))}`,
-      lastmod: b.updated_at ? new Date(b.updated_at).toISOString() : undefined,
-      changefreq: "weekly",
-      priority: 0.6,
-    }));
-    writeFileSync(`${OUT_DIR}/b-${i}.xml`, buildSitemapXml(entries));
-    indexEntries.push({ name: `b-${i}.xml`, lastmod: now });
-    buildingUrls += entries.length;
-  });
-  await runBatches(buildingTasks, CONCURRENCY);
-  console.log(`  Buildings: ${buildingUrls.toLocaleString()} URLs across ${buildingBatches} files`);
+  let batchIndex = 0;
+  let cursor = "00000000-0000-0000-0000-000000000000";
+  let currentEntries = [];
+  let done = false;
+
+  while (!done) {
+    let rows;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      try {
+        rows = await supabaseFetch(
+          `buildings?select=id,slug,borough,metro,updated_at&id=gt.${cursor}&order=id.asc&limit=${PAGE_SIZE}`
+        );
+        break;
+      } catch (err) {
+        if (attempt === 4) throw err;
+        console.log(`    Page retry ${attempt + 1}/5...`);
+        await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
+      }
+    }
+
+    if (!rows || rows.length === 0) {
+      done = true;
+    } else {
+      for (const b of rows) {
+        if (b.slug && b.borough) {
+          currentEntries.push({
+            url: `${BASE_URL}${buildingUrl(b, metroToCity(b.metro))}`,
+            lastmod: b.updated_at ? new Date(b.updated_at).toISOString() : undefined,
+            changefreq: "weekly",
+            priority: 0.6,
+          });
+        }
+
+        if (currentEntries.length >= URLS_PER_FILE) {
+          writeFileSync(`${OUT_DIR}/b-${batchIndex}.xml`, buildSitemapXml(currentEntries));
+          indexEntries.push({ name: `b-${batchIndex}.xml`, lastmod: now });
+          buildingUrls += currentEntries.length;
+          if (batchIndex % 50 === 0) console.log(`    b-${batchIndex}.xml ✓ (${buildingUrls.toLocaleString()} total)`);
+          batchIndex++;
+          currentEntries = [];
+        }
+      }
+
+      cursor = rows[rows.length - 1].id;
+
+      if (rows.length < PAGE_SIZE) done = true;
+    }
+  }
+
+  // Write remaining entries
+  if (currentEntries.length > 0) {
+    writeFileSync(`${OUT_DIR}/b-${batchIndex}.xml`, buildSitemapXml(currentEntries));
+    indexEntries.push({ name: `b-${batchIndex}.xml`, lastmod: now });
+    buildingUrls += currentEntries.length;
+    batchIndex++;
+  }
+  console.log(`  Buildings: ${buildingUrls.toLocaleString()} URLs across ${batchIndex} files`);
 
   // Sitemap index
   indexEntries.sort((a, b) => {
