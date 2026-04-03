@@ -44,14 +44,33 @@ function getGradeColor(grade: string) {
   return gradeColors[letter] ?? gradeColors.C;
 }
 
+function dedupeAmenities(
+  raw: { amenity: string; premium_dollars: number }[],
+): { amenity: string; premium_dollars: number }[] {
+  const map = new Map<string, { total: number; count: number }>();
+  for (const r of raw) {
+    const entry = map.get(r.amenity) || { total: 0, count: 0 };
+    entry.total += r.premium_dollars;
+    entry.count += 1;
+    map.set(r.amenity, entry);
+  }
+  return Array.from(map.entries())
+    .map(([amenity, v]) => ({
+      amenity,
+      premium_dollars: Math.round(v.total / v.count),
+    }))
+    .sort((a, b) => b.premium_dollars - a.premium_dollars);
+}
+
 export function ValueBreakdown({
   neighborhoodMedian,
   buildingMedianRent,
-  amenityPremiums,
+  amenityPremiums: rawPremiums,
   violationDiscount,
   beds,
   valueGrade,
 }: ValueBreakdownProps) {
+  const amenityPremiums = dedupeAmenities(rawPremiums);
   const totalPremiums = amenityPremiums.reduce(
     (sum, a) => sum + a.premium_dollars,
     0,
