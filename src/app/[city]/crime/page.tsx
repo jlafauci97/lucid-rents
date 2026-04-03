@@ -8,6 +8,7 @@ import { isValidCity, CITY_META, type City } from "@/lib/cities";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { CrimeMapSection } from "@/components/crime/CrimeMapSection";
+import { createClient } from "@/lib/supabase/server";
 
 export async function generateMetadata({ params }: { params: Promise<{ city: string }> }): Promise<Metadata> {
   const { city } = await params;
@@ -37,21 +38,21 @@ async function getCrimeByZip(city: string) {
   sinceDate.setFullYear(sinceDate.getFullYear() - 2);
   const sinceDateStr = sinceDate.toISOString().split("T")[0];
 
-  const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/crime_by_zip`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "apikey": process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ since_date: sinceDateStr, metro: city }),
-    cache: "no-store",
-  });
-  if (!res.ok) {
-    console.error("crime_by_zip fetch error:", res.status, await res.text());
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("crime_by_zip", {
+      since_date: sinceDateStr,
+      metro: city,
+    });
+    if (error) {
+      console.error("crime_by_zip RPC error:", error);
+      return [];
+    }
+    return data || [];
+  } catch (err) {
+    console.error("crime_by_zip fetch error:", err);
     return [];
   }
-  return res.json();
 }
 
 interface ZipCrimeRow {
