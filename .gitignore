@@ -10,8 +10,8 @@ __pycache__/
 scripts/.sitemap-progress.json
 .venv/
 *.tsbuildinfo
-# Generated sitemaps (built at deploy time)
-public/sitemap/
+# Sitemap progress file (not the sitemaps themselves)
+# Sitemaps in public/sitemap/ are committed as static assets
 
 scripts/.backfill-progress.json
 scripts/test-landlord-query.mjs
