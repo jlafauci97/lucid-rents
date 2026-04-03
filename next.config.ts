@@ -17,10 +17,7 @@ const nextConfig: NextConfig = {
     },
   ],
   rewrites: async () => ({
-    beforeFiles: [
-      // Sitemap index: /sitemap.xml → static pre-generated file
-      { source: "/sitemap.xml", destination: "/sitemap/index.xml" },
-    ],
+    beforeFiles: [],
   }),
   headers: async () => [
     // Allow embed pages to be iframed by any domain

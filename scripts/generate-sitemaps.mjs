@@ -260,7 +260,7 @@ async function generateStaticSitemap() {
 
 // ─── Main ───────────────────────────────────────────────────────
 
-const SITEMAP_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes max for entire sitemap generation
+const SITEMAP_TIMEOUT_MS = 60 * 60 * 1000; // 60 minutes max for entire sitemap generation
 
 // ─── Progress helpers ──────────────────────────────────────────
 
@@ -288,7 +288,9 @@ function rebuildIndex() {
     };
     return order(a.name).localeCompare(order(b.name));
   });
-  writeFileSync(`${OUT_DIR}/index.xml`, buildSitemapIndex(indexEntries));
+  const indexXml = buildSitemapIndex(indexEntries);
+  writeFileSync(`${OUT_DIR}/index.xml`, indexXml);
+  writeFileSync("public/sitemap.xml", indexXml);
   return indexEntries.length;
 }
 
