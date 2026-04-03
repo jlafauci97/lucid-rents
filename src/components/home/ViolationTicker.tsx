@@ -1,0 +1,209 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { AlertTriangle, Shield, MessageSquare, Star, Scale, HardHat, Siren, Bug, DoorOpen, DollarSign, FileCheck, ShieldAlert } from 'lucide-react';
+import { buildingUrl, cityPath } from '@/lib/seo';
+import { isValidCity, DEFAULT_CITY, type City } from '@/lib/cities';
+import type { ActivityItem } from '@/app/api/activity/route';
+
+/** Icon color on the blue ticker background — lighter variants for readability */
+const typeIconColors: Record<ActivityItem['type'], string> = {
+  violation: 'text-red-200',
+  complaint: 'text-amber-200',
+  review: 'text-white',
+  litigation: 'text-purple-200',
+  dob_violation: 'text-sky-200',
+  crime: 'text-red-300',
+  bedbug: 'text-purple-300',
+  eviction: 'text-pink-200',
+  la_eviction: 'text-pink-200',
+  tenant_buyout: 'text-orange-200',
+  permit: 'text-teal-200',
+  enforcement: 'text-indigo-200',
+  rlto_violation: 'text-orange-200',
+  lead_inspection: 'text-lime-200',
+};
+
+function TypeIcon({ type }: { type: ActivityItem['type'] }) {
+  const color = typeIconColors[type] || 'text-white/70';
+  const cls = `w-10 h-10 flex-shrink-0 ${color}`;
+
+  switch (type) {
+    case 'violation':
+      return <Shield className={cls} />;
+    case 'complaint':
+      return <MessageSquare className={cls} />;
+    case 'review':
+      return <Star className={cls} />;
+    case 'litigation':
+      return <Scale className={cls} />;
+    case 'dob_violation':
+      return <HardHat className={cls} />;
+    case 'crime':
+      return <Siren className={cls} />;
+    case 'bedbug':
+      return <Bug className={cls} />;
+    case 'eviction':
+    case 'la_eviction':
+      return <DoorOpen className={cls} />;
+    case 'tenant_buyout':
+      return <DollarSign className={cls} />;
+    case 'permit':
+      return <FileCheck className={cls} />;
+    case 'enforcement':
+      return <ShieldAlert className={cls} />;
+    case 'rlto_violation':
+      return <Shield className={cls} />;
+    case 'lead_inspection':
+      return <AlertTriangle className={cls} />;
+  }
+}
+
+const typeLabels: Record<ActivityItem['type'], string> = {
+  violation: 'HPD Violation',
+  complaint: 'Complaint',
+  review: 'Review',
+  litigation: 'Litigation',
+  dob_violation: 'DOB Violation',
+  crime: 'Crime',
+  bedbug: 'Bedbug Report',
+  eviction: 'Eviction',
+  la_eviction: 'LAHD Eviction',
+  tenant_buyout: 'Tenant Buyout',
+  permit: 'Building Permit',
+  enforcement: 'Enforcement',
+  rlto_violation: 'RLTO Violation',
+  lead_inspection: 'Lead Inspection',
+};
+
+function formatDate(dateStr: string): string {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function buildItemUrl(item: ActivityItem): string | null {
+  const city: City = item.metro && isValidCity(item.metro) ? item.metro : DEFAULT_CITY;
+  if (item.type === 'crime' && item.zipCode) {
+    return cityPath(`/crime/${item.zipCode}`, city);
+  }
+  if (item.buildingSlug && item.borough) {
+    return buildingUrl({ borough: item.borough, slug: item.buildingSlug }, city);
+  }
+  if (item.buildingId) {
+    return cityPath(`/building/${item.buildingId}`, city);
+  }
+  return null;
+}
+
+function TickerItem({ item }: { item: ActivityItem }) {
+  const url = buildItemUrl(item);
+  const content = (
+    <span className="inline-flex items-center gap-2 whitespace-nowrap">
+      <TypeIcon type={item.type} />
+      <span className="text-white/50 text-xs font-medium uppercase tracking-wide">
+        {typeLabels[item.type]}
+      </span>
+      <span className="font-medium text-white/90">
+        {item.buildingAddress}{item.borough ? `, ${item.borough}` : ''}
+      </span>
+      <span className="text-white/50 mx-1">&mdash;</span>
+      <span className="text-white/70">{item.description}</span>
+      <span className="text-white/40 text-xs">{formatDate(item.date)}</span>
+    </span>
+  );
+
+  if (url) {
+    return (
+      <Link href={url} className="hover:text-white/80 transition-colors">
+        {content}
+      </Link>
+    );
+  }
+  return content;
+}
+
+interface ViolationTickerProps {
+  metro?: string;
+  initialItems?: ActivityItem[];
+}
+
+export function ViolationTicker({ metro, initialItems }: ViolationTickerProps = {}) {
+  const [items, setItems] = useState<ActivityItem[]>(initialItems || []);
+  const [loading, setLoading] = useState(!initialItems || initialItems.length === 0);
+
+  useEffect(() => {
+    // Skip initial fetch if server provided data
+    if (initialItems && initialItems.length > 0) return;
+
+    const params = new URLSearchParams({ limit: "30" });
+    if (metro) params.set("city", metro);
+    fetch(`/api/activity?${params}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.items && data.items.length > 0) {
+          setItems(data.items);
+        } else if (metro) {
+          return fetch(`/api/activity?limit=30`)
+            .then((res) => res.json())
+            .then((data) => {
+              if (data.items) setItems(data.items);
+            });
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [metro, initialItems]);
+
+  if (loading) {
+    return (
+      <div className="bg-[#3B82F6] border-y border-blue-400/30 py-3 overflow-hidden">
+        <div className="flex items-center gap-3 px-4">
+          <span className="flex items-center gap-1.5 text-xs font-bold text-white uppercase tracking-wider flex-shrink-0 bg-red-600 px-3 py-1 rounded">
+            <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+            Live
+          </span>
+          <div className="flex gap-8">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="h-4 bg-white/20 rounded animate-pulse" style={{ width: `${200 + i * 40}px` }} />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (items.length === 0) return null;
+
+  // Scale animation duration by item count for consistent speed
+  const duration = items.length * 18;
+
+  return (
+    <div className="bg-[#3B82F6] border-y border-blue-400/30 py-3 overflow-hidden group/ticker">
+      <div className="flex items-center">
+        <div className="flex items-center flex-shrink-0 pl-3 pr-4 z-10 bg-[#3B82F6]">
+          <span className="flex items-center gap-1.5 text-xs font-bold text-white uppercase tracking-wider bg-red-600 px-3 py-1 rounded">
+            <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+            Live
+          </span>
+        </div>
+        <div className="overflow-hidden flex-1">
+          <div
+            className="flex gap-8 text-sm text-white group-hover/ticker:[animation-play-state:paused]"
+            style={{
+              animation: `ticker ${duration}s linear infinite`,
+              width: 'max-content',
+            }}
+          >
+            {items.map((item) => (
+              <TickerItem key={`a-${item.type}-${item.id}`} item={item} />
+            ))}
+            {items.map((item) => (
+              <TickerItem key={`b-${item.type}-${item.id}`} item={item} />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

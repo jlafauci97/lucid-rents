@@ -1,0 +1,177 @@
+import Link from "next/link";
+import type { Metadata } from "next";
+import { createClient } from "@/lib/supabase/server";
+import { canonicalUrl, breadcrumbJsonLd, cityPath, cityBreadcrumbs } from "@/lib/seo";
+import { newsCollectionJsonLd } from "@/lib/seo";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
+import { type City, CITY_META } from "@/lib/cities";
+import { NEWS_CATEGORIES, type NewsCategory } from "@/lib/news-sources";
+import { NewsList } from "@/components/news/NewsList";
+import { CategoryIcon } from "@/components/news/CategoryIcon";
+import { AdSidebar } from "@/components/ui/AdSidebar";
+import { AdBlock } from "@/components/ui/AdBlock";
+import type { NewsArticle } from "@/types";
+
+export const revalidate = 1800; // 30 minutes
+
+const PER_PAGE = 20;
+
+export async function generateMetadata({ params }: { params: Promise<{ city: string }> }): Promise<Metadata> {
+  const { city } = await params;
+  const { isValidCity, CITY_META } = await import("@/lib/cities");
+  if (!isValidCity(city)) return {};
+  const meta = CITY_META[city];
+  return {
+    title: `${meta.fullName} Housing News | Lucid Rents`,
+    description: `The latest ${meta.fullName} housing news that actually affects renters — policy changes, tenant rights updates, and market shifts you need to know.`,
+    alternates: { canonical: canonicalUrl(cityPath("/news", city)) },
+    openGraph: {
+      title: `${meta.fullName} Housing News — Lucid Rents`,
+      description: `${meta.fullName} housing news that actually affects renters — policy changes, rights updates, and market shifts.`,
+      url: canonicalUrl(cityPath("/news", city)),
+      siteName: "Lucid Rents",
+      type: "website",
+      locale: "en_US",
+    },
+  };
+}
+
+export default async function NewsPage({
+  params: routeParams,
+  searchParams,
+}: {
+  params: Promise<{ city: string }>;
+  searchParams: Promise<{ page?: string }>;
+}) {
+  const { city: cityParam } = await routeParams;
+  const { isValidCity: isValid, CITY_META: cityMeta } = await import("@/lib/cities");
+  const cityName = isValid(cityParam) ? cityMeta[cityParam].fullName : "NYC";
+  const params = await searchParams;
+  const page = Math.max(1, parseInt(params.page || "1", 10));
+  const offset = (page - 1) * PER_PAGE;
+
+  const supabase = await createClient();
+
+  const metro = cityParam;
+  const { count } = await supabase
+    .from("news_articles")
+    .select("id", { count: "exact", head: true })
+    .eq("metro", metro);
+
+  const { data: articles } = await supabase
+    .from("news_articles")
+    .select("*")
+    .eq("metro", metro)
+    .order("published_at", { ascending: false })
+    .range(offset, offset + PER_PAGE - 1);
+
+  const categories = Object.entries(NEWS_CATEGORIES) as [
+    NewsCategory,
+    { label: string; description: string; icon: string; color: string },
+  ][];
+
+  return (
+    <AdSidebar>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* JSON-LD */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(newsCollectionJsonLd()),
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(
+              breadcrumbJsonLd([
+                { name: "Home", url: "/" },
+                { name: "News", url: "/news" },
+              ])
+            ),
+          }}
+        />
+
+        <Breadcrumbs items={cityBreadcrumbs(cityParam as City, { label: "News", href: cityPath("/news", cityParam as City) })} />
+
+        {/* Header */}
+        <div className="mb-6 mt-4">
+          <h1 className="text-2xl font-bold text-[#0F1D2E]">
+            {cityName} Housing News
+          </h1>
+          <p className="text-sm text-[#64748b] mt-1">
+            Latest news on {cityName} rentals, tenant rights, and housing policy
+          </p>
+        </div>
+
+        {/* Category pills */}
+        <div className="flex flex-wrap gap-2 mb-6">
+          <Link
+            href={cityPath("/news", cityParam as import("@/lib/cities").City)}
+            className="px-3 py-1.5 text-sm font-medium rounded-full bg-[#0F1D2E] text-white"
+          >
+            All
+          </Link>
+          {categories.map(([slug, meta]) => (
+            <Link
+              key={slug}
+              href={cityPath(`/news/${slug}`, cityParam as import("@/lib/cities").City)}
+              className="px-3 py-1.5 text-sm font-medium rounded-full bg-[#f1f5f9] text-[#475569] hover:bg-[#e2e8f0] transition-colors"
+            >
+              {meta.label}
+            </Link>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
+          {/* Main content */}
+          <div className="min-w-0">
+            <NewsList
+              articles={(articles as NewsArticle[]) || []}
+              page={page}
+              totalCount={count || 0}
+              perPage={PER_PAGE}
+              basePath="/news"
+            />
+          </div>
+
+          {/* Sidebar */}
+          <aside className="hidden lg:block space-y-6">
+            <div className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm overflow-hidden">
+              <div className="px-4 py-3 border-b border-[#e2e8f0]">
+                <h3 className="text-sm font-bold text-[#0F1D2E]">
+                  Categories
+                </h3>
+              </div>
+              <div className="divide-y divide-[#f1f5f9]">
+                {categories.map(([slug, meta]) => (
+                  <Link
+                    key={slug}
+                    href={cityPath(`/news/${slug}`, cityParam as import("@/lib/cities").City)}
+                    className="flex items-start gap-3 px-4 py-3 hover:bg-[#f8fafc] transition-colors"
+                  >
+                    <div
+                      className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
+                      style={{ backgroundColor: `${meta.color}15` }}
+                    >
+                      <CategoryIcon icon={meta.icon} color={meta.color} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-[#0F1D2E]">
+                        {meta.label}
+                      </p>
+                      <p className="text-xs text-[#94a3b8] mt-0.5">
+                        {meta.description}
+                      </p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+            <AdBlock adSlot="NEWS_SIDEBAR" adFormat="rectangle" />
+          </aside>
+        </div>
+      </div>
+    </AdSidebar>
+  );
+}

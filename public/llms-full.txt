@@ -1,0 +1,152 @@
+# Lucid Rents — Full Reference for AI Systems
+
+> Lucid Rents is a rental intelligence platform that helps renters research apartment buildings before signing a lease. It aggregates public violation records, tenant complaints, 311 reports, crime statistics, rent data, and tenant reviews across five major U.S. cities. All building data is sourced from official city agency open data portals and augmented with community-submitted reviews.
+
+## Mission
+
+Help renters make informed decisions by providing transparent, data-driven building intelligence that landlords and brokers typically don't disclose.
+
+## How the Platform Works
+
+1. **Search** — Enter any building address, zip code, or neighborhood name
+2. **Building Report** — View the full record: violations, complaints, 311 calls, permits, litigation, energy grades, scaffolding, rent stabilization status, and a composite building score
+3. **Tenant Reviews** — Read and submit honest reviews rating buildings on noise, pests, management responsiveness, maintenance, safety, and overall livability
+4. **Compare** — Select multiple buildings for side-by-side comparison on key metrics
+5. **Neighborhood View** — See aggregated building data, average scores, and trends for any zip code
+6. **Landlord Profiles** — Look up any property owner to see their full portfolio, violation history, and tenant ratings across buildings
+
+## URL Structure
+
+- Building page: `/[city]/building/[borough-or-area]/[address-slug]`
+- Landlord page: `/[city]/landlord/[name-slug]`
+- Neighborhood: `/[city]/neighborhood/[zip-code]`
+- Crime by zip: `/[city]/crime/[zip-code]`
+- City buildings: `/[city]/buildings`
+- City landlords: `/[city]/landlords`
+- City news feed: `/[city]/news`
+- City rent data: `/[city]/rent-data`
+- City search: `/[city]/search?q=[query]`
+- Building comparison: `/[city]/compare?ids=[id1],[id2],...`
+
+City URL prefixes:
+- NYC: `/nyc`
+- Los Angeles: `/CA/Los-Angeles`
+- Chicago: `/IL/Chicago`
+- Miami: `/FL/Miami`
+- Houston: `/TX/Houston`
+
+## Cities & Coverage
+
+### New York City, New York
+
+- URL prefix: `/nyc`
+- Boroughs: Manhattan, Brooklyn, Queens, Bronx, Staten Island
+- Crime source: NYPD
+- Data sources:
+  - HPD housing violations & complaints
+  - DOB building complaints, permits & litigation
+  - 311 service requests (heat, noise, pests, water, etc.)
+  - NYPD crime data by precinct and zip code
+  - Rent stabilization registry (DHCR)
+  - DOE energy efficiency grades
+  - DOT active scaffolding permits
+
+### Los Angeles, California
+
+- URL prefix: `/CA/Los-Angeles`
+- Areas: Downtown, Hollywood, Silver Lake, Echo Park, Los Feliz, Koreatown, Mid-Wilshire, Westlake, Venice, North Hollywood, and 40+ more
+- Crime source: LAPD
+- Data sources:
+  - LAHD housing violations & complaints
+  - LADBS permits and code enforcement
+  - LAPD crime data by division
+  - RSO (Rent Stabilization Ordinance) registry
+  - LA County assessor ownership data
+
+### Chicago, Illinois
+
+- URL prefix: `/IL/Chicago`
+- Neighborhoods: Loop, South Loop, West Loop, River North, Lincoln Park, Lakeview, Wicker Park, Logan Square, Hyde Park, and 25+ more
+- Crime source: CPD
+- Data sources:
+  - City of Chicago building code violations
+  - 311 service requests
+  - CPD crime data by district
+  - Cook County assessor data
+
+### Miami, Florida
+
+- URL prefix: `/FL/Miami`
+- Neighborhoods: Brickell, Downtown Miami, Wynwood, Edgewater, Miami Beach, South Beach, Coconut Grove, Coral Gables, Little Havana, and 25+ more
+- Crime source: MDPD
+- Data sources:
+  - Miami-Dade County code violations
+  - 311 service requests
+  - MDPD crime data by district
+  - Miami-Dade property appraiser data
+
+### Houston, Texas
+
+- URL prefix: `/TX/Houston`
+- Neighborhoods: Downtown, Midtown, Montrose, Heights, River Oaks, Galleria, Medical Center, Memorial, and 35+ more
+- Crime source: HPD
+- Data sources:
+  - City of Houston code violations
+  - 311 service requests
+  - HPD crime data by beat
+  - HCAD property records
+
+## Data Categories
+
+### Violations
+Official housing code violations issued by city agencies. Each violation includes the date, class/severity, description, and current status (open, closed, pending). Violations are categorized (e.g., lead paint, mold, pest infestation, structural, fire safety) and contribute to the building's composite score.
+
+### Complaints
+Tenant complaints filed with city agencies. Includes complaint type, date, status, and associated inspection results.
+
+### 311 Service Requests
+Non-emergency service requests related to building conditions — noise, heat/hot water outages, pests, unsanitary conditions, and more.
+
+### Tenant Reviews
+Community-submitted reviews where tenants rate buildings on a 1–5 scale across categories: noise, pests, management, maintenance, safety, and overall quality. Reviews include free-text descriptions of experiences.
+
+### Crime Data
+Neighborhood-level crime statistics sourced from local police departments. Data is broken down by crime type (violent, property, other) and presented at the zip code level with trends over time.
+
+### Rent Data
+Fair market rents (HUD), median asking rents, and rent stabilization status where applicable. Rent affordability calculator available at /rent-affordability-calculator.
+
+### Building Metadata
+Address, borough/area, zip code, number of units, year built, owner/landlord name, rent stabilization status, energy grade, active scaffolding permits, and more.
+
+## Scoring System
+
+Buildings receive a composite score (0–100) based on:
+- Violation severity and recency
+- Complaint volume relative to building size
+- Tenant review ratings
+- 311 request patterns
+
+Higher scores indicate better-maintained buildings. Scores update as new data becomes available.
+
+## Tenant Rights Guides
+
+- [NYC Tenant Rights](https://lucidrents.com/guides/nyc-tenant-rights): Covers rent stabilization, lease renewal rights, repair obligations, harassment protections, security deposit rules, and eviction procedures under New York law.
+- [LA Tenant Rights](https://lucidrents.com/guides/la-tenant-rights): Covers RSO (Rent Stabilization Ordinance), just cause eviction, relocation assistance, habitability standards, and tenant protections under California and LA municipal law.
+
+## Tools
+
+- **Rent Affordability Calculator** (https://lucidrents.com/rent-affordability-calculator): Input your income, debts, and location to determine the maximum rent you can afford using the 30% rule and local cost-of-living adjustments.
+- **Building Comparison** (https://lucidrents.com/[city]/compare): Compare up to 4 buildings side-by-side on violations, scores, reviews, and rent data.
+- **Interactive Map** (https://lucidrents.com/[city]/map): Browse buildings geographically with color-coded scores.
+
+## Contact
+
+- Website: https://lucidrents.com
+- Contact page: https://lucidrents.com/contact
+
+## Machine-Readable Resources
+
+- Sitemap: https://lucidrents.com/sitemap.xml
+- Robots: https://lucidrents.com/robots.txt
+- Concise version: https://lucidrents.com/llms.txt

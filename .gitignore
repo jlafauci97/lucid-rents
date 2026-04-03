@@ -1,0 +1,18 @@
+node_modules/
+.next/
+.env
+.env.local
+.env.*.local
+.vercel
+.env*.local
+__pycache__/
+*.pyc
+scripts/.sitemap-progress.json
+.venv/
+*.tsbuildinfo
+# Generated sitemaps (built at deploy time)
+public/sitemap/
+
+scripts/.backfill-progress.json
+scripts/test-landlord-query.mjs
+scripts/la-owner-backfill.mjs

@@ -1,0 +1,143 @@
+export interface SubwayLine {
+  letter: string;
+  name: string;
+  slug: string;
+  color: string;
+  textColor: string;
+  group: string;
+}
+
+// ── LA Metro Rail Lines ─────────────────────────────────────────────
+export interface MetroLine {
+  letter: string;
+  name: string;
+  slug: string;
+  color: string;
+  textColor: string;
+  group: "Rail" | "BRT";
+  /** Route name used in transit_stops.routes (matches GTFS data) */
+  routeId: string;
+}
+
+export const LA_METRO_LINES: MetroLine[] = [
+  // Rail lines
+  { letter: "A", name: "A Line (Blue)", slug: "a-line", color: "#0072BC", textColor: "white", group: "Rail", routeId: "801" },
+  { letter: "B", name: "B Line (Red)", slug: "b-line", color: "#E3242B", textColor: "white", group: "Rail", routeId: "802" },
+  { letter: "C", name: "C Line (Green)", slug: "c-line", color: "#58A738", textColor: "white", group: "Rail", routeId: "803" },
+  { letter: "D", name: "D Line (Purple)", slug: "d-line", color: "#A05DA5", textColor: "white", group: "Rail", routeId: "804" },
+  { letter: "E", name: "E Line (Expo)", slug: "e-line", color: "#FDB913", textColor: "black", group: "Rail", routeId: "806" },
+  { letter: "K", name: "K Line (Crenshaw)", slug: "k-line", color: "#D29AD3", textColor: "black", group: "Rail", routeId: "807" },
+  { letter: "L", name: "L Line (Gold)", slug: "l-line", color: "#F5A12D", textColor: "black", group: "Rail", routeId: "805" },
+  // Bus Rapid Transit
+  { letter: "G", name: "G Line (Orange)", slug: "g-line", color: "#F58220", textColor: "black", group: "BRT", routeId: "901" },
+  { letter: "J", name: "J Line (Silver)", slug: "j-line", color: "#A1A3A4", textColor: "black", group: "BRT", routeId: "910" },
+];
+
+export function getMetroLineBySlug(slug: string): MetroLine | undefined {
+  return LA_METRO_LINES.find((l) => l.slug === slug);
+}
+
+// ── CTA L Lines (Chicago) ─────────────────────────────────────────
+export interface CTALine {
+  letter: string;
+  name: string;
+  slug: string;
+  color: string;
+  textColor: string;
+  /** Route name stored in transit_stops.routes */
+  routeName: string;
+}
+
+export const CTA_LINES: CTALine[] = [
+  { letter: "R", name: "Red Line", slug: "red-line", color: "#C60C30", textColor: "white", routeName: "Red" },
+  { letter: "B", name: "Blue Line", slug: "blue-line", color: "#00A1DE", textColor: "white", routeName: "Blue" },
+  { letter: "B", name: "Brown Line", slug: "brown-line", color: "#62361B", textColor: "white", routeName: "Brown" },
+  { letter: "G", name: "Green Line", slug: "green-line", color: "#009B3A", textColor: "white", routeName: "Green" },
+  { letter: "O", name: "Orange Line", slug: "orange-line", color: "#F9461C", textColor: "white", routeName: "Orange" },
+  { letter: "P", name: "Pink Line", slug: "pink-line", color: "#E27EA6", textColor: "black", routeName: "Pink" },
+  { letter: "P", name: "Purple Line", slug: "purple-line", color: "#522398", textColor: "white", routeName: "Purple" },
+  { letter: "Y", name: "Yellow Line", slug: "yellow-line", color: "#F9E300", textColor: "black", routeName: "Yellow" },
+];
+
+export function getCTALineBySlug(slug: string): CTALine | undefined {
+  return CTA_LINES.find((l) => l.slug === slug);
+}
+
+export function getMetroLineByRouteId(routeId: string): MetroLine | undefined {
+  // Handle both raw route_id (e.g. "801-13196") and short name (e.g. "801")
+  const shortId = routeId.includes("-") ? routeId.split("-")[0] : routeId;
+  return LA_METRO_LINES.find((l) => l.routeId === routeId || l.routeId === shortId);
+}
+
+export const SUBWAY_LINES: SubwayLine[] = [
+  // 1/2/3 (Red)
+  { letter: "1", name: "1 Train", slug: "1-train", color: "#EE352E", textColor: "white", group: "1/2/3" },
+  { letter: "2", name: "2 Train", slug: "2-train", color: "#EE352E", textColor: "white", group: "1/2/3" },
+  { letter: "3", name: "3 Train", slug: "3-train", color: "#EE352E", textColor: "white", group: "1/2/3" },
+  // 4/5/6 (Green)
+  { letter: "4", name: "4 Train", slug: "4-train", color: "#00933C", textColor: "white", group: "4/5/6" },
+  { letter: "5", name: "5 Train", slug: "5-train", color: "#00933C", textColor: "white", group: "4/5/6" },
+  { letter: "6", name: "6 Train", slug: "6-train", color: "#00933C", textColor: "white", group: "4/5/6" },
+  // 7 (Purple)
+  { letter: "7", name: "7 Train", slug: "7-train", color: "#B933AD", textColor: "white", group: "7" },
+  // A/C/E (Blue)
+  { letter: "A", name: "A Train", slug: "a-train", color: "#2850AD", textColor: "white", group: "A/C/E" },
+  { letter: "C", name: "C Train", slug: "c-train", color: "#2850AD", textColor: "white", group: "A/C/E" },
+  { letter: "E", name: "E Train", slug: "e-train", color: "#2850AD", textColor: "white", group: "A/C/E" },
+  // B/D/F/M (Orange)
+  { letter: "B", name: "B Train", slug: "b-train", color: "#FF6319", textColor: "white", group: "B/D/F/M" },
+  { letter: "D", name: "D Train", slug: "d-train", color: "#FF6319", textColor: "white", group: "B/D/F/M" },
+  { letter: "F", name: "F Train", slug: "f-train", color: "#FF6319", textColor: "white", group: "B/D/F/M" },
+  { letter: "M", name: "M Train", slug: "m-train", color: "#FF6319", textColor: "white", group: "B/D/F/M" },
+  // G (Light Green)
+  { letter: "G", name: "G Train", slug: "g-train", color: "#6CBE45", textColor: "white", group: "G" },
+  // J/Z (Brown)
+  { letter: "J", name: "J Train", slug: "j-train", color: "#996633", textColor: "white", group: "J/Z" },
+  { letter: "Z", name: "Z Train", slug: "z-train", color: "#996633", textColor: "white", group: "J/Z" },
+  // L (Gray)
+  { letter: "L", name: "L Train", slug: "l-train", color: "#A7A9AC", textColor: "white", group: "L" },
+  // N/Q/R/W (Yellow)
+  { letter: "N", name: "N Train", slug: "n-train", color: "#FCCC0A", textColor: "black", group: "N/Q/R/W" },
+  { letter: "Q", name: "Q Train", slug: "q-train", color: "#FCCC0A", textColor: "black", group: "N/Q/R/W" },
+  { letter: "R", name: "R Train", slug: "r-train", color: "#FCCC0A", textColor: "black", group: "N/Q/R/W" },
+  { letter: "W", name: "W Train", slug: "w-train", color: "#FCCC0A", textColor: "black", group: "N/Q/R/W" },
+  // S (Shuttle)
+  { letter: "S", name: "S Shuttle", slug: "s-shuttle", color: "#808183", textColor: "white", group: "Shuttles" },
+];
+
+export function getLineBySlug(slug: string): SubwayLine | undefined {
+  return SUBWAY_LINES.find((l) => l.slug === slug);
+}
+
+export function getLineByLetter(letter: string): SubwayLine | undefined {
+  return SUBWAY_LINES.find((l) => l.letter === letter);
+}
+
+export function transitLineUrl(slug: string, city: string = "nyc"): string {
+  return `/${city}/apartments-near/${slug}`;
+}
+
+export function busRouteSlug(routeName: string): string {
+  return `${routeName.toLowerCase()}-bus`;
+}
+
+export function busRouteFromSlug(slug: string | undefined): string | null {
+  if (!slug || !slug.endsWith("-bus")) return null;
+  const name = slug.slice(0, -4);
+  let route = name.toUpperCase();
+  // Fix Bronx mixed-case prefix: BX → Bx
+  if (route.startsWith("BX") && route.length > 2) {
+    route = "Bx" + route.slice(2);
+  }
+  return route;
+}
+
+// ── LA Metro Bus route slug helpers ─────────────────────────────────
+export function laMetroBusSlug(routeName: string): string {
+  return `metro-${routeName.toLowerCase()}-bus`;
+}
+
+export function laMetroBusFromSlug(slug: string | undefined): string | null {
+  if (!slug || !slug.startsWith("metro-") || !slug.endsWith("-bus")) return null;
+  return slug.slice(6, -4).toUpperCase();
+}
