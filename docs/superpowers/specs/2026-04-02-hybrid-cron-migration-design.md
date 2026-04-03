@@ -115,7 +115,7 @@ A new lightweight route that the Edge Function calls after completing a sync:
 // Body: { paths: string[], secret: string }
 
 const ALLOWED_PATH_PATTERNS = [
-  /^\/\[city\]/,
+  /^\/\[city\]($|\/)/,
   /^\/$/,
 ];
 const MAX_PATHS = 10;
@@ -198,7 +198,7 @@ These also have `maxDuration = 300` and follow the same pattern:
 
 ## Deno Import Strategy
 
-Use an import map (`supabase/functions/import_map.json`) referenced in `supabase/config.toml` to keep imports clean:
+Use an import map (`supabase/functions/import_map.json`) to keep imports clean:
 
 ```json
 {

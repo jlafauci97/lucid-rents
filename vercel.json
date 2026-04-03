@@ -7,228 +7,228 @@
     },
 
     {
-      "path": "/api/cron/sync?source=hpd",
+      "path": "/api/cron/trigger?source=hpd",
       "schedule": "5 5 * * *"
     },
     {
-      "path": "/api/cron/sync?source=complaints",
+      "path": "/api/cron/trigger?source=complaints",
       "schedule": "35 5 * * *"
     },
     {
-      "path": "/api/cron/sync?source=litigations",
+      "path": "/api/cron/trigger?source=litigations",
       "schedule": "5 6 * * *"
     },
     {
-      "path": "/api/cron/sync?source=dob",
+      "path": "/api/cron/trigger?source=dob",
       "schedule": "35 6 * * *"
     },
     {
-      "path": "/api/cron/sync?source=nypd",
+      "path": "/api/cron/trigger?source=nypd",
       "schedule": "5 7 * * *"
     },
     {
-      "path": "/api/cron/sync?source=evictions",
+      "path": "/api/cron/trigger?source=evictions",
       "schedule": "35 7 * * *"
     },
     {
-      "path": "/api/cron/sync?source=permits",
+      "path": "/api/cron/trigger?source=permits",
       "schedule": "5 8 * * *"
     },
     {
-      "path": "/api/cron/sync?mode=link",
+      "path": "/api/cron/trigger?mode=link",
       "schedule": "35 8 * * *"
     },
     {
-      "path": "/api/cron/sync-news",
+      "path": "/api/cron/trigger?source=sync-news",
       "schedule": "5 9 * * *"
     },
     {
-      "path": "/api/cron/sync-news",
+      "path": "/api/cron/trigger?source=sync-news",
       "schedule": "5 18 * * *"
     },
 
     {
-      "path": "/api/cron/sync?source=bedbugs",
+      "path": "/api/cron/trigger?source=bedbugs",
       "schedule": "5 5 * * 1"
     },
     {
-      "path": "/api/cron/sync?source=sheds",
+      "path": "/api/cron/trigger?source=sheds",
       "schedule": "35 5 * * 1"
     },
     {
-      "path": "/api/cron/sync-rent-stabilization",
+      "path": "/api/cron/trigger?source=sync-rent-stabilization",
       "schedule": "5 7 1 * *"
     },
     {
-      "path": "/api/cron/sync-zillow-rents",
+      "path": "/api/cron/trigger?source=sync-zillow-rents",
       "schedule": "35 7 1 * *"
     },
     {
-      "path": "/api/cron/sync-energy",
+      "path": "/api/cron/trigger?source=sync-energy",
       "schedule": "5 8 1 * *"
     },
     {
-      "path": "/api/cron/sync-transit",
+      "path": "/api/cron/trigger?source=sync-transit",
       "schedule": "5 9 1 * *"
     },
     {
-      "path": "/api/cron/sync-schools",
+      "path": "/api/cron/trigger?source=sync-schools",
       "schedule": "35 9 1 * *"
     },
 
     {
-      "path": "/api/cron/sync?source=lahd",
+      "path": "/api/cron/trigger?source=lahd",
       "schedule": "5 10 * * *"
     },
     {
-      "path": "/api/cron/sync?source=la-311",
+      "path": "/api/cron/trigger?source=la-311",
       "schedule": "35 10 * * *"
     },
     {
-      "path": "/api/cron/sync?source=la-permits",
+      "path": "/api/cron/trigger?source=la-permits",
       "schedule": "5 11 * * *"
     },
     {
-      "path": "/api/cron/sync?source=la-evictions",
+      "path": "/api/cron/trigger?source=la-evictions",
       "schedule": "35 11 * * *"
     },
     {
-      "path": "/api/cron/sync?source=la-buyouts",
+      "path": "/api/cron/trigger?source=la-buyouts",
       "schedule": "5 12 * * *"
     },
     {
-      "path": "/api/cron/sync?source=la-ccris",
+      "path": "/api/cron/trigger?source=la-ccris",
       "schedule": "35 12 * * *"
     },
     {
-      "path": "/api/cron/sync?mode=link&source=lahd",
+      "path": "/api/cron/trigger?mode=link&source=lahd",
       "schedule": "5 13 * * *"
     },
     {
-      "path": "/api/cron/sync?mode=link&source=la-311",
+      "path": "/api/cron/trigger?mode=link&source=la-311",
       "schedule": "35 13 * * *"
     },
     {
-      "path": "/api/cron/sync?mode=link&source=ladbs",
+      "path": "/api/cron/trigger?mode=link&source=ladbs",
       "schedule": "5 14 * * *"
     },
     {
-      "path": "/api/cron/sync?mode=link&source=la-evictions",
+      "path": "/api/cron/trigger?mode=link&source=la-evictions",
       "schedule": "35 14 * * *"
     },
     {
-      "path": "/api/cron/sync?mode=link&source=la-buyouts",
+      "path": "/api/cron/trigger?mode=link&source=la-buyouts",
       "schedule": "5 15 * * *"
     },
     {
-      "path": "/api/cron/sync?mode=link&source=la-ccris",
+      "path": "/api/cron/trigger?mode=link&source=la-ccris",
       "schedule": "35 15 * * *"
     },
     {
-      "path": "/api/cron/sync?source=la-soft-story",
+      "path": "/api/cron/trigger?source=la-soft-story",
       "schedule": "5 11 1 * *"
     },
 
     {
-      "path": "/api/cron/sync?source=chicago-violations",
+      "path": "/api/cron/trigger?source=chicago-violations",
       "schedule": "5 16 * * *"
     },
     {
-      "path": "/api/cron/sync?source=chicago-311",
+      "path": "/api/cron/trigger?source=chicago-311",
       "schedule": "35 16 * * *"
     },
     {
-      "path": "/api/cron/sync?source=chicago-crimes",
+      "path": "/api/cron/trigger?source=chicago-crimes",
       "schedule": "5 17 * * *"
     },
     {
-      "path": "/api/cron/sync?source=chicago-permits",
+      "path": "/api/cron/trigger?source=chicago-permits",
       "schedule": "35 17 * * *"
     },
     {
-      "path": "/api/cron/sync?source=chicago-rlto",
+      "path": "/api/cron/trigger?source=chicago-rlto",
       "schedule": "5 5 * * 3"
     },
     {
-      "path": "/api/cron/sync?source=chicago-lead",
+      "path": "/api/cron/trigger?source=chicago-lead",
       "schedule": "35 5 * * 3"
     },
     {
-      "path": "/api/cron/sync?mode=link&source=chicago-violations",
+      "path": "/api/cron/trigger?mode=link&source=chicago-violations",
       "schedule": "5 18 * * *"
     },
     {
-      "path": "/api/cron/sync?mode=link&source=chicago-311",
+      "path": "/api/cron/trigger?mode=link&source=chicago-311",
       "schedule": "35 18 * * *"
     },
     {
-      "path": "/api/cron/sync?mode=link&source=chicago-permits",
+      "path": "/api/cron/trigger?mode=link&source=chicago-permits",
       "schedule": "5 19 * * *"
     },
     {
-      "path": "/api/cron/sync?mode=link&source=chicago-crimes",
+      "path": "/api/cron/trigger?mode=link&source=chicago-crimes",
       "schedule": "35 19 * * *"
     },
 
     {
-      "path": "/api/cron/sync?source=miami-violations",
+      "path": "/api/cron/trigger?source=miami-violations",
       "schedule": "5 20 * * *"
     },
     {
-      "path": "/api/cron/sync?source=miami-311",
+      "path": "/api/cron/trigger?source=miami-311",
       "schedule": "35 20 * * *"
     },
     {
-      "path": "/api/cron/sync?source=miami-crimes",
+      "path": "/api/cron/trigger?source=miami-crimes",
       "schedule": "5 21 * * *"
     },
     {
-      "path": "/api/cron/sync?source=miami-permits",
+      "path": "/api/cron/trigger?source=miami-permits",
       "schedule": "35 21 * * *"
     },
     {
-      "path": "/api/cron/sync?source=miami-unsafe",
+      "path": "/api/cron/trigger?source=miami-unsafe",
       "schedule": "5 5 * * 2"
     },
     {
-      "path": "/api/cron/sync?source=miami-recerts",
+      "path": "/api/cron/trigger?source=miami-recerts",
       "schedule": "35 5 * * 2"
     },
     {
-      "path": "/api/cron/sync?mode=link&source=miami-violations",
+      "path": "/api/cron/trigger?mode=link&source=miami-violations",
       "schedule": "5 22 * * *"
     },
     {
-      "path": "/api/cron/sync?mode=link&source=miami-311",
+      "path": "/api/cron/trigger?mode=link&source=miami-311",
       "schedule": "35 22 * * *"
     },
     {
-      "path": "/api/cron/sync?mode=link&source=miami-permits",
+      "path": "/api/cron/trigger?mode=link&source=miami-permits",
       "schedule": "5 23 * * *"
     },
 
     {
-      "path": "/api/cron/sync?source=houston-violations",
+      "path": "/api/cron/trigger?source=houston-violations",
       "schedule": "5 2 * * *"
     },
     {
-      "path": "/api/cron/sync?source=houston-311",
+      "path": "/api/cron/trigger?source=houston-311",
       "schedule": "35 2 * * *"
     },
     {
-      "path": "/api/cron/sync?source=houston-crimes",
+      "path": "/api/cron/trigger?source=houston-crimes",
       "schedule": "5 4 * * *"
     },
     {
-      "path": "/api/cron/sync?mode=link&source=houston-violations",
+      "path": "/api/cron/trigger?mode=link&source=houston-violations",
       "schedule": "35 0 * * *"
     },
     {
-      "path": "/api/cron/sync?mode=link&source=houston-311",
+      "path": "/api/cron/trigger?mode=link&source=houston-311",
       "schedule": "5 1 * * *"
     },
     {
-      "path": "/api/cron/sync?mode=link&source=houston-crimes",
+      "path": "/api/cron/trigger?mode=link&source=houston-crimes",
       "schedule": "35 1 * * *"
     },
 
