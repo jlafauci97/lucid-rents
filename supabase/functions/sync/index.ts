@@ -3948,7 +3948,7 @@ async function runLinkOnly(
 // ---------------------------------------------------------------------------
 Deno.serve(async (req) => {
   // ---- Auth check ----
-  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const serviceRoleKey = Deno.env.get("CRON_SECRET");
   if (!serviceRoleKey) {
     return new Response(
       JSON.stringify({ error: "SUPABASE_SERVICE_ROLE_KEY not configured" }),

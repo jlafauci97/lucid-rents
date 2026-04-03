@@ -10,7 +10,7 @@ const BATCH_SIZE = 200; // buildings per call -- keeps within timeout
  */
 Deno.serve(async (req) => {
   const authHeader = req.headers.get("authorization");
-  const expectedKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const expectedKey = Deno.env.get("CRON_SECRET");
   if (!expectedKey || authHeader !== `Bearer ${expectedKey}`) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,

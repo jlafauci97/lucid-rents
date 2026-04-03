@@ -11,9 +11,9 @@ export async function GET(req: NextRequest) {
 
   const supabaseUrl =
     process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const cronSecret = process.env.CRON_SECRET;
 
-  if (!supabaseUrl || !serviceKey) {
+  if (!supabaseUrl || !cronSecret) {
     return NextResponse.json(
       { error: "Missing Supabase config" },
       { status: 500 }
@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
   fetch(`${supabaseUrl}/functions/v1/${fnName}`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${serviceKey}`,
+      Authorization: `Bearer ${cronSecret}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ source, mode }),
