@@ -362,21 +362,6 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main column */}
           <div className="lg:col-span-2 space-y-8">
-            {/* Quick Summary — renders immediately */}
-            <QuickSummary
-              building={building}
-              rents={rents}
-              violationCount={effectiveViolationCount}
-              complaintCount={building.complaint_count}
-              bedbugCount={building.bedbug_report_count}
-              evictionCount={building.eviction_count}
-              valueGrade={deweyMetrics?.valueGrade}
-              medianRent={deweyMetrics?.medianRent}
-              pricePerSqft={deweyMetrics?.pricePerSqft}
-              neighborhoodMedianRent={deweyMetrics?.neighborhoodMedianRent}
-              rentChangeYoY={deweyMetrics?.rentChangeYoY}
-            />
-
             {/* Below-fold content streams in via Suspense */}
             <Suspense fallback={<ContentSkeleton />}>
               <DeferredBuildingContent
