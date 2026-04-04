@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
+import { T } from "@/lib/design-tokens";
 import {
   ShieldAlert,
   ShieldCheck,
@@ -112,7 +113,7 @@ export function HazardZonesCard({
           ) : (
             <ShieldAlert className="w-[18px] h-[18px] text-amber-600" />
           )}
-          <h3 className="font-semibold text-[#0F1D2E]">Seismic & Fire Zones</h3>
+          <h3 className="font-semibold" style={{ color: T.text1 }}>Seismic & Fire Zones</h3>
         </div>
       </CardHeader>
       <CardContent>
@@ -164,7 +165,7 @@ export function HazardZonesCard({
                     className={`flex items-center gap-2.5 rounded-lg px-3 py-2 border ${
                       info.inZone
                         ? colors.active
-                        : "bg-white text-[#94a3b8] border-[#e2e8f0]"
+                        : "bg-white border-[#E2E8F0]"
                     }`}
                   >
                     <Icon
@@ -226,14 +227,15 @@ export function HazardZonesCard({
           {/* Link to full safety page */}
           <Link
             href={`/${city}/seismic-fire-safety`}
-            className="flex items-center gap-1 text-xs font-medium text-[#3B82F6] hover:text-[#2563EB] transition-colors"
+            className="flex items-center gap-1 text-xs font-medium transition-colors hover:opacity-80"
+            style={{ color: T.blue }}
           >
             Learn about LA seismic & fire zones
             <ExternalLink className="w-3 h-3" />
           </Link>
 
           {/* Source */}
-          <p className="text-[10px] text-[#94a3b8] leading-tight">
+          <p className="text-[10px] leading-tight" style={{ color: T.text3 }}>
             Data from LA City GeoHub, LADBS Soft-Story Retrofit Program, and CAL
             FIRE. Hazard zones are official designations — actual risk may vary.
           </p>

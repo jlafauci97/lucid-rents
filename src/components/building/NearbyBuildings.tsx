@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { buildingUrl } from "@/lib/seo";
+import { T, gradeColor } from "@/lib/design-tokens";
 import { MapPin, AlertTriangle, Building2 } from "lucide-react";
 
 interface NearbyBuildingsProps {
@@ -11,15 +12,10 @@ interface NearbyBuildingsProps {
 }
 
 function letterGrade(score: number | null): { letter: string; color: string; bg: string } {
-  if (score == null) return { letter: "?", color: "#3B82F6", bg: "#eff6ff" };
-  if (score >= 9) return { letter: "A+", color: "#15803d", bg: "#dcfce7" };
-  if (score >= 8) return { letter: "A", color: "#16a34a", bg: "#dcfce7" };
-  if (score >= 7) return { letter: "B+", color: "#65a30d", bg: "#ecfccb" };
-  if (score >= 6) return { letter: "B", color: "#ca8a04", bg: "#fef9c3" };
-  if (score >= 5) return { letter: "C+", color: "#d97706", bg: "#fef3c7" };
-  if (score >= 4) return { letter: "C", color: "#ea580c", bg: "#ffedd5" };
-  if (score >= 3) return { letter: "D", color: "#dc2626", bg: "#fee2e2" };
-  return { letter: "F", color: "#991b1b", bg: "#fee2e2" };
+  if (score == null) return { letter: "?", color: T.blue, bg: `${T.blue}14` };
+  const letter = score >= 9 ? "A+" : score >= 8 ? "A" : score >= 7 ? "B+" : score >= 6 ? "B" : score >= 5 ? "C+" : score >= 4 ? "C" : score >= 3 ? "D" : "F";
+  const c = gradeColor(letter);
+  return { letter, color: c, bg: `${c}14` };
 }
 
 export async function NearbyBuildings({ buildingId, zipCode, borough, city }: NearbyBuildingsProps) {
@@ -40,7 +36,7 @@ export async function NearbyBuildings({ buildingId, zipCode, borough, city }: Ne
 
   return (
     <section>
-      <h2 className="text-xl font-bold text-[#0F1D2E] mb-4">
+      <h2 className="text-xl font-bold mb-4" style={{ color: T.text1 }}>
         Nearby Buildings
       </h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -50,7 +46,8 @@ export async function NearbyBuildings({ buildingId, zipCode, borough, city }: Ne
             <Link
               key={b.id}
               href={buildingUrl(b, city)}
-              className="group bg-white border border-[#e2e8f0] rounded-xl p-4 hover:shadow-md hover:border-[#3B82F6]/40 transition-all"
+              className="group rounded-2xl border p-4 hover:shadow-md transition-all"
+              style={{ backgroundColor: T.surface, borderColor: T.border }}
             >
               <div className="flex items-start gap-3">
                 {/* Grade badge */}
@@ -58,14 +55,14 @@ export async function NearbyBuildings({ buildingId, zipCode, borough, city }: Ne
                   className="w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0"
                   style={{ backgroundColor: grade.bg, color: grade.color }}
                 >
-                  {b.overall_score != null ? grade.letter : <Building2 className="w-5 h-5 text-[#3B82F6]" />}
+                  {b.overall_score != null ? grade.letter : <Building2 className="w-5 h-5" style={{ color: T.blue }} />}
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-[#0F1D2E] group-hover:text-[#3B82F6] transition-colors text-sm truncate">
+                  <h3 className="font-semibold transition-colors text-sm truncate" style={{ color: T.text1 }}>
                     {b.full_address}
                   </h3>
-                  <div className="flex items-center gap-1 text-xs text-[#64748b] mt-0.5">
+                  <div className="flex items-center gap-1 text-xs text-[#5E6687] mt-0.5">
                     <MapPin className="w-3 h-3 flex-shrink-0" />
                     {b.borough}
                     {b.zip_code && ` \u00b7 ${b.zip_code}`}
@@ -77,24 +74,24 @@ export async function NearbyBuildings({ buildingId, zipCode, borough, city }: Ne
               {/* Stats row */}
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-3 text-xs">
                 {b.violation_count > 0 && (
-                  <span className="inline-flex items-center gap-1 font-medium text-[#ef4444]">
+                  <span className="inline-flex items-center gap-1 font-medium text-[#EF4444]">
                     <AlertTriangle className="w-3 h-3" />
                     {b.violation_count.toLocaleString()} violations
                   </span>
                 )}
                 {b.total_units != null && b.total_units > 0 && (
-                  <span className="inline-flex items-center gap-1 text-[#64748b]">
+                  <span className="inline-flex items-center gap-1 text-[#5E6687]">
                     <Building2 className="w-3 h-3" />
                     {b.total_units} units
                   </span>
                 )}
                 {b.review_count > 0 && (
-                  <span className="text-[#64748b]">
+                  <span className="text-[#5E6687]">
                     {b.review_count} review{b.review_count !== 1 ? "s" : ""}
                   </span>
                 )}
                 {b.is_rent_stabilized && (
-                  <span className="text-emerald-600 font-medium">
+                  <span className="font-medium" style={{ color: T.sage }}>
                     Rent Stabilized
                   </span>
                 )}
@@ -103,21 +100,16 @@ export async function NearbyBuildings({ buildingId, zipCode, borough, city }: Ne
               {/* Score bar */}
               {b.overall_score != null && (
                 <div className="mt-3 flex items-center gap-2">
-                  <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: T.subtle }}>
                     <div
                       className="h-full rounded-full"
                       style={{
                         width: `${(Number(b.overall_score) / 10) * 100}%`,
-                        backgroundColor:
-                          Number(b.overall_score) >= 7
-                            ? "#22c55e"
-                            : Number(b.overall_score) >= 4
-                              ? "#f59e0b"
-                              : "#ef4444",
+                        backgroundColor: grade.color,
                       }}
                     />
                   </div>
-                  <span className="text-xs font-semibold text-[#0F1D2E]">
+                  <span className="text-xs font-semibold" style={{ color: T.text1 }}>
                     {b.overall_score}/10
                   </span>
                 </div>

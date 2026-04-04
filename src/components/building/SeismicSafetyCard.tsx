@@ -1,5 +1,6 @@
 import { ShieldAlert, ShieldCheck, Clock } from "lucide-react";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
+import { T } from "@/lib/design-tokens";
 
 interface SeismicSafetyCardProps {
   isSoftStory: boolean;
@@ -21,7 +22,7 @@ export function SeismicSafetyCard({ isSoftStory, softStoryStatus }: SeismicSafet
           ) : (
             <ShieldAlert className="w-[18px] h-[18px] text-amber-600" />
           )}
-          <h3 className="font-semibold text-[#0F1D2E]">Seismic Safety</h3>
+          <h3 className="font-semibold" style={{ color: T.text1 }}>Seismic Safety</h3>
         </div>
       </CardHeader>
       <CardContent>
@@ -46,14 +47,14 @@ export function SeismicSafetyCard({ isSoftStory, softStoryStatus }: SeismicSafet
               {softStoryStatus || "Soft-Story Building"}
             </span>
           </div>
-          <p className="text-xs text-[#64748b] leading-relaxed">
+          <p className="text-xs leading-relaxed" style={{ color: T.text2 }}>
             {isRetrofitted
               ? "This building has been seismically retrofitted under LA's Soft-Story Retrofit Program. It has received a Certificate of Compliance."
               : isInProgress
               ? "This building is a pre-1978 soft-story structure currently undergoing seismic retrofit work."
               : "This building is identified as a pre-1978 soft-story structure that may be vulnerable to earthquake damage."}
           </p>
-          <p className="text-[10px] text-[#94a3b8]">
+          <p className="text-[10px]" style={{ color: T.text3 }}>
             Source: LADBS Soft-Story Retrofit Program
           </p>
         </div>

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ShieldCheck, ShieldX } from "lucide-react";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { cityPath } from "@/lib/seo";
+import { T } from "@/lib/design-tokens";
 import type { City } from "@/lib/cities";
 
 interface RentStabilizationCardProps {
@@ -34,22 +35,23 @@ export function RentStabilizationCard({
       <CardHeader>
         <div className="flex items-center gap-2">
           {isStabilized ? (
-            <ShieldCheck className="w-[18px] h-[18px] text-[#10b981]" />
+            <ShieldCheck className="w-[18px] h-[18px]" style={{ color: T.sage }} />
           ) : (
-            <ShieldX className="w-[18px] h-[18px] text-[#94a3b8]" />
+            <ShieldX className="w-[18px] h-[18px]" style={{ color: T.text3 }} />
           )}
-          <h3 className="font-semibold text-[#0F1D2E]">{isLA ? "RSO (Rent Stabilization)" : "Rent Stabilization"}</h3>
+          <h3 className="font-semibold" style={{ color: T.text1 }}>{isLA ? "RSO (Rent Stabilization)" : "Rent Stabilization"}</h3>
         </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
           {/* Status */}
           <div
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
+            style={
               isStabilized
-                ? "bg-emerald-50 text-emerald-700"
-                : "bg-gray-100 text-gray-600"
-            }`}
+                ? { backgroundColor: `${T.sage}14`, color: T.sage }
+                : { backgroundColor: T.elevated, color: T.text2 }
+            }
           >
             {isStabilized
               ? (isLA ? "RSO Protected" : "Rent Stabilized")
@@ -58,7 +60,7 @@ export function RentStabilizationCard({
 
           {/* Unit count */}
           {isStabilized && stabilizedUnits != null && (
-            <p className="text-sm text-[#0F1D2E]">
+            <p className="text-sm" style={{ color: T.text1 }}>
               <span className="font-semibold">{stabilizedUnits}</span>
               {totalUnits ? ` of ${totalUnits}` : ""} unit
               {stabilizedUnits !== 1 ? "s" : ""} {isLA ? "covered" : "stabilized"}
@@ -66,7 +68,7 @@ export function RentStabilizationCard({
           )}
 
           {/* Data source info */}
-          <p className="text-xs text-[#94a3b8]">
+          <p className="text-xs" style={{ color: T.text3 }}>
             {isLA
               ? `Based on assessor data${yearBuilt || stabilizedYear ? ` (built ${yearBuilt || stabilizedYear})` : ""}`
               : `Based on ${stabilizedYear} tax bill data`}
@@ -78,7 +80,8 @@ export function RentStabilizationCard({
               href="https://housing.lacity.gov/rental-property-owners/rso-property-search"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs text-[#3B82F6] hover:text-[#2563EB] font-medium transition-colors"
+              className="text-xs font-medium transition-colors hover:opacity-80"
+              style={{ color: T.blue }}
             >
               Verify on LAHD &rarr;
             </a>
@@ -87,7 +90,8 @@ export function RentStabilizationCard({
           {/* Link to checker */}
           <Link
             href={cityPath("/rent-stabilization", city)}
-            className="text-xs text-[#3B82F6] hover:text-[#2563EB] font-medium transition-colors"
+            className="text-xs font-medium transition-colors hover:opacity-80"
+            style={{ color: T.blue }}
           >
             {isLA ? "RSO Checker" : "Rent Stabilization Checker"} &rarr;
           </Link>

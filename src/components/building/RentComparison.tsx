@@ -1,5 +1,6 @@
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { BarChart3, TrendingDown, TrendingUp, Minus } from "lucide-react";
+import { T } from "@/lib/design-tokens";
 
 interface BuildingRent {
   bedrooms: number;
@@ -155,8 +156,8 @@ export function RentComparison({
     <Card>
       <CardHeader>
         <div className="flex items-center gap-2">
-          <BarChart3 className="w-[18px] h-[18px] text-[#2563EB]" />
-          <h3 className="font-semibold text-[#0F1D2E]">Rent Comparison</h3>
+          <BarChart3 className="w-[18px] h-[18px]" style={{ color: T.accent }} />
+          <h3 className="font-semibold" style={{ color: T.text1 }}>Rent Comparison</h3>
         </div>
       </CardHeader>
       <CardContent>
@@ -185,7 +186,7 @@ export function RentComparison({
               return (
                 <div key={entry.bedrooms} className="space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-[#0F1D2E]">
+                    <span className="text-sm font-medium" style={{ color: T.text1 }}>
                       {BED_LABELS[entry.bedrooms] || `${entry.bedrooms} Bed`}
                     </span>
                     {comparison && (
@@ -198,17 +199,17 @@ export function RentComparison({
                     )}
                   </div>
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-[#64748b]">
+                    <span className="text-[#5E6687]">
                       This building:{" "}
-                      <span className="font-medium text-[#334155]">
+                      <span className="font-medium text-[#1A1F36]">
                         {entry.min_rent === entry.max_rent
                           ? formatRent(entry.median_rent)
                           : `${formatRent(entry.min_rent)} – ${formatRent(entry.max_rent)}`}
                       </span>
                     </span>
-                    <span className="text-[#64748b]">
+                    <span className="text-[#5E6687]">
                       Area:{" "}
-                      <span className="font-medium text-[#334155]">
+                      <span className="font-medium text-[#1A1F36]">
                         {formatRent(neighborhoodMedian)}
                       </span>
                     </span>
@@ -224,7 +225,7 @@ export function RentComparison({
               <div className="border-t border-[#e2e8f0]" />
 
               {historicalContext && (
-                <p className="text-xs text-[#64748b]">{historicalContext}</p>
+                <p className="text-xs text-[#5E6687]">{historicalContext}</p>
               )}
 
               {rentTrajectory && (() => {
@@ -245,7 +246,7 @@ export function RentComparison({
             </>
           )}
 
-          <p className="text-[10px] text-[#94a3b8]">
+          <p className="text-[10px]" style={{ color: T.text3 }}>
             Compared to median rents in {zipCode}, {borough}
           </p>
         </div>

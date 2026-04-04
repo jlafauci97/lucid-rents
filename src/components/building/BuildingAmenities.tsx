@@ -1,4 +1,5 @@
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
+import { T } from "@/lib/design-tokens";
 import {
   Building2, TreePine, Dumbbell, Car, WashingMachine,
   Shield, PawPrint, Package, Gem, Sparkles,
@@ -99,7 +100,7 @@ export function BuildingAmenities({ amenities }: BuildingAmenitiesProps) {
       <CardHeader>
         <div className="flex items-center gap-2">
           <Sparkles className="w-4.5 h-4.5 text-[#a855f7]" />
-          <h3 className="text-base font-bold text-[#0F1D2E]">
+          <h3 className="text-base font-bold" style={{ color: T.text1 }}>
             Building Amenities
           </h3>
         </div>
@@ -114,7 +115,7 @@ export function BuildingAmenities({ amenities }: BuildingAmenitiesProps) {
               <div key={key}>
                 <div className="flex items-center gap-1.5 mb-1.5">
                   <Icon className={`w-3.5 h-3.5 ${color}`} />
-                  <span className="text-xs font-semibold text-[#64748b] uppercase tracking-wide">
+                  <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: T.text2 }}>
                     {label}
                   </span>
                 </div>
@@ -124,9 +125,10 @@ export function BuildingAmenities({ amenities }: BuildingAmenitiesProps) {
                     return (
                       <span
                         key={item}
-                        className="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-[#f1f5f9] text-[#334155] rounded-full"
+                        className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full"
+                        style={{ backgroundColor: T.elevated, color: T.text1 }}
                       >
-                        {AmenityIcon && <AmenityIcon className="w-3 h-3 text-[#64748b]" />}
+                        {AmenityIcon && <AmenityIcon className="w-3 h-3" style={{ color: T.text2 }} />}
                         {item}
                       </span>
                     );
@@ -136,7 +138,7 @@ export function BuildingAmenities({ amenities }: BuildingAmenitiesProps) {
             );
           })}
         </div>
-        <p className="text-[10px] text-[#94a3b8] mt-3">
+        <p className="text-[10px] mt-3" style={{ color: T.text3 }}>
           Based on listing data
         </p>
       </CardContent>
