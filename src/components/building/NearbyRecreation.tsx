@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
+import { T } from "@/lib/design-tokens";
 import { TreePine, Dumbbell, Clapperboard, Trophy, Footprints } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -84,7 +85,7 @@ export function NearbyRecreation({ latitude, longitude }: NearbyRecreationProps)
       <CardHeader>
         <div className="flex items-center gap-2">
           <TreePine className="w-4.5 h-4.5 text-[#16a34a]" />
-          <h3 className="text-base font-bold text-[#0F1D2E]">
+          <h3 className="text-base font-bold" style={{ color: T.text1 }}>
             Nearby Recreation
           </h3>
         </div>
@@ -99,7 +100,7 @@ export function NearbyRecreation({ latitude, longitude }: NearbyRecreationProps)
               <div key={key}>
                 <div className="flex items-center gap-1.5 mb-2">
                   <Icon className={`w-4 h-4 ${color}`} />
-                  <span className="text-xs font-semibold text-[#64748b] uppercase tracking-wide">
+                  <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: T.text2 }}>
                     {label}
                   </span>
                 </div>
@@ -110,15 +111,15 @@ export function NearbyRecreation({ latitude, longitude }: NearbyRecreationProps)
                       className="flex items-start justify-between gap-2 text-sm"
                     >
                       <div className="min-w-0 flex-1">
-                        <div className="font-medium text-[#0F1D2E] truncate">
+                        <div className="font-medium truncate" style={{ color: T.text1 }}>
                           {place.name}
                         </div>
                       </div>
                       <div className="flex flex-col items-end shrink-0">
-                        <span className="text-xs font-medium text-[#0F1D2E]">
+                        <span className="text-xs font-medium" style={{ color: T.text1 }}>
                           {place.distance}
                         </span>
-                        <span className="flex items-center gap-0.5 text-[10px] text-[#94a3b8]">
+                        <span className="flex items-center gap-0.5 text-[10px]" style={{ color: T.text3 }}>
                           <Footprints className="w-2.5 h-2.5" />
                           {place.walkMin} min
                         </span>
