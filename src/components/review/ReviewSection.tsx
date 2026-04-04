@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { MonitorButton } from "@/components/building/MonitorButton";
 import { ReviewCard } from "@/components/review/ReviewCard";
 import { ReviewDistribution } from "@/components/review/ReviewDistribution";
+import { T } from "@/lib/design-tokens";
 import type { ReviewWithDetails } from "@/types";
 import type { ReactNode } from "react";
 
@@ -61,7 +62,7 @@ export function ReviewSection({
   return (
     <section id="reviews" className="scroll-mt-28">
       <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-        <h2 className="text-xl font-bold text-[#0F1D2E]">
+        <h2 className="text-xl font-bold" style={{ color: T.text1 }}>
           Tenant Reviews ({reviews.length})
         </h2>
         <div className="flex flex-wrap items-center gap-2">
@@ -89,7 +90,10 @@ export function ReviewSection({
                 id="review-sort"
                 value={sort}
                 onChange={(e) => setSort(e.target.value as SortOption)}
-                className="text-sm border border-[#e2e8f0] rounded-lg px-3 py-1.5 text-[#0F1D2E] bg-white focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
+                className="text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2"
+                style={{ border: `1px solid ${T.border}`, color: T.text1, backgroundColor: T.surface, boxShadow: `0 0 0 0px ${T.accent}` }}
+                onFocus={(e) => { e.currentTarget.style.boxShadow = `0 0 0 2px ${T.accent}`; }}
+                onBlur={(e) => { e.currentTarget.style.boxShadow = "none"; }}
               >
                 {SORT_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -109,7 +113,7 @@ export function ReviewSection({
       ) : (
         <Card>
           <CardContent>
-            <p className="text-center text-[#64748b] py-8">
+            <p className="text-center py-8" style={{ color: T.text2 }}>
               No reviews yet. Be the first to review this building!
             </p>
           </CardContent>

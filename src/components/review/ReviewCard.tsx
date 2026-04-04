@@ -1,7 +1,8 @@
 import { StarRating } from "@/components/ui/StarRating";
 import { Badge } from "@/components/ui/Badge";
-import { ThumbsUp, User } from "lucide-react";
+import { ThumbsUp, ThumbsDown, User } from "lucide-react";
 import { formatRelativeDate } from "@/lib/utils";
+import { T } from "@/lib/design-tokens";
 import type { ReviewWithDetails } from "@/types";
 
 interface ReviewCardProps {
@@ -9,38 +10,54 @@ interface ReviewCardProps {
 }
 
 export function ReviewCard({ review }: ReviewCardProps) {
+  const wouldRecommend = (review.overall_rating ?? 0) >= 3;
+
   return (
-    <div className="bg-white rounded-xl border border-[#e2e8f0] p-6">
+    <div className="rounded-2xl border p-6 shadow-sm" style={{ backgroundColor: T.surface, borderColor: T.border }}>
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-[#0F1D2E] flex items-center justify-center text-white text-sm font-medium">
+          <div className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-medium" style={{ backgroundColor: T.text1 }}>
             {review.reviewer_display_preference === "anonymous"
               ? <User className="w-5 h-5" />
               : (review.reviewer_name || review.profile?.display_name)?.[0]?.toUpperCase() || <User className="w-5 h-5" />}
           </div>
           <div>
-            <p className="text-sm font-medium text-[#0F1D2E]">
+            <p className="text-sm font-medium" style={{ color: T.text1 }}>
               {review.reviewer_display_preference === "anonymous"
                 ? "Anonymous"
                 : review.reviewer_name || review.profile?.display_name || "Anonymous"}
             </p>
-            <p className="text-xs text-[#94a3b8]">
+            <p className="text-xs" style={{ color: T.text3 }}>
               {formatRelativeDate(review.created_at)}
               {review.unit && ` · Unit ${review.unit.unit_number}`}
             </p>
           </div>
         </div>
-        <StarRating value={review.overall_rating} readonly size="sm" />
+        <div className="flex items-center gap-2">
+          <StarRating value={review.overall_rating} readonly size="sm" />
+        </div>
+      </div>
+
+      {/* Would recommend badge */}
+      <div className="mt-3">
+        <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full" style={{
+          backgroundColor: wouldRecommend ? `${T.sage}12` : `${T.danger}12`,
+          color: wouldRecommend ? T.sage : T.danger,
+        }}>
+          {wouldRecommend
+            ? <><ThumbsUp className="w-3 h-3" /> Would recommend</>
+            : <><ThumbsDown className="w-3 h-3" /> Would not recommend</>}
+        </span>
       </div>
 
       {review.title && (
-        <h4 className="text-base font-semibold text-[#0F1D2E] mt-4">
+        <h4 className="text-base font-semibold mt-3" style={{ color: T.text1 }}>
           {review.title}
         </h4>
       )}
 
       {review.body && (
-        <p className="text-sm text-[#64748b] mt-2 leading-relaxed">
+        <p className="text-sm mt-2 leading-relaxed" style={{ color: T.text2 }}>
           {review.body}
         </p>
       )}
@@ -50,7 +67,8 @@ export function ReviewCard({ review }: ReviewCardProps) {
           {review.pro_tags?.map((tag) => (
             <span
               key={`pro-${tag}`}
-              className="px-2.5 py-1 rounded-full text-xs font-medium bg-[#10b981]/10 text-[#10b981]"
+              className="px-2.5 py-1 rounded-full text-xs font-medium"
+              style={{ backgroundColor: `${T.sage}10`, color: T.sage }}
             >
               {tag}
             </span>
@@ -58,7 +76,8 @@ export function ReviewCard({ review }: ReviewCardProps) {
           {review.con_tags?.map((tag) => (
             <span
               key={`con-${tag}`}
-              className="px-2.5 py-1 rounded-full text-xs font-medium bg-[#ef4444]/10 text-[#ef4444]"
+              className="px-2.5 py-1 rounded-full text-xs font-medium"
+              style={{ backgroundColor: `${T.danger}10`, color: T.danger }}
             >
               {tag}
             </span>
@@ -71,9 +90,10 @@ export function ReviewCard({ review }: ReviewCardProps) {
           {review.category_ratings.map((cr) => (
             <div
               key={cr.id}
-              className="flex items-center gap-1.5 bg-gray-50 rounded-lg px-2.5 py-1.5"
+              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5"
+              style={{ backgroundColor: T.elevated }}
             >
-              <span className="text-xs text-[#64748b]">
+              <span className="text-xs" style={{ color: T.text2 }}>
                 {cr.category?.name}
               </span>
               <StarRating value={cr.rating} readonly size="sm" />
@@ -97,8 +117,8 @@ export function ReviewCard({ review }: ReviewCardProps) {
         </div>
       )}
 
-      <div className="flex items-center justify-between mt-4 pt-4 border-t border-[#e2e8f0]">
-        <div className="flex items-center gap-4 text-xs text-[#94a3b8]">
+      <div className="flex items-center justify-between mt-4 pt-4" style={{ borderTop: `1px solid ${T.border}` }}>
+        <div className="flex items-center gap-4 text-xs" style={{ color: T.text3 }}>
           {review.rent_amount && (
             <span>Rent: ${review.rent_amount.toLocaleString()}/mo</span>
           )}
@@ -106,7 +126,7 @@ export function ReviewCard({ review }: ReviewCardProps) {
             <span>{review.lease_type.replace(/_/g, " ")}</span>
           )}
         </div>
-        <div className="flex items-center gap-1.5 text-sm text-[#64748b]">
+        <div className="flex items-center gap-1.5 text-sm" style={{ color: T.text2 }}>
           <ThumbsUp className="w-4 h-4" />
           <span>{review.helpful_count}</span>
         </div>
