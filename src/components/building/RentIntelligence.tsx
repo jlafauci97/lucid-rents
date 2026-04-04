@@ -397,17 +397,7 @@ export async function RentIntelligence({
       {/* Two-column grid: Price comparison + Seasonal pattern */}
       {(hasRentData || hasSeasonalData) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-          {/* Left: Value Breakdown */}
-          {hasRentData && (
-            <ValueBreakdown
-              buildingRents={buildingRents}
-              neighborhoodRents={neighborhoodRents}
-              amenityPremiums={amenityPremiums}
-              valueGrade={valueGrade}
-            />
-          )}
-
-          {/* Right: Two stacked mini-cards */}
+          {/* Seasonal + Price info */}
           <div className="flex flex-col gap-4">
             {hasRentData && (
               <PricePerSqft

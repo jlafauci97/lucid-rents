@@ -282,6 +282,13 @@ export async function DeferredBuildingContent({ building, buildingId, city, rent
         );
       })()}
 
+      {/* Building Amenities — adjacent to premiums */}
+      {amenities.length > 0 && (
+        <div id="amenities" className="scroll-mt-28">
+          <BuildingAmenities amenities={amenities} />
+        </div>
+      )}
+
       {/* Building Pulse — Violation & Complaint Trends */}
       <div id="pulse" className="scroll-mt-28">
         <ViolationTrend buildingId={buildingId} housingAgency={city === "los-angeles" ? "LAHD" : city === "chicago" ? "CDBS" : city === "miami" ? "RER" : "HPD"} />
@@ -336,12 +343,7 @@ export async function DeferredBuildingContent({ building, buildingId, city, rent
         )}
       </div>
 
-      {/* Building Amenities */}
-      {amenities.length > 0 && (
-        <div id="amenities" className="scroll-mt-28">
-          <BuildingAmenities amenities={amenities} />
-        </div>
-      )}
+      {/* Building Amenities — rendered after Amenity Premiums section */}
 
       {/* Violations by Unit Breakdown */}
       <div id="violations-by-unit">
