@@ -1,6 +1,7 @@
 import { HelpCircle } from "lucide-react";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { FAQAccordionItem } from "@/components/seo/FAQAccordionItem";
+import { T } from "@/lib/design-tokens";
 import type { FAQItem } from "@/lib/faq/types";
 
 export function FAQSection({
@@ -28,15 +29,15 @@ export function FAQSection({
   return (
     <section className="mt-8" id="faq">
       <JsonLd data={jsonLd} />
-      <div className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm overflow-hidden">
+      <div className="rounded-2xl border shadow-sm overflow-hidden" style={{ backgroundColor: T.surface, borderColor: T.border }}>
         {/* Header */}
-        <div className="px-6 py-4 border-b border-[#e2e8f0] flex items-center gap-3">
-          <div className="p-1.5 bg-[#EFF6FF] rounded-lg">
-            <HelpCircle className="w-5 h-5 text-[#3B82F6]" />
+        <div className="px-6 py-4 flex items-center gap-3" style={{ borderBottom: `1px solid ${T.border}` }}>
+          <div className="p-1.5 rounded-lg" style={{ backgroundColor: `${T.blue}14` }}>
+            <HelpCircle className="w-5 h-5" style={{ color: T.blue }} />
           </div>
           <div>
-            <h2 className="text-base font-bold text-[#0F1D2E]">{title}</h2>
-            <p className="text-xs text-[#94a3b8] mt-0.5">
+            <h2 className="text-base font-bold" style={{ color: T.text1 }}>{title}</h2>
+            <p className="text-xs mt-0.5" style={{ color: T.text3 }}>
               {items.length} question{items.length !== 1 ? "s" : ""} answered
             </p>
           </div>
