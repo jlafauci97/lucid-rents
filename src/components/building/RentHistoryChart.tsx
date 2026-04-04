@@ -16,6 +16,7 @@ import {
 } from "recharts";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { TrendingUp, TrendingDown } from "lucide-react";
+import { T } from "@/lib/design-tokens";
 
 interface BuildingRent {
   month: string;
@@ -122,40 +123,40 @@ function CustomTooltip({
   const data = payload[0].payload;
 
   return (
-    <div className="bg-white border border-[#e2e8f0] rounded-lg shadow-md px-3 py-2.5 text-xs">
-      <p className="font-semibold text-[#0F1D2E] mb-1.5">
+    <div className="rounded-lg shadow-md px-3 py-2.5 text-xs" style={{ backgroundColor: T.surface, border: `1px solid ${T.border}` }}>
+      <p className="font-semibold mb-1.5" style={{ color: T.text1, fontFamily: "var(--font-body)" }}>
         {formatTooltipMonth(data.month)}
       </p>
       {data.buildingMedian !== null && (
         <div className="flex items-center gap-2 mb-0.5">
-          <span className="w-2.5 h-0.5 bg-[#3B82F6] rounded-full inline-block" />
-          <span className="text-[#334155]">
+          <span className="w-2.5 h-0.5 rounded-full inline-block" style={{ backgroundColor: T.blue }} />
+          <span style={{ color: T.text2 }}>
             Building median:{" "}
-            <span className="font-medium">{formatDollar(data.buildingMedian)}</span>
+            <span className="font-medium" style={{ fontFamily: "var(--font-mono)" }}>{formatDollar(data.buildingMedian)}</span>
           </span>
         </div>
       )}
       {data.minRent !== null && data.maxRent !== null && (
         <div className="flex items-center gap-2 mb-0.5">
-          <span className="w-2.5 h-0.5 bg-[#93C5FD] rounded-full inline-block" />
-          <span className="text-[#64748b]">
-            Range: {formatDollar(data.minRent)} - {formatDollar(data.maxRent)}
+          <span className="w-2.5 h-0.5 rounded-full inline-block" style={{ backgroundColor: `${T.blue}60` }} />
+          <span style={{ color: T.text2 }}>
+            Range: <span style={{ fontFamily: "var(--font-mono)" }}>{formatDollar(data.minRent)} - {formatDollar(data.maxRent)}</span>
           </span>
         </div>
       )}
       {showNeighborhood && data.neighborhoodMedian !== null && (
         <div className="flex items-center gap-2 mb-0.5">
-          <span className="w-2.5 h-0.5 bg-[#94a3b8] rounded-full inline-block" />
-          <span className="text-[#64748b]">
+          <span className="w-2.5 h-0.5 rounded-full inline-block" style={{ backgroundColor: T.text3 }} />
+          <span style={{ color: T.text2 }}>
             Neighborhood:{" "}
-            <span className="font-medium">
+            <span className="font-medium" style={{ fontFamily: "var(--font-mono)" }}>
               {formatDollar(data.neighborhoodMedian)}
             </span>
           </span>
         </div>
       )}
       {data.listingCount > 0 && (
-        <p className="text-[#94a3b8] mt-1">
+        <p className="mt-1" style={{ color: T.text3 }}>
           {data.listingCount} listing{data.listingCount !== 1 ? "s" : ""}
         </p>
       )}
@@ -279,12 +280,12 @@ export function RentHistoryChart({
     return (
       <Card>
         <CardHeader>
-          <h3 className="text-base font-bold text-[#0F1D2E]">
+          <h3 className="text-base font-bold" style={{ color: T.text1, fontFamily: "var(--font-display)" }}>
             Rent History
           </h3>
         </CardHeader>
         <CardContent>
-          <p className="text-center text-[#64748b] py-8">
+          <p className="text-center py-8" style={{ color: T.text2 }}>
             No rent history data available for this building.
           </p>
         </CardContent>
@@ -300,14 +301,14 @@ export function RentHistoryChart({
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <h3 className="text-base font-bold text-[#0F1D2E]">Rent History</h3>
+          <h3 className="text-base font-bold" style={{ color: T.text1, fontFamily: "var(--font-display)" }}>Rent History</h3>
           {trend && (
             <span
-              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${
-                trend.direction === "up"
-                  ? "bg-[#fee2e2] text-[#dc2626]"
-                  : "bg-[#dcfce7] text-[#16a34a]"
-              }`}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
+              style={{
+                color: trend.direction === "up" ? T.danger : T.sage,
+                backgroundColor: trend.direction === "up" ? `${T.danger}15` : `${T.sage}15`,
+              }}
             >
               {trend.direction === "up" ? (
                 <TrendingUp className="w-3.5 h-3.5" />
@@ -325,11 +326,12 @@ export function RentHistoryChart({
               key={beds}
               type="button"
               onClick={() => setSelectedBed(beds)}
-              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                selectedBed === beds
-                  ? "bg-[#3B82F6] text-white"
-                  : "bg-[#f1f5f9] text-[#475569] hover:bg-[#e2e8f0]"
-              }`}
+              className="px-3 py-1 rounded-full text-xs font-medium transition-colors"
+              style={{
+                backgroundColor: selectedBed === beds ? T.accent : T.elevated,
+                color: selectedBed === beds ? "#FFFFFF" : T.text2,
+                fontFamily: "var(--font-body)",
+              }}
             >
               {BED_LABELS[beds] || `${beds}BR`}
             </button>
@@ -342,9 +344,10 @@ export function RentHistoryChart({
               type="checkbox"
               checked={showNeighborhood}
               onChange={(e) => setShowNeighborhood(e.target.checked)}
-              className="w-3.5 h-3.5 rounded border-[#cbd5e1] text-[#3B82F6] focus:ring-[#3B82F6] focus:ring-offset-0"
+              className="w-3.5 h-3.5 rounded focus:ring-offset-0"
+              style={{ borderColor: T.border, accentColor: T.accent }}
             />
-            <span className="text-xs text-[#64748b]">
+            <span className="text-xs" style={{ color: T.text2, fontFamily: "var(--font-body)" }}>
               Show neighborhood median
             </span>
           </label>
@@ -359,21 +362,21 @@ export function RentHistoryChart({
             >
               <CartesianGrid
                 strokeDasharray="3 3"
-                stroke="#e2e8f0"
+                stroke={T.border}
                 vertical={false}
               />
               <XAxis
                 dataKey="month"
-                tick={{ fontSize: 11, fill: "#64748b" }}
+                tick={{ fontSize: 11, fill: T.text2 }}
                 tickLine={false}
-                axisLine={{ stroke: "#e2e8f0" }}
+                axisLine={{ stroke: T.border }}
                 tickFormatter={(value: string, index: number) =>
                   tickIndices.has(index) ? formatYearTick(value) : ""
                 }
                 interval={0}
               />
               <YAxis
-                tick={{ fontSize: 11, fill: "#64748b" }}
+                tick={{ fontSize: 11, fill: T.text2 }}
                 tickLine={false}
                 axisLine={false}
                 width={52}
@@ -390,7 +393,7 @@ export function RentHistoryChart({
               <Area
                 type="monotone"
                 dataKey="range"
-                fill="#3B82F6"
+                fill={T.accent}
                 fillOpacity={0.1}
                 stroke="none"
                 connectNulls={false}
@@ -400,10 +403,10 @@ export function RentHistoryChart({
               <Line
                 type="monotone"
                 dataKey="buildingMedian"
-                stroke="#3B82F6"
+                stroke={T.accent}
                 strokeWidth={2}
                 dot={false}
-                activeDot={{ r: 4, strokeWidth: 0, fill: "#3B82F6" }}
+                activeDot={{ r: 4, strokeWidth: 0, fill: T.accent }}
                 connectNulls
               />
               {/* Neighborhood median line */}
@@ -411,11 +414,11 @@ export function RentHistoryChart({
                 <Line
                   type="monotone"
                   dataKey="neighborhoodMedian"
-                  stroke="#94a3b8"
+                  stroke={T.text3}
                   strokeWidth={1.5}
                   strokeDasharray="6 3"
                   dot={false}
-                  activeDot={{ r: 3, strokeWidth: 0, fill: "#94a3b8" }}
+                  activeDot={{ r: 3, strokeWidth: 0, fill: T.text3 }}
                   connectNulls
                 />
               )}
@@ -423,14 +426,14 @@ export function RentHistoryChart({
               {covidAnnotation && (
                 <ReferenceLine
                   x={covidAnnotation.month}
-                  stroke="#94a3b8"
+                  stroke={T.text3}
                   strokeDasharray="3 3"
                   strokeWidth={1}
                 >
                   <Label
                     value={covidAnnotation.label}
                     position="top"
-                    fill="#94a3b8"
+                    fill={T.text3}
                     fontSize={10}
                     offset={8}
                   />
@@ -439,7 +442,7 @@ export function RentHistoryChart({
             </ComposedChart>
           </ResponsiveContainer>
         </div>
-        <p className="text-[10px] text-[#94a3b8] mt-3">
+        <p className="text-[10px] mt-3" style={{ color: T.text3 }}>
           Based on listing data. Range shows min-max asking rents.
         </p>
       </CardContent>

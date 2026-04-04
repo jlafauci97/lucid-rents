@@ -1,6 +1,7 @@
-import { BarChart3, TrendingUp, TrendingDown, MapPin, Calendar, DollarSign, Snowflake, Sun } from "lucide-react";
+import { TrendingUp, TrendingDown, MapPin, Calendar, DollarSign, Snowflake, Sun } from "lucide-react";
 import { MarketListings } from "@/components/building/MarketListings";
-import { RentHistoryChart as RentHistoryChartClient } from "@/components/building/RentHistoryChart";
+import { T, gradeColor } from "@/lib/design-tokens";
+import { SectionTitle } from "@/components/ui/SectionTitle";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -187,17 +188,17 @@ function InsightsBar({
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
       {/* Rent Change */}
       {rentChange && (
-        <div className="rounded-lg bg-blue-50 p-3 flex items-start gap-2.5">
+        <div className="rounded-2xl p-3 flex items-start gap-2.5" style={{ backgroundColor: T.elevated }}>
           {rentChange.direction === "up" ? (
-            <TrendingUp className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+            <TrendingUp className="w-4 h-4 mt-0.5 shrink-0" style={{ color: T.danger }} />
           ) : rentChange.direction === "down" ? (
-            <TrendingDown className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />
+            <TrendingDown className="w-4 h-4 mt-0.5 shrink-0" style={{ color: T.sage }} />
           ) : (
-            <TrendingUp className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
+            <TrendingUp className="w-4 h-4 mt-0.5 shrink-0" style={{ color: T.text3 }} />
           )}
           <div>
-            <p className="text-xs text-gray-500 font-medium">Rent Trend</p>
-            <p className="text-sm font-semibold text-[#0F1D2E]">
+            <p className="text-xs font-medium" style={{ color: T.text2, fontFamily: "var(--font-body)" }}>Rent Trend</p>
+            <p className="text-sm font-semibold" style={{ color: T.text1, fontFamily: "var(--font-body)" }}>
               {rentChange.direction === "up" && "\u2191 "}
               {rentChange.direction === "down" && "\u2193 "}
               {rentChange.label}
@@ -208,11 +209,11 @@ function InsightsBar({
 
       {/* Neighborhood Position */}
       {position && (
-        <div className="rounded-lg bg-blue-50 p-3 flex items-start gap-2.5">
-          <MapPin className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+        <div className="rounded-2xl p-3 flex items-start gap-2.5" style={{ backgroundColor: T.elevated }}>
+          <MapPin className="w-4 h-4 mt-0.5 shrink-0" style={{ color: T.blue }} />
           <div>
-            <p className="text-xs text-gray-500 font-medium">vs. Neighborhood</p>
-            <p className="text-sm font-semibold text-[#0F1D2E]">
+            <p className="text-xs font-medium" style={{ color: T.text2, fontFamily: "var(--font-body)" }}>vs. Neighborhood</p>
+            <p className="text-sm font-semibold" style={{ color: T.text1, fontFamily: "var(--font-body)" }}>
               {position.pct === 0
                 ? position.label
                 : position.above
@@ -225,11 +226,11 @@ function InsightsBar({
 
       {/* Best Month */}
       {bestMonth && (
-        <div className="rounded-lg bg-blue-50 p-3 flex items-start gap-2.5">
-          <Calendar className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
+        <div className="rounded-2xl p-3 flex items-start gap-2.5" style={{ backgroundColor: T.elevated }}>
+          <Calendar className="w-4 h-4 mt-0.5 shrink-0" style={{ color: T.sage }} />
           <div>
-            <p className="text-xs text-gray-500 font-medium">Best Time to Move</p>
-            <p className="text-sm font-semibold text-[#0F1D2E]">
+            <p className="text-xs font-medium" style={{ color: T.text2, fontFamily: "var(--font-body)" }}>Best Time to Move</p>
+            <p className="text-sm font-semibold" style={{ color: T.text1, fontFamily: "var(--font-body)" }}>
               Cheapest: {bestMonth.cheapest}
             </p>
           </div>
@@ -266,31 +267,31 @@ function PricePerSqft({
     : null;
 
   return (
-    <div className="rounded-xl bg-white border border-gray-100 shadow-sm p-4">
+    <div className="rounded-2xl border shadow-sm p-4" style={{ backgroundColor: T.surface, borderColor: T.border }}>
       <div className="flex items-center gap-2 mb-3">
-        <DollarSign className="w-4 h-4 text-emerald-500" />
-        <h4 className="text-sm font-semibold text-[#0F1D2E]">Price Comparison</h4>
+        <DollarSign className="w-4 h-4" style={{ color: T.sage }} />
+        <h4 className="text-sm font-semibold" style={{ color: T.text1, fontFamily: "var(--font-display)" }}>Price Comparison</h4>
       </div>
       <div className="space-y-2">
         <div className="flex justify-between items-baseline">
-          <span className="text-xs text-gray-500">Building median</span>
-          <span className="text-base font-bold text-[#0F1D2E]">{formatDollars(buildingMedian)}/mo</span>
+          <span className="text-xs" style={{ color: T.text2, fontFamily: "var(--font-body)" }}>Building median</span>
+          <span className="text-base font-bold" style={{ color: T.text1, fontFamily: "var(--font-mono)" }}>{formatDollars(buildingMedian)}/mo</span>
         </div>
         {neighborhoodMedian > 0 && (
           <div className="flex justify-between items-baseline">
-            <span className="text-xs text-gray-500">Neighborhood median</span>
-            <span className="text-sm font-medium text-gray-600">{formatDollars(neighborhoodMedian)}/mo</span>
+            <span className="text-xs" style={{ color: T.text2, fontFamily: "var(--font-body)" }}>Neighborhood median</span>
+            <span className="text-sm font-medium" style={{ color: T.text2, fontFamily: "var(--font-mono)" }}>{formatDollars(neighborhoodMedian)}/mo</span>
           </div>
         )}
         {percentile !== null && (
-          <div className="mt-2 pt-2 border-t border-gray-50">
-            <div className="w-full bg-gray-100 rounded-full h-2">
+          <div className="mt-2 pt-2" style={{ borderTop: `1px solid ${T.subtle}` }}>
+            <div className="w-full rounded-full h-2" style={{ backgroundColor: T.subtle }}>
               <div
-                className="bg-blue-500 h-2 rounded-full transition-all"
-                style={{ width: `${Math.min(percentile, 100)}%` }}
+                className="h-2 rounded-full transition-all"
+                style={{ width: `${Math.min(percentile, 100)}%`, backgroundColor: T.blue }}
               />
             </div>
-            <p className="text-[11px] text-gray-400 mt-1">
+            <p className="text-[11px] mt-1" style={{ color: T.text3 }}>
               {percentile > 50 ? "Above" : "Below"} neighborhood average
             </p>
           </div>
@@ -309,31 +310,31 @@ function SeasonalPattern({
   if (!best) return null;
 
   return (
-    <div className="rounded-xl bg-white border border-gray-100 shadow-sm p-4">
+    <div className="rounded-2xl border shadow-sm p-4" style={{ backgroundColor: T.surface, borderColor: T.border }}>
       <div className="flex items-center gap-2 mb-3">
-        <Calendar className="w-4 h-4 text-blue-500" />
-        <h4 className="text-sm font-semibold text-[#0F1D2E]">Seasonal Pattern</h4>
+        <Calendar className="w-4 h-4" style={{ color: T.blue }} />
+        <h4 className="text-sm font-semibold" style={{ color: T.text1, fontFamily: "var(--font-display)" }}>Seasonal Pattern</h4>
       </div>
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
-            <Snowflake className="w-3.5 h-3.5 text-blue-400" />
-            <span className="text-xs text-gray-500">Cheapest</span>
+            <Snowflake className="w-3.5 h-3.5" style={{ color: T.blue }} />
+            <span className="text-xs" style={{ color: T.text2, fontFamily: "var(--font-body)" }}>Cheapest</span>
           </div>
-          <span className="text-sm font-semibold text-green-600">{best.cheapest}</span>
+          <span className="text-sm font-semibold" style={{ color: T.sage }}>{best.cheapest}</span>
         </div>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
-            <Sun className="w-3.5 h-3.5 text-orange-400" />
-            <span className="text-xs text-gray-500">Most expensive</span>
+            <Sun className="w-3.5 h-3.5" style={{ color: T.coral }} />
+            <span className="text-xs" style={{ color: T.text2, fontFamily: "var(--font-body)" }}>Most expensive</span>
           </div>
-          <span className="text-sm font-semibold text-red-500">{best.expensive}</span>
+          <span className="text-sm font-semibold" style={{ color: T.danger }}>{best.expensive}</span>
         </div>
         {best.savingsPct > 0 && (
-          <div className="mt-1 pt-2 border-t border-gray-50">
-            <p className="text-xs text-gray-500">
+          <div className="mt-1 pt-2" style={{ borderTop: `1px solid ${T.subtle}` }}>
+            <p className="text-xs" style={{ color: T.text2, fontFamily: "var(--font-body)" }}>
               Potential savings:{" "}
-              <span className="font-semibold text-green-600">
+              <span className="font-semibold" style={{ color: T.sage }}>
                 ~{formatPct(best.savingsPct)}
               </span>{" "}
               by timing your move
@@ -370,10 +371,9 @@ export async function RentIntelligence({
   return (
     <section id="rent-intelligence" className="scroll-mt-20 space-y-4">
       {/* Section Header */}
-      <h2 className="text-lg font-semibold text-[#0F1D2E] flex items-center gap-2">
-        <BarChart3 className="w-5 h-5 text-blue-500" />
+      <SectionTitle subtitle="Real-time pricing intelligence from Dewey, StreetEasy & Zillow">
         Rent Intelligence
-      </h2>
+      </SectionTitle>
 
       {/* Insights Bar */}
       {hasRentData && (
@@ -386,8 +386,7 @@ export async function RentIntelligence({
 
       {/* Rent History Chart */}
       {hasRentData && (
-        <RentHistoryChartClient
-          buildingId={buildingId}
+        <RentHistoryChart
           buildingRents={buildingRents}
           neighborhoodRents={neighborhoodRents}
         />
@@ -437,6 +436,59 @@ export async function RentIntelligence({
 /* ------------------------------------------------------------------ */
 
 /**
+ * Placeholder for RentHistoryChart — renders a simple summary table
+ * until the full chart component is built in ./RentHistoryChart.tsx
+ */
+function RentHistoryChart({
+  buildingRents,
+  neighborhoodRents,
+}: {
+  buildingRents: RentIntelligenceProps["buildingRents"];
+  neighborhoodRents: RentIntelligenceProps["neighborhoodRents"];
+}) {
+  const beds = mostCommonBeds(buildingRents);
+  const filtered = buildingRents
+    .filter((r) => r.beds === beds)
+    .sort((a, b) => a.month.localeCompare(b.month));
+
+  const recent = filtered.slice(-6);
+
+  return (
+    <div className="rounded-2xl border shadow-sm p-4" style={{ backgroundColor: T.surface, borderColor: T.border }}>
+      <h3 className="text-sm font-semibold mb-3" style={{ color: T.text1, fontFamily: "var(--font-display)" }}>
+        Rent History ({beds === 0 ? "Studio" : `${beds} Bed`})
+      </h3>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr style={{ borderBottom: `1px solid ${T.border}` }}>
+              <th className="text-left py-1.5 text-xs font-medium" style={{ color: T.text2, fontFamily: "var(--font-body)" }}>Month</th>
+              <th className="text-right py-1.5 text-xs font-medium" style={{ color: T.text2, fontFamily: "var(--font-body)" }}>Median</th>
+              <th className="text-right py-1.5 text-xs font-medium" style={{ color: T.text2, fontFamily: "var(--font-body)" }}>Range</th>
+              <th className="text-right py-1.5 text-xs font-medium" style={{ color: T.text2, fontFamily: "var(--font-body)" }}>Listings</th>
+            </tr>
+          </thead>
+          <tbody>
+            {recent.map((r, i) => (
+              <tr key={r.month} style={{ borderBottom: i < recent.length - 1 ? `1px solid ${T.subtle}` : "none" }}>
+                <td className="py-1.5" style={{ color: T.text2 }}>{r.month}</td>
+                <td className="py-1.5 text-right font-semibold" style={{ color: T.text1, fontFamily: "var(--font-mono)" }}>
+                  {formatDollars(r.median_rent)}
+                </td>
+                <td className="py-1.5 text-right" style={{ color: T.text2, fontFamily: "var(--font-mono)" }}>
+                  {formatDollars(r.min_rent)}&ndash;{formatDollars(r.max_rent)}
+                </td>
+                <td className="py-1.5 text-right" style={{ color: T.text3, fontFamily: "var(--font-mono)" }}>{r.listing_count}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/**
  * Placeholder for ValueBreakdown — renders amenity premiums summary
  * until the full component is built in ./ValueBreakdown.tsx
  */
@@ -451,22 +503,17 @@ function ValueBreakdown({
   amenityPremiums: RentIntelligenceProps["amenityPremiums"];
   valueGrade: string;
 }) {
-  const gradeColors: Record<string, string> = {
-    A: "text-green-600 bg-green-50",
-    B: "text-blue-600 bg-blue-50",
-    C: "text-yellow-600 bg-yellow-50",
-    D: "text-orange-600 bg-orange-50",
-    F: "text-red-600 bg-red-50",
-  };
-
-  const gradeStyle = gradeColors[valueGrade?.[0]?.toUpperCase() ?? ""] ?? "text-gray-600 bg-gray-50";
+  const gc = gradeColor(valueGrade ?? "C");
 
   return (
-    <div className="rounded-xl bg-white border border-gray-100 shadow-sm p-4">
+    <div className="rounded-2xl border shadow-sm p-4" style={{ backgroundColor: T.surface, borderColor: T.border }}>
       <div className="flex items-center justify-between mb-3">
-        <h4 className="text-sm font-semibold text-[#0F1D2E]">Value Breakdown</h4>
+        <h4 className="text-sm font-semibold" style={{ color: T.text1, fontFamily: "var(--font-display)" }}>Value Breakdown</h4>
         {valueGrade && (
-          <span className={`text-lg font-bold px-2.5 py-0.5 rounded-lg ${gradeStyle}`}>
+          <span
+            className="text-lg font-bold px-2.5 py-0.5 rounded-lg"
+            style={{ color: gc, backgroundColor: `${gc}15` }}
+          >
             {valueGrade}
           </span>
         )}
@@ -474,18 +521,18 @@ function ValueBreakdown({
 
       {amenityPremiums.length > 0 ? (
         <div className="space-y-2">
-          <p className="text-xs text-gray-500 mb-2">Amenity premiums in this area</p>
+          <p className="text-xs mb-2" style={{ color: T.text2, fontFamily: "var(--font-body)" }}>Amenity premiums in this area</p>
           {amenityPremiums.slice(0, 5).map((ap) => (
             <div key={ap.amenity} className="flex justify-between items-center">
-              <span className="text-xs text-gray-600">{ap.amenity}</span>
-              <span className="text-xs font-semibold text-[#0F1D2E]">
+              <span className="text-xs" style={{ color: T.text2 }}>{ap.amenity}</span>
+              <span className="text-xs font-semibold" style={{ color: T.text1, fontFamily: "var(--font-mono)" }}>
                 +{formatDollars(ap.premium_dollars)}/mo
               </span>
             </div>
           ))}
         </div>
       ) : (
-        <p className="text-xs text-gray-400">No amenity premium data available.</p>
+        <p className="text-xs" style={{ color: T.text3 }}>No amenity premium data available.</p>
       )}
     </div>
   );
