@@ -156,7 +156,7 @@ export function SectionNav() {
           borderBottom: `1px solid ${T.border}`,
         }}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div
             ref={navRef}
             className="flex overflow-x-auto -mb-px gap-1 py-1"

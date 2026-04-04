@@ -167,7 +167,7 @@ export function BuildingHeader({
     <div
       style={{ backgroundColor: T.surface, borderBottom: `1px solid ${T.border}` }}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {/* Management badge */}
         {building.management_company && (
           <Link
@@ -279,7 +279,7 @@ export function BuildingHeader({
         </div>
 
         {/* Vital signs grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
           <VitalCard
             icon={DollarSign}
             label="Median Rent"

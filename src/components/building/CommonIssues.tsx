@@ -15,7 +15,7 @@ export function CommonIssues({ topViolations, topComplaints }: CommonIssuesProps
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
       {topViolations.length > 0 && (
-        <div className="rounded-xl border p-4 shadow-sm" style={{ backgroundColor: T.surface, borderColor: T.border }}>
+        <div className="rounded-2xl border p-4 shadow-sm" style={{ backgroundColor: T.surface, borderColor: T.border }}>
           <div className="flex items-center gap-2 mb-3">
             <AlertTriangle className="w-4 h-4" style={{ color: T.danger }} />
             <h4 className="text-sm font-semibold" style={{ color: T.text1 }}>Top Violations</h4>
@@ -37,7 +37,7 @@ export function CommonIssues({ topViolations, topComplaints }: CommonIssuesProps
       )}
 
       {topComplaints.length > 0 && (
-        <div className="rounded-xl border p-4 shadow-sm" style={{ backgroundColor: T.surface, borderColor: T.border }}>
+        <div className="rounded-2xl border p-4 shadow-sm" style={{ backgroundColor: T.surface, borderColor: T.border }}>
           <div className="flex items-center gap-2 mb-3">
             <MessageSquareWarning className="w-4 h-4" style={{ color: T.gold }} />
             <h4 className="text-sm font-semibold" style={{ color: T.text1 }}>Top 311 Complaints</h4>
