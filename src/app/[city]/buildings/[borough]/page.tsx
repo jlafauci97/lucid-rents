@@ -177,10 +177,10 @@ export default async function BoroughPage({ params, searchParams }: BoroughPageP
         ]}
       />
 
-      <h1 className="text-3xl font-bold text-[#0F1D2E] mt-6 mb-2">
+      <h1 className="text-3xl font-bold text-[#1A1F36] mt-6 mb-2">
         {borough} Buildings
       </h1>
-      <p className="text-[#64748b] mb-6">
+      <p className="text-[#5E6687] mb-6">
         {total.toLocaleString()} buildings in {borough}
       </p>
 
@@ -190,8 +190,8 @@ export default async function BoroughPage({ params, searchParams }: BoroughPageP
           href={cityPath(`/buildings/${boroughSlug}?sort=violations`, cityParam as import("@/lib/cities").City)}
           className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
             sort !== "score"
-              ? "bg-[#3B82F6] text-white"
-              : "bg-gray-100 text-[#64748b] hover:bg-gray-200"
+              ? "bg-[#6366F1] text-white"
+              : "bg-gray-100 text-[#5E6687] hover:bg-gray-200"
           }`}
         >
           Most Violations
@@ -200,8 +200,8 @@ export default async function BoroughPage({ params, searchParams }: BoroughPageP
           href={cityPath(`/buildings/${boroughSlug}?sort=score`, cityParam as import("@/lib/cities").City)}
           className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
             sort === "score"
-              ? "bg-[#3B82F6] text-white"
-              : "bg-gray-100 text-[#64748b] hover:bg-gray-200"
+              ? "bg-[#6366F1] text-white"
+              : "bg-gray-100 text-[#5E6687] hover:bg-gray-200"
           }`}
         >
           Best Score
@@ -222,18 +222,18 @@ export default async function BoroughPage({ params, searchParams }: BoroughPageP
           {page > 1 && (
             <Link
               href={cityPath(`/buildings/${boroughSlug}?page=${page - 1}${sort ? `&sort=${sort}` : ""}`, cityParam as import("@/lib/cities").City)}
-              className="px-4 py-2 rounded-lg bg-gray-100 text-sm font-medium text-[#0F1D2E] hover:bg-gray-200 transition-colors"
+              className="px-4 py-2 rounded-lg bg-gray-100 text-sm font-medium text-[#1A1F36] hover:bg-gray-200 transition-colors"
             >
               Previous
             </Link>
           )}
-          <span className="px-4 py-2 text-sm text-[#64748b]">
+          <span className="px-4 py-2 text-sm text-[#5E6687]">
             Page {page} of {totalPages}
           </span>
           {page < totalPages && (
             <Link
               href={cityPath(`/buildings/${boroughSlug}?page=${page + 1}${sort ? `&sort=${sort}` : ""}`, cityParam as import("@/lib/cities").City)}
-              className="px-4 py-2 rounded-lg bg-gray-100 text-sm font-medium text-[#0F1D2E] hover:bg-gray-200 transition-colors"
+              className="px-4 py-2 rounded-lg bg-gray-100 text-sm font-medium text-[#1A1F36] hover:bg-gray-200 transition-colors"
             >
               Next
             </Link>

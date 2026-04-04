@@ -78,7 +78,7 @@ export default async function TenantRightsPage({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Top Issues Grid */}
         <section className="mb-14">
-          <h2 className="text-2xl font-bold text-[#0F1D2E] mb-2">
+          <h2 className="text-2xl font-bold text-[#1A1F36] mb-2">
             Top Tenant Issues
           </h2>
           <p className="text-gray-500 mb-6">
@@ -89,14 +89,14 @@ export default async function TenantRightsPage({
               <Link
                 key={issue.slug}
                 href={`/${city}/tenant-rights/${issue.slug}`}
-                className="group bg-white rounded-xl border border-[#e2e8f0] hover:shadow-md hover:border-[#cbd5e1] transition-all p-6"
+                className="group bg-white rounded-xl border border-[#E2E8F0] hover:shadow-md hover:border-[#E2E8F0] transition-all p-6"
               >
                 <div
                   className={`inline-flex items-center justify-center w-10 h-10 rounded-lg border ${issue.color} mb-4`}
                 >
                   <issue.icon className="w-5 h-5" />
                 </div>
-                <h3 className="text-lg font-semibold text-[#0F1D2E] mb-2 group-hover:text-[#3B82F6] transition-colors">
+                <h3 className="text-lg font-semibold text-[#1A1F36] mb-2 group-hover:text-[#6366F1] transition-colors">
                   {issue.title}
                 </h3>
                 <p className="text-sm text-gray-500 leading-relaxed">
@@ -109,16 +109,16 @@ export default async function TenantRightsPage({
 
         {/* General Rights Summary */}
         <section className="mb-14">
-          <h2 className="text-2xl font-bold text-[#0F1D2E] mb-6">
+          <h2 className="text-2xl font-bold text-[#1A1F36] mb-6">
             General Rights Every Tenant Has
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {config.generalRights.map((right) => (
               <div
                 key={right.title}
-                className="bg-white rounded-xl border border-[#e2e8f0] p-6"
+                className="bg-white rounded-xl border border-[#E2E8F0] p-6"
               >
-                <h3 className="font-semibold text-[#0F1D2E] mb-2">
+                <h3 className="font-semibold text-[#1A1F36] mb-2">
                   {right.title}
                 </h3>
                 <p className="text-sm text-gray-500 leading-relaxed">
@@ -131,7 +131,7 @@ export default async function TenantRightsPage({
 
         {/* Emergency Contacts */}
         <section className="mb-14">
-          <h2 className="text-2xl font-bold text-[#0F1D2E] mb-2">
+          <h2 className="text-2xl font-bold text-[#1A1F36] mb-2">
             Emergency Contacts & Resources
           </h2>
           <p className="text-gray-500 mb-6">
@@ -141,13 +141,13 @@ export default async function TenantRightsPage({
             {config.emergencyContacts.map((contact) => (
               <div
                 key={contact.name}
-                className="bg-white rounded-xl border border-[#e2e8f0] p-6 flex items-start gap-4"
+                className="bg-white rounded-xl border border-[#E2E8F0] p-6 flex items-start gap-4"
               >
                 <div className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-blue-50 text-blue-600 border border-blue-200 flex-shrink-0">
                   <Phone className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-[#0F1D2E]">
+                  <h3 className="font-semibold text-[#1A1F36]">
                     {contact.name}
                   </h3>
                   <p className="text-sm text-gray-500 mt-1">
@@ -155,7 +155,7 @@ export default async function TenantRightsPage({
                   </p>
                   <a
                     href={`tel:${contact.phone}`}
-                    className="inline-block mt-2 text-sm font-medium text-[#3B82F6] hover:text-[#2563EB] transition-colors"
+                    className="inline-block mt-2 text-sm font-medium text-[#6366F1] hover:text-[#4F46E5] transition-colors"
                   >
                     {contact.phone}
                   </a>

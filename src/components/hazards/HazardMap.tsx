@@ -136,8 +136,8 @@ export function HazardMap() {
 
   if (!mounted) {
     return (
-      <div className="h-[400px] sm:h-[500px] lg:h-[600px] bg-[#f8fafc] rounded-xl border border-[#e2e8f0] flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-[#3B82F6] border-t-transparent rounded-full animate-spin" />
+      <div className="h-[400px] sm:h-[500px] lg:h-[600px] bg-[#FAFBFD] rounded-xl border border-[#E2E8F0] flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-[#6366F1] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -157,7 +157,7 @@ export function HazardMap() {
               className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition-all ${
                 active
                   ? layer.activeClass + " border-transparent shadow-sm"
-                  : "bg-white text-[#64748b] border-[#e2e8f0] hover:border-[#cbd5e1]"
+                  : "bg-white text-[#5E6687] border-[#E2E8F0] hover:border-[#E2E8F0]"
               }`}
             >
               <Icon className="w-3.5 h-3.5" />
@@ -171,7 +171,7 @@ export function HazardMap() {
       </div>
 
       {/* Map */}
-      <div className="h-[400px] sm:h-[500px] lg:h-[600px] rounded-xl border border-[#e2e8f0] overflow-hidden relative">
+      <div className="h-[400px] sm:h-[500px] lg:h-[600px] rounded-xl border border-[#E2E8F0] overflow-hidden relative">
         <MapContainer
           center={[34.0522, -118.2437]}
           zoom={10}
@@ -213,8 +213,8 @@ export function HazardMap() {
         </MapContainer>
 
         {/* Legend */}
-        <div className="absolute bottom-3 right-3 z-[1000] bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border border-[#e2e8f0] p-3">
-          <div className="text-[10px] font-semibold text-[#64748b] uppercase tracking-wide mb-2">
+        <div className="absolute bottom-3 right-3 z-[1000] bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border border-[#E2E8F0] p-3">
+          <div className="text-[10px] font-semibold text-[#5E6687] uppercase tracking-wide mb-2">
             Active Layers
           </div>
           <div className="space-y-1.5">
@@ -228,13 +228,13 @@ export function HazardMap() {
                     opacity: 0.7,
                   }}
                 />
-                <span className="text-[11px] text-[#334155]">
+                <span className="text-[11px] text-[#1A1F36]">
                   {layer.shortLabel}
                 </span>
               </div>
             ))}
             {activeLayers.size === 0 && (
-              <span className="text-[11px] text-[#94a3b8] italic">
+              <span className="text-[11px] text-[#A3ACBE] italic">
                 Select a layer above
               </span>
             )}
@@ -242,7 +242,7 @@ export function HazardMap() {
         </div>
       </div>
 
-      <p className="text-[10px] text-[#94a3b8]">
+      <p className="text-[10px] text-[#A3ACBE]">
         Source: LA City GeoHub, California Geological Survey, CAL FIRE. Zone
         boundaries are official designations updated periodically.
       </p>

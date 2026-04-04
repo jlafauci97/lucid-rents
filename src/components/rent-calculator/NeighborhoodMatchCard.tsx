@@ -46,33 +46,33 @@ export function NeighborhoodMatchCard({
     <div
       className={`bg-white rounded-xl border p-4 transition-all hover:shadow-md ${
         isAffordable
-          ? "border-[#e2e8f0] hover:border-[#cbd5e1]"
-          : "border-[#e2e8f0] opacity-60"
+          ? "border-[#E2E8F0] hover:border-[#E2E8F0]"
+          : "border-[#E2E8F0] opacity-60"
       }`}
     >
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
-            <MapPin className="w-3.5 h-3.5 text-[#3B82F6] flex-shrink-0" />
-            <h4 className="text-sm font-semibold text-[#0F1D2E] truncate">
+            <MapPin className="w-3.5 h-3.5 text-[#6366F1] flex-shrink-0" />
+            <h4 className="text-sm font-semibold text-[#1A1F36] truncate">
               {match.neighborhood}
             </h4>
           </div>
-          <p className="text-xs text-[#94a3b8] mt-0.5">
+          <p className="text-xs text-[#A3ACBE] mt-0.5">
             {match.region} · {match.zipCode}
           </p>
         </div>
         <div className="text-right flex-shrink-0">
-          <p className="text-sm font-bold text-[#0F1D2E]">
+          <p className="text-sm font-bold text-[#1A1F36]">
             {formatCurrency(match.medianRent)}
           </p>
-          <p className="text-[10px] text-[#94a3b8]">median rent</p>
+          <p className="text-[10px] text-[#A3ACBE]">median rent</p>
         </div>
       </div>
 
       {/* Fit bar */}
       <div className="mb-3">
-        <div className="w-full h-2 bg-[#f1f5f9] rounded-full overflow-hidden">
+        <div className="w-full h-2 bg-[#F5F7FA] rounded-full overflow-hidden">
           <div
             className="h-full rounded-full transition-all duration-500"
             style={{
@@ -103,7 +103,7 @@ export function NeighborhoodMatchCard({
         </div>
         <Link
           href={href}
-          className="inline-flex items-center gap-1 text-xs font-medium text-[#3B82F6] hover:text-[#2563EB] transition-colors"
+          className="inline-flex items-center gap-1 text-xs font-medium text-[#6366F1] hover:text-[#4F46E5] transition-colors"
         >
           Explore
           <ArrowRight className="w-3 h-3" />

@@ -116,7 +116,7 @@ export function ContentQueue() {
               className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
                 statusFilter === s
                   ? "bg-[#0F1D2E] text-white"
-                  : "bg-gray-100 text-[#64748b] hover:bg-gray-200"
+                  : "bg-gray-100 text-[#5E6687] hover:bg-gray-200"
               }`}
             >
               {s === "all" ? "All" : s.charAt(0).toUpperCase() + s.slice(1)}
@@ -178,23 +178,23 @@ export function ContentQueue() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[#e2e8f0]">
-                <th className="px-4 py-3 text-left font-medium text-[#64748b]">
+              <tr className="border-b border-[#E2E8F0]">
+                <th className="px-4 py-3 text-left font-medium text-[#5E6687]">
                   Status
                 </th>
-                <th className="px-4 py-3 text-left font-medium text-[#64748b]">
+                <th className="px-4 py-3 text-left font-medium text-[#5E6687]">
                   Type
                 </th>
-                <th className="px-4 py-3 text-left font-medium text-[#64748b]">
+                <th className="px-4 py-3 text-left font-medium text-[#5E6687]">
                   Caption
                 </th>
-                <th className="px-4 py-3 text-left font-medium text-[#64748b]">
+                <th className="px-4 py-3 text-left font-medium text-[#5E6687]">
                   Video
                 </th>
-                <th className="px-4 py-3 text-left font-medium text-[#64748b]">
+                <th className="px-4 py-3 text-left font-medium text-[#5E6687]">
                   Created
                 </th>
-                <th className="px-4 py-3 text-right font-medium text-[#64748b]">
+                <th className="px-4 py-3 text-right font-medium text-[#5E6687]">
                   Action
                 </th>
               </tr>
@@ -202,13 +202,13 @@ export function ContentQueue() {
             <tbody>
               {loading && drafts.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center text-[#64748b]">
+                  <td colSpan={6} className="px-4 py-12 text-center text-[#5E6687]">
                     Loading drafts...
                   </td>
                 </tr>
               ) : drafts.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center text-[#64748b]">
+                  <td colSpan={6} className="px-4 py-12 text-center text-[#5E6687]">
                     No content drafts yet
                   </td>
                 </tr>
@@ -216,25 +216,25 @@ export function ContentQueue() {
                 drafts.map((draft) => (
                   <tr
                     key={draft.id}
-                    className="border-b border-[#e2e8f0] last:border-0 hover:bg-gray-50 transition-colors"
+                    className="border-b border-[#E2E8F0] last:border-0 hover:bg-gray-50 transition-colors"
                   >
                     <td className="px-4 py-3">
                       <Badge variant={STATUS_BADGES[draft.status] ?? "default"}>
                         {draft.status}
                       </Badge>
                     </td>
-                    <td className="px-4 py-3 text-[#0F1D2E]">
+                    <td className="px-4 py-3 text-[#1A1F36]">
                       {CONTENT_TYPE_LABELS[draft.content_type] ?? draft.content_type}
                     </td>
-                    <td className="px-4 py-3 text-[#0F1D2E] max-w-xs">
+                    <td className="px-4 py-3 text-[#1A1F36] max-w-xs">
                       {draft.caption ? truncate(draft.caption, 80) : (
-                        <span className="text-[#64748b] italic">Generating...</span>
+                        <span className="text-[#5E6687] italic">Generating...</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-[#64748b]">
+                    <td className="px-4 py-3 text-[#5E6687]">
                       {VIDEO_TYPE_LABELS[draft.video_type] ?? draft.video_type}
                     </td>
-                    <td className="px-4 py-3 text-[#64748b] whitespace-nowrap">
+                    <td className="px-4 py-3 text-[#5E6687] whitespace-nowrap">
                       {formatRelativeTime(draft.created_at)}
                     </td>
                     <td className="px-4 py-3 text-right">
@@ -252,7 +252,7 @@ export function ContentQueue() {
                           href={draft.publish_results[0].url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-[#3B82F6] hover:underline text-xs"
+                          className="text-[#6366F1] hover:underline text-xs"
                         >
                           View post
                         </a>

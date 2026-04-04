@@ -40,21 +40,21 @@ export default function LoginPage() {
     <div className="min-h-[60vh] flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-[#0F1D2E]">Welcome Back</h1>
-          <p className="text-sm text-[#64748b] mt-1">
+          <h1 className="text-2xl font-bold text-[#1A1F36]">Welcome Back</h1>
+          <p className="text-sm text-[#5E6687] mt-1">
             Log in to submit reviews and track buildings
           </p>
         </div>
 
-        <div className="bg-white rounded-xl border border-[#e2e8f0] p-8">
+        <div className="bg-white rounded-xl border border-[#E2E8F0] p-8">
           <SocialAuthButtons />
 
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-[#e2e8f0]" />
+              <div className="w-full border-t border-[#E2E8F0]" />
             </div>
             <div className="relative flex justify-center text-xs">
-              <span className="bg-white px-2 text-[#94a3b8]">
+              <span className="bg-white px-2 text-[#A3ACBE]">
                 or continue with email
               </span>
             </div>
@@ -88,18 +88,18 @@ export default function LoginPage() {
           <div className="text-center mt-3">
             <Link
               href="/forgot-password"
-              className="text-sm text-[#3B82F6] hover:text-[#2563EB] font-medium"
+              className="text-sm text-[#6366F1] hover:text-[#4F46E5] font-medium"
             >
               Forgot your password?
             </Link>
           </div>
         </div>
 
-        <p className="text-center text-sm text-[#64748b] mt-4">
+        <p className="text-center text-sm text-[#5E6687] mt-4">
           Don&apos;t have an account?{" "}
           <Link
             href="/register"
-            className="text-[#3B82F6] hover:text-[#2563EB] font-medium"
+            className="text-[#6366F1] hover:text-[#4F46E5] font-medium"
           >
             Sign up
           </Link>

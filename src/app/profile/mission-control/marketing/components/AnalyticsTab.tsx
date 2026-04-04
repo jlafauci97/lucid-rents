@@ -46,7 +46,7 @@ export function AnalyticsTab() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16 text-[#64748b]">
+      <div className="flex items-center justify-center py-16 text-[#5E6687]">
         <RefreshCw className="h-5 w-5 animate-spin mr-2" />
         Loading analytics...
       </div>
@@ -58,7 +58,7 @@ export function AnalyticsTab() {
       <Card>
         <CardContent className="py-16 text-center">
           <TrendingUp className="h-10 w-10 mx-auto text-[#e2e8f0] mb-3" />
-          <p className="text-[#64748b]">No published posts with analytics yet</p>
+          <p className="text-[#5E6687]">No published posts with analytics yet</p>
         </CardContent>
       </Card>
     );
@@ -72,11 +72,11 @@ export function AnalyticsTab() {
           <CardContent>
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-50 rounded-lg">
-                <TrendingUp className="h-5 w-5 text-[#3B82F6]" />
+                <TrendingUp className="h-5 w-5 text-[#6366F1]" />
               </div>
               <div>
-                <p className="text-xs text-[#64748b]">Posts Published</p>
-                <p className="text-xl font-semibold text-[#0F1D2E]">
+                <p className="text-xs text-[#5E6687]">Posts Published</p>
+                <p className="text-xl font-semibold text-[#1A1F36]">
                   {uniqueDrafts}
                 </p>
               </div>
@@ -90,8 +90,8 @@ export function AnalyticsTab() {
                 <Eye className="h-5 w-5 text-emerald-600" />
               </div>
               <div>
-                <p className="text-xs text-[#64748b]">Total Impressions</p>
-                <p className="text-xl font-semibold text-[#0F1D2E]">
+                <p className="text-xs text-[#5E6687]">Total Impressions</p>
+                <p className="text-xl font-semibold text-[#1A1F36]">
                   {totalImpressions.toLocaleString()}
                 </p>
               </div>
@@ -105,8 +105,8 @@ export function AnalyticsTab() {
                 <Heart className="h-5 w-5 text-amber-600" />
               </div>
               <div>
-                <p className="text-xs text-[#64748b]">Total Engagements</p>
-                <p className="text-xl font-semibold text-[#0F1D2E]">
+                <p className="text-xs text-[#5E6687]">Total Engagements</p>
+                <p className="text-xl font-semibold text-[#1A1F36]">
                   {totalEngagements.toLocaleString()}
                 </p>
               </div>
@@ -120,8 +120,8 @@ export function AnalyticsTab() {
                 <Trophy className="h-5 w-5 text-purple-600" />
               </div>
               <div>
-                <p className="text-xs text-[#64748b]">Top Post Engagements</p>
-                <p className="text-xl font-semibold text-[#0F1D2E]">
+                <p className="text-xs text-[#5E6687]">Top Post Engagements</p>
+                <p className="text-xl font-semibold text-[#1A1F36]">
                   {topPost ? topPost.engagements.toLocaleString() : "—"}
                 </p>
               </div>
@@ -134,7 +134,7 @@ export function AnalyticsTab() {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium text-[#0F1D2E]">
+            <h3 className="text-sm font-medium text-[#1A1F36]">
               Post Performance
             </h3>
             <Button
@@ -152,23 +152,23 @@ export function AnalyticsTab() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[#e2e8f0]">
-                <th className="px-4 py-3 text-left font-medium text-[#64748b]">
+              <tr className="border-b border-[#E2E8F0]">
+                <th className="px-4 py-3 text-left font-medium text-[#5E6687]">
                   Caption
                 </th>
-                <th className="px-4 py-3 text-left font-medium text-[#64748b]">
+                <th className="px-4 py-3 text-left font-medium text-[#5E6687]">
                   Platform
                 </th>
-                <th className="px-4 py-3 text-right font-medium text-[#64748b]">
+                <th className="px-4 py-3 text-right font-medium text-[#5E6687]">
                   Impressions
                 </th>
-                <th className="px-4 py-3 text-right font-medium text-[#64748b]">
+                <th className="px-4 py-3 text-right font-medium text-[#5E6687]">
                   Engagements
                 </th>
-                <th className="px-4 py-3 text-right font-medium text-[#64748b]">
+                <th className="px-4 py-3 text-right font-medium text-[#5E6687]">
                   Clicks
                 </th>
-                <th className="px-4 py-3 text-left font-medium text-[#64748b]">
+                <th className="px-4 py-3 text-left font-medium text-[#5E6687]">
                   Fetched
                 </th>
               </tr>
@@ -177,26 +177,26 @@ export function AnalyticsTab() {
               {rows.map((row) => (
                 <tr
                   key={row.id}
-                  className="border-b border-[#e2e8f0] last:border-0 hover:bg-gray-50"
+                  className="border-b border-[#E2E8F0] last:border-0 hover:bg-gray-50"
                 >
-                  <td className="px-4 py-3 text-[#0F1D2E] max-w-xs">
+                  <td className="px-4 py-3 text-[#1A1F36] max-w-xs">
                     {row.caption
                       ? truncate(row.caption, 60)
                       : truncate(row.draft_id, 12)}
                   </td>
-                  <td className="px-4 py-3 text-[#64748b] capitalize">
+                  <td className="px-4 py-3 text-[#5E6687] capitalize">
                     {row.platform}
                   </td>
-                  <td className="px-4 py-3 text-right text-[#0F1D2E]">
+                  <td className="px-4 py-3 text-right text-[#1A1F36]">
                     {row.impressions.toLocaleString()}
                   </td>
-                  <td className="px-4 py-3 text-right text-[#0F1D2E]">
+                  <td className="px-4 py-3 text-right text-[#1A1F36]">
                     {row.engagements.toLocaleString()}
                   </td>
-                  <td className="px-4 py-3 text-right text-[#0F1D2E]">
+                  <td className="px-4 py-3 text-right text-[#1A1F36]">
                     {row.clicks.toLocaleString()}
                   </td>
-                  <td className="px-4 py-3 text-[#64748b] text-xs whitespace-nowrap">
+                  <td className="px-4 py-3 text-[#5E6687] text-xs whitespace-nowrap">
                     {new Date(row.fetched_at).toLocaleDateString()}
                   </td>
                 </tr>

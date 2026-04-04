@@ -44,8 +44,8 @@ export default async function ReviewNewPage({ searchParams }: ReviewNewPageProps
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-2xl font-bold text-[#0F1D2E] mb-2">Submit a Review</h1>
-      <p className="text-sm text-[#64748b] mb-8">Your changes are automatically saved as you progress.</p>
+      <h1 className="text-2xl font-bold text-[#1A1F36] mb-2">Submit a Review</h1>
+      <p className="text-sm text-[#5E6687] mb-8">Your changes are automatically saved as you progress.</p>
       <ReviewWizard
         preselectedBuildingId={params.building}
         categories={categories || []}

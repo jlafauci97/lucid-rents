@@ -102,14 +102,14 @@ export function CompareSearch({
               key={building.id}
               className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-sm"
             >
-              <MapPin className="w-3.5 h-3.5 text-[#3B82F6] shrink-0" />
-              <span className="text-[#0F1D2E] font-medium truncate max-w-[240px]">
+              <MapPin className="w-3.5 h-3.5 text-[#6366F1] shrink-0" />
+              <span className="text-[#1A1F36] font-medium truncate max-w-[240px]">
                 {building.full_address}
               </span>
               <button
                 type="button"
                 onClick={() => removeBuilding(building.id)}
-                className="ml-1 text-[#64748b] hover:text-red-500 transition-colors shrink-0"
+                className="ml-1 text-[#5E6687] hover:text-red-500 transition-colors shrink-0"
                 aria-label={`Remove ${building.full_address}`}
               >
                 <X className="w-4 h-4" />
@@ -122,14 +122,14 @@ export function CompareSearch({
       {/* Search input */}
       <div ref={wrapperRef} className="relative">
         {isFull ? (
-          <div className="w-full bg-gray-50 text-[#64748b] border border-[#e2e8f0] rounded-xl px-12 py-3 text-sm">
+          <div className="w-full bg-gray-50 text-[#5E6687] border border-[#E2E8F0] rounded-xl px-12 py-3 text-sm">
             Maximum of {maxBuildings} buildings reached. Remove one to add
             another.
           </div>
         ) : (
           <>
             <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#94a3b8] w-5 h-5" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#A3ACBE] w-5 h-5" />
               <input
                 ref={inputRef}
                 type="text"
@@ -141,15 +141,15 @@ export function CompareSearch({
                     ? "Search for a building to start comparing..."
                     : "Add another building to compare..."
                 }
-                className="w-full bg-white text-[#0F1D2E] placeholder-[#94a3b8] border border-[#e2e8f0] rounded-xl pl-12 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent shadow-sm"
+                className="w-full bg-white text-[#1A1F36] placeholder-[#94a3b8] border border-[#E2E8F0] rounded-xl pl-12 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent shadow-sm"
               />
               {loading && (
-                <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 animate-spin text-[#94a3b8] w-5 h-5" />
+                <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 animate-spin text-[#A3ACBE] w-5 h-5" />
               )}
             </div>
 
             {open && results.length > 0 && (
-              <div className="absolute z-50 w-full mt-2 bg-white rounded-xl border border-[#e2e8f0] shadow-lg overflow-hidden">
+              <div className="absolute z-50 w-full mt-2 bg-white rounded-xl border border-[#E2E8F0] shadow-lg overflow-hidden">
                 {results.map((building) => (
                   <button
                     key={building.id}
@@ -157,17 +157,17 @@ export function CompareSearch({
                     onClick={() => addBuilding(building.id)}
                     className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left"
                   >
-                    <MapPin className="w-4 h-4 text-[#94a3b8] shrink-0" />
+                    <MapPin className="w-4 h-4 text-[#A3ACBE] shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-[#0F1D2E] truncate">
+                      <p className="text-sm font-medium text-[#1A1F36] truncate">
                         {building.full_address}
                       </p>
-                      <p className="text-xs text-[#64748b]">
+                      <p className="text-xs text-[#5E6687]">
                         {building.borough}
                         {building.zip_code && ` \u00B7 ${building.zip_code}`}
                       </p>
                     </div>
-                    <div className="flex items-center gap-1 text-xs text-[#3B82F6] font-medium shrink-0">
+                    <div className="flex items-center gap-1 text-xs text-[#6366F1] font-medium shrink-0">
                       <Plus className="w-3.5 h-3.5" />
                       Add
                     </div>
@@ -177,8 +177,8 @@ export function CompareSearch({
             )}
 
             {open && debouncedQuery.length >= 2 && results.length === 0 && !loading && (
-              <div className="absolute z-50 w-full mt-2 bg-white rounded-xl border border-[#e2e8f0] shadow-lg overflow-hidden">
-                <div className="px-4 py-6 text-center text-sm text-[#64748b]">
+              <div className="absolute z-50 w-full mt-2 bg-white rounded-xl border border-[#E2E8F0] shadow-lg overflow-hidden">
+                <div className="px-4 py-6 text-center text-sm text-[#5E6687]">
                   No buildings found for &ldquo;{debouncedQuery}&rdquo;
                 </div>
               </div>
@@ -189,7 +189,7 @@ export function CompareSearch({
 
       {/* Helper text */}
       {selectedIds.length < 2 && (
-        <p className="text-sm text-[#64748b]">
+        <p className="text-sm text-[#5E6687]">
           {selectedIds.length === 0
             ? "Search and add 2-3 buildings to compare them side by side."
             : "Add at least one more building to start comparing."}

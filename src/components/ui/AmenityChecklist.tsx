@@ -56,10 +56,10 @@ export function AmenityChecklist({
 
   return (
     <div className="space-y-1">
-      <label className="block text-sm font-medium text-[#0F1D2E] mb-2">
+      <label className="block text-sm font-medium text-[#1A1F36] mb-2">
         Amenities
       </label>
-      <div className="rounded-lg border border-[#e2e8f0] divide-y divide-[#e2e8f0]">
+      <div className="rounded-lg border border-[#E2E8F0] divide-y divide-[#e2e8f0]">
         {allAmenities.map(({ category, items }) => {
           const isOpen = expanded[category] ?? false;
           const count = selectedCountForCategory(category);
@@ -69,20 +69,20 @@ export function AmenityChecklist({
               <button
                 type="button"
                 onClick={() => toggleCategory(category)}
-                className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-[#0F1D2E] hover:bg-gray-50 transition-colors"
+                className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-[#1A1F36] hover:bg-gray-50 transition-colors"
               >
                 <span>
                   {category}
                   {count > 0 && (
-                    <span className="ml-1.5 text-[#94a3b8] font-normal">
+                    <span className="ml-1.5 text-[#A3ACBE] font-normal">
                       ({count})
                     </span>
                   )}
                 </span>
                 {isOpen ? (
-                  <ChevronUp className="h-4 w-4 text-[#94a3b8]" />
+                  <ChevronUp className="h-4 w-4 text-[#A3ACBE]" />
                 ) : (
-                  <ChevronDown className="h-4 w-4 text-[#94a3b8]" />
+                  <ChevronDown className="h-4 w-4 text-[#A3ACBE]" />
                 )}
               </button>
 
@@ -98,14 +98,14 @@ export function AmenityChecklist({
                       <label
                         key={amenity}
                         htmlFor={id}
-                        className="flex items-center gap-2 cursor-pointer text-sm text-[#0F1D2E]"
+                        className="flex items-center gap-2 cursor-pointer text-sm text-[#1A1F36]"
                       >
                         <input
                           id={id}
                           type="checkbox"
                           checked={checked}
                           onChange={() => toggleAmenity(amenity, category)}
-                          className="h-4 w-4 rounded border-[#e2e8f0] text-[#3B82F6] focus:ring-[#3B82F6]"
+                          className="h-4 w-4 rounded border-[#E2E8F0] text-[#6366F1] focus:ring-[#3B82F6]"
                         />
                         {amenity}
                       </label>

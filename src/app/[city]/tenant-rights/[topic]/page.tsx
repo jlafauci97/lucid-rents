@@ -96,9 +96,9 @@ export default async function TopicPage({
           {topic.sections.map((section) => (
             <section
               key={section.heading}
-              className="bg-white rounded-xl border border-[#e2e8f0] p-6 sm:p-8"
+              className="bg-white rounded-xl border border-[#E2E8F0] p-6 sm:p-8"
             >
-              <h2 className="text-xl font-bold text-[#0F1D2E] mb-3">
+              <h2 className="text-xl font-bold text-[#1A1F36] mb-3">
                 {section.heading}
               </h2>
               <p className="text-gray-600 leading-relaxed">{section.content}</p>
@@ -108,7 +108,7 @@ export default async function TopicPage({
 
         {/* Do's and Don'ts */}
         <section className="mb-12">
-          <h2 className="text-2xl font-bold text-[#0F1D2E] mb-6">
+          <h2 className="text-2xl font-bold text-[#1A1F36] mb-6">
             Do&apos;s & Don&apos;ts
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -151,10 +151,10 @@ export default async function TopicPage({
 
         {/* Resources */}
         <section className="mb-12">
-          <h2 className="text-2xl font-bold text-[#0F1D2E] mb-6">
+          <h2 className="text-2xl font-bold text-[#1A1F36] mb-6">
             Helpful Resources
           </h2>
-          <div className="bg-white rounded-xl border border-[#e2e8f0] divide-y divide-[#e2e8f0]">
+          <div className="bg-white rounded-xl border border-[#E2E8F0] divide-y divide-[#e2e8f0]">
             {topic.resources.map((resource) => (
               <a
                 key={resource.url}
@@ -163,10 +163,10 @@ export default async function TopicPage({
                 rel="noopener noreferrer"
                 className="flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors"
               >
-                <span className="text-sm font-medium text-[#0F1D2E]">
+                <span className="text-sm font-medium text-[#1A1F36]">
                   {resource.name}
                 </span>
-                <span className="text-xs text-[#3B82F6]">Visit &rarr;</span>
+                <span className="text-xs text-[#6366F1]">Visit &rarr;</span>
               </a>
             ))}
           </div>
@@ -183,7 +183,7 @@ export default async function TopicPage({
                 </h3>
                 <a
                   href={`tel:${topic.helpline.phone}`}
-                  className="text-lg font-bold text-[#3B82F6] hover:text-[#2563EB] transition-colors"
+                  className="text-lg font-bold text-[#6366F1] hover:text-[#4F46E5] transition-colors"
                 >
                   {topic.helpline.phone}
                 </a>

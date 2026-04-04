@@ -103,7 +103,7 @@ function FeedItemIcon({ type }: { type: ActivityItem["type"] }) {
   const iconMap: Record<string, { bg: string; color: string; Icon: typeof Shield }> = {
     violation: { bg: "bg-red-50", color: "text-[#EF4444]", Icon: Shield },
     complaint: { bg: "bg-amber-50", color: "text-[#F59E0B]", Icon: MessageSquare },
-    review: { bg: "bg-blue-50", color: "text-[#3B82F6]", Icon: Star },
+    review: { bg: "bg-blue-50", color: "text-[#6366F1]", Icon: Star },
     litigation: { bg: "bg-purple-50", color: "text-[#8B5CF6]", Icon: Scale },
     dob_violation: { bg: "bg-sky-50", color: "text-[#0EA5E9]", Icon: HardHat },
     crime: { bg: "bg-red-100", color: "text-[#DC2626]", Icon: Siren },
@@ -147,7 +147,7 @@ function sourceColor(type: ActivityItem["type"]): string {
   switch (type) {
     case "violation": return "text-[#EF4444]";
     case "complaint": return "text-[#F59E0B]";
-    case "review": return "text-[#3B82F6]";
+    case "review": return "text-[#6366F1]";
     case "litigation": return "text-[#8B5CF6]";
     case "dob_violation": return "text-[#0EA5E9]";
     case "crime": return "text-[#DC2626]";
@@ -166,8 +166,8 @@ function severityChipClasses(cls: string): string {
   switch (cls.toUpperCase()) {
     case "C": return "bg-red-100 text-[#EF4444]";
     case "B": return "bg-amber-100 text-[#B45309]";
-    case "A": return "bg-[#f1f5f9] text-[#475569]";
-    default: return "bg-[#f1f5f9] text-[#475569]";
+    case "A": return "bg-[#F5F7FA] text-[#5E6687]";
+    default: return "bg-[#F5F7FA] text-[#5E6687]";
   }
 }
 
@@ -178,11 +178,11 @@ function RatingDots({ rating }: { rating: number }) {
         <div
           key={i}
           className={`w-[7px] h-[7px] rounded-full ${
-            i <= rating ? "bg-[#3B82F6]" : "bg-[#e2e8f0]"
+            i <= rating ? "bg-[#6366F1]" : "bg-[#e2e8f0]"
           }`}
         />
       ))}
-      <span className="text-[11px] text-[#64748b] ml-1 font-mono">{rating}/5</span>
+      <span className="text-[11px] text-[#5E6687] ml-1 font-mono">{rating}/5</span>
     </div>
   );
 }
@@ -236,18 +236,18 @@ function FeedCard({ item }: { item: ActivityItem }) {
               CLASS {item.violationClass.toUpperCase()}
             </span>
           )}
-          <span className="text-[#cbd5e1]">&middot;</span>
-          <span className="text-[#94a3b8] font-mono text-xs">{timeAgo(item.date)}</span>
+          <span className="text-[#A3ACBE]">&middot;</span>
+          <span className="text-[#A3ACBE] font-mono text-xs">{timeAgo(item.date)}</span>
           {address && (
             <>
-              <span className="text-[#cbd5e1]">&middot;</span>
-              <span className="text-[#64748b] truncate">{address}</span>
+              <span className="text-[#A3ACBE]">&middot;</span>
+              <span className="text-[#5E6687] truncate">{address}</span>
             </>
           )}
         </div>
 
         {/* Description — humanized */}
-        <p className="text-sm text-[#0F1D2E] leading-relaxed mt-1 line-clamp-2">
+        <p className="text-sm text-[#1A1F36] leading-relaxed mt-1 line-clamp-2">
           {humanize(item.description)}
         </p>
 
@@ -331,21 +331,21 @@ export function FeedView() {
   const filters = city === "los-angeles" ? LA_FILTERS : NYC_FILTERS;
 
   return (
-    <div className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm overflow-hidden">
+    <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-[#e2e8f0]">
+      <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-[#E2E8F0]">
         <div className="flex items-center justify-between px-5 pt-4 pb-0">
           <div className="flex items-center gap-2.5">
             <div className="relative flex items-center justify-center">
               <span className="absolute w-2 h-2 rounded-full bg-[#22C55E] animate-ping opacity-40" />
               <span className="relative w-2 h-2 rounded-full bg-[#22C55E]" />
             </div>
-            <h2 className="text-lg font-bold text-[#0F1D2E]">Feed</h2>
+            <h2 className="text-lg font-bold text-[#1A1F36]">Feed</h2>
           </div>
           <button
             onClick={() => fetchItems(activeFilter, currentPage, true)}
             disabled={refreshing}
-            className="p-2 rounded-lg hover:bg-[#EFF6FF] text-[#64748b] hover:text-[#3B82F6] transition-colors disabled:opacity-50"
+            className="p-2 rounded-lg hover:bg-[#EFF6FF] text-[#5E6687] hover:text-[#6366F1] transition-colors disabled:opacity-50"
             title="Refresh"
           >
             <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
@@ -362,22 +362,22 @@ export function FeedView() {
                 onClick={() => handleFilterChange(f.key)}
                 className={`flex-1 text-sm font-medium py-3 relative transition-colors flex items-center justify-center gap-1.5 ${
                   activeFilter === f.key
-                    ? "text-[#0F1D2E]"
-                    : "text-[#64748b] hover:text-[#0F1D2E] hover:bg-[#f8fafc]"
+                    ? "text-[#1A1F36]"
+                    : "text-[#5E6687] hover:text-[#1A1F36] hover:bg-[#FAFBFD]"
                 }`}
               >
                 {f.label}
                 {count != null && count > 0 && (
                   <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full ${
                     activeFilter === f.key
-                      ? "bg-[#EFF6FF] text-[#3B82F6]"
-                      : "bg-[#f1f5f9] text-[#94a3b8]"
+                      ? "bg-[#EFF6FF] text-[#6366F1]"
+                      : "bg-[#F5F7FA] text-[#A3ACBE]"
                   }`}>
                     {count}
                   </span>
                 )}
                 {activeFilter === f.key && (
-                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-[3px] bg-[#3B82F6] rounded-full" />
+                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-[3px] bg-[#6366F1] rounded-full" />
                 )}
               </button>
             );
@@ -399,10 +399,10 @@ export function FeedView() {
 
         {!loading && error && (
           <div className="px-4 py-16 text-center">
-            <p className="text-[#64748b] mb-3">Unable to load the feed right now.</p>
+            <p className="text-[#5E6687] mb-3">Unable to load the feed right now.</p>
             <button
               onClick={() => fetchItems(activeFilter, currentPage)}
-              className="text-sm text-[#3B82F6] hover:text-[#2563EB] font-medium"
+              className="text-sm text-[#6366F1] hover:text-[#4F46E5] font-medium"
             >
               Try again
             </button>
@@ -411,19 +411,19 @@ export function FeedView() {
 
         {!loading && !error && items.length === 0 && (
           <div className="px-4 py-16 text-center">
-            <p className="text-[#64748b]">No activity to show for this filter.</p>
+            <p className="text-[#5E6687]">No activity to show for this filter.</p>
           </div>
         )}
 
         {!loading && !error && dateGroups.map((group) => (
           <div key={group.label}>
             {/* Date group header */}
-            <div className="flex items-center gap-3 px-5 py-2.5 bg-[#f8fafc] border-b border-[#f1f5f9]">
-              <span className="text-[11px] font-semibold text-[#64748b] uppercase tracking-wider font-mono">
+            <div className="flex items-center gap-3 px-5 py-2.5 bg-[#FAFBFD] border-b border-[#f1f5f9]">
+              <span className="text-[11px] font-semibold text-[#5E6687] uppercase tracking-wider font-mono">
                 {group.label}
               </span>
               <div className="flex-1 h-px bg-[#e2e8f0]" />
-              <span className="text-[11px] text-[#94a3b8] font-mono">
+              <span className="text-[11px] text-[#A3ACBE] font-mono">
                 {group.items.length} item{group.items.length !== 1 ? "s" : ""}
               </span>
             </div>
@@ -438,11 +438,11 @@ export function FeedView() {
 
       {/* Pagination */}
       {!loading && !error && totalPages > 1 && (
-        <div className="flex items-center justify-between px-4 py-4 border-t border-[#e2e8f0]">
+        <div className="flex items-center justify-between px-4 py-4 border-t border-[#E2E8F0]">
           <button
             onClick={() => navigateToPage(currentPage - 1)}
             disabled={currentPage <= 1}
-            className="flex items-center gap-1 text-sm font-medium text-[#64748b] hover:text-[#3B82F6] disabled:opacity-30 disabled:hover:text-[#64748b] transition-colors"
+            className="flex items-center gap-1 text-sm font-medium text-[#5E6687] hover:text-[#6366F1] disabled:opacity-30 disabled:hover:text-[#5E6687] transition-colors"
           >
             <ChevronLeft className="w-4 h-4" />
             Previous
@@ -451,15 +451,15 @@ export function FeedView() {
           <div className="flex items-center gap-1">
             {generatePageNumbers(currentPage, totalPages).map((p, i) =>
               p === "..." ? (
-                <span key={`ellipsis-${i}`} className="px-2 text-sm text-[#94a3b8]">&hellip;</span>
+                <span key={`ellipsis-${i}`} className="px-2 text-sm text-[#A3ACBE]">&hellip;</span>
               ) : (
                 <button
                   key={p}
                   onClick={() => navigateToPage(p as number)}
                   className={`min-w-[36px] h-9 rounded-lg text-sm font-medium transition-colors ${
                     p === currentPage
-                      ? "bg-[#3B82F6] text-white"
-                      : "text-[#64748b] hover:bg-[#f1f5f9] hover:text-[#0F1D2E]"
+                      ? "bg-[#6366F1] text-white"
+                      : "text-[#5E6687] hover:bg-[#F5F7FA] hover:text-[#1A1F36]"
                   }`}
                 >
                   {p}
@@ -471,7 +471,7 @@ export function FeedView() {
           <button
             onClick={() => navigateToPage(currentPage + 1)}
             disabled={currentPage >= totalPages}
-            className="flex items-center gap-1 text-sm font-medium text-[#64748b] hover:text-[#3B82F6] disabled:opacity-30 disabled:hover:text-[#64748b] transition-colors"
+            className="flex items-center gap-1 text-sm font-medium text-[#5E6687] hover:text-[#6366F1] disabled:opacity-30 disabled:hover:text-[#5E6687] transition-colors"
           >
             Next
             <ChevronRight className="w-4 h-4" />

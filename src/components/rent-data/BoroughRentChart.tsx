@@ -36,7 +36,7 @@ const COLOR_POOL = [
 export function BoroughRentChart({ data, city = "nyc" }: { data: DataPoint[]; city?: City }) {
   if (data.length === 0) {
     return (
-      <div className="text-center py-12 text-[#94a3b8]">
+      <div className="text-center py-12 text-[#A3ACBE]">
         No area rent data available yet.
       </div>
     );

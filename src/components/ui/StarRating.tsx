@@ -32,7 +32,7 @@ export function StarRating({ value, onChange, size = "md", readonly = false }: S
           >
             <Star
               size={starSize}
-              className={filled ? "fill-[#3B82F6] text-[#3B82F6]" : "text-gray-300"}
+              className={filled ? "fill-[#3B82F6] text-[#6366F1]" : "text-gray-300"}
             />
           </button>
         );

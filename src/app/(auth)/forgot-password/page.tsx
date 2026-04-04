@@ -36,15 +36,15 @@ export default function ForgotPasswordPage() {
     <div className="min-h-[60vh] flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-[#0F1D2E]">
+          <h1 className="text-2xl font-bold text-[#1A1F36]">
             Reset Your Password
           </h1>
-          <p className="text-sm text-[#64748b] mt-1">
+          <p className="text-sm text-[#5E6687] mt-1">
             Enter your email and we&apos;ll send you a reset link
           </p>
         </div>
 
-        <div className="bg-white rounded-xl border border-[#e2e8f0] p-8">
+        <div className="bg-white rounded-xl border border-[#E2E8F0] p-8">
           {success ? (
             <div className="text-center space-y-3">
               <div className="w-12 h-12 bg-[#ecfdf5] rounded-full flex items-center justify-center mx-auto">
@@ -62,12 +62,12 @@ export default function ForgotPasswordPage() {
                   />
                 </svg>
               </div>
-              <p className="text-sm text-[#0F1D2E] font-medium">
+              <p className="text-sm text-[#1A1F36] font-medium">
                 Check your email
               </p>
-              <p className="text-sm text-[#64748b]">
+              <p className="text-sm text-[#5E6687]">
                 We sent a password reset link to{" "}
-                <span className="font-medium text-[#0F1D2E]">{email}</span>
+                <span className="font-medium text-[#1A1F36]">{email}</span>
               </p>
             </div>
           ) : (
@@ -88,11 +88,11 @@ export default function ForgotPasswordPage() {
           )}
         </div>
 
-        <p className="text-center text-sm text-[#64748b] mt-4">
+        <p className="text-center text-sm text-[#5E6687] mt-4">
           Remember your password?{" "}
           <Link
             href="/login"
-            className="text-[#3B82F6] hover:text-[#2563EB] font-medium"
+            className="text-[#6366F1] hover:text-[#4F46E5] font-medium"
           >
             Log in
           </Link>

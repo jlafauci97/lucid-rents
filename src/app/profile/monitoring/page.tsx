@@ -29,10 +29,10 @@ export default async function MonitoringPage() {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-[#0F1D2E]">
+          <h1 className="text-2xl font-bold text-[#1A1F36]">
             Monitored Buildings
           </h1>
-          <p className="text-sm text-[#64748b] mt-1">
+          <p className="text-sm text-[#5E6687] mt-1">
             Get notified when new violations or complaints are filed for these buildings.
           </p>
         </div>
@@ -60,11 +60,11 @@ export default async function MonitoringPage() {
                       <div className="min-w-0">
                         <Link
                           href={building ? buildingUrl(building) : "#"}
-                          className="text-base font-semibold text-[#0F1D2E] hover:text-[#3B82F6] transition-colors truncate block"
+                          className="text-base font-semibold text-[#1A1F36] hover:text-[#6366F1] transition-colors truncate block"
                         >
                           {building?.full_address}
                         </Link>
-                        <p className="text-sm text-[#64748b]">
+                        <p className="text-sm text-[#5E6687]">
                           {building?.borough}
                         </p>
                       </div>
@@ -85,18 +85,18 @@ export default async function MonitoringPage() {
           <CardContent>
             <div className="text-center py-12">
               <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Bell className="w-8 h-8 text-[#3B82F6]" />
+                <Bell className="w-8 h-8 text-[#6366F1]" />
               </div>
-              <p className="text-[#0F1D2E] font-semibold mb-1">
+              <p className="text-[#1A1F36] font-semibold mb-1">
                 No monitored buildings
               </p>
-              <p className="text-sm text-[#64748b] mb-4">
+              <p className="text-sm text-[#5E6687] mb-4">
                 Visit a building page and click &quot;Monitor&quot; to start
                 tracking violations and complaints.
               </p>
               <Link
                 href={cityPath("/search")}
-                className="text-sm text-[#3B82F6] hover:text-[#2563EB] font-medium"
+                className="text-sm text-[#6366F1] hover:text-[#4F46E5] font-medium"
               >
                 Search for buildings
               </Link>

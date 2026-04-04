@@ -123,20 +123,20 @@ export default async function TemplatePage({
 
         {/* Tips section */}
         <div className="mt-12 grid sm:grid-cols-3 gap-5">
-          <div className="bg-white rounded-xl border border-[#e2e8f0] p-5">
-            <h3 className="font-semibold text-[#0F1D2E] mb-2">Send Certified Mail</h3>
+          <div className="bg-white rounded-xl border border-[#E2E8F0] p-5">
+            <h3 className="font-semibold text-[#1A1F36] mb-2">Send Certified Mail</h3>
             <p className="text-sm text-gray-500 leading-relaxed">
               Send via USPS certified mail with return receipt so you have proof of delivery — useful if this escalates.
             </p>
           </div>
-          <div className="bg-white rounded-xl border border-[#e2e8f0] p-5">
-            <h3 className="font-semibold text-[#0F1D2E] mb-2">Keep a Copy</h3>
+          <div className="bg-white rounded-xl border border-[#E2E8F0] p-5">
+            <h3 className="font-semibold text-[#1A1F36] mb-2">Keep a Copy</h3>
             <p className="text-sm text-gray-500 leading-relaxed">
               Save a dated copy for your records. Print to PDF using "Print / Save PDF" and store it safely.
             </p>
           </div>
-          <div className="bg-white rounded-xl border border-[#e2e8f0] p-5">
-            <h3 className="font-semibold text-[#0F1D2E] mb-2">File a Complaint Too</h3>
+          <div className="bg-white rounded-xl border border-[#E2E8F0] p-5">
+            <h3 className="font-semibold text-[#1A1F36] mb-2">File a Complaint Too</h3>
             <p className="text-sm text-gray-500 leading-relaxed">
               For serious issues, also file a complaint with {cityAgencyName} alongside sending this letter.
             </p>
@@ -147,7 +147,7 @@ export default async function TemplatePage({
         <div className="mt-10 text-center">
           <Link
             href={cityPath("/tenant-tools/templates", city as City)}
-            className="inline-flex items-center gap-2 text-sm font-semibold text-[#3B82F6] hover:text-[#2563EB] transition-colors"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-[#6366F1] hover:text-[#4F46E5] transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             View all {cityName} tenant letter templates

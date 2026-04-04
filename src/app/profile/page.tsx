@@ -100,10 +100,10 @@ export default async function ProfilePage() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-[#0F1D2E]">
+          <h1 className="text-2xl font-bold text-[#1A1F36]">
             Welcome, {profile?.display_name || "User"}
           </h1>
-          <p className="text-sm text-[#64748b]">
+          <p className="text-sm text-[#5E6687]">
             Your apartment insights profile
           </p>
         </div>
@@ -123,10 +123,10 @@ export default async function ProfilePage() {
               <PenSquare className="w-6 h-6 text-blue-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-[#0F1D2E]">
+              <p className="text-2xl font-bold text-[#1A1F36]">
                 {profile?.review_count || 0}
               </p>
-              <p className="text-sm text-[#64748b]">Reviews</p>
+              <p className="text-sm text-[#5E6687]">Reviews</p>
             </div>
           </CardContent>
         </Card>
@@ -136,10 +136,10 @@ export default async function ProfilePage() {
               <ThumbsUp className="w-6 h-6 text-amber-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-[#0F1D2E]">
+              <p className="text-2xl font-bold text-[#1A1F36]">
                 {profile?.helpful_count || 0}
               </p>
-              <p className="text-sm text-[#64748b]">Helpful Votes</p>
+              <p className="text-sm text-[#5E6687]">Helpful Votes</p>
             </div>
           </CardContent>
         </Card>
@@ -149,10 +149,10 @@ export default async function ProfilePage() {
               <Bookmark className="w-6 h-6 text-emerald-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-[#0F1D2E]">
+              <p className="text-2xl font-bold text-[#1A1F36]">
                 {savedCount}
               </p>
-              <p className="text-sm text-[#64748b]">Saved Buildings</p>
+              <p className="text-sm text-[#5E6687]">Saved Buildings</p>
             </div>
           </CardContent>
         </Card>
@@ -162,10 +162,10 @@ export default async function ProfilePage() {
               <Bell className="w-6 h-6 text-indigo-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-[#0F1D2E]">
+              <p className="text-2xl font-bold text-[#1A1F36]">
                 {monitoredCount}
               </p>
-              <p className="text-sm text-[#64748b]">Monitored</p>
+              <p className="text-sm text-[#5E6687]">Monitored</p>
             </div>
           </CardContent>
         </Card>
@@ -175,10 +175,10 @@ export default async function ProfilePage() {
               <AlertTriangle className="w-6 h-6 text-red-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-[#0F1D2E]">
+              <p className="text-2xl font-bold text-[#1A1F36]">
                 {alertCount}
               </p>
-              <p className="text-sm text-[#64748b]">Alerts (7d)</p>
+              <p className="text-sm text-[#5E6687]">Alerts (7d)</p>
             </div>
           </CardContent>
         </Card>
@@ -192,7 +192,7 @@ export default async function ProfilePage() {
               <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
                 <Search className="w-5 h-5 text-blue-600" />
               </div>
-              <span className="text-sm font-medium text-[#0F1D2E]">
+              <span className="text-sm font-medium text-[#1A1F36]">
                 Search Buildings
               </span>
             </CardContent>
@@ -204,7 +204,7 @@ export default async function ProfilePage() {
               <div className="w-10 h-10 bg-purple-50 rounded-lg flex items-center justify-center">
                 <ArrowLeftRight className="w-5 h-5 text-purple-600" />
               </div>
-              <span className="text-sm font-medium text-[#0F1D2E]">
+              <span className="text-sm font-medium text-[#1A1F36]">
                 Compare Buildings
               </span>
             </CardContent>
@@ -216,7 +216,7 @@ export default async function ProfilePage() {
               <div className="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center">
                 <MapPin className="w-5 h-5 text-amber-600" />
               </div>
-              <span className="text-sm font-medium text-[#0F1D2E]">
+              <span className="text-sm font-medium text-[#1A1F36]">
                 View Crime Data
               </span>
             </CardContent>
@@ -228,7 +228,7 @@ export default async function ProfilePage() {
               <div className="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center">
                 <Shield className="w-5 h-5 text-emerald-600" />
               </div>
-              <span className="text-sm font-medium text-[#0F1D2E]">
+              <span className="text-sm font-medium text-[#1A1F36]">
                 Tenant Rights
               </span>
             </CardContent>
@@ -240,7 +240,7 @@ export default async function ProfilePage() {
         {/* My Reviews */}
         <Card>
           <CardHeader>
-            <h2 className="font-semibold text-[#0F1D2E]">My Reviews</h2>
+            <h2 className="font-semibold text-[#1A1F36]">My Reviews</h2>
           </CardHeader>
           <CardContent>
             {reviews.length > 0 ? (
@@ -256,15 +256,15 @@ export default async function ProfilePage() {
                       className="flex items-start justify-between py-2 hover:bg-gray-50 rounded px-2 -mx-2"
                     >
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-[#0F1D2E] truncate">
+                        <p className="text-sm font-medium text-[#1A1F36] truncate">
                           {building?.full_address}
                         </p>
                         {title && (
-                          <p className="text-xs text-[#64748b] truncate mt-0.5">
+                          <p className="text-xs text-[#5E6687] truncate mt-0.5">
                             {title}
                           </p>
                         )}
-                        <p className="text-xs text-[#94a3b8] mt-0.5">
+                        <p className="text-xs text-[#A3ACBE] mt-0.5">
                           {formatRelativeDate(review.created_at)}
                         </p>
                       </div>
@@ -291,11 +291,11 @@ export default async function ProfilePage() {
                 })}
               </div>
             ) : (
-              <p className="text-sm text-[#64748b] text-center py-6">
+              <p className="text-sm text-[#5E6687] text-center py-6">
                 No reviews yet.{" "}
                 <Link
                   href={cityPath("/review/new")}
-                  className="text-[#3B82F6] hover:text-[#2563EB] font-medium"
+                  className="text-[#6366F1] hover:text-[#4F46E5] font-medium"
                 >
                   Write your first review
                 </Link>
@@ -307,7 +307,7 @@ export default async function ProfilePage() {
         {/* Saved Buildings */}
         <Card>
           <CardHeader>
-            <h2 className="font-semibold text-[#0F1D2E]">Saved Buildings</h2>
+            <h2 className="font-semibold text-[#1A1F36]">Saved Buildings</h2>
           </CardHeader>
           <CardContent>
             {saved.length > 0 ? (
@@ -327,10 +327,10 @@ export default async function ProfilePage() {
                       className="flex items-center justify-between py-2 hover:bg-gray-50 rounded px-2 -mx-2"
                     >
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-[#0F1D2E] truncate">
+                        <p className="text-sm font-medium text-[#1A1F36] truncate">
                           {building?.full_address}
                         </p>
-                        <p className="text-xs text-[#94a3b8]">
+                        <p className="text-xs text-[#A3ACBE]">
                           {building?.borough}
                         </p>
                       </div>
@@ -347,11 +347,11 @@ export default async function ProfilePage() {
                 })}
               </div>
             ) : (
-              <p className="text-sm text-[#64748b] text-center py-6">
+              <p className="text-sm text-[#5E6687] text-center py-6">
                 No saved buildings yet.{" "}
                 <Link
                   href={cityPath("/search")}
-                  className="text-[#3B82F6] hover:text-[#2563EB] font-medium"
+                  className="text-[#6366F1] hover:text-[#4F46E5] font-medium"
                 >
                   Search for buildings
                 </Link>
@@ -363,7 +363,7 @@ export default async function ProfilePage() {
         {/* Monitored Buildings */}
         <Card>
           <CardHeader>
-            <h2 className="font-semibold text-[#0F1D2E]">Monitored Buildings</h2>
+            <h2 className="font-semibold text-[#1A1F36]">Monitored Buildings</h2>
           </CardHeader>
           <CardContent>
             {monitored.length > 0 ? (
@@ -383,12 +383,12 @@ export default async function ProfilePage() {
                       className="flex items-center justify-between py-2 hover:bg-gray-50 rounded px-2 -mx-2"
                     >
                       <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <Bell className="w-4 h-4 text-[#3B82F6] flex-shrink-0" />
+                        <Bell className="w-4 h-4 text-[#6366F1] flex-shrink-0" />
                         <div className="min-w-0">
-                          <p className="text-sm font-medium text-[#0F1D2E] truncate">
+                          <p className="text-sm font-medium text-[#1A1F36] truncate">
                             {building?.full_address}
                           </p>
-                          <p className="text-xs text-[#94a3b8]">
+                          <p className="text-xs text-[#A3ACBE]">
                             {building?.borough}
                           </p>
                         </div>
@@ -406,7 +406,7 @@ export default async function ProfilePage() {
                 })}
               </div>
             ) : (
-              <p className="text-sm text-[#64748b] text-center py-6">
+              <p className="text-sm text-[#5E6687] text-center py-6">
                 No monitored buildings yet. Visit a building page and click
                 &quot;Monitor&quot; to track new violations.
               </p>
@@ -417,7 +417,7 @@ export default async function ProfilePage() {
         {/* Activity Timeline */}
         <Card>
           <CardHeader>
-            <h2 className="font-semibold text-[#0F1D2E]">
+            <h2 className="font-semibold text-[#1A1F36]">
               Recent Activity on Monitored Buildings
             </h2>
           </CardHeader>

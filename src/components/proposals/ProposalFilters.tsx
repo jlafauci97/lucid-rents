@@ -61,7 +61,7 @@ export function ProposalFilters({ city }: Props) {
       <select
         value={locationValue}
         onChange={(e) => updateParam(locationKey, e.target.value)}
-        className="px-3 py-1.5 text-sm border border-[#e2e8f0] rounded-lg bg-white text-[#0F1D2E] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+        className="px-3 py-1.5 text-sm border border-[#E2E8F0] rounded-lg bg-white text-[#1A1F36] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
       >
         <option value="">{isNyc ? "All Boroughs" : "All Districts"}</option>
         {locationOptions.map((o) => (
@@ -72,7 +72,7 @@ export function ProposalFilters({ city }: Props) {
       <select
         value={currentCategory}
         onChange={(e) => updateParam("category", e.target.value)}
-        className="px-3 py-1.5 text-sm border border-[#e2e8f0] rounded-lg bg-white text-[#0F1D2E] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+        className="px-3 py-1.5 text-sm border border-[#E2E8F0] rounded-lg bg-white text-[#1A1F36] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
       >
         <option value="">All Categories</option>
         {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
@@ -83,7 +83,7 @@ export function ProposalFilters({ city }: Props) {
       <select
         value={currentStatus}
         onChange={(e) => updateParam("status", e.target.value)}
-        className="px-3 py-1.5 text-sm border border-[#e2e8f0] rounded-lg bg-white text-[#0F1D2E] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+        className="px-3 py-1.5 text-sm border border-[#E2E8F0] rounded-lg bg-white text-[#1A1F36] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
       >
         <option value="">All Statuses</option>
         {Object.entries(STATUS_LABELS).map(([key, label]) => (
@@ -94,20 +94,20 @@ export function ProposalFilters({ city }: Props) {
       <select
         value={currentType}
         onChange={(e) => updateParam("type", e.target.value)}
-        className="px-3 py-1.5 text-sm border border-[#e2e8f0] rounded-lg bg-white text-[#0F1D2E] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+        className="px-3 py-1.5 text-sm border border-[#E2E8F0] rounded-lg bg-white text-[#1A1F36] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
       >
         {TYPE_OPTIONS.map((o) => (
           <option key={o.value} value={o.value}>{o.label}</option>
         ))}
       </select>
 
-      <div className="ml-auto flex items-center gap-1 bg-[#f1f5f9] rounded-lg p-0.5">
+      <div className="ml-auto flex items-center gap-1 bg-[#F5F7FA] rounded-lg p-0.5">
         <button
           onClick={() => updateParam("view", "list")}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
             currentView === "list"
-              ? "bg-white text-[#0F1D2E] shadow-sm"
-              : "text-[#64748b] hover:text-[#0F1D2E]"
+              ? "bg-white text-[#1A1F36] shadow-sm"
+              : "text-[#5E6687] hover:text-[#1A1F36]"
           }`}
         >
           <List className="w-3.5 h-3.5" />
@@ -117,8 +117,8 @@ export function ProposalFilters({ city }: Props) {
           onClick={() => updateParam("view", "map")}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
             currentView === "map"
-              ? "bg-white text-[#0F1D2E] shadow-sm"
-              : "text-[#64748b] hover:text-[#0F1D2E]"
+              ? "bg-white text-[#1A1F36] shadow-sm"
+              : "text-[#5E6687] hover:text-[#1A1F36]"
           }`}
         >
           <MapIcon className="w-3.5 h-3.5" />

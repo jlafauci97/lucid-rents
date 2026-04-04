@@ -155,18 +155,18 @@ export function TransitBuildingList({
       {/* Search input */}
       <div className="mb-6">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94a3b8]" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#A3ACBE]" />
           <input
             type="text"
             value={query}
             onChange={(e) => handleQueryChange(e.target.value)}
             placeholder={`Filter by neighborhood, zip code, or address...`}
-            className="w-full pl-10 pr-10 py-3 text-sm border border-[#e2e8f0] rounded-xl bg-white text-[#0F1D2E] placeholder:text-[#94a3b8] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/30 focus:border-[#3B82F6] transition-all"
+            className="w-full pl-10 pr-10 py-3 text-sm border border-[#E2E8F0] rounded-xl bg-white text-[#1A1F36] placeholder:text-[#A3ACBE] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/30 focus:border-[#6366F1] transition-all"
           />
           {query && (
             <button
               onClick={() => handleQueryChange("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#64748b] transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A3ACBE] hover:text-[#5E6687] transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
@@ -180,7 +180,7 @@ export function TransitBuildingList({
               <button
                 key={match.zipCode}
                 onClick={() => handleQueryChange(match.zipCode)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full border border-[#e2e8f0] bg-white text-[#0F1D2E] hover:bg-[#3B82F6] hover:text-white hover:border-[#3B82F6] transition-all"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full border border-[#E2E8F0] bg-white text-[#1A1F36] hover:bg-[#6366F1] hover:text-white hover:border-[#6366F1] transition-all"
               >
                 <MapPin className="w-3 h-3" />
                 {match.name} &middot; {match.borough} &middot; {match.zipCode}
@@ -191,7 +191,7 @@ export function TransitBuildingList({
       </div>
 
       {/* Results count */}
-      <p className="text-sm text-[#64748b] mb-4">
+      <p className="text-sm text-[#5E6687] mb-4">
         {query ? (
           <>
             Showing {filtered.length.toLocaleString()} of{" "}
@@ -215,12 +215,12 @@ export function TransitBuildingList({
             <Link
               key={building.id}
               href={buildingUrl(building, city)}
-              className="group bg-white border border-[#e2e8f0] rounded-xl p-4 hover:shadow-md hover:border-[#3B82F6]/40 transition-all"
+              className="group bg-white border border-[#E2E8F0] rounded-xl p-4 hover:shadow-md hover:border-[#6366F1]/40 transition-all"
             >
-              <h3 className="font-semibold text-[#0F1D2E] group-hover:text-[#3B82F6] transition-colors truncate text-sm">
+              <h3 className="font-semibold text-[#1A1F36] group-hover:text-[#6366F1] transition-colors truncate text-sm">
                 {building.full_address}
               </h3>
-              <div className="flex items-center gap-1 text-xs text-[#64748b] mt-1">
+              <div className="flex items-center gap-1 text-xs text-[#5E6687] mt-1">
                 <MapPin className="w-3 h-3 flex-shrink-0" />
                 {building.borough}
                 {building.zip_code && ` \u00b7 ${building.zip_code}`}
@@ -250,7 +250,7 @@ export function TransitBuildingList({
                         ? "text-[#ef4444]"
                         : building.violation_count > 10
                           ? "text-[#f97316]"
-                          : "text-[#64748b]"
+                          : "text-[#5E6687]"
                     }`}
                   >
                     {building.violation_count.toLocaleString()} violations
@@ -263,14 +263,14 @@ export function TransitBuildingList({
                         ? "text-[#ef4444]"
                         : building.complaint_count > 10
                           ? "text-[#f97316]"
-                          : "text-[#64748b]"
+                          : "text-[#5E6687]"
                     }`}
                   >
                     {building.complaint_count.toLocaleString()} complaints
                   </span>
                 )}
                 {building.total_units ? (
-                  <span className="text-[#64748b]">
+                  <span className="text-[#5E6687]">
                     {building.total_units} units
                   </span>
                 ) : null}
@@ -298,7 +298,7 @@ export function TransitBuildingList({
                       }}
                     />
                   </div>
-                  <span className="text-xs font-semibold text-[#0F1D2E]">
+                  <span className="text-xs font-semibold text-[#1A1F36]">
                     {building.overall_score}/10
                   </span>
                 </div>
@@ -307,12 +307,12 @@ export function TransitBuildingList({
           ))}
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-[#e2e8f0] p-12 text-center mb-6">
-          <Building2 className="w-12 h-12 text-[#94a3b8] mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-[#0F1D2E] mb-2">
+        <div className="bg-white rounded-xl border border-[#E2E8F0] p-12 text-center mb-6">
+          <Building2 className="w-12 h-12 text-[#A3ACBE] mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-[#1A1F36] mb-2">
             {query ? "No matching buildings" : "No buildings found"}
           </h3>
-          <p className="text-sm text-[#64748b]">
+          <p className="text-sm text-[#5E6687]">
             {query
               ? `No buildings match "${query}". Try a different neighborhood, zip code, or address.`
               : "No buildings found near this transit line."}
@@ -320,7 +320,7 @@ export function TransitBuildingList({
           {query && (
             <button
               onClick={() => handleQueryChange("")}
-              className="mt-4 text-sm text-[#3B82F6] hover:underline"
+              className="mt-4 text-sm text-[#6366F1] hover:underline"
             >
               Clear filter
             </button>
@@ -330,15 +330,15 @@ export function TransitBuildingList({
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between px-4 py-3 bg-white border border-[#e2e8f0] rounded-xl mb-6">
-          <p className="text-sm text-[#64748b]">
+        <div className="flex items-center justify-between px-4 py-3 bg-white border border-[#E2E8F0] rounded-xl mb-6">
+          <p className="text-sm text-[#5E6687]">
             Page {safePage} of {totalPages}
           </p>
           <div className="flex gap-2">
             {safePage > 1 && (
               <button
                 onClick={() => setPage(safePage - 1)}
-                className="flex items-center gap-1 px-3 py-1.5 text-sm border border-[#e2e8f0] rounded-lg hover:bg-gray-50 transition-colors text-[#64748b]"
+                className="flex items-center gap-1 px-3 py-1.5 text-sm border border-[#E2E8F0] rounded-lg hover:bg-gray-50 transition-colors text-[#5E6687]"
               >
                 <ChevronLeft className="w-4 h-4" />
                 Previous
@@ -347,7 +347,7 @@ export function TransitBuildingList({
             {safePage < totalPages && (
               <button
                 onClick={() => setPage(safePage + 1)}
-                className="flex items-center gap-1 px-3 py-1.5 text-sm border border-[#e2e8f0] rounded-lg hover:bg-gray-50 transition-colors text-[#64748b]"
+                className="flex items-center gap-1 px-3 py-1.5 text-sm border border-[#E2E8F0] rounded-lg hover:bg-gray-50 transition-colors text-[#5E6687]"
               >
                 Next
                 <ChevronRight className="w-4 h-4" />

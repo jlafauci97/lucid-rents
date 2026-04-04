@@ -215,11 +215,11 @@ export default async function TransitHubPage({ params }: { params: Promise<{ cit
             <div className="p-2 bg-blue-50 rounded-lg">
               <TrainFront className="w-6 h-6" style={{ color: accentColor }} />
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#0F1D2E]">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#1A1F36]">
               Apartments Near Transit
             </h1>
           </div>
-          <p className="text-[#64748b] text-sm sm:text-base max-w-3xl">
+          <p className="text-[#5E6687] text-sm sm:text-base max-w-3xl">
             {isChicago
               ? "Find apartments within walking distance of CTA 'L' train stations across Chicago. Click any line to browse nearby buildings."
               : isLA
@@ -231,17 +231,17 @@ export default async function TransitHubPage({ params }: { params: Promise<{ cit
         {/* Rail section */}
         {isChicago ? (
           <section className="mb-10">
-            <h2 className="text-lg font-bold text-[#0F1D2E] mb-4 flex items-center gap-2">
+            <h2 className="text-lg font-bold text-[#1A1F36] mb-4 flex items-center gap-2">
               <TrainFront className="w-5 h-5 text-[#00A1DE]" />
               CTA &lsquo;L&rsquo; Lines
             </h2>
-            <div className="bg-white border border-[#e2e8f0] rounded-xl p-5 sm:p-6">
+            <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 sm:p-6">
               <div className="flex flex-wrap gap-3">
                 {CTA_LINES_DATA.map((line) => (
                   <Link
                     key={line.slug}
                     href={transitLineUrl(line.slug, city)}
-                    className="group flex items-center gap-2.5 px-4 py-2.5 rounded-lg border border-[#e2e8f0] hover:shadow-md hover:border-[#3B82F6]/40 transition-all bg-white"
+                    className="group flex items-center gap-2.5 px-4 py-2.5 rounded-lg border border-[#E2E8F0] hover:shadow-md hover:border-[#6366F1]/40 transition-all bg-white"
                   >
                     <span
                       className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
@@ -249,10 +249,10 @@ export default async function TransitHubPage({ params }: { params: Promise<{ cit
                     >
                       {line.letter}
                     </span>
-                    <span className="text-sm font-medium text-[#0F1D2E] group-hover:text-[#3B82F6] transition-colors">
+                    <span className="text-sm font-medium text-[#1A1F36] group-hover:text-[#6366F1] transition-colors">
                       {line.name}
                     </span>
-                    <ChevronRight className="w-4 h-4 text-[#94a3b8] group-hover:text-[#3B82F6]" />
+                    <ChevronRight className="w-4 h-4 text-[#A3ACBE] group-hover:text-[#6366F1]" />
                   </Link>
                 ))}
               </div>
@@ -262,17 +262,17 @@ export default async function TransitHubPage({ params }: { params: Promise<{ cit
           <>
             {/* LA Metro Rail Lines */}
             <section className="mb-10">
-              <h2 className="text-lg font-bold text-[#0F1D2E] mb-4 flex items-center gap-2">
+              <h2 className="text-lg font-bold text-[#1A1F36] mb-4 flex items-center gap-2">
                 <TrainFront className="w-5 h-5" style={{ color: accentColor }} />
                 Metro Rail Lines
               </h2>
-              <div className="bg-white border border-[#e2e8f0] rounded-xl p-5 sm:p-6">
+              <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 sm:p-6">
                 <div className="flex flex-wrap gap-3">
                   {laRailLines.map((line) => (
                     <Link
                       key={line.slug}
                       href={transitLineUrl(line.slug, city)}
-                      className="group flex items-center gap-2.5 px-4 py-2.5 rounded-lg border border-[#e2e8f0] hover:shadow-md hover:border-[#3B82F6]/40 transition-all bg-white"
+                      className="group flex items-center gap-2.5 px-4 py-2.5 rounded-lg border border-[#E2E8F0] hover:shadow-md hover:border-[#6366F1]/40 transition-all bg-white"
                     >
                       <span
                         className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
@@ -283,10 +283,10 @@ export default async function TransitHubPage({ params }: { params: Promise<{ cit
                       >
                         {line.letter}
                       </span>
-                      <span className="text-sm font-medium text-[#0F1D2E] group-hover:text-[#3B82F6] transition-colors">
+                      <span className="text-sm font-medium text-[#1A1F36] group-hover:text-[#6366F1] transition-colors">
                         {line.name}
                       </span>
-                      <ChevronRight className="w-4 h-4 text-[#94a3b8] group-hover:text-[#3B82F6] ml-auto transition-colors" />
+                      <ChevronRight className="w-4 h-4 text-[#A3ACBE] group-hover:text-[#6366F1] ml-auto transition-colors" />
                     </Link>
                   ))}
                 </div>
@@ -296,17 +296,17 @@ export default async function TransitHubPage({ params }: { params: Promise<{ cit
             {/* LA BRT Lines */}
             {laBRTLines.length > 0 && (
               <section className="mb-10">
-                <h2 className="text-lg font-bold text-[#0F1D2E] mb-4 flex items-center gap-2">
+                <h2 className="text-lg font-bold text-[#1A1F36] mb-4 flex items-center gap-2">
                   <Bus className="w-5 h-5" style={{ color: accentColor }} />
                   Bus Rapid Transit (BRT)
                 </h2>
-                <div className="bg-white border border-[#e2e8f0] rounded-xl p-5 sm:p-6">
+                <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 sm:p-6">
                   <div className="flex flex-wrap gap-3">
                     {laBRTLines.map((line) => (
                       <Link
                         key={line.slug}
                         href={transitLineUrl(line.slug, city)}
-                        className="group flex items-center gap-2.5 px-4 py-2.5 rounded-lg border border-[#e2e8f0] hover:shadow-md hover:border-[#3B82F6]/40 transition-all bg-white"
+                        className="group flex items-center gap-2.5 px-4 py-2.5 rounded-lg border border-[#E2E8F0] hover:shadow-md hover:border-[#6366F1]/40 transition-all bg-white"
                       >
                         <span
                           className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
@@ -317,10 +317,10 @@ export default async function TransitHubPage({ params }: { params: Promise<{ cit
                         >
                           {line.letter}
                         </span>
-                        <span className="text-sm font-medium text-[#0F1D2E] group-hover:text-[#3B82F6] transition-colors">
+                        <span className="text-sm font-medium text-[#1A1F36] group-hover:text-[#6366F1] transition-colors">
                           {line.name}
                         </span>
-                        <ChevronRight className="w-4 h-4 text-[#94a3b8] group-hover:text-[#3B82F6] ml-auto transition-colors" />
+                        <ChevronRight className="w-4 h-4 text-[#A3ACBE] group-hover:text-[#6366F1] ml-auto transition-colors" />
                       </Link>
                     ))}
                   </div>
@@ -331,18 +331,18 @@ export default async function TransitHubPage({ params }: { params: Promise<{ cit
         ) : (
           /* NYC Subway Lines */
           <section className="mb-10">
-            <h2 className="text-lg font-bold text-[#0F1D2E] mb-4 flex items-center gap-2">
+            <h2 className="text-lg font-bold text-[#1A1F36] mb-4 flex items-center gap-2">
               <TrainFront className="w-5 h-5" style={{ color: accentColor }} />
               Subway Lines
             </h2>
-            <div className="bg-white border border-[#e2e8f0] rounded-xl p-5 sm:p-6">
+            <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 sm:p-6">
               <div className="flex flex-wrap gap-3">
                 {SUBWAY_GROUPS.map((group) =>
                   group.lines.map((line) => (
                     <Link
                       key={line.slug}
                       href={transitLineUrl(line.slug)}
-                      className="group flex items-center gap-2.5 px-4 py-2.5 rounded-lg border border-[#e2e8f0] hover:shadow-md hover:border-[#3B82F6]/40 transition-all bg-white"
+                      className="group flex items-center gap-2.5 px-4 py-2.5 rounded-lg border border-[#E2E8F0] hover:shadow-md hover:border-[#6366F1]/40 transition-all bg-white"
                     >
                       <span
                         className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
@@ -353,10 +353,10 @@ export default async function TransitHubPage({ params }: { params: Promise<{ cit
                       >
                         {line.letter}
                       </span>
-                      <span className="text-sm font-medium text-[#0F1D2E] group-hover:text-[#3B82F6] transition-colors">
+                      <span className="text-sm font-medium text-[#1A1F36] group-hover:text-[#6366F1] transition-colors">
                         {line.name}
                       </span>
-                      <ChevronRight className="w-4 h-4 text-[#94a3b8] group-hover:text-[#3B82F6] ml-auto transition-colors" />
+                      <ChevronRight className="w-4 h-4 text-[#A3ACBE] group-hover:text-[#6366F1] ml-auto transition-colors" />
                     </Link>
                   ))
                 )}
@@ -368,7 +368,7 @@ export default async function TransitHubPage({ params }: { params: Promise<{ cit
         {/* Bus section */}
         {busRoutes.length > 0 && (
           <section className="mb-10">
-            <h2 className="text-lg font-bold text-[#0F1D2E] mb-4 flex items-center gap-2">
+            <h2 className="text-lg font-bold text-[#1A1F36] mb-4 flex items-center gap-2">
               <Bus className="w-5 h-5" style={{ color: accentColor }} />
               {isLA ? "Metro Bus Routes" : "Bus Routes"}
             </h2>
@@ -378,9 +378,9 @@ export default async function TransitHubPage({ params }: { params: Promise<{ cit
                 .map((prefix) => (
                   <div
                     key={prefix}
-                    className="bg-white border border-[#e2e8f0] rounded-xl p-5"
+                    className="bg-white border border-[#E2E8F0] rounded-xl p-5"
                   >
-                    <h3 className="text-sm font-semibold text-[#64748b] uppercase tracking-wide mb-3">
+                    <h3 className="text-sm font-semibold text-[#5E6687] uppercase tracking-wide mb-3">
                       {prefix}
                     </h3>
                     <div className="flex flex-wrap gap-2">
@@ -391,7 +391,7 @@ export default async function TransitHubPage({ params }: { params: Promise<{ cit
                             isLA ? laMetroBusSlug(route) : busRouteSlug(route),
                             city
                           )}
-                          className={`px-3 py-1.5 text-sm font-medium rounded-lg border border-[#e2e8f0] text-[#0F1D2E] transition-all ${
+                          className={`px-3 py-1.5 text-sm font-medium rounded-lg border border-[#E2E8F0] text-[#1A1F36] transition-all ${
                             isLA
                               ? "hover:bg-[#E3242B] hover:text-white hover:border-[#E3242B]"
                               : "hover:bg-[#0039A6] hover:text-white hover:border-[#0039A6]"
@@ -425,26 +425,26 @@ export default async function TransitHubPage({ params }: { params: Promise<{ cit
           };
           return (
             <section className="mb-10">
-              <h2 className="text-lg font-bold text-[#0F1D2E] mb-2 flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-[#3B82F6]" />
+              <h2 className="text-lg font-bold text-[#1A1F36] mb-2 flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-[#6366F1]" />
                 Apartments Near Landmarks
               </h2>
-              <p className="text-sm text-[#64748b] mb-4">
+              <p className="text-sm text-[#5E6687] mb-4">
                 Find apartments within walking distance of major {meta.fullName} employers, universities, and landmarks.
               </p>
               <div className="space-y-4">
                 {Object.entries(categoryGroups).map(([cat, items]) => (
                   <div key={cat}>
-                    <p className="text-xs font-semibold text-[#94a3b8] uppercase tracking-wide mb-2">{categoryLabels[cat] || cat}</p>
+                    <p className="text-xs font-semibold text-[#A3ACBE] uppercase tracking-wide mb-2">{categoryLabels[cat] || cat}</p>
                     <div className="flex flex-wrap gap-2">
                       {items.map((l) => (
                         <Link
                           key={l.slug}
                           href={cityPath(`/apartments-near/${l.slug}`, city as City)}
-                          className="group flex items-center gap-2 px-3 py-2 bg-white border border-[#e2e8f0] rounded-lg hover:border-[#3B82F6] hover:shadow-sm transition-all text-sm"
+                          className="group flex items-center gap-2 px-3 py-2 bg-white border border-[#E2E8F0] rounded-lg hover:border-[#6366F1] hover:shadow-sm transition-all text-sm"
                         >
-                          <MapPin className="w-3.5 h-3.5 text-[#94a3b8] group-hover:text-[#3B82F6] flex-shrink-0" />
-                          <span className="text-[#0F1D2E] group-hover:text-[#3B82F6] transition-colors">{l.name}</span>
+                          <MapPin className="w-3.5 h-3.5 text-[#A3ACBE] group-hover:text-[#6366F1] flex-shrink-0" />
+                          <span className="text-[#1A1F36] group-hover:text-[#6366F1] transition-colors">{l.name}</span>
                         </Link>
                       ))}
                     </div>

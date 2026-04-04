@@ -152,23 +152,23 @@ async function CategoryView({
           }}
         />
 
-        <nav className="text-sm text-[#94a3b8] mb-4">
-          <Link href="/" className="hover:text-[#3B82F6]">Home</Link>
+        <nav className="text-sm text-[#A3ACBE] mb-4">
+          <Link href="/" className="hover:text-[#6366F1]">Home</Link>
           {" / "}
-          <Link href={cityPath("/news", city)} className="hover:text-[#3B82F6]">News</Link>
+          <Link href={cityPath("/news", city)} className="hover:text-[#6366F1]">News</Link>
           {" / "}
-          <span className="text-[#0F1D2E] font-medium">{meta.label}</span>
+          <span className="text-[#1A1F36] font-medium">{meta.label}</span>
         </nav>
 
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-[#0F1D2E]">{meta.label}</h1>
-          <p className="text-sm text-[#64748b] mt-1">{meta.description}</p>
+          <h1 className="text-2xl font-bold text-[#1A1F36]">{meta.label}</h1>
+          <p className="text-sm text-[#5E6687] mt-1">{meta.description}</p>
         </div>
 
         <div className="flex flex-wrap gap-2 mb-6">
           <Link
             href={cityPath("/news", city)}
-            className="px-3 py-1.5 text-sm font-medium rounded-full bg-[#f1f5f9] text-[#475569] hover:bg-[#e2e8f0] transition-colors"
+            className="px-3 py-1.5 text-sm font-medium rounded-full bg-[#F5F7FA] text-[#5E6687] hover:bg-[#e2e8f0] transition-colors"
           >
             All
           </Link>
@@ -179,7 +179,7 @@ async function CategoryView({
               className={`px-3 py-1.5 text-sm font-medium rounded-full transition-colors ${
                 slug === category
                   ? "bg-[#0F1D2E] text-white"
-                  : "bg-[#f1f5f9] text-[#475569] hover:bg-[#e2e8f0]"
+                  : "bg-[#F5F7FA] text-[#5E6687] hover:bg-[#e2e8f0]"
               }`}
             >
               {catMeta.label}
@@ -199,9 +199,9 @@ async function CategoryView({
           </div>
 
           <aside className="hidden lg:block space-y-6">
-            <div className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm overflow-hidden">
-              <div className="px-4 py-3 border-b border-[#e2e8f0]">
-                <h3 className="text-sm font-bold text-[#0F1D2E]">Categories</h3>
+            <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm overflow-hidden">
+              <div className="px-4 py-3 border-b border-[#E2E8F0]">
+                <h3 className="text-sm font-bold text-[#1A1F36]">Categories</h3>
               </div>
               <div className="divide-y divide-[#f1f5f9]">
                 {categories.map(([slug, catMeta]) => (
@@ -209,7 +209,7 @@ async function CategoryView({
                     key={slug}
                     href={`/news/${slug}`}
                     className={`flex items-start gap-3 px-4 py-3 transition-colors ${
-                      slug === category ? "bg-[#EFF6FF]" : "hover:bg-[#f8fafc]"
+                      slug === category ? "bg-[#EFF6FF]" : "hover:bg-[#FAFBFD]"
                     }`}
                   >
                     <div
@@ -219,10 +219,10 @@ async function CategoryView({
                       <CategoryIcon icon={catMeta.icon} color={catMeta.color} />
                     </div>
                     <div>
-                      <p className={`text-sm font-medium ${slug === category ? "text-[#3B82F6]" : "text-[#0F1D2E]"}`}>
+                      <p className={`text-sm font-medium ${slug === category ? "text-[#6366F1]" : "text-[#1A1F36]"}`}>
                         {catMeta.label}
                       </p>
-                      <p className="text-xs text-[#94a3b8] mt-0.5">{catMeta.description}</p>
+                      <p className="text-xs text-[#A3ACBE] mt-0.5">{catMeta.description}</p>
                     </div>
                   </Link>
                 ))}
@@ -312,7 +312,7 @@ async function ArticleView({ slug, city }: { slug: string; city: import("@/lib/c
         <div className="flex items-center gap-4 mb-4">
           <Link
             href={cityPath("/news", city)}
-            className="flex items-center gap-1 text-sm text-[#3B82F6] hover:underline"
+            className="flex items-center gap-1 text-sm text-[#6366F1] hover:underline"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to News
@@ -323,16 +323,16 @@ async function ArticleView({ slug, city }: { slug: string; city: import("@/lib/c
           {categoryMeta && (
             <Link
               href={`/news/${typedArticle.category}`}
-              className="inline-block text-xs font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full bg-[#EFF6FF] text-[#3B82F6] mb-3 hover:bg-[#DBEAFE] transition-colors"
+              className="inline-block text-xs font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full bg-[#EFF6FF] text-[#6366F1] mb-3 hover:bg-[#DBEAFE] transition-colors"
             >
               {categoryMeta.label}
             </Link>
           )}
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#0F1D2E] leading-tight mb-3">
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#1A1F36] leading-tight mb-3">
             {typedArticle.title}
           </h1>
-          <div className="flex flex-wrap items-center gap-3 text-sm text-[#64748b]">
-            <span className="font-medium text-[#0F1D2E]">{typedArticle.source_name}</span>
+          <div className="flex flex-wrap items-center gap-3 text-sm text-[#5E6687]">
+            <span className="font-medium text-[#1A1F36]">{typedArticle.source_name}</span>
             {typedArticle.author && <span>by {typedArticle.author}</span>}
             <span className="flex items-center gap-1">
               <Clock className="w-3.5 h-3.5" />
@@ -342,19 +342,19 @@ async function ArticleView({ slug, city }: { slug: string; city: import("@/lib/c
         </div>
 
         {typedArticle.excerpt && (
-          <div className="bg-[#f8fafc] rounded-xl border border-[#e2e8f0] p-4 mb-4">
-            <p className="text-sm text-[#475569] leading-relaxed">{typedArticle.excerpt}</p>
+          <div className="bg-[#FAFBFD] rounded-xl border border-[#E2E8F0] p-4 mb-4">
+            <p className="text-sm text-[#5E6687] leading-relaxed">{typedArticle.excerpt}</p>
           </div>
         )}
 
-        <div className="rounded-xl border border-[#e2e8f0] overflow-hidden bg-white mb-6">
-          <div className="flex items-center justify-between px-4 py-2 bg-[#f8fafc] border-b border-[#e2e8f0]">
-            <span className="text-xs text-[#94a3b8]">Source: {typedArticle.source_name}</span>
+        <div className="rounded-xl border border-[#E2E8F0] overflow-hidden bg-white mb-6">
+          <div className="flex items-center justify-between px-4 py-2 bg-[#FAFBFD] border-b border-[#E2E8F0]">
+            <span className="text-xs text-[#A3ACBE]">Source: {typedArticle.source_name}</span>
             <a
               href={typedArticle.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1 text-xs text-[#3B82F6] hover:underline"
+              className="flex items-center gap-1 text-xs text-[#6366F1] hover:underline"
             >
               Open original
               <ExternalLink className="w-3 h-3" />
@@ -372,14 +372,14 @@ async function ArticleView({ slug, city }: { slug: string; city: import("@/lib/c
         </div>
 
         <div className="text-center mb-8">
-          <p className="text-sm text-[#94a3b8] mb-2">
+          <p className="text-sm text-[#A3ACBE] mb-2">
             Article not loading? Some sites restrict embedding.
           </p>
           <a
             href={typedArticle.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#3B82F6] border border-[#3B82F6] rounded-lg hover:bg-[#EFF6FF] transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#6366F1] border border-[#6366F1] rounded-lg hover:bg-[#EFF6FF] transition-colors"
           >
             Read on {typedArticle.source_name}
             <ExternalLink className="w-4 h-4" />
@@ -389,8 +389,8 @@ async function ArticleView({ slug, city }: { slug: string; city: import("@/lib/c
         <AdBlock adSlot="NEWS_ARTICLE_BOTTOM" adFormat="horizontal" />
 
         {related && related.length > 0 && (
-          <div className="mt-8 pt-8 border-t border-[#e2e8f0]">
-            <h2 className="text-lg font-bold text-[#0F1D2E] mb-4">Related Articles</h2>
+          <div className="mt-8 pt-8 border-t border-[#E2E8F0]">
+            <h2 className="text-lg font-bold text-[#1A1F36] mb-4">Related Articles</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {(related as NewsArticle[]).map((r) => (
                 <NewsCard key={r.id} article={r} />

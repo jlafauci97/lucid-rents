@@ -139,8 +139,8 @@ export function UnitDetailsStep({
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h2 className="text-xl font-semibold text-[#0F1D2E]">Unit Details</h2>
-        <p className="mt-1 text-sm text-[#64748b]">
+        <h2 className="text-xl font-semibold text-[#1A1F36]">Unit Details</h2>
+        <p className="mt-1 text-sm text-[#5E6687]">
           This step is optional &mdash; skip if you prefer
         </p>
       </div>

@@ -210,8 +210,8 @@ export function SeasonalCalculator() {
             onClick={() => handleCityChange(c)}
             className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
               city === c
-                ? "bg-[#3B82F6] text-white shadow-md"
-                : "bg-white text-gray-700 border border-[#e2e8f0] hover:border-[#3B82F6] hover:text-[#3B82F6]"
+                ? "bg-[#6366F1] text-white shadow-md"
+                : "bg-white text-gray-700 border border-[#E2E8F0] hover:border-[#6366F1] hover:text-[#6366F1]"
             }`}
           >
             {CITY_LABELS[c]}
@@ -227,7 +227,7 @@ export function SeasonalCalculator() {
             value={selectedZip ?? ""}
             onChange={(e) => setSelectedZip(e.target.value || null)}
             disabled={nhLoading}
-            className="w-full appearance-none bg-white border border-[#e2e8f0] rounded-lg px-4 py-2.5 pr-10 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent disabled:opacity-50"
+            className="w-full appearance-none bg-white border border-[#E2E8F0] rounded-lg px-4 py-2.5 pr-10 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent disabled:opacity-50"
           >
             <option value="">City-wide average</option>
             {neighborhoods.map((n) => (
@@ -240,14 +240,14 @@ export function SeasonalCalculator() {
         </div>
 
         {/* Bed count selector */}
-        <div className="flex gap-1 bg-white border border-[#e2e8f0] rounded-lg p-1">
+        <div className="flex gap-1 bg-white border border-[#E2E8F0] rounded-lg p-1">
           {BED_OPTIONS.map((opt) => (
             <button
               key={opt.value}
               onClick={() => setBeds(opt.value)}
               className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                 beds === opt.value
-                  ? "bg-[#3B82F6] text-white"
+                  ? "bg-[#6366F1] text-white"
                   : "text-gray-600 hover:bg-gray-100"
               }`}
             >
@@ -260,7 +260,7 @@ export function SeasonalCalculator() {
       {/* Loading / Error states */}
       {loading && (
         <div className="flex items-center justify-center py-16">
-          <Loader2 className="w-6 h-6 text-[#3B82F6] animate-spin" />
+          <Loader2 className="w-6 h-6 text-[#6366F1] animate-spin" />
         </div>
       )}
 
@@ -375,7 +375,7 @@ export function SeasonalCalculator() {
           )}
 
           {/* Recharts Bar Chart */}
-          <div className="bg-white border border-[#e2e8f0] rounded-xl p-4 sm:p-6">
+          <div className="bg-white border border-[#E2E8F0] rounded-xl p-4 sm:p-6">
             <h3 className="text-sm font-semibold text-gray-700 mb-4">
               Monthly Rent Index
             </h3>
@@ -407,7 +407,7 @@ export function SeasonalCalculator() {
                         pct: number;
                       };
                       return (
-                        <div className="bg-white border border-[#e2e8f0] rounded-lg shadow-md px-3 py-2 text-sm">
+                        <div className="bg-white border border-[#E2E8F0] rounded-lg shadow-md px-3 py-2 text-sm">
                           <div className="font-semibold text-gray-900">
                             {d.month}
                           </div>
@@ -451,7 +451,7 @@ export function SeasonalCalculator() {
           </div>
 
           {/* How This Works */}
-          <div className="bg-gray-50 border border-[#e2e8f0] rounded-xl p-5">
+          <div className="bg-gray-50 border border-[#E2E8F0] rounded-xl p-5">
             <h3 className="flex items-center gap-2 font-semibold text-gray-800 mb-2">
               <Info className="w-5 h-5 text-gray-500" />
               How This Works
@@ -472,7 +472,7 @@ export function SeasonalCalculator() {
           <div className="text-center">
             <a
               href={`/${CITY_META[city].urlPrefix}/buildings`}
-              className="inline-flex items-center gap-2 bg-[#3B82F6] text-white px-6 py-3 rounded-lg font-medium text-sm hover:bg-[#2563eb] transition-colors shadow-sm"
+              className="inline-flex items-center gap-2 bg-[#6366F1] text-white px-6 py-3 rounded-lg font-medium text-sm hover:bg-[#2563eb] transition-colors shadow-sm"
             >
               Browse buildings in {CITY_LABELS[city]}
             </a>

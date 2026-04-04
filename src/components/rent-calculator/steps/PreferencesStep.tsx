@@ -47,10 +47,10 @@ export function PreferencesStep({
   return (
     <div className="max-w-lg mx-auto">
       <div className="mb-6">
-        <h2 className="text-xl font-bold text-[#0F1D2E] mb-1">
+        <h2 className="text-xl font-bold text-[#1A1F36] mb-1">
           Where do you want to live?
         </h2>
-        <p className="text-sm text-[#64748b]">
+        <p className="text-sm text-[#5E6687]">
           Pick a city and your ideal apartment size. We&rsquo;ll match you with
           neighborhoods that fit your budget.
         </p>
@@ -72,7 +72,7 @@ export function PreferencesStep({
 
         {/* Bedrooms */}
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-[#0F1D2E]">
+          <label className="block text-sm font-medium text-[#1A1F36]">
             Bedrooms *
           </label>
           <div className="flex flex-wrap gap-2">
@@ -83,8 +83,8 @@ export function PreferencesStep({
                 onClick={() => onChange({ city, bedrooms: opt.value })}
                 className={`rounded-full px-5 py-2 text-sm font-medium border transition-colors ${
                   bedrooms === opt.value
-                    ? "bg-[#3B82F6] text-white border-[#3B82F6]"
-                    : "border-[#e2e8f0] text-[#64748b] hover:bg-gray-50"
+                    ? "bg-[#6366F1] text-white border-[#6366F1]"
+                    : "border-[#E2E8F0] text-[#5E6687] hover:bg-gray-50"
                 }`}
               >
                 {opt.label}
@@ -95,14 +95,14 @@ export function PreferencesStep({
 
         {/* City preview card */}
         {city && (
-          <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-lg px-4 py-3">
-            <p className="text-xs text-[#94a3b8] uppercase tracking-wider font-semibold mb-1">
+          <div className="bg-[#FAFBFD] border border-[#E2E8F0] rounded-lg px-4 py-3">
+            <p className="text-xs text-[#A3ACBE] uppercase tracking-wider font-semibold mb-1">
               Searching in
             </p>
-            <p className="text-sm font-semibold text-[#0F1D2E]">
+            <p className="text-sm font-semibold text-[#1A1F36]">
               {CITY_META[city].fullName}, {CITY_META[city].stateCode}
             </p>
-            <p className="text-xs text-[#64748b] mt-0.5">
+            <p className="text-xs text-[#5E6687] mt-0.5">
               {CITY_META[city].regions.length}{" "}
               {CITY_META[city].regionLabel.toLowerCase()}s available ·{" "}
               {bedroomOptions.find((o) => o.value === bedrooms)?.label}

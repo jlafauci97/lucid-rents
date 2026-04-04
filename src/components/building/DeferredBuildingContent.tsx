@@ -359,7 +359,7 @@ export async function DeferredBuildingContent({ building, buildingId, city, rent
       <div className="flex justify-end">
         <Link
           href={`${buildingUrl(building, city)}/timeline`}
-          className="inline-flex items-center gap-2 text-sm font-medium text-[#3B82F6] hover:text-[#2563EB] transition-colors"
+          className="inline-flex items-center gap-2 text-sm font-medium text-[#6366F1] hover:text-[#4F46E5] transition-colors"
         >
           <Clock className="w-4 h-4" />
           View Full History Timeline

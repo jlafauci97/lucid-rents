@@ -66,10 +66,10 @@ export function IncomeStep({
   return (
     <div className="max-w-lg mx-auto">
       <div className="mb-6">
-        <h2 className="text-xl font-bold text-[#0F1D2E] mb-1">
+        <h2 className="text-xl font-bold text-[#1A1F36] mb-1">
           What&rsquo;s your income?
         </h2>
-        <p className="text-sm text-[#64748b]">
+        <p className="text-sm text-[#5E6687]">
           Enter your gross (pre-tax) income. We use this to calculate how much
           rent you can comfortably afford.
         </p>
@@ -97,8 +97,8 @@ export function IncomeStep({
                 onClick={() => handleFrequencyToggle(freq)}
                 className={`rounded-full px-4 py-1.5 text-sm font-medium border transition-colors ${
                   incomeFrequency === freq
-                    ? "bg-[#3B82F6] text-white border-[#3B82F6]"
-                    : "border-[#e2e8f0] text-[#64748b] hover:bg-gray-50"
+                    ? "bg-[#6366F1] text-white border-[#6366F1]"
+                    : "border-[#E2E8F0] text-[#5E6687] hover:bg-gray-50"
                 }`}
               >
                 {freq === "annual" ? "Per Year" : "Per Month"}
@@ -109,8 +109,8 @@ export function IncomeStep({
 
         {/* Tooltip */}
         <div className="flex items-start gap-2 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2.5">
-          <Info className="w-4 h-4 text-[#3B82F6] mt-0.5 flex-shrink-0" />
-          <p className="text-xs text-[#3B82F6]/80">
+          <Info className="w-4 h-4 text-[#6366F1] mt-0.5 flex-shrink-0" />
+          <p className="text-xs text-[#6366F1]/80">
             <span className="font-medium">Gross income</span> is your total
             earnings before taxes and deductions. Include salary, freelance
             income, and any regular income sources.
@@ -118,11 +118,11 @@ export function IncomeStep({
         </div>
 
         {/* Roommate toggle */}
-        <div className="pt-2 border-t border-[#e2e8f0]">
+        <div className="pt-2 border-t border-[#E2E8F0]">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <Users className="w-4 h-4 text-[#64748b]" />
-              <span className="text-sm font-medium text-[#0F1D2E]">
+              <Users className="w-4 h-4 text-[#5E6687]" />
+              <span className="text-sm font-medium text-[#1A1F36]">
                 Splitting rent with someone?
               </span>
             </div>
@@ -134,8 +134,8 @@ export function IncomeStep({
                   onClick={() => handleRoommateToggle(val)}
                   className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors ${
                     hasRoommate === val
-                      ? "bg-[#3B82F6] text-white border-[#3B82F6]"
-                      : "border-[#e2e8f0] text-[#64748b] hover:bg-gray-50"
+                      ? "bg-[#6366F1] text-white border-[#6366F1]"
+                      : "border-[#E2E8F0] text-[#5E6687] hover:bg-gray-50"
                   }`}
                 >
                   {val ? "Yes" : "No"}

@@ -27,7 +27,7 @@ export function ReviewStep({
 }: ReviewStepProps) {
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-bold text-[#0F1D2E]">Write Your Review</h2>
+      <h2 className="text-xl font-bold text-[#1A1F36]">Write Your Review</h2>
 
       <Input
         label="Review Title *"
@@ -38,7 +38,7 @@ export function ReviewStep({
       />
 
       <div className="space-y-1">
-        <label className="block text-sm font-medium text-[#0F1D2E]">
+        <label className="block text-sm font-medium text-[#1A1F36]">
           Your Review <span className="text-[#ef4444]">*</span>
         </label>
         <textarea
@@ -47,14 +47,14 @@ export function ReviewStep({
           placeholder="Tell future renters what it's really like living here. Be specific about what you liked and didn't like..."
           rows={6}
           maxLength={5000}
-          className="w-full rounded-lg border border-[#e2e8f0] bg-white px-3 py-2 text-sm text-[#0F1D2E] placeholder:text-[#94a3b8] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
+          className="w-full rounded-lg border border-[#E2E8F0] bg-white px-3 py-2 text-sm text-[#1A1F36] placeholder:text-[#A3ACBE] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
           required
         />
         <p
           className={`text-xs ${
             body.length > 0 && body.length < 10
               ? "text-[#ef4444]"
-              : "text-[#94a3b8]"
+              : "text-[#A3ACBE]"
           }`}
         >
           {body.length}/5000 characters (minimum 10)

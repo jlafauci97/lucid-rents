@@ -92,11 +92,11 @@ export default async function ProposalsPage({
             <div className="p-2 bg-blue-50 rounded-lg">
               <FileText className="w-6 h-6 text-blue-600" />
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#0F1D2E]">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#1A1F36]">
               Proposals & Land Use
             </h1>
           </div>
-          <p className="text-[#64748b] text-sm sm:text-base">
+          <p className="text-[#5E6687] text-sm sm:text-base">
             City council legislation and land use applications under review in{" "}
             {meta.fullName}. Filter by area, category, or status.
           </p>
@@ -109,7 +109,7 @@ export default async function ProposalsPage({
         {currentView === "map" ? (
           <Suspense
             fallback={
-              <div className="h-[500px] bg-[#f8fafc] rounded-xl border border-[#e2e8f0] flex items-center justify-center">
+              <div className="h-[500px] bg-[#FAFBFD] rounded-xl border border-[#E2E8F0] flex items-center justify-center">
                 <div className="w-12 h-12 border-4 border-[#3b82f6] border-t-transparent rounded-full animate-spin" />
               </div>
             }
@@ -117,7 +117,7 @@ export default async function ProposalsPage({
             <ProposalMap city={city as City} />
           </Suspense>
         ) : (
-          <Suspense fallback={<div className="py-12 text-center text-[#64748b]">Loading...</div>}>
+          <Suspense fallback={<div className="py-12 text-center text-[#5E6687]">Loading...</div>}>
             <ProposalList
               initialData={proposals}
               initialTotal={total}

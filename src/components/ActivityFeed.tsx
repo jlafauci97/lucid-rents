@@ -51,7 +51,7 @@ function ActivityIcon({ type }: { type: ActivityItem["type"] }) {
     case "review":
       return (
         <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center">
-          <Star className="w-[18px] h-[18px] text-[#3B82F6]" />
+          <Star className="w-[18px] h-[18px] text-[#6366F1]" />
         </div>
       );
     case "litigation":
@@ -158,7 +158,7 @@ function typeBadgeClasses(type: ActivityItem["type"]): string {
     case "complaint":
       return "bg-amber-50 text-[#F59E0B]";
     case "review":
-      return "bg-blue-50 text-[#3B82F6]";
+      return "bg-blue-50 text-[#6366F1]";
     case "litigation":
       return "bg-purple-50 text-[#8B5CF6]";
     case "dob_violation":
@@ -222,19 +222,19 @@ export function ActivityFeed({ allCities = false }: { allCities?: boolean } = {}
   }, [city, allCities]);
 
   return (
-    <div className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm overflow-hidden">
+    <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="px-5 py-4 border-b border-[#e2e8f0] flex items-center justify-between">
+      <div className="px-5 py-4 border-b border-[#E2E8F0] flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <div className="relative flex items-center justify-center">
             <span className="absolute w-2.5 h-2.5 rounded-full bg-[#22C55E] animate-ping opacity-40" />
             <span className="relative w-2.5 h-2.5 rounded-full bg-[#22C55E]" />
           </div>
-          <h3 className="text-base font-semibold text-[#0F1D2E]">
+          <h3 className="text-base font-semibold text-[#1A1F36]">
             Live Activity
           </h3>
         </div>
-        <span className="text-xs text-[#64748b]">
+        <span className="text-xs text-[#5E6687]">
           {allCities ? "All cities" : `Across ${CITY_META[city].name}`}
         </span>
       </div>
@@ -253,7 +253,7 @@ export function ActivityFeed({ allCities = false }: { allCities?: boolean } = {}
 
         {!loading && error && (
           <div className="px-5 py-12 text-center">
-            <p className="text-sm text-[#64748b]">
+            <p className="text-sm text-[#5E6687]">
               Unable to load activity feed right now.
             </p>
           </div>
@@ -261,7 +261,7 @@ export function ActivityFeed({ allCities = false }: { allCities?: boolean } = {}
 
         {!loading && !error && items.length === 0 && (
           <div className="px-5 py-12 text-center">
-            <p className="text-sm text-[#64748b]">
+            <p className="text-sm text-[#5E6687]">
               No recent activity to display.
             </p>
           </div>
@@ -284,14 +284,14 @@ export function ActivityFeed({ allCities = false }: { allCities?: boolean } = {}
                     >
                       {typeLabel(item.type)}
                     </span>
-                    <span className="text-[11px] text-[#94a3b8]">
+                    <span className="text-[11px] text-[#A3ACBE]">
                       {timeAgo(item.date)}
                     </span>
                   </div>
-                  <p className="text-sm text-[#0F1D2E] leading-snug line-clamp-2">
+                  <p className="text-sm text-[#1A1F36] leading-snug line-clamp-2">
                     {item.description}
                   </p>
-                  <p className="text-xs text-[#64748b] mt-1 truncate">
+                  <p className="text-xs text-[#5E6687] mt-1 truncate">
                     {item.buildingAddress}
                     {item.borough ? `, ${item.borough}` : ""}
                   </p>

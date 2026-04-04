@@ -88,7 +88,7 @@ export function ProposalList({ initialData, initialTotal, metro }: Props) {
 
   if (fetching) {
     return (
-      <div className="py-12 text-center text-[#64748b]">
+      <div className="py-12 text-center text-[#5E6687]">
         <div className="w-8 h-8 border-3 border-[#3b82f6] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
         <p className="text-sm">Filtering proposals...</p>
       </div>
@@ -97,7 +97,7 @@ export function ProposalList({ initialData, initialTotal, metro }: Props) {
 
   if (proposals.length === 0) {
     return (
-      <div className="text-center py-12 text-[#64748b]">
+      <div className="text-center py-12 text-[#5E6687]">
         <p className="text-lg font-medium">No proposals found</p>
         <p className="text-sm mt-1">Try adjusting your filters</p>
       </div>
@@ -106,7 +106,7 @@ export function ProposalList({ initialData, initialTotal, metro }: Props) {
 
   return (
     <div>
-      <p className="text-sm text-[#64748b] mb-3">
+      <p className="text-sm text-[#5E6687] mb-3">
         {total.toLocaleString()} proposal{total !== 1 ? "s" : ""}
       </p>
 

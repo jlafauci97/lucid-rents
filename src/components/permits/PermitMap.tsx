@@ -73,7 +73,7 @@ export function PermitMap({ data, city: cityProp }: { data: ZipPermitRow[]; city
 
   if (!isClient) {
     return (
-      <div className="h-[450px] bg-[#f1f5f9] rounded-lg flex items-center justify-center text-[#94a3b8]">
+      <div className="h-[450px] bg-[#F5F7FA] rounded-lg flex items-center justify-center text-[#A3ACBE]">
         Loading map...
       </div>
     );
@@ -81,7 +81,7 @@ export function PermitMap({ data, city: cityProp }: { data: ZipPermitRow[]; city
 
   if (data.length === 0) {
     return (
-      <div className="text-center py-12 text-[#94a3b8]">
+      <div className="text-center py-12 text-[#A3ACBE]">
         No permit data available for the map yet.
       </div>
     );
@@ -91,7 +91,7 @@ export function PermitMap({ data, city: cityProp }: { data: ZipPermitRow[]; city
 
   return (
     <div>
-      <div className="h-[450px] rounded-lg overflow-hidden border border-[#e2e8f0]">
+      <div className="h-[450px] rounded-lg overflow-hidden border border-[#E2E8F0]">
         <MapContainer
           center={[meta.center.lat, meta.center.lng]}
           zoom={meta.zoom}
@@ -133,7 +133,7 @@ export function PermitMap({ data, city: cityProp }: { data: ZipPermitRow[]; city
         </MapContainer>
       </div>
       {/* Legend */}
-      <div className="flex flex-wrap items-center gap-3 mt-3 text-xs text-[#64748b]">
+      <div className="flex flex-wrap items-center gap-3 mt-3 text-xs text-[#5E6687]">
         <span className="font-medium">Active Permits:</span>
         {[
           { color: "#CCFBF1", label: "1\u20139" },

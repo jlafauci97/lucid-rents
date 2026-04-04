@@ -26,16 +26,16 @@ const CATEGORY_CONFIG: {
   icon: LucideIcon;
   color: string;
 }[] = [
-  { key: "building", label: "Building", icon: Building2, color: "text-[#2563EB]" },
+  { key: "building", label: "Building", icon: Building2, color: "text-[#4F46E5]" },
   { key: "outdoor", label: "Outdoor", icon: TreePine, color: "text-[#16a34a]" },
   { key: "fitness", label: "Fitness", icon: Dumbbell, color: "text-[#7C3AED]" },
-  { key: "parking", label: "Parking & Bikes", icon: Car, color: "text-[#64748b]" },
+  { key: "parking", label: "Parking & Bikes", icon: Car, color: "text-[#5E6687]" },
   { key: "laundry", label: "Laundry", icon: WashingMachine, color: "text-[#0ea5e9]" },
   { key: "security", label: "Security", icon: Shield, color: "text-[#dc2626]" },
   { key: "pet", label: "Pet Friendly", icon: PawPrint, color: "text-[#EA580C]" },
   { key: "storage", label: "Storage", icon: Package, color: "text-[#78716c]" },
   { key: "luxury", label: "Luxury", icon: Gem, color: "text-[#a855f7]" },
-  { key: "other", label: "Other", icon: Sparkles, color: "text-[#94a3b8]" },
+  { key: "other", label: "Other", icon: Sparkles, color: "text-[#A3ACBE]" },
 ];
 
 const AMENITY_ICONS: Record<string, LucideIcon> = {

@@ -31,7 +31,7 @@ export function NewsCard({ article }: { article: NewsArticle }) {
     CATEGORY_COLORS[article.category] || CATEGORY_COLORS.general;
 
   return (
-    <article className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+    <article className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm hover:shadow-md transition-shadow overflow-hidden">
       <Link href={`/news/${article.slug}`} className="flex gap-0 sm:gap-4 p-4 sm:p-5">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-2">
@@ -40,17 +40,17 @@ export function NewsCard({ article }: { article: NewsArticle }) {
             >
               {categoryMeta?.label || article.category}
             </span>
-            <span className="text-xs text-[#94a3b8]">{article.source_name}</span>
+            <span className="text-xs text-[#A3ACBE]">{article.source_name}</span>
           </div>
-          <h3 className="text-base font-bold text-[#0F1D2E] leading-snug mb-2 line-clamp-2">
+          <h3 className="text-base font-bold text-[#1A1F36] leading-snug mb-2 line-clamp-2">
             {article.title}
           </h3>
           {article.excerpt && (
-            <p className="text-sm text-[#64748b] leading-relaxed line-clamp-2 mb-3">
+            <p className="text-sm text-[#5E6687] leading-relaxed line-clamp-2 mb-3">
               {article.excerpt}
             </p>
           )}
-          <div className="flex items-center gap-3 text-xs text-[#94a3b8]">
+          <div className="flex items-center gap-3 text-xs text-[#A3ACBE]">
             <span className="flex items-center gap-1">
               <Clock className="w-3 h-3" />
               {timeAgo(article.published_at)}
@@ -59,7 +59,7 @@ export function NewsCard({ article }: { article: NewsArticle }) {
           </div>
         </div>
         {article.image_url && (
-          <div className="hidden sm:block flex-shrink-0 w-[140px] h-[100px] rounded-lg overflow-hidden bg-[#f1f5f9]">
+          <div className="hidden sm:block flex-shrink-0 w-[140px] h-[100px] rounded-lg overflow-hidden bg-[#F5F7FA]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={article.image_url}

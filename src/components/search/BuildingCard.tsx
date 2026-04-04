@@ -33,12 +33,12 @@ export function BuildingCard({ building }: BuildingCardProps) {
             </div>
             <div className="flex-1 min-w-0">
               {building.name && (
-                <p className="text-xs font-medium text-[#3B82F6] mb-0.5">{building.name}</p>
+                <p className="text-xs font-medium text-[#6366F1] mb-0.5">{building.name}</p>
               )}
-              <h3 className="text-base font-semibold text-[#0F1D2E] truncate pr-8">
+              <h3 className="text-base font-semibold text-[#1A1F36] truncate pr-8">
                 {building.full_address}
               </h3>
-              <div className="flex items-center gap-2 mt-1 text-sm text-[#64748b]">
+              <div className="flex items-center gap-2 mt-1 text-sm text-[#5E6687]">
                 <MapPin className="w-3.5 h-3.5" />
                 <span>{building.borough}</span>
                 {building.zip_code && (
@@ -50,19 +50,19 @@ export function BuildingCard({ building }: BuildingCardProps) {
               </div>
               <div className="flex flex-wrap items-center gap-3 mt-3">
                 {building.year_built && (
-                  <div className="flex items-center gap-1 text-xs text-[#64748b]">
+                  <div className="flex items-center gap-1 text-xs text-[#5E6687]">
                     <Calendar className="w-3.5 h-3.5" />
                     Built {building.year_built}
                   </div>
                 )}
                 {building.total_units && (
-                  <div className="flex items-center gap-1 text-xs text-[#64748b]">
+                  <div className="flex items-center gap-1 text-xs text-[#5E6687]">
                     <Building2 className="w-3.5 h-3.5" />
                     {building.total_units} units
                   </div>
                 )}
                 {building.review_count > 0 && (
-                  <div className="flex items-center gap-1 text-xs text-[#64748b]">
+                  <div className="flex items-center gap-1 text-xs text-[#5E6687]">
                     <Users className="w-3.5 h-3.5" />
                     {building.review_count} review{building.review_count !== 1 ? "s" : ""}
                   </div>
@@ -86,7 +86,7 @@ export function BuildingCard({ building }: BuildingCardProps) {
       </Link>
       <Link
         href={cityPath(`/compare?ids=${building.id}`, city)}
-        className="absolute top-4 right-4 p-1.5 rounded-md text-[#94a3b8] hover:text-[#3B82F6] hover:bg-blue-50 transition-colors opacity-0 group-hover:opacity-100 z-10"
+        className="absolute top-4 right-4 p-1.5 rounded-md text-[#A3ACBE] hover:text-[#6366F1] hover:bg-blue-50 transition-colors opacity-0 group-hover:opacity-100 z-10"
         title="Compare this building"
         onClick={(e) => e.stopPropagation()}
       >

@@ -151,22 +151,22 @@ function ContentSkeleton() {
   return (
     <div className="space-y-8 animate-pulse">
       {/* Reviews skeleton */}
-      <div className="bg-white rounded-xl border border-[#e2e8f0] p-6">
+      <div className="bg-white rounded-xl border border-[#E2E8F0] p-6">
         <div className="h-6 w-40 bg-[#e2e8f0] rounded mb-4" />
         <div className="space-y-3">
-          <div className="h-24 bg-[#f8fafc] rounded-lg" />
-          <div className="h-24 bg-[#f8fafc] rounded-lg" />
+          <div className="h-24 bg-[#FAFBFD] rounded-lg" />
+          <div className="h-24 bg-[#FAFBFD] rounded-lg" />
         </div>
       </div>
       {/* Rent skeleton */}
-      <div className="bg-white rounded-xl border border-[#e2e8f0] p-6">
+      <div className="bg-white rounded-xl border border-[#E2E8F0] p-6">
         <div className="h-6 w-36 bg-[#e2e8f0] rounded mb-4" />
-        <div className="h-[200px] bg-[#f8fafc] rounded-lg" />
+        <div className="h-[200px] bg-[#FAFBFD] rounded-lg" />
       </div>
       {/* Chart skeleton */}
-      <div className="bg-white rounded-xl border border-[#e2e8f0] p-6">
+      <div className="bg-white rounded-xl border border-[#E2E8F0] p-6">
         <div className="h-6 w-48 bg-[#e2e8f0] rounded mb-4" />
-        <div className="h-[300px] bg-[#f8fafc] rounded-lg" />
+        <div className="h-[300px] bg-[#FAFBFD] rounded-lg" />
       </div>
     </div>
   );
@@ -178,7 +178,7 @@ function BottomSkeleton() {
     <div className="animate-pulse">
       <div className="h-6 w-48 bg-[#e2e8f0] rounded mb-4" />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {[...Array(3)].map((_, i) => <div key={i} className="h-32 bg-[#f8fafc] rounded-xl border border-[#e2e8f0]" />)}
+        {[...Array(3)].map((_, i) => <div key={i} className="h-32 bg-[#FAFBFD] rounded-xl border border-[#E2E8F0]" />)}
       </div>
     </div>
   );

@@ -33,13 +33,13 @@ export function WelcomeStep({ onNext }: WelcomeStepProps) {
     <div className="max-w-2xl mx-auto text-center">
       {/* Hero */}
       <div className="mb-8">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[#3B82F6]/10 mb-4">
-          <DollarSign className="w-8 h-8 text-[#3B82F6]" />
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[#6366F1]/10 mb-4">
+          <DollarSign className="w-8 h-8 text-[#6366F1]" />
         </div>
-        <h2 className="text-2xl sm:text-3xl font-bold text-[#0F1D2E] mb-3">
+        <h2 className="text-2xl sm:text-3xl font-bold text-[#1A1F36] mb-3">
           Can I Afford to Live Here?
         </h2>
-        <p className="text-[#64748b] text-base sm:text-lg max-w-lg mx-auto">
+        <p className="text-[#5E6687] text-base sm:text-lg max-w-lg mx-auto">
           Answer a few questions about your finances, pick a city, and
           we&rsquo;ll show you exactly which neighborhoods fit your budget.
         </p>
@@ -47,22 +47,22 @@ export function WelcomeStep({ onNext }: WelcomeStepProps) {
 
       {/* How it works */}
       <div className="mb-8">
-        <p className="text-xs uppercase tracking-wider font-semibold text-[#94a3b8] mb-4">
+        <p className="text-xs uppercase tracking-wider font-semibold text-[#A3ACBE] mb-4">
           How It Works
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {features.map((f) => (
             <div
               key={f.title}
-              className="bg-white rounded-xl border border-[#e2e8f0] p-5 text-left hover:shadow-md hover:border-[#cbd5e1] transition-all"
+              className="bg-white rounded-xl border border-[#E2E8F0] p-5 text-left hover:shadow-md hover:border-[#E2E8F0] transition-all"
             >
-              <div className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-[#3B82F6]/10 mb-3">
-                <f.icon className="w-5 h-5 text-[#3B82F6]" />
+              <div className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-[#6366F1]/10 mb-3">
+                <f.icon className="w-5 h-5 text-[#6366F1]" />
               </div>
-              <h3 className="text-sm font-semibold text-[#0F1D2E] mb-1">
+              <h3 className="text-sm font-semibold text-[#1A1F36] mb-1">
                 {f.title}
               </h3>
-              <p className="text-xs text-[#64748b] leading-relaxed">
+              <p className="text-xs text-[#5E6687] leading-relaxed">
                 {f.description}
               </p>
             </div>
@@ -71,15 +71,15 @@ export function WelcomeStep({ onNext }: WelcomeStepProps) {
       </div>
 
       {/* Steps preview */}
-      <div className="mb-8 flex items-center justify-center gap-2 text-xs text-[#94a3b8]">
+      <div className="mb-8 flex items-center justify-center gap-2 text-xs text-[#A3ACBE]">
         {["Your Income", "Expenses", "City & Preferences", "Results"].map(
           (label, i) => (
             <span key={label} className="flex items-center gap-2">
-              <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[#0F1D2E]/5 text-[10px] font-semibold text-[#64748b]">
+              <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[#0F1D2E]/5 text-[10px] font-semibold text-[#5E6687]">
                 {i + 1}
               </span>
               <span>{label}</span>
-              {i < 3 && <ArrowRight className="w-3 h-3 text-[#cbd5e1]" />}
+              {i < 3 && <ArrowRight className="w-3 h-3 text-[#A3ACBE]" />}
             </span>
           )
         )}
@@ -91,7 +91,7 @@ export function WelcomeStep({ onNext }: WelcomeStepProps) {
         <ArrowRight className="w-4 h-4 ml-2" />
       </Button>
 
-      <p className="mt-4 text-xs text-[#94a3b8]">
+      <p className="mt-4 text-xs text-[#A3ACBE]">
         Takes about 2 minutes · No sign-up required
       </p>
     </div>

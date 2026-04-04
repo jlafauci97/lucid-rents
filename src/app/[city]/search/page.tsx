@@ -93,7 +93,7 @@ async function SearchResults({
   if (!q) {
     return (
       <div className="text-center py-16">
-        <p className="text-[#64748b] text-lg">
+        <p className="text-[#5E6687] text-lg">
           Enter an address, neighborhood, or zip code to search.
         </p>
       </div>
@@ -125,10 +125,10 @@ async function SearchResults({
   if (!buildings || buildings.length === 0) {
     return (
       <div className="text-center py-16">
-        <p className="text-[#64748b] text-lg mb-2">
+        <p className="text-[#5E6687] text-lg mb-2">
           No buildings found for &ldquo;{q}&rdquo;
         </p>
-        <p className="text-sm text-[#94a3b8]">
+        <p className="text-sm text-[#A3ACBE]">
           Try a different address, zip code, or borough.
         </p>
       </div>
@@ -140,7 +140,7 @@ async function SearchResults({
 
   return (
     <div>
-      <p className="text-sm text-[#64748b] mb-4">
+      <p className="text-sm text-[#5E6687] mb-4">
         {count} building{count !== 1 ? "s" : ""} found
       </p>
       <div className="space-y-4">
@@ -153,18 +153,18 @@ async function SearchResults({
           {page > 1 && (
             <a
               href={`${cityPath("/search", city as City)}?${paginationBase}&page=${page - 1}`}
-              className="px-4 py-2 rounded-lg border border-[#e2e8f0] text-sm hover:bg-gray-50"
+              className="px-4 py-2 rounded-lg border border-[#E2E8F0] text-sm hover:bg-gray-50"
             >
               Previous
             </a>
           )}
-          <span className="px-4 py-2 text-sm text-[#64748b]">
+          <span className="px-4 py-2 text-sm text-[#5E6687]">
             Page {page} of {totalPages}
           </span>
           {page < totalPages && (
             <a
               href={`${cityPath("/search", city as City)}?${paginationBase}&page=${page + 1}`}
-              className="px-4 py-2 rounded-lg border border-[#e2e8f0] text-sm hover:bg-gray-50"
+              className="px-4 py-2 rounded-lg border border-[#E2E8F0] text-sm hover:bg-gray-50"
             >
               Next
             </a>
@@ -179,7 +179,7 @@ function SearchSkeleton() {
   return (
     <div className="space-y-4">
       {[1, 2, 3].map((i) => (
-        <div key={i} className="bg-white rounded-xl border border-[#e2e8f0] p-6">
+        <div key={i} className="bg-white rounded-xl border border-[#E2E8F0] p-6">
           <div className="flex items-start gap-4">
             <Skeleton className="w-14 h-14 rounded-full" />
             <div className="flex-1 space-y-2">
@@ -209,7 +209,7 @@ export default async function SearchPage({ params: routeParams, searchParams }: 
     <AdSidebar>
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* Search bar + filters */}
-      <div className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm p-4 sm:p-5 mb-5">
+      <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm p-4 sm:p-5 mb-5">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="flex-1">
             <SearchBar initialQuery={q} />
@@ -243,11 +243,11 @@ export default async function SearchPage({ params: routeParams, searchParams }: 
             </Suspense>
           </div>
           <div>
-            <div className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm p-5 text-center">
-              <p className="text-[#64748b] text-sm">
+            <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm p-5 text-center">
+              <p className="text-[#5E6687] text-sm">
                 Search by address, neighborhood, or zip code to find buildings.
               </p>
-              <p className="text-xs text-[#94a3b8] mt-2">
+              <p className="text-xs text-[#A3ACBE] mt-2">
                 Or use the quick filters above to browse.
               </p>
             </div>

@@ -2,7 +2,7 @@ import { AlertTriangle } from "lucide-react";
 
 export function AffordabilityDisclaimer() {
   return (
-    <div className="mt-8 border-t border-[#e2e8f0] pt-6">
+    <div className="mt-8 border-t border-[#E2E8F0] pt-6">
       <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
         <AlertTriangle className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" />
         <div className="text-xs text-amber-800 space-y-1">

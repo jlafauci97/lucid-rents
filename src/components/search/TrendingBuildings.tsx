@@ -28,9 +28,9 @@ export async function TrendingBuildings({ city }: TrendingBuildingsProps) {
   if (!buildings || buildings.length === 0) return null;
 
   return (
-    <div className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm">
-      <div className="px-5 py-3 border-b border-[#e2e8f0]">
-        <h3 className="text-xs font-semibold text-[#94a3b8] uppercase tracking-wider flex items-center gap-2">
+    <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm">
+      <div className="px-5 py-3 border-b border-[#E2E8F0]">
+        <h3 className="text-xs font-semibold text-[#A3ACBE] uppercase tracking-wider flex items-center gap-2">
           <TrendingUp className="w-3.5 h-3.5" />
           Most Violations
         </h3>
@@ -45,13 +45,13 @@ export async function TrendingBuildings({ city }: TrendingBuildingsProps) {
             <Link
               key={building.id}
               href={buildingUrl(building, city)}
-              className="flex items-center justify-between px-5 py-3 hover:bg-[#f8fafc] transition-colors"
+              className="flex items-center justify-between px-5 py-3 hover:bg-[#FAFBFD] transition-colors"
             >
               <div className="min-w-0">
-                <p className="text-sm font-medium text-[#0F1D2E] truncate">
+                <p className="text-sm font-medium text-[#1A1F36] truncate">
                   {building.full_address}
                 </p>
-                <p className="text-xs text-[#94a3b8]">
+                <p className="text-xs text-[#A3ACBE]">
                   {building.borough}
                   {building.violation_count > 0 &&
                     ` · ${building.violation_count.toLocaleString()} violations`}

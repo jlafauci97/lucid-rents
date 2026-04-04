@@ -76,8 +76,8 @@ export async function BoroughExploreLinks({ borough, boroughSlug, city = "nyc" }
       {/* Neighborhoods in this borough */}
       {neighborhoods.length > 0 && (
         <section>
-          <h2 className="text-lg font-bold text-[#0F1D2E] mb-4 flex items-center gap-2">
-            <MapPin className="w-5 h-5 text-[#3B82F6]" />
+          <h2 className="text-lg font-bold text-[#1A1F36] mb-4 flex items-center gap-2">
+            <MapPin className="w-5 h-5 text-[#6366F1]" />
             Neighborhoods in {borough}
           </h2>
           <div className="flex flex-wrap gap-2">
@@ -85,10 +85,10 @@ export async function BoroughExploreLinks({ borough, boroughSlug, city = "nyc" }
               <Link
                 key={n.zip}
                 href={neighborhoodUrl(n.zip, city)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm bg-white border border-[#e2e8f0] rounded-lg hover:border-[#3B82F6] hover:text-[#3B82F6] transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm bg-white border border-[#E2E8F0] rounded-lg hover:border-[#6366F1] hover:text-[#6366F1] transition-colors"
               >
                 {n.name}
-                <span className="text-xs text-[#94a3b8]">
+                <span className="text-xs text-[#A3ACBE]">
                   ({n.count.toLocaleString()})
                 </span>
               </Link>
@@ -100,7 +100,7 @@ export async function BoroughExploreLinks({ borough, boroughSlug, city = "nyc" }
       {/* Top landlords in this borough */}
       {topLandlords.length > 0 && (
         <section>
-          <h2 className="text-lg font-bold text-[#0F1D2E] mb-4 flex items-center gap-2">
+          <h2 className="text-lg font-bold text-[#1A1F36] mb-4 flex items-center gap-2">
             <Users className="w-5 h-5 text-[#8B5CF6]" />
             Top Landlords in {borough}
           </h2>
@@ -109,12 +109,12 @@ export async function BoroughExploreLinks({ borough, boroughSlug, city = "nyc" }
               <Link
                 key={name}
                 href={cityPath(`/landlord/${landlordSlug(name)}`)}
-                className="group bg-white border border-[#e2e8f0] rounded-lg p-3 hover:border-[#8B5CF6]/40 hover:shadow-sm transition-all"
+                className="group bg-white border border-[#E2E8F0] rounded-lg p-3 hover:border-[#8B5CF6]/40 hover:shadow-sm transition-all"
               >
-                <p className="text-sm font-medium text-[#0F1D2E] group-hover:text-[#8B5CF6] transition-colors truncate">
+                <p className="text-sm font-medium text-[#1A1F36] group-hover:text-[#8B5CF6] transition-colors truncate">
                   {name}
                 </p>
-                <div className="flex items-center gap-3 mt-1.5 text-xs text-[#64748b]">
+                <div className="flex items-center gap-3 mt-1.5 text-xs text-[#5E6687]">
                   <span>{stats.buildings} bldg{stats.buildings !== 1 ? "s" : ""}</span>
                   <span className="inline-flex items-center gap-0.5 text-[#ef4444]">
                     <AlertTriangle className="w-3 h-3" />
@@ -129,14 +129,14 @@ export async function BoroughExploreLinks({ borough, boroughSlug, city = "nyc" }
 
       {/* Explore more links */}
       <section>
-        <h2 className="text-lg font-bold text-[#0F1D2E] mb-4 flex items-center gap-2">
+        <h2 className="text-lg font-bold text-[#1A1F36] mb-4 flex items-center gap-2">
           <ShieldAlert className="w-5 h-5 text-[#ef4444]" />
           Explore {borough}
         </h2>
         <div className="flex flex-wrap gap-3">
           <Link
             href={`${cityPath("/worst-rated-buildings", city)}?borough=${encodeURIComponent(borough)}`}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-blue-50 text-[#3B82F6] border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-blue-50 text-[#6366F1] border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
           >
             <ShieldAlert className="w-4 h-4" />
             Rankings in {borough}

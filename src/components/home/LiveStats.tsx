@@ -75,9 +75,9 @@ export async function LiveStats({ metro }: LiveStatsProps = {}) {
     <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
       {stats.map((stat) => (
         <div key={stat.label} className="text-center">
-          <stat.icon className="w-8 h-8 text-[#3B82F6] mx-auto mb-2" />
-          <p className="text-2xl font-bold text-[#0F1D2E]">{stat.value}</p>
-          <p className="text-sm text-[#64748b]">{stat.label}</p>
+          <stat.icon className="w-8 h-8 text-[#6366F1] mx-auto mb-2" />
+          <p className="text-2xl font-bold text-[#1A1F36]">{stat.value}</p>
+          <p className="text-sm text-[#5E6687]">{stat.label}</p>
         </div>
       ))}
     </div>

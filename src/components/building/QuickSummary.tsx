@@ -155,7 +155,7 @@ export function QuickSummary({
   return (
     <Card>
       <CardContent className="py-5">
-        <h3 className="text-sm font-semibold text-[#0F1D2E] mb-4 uppercase tracking-wide">
+        <h3 className="text-sm font-semibold text-[#1A1F36] mb-4 uppercase tracking-wide">
           Quick Summary
         </h3>
         <div className="grid grid-cols-2 gap-4">
@@ -163,7 +163,7 @@ export function QuickSummary({
           <div className={`rounded-lg p-3 ${colors.bg}`}>
             <div className="flex items-center gap-2 mb-1">
               <WorstIcon className={`w-4 h-4 ${colors.icon}`} />
-              <span className="text-xs font-medium text-[#64748b]">
+              <span className="text-xs font-medium text-[#5E6687]">
                 Top Concern
               </span>
             </div>
@@ -182,7 +182,7 @@ export function QuickSummary({
             <div className="rounded-lg p-3" style={{ backgroundColor: `${GRADE_COLORS[valueGrade as LetterGrade] || "#6b7280"}15` }}>
               <div className="flex items-center gap-2 mb-1">
                 <Star className="w-4 h-4" style={{ color: GRADE_COLORS[valueGrade as LetterGrade] || "#6b7280" }} />
-                <span className="text-xs font-medium text-[#64748b]">
+                <span className="text-xs font-medium text-[#5E6687]">
                   Value Grade
                 </span>
               </div>
@@ -190,14 +190,14 @@ export function QuickSummary({
                 {valueGrade}
               </p>
               {rentContext && (
-                <p className="text-xs text-[#64748b]">{rentContext}</p>
+                <p className="text-xs text-[#5E6687]">{rentContext}</p>
               )}
             </div>
           ) : (
             <div className="rounded-lg p-3 bg-blue-50">
               <div className="flex items-center gap-2 mb-1">
                 <DollarSign className="w-4 h-4 text-blue-500" />
-                <span className="text-xs font-medium text-[#64748b]">
+                <span className="text-xs font-medium text-[#5E6687]">
                   Rent Range
                 </span>
               </div>
@@ -212,7 +212,7 @@ export function QuickSummary({
             <div className="rounded-lg p-3 bg-blue-50">
               <div className="flex items-center gap-2 mb-1">
                 <DollarSign className="w-4 h-4 text-blue-500" />
-                <span className="text-xs font-medium text-[#64748b]">
+                <span className="text-xs font-medium text-[#5E6687]">
                   Rent Range
                 </span>
               </div>
@@ -232,7 +232,7 @@ export function QuickSummary({
                 ) : (
                   <ShieldX className="w-4 h-4 text-gray-400" />
                 )}
-                <span className="text-xs font-medium text-[#64748b]">
+                <span className="text-xs font-medium text-[#5E6687]">
                   Rent Stabilized
                 </span>
               </div>
@@ -251,7 +251,7 @@ export function QuickSummary({
             <div className="rounded-lg p-3 bg-violet-50">
               <div className="flex items-center gap-2 mb-1">
                 <Ruler className="w-4 h-4 text-violet-500" />
-                <span className="text-xs font-medium text-[#64748b]">
+                <span className="text-xs font-medium text-[#5E6687]">
                   $/sqft
                 </span>
               </div>
@@ -262,8 +262,8 @@ export function QuickSummary({
           ) : (
             <div className="rounded-lg p-3 bg-gray-50">
               <div className="flex items-center gap-2 mb-1">
-                <Activity className="w-4 h-4 text-[#64748b]" />
-                <span className="text-xs font-medium text-[#64748b]">
+                <Activity className="w-4 h-4 text-[#5E6687]" />
+                <span className="text-xs font-medium text-[#5E6687]">
                   Issue Density
                 </span>
               </div>
@@ -286,7 +286,7 @@ export function QuickSummary({
                   ) : (
                     <ShieldX className="w-4 h-4 text-gray-400" />
                   )}
-                  <span className="text-xs font-medium text-[#64748b]">
+                  <span className="text-xs font-medium text-[#5E6687]">
                     Rent Stabilized
                   </span>
                 </div>
@@ -308,9 +308,9 @@ export function QuickSummary({
                     ) : rentChangeYoY < 0 ? (
                       <TrendingDown className="w-4 h-4 text-emerald-500" />
                     ) : (
-                      <Activity className="w-4 h-4 text-[#64748b]" />
+                      <Activity className="w-4 h-4 text-[#5E6687]" />
                     )}
-                    <span className="text-xs font-medium text-[#64748b]">
+                    <span className="text-xs font-medium text-[#5E6687]">
                       Rent Trend (YoY)
                     </span>
                   </div>
@@ -330,8 +330,8 @@ export function QuickSummary({
               ) : (
                 <div className="rounded-lg p-3 bg-gray-50">
                   <div className="flex items-center gap-2 mb-1">
-                    <Activity className="w-4 h-4 text-[#64748b]" />
-                    <span className="text-xs font-medium text-[#64748b]">
+                    <Activity className="w-4 h-4 text-[#5E6687]" />
+                    <span className="text-xs font-medium text-[#5E6687]">
                       Issue Density
                     </span>
                   </div>

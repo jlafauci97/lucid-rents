@@ -51,26 +51,26 @@ export function ProposalCard({ proposal }: { proposal: Proposal }) {
   const location = locationParts.join(" \u00b7 ") || "Citywide";
 
   return (
-    <div className="bg-white border border-[#e2e8f0] rounded-lg p-4 hover:border-[#cbd5e1] transition-colors">
+    <div className="bg-white border border-[#E2E8F0] rounded-lg p-4 hover:border-[#E2E8F0] transition-colors">
       <div className="flex flex-wrap items-center gap-2 mb-2">
         <CategoryBadge category={proposal.category} />
         <StatusBadge status={proposal.status} />
-        <span className="text-xs text-[#94a3b8]">
+        <span className="text-xs text-[#A3ACBE]">
           {proposal.type === "legislation" ? "Legislation" : "Land Use"}
         </span>
       </div>
 
-      <h3 className="text-sm font-semibold text-[#0F1D2E] mb-1 line-clamp-2">
+      <h3 className="text-sm font-semibold text-[#1A1F36] mb-1 line-clamp-2">
         {proposal.title}
       </h3>
 
       {proposal.description && (
-        <p className="text-xs text-[#64748b] mb-2 line-clamp-2">
+        <p className="text-xs text-[#5E6687] mb-2 line-clamp-2">
           {proposal.description}
         </p>
       )}
 
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#64748b]">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#5E6687]">
         {proposal.sponsor && (
           <span className="flex items-center gap-1">
             <User className="w-3 h-3" />
@@ -88,7 +88,7 @@ export function ProposalCard({ proposal }: { proposal: Proposal }) {
       </div>
 
       <div className="flex items-center justify-between mt-3 pt-3 border-t border-[#f1f5f9]">
-        <span className="text-xs text-[#94a3b8]">{getSourceLabel(proposal.source)}</span>
+        <span className="text-xs text-[#A3ACBE]">{getSourceLabel(proposal.source)}</span>
         <a
           href={proposal.source_url}
           target="_blank"

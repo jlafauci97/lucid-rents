@@ -223,32 +223,32 @@ export default async function ApartmentsNearPage({
           <Breadcrumbs items={cityBreadcrumbs(city, { label: "Transit", href: cityPath("/transit", city) }, { label: lineInfo.displayName, href: transitLineUrl(slug, city) })} />
 
           <div className="mb-8 mt-4">
-            <Link href={cityPath("/transit", city)} className="inline-flex items-center gap-1 text-sm text-[#64748b] hover:text-[#3B82F6] transition-colors mb-3">
+            <Link href={cityPath("/transit", city)} className="inline-flex items-center gap-1 text-sm text-[#5E6687] hover:text-[#6366F1] transition-colors mb-3">
               ← All Transit Lines
             </Link>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold flex-shrink-0" style={{ backgroundColor: lineInfo.color, color: lineInfo.textColor }}>
                 {isRail ? (lineInfo.type === "rail" ? lineInfo.displayName.charAt(0) : lineInfo.routeName) : <Icon className="w-5 h-5" />}
               </div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-[#0F1D2E]">Apartments Near the {lineInfo.displayName}</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-[#1A1F36]">Apartments Near the {lineInfo.displayName}</h1>
             </div>
-            <p className="text-[#64748b] text-sm sm:text-base max-w-3xl mt-2">
+            <p className="text-[#5E6687] text-sm sm:text-base max-w-3xl mt-2">
               {totalCount.toLocaleString()} buildings within walking distance of {stationCount} {lineInfo.displayName} {stopWord}.
             </p>
           </div>
 
           <div className="grid grid-cols-3 gap-4 mb-8">
-            <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
-              <p className="text-xs text-[#64748b] font-medium uppercase tracking-wide">Buildings</p>
-              <p className="text-2xl font-bold text-[#0F1D2E] mt-1">{totalCount.toLocaleString()}</p>
+            <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
+              <p className="text-xs text-[#5E6687] font-medium uppercase tracking-wide">Buildings</p>
+              <p className="text-2xl font-bold text-[#1A1F36] mt-1">{totalCount.toLocaleString()}</p>
             </div>
-            <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
-              <p className="text-xs text-[#64748b] font-medium uppercase tracking-wide">{isRail ? "Stations" : "Stops"}</p>
-              <p className="text-2xl font-bold text-[#0F1D2E] mt-1">{stationCount}</p>
+            <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
+              <p className="text-xs text-[#5E6687] font-medium uppercase tracking-wide">{isRail ? "Stations" : "Stops"}</p>
+              <p className="text-2xl font-bold text-[#1A1F36] mt-1">{stationCount}</p>
             </div>
-            <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
-              <p className="text-xs text-[#64748b] font-medium uppercase tracking-wide">Walk Radius</p>
-              <p className="text-2xl font-bold text-[#0F1D2E] mt-1">0.35 mi</p>
+            <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
+              <p className="text-xs text-[#5E6687] font-medium uppercase tracking-wide">Walk Radius</p>
+              <p className="text-2xl font-bold text-[#1A1F36] mt-1">0.35 mi</p>
             </div>
           </div>
 
@@ -295,64 +295,64 @@ export default async function ApartmentsNearPage({
         <Breadcrumbs items={cityBreadcrumbs(city, { label: "Transit", href: cityPath("/transit", city) }, { label: `Near ${landmarkData!.name}`, href: cityPath(`/apartments-near/${slug}`, city) })} />
 
         <div className="mb-8 mt-4">
-          <Link href={cityPath("/transit", city)} className="inline-flex items-center gap-1 text-sm text-[#64748b] hover:text-[#3B82F6] transition-colors mb-3">
+          <Link href={cityPath("/transit", city)} className="inline-flex items-center gap-1 text-sm text-[#5E6687] hover:text-[#6366F1] transition-colors mb-3">
             ← Back to Transit
           </Link>
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-blue-50 rounded-lg">
-              <MapPin className="w-6 h-6 text-[#3B82F6]" />
+              <MapPin className="w-6 h-6 text-[#6366F1]" />
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#0F1D2E]">Apartments Near {landmarkData!.name}</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#1A1F36]">Apartments Near {landmarkData!.name}</h1>
           </div>
-          <p className="text-[#64748b] text-sm sm:text-base max-w-3xl">
+          <p className="text-[#5E6687] text-sm sm:text-base max-w-3xl">
             {totalCount.toLocaleString()} buildings within {MAX_LANDMARK_DISTANCE_MI} miles of {landmarkData!.name} in {meta.fullName}.
             {landmarkData!.description && ` ${landmarkData!.description}.`}
           </p>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
-          <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
-            <p className="text-xs text-[#64748b] font-medium uppercase tracking-wide">Buildings</p>
-            <p className="text-2xl font-bold text-[#0F1D2E] mt-1">{totalCount.toLocaleString()}</p>
+          <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
+            <p className="text-xs text-[#5E6687] font-medium uppercase tracking-wide">Buildings</p>
+            <p className="text-2xl font-bold text-[#1A1F36] mt-1">{totalCount.toLocaleString()}</p>
           </div>
-          <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
-            <p className="text-xs text-[#64748b] font-medium uppercase tracking-wide">Type</p>
-            <p className="text-lg font-bold text-[#0F1D2E] mt-1 capitalize">{landmarkData!.category}</p>
+          <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
+            <p className="text-xs text-[#5E6687] font-medium uppercase tracking-wide">Type</p>
+            <p className="text-lg font-bold text-[#1A1F36] mt-1 capitalize">{landmarkData!.category}</p>
           </div>
-          <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
-            <p className="text-xs text-[#64748b] font-medium uppercase tracking-wide">Max Walk</p>
-            <p className="text-2xl font-bold text-[#0F1D2E] mt-1">{MAX_LANDMARK_DISTANCE_MI} mi</p>
+          <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
+            <p className="text-xs text-[#5E6687] font-medium uppercase tracking-wide">Max Walk</p>
+            <p className="text-2xl font-bold text-[#1A1F36] mt-1">{MAX_LANDMARK_DISTANCE_MI} mi</p>
           </div>
         </div>
 
         {totalCount === 0 ? (
-          <div className="bg-white border border-[#e2e8f0] rounded-xl p-12 text-center">
-            <MapPin className="w-12 h-12 text-[#cbd5e1] mx-auto mb-3" />
-            <p className="text-[#64748b]">No buildings found within walking distance.</p>
+          <div className="bg-white border border-[#E2E8F0] rounded-xl p-12 text-center">
+            <MapPin className="w-12 h-12 text-[#A3ACBE] mx-auto mb-3" />
+            <p className="text-[#5E6687]">No buildings found within walking distance.</p>
           </div>
         ) : (
-          <div className="bg-white border border-[#e2e8f0] rounded-xl overflow-hidden">
+          <div className="bg-white border border-[#E2E8F0] rounded-xl overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide">Address</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide hidden sm:table-cell">{meta.regionLabel}</th>
-                    <th className="text-right px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide">Distance</th>
-                    <th className="text-right px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide hidden md:table-cell">Score</th>
-                    <th className="text-right px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide hidden md:table-cell">Violations</th>
+                  <tr className="bg-[#FAFBFD] border-b border-[#E2E8F0]">
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-[#5E6687] uppercase tracking-wide">Address</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-[#5E6687] uppercase tracking-wide hidden sm:table-cell">{meta.regionLabel}</th>
+                    <th className="text-right px-4 py-3 text-xs font-semibold text-[#5E6687] uppercase tracking-wide">Distance</th>
+                    <th className="text-right px-4 py-3 text-xs font-semibold text-[#5E6687] uppercase tracking-wide hidden md:table-cell">Score</th>
+                    <th className="text-right px-4 py-3 text-xs font-semibold text-[#5E6687] uppercase tracking-wide hidden md:table-cell">Violations</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#e2e8f0]">
                   {buildingsWithDistance.slice(0, 100).map((b) => (
-                    <tr key={b.id} className="hover:bg-[#f8fafc] transition-colors">
+                    <tr key={b.id} className="hover:bg-[#FAFBFD] transition-colors">
                       <td className="px-4 py-3">
-                        <Link href={buildingUrl(b as { borough: string; slug: string }, city)} className="text-sm font-medium text-[#2563EB] hover:underline">
+                        <Link href={buildingUrl(b as { borough: string; slug: string }, city)} className="text-sm font-medium text-[#4F46E5] hover:underline">
                           {b.full_address}
                         </Link>
                       </td>
-                      <td className="px-4 py-3 text-sm text-[#334155] hidden sm:table-cell">{b.borough}</td>
-                      <td className="px-4 py-3 text-sm text-[#64748b] text-right">{b.distance_mi.toFixed(2)} mi</td>
+                      <td className="px-4 py-3 text-sm text-[#1A1F36] hidden sm:table-cell">{b.borough}</td>
+                      <td className="px-4 py-3 text-sm text-[#5E6687] text-right">{b.distance_mi.toFixed(2)} mi</td>
                       <td className="px-4 py-3 text-sm font-semibold text-right hidden md:table-cell">{b.overall_score !== null ? b.overall_score.toFixed(1) : "—"}</td>
                       <td className="px-4 py-3 text-sm text-right hidden md:table-cell">{(b.violation_count || 0).toLocaleString()}</td>
                     </tr>
@@ -361,7 +361,7 @@ export default async function ApartmentsNearPage({
               </table>
             </div>
             {totalCount > 100 && (
-              <div className="px-4 py-3 border-t border-[#e2e8f0] bg-[#f8fafc] text-xs text-[#64748b] text-center">
+              <div className="px-4 py-3 border-t border-[#E2E8F0] bg-[#FAFBFD] text-xs text-[#5E6687] text-center">
                 Showing 100 of {totalCount.toLocaleString()} buildings
               </div>
             )}
@@ -371,10 +371,10 @@ export default async function ApartmentsNearPage({
         <AdBlock adSlot="TRANSIT_BOTTOM" adFormat="horizontal" />
 
         <div className="mt-8">
-          <h2 className="text-lg font-bold text-[#0F1D2E] mb-4">Other Landmarks in {meta.fullName}</h2>
+          <h2 className="text-lg font-bold text-[#1A1F36] mb-4">Other Landmarks in {meta.fullName}</h2>
           <div className="flex flex-wrap gap-2">
             {getLandmarksByCity(city).filter((l) => l.slug !== slug).map((l) => (
-              <Link key={l.slug} href={cityPath(`/apartments-near/${l.slug}`, city)} className="px-3 py-1.5 text-sm bg-[#f1f5f9] text-[#475569] rounded-full hover:bg-[#e2e8f0] transition-colors">
+              <Link key={l.slug} href={cityPath(`/apartments-near/${l.slug}`, city)} className="px-3 py-1.5 text-sm bg-[#F5F7FA] text-[#5E6687] rounded-full hover:bg-[#e2e8f0] transition-colors">
                 Near {l.name}
               </Link>
             ))}

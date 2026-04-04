@@ -32,10 +32,10 @@ export function TagSelector({
 
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-[#0F1D2E]">
+      <label className="block text-sm font-medium text-[#1A1F36]">
         {label}
         {selected.length > 0 && (
-          <span className="ml-1.5 text-[#94a3b8] font-normal">
+          <span className="ml-1.5 text-[#A3ACBE] font-normal">
             ({selected.length} selected)
           </span>
         )}
@@ -52,7 +52,7 @@ export function TagSelector({
               className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors ${
                 isActive
                   ? activeStyles[accentColor]
-                  : "border-[#e2e8f0] text-[#64748b] hover:bg-gray-50"
+                  : "border-[#E2E8F0] text-[#5E6687] hover:bg-gray-50"
               }`}
             >
               {tag}

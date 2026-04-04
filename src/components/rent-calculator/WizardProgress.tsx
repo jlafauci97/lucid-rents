@@ -29,7 +29,7 @@ export function WizardProgress({
   const desktop = (
     <aside className="hidden md:flex flex-col w-[220px] shrink-0 bg-[#0F1D2E] rounded-xl p-4 text-white self-start sticky top-24">
       <div className="pb-3 mb-3 border-b border-white/10">
-        <p className="text-xs uppercase tracking-wider text-[#94a3b8]">
+        <p className="text-xs uppercase tracking-wider text-[#A3ACBE]">
           Progress
         </p>
         <p className="text-sm font-semibold mt-0.5">
@@ -63,8 +63,8 @@ export function WizardProgress({
                   completed
                     ? "bg-[#10b981] text-white"
                     : active
-                    ? "bg-[#3B82F6] text-white"
-                    : "bg-white/10 text-[#94a3b8]"
+                    ? "bg-[#6366F1] text-white"
+                    : "bg-white/10 text-[#A3ACBE]"
                 }`}
               >
                 {completed ? <Check className="w-3.5 h-3.5" /> : i + 1}
@@ -86,7 +86,7 @@ export function WizardProgress({
           onClick={() => setMobileOpen((prev) => !prev)}
           className="flex items-center gap-2 bg-[#0F1D2E] text-white text-sm font-medium px-3 py-2 rounded-lg"
         >
-          <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[#3B82F6] text-[10px] font-bold">
+          <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[#6366F1] text-[10px] font-bold">
             {currentStep + 1}
           </span>
           <span className="truncate max-w-[160px]">
@@ -108,7 +108,7 @@ export function WizardProgress({
                 step.completed
                   ? "bg-[#10b981]"
                   : i === currentStep
-                  ? "bg-[#3B82F6]"
+                  ? "bg-[#6366F1]"
                   : "bg-[#94a3b8]/30"
               }`}
             />
@@ -148,8 +148,8 @@ export function WizardProgress({
                     completed
                       ? "bg-[#10b981] text-white"
                       : active
-                      ? "bg-[#3B82F6] text-white"
-                      : "bg-white/10 text-[#94a3b8]"
+                      ? "bg-[#6366F1] text-white"
+                      : "bg-white/10 text-[#A3ACBE]"
                   }`}
                 >
                   {completed ? <Check className="w-3 h-3" /> : i + 1}

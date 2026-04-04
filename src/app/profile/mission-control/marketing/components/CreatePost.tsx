@@ -210,18 +210,18 @@ export function CreatePost() {
       <Card>
         <CardContent className="space-y-4">
           <div className="flex items-center gap-2 mb-1">
-            <div className="flex items-center justify-center w-6 h-6 rounded-full bg-[#3B82F6] text-white text-xs font-bold">
+            <div className="flex items-center justify-center w-6 h-6 rounded-full bg-[#6366F1] text-white text-xs font-bold">
               1
             </div>
-            <h3 className="text-sm font-semibold text-[#0F1D2E]">
+            <h3 className="text-sm font-semibold text-[#1A1F36]">
               Generate Your Prompt
             </h3>
-            <Sparkles className="h-4 w-4 text-[#3B82F6]" />
+            <Sparkles className="h-4 w-4 text-[#6366F1]" />
           </div>
 
           {/* Topic input */}
           <div>
-            <label className="block text-xs font-medium text-[#64748b] mb-1">
+            <label className="block text-xs font-medium text-[#5E6687] mb-1">
               What&apos;s the topic?
             </label>
             <input
@@ -229,7 +229,7 @@ export function CreatePost() {
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
               placeholder="e.g., Worst landlords in Brooklyn, bedbugs in Bushwick, rent increase tips..."
-              className="w-full rounded-lg border border-[#e2e8f0] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
+              className="w-full rounded-lg border border-[#E2E8F0] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !generatingPrompt && topic.trim()) {
                   handleGeneratePrompt();
@@ -241,13 +241,13 @@ export function CreatePost() {
           {/* Quick selectors row */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div>
-              <label className="block text-xs font-medium text-[#64748b] mb-1">
+              <label className="block text-xs font-medium text-[#5E6687] mb-1">
                 Content Type
               </label>
               <select
                 value={contentType}
                 onChange={(e) => setContentType(e.target.value as MarketingContentType)}
-                className="w-full rounded-lg border border-[#e2e8f0] px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
+                className="w-full rounded-lg border border-[#E2E8F0] px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
               >
                 {CONTENT_TYPES.map(({ value, label, emoji }) => (
                   <option key={value} value={value}>
@@ -258,13 +258,13 @@ export function CreatePost() {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-[#64748b] mb-1">
+              <label className="block text-xs font-medium text-[#5E6687] mb-1">
                 City
               </label>
               <select
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
-                className="w-full rounded-lg border border-[#e2e8f0] px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
+                className="w-full rounded-lg border border-[#E2E8F0] px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
               >
                 {CITIES.map((c) => (
                   <option key={c} value={c}>{c}</option>
@@ -273,13 +273,13 @@ export function CreatePost() {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-[#64748b] mb-1">
+              <label className="block text-xs font-medium text-[#5E6687] mb-1">
                 Tone
               </label>
               <select
                 value={tone}
                 onChange={(e) => setTone(e.target.value)}
-                className="w-full rounded-lg border border-[#e2e8f0] px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
+                className="w-full rounded-lg border border-[#E2E8F0] px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
               >
                 {TONES.map((t) => (
                   <option key={t} value={t}>{t}</option>
@@ -288,13 +288,13 @@ export function CreatePost() {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-[#64748b] mb-1">
+              <label className="block text-xs font-medium text-[#5E6687] mb-1">
                 Angle
               </label>
               <select
                 value={angle}
                 onChange={(e) => setAngle(e.target.value)}
-                className="w-full rounded-lg border border-[#e2e8f0] px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
+                className="w-full rounded-lg border border-[#E2E8F0] px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
               >
                 {ANGLES.map((a) => (
                   <option key={a} value={a}>{a}</option>
@@ -310,10 +310,10 @@ export function CreatePost() {
                 <div className="h-8 w-8 rounded-full border-2 border-purple-200 border-t-purple-500 animate-spin" />
               </div>
               <div>
-                <p className="text-sm font-medium text-[#0F1D2E]">
+                <p className="text-sm font-medium text-[#1A1F36]">
                   Crafting your prompt...
                 </p>
-                <p className="text-xs text-[#64748b]">
+                <p className="text-xs text-[#5E6687]">
                   AI is writing a creative brief based on your inputs.
                 </p>
               </div>
@@ -341,18 +341,18 @@ export function CreatePost() {
               className="flex items-center justify-between w-full"
             >
               <div className="flex items-center gap-2">
-                <History className="h-4 w-4 text-[#64748b]" />
-                <span className="text-sm font-medium text-[#0F1D2E]">
+                <History className="h-4 w-4 text-[#5E6687]" />
+                <span className="text-sm font-medium text-[#1A1F36]">
                   Prompt History
                 </span>
-                <span className="text-xs text-[#64748b] bg-gray-100 px-1.5 py-0.5 rounded-full">
+                <span className="text-xs text-[#5E6687] bg-gray-100 px-1.5 py-0.5 rounded-full">
                   {history.length}
                 </span>
               </div>
               {showHistory ? (
-                <ChevronUp className="h-4 w-4 text-[#64748b]" />
+                <ChevronUp className="h-4 w-4 text-[#5E6687]" />
               ) : (
-                <ChevronDown className="h-4 w-4 text-[#64748b]" />
+                <ChevronDown className="h-4 w-4 text-[#5E6687]" />
               )}
             </button>
 
@@ -361,22 +361,22 @@ export function CreatePost() {
                 {history.map((entry) => (
                   <div
                     key={entry.id}
-                    className="group flex items-start gap-2 p-3 rounded-lg border border-[#e2e8f0] hover:border-[#3B82F6] hover:bg-blue-50/30 transition-colors"
+                    className="group flex items-start gap-2 p-3 rounded-lg border border-[#E2E8F0] hover:border-[#6366F1] hover:bg-blue-50/30 transition-colors"
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-medium text-[#0F1D2E] truncate">
+                        <span className="text-xs font-medium text-[#1A1F36] truncate">
                           {entry.topic}
                         </span>
-                        <span className="text-[10px] text-[#64748b] bg-gray-100 px-1.5 py-0.5 rounded flex-shrink-0">
+                        <span className="text-[10px] text-[#5E6687] bg-gray-100 px-1.5 py-0.5 rounded flex-shrink-0">
                           {CONTENT_TYPES.find((t) => t.value === entry.contentType)?.emoji}{" "}
                           {entry.city !== "Any City" ? entry.city : ""}
                         </span>
                       </div>
-                      <p className="text-xs text-[#64748b] line-clamp-2">
+                      <p className="text-xs text-[#5E6687] line-clamp-2">
                         {entry.prompt}
                       </p>
-                      <p className="text-[10px] text-[#94a3b8] mt-1">
+                      <p className="text-[10px] text-[#A3ACBE] mt-1">
                         {new Date(entry.createdAt).toLocaleDateString(undefined, {
                           month: "short",
                           day: "numeric",
@@ -388,7 +388,7 @@ export function CreatePost() {
                     <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
                       <button
                         onClick={() => loadFromHistory(entry)}
-                        className="p-1 rounded hover:bg-blue-100 text-[#3B82F6]"
+                        className="p-1 rounded hover:bg-blue-100 text-[#6366F1]"
                         title="Use this prompt"
                       >
                         <Copy className="h-3.5 w-3.5" />
@@ -414,11 +414,11 @@ export function CreatePost() {
         <CardContent className="space-y-4">
           <div className="flex items-center gap-2 mb-1">
             <div className={`flex items-center justify-center w-6 h-6 rounded-full text-white text-xs font-bold ${
-              prompt ? "bg-[#3B82F6]" : "bg-[#cbd5e1]"
+              prompt ? "bg-[#6366F1]" : "bg-[#cbd5e1]"
             }`}>
               2
             </div>
-            <h3 className="text-sm font-semibold text-[#0F1D2E]">
+            <h3 className="text-sm font-semibold text-[#1A1F36]">
               Review & Create Draft
             </h3>
           </div>
@@ -426,14 +426,14 @@ export function CreatePost() {
           {/* Generated prompt (editable) */}
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="block text-xs font-medium text-[#64748b]">
+              <label className="block text-xs font-medium text-[#5E6687]">
                 Prompt {prompt ? "(edit if needed)" : "(generate above or write your own)"}
               </label>
               {prompt && (
                 <button
                   onClick={() => handleGeneratePrompt()}
                   disabled={generatingPrompt || !topic.trim()}
-                  className="flex items-center gap-1 text-xs text-[#3B82F6] hover:text-[#2563EB] disabled:opacity-50"
+                  className="flex items-center gap-1 text-xs text-[#6366F1] hover:text-[#4F46E5] disabled:opacity-50"
                 >
                   <RotateCcw className="h-3 w-3" />
                   Regenerate
@@ -445,14 +445,14 @@ export function CreatePost() {
               onChange={(e) => setPrompt(e.target.value)}
               placeholder="Your AI-generated prompt will appear here, or write your own..."
               rows={5}
-              className="w-full rounded-lg border border-[#e2e8f0] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6] resize-y"
+              className="w-full rounded-lg border border-[#E2E8F0] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6] resize-y"
             />
           </div>
 
           {/* Advanced: Video selection */}
           <button
             onClick={() => setShowAdvanced(!showAdvanced)}
-            className="flex items-center gap-1 text-xs text-[#64748b] hover:text-[#0F1D2E]"
+            className="flex items-center gap-1 text-xs text-[#5E6687] hover:text-[#1A1F36]"
           >
             {showAdvanced ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
             Video options
@@ -460,13 +460,13 @@ export function CreatePost() {
 
           {showAdvanced && (
             <div>
-              <label className="block text-xs font-medium text-[#64748b] mb-1">
+              <label className="block text-xs font-medium text-[#5E6687] mb-1">
                 Video Type
               </label>
               <select
                 value={videoType}
                 onChange={(e) => setVideoType(e.target.value as MarketingVideoType)}
-                className="w-full rounded-lg border border-[#e2e8f0] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
+                className="w-full rounded-lg border border-[#E2E8F0] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
               >
                 {VIDEO_OPTIONS.map(({ value, label }) => (
                   <option key={value} value={value}>{label}</option>
@@ -482,10 +482,10 @@ export function CreatePost() {
                 <div className="h-8 w-8 rounded-full border-2 border-blue-200 border-t-[#3B82F6] animate-spin" />
               </div>
               <div>
-                <p className="text-sm font-medium text-[#0F1D2E]">
+                <p className="text-sm font-medium text-[#1A1F36]">
                   Generating your draft...
                 </p>
-                <p className="text-xs text-[#64748b]">
+                <p className="text-xs text-[#5E6687]">
                   AI is creating captions for all 10 platforms. This takes 10-20 seconds.
                 </p>
               </div>
@@ -495,7 +495,7 @@ export function CreatePost() {
           {/* Submit */}
           {!loading && (
             <div className="flex items-center justify-between">
-              <p className="text-xs text-[#64748b]">
+              <p className="text-xs text-[#5E6687]">
                 Creates a draft for your review — nothing publishes until you approve.
               </p>
               <Button

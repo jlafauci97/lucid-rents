@@ -142,9 +142,9 @@ export function ReviewModal({ draft, onClose, onActionComplete }: ReviewModalPro
     <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
       <div className="bg-white rounded-xl w-full max-w-6xl max-h-[90vh] flex flex-col shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#e2e8f0]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#E2E8F0]">
           <div className="flex items-center gap-3">
-            <h2 className="text-lg font-semibold text-[#0F1D2E]">
+            <h2 className="text-lg font-semibold text-[#1A1F36]">
               Review Draft
             </h2>
             <Badge variant="warning">draft</Badge>
@@ -153,7 +153,7 @@ export function ReviewModal({ draft, onClose, onActionComplete }: ReviewModalPro
             onClick={onClose}
             className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
           >
-            <X className="h-5 w-5 text-[#64748b]" />
+            <X className="h-5 w-5 text-[#5E6687]" />
           </button>
         </div>
 
@@ -163,16 +163,16 @@ export function ReviewModal({ draft, onClose, onActionComplete }: ReviewModalPro
             {/* Left panel - Primary caption */}
             <div className="w-3/5 p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-[#0F1D2E] mb-1">
+                <label className="block text-sm font-medium text-[#1A1F36] mb-1">
                   Primary Caption
                 </label>
                 <textarea
                   value={caption}
                   onChange={(e) => setCaption(e.target.value)}
                   rows={10}
-                  className="w-full rounded-lg border border-[#e2e8f0] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent resize-y"
+                  className="w-full rounded-lg border border-[#E2E8F0] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent resize-y"
                 />
-                <p className="text-xs text-[#64748b] mt-1">
+                <p className="text-xs text-[#5E6687] mt-1">
                   {caption.length} characters
                 </p>
               </div>
@@ -180,14 +180,14 @@ export function ReviewModal({ draft, onClose, onActionComplete }: ReviewModalPro
               {/* Media preview */}
               {(videoUrl || pinterestImage) && (
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-[#0F1D2E]">
+                  <label className="block text-sm font-medium text-[#1A1F36]">
                     Media Preview
                   </label>
                   {videoUrl && (
                     <video
                       src={videoUrl}
                       controls
-                      className="w-full rounded-lg border border-[#e2e8f0] bg-black"
+                      className="w-full rounded-lg border border-[#E2E8F0] bg-black"
                       style={{ maxHeight: "320px" }}
                     />
                   )}
@@ -195,21 +195,21 @@ export function ReviewModal({ draft, onClose, onActionComplete }: ReviewModalPro
                     <img
                       src={pinterestImage}
                       alt="Pinterest preview"
-                      className="max-w-full max-h-48 rounded-lg border border-[#e2e8f0]"
+                      className="max-w-full max-h-48 rounded-lg border border-[#E2E8F0]"
                     />
                   )}
                 </div>
               )}
               {!videoUrl && !pinterestImage && (
-                <div className="rounded-lg border border-dashed border-[#e2e8f0] bg-gray-50 p-4">
+                <div className="rounded-lg border border-dashed border-[#E2E8F0] bg-gray-50 p-4">
                   {generatingVideo ? (
                     <div className="flex items-center gap-3 justify-center">
                       <div className="h-8 w-8 rounded-full border-2 border-purple-200 border-t-purple-500 animate-spin" />
                       <div className="text-left">
-                        <p className="text-sm font-medium text-[#0F1D2E]">
+                        <p className="text-sm font-medium text-[#1A1F36]">
                           Generating video with Kling AI...
                         </p>
-                        <p className="text-xs text-[#64748b]">
+                        <p className="text-xs text-[#5E6687]">
                           This takes 1-3 minutes. You can edit text while waiting.
                         </p>
                       </div>
@@ -220,7 +220,7 @@ export function ReviewModal({ draft, onClose, onActionComplete }: ReviewModalPro
                       <div className="flex gap-2 justify-center">
                         <button
                           onClick={() => handleGenerateVideo("viral_character")}
-                          className="text-xs text-[#3B82F6] hover:underline"
+                          className="text-xs text-[#6366F1] hover:underline"
                         >
                           Try again
                         </button>
@@ -228,8 +228,8 @@ export function ReviewModal({ draft, onClose, onActionComplete }: ReviewModalPro
                     </div>
                   ) : (
                     <div className="text-center space-y-3">
-                      <Film className="h-8 w-8 text-[#94a3b8] mx-auto" />
-                      <p className="text-sm text-[#64748b]">
+                      <Film className="h-8 w-8 text-[#A3ACBE] mx-auto" />
+                      <p className="text-sm text-[#5E6687]">
                         No video yet — generate one to preview before publishing
                       </p>
                       <div className="flex gap-2 justify-center">
@@ -250,7 +250,7 @@ export function ReviewModal({ draft, onClose, onActionComplete }: ReviewModalPro
                           Avatar Narration
                         </Button>
                       </div>
-                      <p className="text-[10px] text-[#94a3b8]">
+                      <p className="text-[10px] text-[#A3ACBE]">
                         Uses 1 Kling AI credit · Takes 1-3 minutes
                       </p>
                     </div>
@@ -263,7 +263,7 @@ export function ReviewModal({ draft, onClose, onActionComplete }: ReviewModalPro
                 <div>
                   <button
                     onClick={() => setShowSource(!showSource)}
-                    className="flex items-center gap-1 text-sm text-[#64748b] hover:text-[#0F1D2E] transition-colors"
+                    className="flex items-center gap-1 text-sm text-[#5E6687] hover:text-[#1A1F36] transition-colors"
                   >
                     {showSource ? (
                       <ChevronDown className="h-4 w-4" />
@@ -273,7 +273,7 @@ export function ReviewModal({ draft, onClose, onActionComplete }: ReviewModalPro
                     Source Data
                   </button>
                   {showSource && (
-                    <pre className="mt-2 p-3 bg-gray-50 rounded-lg text-xs overflow-auto max-h-60 border border-[#e2e8f0]">
+                    <pre className="mt-2 p-3 bg-gray-50 rounded-lg text-xs overflow-auto max-h-60 border border-[#E2E8F0]">
                       {JSON.stringify(draft.source_data, null, 2)}
                     </pre>
                   )}
@@ -292,10 +292,10 @@ export function ReviewModal({ draft, onClose, onActionComplete }: ReviewModalPro
                       onClick={() => setActivePlatform(key)}
                       className={`px-2.5 py-1 text-xs font-medium rounded-full transition-colors ${
                         activePlatform === key
-                          ? "bg-[#3B82F6] text-white"
+                          ? "bg-[#6366F1] text-white"
                           : hasVariant
-                          ? "bg-gray-100 text-[#0F1D2E] hover:bg-gray-200"
-                          : "bg-gray-50 text-[#64748b] hover:bg-gray-100"
+                          ? "bg-gray-100 text-[#1A1F36] hover:bg-gray-200"
+                          : "bg-gray-50 text-[#5E6687] hover:bg-gray-100"
                       }`}
                     >
                       {label}
@@ -309,7 +309,7 @@ export function ReviewModal({ draft, onClose, onActionComplete }: ReviewModalPro
                   {activePlatform === "pinterest" ? (
                     <>
                       <div>
-                        <label className="block text-xs font-medium text-[#64748b] mb-1">
+                        <label className="block text-xs font-medium text-[#5E6687] mb-1">
                           Title
                         </label>
                         <input
@@ -318,11 +318,11 @@ export function ReviewModal({ draft, onClose, onActionComplete }: ReviewModalPro
                           onChange={(e) =>
                             updatePinterestField("title", e.target.value)
                           }
-                          className="w-full rounded-lg border border-[#e2e8f0] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
+                          className="w-full rounded-lg border border-[#E2E8F0] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-[#64748b] mb-1">
+                        <label className="block text-xs font-medium text-[#5E6687] mb-1">
                           Description
                         </label>
                         <textarea
@@ -331,11 +331,11 @@ export function ReviewModal({ draft, onClose, onActionComplete }: ReviewModalPro
                             updateVariantCaption("pinterest", e.target.value)
                           }
                           rows={5}
-                          className="w-full rounded-lg border border-[#e2e8f0] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6] resize-y"
+                          className="w-full rounded-lg border border-[#E2E8F0] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6] resize-y"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-[#64748b] mb-1">
+                        <label className="block text-xs font-medium text-[#5E6687] mb-1">
                           Board
                         </label>
                         <input
@@ -344,14 +344,14 @@ export function ReviewModal({ draft, onClose, onActionComplete }: ReviewModalPro
                           onChange={(e) =>
                             updatePinterestField("board", e.target.value)
                           }
-                          className="w-full rounded-lg border border-[#e2e8f0] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
+                          className="w-full rounded-lg border border-[#E2E8F0] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
                         />
                       </div>
                     </>
                   ) : (
                     <>
                       <div>
-                        <label className="block text-xs font-medium text-[#64748b] mb-1">
+                        <label className="block text-xs font-medium text-[#5E6687] mb-1">
                           Caption
                         </label>
                         <textarea
@@ -360,11 +360,11 @@ export function ReviewModal({ draft, onClose, onActionComplete }: ReviewModalPro
                             updateVariantCaption(activePlatform, e.target.value)
                           }
                           rows={6}
-                          className="w-full rounded-lg border border-[#e2e8f0] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6] resize-y"
+                          className="w-full rounded-lg border border-[#E2E8F0] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6] resize-y"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-[#64748b] mb-1">
+                        <label className="block text-xs font-medium text-[#5E6687] mb-1">
                           Hashtags (comma-separated)
                         </label>
                         <input
@@ -375,7 +375,7 @@ export function ReviewModal({ draft, onClose, onActionComplete }: ReviewModalPro
                           onChange={(e) =>
                             updateVariantHashtags(activePlatform, e.target.value)
                           }
-                          className="w-full rounded-lg border border-[#e2e8f0] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
+                          className="w-full rounded-lg border border-[#E2E8F0] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
                         />
                       </div>
                     </>
@@ -384,7 +384,7 @@ export function ReviewModal({ draft, onClose, onActionComplete }: ReviewModalPro
                   {/* YouTube-specific fields */}
                   {activePlatform === "youtube" && variants.youtube && (
                     <div>
-                      <label className="block text-xs font-medium text-[#64748b] mb-1">
+                      <label className="block text-xs font-medium text-[#5E6687] mb-1">
                         YouTube Title
                       </label>
                       <input
@@ -396,13 +396,13 @@ export function ReviewModal({ draft, onClose, onActionComplete }: ReviewModalPro
                             youtube: { ...prev.youtube!, title: e.target.value },
                           }))
                         }
-                        className="w-full rounded-lg border border-[#e2e8f0] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
+                        className="w-full rounded-lg border border-[#E2E8F0] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
                       />
                     </div>
                   )}
                 </div>
               ) : (
-                <p className="text-sm text-[#64748b] py-8 text-center">
+                <p className="text-sm text-[#5E6687] py-8 text-center">
                   No variant for {activePlatform}
                 </p>
               )}
@@ -411,7 +411,7 @@ export function ReviewModal({ draft, onClose, onActionComplete }: ReviewModalPro
         </div>
 
         {/* Fixed action bar */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[#e2e8f0] bg-gray-50 rounded-b-xl">
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[#E2E8F0] bg-gray-50 rounded-b-xl">
           <Button variant="outline" onClick={onClose} disabled={loading}>
             Close
           </Button>

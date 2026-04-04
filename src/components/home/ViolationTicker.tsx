@@ -157,7 +157,7 @@ export function ViolationTicker({ metro, initialItems }: ViolationTickerProps = 
 
   if (loading) {
     return (
-      <div className="bg-[#3B82F6] border-y border-blue-400/30 py-3 overflow-hidden">
+      <div className="bg-[#6366F1] border-y border-blue-400/30 py-3 overflow-hidden">
         <div className="flex items-center gap-3 px-4">
           <span className="flex items-center gap-1.5 text-xs font-bold text-white uppercase tracking-wider flex-shrink-0 bg-red-600 px-3 py-1 rounded">
             <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
@@ -179,9 +179,9 @@ export function ViolationTicker({ metro, initialItems }: ViolationTickerProps = 
   const duration = items.length * 18;
 
   return (
-    <div className="bg-[#3B82F6] border-y border-blue-400/30 py-3 overflow-hidden group/ticker">
+    <div className="bg-[#6366F1] border-y border-blue-400/30 py-3 overflow-hidden group/ticker">
       <div className="flex items-center">
-        <div className="flex items-center flex-shrink-0 pl-3 pr-4 z-10 bg-[#3B82F6]">
+        <div className="flex items-center flex-shrink-0 pl-3 pr-4 z-10 bg-[#6366F1]">
           <span className="flex items-center gap-1.5 text-xs font-bold text-white uppercase tracking-wider bg-red-600 px-3 py-1 rounded">
             <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
             Live

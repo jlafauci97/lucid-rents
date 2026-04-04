@@ -112,9 +112,9 @@ export function PhotoUpload({
 
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-[#0F1D2E]">
+      <label className="block text-sm font-medium text-[#1A1F36]">
         Photos
-        <span className="ml-1.5 text-[#94a3b8] font-normal">
+        <span className="ml-1.5 text-[#A3ACBE] font-normal">
           ({photos.length}/{maxPhotos})
         </span>
       </label>
@@ -125,7 +125,7 @@ export function PhotoUpload({
           {photos.map((path, i) => (
             <div
               key={path}
-              className="relative group aspect-square rounded-lg overflow-hidden border border-[#e2e8f0]"
+              className="relative group aspect-square rounded-lg overflow-hidden border border-[#E2E8F0]"
             >
               <img
                 src={getPublicUrl(path)}
@@ -156,19 +156,19 @@ export function PhotoUpload({
           onClick={() => inputRef.current?.click()}
           className={`flex flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed p-6 cursor-pointer transition-colors ${
             dragOver
-              ? "border-[#3B82F6] bg-[#3B82F6]/5"
-              : "border-[#e2e8f0] hover:border-[#94a3b8]"
+              ? "border-[#6366F1] bg-[#6366F1]/5"
+              : "border-[#E2E8F0] hover:border-[#94a3b8]"
           }`}
         >
           {uploading ? (
-            <Loader2 className="h-6 w-6 text-[#3B82F6] animate-spin" />
+            <Loader2 className="h-6 w-6 text-[#6366F1] animate-spin" />
           ) : (
             <>
-              <Upload className="h-6 w-6 text-[#94a3b8]" />
-              <span className="text-sm text-[#64748b]">
+              <Upload className="h-6 w-6 text-[#A3ACBE]" />
+              <span className="text-sm text-[#5E6687]">
                 Drag & drop or click to upload
               </span>
-              <span className="text-xs text-[#94a3b8]">
+              <span className="text-xs text-[#A3ACBE]">
                 JPG, PNG, WebP &middot; Max 10MB
               </span>
             </>
@@ -186,7 +186,7 @@ export function PhotoUpload({
 
       {/* Empty state */}
       {photos.length === 0 && !canUpload && (
-        <div className="flex items-center justify-center gap-2 rounded-lg border border-[#e2e8f0] p-6 text-[#94a3b8]">
+        <div className="flex items-center justify-center gap-2 rounded-lg border border-[#E2E8F0] p-6 text-[#A3ACBE]">
           <ImageIcon className="h-5 w-5" />
           <span className="text-sm">No photos uploaded</span>
         </div>

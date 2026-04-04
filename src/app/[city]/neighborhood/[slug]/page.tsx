@@ -139,12 +139,12 @@ export default async function NeighborhoodPage({
   if (!stats || stats.building_count === 0) {
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
-        <MapPin className="w-12 h-12 text-[#94a3b8] mx-auto mb-4" />
-        <h1 className="text-2xl font-bold text-[#0F1D2E] mb-2">
+        <MapPin className="w-12 h-12 text-[#A3ACBE] mx-auto mb-4" />
+        <h1 className="text-2xl font-bold text-[#1A1F36] mb-2">
           No Data for {neighborhoodName ? `${neighborhoodName} (${zipCode})` : zipCode}
         </h1>
-        <p className="text-[#64748b]">We don&apos;t have building data for this zip code yet.</p>
-        <Link href={cityPath("/crime", city)} className="text-[#3B82F6] text-sm mt-4 inline-block">
+        <p className="text-[#5E6687]">We don&apos;t have building data for this zip code yet.</p>
+        <Link href={cityPath("/crime", city)} className="text-[#6366F1] text-sm mt-4 inline-block">
           Browse all neighborhoods
         </Link>
       </div>
@@ -209,12 +209,12 @@ export default async function NeighborhoodPage({
       <div className="flex items-start gap-5 mb-8">
         <LetterGrade score={overallScore} size="lg" showScore />
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#0F1D2E]">
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#1A1F36]">
             {neighborhoodName
               ? `${neighborhoodName} Report Card`
               : `Neighborhood Report Card: ${zipCode}`}
           </h1>
-          <p className="text-[#64748b] mt-1">
+          <p className="text-[#5E6687] mt-1">
             {neighborhoodName && `${zipCode} · `}{borough && `${borough} · `}{buildingCount.toLocaleString()} buildings tracked
           </p>
         </div>
@@ -226,15 +226,15 @@ export default async function NeighborhoodPage({
           const grade = getLetterGrade(g.score);
           const color = getGradeColor(grade);
           return (
-            <div key={g.label} className="bg-white rounded-xl border border-[#e2e8f0] p-4 text-center">
+            <div key={g.label} className="bg-white rounded-xl border border-[#E2E8F0] p-4 text-center">
               <div
                 className="w-12 h-12 rounded-lg flex items-center justify-center text-2xl font-bold text-white mx-auto mb-2"
                 style={{ backgroundColor: color }}
               >
                 {grade}
               </div>
-              <p className="text-sm font-semibold text-[#0F1D2E]">{g.label}</p>
-              <p className="text-xs text-[#94a3b8] mt-0.5">{g.description}</p>
+              <p className="text-sm font-semibold text-[#1A1F36]">{g.label}</p>
+              <p className="text-xs text-[#A3ACBE] mt-0.5">{g.description}</p>
             </div>
           );
         })}
@@ -242,33 +242,33 @@ export default async function NeighborhoodPage({
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white rounded-xl border border-[#e2e8f0] p-4">
+        <div className="bg-white rounded-xl border border-[#E2E8F0] p-4">
           <div className="flex items-center gap-2 mb-1">
-            <Building2 className="w-4 h-4 text-[#3B82F6]" />
-            <p className="text-xs text-[#94a3b8] uppercase tracking-wide font-medium">Buildings</p>
+            <Building2 className="w-4 h-4 text-[#6366F1]" />
+            <p className="text-xs text-[#A3ACBE] uppercase tracking-wide font-medium">Buildings</p>
           </div>
-          <p className="text-2xl font-bold text-[#0F1D2E]">{buildingCount.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-[#1A1F36]">{buildingCount.toLocaleString()}</p>
         </div>
-        <div className="bg-white rounded-xl border border-[#e2e8f0] p-4">
+        <div className="bg-white rounded-xl border border-[#E2E8F0] p-4">
           <div className="flex items-center gap-2 mb-1">
             <AlertTriangle className="w-4 h-4 text-[#EF4444]" />
-            <p className="text-xs text-[#94a3b8] uppercase tracking-wide font-medium">Violations</p>
+            <p className="text-xs text-[#A3ACBE] uppercase tracking-wide font-medium">Violations</p>
           </div>
-          <p className="text-2xl font-bold text-[#0F1D2E]">{totalViolations.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-[#1A1F36]">{totalViolations.toLocaleString()}</p>
         </div>
-        <div className="bg-white rounded-xl border border-[#e2e8f0] p-4">
+        <div className="bg-white rounded-xl border border-[#E2E8F0] p-4">
           <div className="flex items-center gap-2 mb-1">
             <MessageSquare className="w-4 h-4 text-[#F59E0B]" />
-            <p className="text-xs text-[#94a3b8] uppercase tracking-wide font-medium">Complaints</p>
+            <p className="text-xs text-[#A3ACBE] uppercase tracking-wide font-medium">Complaints</p>
           </div>
-          <p className="text-2xl font-bold text-[#0F1D2E]">{totalComplaints.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-[#1A1F36]">{totalComplaints.toLocaleString()}</p>
         </div>
-        <div className="bg-white rounded-xl border border-[#e2e8f0] p-4">
+        <div className="bg-white rounded-xl border border-[#E2E8F0] p-4">
           <div className="flex items-center gap-2 mb-1">
-            <Users className="w-4 h-4 text-[#3B82F6]" />
-            <p className="text-xs text-[#94a3b8] uppercase tracking-wide font-medium">Reviews</p>
+            <Users className="w-4 h-4 text-[#6366F1]" />
+            <p className="text-xs text-[#A3ACBE] uppercase tracking-wide font-medium">Reviews</p>
           </div>
-          <p className="text-2xl font-bold text-[#0F1D2E]">{Number(stats.total_reviews).toLocaleString()}</p>
+          <p className="text-2xl font-bold text-[#1A1F36]">{Number(stats.total_reviews).toLocaleString()}</p>
         </div>
       </div>
 
@@ -277,32 +277,32 @@ export default async function NeighborhoodPage({
 
       {/* Crime Summary */}
       {crime && crime.total > 0 && (
-        <div className="bg-white rounded-xl border border-[#e2e8f0] p-6 mb-8">
+        <div className="bg-white rounded-xl border border-[#E2E8F0] p-6 mb-8">
           <div className="flex items-center gap-2 mb-4">
             <Siren className="w-5 h-5 text-[#DC2626]" />
-            <h2 className="text-lg font-bold text-[#0F1D2E]">Crime Summary (12 Months)</h2>
+            <h2 className="text-lg font-bold text-[#1A1F36]">Crime Summary (12 Months)</h2>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div>
-              <p className="text-2xl font-bold text-[#0F1D2E]">{crime.total.toLocaleString()}</p>
-              <p className="text-xs text-[#94a3b8]">Total Incidents</p>
+              <p className="text-2xl font-bold text-[#1A1F36]">{crime.total.toLocaleString()}</p>
+              <p className="text-xs text-[#A3ACBE]">Total Incidents</p>
             </div>
             <div>
               <p className="text-2xl font-bold text-[#EF4444]">{crime.violent.toLocaleString()}</p>
-              <p className="text-xs text-[#94a3b8]">Violent</p>
+              <p className="text-xs text-[#A3ACBE]">Violent</p>
             </div>
             <div>
               <p className="text-2xl font-bold text-[#F59E0B]">{crime.property.toLocaleString()}</p>
-              <p className="text-xs text-[#94a3b8]">Property</p>
+              <p className="text-xs text-[#A3ACBE]">Property</p>
             </div>
             <div>
-              <p className="text-2xl font-bold text-[#3B82F6]">{crime.quality_of_life.toLocaleString()}</p>
-              <p className="text-xs text-[#94a3b8]">Quality of Life</p>
+              <p className="text-2xl font-bold text-[#6366F1]">{crime.quality_of_life.toLocaleString()}</p>
+              <p className="text-xs text-[#A3ACBE]">Quality of Life</p>
             </div>
           </div>
           <Link
             href={cityPath(`/crime/${zipCode}`, city)}
-            className="inline-flex items-center gap-1 text-sm text-[#3B82F6] font-medium mt-4"
+            className="inline-flex items-center gap-1 text-sm text-[#6366F1] font-medium mt-4"
           >
             View detailed crime data
           </Link>
@@ -313,15 +313,15 @@ export default async function NeighborhoodPage({
         {/* Top Buildings */}
         {buildings.length > 0 && (
           <div>
-            <h2 className="text-lg font-bold text-[#0F1D2E] mb-3">Most Flagged Buildings</h2>
+            <h2 className="text-lg font-bold text-[#1A1F36] mb-3">Most Flagged Buildings</h2>
             <div className="space-y-2">
               {buildings.map((b: { id: string; full_address: string; borough: string; slug: string; overall_score: number | null; violation_count: number; complaint_count: number; review_count: number }) => (
                 <Link key={b.id} href={buildingUrl(b, city)}>
-                  <div className="bg-white rounded-xl border border-[#e2e8f0] p-4 hover:border-[#3B82F6] transition-colors flex items-center gap-3">
+                  <div className="bg-white rounded-xl border border-[#E2E8F0] p-4 hover:border-[#6366F1] transition-colors flex items-center gap-3">
                     <LetterGrade score={b.overall_score} size="sm" />
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-[#0F1D2E] truncate">{b.full_address}</p>
-                      <div className="flex items-center gap-3 text-xs text-[#94a3b8] mt-0.5">
+                      <p className="text-sm font-semibold text-[#1A1F36] truncate">{b.full_address}</p>
+                      <div className="flex items-center gap-3 text-xs text-[#A3ACBE] mt-0.5">
                         <span className="text-[#EF4444] font-medium">{(b.violation_count || 0).toLocaleString()} violations</span>
                         <span>{(b.complaint_count || 0).toLocaleString()} complaints</span>
                       </div>
@@ -336,14 +336,14 @@ export default async function NeighborhoodPage({
         {/* Top Landlord */}
         {stats.top_landlord && (
           <div>
-            <h2 className="text-lg font-bold text-[#0F1D2E] mb-3">Largest Landlord</h2>
+            <h2 className="text-lg font-bold text-[#1A1F36] mb-3">Largest Landlord</h2>
             <Link href={landlordUrl(stats.top_landlord)}>
-              <div className="bg-white rounded-xl border border-[#e2e8f0] p-6 hover:border-[#3B82F6] transition-colors">
-                <p className="text-lg font-semibold text-[#0F1D2E]">{stats.top_landlord}</p>
-                <p className="text-sm text-[#64748b] mt-1">
+              <div className="bg-white rounded-xl border border-[#E2E8F0] p-6 hover:border-[#6366F1] transition-colors">
+                <p className="text-lg font-semibold text-[#1A1F36]">{stats.top_landlord}</p>
+                <p className="text-sm text-[#5E6687] mt-1">
                   {Number(stats.top_landlord_buildings)} buildings in this zip code
                 </p>
-                <p className="text-sm text-[#3B82F6] font-medium mt-3">View landlord portfolio</p>
+                <p className="text-sm text-[#6366F1] font-medium mt-3">View landlord portfolio</p>
               </div>
             </Link>
           </div>

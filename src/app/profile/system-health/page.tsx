@@ -112,8 +112,8 @@ export default function SystemHealthPage() {
   if (loading && !health) {
     return (
       <div className="max-w-6xl mx-auto px-4 py-12 text-center">
-        <RefreshCw className="w-8 h-8 text-[#3B82F6] animate-spin mx-auto mb-3" />
-        <p className="text-[#64748b]">Running health checks...</p>
+        <RefreshCw className="w-8 h-8 text-[#6366F1] animate-spin mx-auto mb-3" />
+        <p className="text-[#5E6687]">Running health checks...</p>
       </div>
     );
   }
@@ -125,7 +125,7 @@ export default function SystemHealthPage() {
         <p className="text-red-600">{error}</p>
         <button
           onClick={fetchHealth}
-          className="mt-4 px-4 py-2 bg-[#3B82F6] text-white rounded-lg text-sm"
+          className="mt-4 px-4 py-2 bg-[#6366F1] text-white rounded-lg text-sm"
         >
           Retry
         </button>
@@ -146,15 +146,15 @@ export default function SystemHealthPage() {
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <Activity className="w-6 h-6 text-[#3B82F6]" />
-          <h1 className="text-2xl font-bold text-[#0F1D2E]">
+          <Activity className="w-6 h-6 text-[#6366F1]" />
+          <h1 className="text-2xl font-bold text-[#1A1F36]">
             System Health Monitor
           </h1>
         </div>
         <button
           onClick={fetchHealth}
           disabled={loading}
-          className="flex items-center gap-2 px-3 py-1.5 bg-white border border-[#e2e8f0] rounded-lg text-sm text-[#64748b] hover:bg-[#f8fafc] disabled:opacity-50"
+          className="flex items-center gap-2 px-3 py-1.5 bg-white border border-[#E2E8F0] rounded-lg text-sm text-[#5E6687] hover:bg-[#FAFBFD] disabled:opacity-50"
         >
           <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
           Refresh
@@ -184,41 +184,41 @@ export default function SystemHealthPage() {
       {/* Sync Status */}
       <section className="mb-6">
         <div className="flex items-center gap-2 mb-3">
-          <Clock className="w-5 h-5 text-[#64748b]" />
-          <h2 className="text-lg font-bold text-[#0F1D2E]">Data Sync Status</h2>
+          <Clock className="w-5 h-5 text-[#5E6687]" />
+          <h2 className="text-lg font-bold text-[#1A1F36]">Data Sync Status</h2>
         </div>
-        <div className="bg-white border border-[#e2e8f0] rounded-xl overflow-hidden">
+        <div className="bg-white border border-[#E2E8F0] rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-[#64748b] uppercase">
+                <tr className="bg-[#FAFBFD] border-b border-[#E2E8F0]">
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-[#5E6687] uppercase">
                     Source
                   </th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-[#64748b] uppercase">
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-[#5E6687] uppercase">
                     Status
                   </th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-[#64748b] uppercase">
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-[#5E6687] uppercase">
                     Last Run
                   </th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-[#64748b] uppercase">
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-[#5E6687] uppercase">
                     Added
                   </th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-[#64748b] uppercase">
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-[#5E6687] uppercase">
                     Linked
                   </th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-[#64748b] uppercase hidden lg:table-cell">
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-[#5E6687] uppercase hidden lg:table-cell">
                     Error
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#e2e8f0]">
                 {health.syncs.map((sync) => (
-                  <tr key={sync.sync_type} className="hover:bg-[#f8fafc]">
+                  <tr key={sync.sync_type} className="hover:bg-[#FAFBFD]">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <StatusIcon status={sync.status} />
-                        <span className="text-sm font-medium text-[#0F1D2E]">
+                        <span className="text-sm font-medium text-[#1A1F36]">
                           {sync.sync_type}
                         </span>
                       </div>
@@ -226,7 +226,7 @@ export default function SystemHealthPage() {
                     <td className="px-4 py-3">
                       <StatusBadge status={sync.last_status || "unknown"} />
                     </td>
-                    <td className="px-4 py-3 text-sm text-[#64748b]">
+                    <td className="px-4 py-3 text-sm text-[#5E6687]">
                       {sync.last_run ? (
                         <span title={sync.last_run}>
                           {timeAgo(sync.last_run)}
@@ -240,10 +240,10 @@ export default function SystemHealthPage() {
                         "Never"
                       )}
                     </td>
-                    <td className="px-4 py-3 text-sm text-right text-[#334155]">
+                    <td className="px-4 py-3 text-sm text-right text-[#1A1F36]">
                       {sync.records_added.toLocaleString()}
                     </td>
-                    <td className="px-4 py-3 text-sm text-right text-[#334155]">
+                    <td className="px-4 py-3 text-sm text-right text-[#1A1F36]">
                       {sync.records_linked.toLocaleString()}
                     </td>
                     <td className="px-4 py-3 text-xs text-red-600 max-w-[300px] truncate hidden lg:table-cell">
@@ -260,25 +260,25 @@ export default function SystemHealthPage() {
       {/* Data Tables */}
       <section className="mb-6">
         <div className="flex items-center gap-2 mb-3">
-          <Database className="w-5 h-5 text-[#64748b]" />
-          <h2 className="text-lg font-bold text-[#0F1D2E]">Data Tables</h2>
+          <Database className="w-5 h-5 text-[#5E6687]" />
+          <h2 className="text-lg font-bold text-[#1A1F36]">Data Tables</h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {health.data.map((d) => (
             <div
               key={d.name}
-              className="bg-white border border-[#e2e8f0] rounded-xl p-4"
+              className="bg-white border border-[#E2E8F0] rounded-xl p-4"
             >
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-[#0F1D2E]">
+                <span className="text-sm font-medium text-[#1A1F36]">
                   {d.name}
                 </span>
                 <StatusIcon status={d.status} />
               </div>
-              <p className="text-2xl font-bold text-[#0F1D2E]">
+              <p className="text-2xl font-bold text-[#1A1F36]">
                 {d.row_count.toLocaleString()}
               </p>
-              <p className="text-xs text-[#64748b] mt-1">{d.details}</p>
+              <p className="text-xs text-[#5E6687] mt-1">{d.details}</p>
             </div>
           ))}
         </div>
@@ -287,22 +287,22 @@ export default function SystemHealthPage() {
       {/* RPC Checks */}
       <section className="mb-6">
         <div className="flex items-center gap-2 mb-3">
-          <Zap className="w-5 h-5 text-[#64748b]" />
-          <h2 className="text-lg font-bold text-[#0F1D2E]">RPC Functions</h2>
+          <Zap className="w-5 h-5 text-[#5E6687]" />
+          <h2 className="text-lg font-bold text-[#1A1F36]">RPC Functions</h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {health.rpcs.map((rpc) => (
             <div
               key={rpc.name}
-              className="bg-white border border-[#e2e8f0] rounded-xl p-4"
+              className="bg-white border border-[#E2E8F0] rounded-xl p-4"
             >
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-[#0F1D2E]">
+                <span className="text-sm font-medium text-[#1A1F36]">
                   {rpc.name}
                 </span>
                 <StatusIcon status={rpc.status} />
               </div>
-              <div className="flex items-center gap-4 text-sm text-[#64748b]">
+              <div className="flex items-center gap-4 text-sm text-[#5E6687]">
                 <span>{rpc.response_time_ms}ms</span>
                 <span>{rpc.row_count} rows</span>
               </div>
@@ -318,15 +318,15 @@ export default function SystemHealthPage() {
 
       {/* Activity Feed Check */}
       <section>
-        <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
+        <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <StatusIcon status={health.activity_feed.status} />
-              <span className="text-sm font-medium text-[#0F1D2E]">
+              <span className="text-sm font-medium text-[#1A1F36]">
                 Activity Feed
               </span>
             </div>
-            <span className="text-sm text-[#64748b]">
+            <span className="text-sm text-[#5E6687]">
               {health.activity_feed.details}
             </span>
           </div>

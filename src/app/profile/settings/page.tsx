@@ -66,13 +66,13 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-2xl font-bold text-[#0F1D2E] mb-6">
+      <h1 className="text-2xl font-bold text-[#1A1F36] mb-6">
         Profile Settings
       </h1>
 
       <Card>
         <CardHeader>
-          <h2 className="font-semibold text-[#0F1D2E]">Your Profile</h2>
+          <h2 className="font-semibold text-[#1A1F36]">Your Profile</h2>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSave} className="space-y-4">
@@ -83,7 +83,7 @@ export default function SettingsPage() {
               placeholder="Your display name"
             />
             <div className="space-y-1">
-              <label className="block text-sm font-medium text-[#0F1D2E]">
+              <label className="block text-sm font-medium text-[#1A1F36]">
                 Bio
               </label>
               <textarea
@@ -92,9 +92,9 @@ export default function SettingsPage() {
                 placeholder="Tell others about yourself..."
                 rows={3}
                 maxLength={500}
-                className="w-full rounded-lg border border-[#e2e8f0] bg-white px-3 py-2 text-sm text-[#0F1D2E] placeholder:text-[#94a3b8] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
+                className="w-full rounded-lg border border-[#E2E8F0] bg-white px-3 py-2 text-sm text-[#1A1F36] placeholder:text-[#A3ACBE] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
               />
-              <p className="text-xs text-[#94a3b8]">{bio.length}/500</p>
+              <p className="text-xs text-[#A3ACBE]">{bio.length}/500</p>
             </div>
             {message && (
               <p

@@ -7,7 +7,7 @@ import { AdBlock } from "@/components/ui/AdBlock";
 import dynamic from "next/dynamic";
 import { ZipRentTable } from "@/components/rent-data/ZipRentTable";
 
-const ChartSkeleton = () => <div className="bg-white rounded-xl border border-[#e2e8f0] p-6"><div className="h-6 w-48 bg-[#e2e8f0] rounded animate-pulse mb-4" /><div className="h-[300px] bg-[#f8fafc] rounded-lg animate-pulse" /></div>;
+const ChartSkeleton = () => <div className="bg-white rounded-xl border border-[#E2E8F0] p-6"><div className="h-6 w-48 bg-[#e2e8f0] rounded animate-pulse mb-4" /><div className="h-[300px] bg-[#FAFBFD] rounded-lg animate-pulse" /></div>;
 const CitywideTrendChart = dynamic(() => import("@/components/rent-data/CitywideTrendChart").then(m => m.CitywideTrendChart), { loading: ChartSkeleton });
 const BoroughRentChart = dynamic(() => import("@/components/rent-data/BoroughRentChart").then(m => m.BoroughRentChart), { loading: ChartSkeleton });
 const RGBChart = dynamic(() => import("@/components/rent-data/RGBChart").then(m => m.RGBChart), { loading: ChartSkeleton });
@@ -114,13 +114,13 @@ export default async function RentDataPage({ params: routeParams }: { params: Pr
         <div className="mb-8 mt-4">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-blue-50 rounded-lg">
-              <BarChart3 className="w-6 h-6 text-[#3B82F6]" />
+              <BarChart3 className="w-6 h-6 text-[#6366F1]" />
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#0F1D2E]">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#1A1F36]">
               {meta.fullName} Rent Data & Trends
             </h1>
           </div>
-          <p className="text-[#64748b] text-sm sm:text-base max-w-3xl">
+          <p className="text-[#5E6687] text-sm sm:text-base max-w-3xl">
             {isNyc
               ? `Explore median rent prices across NYC neighborhoods, track borough trends over time, and see how Rent Guidelines Board decisions affect stabilized tenants. Data from the Zillow Observed Rent Index (ZORI).`
               : `Explore median rent prices across ${meta.fullName} neighborhoods, track area trends over time, and compare rents by zip code. Data from the Zillow Observed Rent Index (ZORI).`}
@@ -129,49 +129,49 @@ export default async function RentDataPage({ params: routeParams }: { params: Pr
 
         {/* Summary stats */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
-          <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
-            <p className="text-xs text-[#64748b] font-medium uppercase tracking-wide">
+          <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
+            <p className="text-xs text-[#5E6687] font-medium uppercase tracking-wide">
               Avg Median Rent
             </p>
-            <p className="text-2xl font-bold text-[#0F1D2E] mt-1">
+            <p className="text-2xl font-bold text-[#1A1F36] mt-1">
               {avgRent > 0 ? `$${avgRent.toLocaleString()}` : "—"}
             </p>
           </div>
-          <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
-            <p className="text-xs text-[#64748b] font-medium uppercase tracking-wide">
+          <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
+            <p className="text-xs text-[#5E6687] font-medium uppercase tracking-wide">
               Zip Codes Tracked
             </p>
-            <p className="text-2xl font-bold text-[#0F1D2E] mt-1">
+            <p className="text-2xl font-bold text-[#1A1F36] mt-1">
               {zipData.length || "—"}
             </p>
           </div>
-          <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
-            <p className="text-xs text-[#64748b] font-medium uppercase tracking-wide">
+          <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
+            <p className="text-xs text-[#5E6687] font-medium uppercase tracking-wide">
               Latest Data
             </p>
-            <p className="text-sm font-semibold text-[#0F1D2E] mt-2">
+            <p className="text-sm font-semibold text-[#1A1F36] mt-2">
               {latestMonth}
             </p>
           </div>
         </div>
 
         {/* Section 1: Citywide Trend */}
-        <section className="bg-white border border-[#e2e8f0] rounded-xl p-5 sm:p-6 mb-6">
-          <h2 className="text-lg font-bold text-[#0F1D2E] mb-1">
+        <section className="bg-white border border-[#E2E8F0] rounded-xl p-5 sm:p-6 mb-6">
+          <h2 className="text-lg font-bold text-[#1A1F36] mb-1">
             {meta.fullName} Median Rent Over Time
           </h2>
-          <p className="text-sm text-[#64748b] mb-4">
+          <p className="text-sm text-[#5E6687] mb-4">
             Average median rent across all tracked {meta.fullName} zip codes, monthly.
           </p>
           <CitywideTrendChart data={citywideTrend || []} />
         </section>
 
         {/* Section 2: Area/Borough Comparison */}
-        <section className="bg-white border border-[#e2e8f0] rounded-xl p-5 sm:p-6 mb-6">
-          <h2 className="text-lg font-bold text-[#0F1D2E] mb-1">
+        <section className="bg-white border border-[#E2E8F0] rounded-xl p-5 sm:p-6 mb-6">
+          <h2 className="text-lg font-bold text-[#1A1F36] mb-1">
             Rent Trends by {meta.regionLabel}
           </h2>
-          <p className="text-sm text-[#64748b] mb-4">
+          <p className="text-sm text-[#5E6687] mb-4">
             {isNyc
               ? "How median rents compare across NYC\u2019s five boroughs over time."
               : `How median rents compare across ${meta.fullName}\u2019s areas over time.`}
@@ -180,11 +180,11 @@ export default async function RentDataPage({ params: routeParams }: { params: Pr
         </section>
 
         {/* Section 3: Zip Code Table */}
-        <section className="bg-white border border-[#e2e8f0] rounded-xl p-5 sm:p-6 mb-6">
-          <h2 className="text-lg font-bold text-[#0F1D2E] mb-1">
+        <section className="bg-white border border-[#E2E8F0] rounded-xl p-5 sm:p-6 mb-6">
+          <h2 className="text-lg font-bold text-[#1A1F36] mb-1">
             Rent by Neighborhood
           </h2>
-          <p className="text-sm text-[#64748b] mb-4">
+          <p className="text-sm text-[#5E6687] mb-4">
             Current median rent for each {meta.fullName} zip code. Filter by {meta.regionLabel.toLowerCase()} and
             sort by rent or zip code.
           </p>
@@ -193,11 +193,11 @@ export default async function RentDataPage({ params: routeParams }: { params: Pr
 
         {/* Section 4: RGB History — NYC only */}
         {isNyc && (
-          <section className="bg-white border border-[#e2e8f0] rounded-xl p-5 sm:p-6 mb-6">
-            <h2 className="text-lg font-bold text-[#0F1D2E] mb-1">
+          <section className="bg-white border border-[#E2E8F0] rounded-xl p-5 sm:p-6 mb-6">
+            <h2 className="text-lg font-bold text-[#1A1F36] mb-1">
               Rent Guidelines Board Rate History
             </h2>
-            <p className="text-sm text-[#64748b] mb-4">
+            <p className="text-sm text-[#5E6687] mb-4">
               Maximum annual rent increases set by the NYC Rent Guidelines Board
               for rent-stabilized apartments.
             </p>
@@ -206,11 +206,11 @@ export default async function RentDataPage({ params: routeParams }: { params: Pr
         )}
 
         {/* Section 5: Rent Map */}
-        <section className="bg-white border border-[#e2e8f0] rounded-xl p-5 sm:p-6 mb-6">
-          <h2 className="text-lg font-bold text-[#0F1D2E] mb-1">
+        <section className="bg-white border border-[#E2E8F0] rounded-xl p-5 sm:p-6 mb-6">
+          <h2 className="text-lg font-bold text-[#1A1F36] mb-1">
             {meta.fullName} Rent Map
           </h2>
-          <p className="text-sm text-[#64748b] mb-4">
+          <p className="text-sm text-[#5E6687] mb-4">
             Interactive map showing current median rents by zip code. Hover over
             a neighborhood to see details.
           </p>

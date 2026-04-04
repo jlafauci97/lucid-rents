@@ -33,7 +33,7 @@ export function LetterGrade({ score, size = "md", showScore = false }: LetterGra
         {grade}
       </div>
       {showScore && (
-        <span className="text-xs font-medium text-[#64748b]">
+        <span className="text-xs font-medium text-[#5E6687]">
           {score.toFixed(1)}/10
         </span>
       )}

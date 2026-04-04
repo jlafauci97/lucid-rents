@@ -13,7 +13,7 @@ interface ActivityEvent {
 }
 
 const STATUS_ICON = {
-  in_progress: <Loader2 className="h-3.5 w-3.5 text-[#3B82F6] animate-spin" />,
+  in_progress: <Loader2 className="h-3.5 w-3.5 text-[#6366F1] animate-spin" />,
   done: <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />,
   failed: <XCircle className="h-3.5 w-3.5 text-red-500" />,
 };
@@ -137,8 +137,8 @@ export function ActivitySidebar() {
     <Card>
       <CardHeader className="py-3">
         <div className="flex items-center gap-2">
-          <Activity className="h-4 w-4 text-[#64748b]" />
-          <h3 className="text-sm font-medium text-[#0F1D2E]">
+          <Activity className="h-4 w-4 text-[#5E6687]" />
+          <h3 className="text-sm font-medium text-[#1A1F36]">
             Workflow Activity
           </h3>
           {connected && (
@@ -151,7 +151,7 @@ export function ActivitySidebar() {
       </CardHeader>
       <CardContent>
         {events.length === 0 ? (
-          <p className="text-xs text-[#64748b] py-4 text-center">
+          <p className="text-xs text-[#5E6687] py-4 text-center">
             No active workflows
           </p>
         ) : (
@@ -160,10 +160,10 @@ export function ActivitySidebar() {
               <div key={event.id} className="flex items-start gap-2">
                 <div className="mt-0.5">{STATUS_ICON[event.status]}</div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-[#0F1D2E] truncate">
+                  <p className="text-xs text-[#1A1F36] truncate">
                     {event.step}
                   </p>
-                  <p className="text-[10px] text-[#64748b]">
+                  <p className="text-[10px] text-[#5E6687]">
                     {event.timestamp}
                   </p>
                 </div>

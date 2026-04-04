@@ -55,8 +55,8 @@ export function CrimeCategoryBreakdown({ summary }: CrimeCategoryBreakdownProps)
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <Card>
         <CardHeader>
-          <h3 className="text-lg font-bold text-[#0F1D2E]">By Category</h3>
-          <p className="text-sm text-[#64748b]">Crime type breakdown (12 months)</p>
+          <h3 className="text-lg font-bold text-[#1A1F36]">By Category</h3>
+          <p className="text-sm text-[#5E6687]">Crime type breakdown (12 months)</p>
         </CardHeader>
         <CardContent>
           <div className="h-[220px] w-full">
@@ -106,8 +106,8 @@ export function CrimeCategoryBreakdown({ summary }: CrimeCategoryBreakdownProps)
 
       <Card>
         <CardHeader>
-          <h3 className="text-lg font-bold text-[#0F1D2E]">By Severity</h3>
-          <p className="text-sm text-[#64748b]">Legal classification breakdown (12 months)</p>
+          <h3 className="text-lg font-bold text-[#1A1F36]">By Severity</h3>
+          <p className="text-sm text-[#5E6687]">Legal classification breakdown (12 months)</p>
         </CardHeader>
         <CardContent>
           <div className="h-[220px] w-full">

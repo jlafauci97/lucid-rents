@@ -12,16 +12,16 @@ export const metadata: Metadata = {
 export default function AboutPage() {
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <h1 className="text-3xl font-bold text-[#0F1D2E] mb-2">
+      <h1 className="text-3xl font-bold text-[#1A1F36] mb-2">
         About Lucid Rents
       </h1>
-      <p className="text-sm text-[#94a3b8] mb-8">
+      <p className="text-sm text-[#A3ACBE] mb-8">
         Transparency for renters
       </p>
 
-      <div className="prose prose-slate max-w-none space-y-8 text-[#334155] text-sm leading-relaxed">
+      <div className="prose prose-slate max-w-none space-y-8 text-[#1A1F36] text-sm leading-relaxed">
         <section>
-          <h2 className="text-lg font-semibold text-[#0F1D2E] mb-2">
+          <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
             Our Mission
           </h2>
           <p>
@@ -36,47 +36,47 @@ export default function AboutPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[#0F1D2E] mb-2">
+          <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
             What We Do
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 not-prose">
-            <div className="border border-[#e2e8f0] rounded-lg p-4">
-              <Building2 className="w-5 h-5 text-[#3B82F6] mb-2" />
-              <h3 className="font-semibold text-[#0F1D2E] text-sm mb-1">
+            <div className="border border-[#E2E8F0] rounded-lg p-4">
+              <Building2 className="w-5 h-5 text-[#6366F1] mb-2" />
+              <h3 className="font-semibold text-[#1A1F36] text-sm mb-1">
                 Building Profiles
               </h3>
-              <p className="text-xs text-[#64748b]">
+              <p className="text-xs text-[#5E6687]">
                 Detailed pages for over 1.8 million buildings across NYC,
                 Los Angeles, Chicago, Miami, and Houston with violation
                 histories, complaints, and tenant reviews.
               </p>
             </div>
-            <div className="border border-[#e2e8f0] rounded-lg p-4">
-              <Database className="w-5 h-5 text-[#3B82F6] mb-2" />
-              <h3 className="font-semibold text-[#0F1D2E] text-sm mb-1">
+            <div className="border border-[#E2E8F0] rounded-lg p-4">
+              <Database className="w-5 h-5 text-[#6366F1] mb-2" />
+              <h3 className="font-semibold text-[#1A1F36] text-sm mb-1">
                 Public Data
               </h3>
-              <p className="text-xs text-[#64748b]">
+              <p className="text-xs text-[#5E6687]">
                 Violations, complaints, crime data, rent stabilization
                 records, and more from city-specific agencies — updated daily.
               </p>
             </div>
-            <div className="border border-[#e2e8f0] rounded-lg p-4">
-              <Users className="w-5 h-5 text-[#3B82F6] mb-2" />
-              <h3 className="font-semibold text-[#0F1D2E] text-sm mb-1">
+            <div className="border border-[#E2E8F0] rounded-lg p-4">
+              <Users className="w-5 h-5 text-[#6366F1] mb-2" />
+              <h3 className="font-semibold text-[#1A1F36] text-sm mb-1">
                 Tenant Reviews
               </h3>
-              <p className="text-xs text-[#64748b]">
+              <p className="text-xs text-[#5E6687]">
                 Real reviews from current and former tenants covering
                 management, maintenance, pests, noise, and more.
               </p>
             </div>
-            <div className="border border-[#e2e8f0] rounded-lg p-4">
-              <Shield className="w-5 h-5 text-[#3B82F6] mb-2" />
-              <h3 className="font-semibold text-[#0F1D2E] text-sm mb-1">
+            <div className="border border-[#E2E8F0] rounded-lg p-4">
+              <Shield className="w-5 h-5 text-[#6366F1] mb-2" />
+              <h3 className="font-semibold text-[#1A1F36] text-sm mb-1">
                 Tenant Tools
               </h3>
-              <p className="text-xs text-[#64748b]">
+              <p className="text-xs text-[#5E6687]">
                 Rent affordability calculator, rent stabilization checker,
                 building comparison, energy scores, transit search, and more
                 — all free.
@@ -86,7 +86,7 @@ export default function AboutPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[#0F1D2E] mb-2">
+          <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
             Our Data Sources
           </h2>
           <p>
@@ -125,19 +125,19 @@ export default function AboutPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[#0F1D2E] mb-2">
+          <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
             Contact Us
           </h2>
           <p>
             Have questions, feedback, or data correction requests? Reach out at{" "}
             <a
               href="mailto:admin@lucidrents.com"
-              className="text-[#3B82F6] hover:underline"
+              className="text-[#6366F1] hover:underline"
             >
               admin@lucidrents.com
             </a>
             . You can also visit our{" "}
-            <a href="/contact" className="text-[#3B82F6] hover:underline">
+            <a href="/contact" className="text-[#6366F1] hover:underline">
               Contact page
             </a>{" "}
             for more ways to get in touch.
@@ -145,7 +145,7 @@ export default function AboutPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[#0F1D2E] mb-2">
+          <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
             Disclaimer
           </h2>
           <p>

@@ -275,7 +275,7 @@ export function MarketListings({ listings: rawListings, amenities, rentHistory =
           <Card id="units">
             <CardHeader>
               <div className="flex items-center gap-2">
-                <Home className="w-4.5 h-4.5 text-[#2563EB]" />
+                <Home className="w-4.5 h-4.5 text-[#4F46E5]" />
                 <h3 className="text-base font-bold" style={{ color: T.text1 }}>
                   Units Historic Rent ({rentHistory.length})
                 </h3>

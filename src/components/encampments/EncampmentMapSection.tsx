@@ -79,7 +79,7 @@ export function EncampmentMapSection({ city }: { city: string }) {
 
   if (!mounted) {
     return (
-      <div className="h-[400px] sm:h-[500px] lg:h-[550px] bg-[#f8fafc] rounded-xl border border-[#e2e8f0] flex items-center justify-center">
+      <div className="h-[400px] sm:h-[500px] lg:h-[550px] bg-[#FAFBFD] rounded-xl border border-[#E2E8F0] flex items-center justify-center">
         <div className="w-12 h-12 border-4 border-[#F59E0B] border-t-transparent rounded-full animate-spin" />
       </div>
     );
@@ -105,8 +105,8 @@ export function EncampmentMapSection({ city }: { city: string }) {
       >
         <Popup>
           <div className="text-sm min-w-[180px]">
-            <p className="font-bold text-[#0F1D2E] mb-1 text-xs">{p.address || "No address"}</p>
-            <div className="space-y-0.5 text-xs text-[#64748b]">
+            <p className="font-bold text-[#1A1F36] mb-1 text-xs">{p.address || "No address"}</p>
+            <div className="space-y-0.5 text-xs text-[#5E6687]">
               <p>
                 Status:{" "}
                 <span
@@ -118,7 +118,7 @@ export function EncampmentMapSection({ city }: { city: string }) {
               </p>
               <p>
                 Date:{" "}
-                <span className="font-semibold text-[#0F1D2E]">
+                <span className="font-semibold text-[#1A1F36]">
                   {new Date(p.date).toLocaleDateString()}
                 </span>
               </p>
@@ -149,23 +149,23 @@ export function EncampmentMapSection({ city }: { city: string }) {
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
               filter === f.key
                 ? "bg-[#0F1D2E] text-white"
-                : "bg-[#f1f5f9] text-[#64748b] hover:bg-[#e2e8f0]"
+                : "bg-[#F5F7FA] text-[#5E6687] hover:bg-[#e2e8f0]"
             }`}
           >
             <f.icon className="w-3.5 h-3.5" />
             {f.label}
           </button>
         ))}
-        <span className="text-sm text-[#64748b] ml-2">
+        <span className="text-sm text-[#5E6687] ml-2">
           {loading ? "Loading..." : `${filteredPoints.length.toLocaleString()} reports shown`}
         </span>
       </div>
 
       {/* Map */}
-      <div className="h-[400px] sm:h-[500px] lg:h-[550px] rounded-xl border border-[#e2e8f0] overflow-hidden relative">
+      <div className="h-[400px] sm:h-[500px] lg:h-[550px] rounded-xl border border-[#E2E8F0] overflow-hidden relative">
         {/* Legend */}
-        <div className="absolute bottom-3 right-3 z-[1000] bg-white rounded-lg shadow-lg border border-[#e2e8f0] p-3">
-          <p className="text-xs font-semibold text-[#0F1D2E] mb-1.5">Report Status</p>
+        <div className="absolute bottom-3 right-3 z-[1000] bg-white rounded-lg shadow-lg border border-[#E2E8F0] p-3">
+          <p className="text-xs font-semibold text-[#1A1F36] mb-1.5">Report Status</p>
           <div className="space-y-1">
             {[
               { label: "Open", color: "#ef4444" },
@@ -177,7 +177,7 @@ export function EncampmentMapSection({ city }: { city: string }) {
                   className="w-3 h-3 rounded-full"
                   style={{ backgroundColor: s.color }}
                 />
-                <span className="text-[10px] text-[#64748b]">{s.label}</span>
+                <span className="text-[10px] text-[#5E6687]">{s.label}</span>
               </div>
             ))}
           </div>

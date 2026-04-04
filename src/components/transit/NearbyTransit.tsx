@@ -37,7 +37,7 @@ const NYC_TRANSIT_CONFIG: TransitConfigItem[] = [
     key: "subway",
     label: "Subway",
     icon: TrainFront,
-    color: "text-[#2563EB]",
+    color: "text-[#4F46E5]",
     badgeColor: "bg-[#2563EB] text-white",
   },
   {
@@ -75,7 +75,7 @@ const LA_TRANSIT_CONFIG: TransitConfigItem[] = [
     key: "rail",
     label: "Metro Rail",
     icon: TrainFront,
-    color: "text-[#2563EB]",
+    color: "text-[#4F46E5]",
     badgeColor: "bg-[#2563EB] text-white",
   },
   {
@@ -142,7 +142,7 @@ export function NearbyTransit({ latitude, longitude, city }: NearbyTransitProps)
     <Card>
       <CardHeader>
         <div className="flex items-center gap-2">
-          <TrainFront className="w-4.5 h-4.5 text-[#2563EB]" />
+          <TrainFront className="w-4.5 h-4.5 text-[#4F46E5]" />
           <h3 className="text-base font-bold" style={{ color: T.text1 }}>
             Nearby Transit
           </h3>

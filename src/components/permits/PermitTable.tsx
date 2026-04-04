@@ -96,7 +96,7 @@ export function PermitTable({ data }: { data: PermitRow[] }) {
 
   if (data.length === 0) {
     return (
-      <div className="text-center py-12 text-[#94a3b8]">
+      <div className="text-center py-12 text-[#A3ACBE]">
         No permit data available yet.
       </div>
     );
@@ -111,7 +111,7 @@ export function PermitTable({ data }: { data: PermitRow[] }) {
           className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
             !borough
               ? "bg-[#0F1D2E] text-white"
-              : "bg-[#f1f5f9] text-[#64748b] hover:bg-[#e2e8f0]"
+              : "bg-[#F5F7FA] text-[#5E6687] hover:bg-[#e2e8f0]"
           }`}
         >
           All {regionLabel}s
@@ -123,7 +123,7 @@ export function PermitTable({ data }: { data: PermitRow[] }) {
             className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
               borough === b
                 ? "bg-[#0F1D2E] text-white"
-                : "bg-[#f1f5f9] text-[#64748b] hover:bg-[#e2e8f0]"
+                : "bg-[#F5F7FA] text-[#5E6687] hover:bg-[#e2e8f0]"
             }`}
           >
             {b}
@@ -136,7 +136,7 @@ export function PermitTable({ data }: { data: PermitRow[] }) {
         <select
           value={workType}
           onChange={(e) => handleFilterChange(setWorkType)(e.target.value)}
-          className="text-sm border border-[#e2e8f0] rounded-lg px-3 py-2 text-[#0F1D2E] bg-white"
+          className="text-sm border border-[#E2E8F0] rounded-lg px-3 py-2 text-[#1A1F36] bg-white"
         >
           <option value="">All Work Types</option>
           {workTypes.map((t) => (
@@ -151,41 +151,41 @@ export function PermitTable({ data }: { data: PermitRow[] }) {
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
-              <th className="text-left px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide">
+            <tr className="bg-[#FAFBFD] border-b border-[#E2E8F0]">
+              <th className="text-left px-4 py-3 text-xs font-semibold text-[#5E6687] uppercase tracking-wide">
                 Address
               </th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide hidden sm:table-cell">
+              <th className="text-left px-4 py-3 text-xs font-semibold text-[#5E6687] uppercase tracking-wide hidden sm:table-cell">
                 Work Type
               </th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide hidden md:table-cell">
+              <th className="text-left px-4 py-3 text-xs font-semibold text-[#5E6687] uppercase tracking-wide hidden md:table-cell">
                 {regionLabel}
               </th>
               <th className="text-right px-4 py-3 text-xs font-semibold text-[#0D9488] uppercase tracking-wide">
                 <button
                   onClick={() => toggleSort("issued_date")}
-                  className="inline-flex items-center gap-1 hover:text-[#0F1D2E] ml-auto"
+                  className="inline-flex items-center gap-1 hover:text-[#1A1F36] ml-auto"
                 >
                   Issued <ArrowUpDown className="w-3 h-3" />
                 </button>
               </th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide hidden lg:table-cell">
+              <th className="text-right px-4 py-3 text-xs font-semibold text-[#5E6687] uppercase tracking-wide hidden lg:table-cell">
                 <button
                   onClick={() => toggleSort("estimated_job_costs")}
-                  className="inline-flex items-center gap-1 hover:text-[#0F1D2E] ml-auto"
+                  className="inline-flex items-center gap-1 hover:text-[#1A1F36] ml-auto"
                 >
                   Est. Cost <ArrowUpDown className="w-3 h-3" />
                 </button>
               </th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide hidden xl:table-cell">
+              <th className="text-left px-4 py-3 text-xs font-semibold text-[#5E6687] uppercase tracking-wide hidden xl:table-cell">
                 Description
               </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#e2e8f0]">
             {paginated.map((row) => (
-              <tr key={row.work_permit} className="hover:bg-[#f8fafc] transition-colors">
-                <td className="px-4 py-3 text-sm font-semibold text-[#0F1D2E]">
+              <tr key={row.work_permit} className="hover:bg-[#FAFBFD] transition-colors">
+                <td className="px-4 py-3 text-sm font-semibold text-[#1A1F36]">
                   {row.building_slug && row.building_borough ? (
                     <Link
                       href={buildingUrl({ borough: row.building_borough, slug: row.building_slug }, city)}
@@ -197,13 +197,13 @@ export function PermitTable({ data }: { data: PermitRow[] }) {
                     <>{row.house_no} {row.street_name}</>
                   )}
                 </td>
-                <td className="px-4 py-3 text-sm text-[#334155] hidden sm:table-cell">
+                <td className="px-4 py-3 text-sm text-[#1A1F36] hidden sm:table-cell">
                   {row.work_type || "\u2014"}
                 </td>
-                <td className="px-4 py-3 text-sm text-[#334155] hidden md:table-cell">
+                <td className="px-4 py-3 text-sm text-[#1A1F36] hidden md:table-cell">
                   {row.borough || "\u2014"}
                 </td>
-                <td className="px-4 py-3 text-sm text-[#334155] text-right">
+                <td className="px-4 py-3 text-sm text-[#1A1F36] text-right">
                   {row.issued_date
                     ? new Date(row.issued_date).toLocaleDateString("en-US", {
                         month: "short",
@@ -212,10 +212,10 @@ export function PermitTable({ data }: { data: PermitRow[] }) {
                       })
                     : "\u2014"}
                 </td>
-                <td className="px-4 py-3 text-sm text-[#334155] text-right hidden lg:table-cell">
+                <td className="px-4 py-3 text-sm text-[#1A1F36] text-right hidden lg:table-cell">
                   {formatCost(row.estimated_job_costs)}
                 </td>
-                <td className="px-4 py-3 text-sm text-[#334155] hidden xl:table-cell max-w-[250px] truncate">
+                <td className="px-4 py-3 text-sm text-[#1A1F36] hidden xl:table-cell max-w-[250px] truncate">
                   {row.job_description || "\u2014"}
                 </td>
               </tr>
@@ -226,7 +226,7 @@ export function PermitTable({ data }: { data: PermitRow[] }) {
 
       {/* Pagination */}
       <div className="flex items-center justify-between mt-4">
-        <p className="text-xs text-[#94a3b8]">
+        <p className="text-xs text-[#A3ACBE]">
           Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length} permits. Data: {dataSource} Permits.
         </p>
         {totalPages > 1 && (
@@ -234,17 +234,17 @@ export function PermitTable({ data }: { data: PermitRow[] }) {
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e2e8f0] text-[#334155] hover:bg-[#f8fafc] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#E2E8F0] text-[#1A1F36] hover:bg-[#FAFBFD] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               <ChevronLeft className="w-3 h-3" /> Previous
             </button>
-            <span className="text-xs text-[#64748b]">
+            <span className="text-xs text-[#5E6687]">
               Page {page} of {totalPages}
             </span>
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e2e8f0] text-[#334155] hover:bg-[#f8fafc] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#E2E8F0] text-[#1A1F36] hover:bg-[#FAFBFD] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               Next <ChevronRight className="w-3 h-3" />
             </button>

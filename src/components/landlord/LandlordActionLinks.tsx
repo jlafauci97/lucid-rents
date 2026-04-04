@@ -45,26 +45,26 @@ export function LandlordActionLinks({ compareIds }: LandlordActionLinksProps) {
   ];
 
   return (
-    <div className="bg-white rounded-xl border border-[#e2e8f0] p-6 mb-8">
-      <h2 className="text-lg font-bold text-[#0F1D2E] mb-4">
+    <div className="bg-white rounded-xl border border-[#E2E8F0] p-6 mb-8">
+      <h2 className="text-lg font-bold text-[#1A1F36] mb-4">
         Tenant Resources
       </h2>
       <div className="space-y-2">
         {links.map((link) => {
           const Icon = link.icon;
           const inner = (
-            <div className="flex items-center gap-3 rounded-lg px-4 py-3 hover:bg-[#f8fafc] transition-colors group">
+            <div className="flex items-center gap-3 rounded-lg px-4 py-3 hover:bg-[#FAFBFD] transition-colors group">
               <div className="w-9 h-9 rounded-lg bg-[#eff6ff] flex items-center justify-center flex-shrink-0">
-                <Icon className="w-4.5 h-4.5 text-[#3B82F6]" />
+                <Icon className="w-4.5 h-4.5 text-[#6366F1]" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-[#0F1D2E] group-hover:text-[#3B82F6] transition-colors">
+                <p className="text-sm font-semibold text-[#1A1F36] group-hover:text-[#6366F1] transition-colors">
                   {link.label}
                 </p>
-                <p className="text-xs text-[#94a3b8]">{link.description}</p>
+                <p className="text-xs text-[#A3ACBE]">{link.description}</p>
               </div>
               {link.external && (
-                <ExternalLink className="w-4 h-4 text-[#94a3b8] flex-shrink-0" />
+                <ExternalLink className="w-4 h-4 text-[#A3ACBE] flex-shrink-0" />
               )}
             </div>
           );

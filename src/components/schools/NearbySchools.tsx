@@ -33,7 +33,7 @@ const SCHOOL_CONFIG: {
     key: "public_school",
     label: "Public Schools",
     icon: School,
-    color: "text-[#2563EB]",
+    color: "text-[#4F46E5]",
   },
   {
     key: "charter_school",
@@ -106,7 +106,7 @@ export function NearbySchools({ latitude, longitude, city }: NearbySchoolsProps)
     <Card>
       <CardHeader>
         <div className="flex items-center gap-2">
-          <GraduationCap className="w-4.5 h-4.5 text-[#2563EB]" />
+          <GraduationCap className="w-4.5 h-4.5 text-[#4F46E5]" />
           <h3 className="text-base font-bold" style={{ color: T.text1 }}>
             Nearby Schools & Colleges
           </h3>

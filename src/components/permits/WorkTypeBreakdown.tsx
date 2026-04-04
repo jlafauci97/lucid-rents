@@ -20,7 +20,7 @@ interface WorkTypeStat {
 export function WorkTypeBreakdown({ data }: { data: WorkTypeStat[] }) {
   if (data.length === 0) {
     return (
-      <div className="text-center py-12 text-[#94a3b8]">
+      <div className="text-center py-12 text-[#A3ACBE]">
         No work type breakdown data available yet.
       </div>
     );

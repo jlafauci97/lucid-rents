@@ -27,8 +27,8 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: Array<
   if (!active || !payload?.length) return null;
   const item = payload[0];
   return (
-    <div className="bg-white border border-[#e2e8f0] rounded-lg shadow-md px-3 py-2">
-      <p className="text-xs font-semibold text-[#0F1D2E]">{item.name}</p>
+    <div className="bg-white border border-[#E2E8F0] rounded-lg shadow-md px-3 py-2">
+      <p className="text-xs font-semibold text-[#1A1F36]">{item.name}</p>
       <p className="text-sm font-bold" style={{ color: item.payload.fill }}>
         {formatCurrency(item.value)}
       </p>
@@ -49,7 +49,7 @@ export function BudgetBreakdownChart({
 
   return (
     <div>
-      <h3 className="text-sm font-semibold text-[#0F1D2E] mb-3">
+      <h3 className="text-sm font-semibold text-[#1A1F36] mb-3">
         Monthly Budget Breakdown
       </h3>
       <div className="flex flex-col sm:flex-row items-center gap-4">
@@ -85,8 +85,8 @@ export function BudgetBreakdownChart({
                 style={{ backgroundColor: item.fill }}
               />
               <div>
-                <p className="text-xs text-[#64748b]">{item.name}</p>
-                <p className="text-sm font-semibold text-[#0F1D2E]">
+                <p className="text-xs text-[#5E6687]">{item.name}</p>
+                <p className="text-sm font-semibold text-[#1A1F36]">
                   {formatCurrency(item.value)}
                 </p>
               </div>

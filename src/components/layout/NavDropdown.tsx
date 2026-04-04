@@ -198,7 +198,7 @@ export function NavDropdown({ city = DEFAULT_CITY }: { city?: City }) {
                 onClick={() => setOpen(false)}
                 className="flex items-start gap-3 px-4 py-3 hover:bg-white/5 transition-colors"
               >
-                <tool.icon className="w-4 h-4 text-[#3B82F6] mt-0.5 flex-shrink-0" />
+                <tool.icon className="w-4 h-4 text-[#6366F1] mt-0.5 flex-shrink-0" />
                 <div>
                   <div className="text-sm font-medium text-white">{getToolLabel(tool, city)}</div>
                   <div className="text-xs text-gray-400 mt-0.5">{getToolDescription(tool, city)}</div>

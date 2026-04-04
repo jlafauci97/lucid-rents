@@ -96,17 +96,17 @@ export default async function AffordableHousingPage({
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <Home className="w-12 h-12 text-[#94a3b8] mx-auto mb-4" />
-          <h1 className="text-xl font-bold text-[#0F1D2E] mb-2">
+          <Home className="w-12 h-12 text-[#A3ACBE] mx-auto mb-4" />
+          <h1 className="text-xl font-bold text-[#1A1F36] mb-2">
             Coming Soon
           </h1>
-          <p className="text-sm text-[#64748b] max-w-md">
+          <p className="text-sm text-[#5E6687] max-w-md">
             Affordable housing tracking is currently available for Chicago.
             We&apos;re working on expanding to other cities.
           </p>
           <Link
             href={`/${city}/tenant-rights`}
-            className="inline-block mt-6 text-sm font-medium text-[#3B82F6] hover:text-[#2563EB] transition-colors"
+            className="inline-block mt-6 text-sm font-medium text-[#6366F1] hover:text-[#4F46E5] transition-colors"
           >
             &larr; Back to Tenant Rights
           </Link>
@@ -173,11 +173,11 @@ export default async function AffordableHousingPage({
             <div className="p-2 bg-emerald-50 rounded-lg">
               <Home className="w-6 h-6 text-[#059669]" />
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#0F1D2E]">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#1A1F36]">
               Affordable Housing Tracker — ARO Units
             </h1>
           </div>
-          <p className="text-[#64748b] text-sm sm:text-base max-w-3xl">
+          <p className="text-[#5E6687] text-sm sm:text-base max-w-3xl">
             Chicago&apos;s Affordable Requirements Ordinance (ARO) requires
             developers receiving city assistance or zoning changes to include
             affordable units in their projects. Track where affordable housing is
@@ -187,48 +187,48 @@ export default async function AffordableHousingPage({
 
         {/* Summary stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
-            <p className="text-xs text-[#64748b] font-medium uppercase tracking-wide">
+          <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
+            <p className="text-xs text-[#5E6687] font-medium uppercase tracking-wide">
               Total Projects
             </p>
-            <p className="text-2xl font-bold text-[#0F1D2E] mt-1">
+            <p className="text-2xl font-bold text-[#1A1F36] mt-1">
               {totalCount > 0 ? totalCount.toLocaleString() : "\u2014"}
             </p>
           </div>
-          <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
+          <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
             <p className="text-xs text-[#059669] font-medium uppercase tracking-wide">
               Affordable Units
             </p>
-            <p className="text-2xl font-bold text-[#0F1D2E] mt-1">
+            <p className="text-2xl font-bold text-[#1A1F36] mt-1">
               {totalAffordableUnits > 0
                 ? totalAffordableUnits.toLocaleString()
                 : "\u2014"}
             </p>
           </div>
-          <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
-            <p className="text-xs text-[#64748b] font-medium uppercase tracking-wide">
+          <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
+            <p className="text-xs text-[#5E6687] font-medium uppercase tracking-wide">
               Avg Affordability %
             </p>
-            <p className="text-2xl font-bold text-[#0F1D2E] mt-1">
+            <p className="text-2xl font-bold text-[#1A1F36] mt-1">
               {avgAffordability}%
             </p>
           </div>
-          <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
-            <p className="text-xs text-[#64748b] font-medium uppercase tracking-wide">
+          <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
+            <p className="text-xs text-[#5E6687] font-medium uppercase tracking-wide">
               Wards Covered
             </p>
-            <p className="text-2xl font-bold text-[#0F1D2E] mt-1">
+            <p className="text-2xl font-bold text-[#1A1F36] mt-1">
               {wards.length > 0 ? wards.length : "\u2014"}
             </p>
           </div>
         </div>
 
         {/* Table */}
-        <section className="bg-white border border-[#e2e8f0] rounded-xl p-5 sm:p-6 mb-6">
-          <h2 className="text-lg font-bold text-[#0F1D2E] mb-1">
+        <section className="bg-white border border-[#E2E8F0] rounded-xl p-5 sm:p-6 mb-6">
+          <h2 className="text-lg font-bold text-[#1A1F36] mb-1">
             ARO Projects
           </h2>
-          <p className="text-sm text-[#64748b] mb-4">
+          <p className="text-sm text-[#5E6687] mb-4">
             Showing {offset + 1}–{Math.min(offset + pageSize, totalCount).toLocaleString()} of{" "}
             {totalCount.toLocaleString()} projects, sorted by affordable unit
             count.
@@ -237,29 +237,29 @@ export default async function AffordableHousingPage({
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-[#e2e8f0] text-left">
-                  <th className="pb-3 pr-4 text-xs font-medium text-[#64748b] uppercase tracking-wide">
+                <tr className="border-b border-[#E2E8F0] text-left">
+                  <th className="pb-3 pr-4 text-xs font-medium text-[#5E6687] uppercase tracking-wide">
                     Project
                   </th>
-                  <th className="pb-3 pr-4 text-xs font-medium text-[#64748b] uppercase tracking-wide">
+                  <th className="pb-3 pr-4 text-xs font-medium text-[#5E6687] uppercase tracking-wide">
                     Address
                   </th>
-                  <th className="pb-3 pr-4 text-xs font-medium text-[#64748b] uppercase tracking-wide text-right">
+                  <th className="pb-3 pr-4 text-xs font-medium text-[#5E6687] uppercase tracking-wide text-right">
                     Total Units
                   </th>
-                  <th className="pb-3 pr-4 text-xs font-medium text-[#64748b] uppercase tracking-wide text-right">
+                  <th className="pb-3 pr-4 text-xs font-medium text-[#5E6687] uppercase tracking-wide text-right">
                     <span className="inline-flex items-center gap-1">
                       Affordable
                       <ArrowUpDown className="w-3 h-3" />
                     </span>
                   </th>
-                  <th className="pb-3 pr-4 text-xs font-medium text-[#64748b] uppercase tracking-wide">
+                  <th className="pb-3 pr-4 text-xs font-medium text-[#5E6687] uppercase tracking-wide">
                     Income Req.
                   </th>
-                  <th className="pb-3 pr-4 text-xs font-medium text-[#64748b] uppercase tracking-wide">
+                  <th className="pb-3 pr-4 text-xs font-medium text-[#5E6687] uppercase tracking-wide">
                     Status
                   </th>
-                  <th className="pb-3 text-xs font-medium text-[#64748b] uppercase tracking-wide text-right">
+                  <th className="pb-3 text-xs font-medium text-[#5E6687] uppercase tracking-wide text-right">
                     Ward
                   </th>
                 </tr>
@@ -268,30 +268,30 @@ export default async function AffordableHousingPage({
                 {units.map((u) => (
                   <tr
                     key={u.id}
-                    className="border-b border-[#f1f5f9] hover:bg-[#f8fafc] transition-colors"
+                    className="border-b border-[#f1f5f9] hover:bg-[#FAFBFD] transition-colors"
                   >
-                    <td className="py-3 pr-4 font-medium text-[#0F1D2E]">
+                    <td className="py-3 pr-4 font-medium text-[#1A1F36]">
                       {u.project_name || "\u2014"}
                     </td>
                     <td className="py-3 pr-4">
                       {u.building ? (
                         <Link
                           href={buildingUrl(u.building, "chicago")}
-                          className="text-[#2563EB] hover:text-[#1d4ed8] hover:underline font-medium"
+                          className="text-[#4F46E5] hover:text-[#1d4ed8] hover:underline font-medium"
                         >
                           {u.address}
                         </Link>
                       ) : (
-                        <span className="text-[#64748b]">{u.address}</span>
+                        <span className="text-[#5E6687]">{u.address}</span>
                       )}
                     </td>
-                    <td className="py-3 pr-4 text-right text-[#0F1D2E]">
+                    <td className="py-3 pr-4 text-right text-[#1A1F36]">
                       {u.total_units?.toLocaleString() ?? "\u2014"}
                     </td>
                     <td className="py-3 pr-4 text-right font-semibold text-[#059669]">
                       {u.affordable_units?.toLocaleString() ?? "\u2014"}
                     </td>
-                    <td className="py-3 pr-4 text-[#64748b] text-xs">
+                    <td className="py-3 pr-4 text-[#5E6687] text-xs">
                       {u.income_requirement || "\u2014"}
                     </td>
                     <td className="py-3 pr-4">
@@ -312,7 +312,7 @@ export default async function AffordableHousingPage({
                         "\u2014"
                       )}
                     </td>
-                    <td className="py-3 text-right text-[#64748b]">
+                    <td className="py-3 text-right text-[#5E6687]">
                       {u.ward ?? "\u2014"}
                     </td>
                   </tr>
@@ -321,7 +321,7 @@ export default async function AffordableHousingPage({
                   <tr>
                     <td
                       colSpan={7}
-                      className="py-12 text-center text-[#94a3b8]"
+                      className="py-12 text-center text-[#A3ACBE]"
                     >
                       No affordable housing data available yet.
                     </td>
@@ -333,32 +333,32 @@ export default async function AffordableHousingPage({
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4 pt-4 border-t border-[#e2e8f0]">
-              <span className="text-xs text-[#64748b]">
+            <div className="flex items-center justify-between mt-4 pt-4 border-t border-[#E2E8F0]">
+              <span className="text-xs text-[#5E6687]">
                 Page {currentPage} of {totalPages}
               </span>
               <div className="flex items-center gap-2">
                 {currentPage > 1 ? (
                   <Link
                     href={`/${city}/affordable-housing?page=${currentPage - 1}`}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e2e8f0] text-[#334155] hover:bg-[#f8fafc] transition-colors"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#E2E8F0] text-[#1A1F36] hover:bg-[#FAFBFD] transition-colors"
                   >
                     <ChevronLeft className="w-3 h-3" /> Previous
                   </Link>
                 ) : (
-                  <span className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e2e8f0] text-[#334155] opacity-40 cursor-not-allowed">
+                  <span className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#E2E8F0] text-[#1A1F36] opacity-40 cursor-not-allowed">
                     <ChevronLeft className="w-3 h-3" /> Previous
                   </span>
                 )}
                 {currentPage < totalPages ? (
                   <Link
                     href={`/${city}/affordable-housing?page=${currentPage + 1}`}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e2e8f0] text-[#334155] hover:bg-[#f8fafc] transition-colors"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#E2E8F0] text-[#1A1F36] hover:bg-[#FAFBFD] transition-colors"
                   >
                     Next <ChevronRight className="w-3 h-3" />
                   </Link>
                 ) : (
-                  <span className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e2e8f0] text-[#334155] opacity-40 cursor-not-allowed">
+                  <span className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#E2E8F0] text-[#1A1F36] opacity-40 cursor-not-allowed">
                     Next <ChevronRight className="w-3 h-3" />
                   </span>
                 )}
@@ -373,14 +373,14 @@ export default async function AffordableHousingPage({
             href="https://www.chicago.gov/city/en/depts/doh/provdrs/developers/svcs/aro.html"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-start gap-3 bg-white border border-[#e2e8f0] rounded-xl p-4 hover:border-[#3B82F6] hover:shadow-sm transition-all group"
+            className="flex items-start gap-3 bg-white border border-[#E2E8F0] rounded-xl p-4 hover:border-[#6366F1] hover:shadow-sm transition-all group"
           >
-            <ExternalLink className="w-5 h-5 text-[#3B82F6] mt-0.5 flex-shrink-0" />
+            <ExternalLink className="w-5 h-5 text-[#6366F1] mt-0.5 flex-shrink-0" />
             <div>
-              <p className="text-sm font-semibold text-[#0F1D2E] group-hover:text-[#3B82F6]">
+              <p className="text-sm font-semibold text-[#1A1F36] group-hover:text-[#6366F1]">
                 Chicago ARO Program
               </p>
-              <p className="text-xs text-[#64748b] mt-0.5">
+              <p className="text-xs text-[#5E6687] mt-0.5">
                 Learn about Chicago&apos;s Affordable Requirements Ordinance and
                 eligibility for affordable units.
               </p>
@@ -390,14 +390,14 @@ export default async function AffordableHousingPage({
             href="https://www.chicago.gov/city/en/depts/doh.html"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-start gap-3 bg-white border border-[#e2e8f0] rounded-xl p-4 hover:border-[#3B82F6] hover:shadow-sm transition-all group"
+            className="flex items-start gap-3 bg-white border border-[#E2E8F0] rounded-xl p-4 hover:border-[#6366F1] hover:shadow-sm transition-all group"
           >
-            <ExternalLink className="w-5 h-5 text-[#3B82F6] mt-0.5 flex-shrink-0" />
+            <ExternalLink className="w-5 h-5 text-[#6366F1] mt-0.5 flex-shrink-0" />
             <div>
-              <p className="text-sm font-semibold text-[#0F1D2E] group-hover:text-[#3B82F6]">
+              <p className="text-sm font-semibold text-[#1A1F36] group-hover:text-[#6366F1]">
                 Dept. of Housing
               </p>
-              <p className="text-xs text-[#64748b] mt-0.5">
+              <p className="text-xs text-[#5E6687] mt-0.5">
                 Chicago Department of Housing — affordable housing programs,
                 applications, and tenant resources.
               </p>
