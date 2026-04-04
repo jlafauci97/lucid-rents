@@ -1,8 +1,25 @@
 import Link from "next/link";
-import { MapPin, Building2, Calendar, Layers, Users, ShieldCheck, AlertTriangle, MessageSquareWarning, Bug, Gavel, DollarSign, Ruler } from "lucide-react";
-import { getLetterGrade, deriveScore, GRADE_COLORS, type LetterGrade } from "@/lib/constants";
+import {
+  MapPin,
+  Building2,
+  Calendar,
+  Layers,
+  ShieldCheck,
+  AlertTriangle,
+  MessageSquareWarning,
+  DollarSign,
+  Users,
+  Bookmark,
+  GitCompare,
+  Share2,
+  Bell,
+} from "lucide-react";
+import { getLetterGrade, deriveScore } from "@/lib/constants";
 import { CITY_META, type City } from "@/lib/cities";
 import { landlordUrl } from "@/lib/seo";
+import { T, gradeColor } from "@/lib/design-tokens";
+import { Sparkline } from "@/components/ui/Sparkline";
+import { TrendBadge } from "@/components/ui/TrendBadge";
 import type { Building } from "@/types";
 
 interface BuildingHeaderProps {
@@ -14,22 +31,124 @@ interface BuildingHeaderProps {
   pricePerSqft?: number;
 }
 
-export function BuildingHeader({ building, city = "nyc", violationCount, valueGrade, medianRent, pricePerSqft }: BuildingHeaderProps) {
-  const vCount = violationCount ?? building.violation_count ?? 0;
-  const score = building.overall_score ?? deriveScore(
-    vCount,
-    building.complaint_count || 0
+/* ─── Double Ring Knockout Badge ─── */
+function GradeBadge({ grade, score }: { grade: string; score: number }) {
+  const color = gradeColor(grade);
+  const size = 88;
+  const strokeW = 3;
+  const inset = 10;
+  const innerR = size / 2 - inset;
+
+  return (
+    <div className="shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        {/* Outer ring */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={size / 2 - strokeW / 2}
+          fill="none"
+          stroke={color}
+          strokeWidth={strokeW}
+        />
+        {/* Inner filled circle */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={innerR}
+          fill={color}
+        />
+        {/* Grade letter */}
+        <text
+          x={size / 2}
+          y={size / 2 - 2}
+          textAnchor="middle"
+          dominantBaseline="central"
+          fill="white"
+          style={{ fontSize: 32, fontWeight: 800, fontFamily: "var(--font-display)" }}
+        >
+          {grade}
+        </text>
+        {/* Score */}
+        <text
+          x={size / 2}
+          y={size / 2 + 18}
+          textAnchor="middle"
+          dominantBaseline="central"
+          fill="rgba(255,255,255,0.7)"
+          style={{ fontSize: 12, fontWeight: 600, fontFamily: "var(--font-mono)" }}
+        >
+          {score.toFixed(1)}/5
+        </text>
+      </svg>
+    </div>
   );
+}
+
+/* ─── Vital Sign Metric Card ─── */
+function VitalCard({
+  label,
+  value,
+  sub,
+  color,
+  icon: Icon,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  color: string;
+  icon: typeof AlertTriangle;
+}) {
+  return (
+    <div
+      className="flex-1 min-w-[140px] rounded-xl p-4 border"
+      style={{
+        backgroundColor: `${color}08`,
+        borderColor: `${color}20`,
+      }}
+    >
+      <div className="flex items-center gap-1.5 mb-2">
+        <Icon className="w-3.5 h-3.5" style={{ color }} />
+        <span
+          className="text-xs font-medium"
+          style={{ color: T.text2, fontFamily: "var(--font-body)" }}
+        >
+          {label}
+        </span>
+      </div>
+      <div
+        className="text-2xl font-bold leading-none"
+        style={{ color: T.text1, fontFamily: "var(--font-mono)" }}
+      >
+        {value}
+      </div>
+      {sub && (
+        <div
+          className="text-xs mt-1"
+          style={{ color: T.text3, fontFamily: "var(--font-body)" }}
+        >
+          {sub}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function BuildingHeader({
+  building,
+  city = "nyc",
+  violationCount,
+  valueGrade,
+  medianRent,
+  pricePerSqft,
+}: BuildingHeaderProps) {
+  const vCount = violationCount ?? building.violation_count ?? 0;
+  const score =
+    building.overall_score ??
+    deriveScore(vCount, building.complaint_count || 0);
   const grade = getLetterGrade(score);
 
   const meta = [
-    (building.borough || building.zip_code) && {
-      icon: MapPin,
-      text: [
-        building.borough,
-        `${CITY_META[(building.metro as City) || city]?.stateCode || CITY_META[city].stateCode} ${building.zip_code || ""}`.trim(),
-      ].filter(Boolean).join(", "),
-    },
     building.year_built && {
       icon: Calendar,
       text: `Built ${building.year_built}`,
@@ -44,169 +163,170 @@ export function BuildingHeader({ building, city = "nyc", violationCount, valueGr
     },
   ].filter(Boolean) as { icon: typeof MapPin; text: string }[];
 
-  const stats = [
-    vCount > 0 && {
-      icon: AlertTriangle,
-      count: vCount,
-      label: "violation",
-      colorClass: "text-red-400 bg-red-500/10 border-red-500/20",
-    },
-    building.complaint_count > 0 && {
-      icon: MessageSquareWarning,
-      count: building.complaint_count,
-      label: "complaint",
-      colorClass: "text-amber-400 bg-amber-500/10 border-amber-500/20",
-    },
-    building.bedbug_report_count > 0 && {
-      icon: Bug,
-      count: building.bedbug_report_count,
-      label: "bedbug report",
-      colorClass: "text-red-400 bg-red-500/10 border-red-500/20",
-    },
-    building.eviction_count > 0 && {
-      icon: Gavel,
-      count: building.eviction_count,
-      label: "eviction",
-      colorClass: "text-red-400 bg-red-500/10 border-red-500/20",
-    },
-  ].filter(Boolean) as { icon: typeof AlertTriangle; count: number; label: string; colorClass: string }[];
-
   return (
-    <div className="bg-[#0F1D2E]">
+    <div
+      style={{ backgroundColor: T.surface, borderBottom: `1px solid ${T.border}` }}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <div className="flex flex-col md:flex-row md:items-center gap-5">
-          {/* Score shields */}
-          <div className="shrink-0 flex items-end gap-2">
-            {/* Main quality shield */}
-            <div className="relative" style={{ width: 64, height: 76 }}>
-              <svg
-                viewBox="0 0 64 76"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-full h-full"
-                style={{ filter: "drop-shadow(0 4px 15px rgba(59,130,246,0.3))" }}
+        {/* Management badge */}
+        {building.management_company && (
+          <Link
+            href={landlordUrl(building.management_company)}
+            className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium mb-4 border transition-colors hover:bg-indigo-50"
+            style={{
+              color: T.accent,
+              borderColor: `${T.accent}40`,
+            }}
+          >
+            Managed by {building.management_company}
+          </Link>
+        )}
+
+        <div className="flex flex-col lg:flex-row lg:items-start gap-6">
+          {/* Left: Badge + Info */}
+          <div className="flex items-start gap-5 flex-1 min-w-0">
+            <GradeBadge grade={grade} score={score} />
+
+            <div className="flex-1 min-w-0">
+              {/* Building name */}
+              {building.name && (
+                <p
+                  className="text-xs font-semibold uppercase tracking-widest mb-1"
+                  style={{ color: T.accent }}
+                >
+                  {building.name}
+                </p>
+              )}
+
+              {/* Address */}
+              <h1
+                className="text-2xl sm:text-3xl font-bold tracking-tight leading-tight"
+                style={{ color: T.text1, fontFamily: "var(--font-display)" }}
               >
-                <path
-                  d="M32 2L4 14V34C4 54 32 72 32 72C32 72 60 54 60 34V14L32 2Z"
-                  fill="#3B82F6"
-                />
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ paddingBottom: 4 }}>
-                <span className="text-[26px] font-black text-white leading-none">{grade}</span>
-                <span className="text-[10px] font-bold text-white/70 -mt-0.5">
-                  {score.toFixed(1)}
-                </span>
+                {building.full_address}
+              </h1>
+
+              {/* Location line */}
+              {(building.borough || building.zip_code) && (
+                <p className="flex items-center gap-1.5 mt-1 text-sm" style={{ color: T.text2 }}>
+                  <MapPin className="w-3.5 h-3.5" style={{ color: T.text3 }} />
+                  {[
+                    building.borough,
+                    `${CITY_META[(building.metro as City) || city]?.stateCode || CITY_META[city].stateCode} ${building.zip_code || ""}`.trim(),
+                  ]
+                    .filter(Boolean)
+                    .join(", ")}
+                </p>
+              )}
+
+              {/* Quick stats row */}
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-3">
+                {meta.map(({ icon: Icon, text }) => (
+                  <span
+                    key={text}
+                    className="inline-flex items-center gap-1.5 text-sm"
+                    style={{ color: T.text2, fontFamily: "var(--font-body)" }}
+                  >
+                    <Icon className="w-3.5 h-3.5" style={{ color: T.text3 }} />
+                    {text}
+                  </span>
+                ))}
+
+                {building.is_rent_stabilized && (
+                  <span
+                    className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                    style={{
+                      color: T.sage,
+                      backgroundColor: `${T.sage}15`,
+                    }}
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    Rent Stabilized
+                  </span>
+                )}
+
+                {building.owner_name && (
+                  <Link
+                    href={landlordUrl(building.owner_name)}
+                    className="inline-flex items-center gap-1.5 text-sm hover:underline"
+                    style={{ color: T.text2 }}
+                  >
+                    Owner: {building.owner_name}
+                  </Link>
+                )}
               </div>
             </div>
-
-            {/* Value grade badge */}
-            {valueGrade && (
-              <div className="relative" style={{ width: 44, height: 52 }}>
-                <svg
-                  viewBox="0 0 64 76"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-full h-full"
-                  style={{ filter: `drop-shadow(0 2px 8px ${GRADE_COLORS[valueGrade as LetterGrade] || "#6b7280"}40)` }}
-                >
-                  <path
-                    d="M32 2L4 14V34C4 54 32 72 32 72C32 72 60 54 60 34V14L32 2Z"
-                    fill={GRADE_COLORS[valueGrade as LetterGrade] || "#6b7280"}
-                  />
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ paddingBottom: 3 }}>
-                  <span className="text-[18px] font-black text-white leading-none">{valueGrade}</span>
-                  <span className="text-[7px] font-bold text-white/80 -mt-0.5">Value</span>
-                </div>
-              </div>
-            )}
           </div>
 
-          {/* Info */}
-          <div className="flex-1 min-w-0">
-            {/* Building name */}
-            {building.name && (
-              <p className="text-xs font-semibold text-[#60a5fa] uppercase tracking-widest mb-1">
-                {building.name}
-              </p>
-            )}
-
-            {/* Address */}
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-tight">
-              {building.full_address}
-            </h1>
-
-            {/* Meta details — white text */}
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2">
-              {meta.map(({ icon: Icon, text }) => (
-                <span
-                  key={text}
-                  className="inline-flex items-center gap-1.5 text-sm text-white/70"
-                >
-                  <Icon className="w-3.5 h-3.5 text-white/50" />
-                  {text}
-                </span>
-              ))}
-            </div>
-
-            {/* Stats + badges row */}
-            <div className="flex flex-wrap items-center gap-2 mt-3">
-              {stats.map(({ icon: Icon, count, label, colorClass }) => (
-                <span
-                  key={label}
-                  className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold border ${colorClass}`}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  {count.toLocaleString()} {label}{count !== 1 ? "s" : ""}
-                </span>
-              ))}
-
-              {medianRent != null && medianRent > 0 && (
-                <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">
-                  <DollarSign className="w-3.5 h-3.5" />
-                  ${medianRent.toLocaleString()} median
-                </span>
-              )}
-
-              {pricePerSqft != null && pricePerSqft > 0 && (
-                <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold text-violet-400 bg-violet-500/10 border border-violet-500/20">
-                  <Ruler className="w-3.5 h-3.5" />
-                  ${pricePerSqft.toFixed(2)}/sqft
-                </span>
-              )}
-
-              {building.review_count > 0 && (
-                <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold text-blue-400 bg-blue-500/10 border border-blue-500/20">
-                  <Users className="w-3.5 h-3.5" />
-                  {building.review_count} review{building.review_count !== 1 ? "s" : ""}
-                </span>
-              )}
-
-              {building.is_rent_stabilized && (
-                <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  Rent Stabilized
-                </span>
-              )}
-
-              {building.management_company && (
-                <Link
-                  href={landlordUrl(building.management_company)}
-                  className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium text-[#94a3b8] bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
-                >
-                  Managed by: {building.management_company}
-                </Link>
-              )}
-              {building.owner_name && (
-                <Link
-                  href={landlordUrl(building.owner_name)}
-                  className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium text-[#94a3b8] bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
-                >
-                  Property Owner: {building.owner_name}
-                </Link>
-              )}
-            </div>
+          {/* Right: Action buttons (placeholder — interactive versions live in DeferredBuildingContent) */}
+          <div className="flex items-center gap-2 shrink-0 lg:pt-1">
+            {[
+              { icon: Bookmark, label: "Save" },
+              { icon: GitCompare, label: "Compare" },
+              { icon: Share2, label: "Share" },
+              { icon: Bell, label: "Monitor" },
+            ].map(({ icon: Icon, label }) => (
+              <button
+                key={label}
+                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium border transition-colors hover:bg-gray-50"
+                style={{ color: T.text2, borderColor: T.border }}
+              >
+                <Icon className="w-4 h-4" />
+                <span className="hidden sm:inline">{label}</span>
+              </button>
+            ))}
           </div>
+        </div>
+
+        {/* Vital signs grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6">
+          <VitalCard
+            icon={DollarSign}
+            label="Median Rent"
+            value={
+              medianRent != null && medianRent > 0
+                ? `$${medianRent.toLocaleString()}`
+                : "--"
+            }
+            sub={
+              pricePerSqft != null && pricePerSqft > 0
+                ? `$${pricePerSqft.toFixed(2)}/sqft`
+                : undefined
+            }
+            color={T.sage}
+          />
+          <VitalCard
+            icon={AlertTriangle}
+            label="Violations"
+            value={vCount > 0 ? vCount.toLocaleString() : "0"}
+            sub={vCount === 0 ? "No open violations" : undefined}
+            color={T.danger}
+          />
+          <VitalCard
+            icon={MessageSquareWarning}
+            label="Complaints"
+            value={
+              building.complaint_count > 0
+                ? building.complaint_count.toLocaleString()
+                : "0"
+            }
+            color={T.gold}
+          />
+          <VitalCard
+            icon={Users}
+            label="Reviews"
+            value={
+              building.review_count > 0
+                ? building.review_count.toLocaleString()
+                : "0"
+            }
+            sub={
+              building.review_count > 0
+                ? `${building.review_count} resident${building.review_count !== 1 ? "s" : ""}`
+                : "No reviews yet"
+            }
+            color={T.blue}
+          />
         </div>
       </div>
     </div>
