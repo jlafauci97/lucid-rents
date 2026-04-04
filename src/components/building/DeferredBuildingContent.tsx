@@ -14,6 +14,7 @@ import { Clock } from "lucide-react";
 import { BuildingLocationMap } from "@/components/building/BuildingLocationMap";
 import { ViolationTrend } from "@/components/building/ViolationTrend";
 import { RentIntelligence } from "@/components/building/RentIntelligence";
+import { VerdictBanner } from "@/components/building/VerdictBanner";
 import type { City } from "@/lib/cities";
 import type { Building, HpdViolation, Complaint311, HpdLitigation, DobViolation, BedBugReport, Eviction, DobPermit, ReviewWithDetails, LahdViolationSummary } from "@/types";
 
@@ -77,7 +78,7 @@ export async function DeferredBuildingContent({ building, buildingId, city, rent
       ? safe(supabase.from("dewey_neighborhood_rents").select("month, beds, median_rent, p25_rent, p75_rent").eq("zip", building.zip_code).order("month", { ascending: true }), [])
       : Promise.resolve([]),
     building.zip_code
-      ? safe(supabase.from("dewey_amenity_premiums").select("amenity, premium_dollars, premium_pct, sample_size").eq("zip", building.zip_code).limit(50), [])
+      ? safe(supabase.from("dewey_amenity_premiums").select("amenity, premium_dollars, premium_pct, sample_size").eq("city", building.city || city).eq("zip", building.zip_code).eq("period", "all_time"), [])
       : Promise.resolve([]),
     building.zip_code
       ? safe(supabase.from("dewey_seasonal_index").select("month_of_year, rent_index").eq("city", building.city || city).eq("zip", building.zip_code), [])
@@ -86,8 +87,37 @@ export async function DeferredBuildingContent({ building, buildingId, city, rent
 
   const shortAddress = building.full_address.split(",")[0]?.trim() || building.full_address;
 
+  // Verdict banner computations
+  const recommendPct = reviews.length > 0
+    ? Math.round((reviews.filter(r => (r.overall_rating ?? 0) >= 3).length / reviews.length) * 100)
+    : 0;
+
+  const dateFmt = (d: string) => new Date(d).toLocaleDateString("en-US", { month: "short", year: "numeric" });
+
+  const bestPositiveReview = reviews.length > 0
+    ? reviews.reduce((best, r) => ((r.overall_rating ?? 0) > (best.overall_rating ?? 0) ? r : best), reviews[0])
+    : null;
+  const bestCriticalReview = reviews.length > 0
+    ? reviews.reduce((worst, r) => ((r.overall_rating ?? 0) < (worst.overall_rating ?? 0) ? r : worst), reviews[0])
+    : null;
+
+  const bestPositive = bestPositiveReview
+    ? { text: bestPositiveReview.body?.slice(0, 120) || "", author: bestPositiveReview.profile?.display_name || "Anonymous", date: dateFmt(bestPositiveReview.created_at) }
+    : null;
+  const bestCritical = bestCriticalReview && bestCriticalReview !== bestPositiveReview
+    ? { text: bestCriticalReview.body?.slice(0, 120) || "", author: bestCriticalReview.profile?.display_name || "Anonymous", date: dateFmt(bestCriticalReview.created_at) }
+    : null;
+
   return (
     <>
+      {/* Verdict Banner */}
+      <VerdictBanner
+        recommendPct={recommendPct}
+        reviewCount={reviews.length}
+        bestPositive={bestPositive}
+        bestCritical={bestCritical}
+      />
+
       {/* Reviews */}
       <ReviewSection
         reviews={reviews}
