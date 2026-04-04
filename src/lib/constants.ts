@@ -159,39 +159,39 @@ export function getRentProtectionLabel(city: City): string {
 }
 
 export const SCORE_COLORS = {
-  good: { min: 7, color: "#10b981", label: "Good" },
-  average: { min: 4, color: "#f97316", label: "Average" },
+  good: { min: 3.5, color: "#10b981", label: "Good" },
+  average: { min: 2, color: "#f97316", label: "Average" },
   poor: { min: 0, color: "#ef4444", label: "Poor" },
 } as const;
 
 export function getScoreColor(score: number): string {
-  if (score >= 7) return SCORE_COLORS.good.color;
-  if (score >= 4) return SCORE_COLORS.average.color;
+  if (score >= 3.5) return SCORE_COLORS.good.color;
+  if (score >= 2) return SCORE_COLORS.average.color;
   return SCORE_COLORS.poor.color;
 }
 
 export function getScoreLabel(score: number): string {
-  if (score >= 7) return SCORE_COLORS.good.label;
-  if (score >= 4) return SCORE_COLORS.average.label;
+  if (score >= 3.5) return SCORE_COLORS.good.label;
+  if (score >= 2) return SCORE_COLORS.average.label;
   return SCORE_COLORS.poor.label;
 }
 
 export type LetterGrade = "A" | "B" | "C" | "D" | "F";
 
 export function getLetterGrade(score: number): LetterGrade {
-  if (score >= 8) return "A";
-  if (score >= 6) return "B";
-  if (score >= 4) return "C";
-  if (score >= 2) return "D";
+  if (score >= 4) return "A";
+  if (score >= 3) return "B";
+  if (score >= 2) return "C";
+  if (score >= 1) return "D";
   return "F";
 }
 
 export const GRADE_COLORS: Record<LetterGrade, string> = {
-  A: "#10b981",
-  B: "#22c55e",
-  C: "#f97316",
-  D: "#ef4444",
-  F: "#dc2626",
+  A: "#10B981",
+  B: "#3B82F6",
+  C: "#F59E0B",
+  D: "#F97316",
+  F: "#EF4444",
 };
 
 export function getGradeColor(grade: LetterGrade): string {
@@ -199,13 +199,13 @@ export function getGradeColor(grade: LetterGrade): string {
 }
 
 /**
- * Derive a 0-10 building score from violation + complaint counts.
+ * Derive a 0-5 building score from violation + complaint counts.
  * Uses log scale so scores spread naturally across the full A-F range.
  */
 export function deriveScore(violations: number, complaints: number): number {
   const total = violations + complaints;
-  if (total === 0) return 10;
-  const score = Math.max(0, 10 - Math.log10(total + 1) * 3);
+  if (total === 0) return 5;
+  const score = Math.max(0, 5 - Math.log10(total + 1) * 1.5);
   return Math.round(score * 10) / 10;
 }
 

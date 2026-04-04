@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Sora } from "next/font/google";
+import { Sora, Instrument_Serif, DM_Sans, JetBrains_Mono } from "next/font/google";
 import { Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
@@ -16,6 +16,22 @@ const sora = Sora({
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+const instrumentSerif = Instrument_Serif({
+  weight: "400",
+  variable: "--font-display",
+  subsets: ["latin"],
+});
+
+const dmSans = DM_Sans({
+  variable: "--font-body",
+  subsets: ["latin"],
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-mono",
   subsets: ["latin"],
 });
 
@@ -84,7 +100,7 @@ export default async function RootLayout({
         `}
       </Script>
       <body
-        className={`${sora.variable} ${geistMono.variable} antialiased`}
+        className={`${sora.variable} ${geistMono.variable} ${instrumentSerif.variable} ${dmSans.variable} ${jetbrainsMono.variable} antialiased`}
         style={{ fontFamily: "var(--font-sora), system-ui, sans-serif" }}
       >
         <Navbar />
