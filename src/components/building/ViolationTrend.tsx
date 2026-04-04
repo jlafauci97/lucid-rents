@@ -13,6 +13,7 @@ import {
 } from "recharts";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { TrendingDown, TrendingUp, Minus } from "lucide-react";
+import { T } from "@/lib/design-tokens";
 
 interface MonthData {
   month: string;
@@ -44,7 +45,7 @@ function formatMonthLabel(month: string): string {
 function TrendBadge({ trend }: { trend: "improving" | "declining" | "stable" }) {
   if (trend === "improving") {
     return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#dcfce7] text-[#16a34a]">
+      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold" style={{ backgroundColor: `${T.sage}15`, color: T.sage }}>
         <TrendingDown className="w-3.5 h-3.5" />
         Improving
       </span>
@@ -52,14 +53,14 @@ function TrendBadge({ trend }: { trend: "improving" | "declining" | "stable" }) 
   }
   if (trend === "declining") {
     return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#fee2e2] text-[#dc2626]">
+      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold" style={{ backgroundColor: `${T.danger}15`, color: T.danger }}>
         <TrendingUp className="w-3.5 h-3.5" />
         Declining
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#f1f5f9] text-[#64748b]">
+    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold" style={{ backgroundColor: T.subtle, color: T.text2 }}>
       <Minus className="w-3.5 h-3.5" />
       Stable
     </span>
@@ -71,13 +72,13 @@ function SkeletonChart() {
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <div className="h-6 w-48 bg-[#e2e8f0] rounded animate-pulse" />
-          <div className="h-6 w-24 bg-[#e2e8f0] rounded-full animate-pulse" />
+          <div className="h-6 w-48 rounded animate-pulse" style={{ backgroundColor: T.border }} />
+          <div className="h-6 w-24 rounded-full animate-pulse" style={{ backgroundColor: T.border }} />
         </div>
       </CardHeader>
       <CardContent>
-        <div className="h-[300px] w-full bg-[#f8fafc] rounded-lg animate-pulse flex items-center justify-center">
-          <div className="text-[#94a3b8] text-sm">Loading chart data...</div>
+        <div className="h-[300px] w-full rounded-lg animate-pulse flex items-center justify-center" style={{ backgroundColor: T.elevated }}>
+          <div className="text-sm" style={{ color: T.text3 }}>Loading chart data...</div>
         </div>
       </CardContent>
     </Card>
@@ -118,12 +119,12 @@ export function ViolationTrend({ buildingId, housingAgency = "HPD" }: ViolationT
     return (
       <Card>
         <CardHeader>
-          <h2 className="text-xl font-bold text-[#0F1D2E]">
+          <h2 className="text-xl font-bold" style={{ color: T.text1 }}>
             Violation &amp; Complaint Trends
           </h2>
         </CardHeader>
         <CardContent>
-          <p className="text-center text-[#64748b] py-8">
+          <p className="text-center py-8" style={{ color: T.text2 }}>
             Unable to load trend data. Please try again later.
           </p>
         </CardContent>
@@ -135,12 +136,12 @@ export function ViolationTrend({ buildingId, housingAgency = "HPD" }: ViolationT
     return (
       <Card>
         <CardHeader>
-          <h2 className="text-xl font-bold text-[#0F1D2E]">
+          <h2 className="text-xl font-bold" style={{ color: T.text1 }}>
             Violation &amp; Complaint Trends
           </h2>
         </CardHeader>
         <CardContent>
-          <p className="text-center text-[#64748b] py-8">
+          <p className="text-center py-8" style={{ color: T.text2 }}>
             No violation or complaint data available for this building.
           </p>
         </CardContent>
@@ -157,14 +158,14 @@ export function ViolationTrend({ buildingId, housingAgency = "HPD" }: ViolationT
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-[#0F1D2E]">
+            <h2 className="text-xl font-bold" style={{ color: T.text1 }}>
               Violation &amp; Complaint Trends
             </h2>
             <TrendBadge trend="stable" />
           </div>
         </CardHeader>
         <CardContent>
-          <p className="text-center text-[#64748b] py-8">
+          <p className="text-center py-8" style={{ color: T.text2 }}>
             No violations or complaints recorded in the last 5 years.
           </p>
         </CardContent>
@@ -183,12 +184,12 @@ export function ViolationTrend({ buildingId, housingAgency = "HPD" }: ViolationT
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold text-[#0F1D2E]">
+          <h2 className="text-xl font-bold" style={{ color: T.text1 }}>
             Violation &amp; Complaint Trends
           </h2>
           <TrendBadge trend={data.trend} />
         </div>
-        <p className="text-sm text-[#64748b] mt-1">
+        <p className="text-sm mt-1" style={{ color: T.text2 }}>
           Monthly counts over the last 5 years
         </p>
       </CardHeader>
@@ -201,21 +202,21 @@ export function ViolationTrend({ buildingId, housingAgency = "HPD" }: ViolationT
             >
               <CartesianGrid
                 strokeDasharray="3 3"
-                stroke="#e2e8f0"
+                stroke={T.border}
                 vertical={false}
               />
               <XAxis
                 dataKey="label"
-                tick={{ fontSize: 11, fill: "#64748b" }}
+                tick={{ fontSize: 11, fill: T.text2 }}
                 tickLine={false}
-                axisLine={{ stroke: "#e2e8f0" }}
+                axisLine={{ stroke: T.border }}
                 interval="preserveStartEnd"
                 tickFormatter={(value, index) =>
                   chartData[index]?.showLabel ? value : ""
                 }
               />
               <YAxis
-                tick={{ fontSize: 11, fill: "#64748b" }}
+                tick={{ fontSize: 11, fill: T.text2 }}
                 tickLine={false}
                 axisLine={false}
                 allowDecimals={false}
@@ -223,13 +224,13 @@ export function ViolationTrend({ buildingId, housingAgency = "HPD" }: ViolationT
               />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: "#ffffff",
-                  border: "1px solid #e2e8f0",
+                  backgroundColor: T.surface,
+                  border: `1px solid ${T.border}`,
                   borderRadius: "8px",
                   fontSize: "13px",
                   boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
                 }}
-                labelStyle={{ fontWeight: 600, color: "#0F1D2E" }}
+                labelStyle={{ fontWeight: 600, color: T.text1 }}
               />
               <Legend
                 wrapperStyle={{ fontSize: "13px", paddingTop: "12px" }}
@@ -240,19 +241,19 @@ export function ViolationTrend({ buildingId, housingAgency = "HPD" }: ViolationT
                 type="monotone"
                 dataKey="violations"
                 name={`${housingAgency} Violations`}
-                stroke="#EF4444"
+                stroke={T.danger}
                 strokeWidth={2}
                 dot={false}
-                activeDot={{ r: 4, strokeWidth: 0, fill: "#EF4444" }}
+                activeDot={{ r: 4, strokeWidth: 0, fill: T.danger }}
               />
               <Line
                 type="monotone"
                 dataKey="complaints"
                 name="311 Complaints"
-                stroke="#F59E0B"
+                stroke={T.gold}
                 strokeWidth={2}
                 dot={false}
-                activeDot={{ r: 4, strokeWidth: 0, fill: "#F59E0B" }}
+                activeDot={{ r: 4, strokeWidth: 0, fill: T.gold }}
               />
             </LineChart>
           </ResponsiveContainer>

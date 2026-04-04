@@ -17,6 +17,7 @@ import { RentIntelligence } from "@/components/building/RentIntelligence";
 import { VerdictBanner } from "@/components/building/VerdictBanner";
 import { ReportCard } from "@/components/building/ReportCard";
 import { AmenityPremiums } from "@/components/building/AmenityPremiums";
+import { CommonIssues } from "@/components/building/CommonIssues";
 import { getLetterGrade, deriveScore } from "@/lib/constants";
 import type { City } from "@/lib/cities";
 import type { Building, HpdViolation, Complaint311, HpdLitigation, DobViolation, BedBugReport, Eviction, DobPermit, ReviewWithDetails, LahdViolationSummary } from "@/types";
@@ -309,6 +310,33 @@ export async function DeferredBuildingContent({ building, buildingId, city, rent
       {/* Violation & Complaint Trends */}
       <div id="violation-trends" className="scroll-mt-28">
         <ViolationTrend buildingId={buildingId} housingAgency={city === "los-angeles" ? "LAHD" : city === "chicago" ? "CDBS" : city === "miami" ? "RER" : "HPD"} />
+
+        {/* Common Issues Breakdown */}
+        {(() => {
+          // Aggregate violations by nov_description, top 5
+          const violationCounts = new Map<string, number>();
+          for (const v of violations) {
+            const type = v.nov_description || "Unknown";
+            violationCounts.set(type, (violationCounts.get(type) || 0) + 1);
+          }
+          const topViolations = [...violationCounts.entries()]
+            .map(([type, count]) => ({ type, count }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 5);
+
+          // Aggregate complaints by complaint_type, top 5
+          const complaintCounts = new Map<string, number>();
+          for (const c of complaints) {
+            const type = c.complaint_type || c.descriptor || "Unknown";
+            complaintCounts.set(type, (complaintCounts.get(type) || 0) + 1);
+          }
+          const topComplaints = [...complaintCounts.entries()]
+            .map(([type, count]) => ({ type, count }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 5);
+
+          return <CommonIssues topViolations={topViolations} topComplaints={topComplaints} />;
+        })()}
       </div>
 
       {/* Violations by Unit Breakdown */}
