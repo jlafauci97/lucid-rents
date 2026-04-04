@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
+  Star,
+  BarChart3,
   MessageSquare,
   DollarSign,
   Sparkles,
@@ -14,13 +16,16 @@ import {
   GraduationCap,
   TreePine,
 } from "lucide-react";
+import { T } from "@/lib/design-tokens";
 
 const SECTIONS = [
-  { id: "reviews", label: "Reviews", icon: MessageSquare },
+  { id: "verdict", label: "Verdict", icon: Star },
+  { id: "report-card", label: "Report Card", icon: BarChart3 },
   { id: "rent-intelligence", label: "Rent Intel", icon: DollarSign },
+  { id: "pulse", label: "Building Pulse", icon: TrendingUp },
+  { id: "reviews", label: "Reviews", icon: MessageSquare },
   { id: "rent", label: "Listings", icon: DollarSign },
   { id: "amenities", label: "Amenities", icon: Sparkles },
-  { id: "violation-trends", label: "Trends", icon: TrendingUp },
   { id: "violations", label: "Issues", icon: AlertTriangle },
   { id: "location", label: "Map", icon: MapPin },
   { id: "building-details", label: "Details", icon: Building2 },
@@ -143,9 +148,13 @@ export function SectionNav() {
       <div ref={sentinelRef} className="h-0" aria-hidden="true" />
 
       <nav
-        className={`sticky top-16 z-30 bg-[#3B82F6] transition-shadow duration-200 ${
-          isSticky ? "shadow-lg shadow-blue-500/20" : ""
+        className={`sticky top-16 z-30 backdrop-blur-xl transition-shadow duration-200 ${
+          isSticky ? "shadow-sm" : ""
         }`}
+        style={{
+          backgroundColor: `${T.surface}E6`,
+          borderBottom: `1px solid ${T.border}`,
+        }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div
@@ -162,18 +171,25 @@ export function SectionNav() {
                   key={section.id}
                   data-section={section.id}
                   onClick={() => scrollToSection(section.id)}
-                  className={`group shrink-0 flex items-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
-                    isActive
-                      ? "bg-white/20 text-white"
-                      : "text-white/70 hover:bg-white/10 hover:text-white"
-                  }`}
+                  className="group shrink-0 flex items-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150"
+                  style={{
+                    color: isActive ? T.accent : T.text3,
+                    backgroundColor: isActive ? `${T.accent}10` : "transparent",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.color = T.text2;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.color = T.text3;
+                    }
+                  }}
                 >
                   <Icon
-                    className={`w-4 h-4 transition-colors ${
-                      isActive
-                        ? "text-white"
-                        : "text-white/50 group-hover:text-white/80"
-                    }`}
+                    className="w-4 h-4 transition-colors"
+                    style={{ color: "inherit" }}
                   />
                   <span className="whitespace-nowrap">{section.label}</span>
                 </button>
