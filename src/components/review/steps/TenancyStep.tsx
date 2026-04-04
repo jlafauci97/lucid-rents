@@ -47,7 +47,7 @@ export function TenancyStep({
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-bold text-[#1A1F36]">Tenancy Details</h2>
+      <h2 className="text-xl font-bold text-[#0F1D2E]">Tenancy Details</h2>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Input
@@ -82,12 +82,12 @@ export function TenancyStep({
       <div className="space-y-1">
         <label
           htmlFor="rent-amount"
-          className="block text-sm font-medium text-[#1A1F36]"
+          className="block text-sm font-medium text-[#0F1D2E]"
         >
           Monthly Rent <span className="text-[#ef4444]">*</span>
         </label>
         <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-[#A3ACBE]">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-[#94a3b8]">
             $
           </span>
           <input
@@ -97,7 +97,7 @@ export function TenancyStep({
             onChange={(e) => onRentAmountChange(e.target.value)}
             placeholder="e.g., 2500"
             min="0"
-            className="w-full pl-7 pr-3 py-2 rounded-lg border border-[#E2E8F0] bg-white text-sm text-[#1A1F36] placeholder:text-[#A3ACBE] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
+            className="w-full pl-7 pr-3 py-2 rounded-lg border border-[#e2e8f0] bg-white text-sm text-[#0F1D2E] placeholder:text-[#94a3b8] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
             required
           />
         </div>

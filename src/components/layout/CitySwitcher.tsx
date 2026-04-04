@@ -61,7 +61,7 @@ export function CitySwitcher() {
         className="flex items-center gap-1.5 text-sm text-gray-300 hover:text-white transition-colors"
         aria-label="Switch city"
       >
-        <MapPin className="w-4 h-4 text-[#6366F1]" />
+        <MapPin className="w-4 h-4 text-[#3B82F6]" />
         <span className="font-medium">{CITY_META[city].name}</span>
         <ChevronDown
           className={`w-3.5 h-3.5 transition-transform ${open ? "rotate-180" : ""}`}
@@ -87,12 +87,12 @@ export function CitySwitcher() {
               >
                 <MapPin
                   className={`w-4 h-4 flex-shrink-0 ${
-                    isActive ? "text-[#6366F1]" : "text-gray-500"
+                    isActive ? "text-[#3B82F6]" : "text-gray-500"
                   }`}
                 />
                 <span className="flex-1">{CITY_META[c].fullName}</span>
                 {isActive && (
-                  <Check className="w-4 h-4 text-[#6366F1] flex-shrink-0" />
+                  <Check className="w-4 h-4 text-[#3B82F6] flex-shrink-0" />
                 )}
               </Link>
             );
@@ -112,7 +112,7 @@ export function MobileCitySwitcher() {
 
   return (
     <div className="flex items-center gap-2 px-3 py-2.5">
-      <MapPin className="w-4 h-4 text-[#6366F1] flex-shrink-0" />
+      <MapPin className="w-4 h-4 text-[#3B82F6] flex-shrink-0" />
       <span className="text-xs text-gray-400 uppercase tracking-wider mr-1">City</span>
       {VALID_CITIES.map((c) => {
         const isActive = c === city;
@@ -124,7 +124,7 @@ export function MobileCitySwitcher() {
             href={href}
             className={`text-sm px-3 py-1 rounded-full transition-colors ${
               isActive
-                ? "bg-[#6366F1]/20 text-[#6366F1] font-medium"
+                ? "bg-[#3B82F6]/20 text-[#3B82F6] font-medium"
                 : "text-gray-400 hover:text-white hover:bg-white/5"
             }`}
           >

@@ -58,7 +58,7 @@ export function ZipRentTable({ data }: { data: ZipRentRow[] }) {
 
   if (data.length === 0) {
     return (
-      <div className="text-center py-12 text-[#A3ACBE]">
+      <div className="text-center py-12 text-[#94a3b8]">
         No zip code rent data available yet.
       </div>
     );
@@ -73,7 +73,7 @@ export function ZipRentTable({ data }: { data: ZipRentRow[] }) {
           className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
             !borough
               ? "bg-[#0F1D2E] text-white"
-              : "bg-[#F5F7FA] text-[#5E6687] hover:bg-[#e2e8f0]"
+              : "bg-[#f1f5f9] text-[#64748b] hover:bg-[#e2e8f0]"
           }`}
         >
           All {getRegionLabel(city)}s
@@ -85,7 +85,7 @@ export function ZipRentTable({ data }: { data: ZipRentRow[] }) {
             className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
               borough === b
                 ? "bg-[#0F1D2E] text-white"
-                : "bg-[#F5F7FA] text-[#5E6687] hover:bg-[#e2e8f0]"
+                : "bg-[#f1f5f9] text-[#64748b] hover:bg-[#e2e8f0]"
             }`}
           >
             {b}
@@ -97,22 +97,22 @@ export function ZipRentTable({ data }: { data: ZipRentRow[] }) {
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="bg-[#FAFBFD] border-b border-[#E2E8F0]">
-              <th className="text-left px-4 py-3 text-xs font-semibold text-[#5E6687] uppercase tracking-wide">
+            <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
+              <th className="text-left px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide">
                 <button
                   onClick={() => toggleSort("zip_code")}
-                  className="inline-flex items-center gap-1 hover:text-[#1A1F36]"
+                  className="inline-flex items-center gap-1 hover:text-[#0F1D2E]"
                 >
                   Zip Code <ArrowUpDown className="w-3 h-3" />
                 </button>
               </th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-[#5E6687] uppercase tracking-wide hidden sm:table-cell">
+              <th className="text-left px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide hidden sm:table-cell">
                 {getRegionLabel(city)}
               </th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-[#6366F1] uppercase tracking-wide">
+              <th className="text-right px-4 py-3 text-xs font-semibold text-[#3B82F6] uppercase tracking-wide">
                 <button
                   onClick={() => toggleSort("median_rent")}
-                  className="inline-flex items-center gap-1 hover:text-[#1A1F36] ml-auto"
+                  className="inline-flex items-center gap-1 hover:text-[#0F1D2E] ml-auto"
                 >
                   Median Rent <ArrowUpDown className="w-3 h-3" />
                 </button>
@@ -121,14 +121,14 @@ export function ZipRentTable({ data }: { data: ZipRentRow[] }) {
           </thead>
           <tbody className="divide-y divide-[#e2e8f0]">
             {filtered.map((row) => (
-              <tr key={row.zip_code} className="hover:bg-[#FAFBFD] transition-colors">
-                <td className="px-4 py-3 text-sm font-semibold text-[#1A1F36]">
+              <tr key={row.zip_code} className="hover:bg-[#f8fafc] transition-colors">
+                <td className="px-4 py-3 text-sm font-semibold text-[#0F1D2E]">
                   {row.zip_code}
                 </td>
-                <td className="px-4 py-3 text-sm text-[#1A1F36] hidden sm:table-cell">
+                <td className="px-4 py-3 text-sm text-[#334155] hidden sm:table-cell">
                   {normalizeBorough(row.borough)}
                 </td>
-                <td className="px-4 py-3 text-sm font-semibold text-[#6366F1] text-right">
+                <td className="px-4 py-3 text-sm font-semibold text-[#3B82F6] text-right">
                   ${Math.round(row.median_rent).toLocaleString()}
                 </td>
               </tr>
@@ -137,7 +137,7 @@ export function ZipRentTable({ data }: { data: ZipRentRow[] }) {
         </table>
       </div>
 
-      <p className="text-xs text-[#A3ACBE] mt-3">
+      <p className="text-xs text-[#94a3b8] mt-3">
         {filtered.length} zip codes shown. Data: Zillow Observed Rent Index (ZORI).
       </p>
     </div>

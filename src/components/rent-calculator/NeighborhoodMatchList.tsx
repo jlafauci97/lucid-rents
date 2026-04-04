@@ -57,10 +57,10 @@ export function NeighborhoodMatchList({
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
         <div>
-          <h3 className="text-sm font-semibold text-[#1A1F36]">
+          <h3 className="text-sm font-semibold text-[#0F1D2E]">
             {meta.regionLabel} Matches in {meta.fullName}
           </h3>
-          <p className="text-xs text-[#5E6687]">
+          <p className="text-xs text-[#64748b]">
             {affordableCount} of {filtered.length}{" "}
             {meta.regionLabel.toLowerCase()}s fit your budget
           </p>
@@ -74,8 +74,8 @@ export function NeighborhoodMatchList({
               onClick={() => setRegionFilter("all")}
               className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors ${
                 regionFilter === "all"
-                  ? "bg-[#6366F1] text-white border-[#6366F1]"
-                  : "border-[#E2E8F0] text-[#5E6687] hover:bg-gray-50"
+                  ? "bg-[#3B82F6] text-white border-[#3B82F6]"
+                  : "border-[#e2e8f0] text-[#64748b] hover:bg-gray-50"
               }`}
             >
               All
@@ -87,8 +87,8 @@ export function NeighborhoodMatchList({
                 onClick={() => setRegionFilter(r)}
                 className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors ${
                   regionFilter === r
-                    ? "bg-[#6366F1] text-white border-[#6366F1]"
-                    : "border-[#E2E8F0] text-[#5E6687] hover:bg-gray-50"
+                    ? "bg-[#3B82F6] text-white border-[#3B82F6]"
+                    : "border-[#e2e8f0] text-[#64748b] hover:bg-gray-50"
                 }`}
               >
                 {r}
@@ -99,7 +99,7 @@ export function NeighborhoodMatchList({
       </div>
 
       {filtered.length === 0 ? (
-        <div className="text-center py-12 text-[#A3ACBE]">
+        <div className="text-center py-12 text-[#94a3b8]">
           <p className="text-sm">
             No neighborhood data available for this selection.
           </p>

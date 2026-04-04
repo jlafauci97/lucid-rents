@@ -19,7 +19,7 @@ interface EnergyRow {
 }
 
 function scoreClass(score: number | null): string {
-  if (score == null) return "text-[#A3ACBE]";
+  if (score == null) return "text-[#94a3b8]";
   if (score >= 75) return "text-emerald-600 font-bold";
   if (score >= 50) return "text-amber-600 font-bold";
   return "text-red-600 font-bold";
@@ -76,7 +76,7 @@ export function EnergyTable({ data, dataSourceLabel }: EnergyTableProps) {
 
   if (data.length === 0) {
     return (
-      <div className="text-center py-12 text-[#A3ACBE]">
+      <div className="text-center py-12 text-[#94a3b8]">
         No energy data available yet.
       </div>
     );
@@ -91,7 +91,7 @@ export function EnergyTable({ data, dataSourceLabel }: EnergyTableProps) {
           className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
             !borough
               ? "bg-[#0F1D2E] text-white"
-              : "bg-[#F5F7FA] text-[#5E6687] hover:bg-[#e2e8f0]"
+              : "bg-[#f1f5f9] text-[#64748b] hover:bg-[#e2e8f0]"
           }`}
         >
           All {getRegionLabel(city)}s
@@ -103,7 +103,7 @@ export function EnergyTable({ data, dataSourceLabel }: EnergyTableProps) {
             className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
               borough === b
                 ? "bg-[#0F1D2E] text-white"
-                : "bg-[#F5F7FA] text-[#5E6687] hover:bg-[#e2e8f0]"
+                : "bg-[#f1f5f9] text-[#64748b] hover:bg-[#e2e8f0]"
             }`}
           >
             {b}
@@ -115,37 +115,37 @@ export function EnergyTable({ data, dataSourceLabel }: EnergyTableProps) {
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="bg-[#FAFBFD] border-b border-[#E2E8F0]">
-              <th className="text-left px-4 py-3 text-xs font-semibold text-[#5E6687] uppercase tracking-wide">
+            <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
+              <th className="text-left px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide">
                 Building
               </th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-[#5E6687] uppercase tracking-wide hidden md:table-cell">
+              <th className="text-left px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide hidden md:table-cell">
                 {getRegionLabel(city)}
               </th>
               <th className="text-right px-4 py-3 text-xs font-semibold text-[#059669] uppercase tracking-wide">
                 <button
                   onClick={() => toggleSort("energy_star_score")}
-                  className="inline-flex items-center gap-1 hover:text-[#1A1F36] ml-auto"
+                  className="inline-flex items-center gap-1 hover:text-[#0F1D2E] ml-auto"
                 >
                   Score <ArrowUpDown className="w-3 h-3" />
                 </button>
               </th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-[#5E6687] uppercase tracking-wide hidden sm:table-cell">
+              <th className="text-right px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide hidden sm:table-cell">
                 <button
                   onClick={() => toggleSort("site_eui")}
-                  className="inline-flex items-center gap-1 hover:text-[#1A1F36] ml-auto"
+                  className="inline-flex items-center gap-1 hover:text-[#0F1D2E] ml-auto"
                 >
                   Site EUI <ArrowUpDown className="w-3 h-3" />
                 </button>
               </th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-[#5E6687] uppercase tracking-wide hidden lg:table-cell">
+              <th className="text-right px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide hidden lg:table-cell">
                 GHG Emissions
               </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#e2e8f0]">
             {paginated.map((row, i) => (
-              <tr key={i} className="hover:bg-[#FAFBFD] transition-colors">
+              <tr key={i} className="hover:bg-[#f8fafc] transition-colors">
                 <td className="px-4 py-3 text-sm">
                   {row.building_slug && row.building_borough ? (
                     <Link
@@ -155,24 +155,24 @@ export function EnergyTable({ data, dataSourceLabel }: EnergyTableProps) {
                       {row.property_name || row.address || "Unknown"}
                     </Link>
                   ) : (
-                    <span className="font-semibold text-[#1A1F36]">
+                    <span className="font-semibold text-[#0F1D2E]">
                       {row.property_name || row.address || "Unknown"}
                     </span>
                   )}
                   {row.address && row.property_name && (
-                    <p className="text-xs text-[#A3ACBE] mt-0.5">{row.address}</p>
+                    <p className="text-xs text-[#94a3b8] mt-0.5">{row.address}</p>
                   )}
                 </td>
-                <td className="px-4 py-3 text-sm text-[#1A1F36] hidden md:table-cell">
+                <td className="px-4 py-3 text-sm text-[#334155] hidden md:table-cell">
                   {row.borough || "\u2014"}
                 </td>
                 <td className={`px-4 py-3 text-sm text-right ${scoreClass(row.energy_star_score)}`}>
                   {row.energy_star_score ?? "\u2014"}
                 </td>
-                <td className="px-4 py-3 text-sm text-[#1A1F36] text-right hidden sm:table-cell">
+                <td className="px-4 py-3 text-sm text-[#334155] text-right hidden sm:table-cell">
                   {row.site_eui != null ? `${row.site_eui.toFixed(1)}` : "\u2014"}
                 </td>
-                <td className="px-4 py-3 text-sm text-[#1A1F36] text-right hidden lg:table-cell">
+                <td className="px-4 py-3 text-sm text-[#334155] text-right hidden lg:table-cell">
                   {row.total_ghg_emissions != null
                     ? `${row.total_ghg_emissions.toLocaleString()} t`
                     : "\u2014"}
@@ -185,7 +185,7 @@ export function EnergyTable({ data, dataSourceLabel }: EnergyTableProps) {
 
       {/* Pagination */}
       <div className="flex items-center justify-between mt-4">
-        <p className="text-xs text-[#A3ACBE]">
+        <p className="text-xs text-[#94a3b8]">
           Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length} buildings. Data: {sourceLabel}.
         </p>
         {totalPages > 1 && (
@@ -193,17 +193,17 @@ export function EnergyTable({ data, dataSourceLabel }: EnergyTableProps) {
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#E2E8F0] text-[#1A1F36] hover:bg-[#FAFBFD] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e2e8f0] text-[#334155] hover:bg-[#f8fafc] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               <ChevronLeft className="w-3 h-3" /> Previous
             </button>
-            <span className="text-xs text-[#5E6687]">
+            <span className="text-xs text-[#64748b]">
               Page {page} of {totalPages}
             </span>
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#E2E8F0] text-[#1A1F36] hover:bg-[#FAFBFD] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e2e8f0] text-[#334155] hover:bg-[#f8fafc] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               Next <ChevronRight className="w-3 h-3" />
             </button>

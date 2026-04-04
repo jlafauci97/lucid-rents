@@ -204,7 +204,7 @@ export function SearchBar({
       <form onSubmit={handleSubmit}>
         <div className="relative">
           <Search
-            className={`absolute left-4 top-1/2 -translate-y-1/2 text-[#A3ACBE] ${isHero ? "w-6 h-6" : "w-5 h-5"}`}
+            className={`absolute left-4 top-1/2 -translate-y-1/2 text-[#94a3b8] ${isHero ? "w-6 h-6" : "w-5 h-5"}`}
           />
           <input
             ref={inputRef}
@@ -214,7 +214,7 @@ export function SearchBar({
             onFocus={handleFocus}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
-            className={`w-full bg-white text-[#1A1F36] placeholder-[#94a3b8] border border-[#E2E8F0] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent ${isHero ? "pl-14 pr-6 py-5 text-lg" : "pl-12 pr-4 py-3 text-sm"} shadow-sm`}
+            className={`w-full bg-white text-[#0F1D2E] placeholder-[#94a3b8] border border-[#e2e8f0] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent ${isHero ? "pl-14 pr-6 py-5 text-lg" : "pl-12 pr-4 py-3 text-sm"} shadow-sm`}
             role="combobox"
             aria-expanded={showDropdown}
             aria-autocomplete="list"
@@ -222,19 +222,19 @@ export function SearchBar({
           />
           {loading && (
             <Loader2
-              className={`absolute right-4 top-1/2 -translate-y-1/2 animate-spin text-[#A3ACBE] ${isHero ? "w-6 h-6" : "w-5 h-5"}`}
+              className={`absolute right-4 top-1/2 -translate-y-1/2 animate-spin text-[#94a3b8] ${isHero ? "w-6 h-6" : "w-5 h-5"}`}
             />
           )}
         </div>
       </form>
 
       {showDropdown && (
-        <div className="absolute z-50 w-full mt-2 bg-white rounded-xl border border-[#E2E8F0] shadow-lg overflow-hidden" role="listbox">
+        <div className="absolute z-50 w-full mt-2 bg-white rounded-xl border border-[#e2e8f0] shadow-lg overflow-hidden" role="listbox">
           {/* Recently Viewed (when query is empty) */}
           {showingRecent && (
             <>
-              <div className="px-4 py-1.5 bg-[#FAFBFD] border-b border-[#E2E8F0]">
-                <span className="text-[10px] font-semibold text-[#A3ACBE] uppercase tracking-wider">
+              <div className="px-4 py-1.5 bg-[#f8fafc] border-b border-[#e2e8f0]">
+                <span className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
                   Recently Viewed
                 </span>
               </div>
@@ -251,12 +251,12 @@ export function SearchBar({
                     onMouseEnter={() => setHighlightIndex(idx)}
                     className={`w-full flex items-start gap-3 px-4 py-3 transition-colors text-left ${highlightIndex === idx ? "bg-[#EFF6FF]" : "hover:bg-gray-50"}`}
                   >
-                    <Clock className="w-5 h-5 text-[#A3ACBE] mt-0.5 shrink-0" />
+                    <Clock className="w-5 h-5 text-[#94a3b8] mt-0.5 shrink-0" />
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-[#1A1F36] truncate">
+                      <p className="text-sm font-medium text-[#0F1D2E] truncate">
                         {r.full_address}
                       </p>
-                      <p className="text-xs text-[#5E6687]">{r.borough}</p>
+                      <p className="text-xs text-[#64748b]">{r.borough}</p>
                     </div>
                     <div className="ml-auto shrink-0">
                       <LetterGrade score={r.overall_score ?? 50} size="sm" />
@@ -270,8 +270,8 @@ export function SearchBar({
           {/* Neighborhood results */}
           {!showingRecent && neighborhoodResults.length > 0 && (
             <>
-              <div className="px-4 py-1.5 bg-[#FAFBFD] border-b border-[#E2E8F0]">
-                <span className="text-[10px] font-semibold text-[#A3ACBE] uppercase tracking-wider">
+              <div className="px-4 py-1.5 bg-[#f8fafc] border-b border-[#e2e8f0]">
+                <span className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
                   Neighborhoods
                 </span>
               </div>
@@ -288,12 +288,12 @@ export function SearchBar({
                     onMouseEnter={() => setHighlightIndex(idx)}
                     className={`w-full flex items-start gap-3 px-4 py-3 transition-colors text-left ${highlightIndex === idx ? "bg-[#EFF6FF]" : "hover:bg-gray-50"}`}
                   >
-                    <MapPin className="w-5 h-5 text-[#6366F1] mt-0.5 shrink-0" />
+                    <MapPin className="w-5 h-5 text-[#3B82F6] mt-0.5 shrink-0" />
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-[#1A1F36]">
+                      <p className="text-sm font-medium text-[#0F1D2E]">
                         {n.name}
                       </p>
-                      <p className="text-xs text-[#5E6687]">
+                      <p className="text-xs text-[#64748b]">
                         {n.zipCode} &middot; {n.region}
                       </p>
                     </div>
@@ -306,8 +306,8 @@ export function SearchBar({
           {!showingRecent && results.length > 0 && (
             <>
               {neighborhoodResults.length > 0 && (
-                <div className="px-4 py-1.5 bg-[#FAFBFD] border-b border-[#E2E8F0]">
-                  <span className="text-[10px] font-semibold text-[#A3ACBE] uppercase tracking-wider">
+                <div className="px-4 py-1.5 bg-[#f8fafc] border-b border-[#e2e8f0]">
+                  <span className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
                     Buildings
                   </span>
                 </div>
@@ -325,15 +325,15 @@ export function SearchBar({
                     onMouseEnter={() => setHighlightIndex(idx)}
                     className={`w-full flex items-start gap-3 px-4 py-3 transition-colors text-left ${highlightIndex === idx ? "bg-[#EFF6FF]" : "hover:bg-gray-50"}`}
                   >
-                    <MapPin className="w-5 h-5 text-[#A3ACBE] mt-0.5 shrink-0" />
+                    <MapPin className="w-5 h-5 text-[#94a3b8] mt-0.5 shrink-0" />
                     <div className="min-w-0">
                       {building.name && (
-                        <p className="text-xs font-medium text-[#6366F1]">{building.name}</p>
+                        <p className="text-xs font-medium text-[#3B82F6]">{building.name}</p>
                       )}
-                      <p className="text-sm font-medium text-[#1A1F36] truncate">
+                      <p className="text-sm font-medium text-[#0F1D2E] truncate">
                         {building.full_address}
                       </p>
-                      <p className="text-xs text-[#5E6687]">
+                      <p className="text-xs text-[#64748b]">
                         {building.borough}
                         {building.zip_code && ` · ${building.zip_code}`}
                         {building.review_count > 0 &&
@@ -360,7 +360,7 @@ export function SearchBar({
                 aria-selected={highlightIndex === idx}
                 onClick={() => navigateToItem({ type: "view-all" })}
                 onMouseEnter={() => setHighlightIndex(idx)}
-                className={`w-full px-4 py-3 text-sm text-[#6366F1] font-medium border-t border-[#E2E8F0] ${highlightIndex === idx ? "bg-[#EFF6FF]" : "hover:bg-gray-50"}`}
+                className={`w-full px-4 py-3 text-sm text-[#3B82F6] font-medium border-t border-[#e2e8f0] ${highlightIndex === idx ? "bg-[#EFF6FF]" : "hover:bg-gray-50"}`}
               >
                 View all results for &ldquo;{query}&rdquo;
               </button>

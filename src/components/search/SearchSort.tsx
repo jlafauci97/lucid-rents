@@ -31,14 +31,14 @@ export function SearchSort() {
 
   return (
     <div className="flex items-center gap-2">
-      <label htmlFor="search-sort" className="text-xs text-[#A3ACBE] whitespace-nowrap">
+      <label htmlFor="search-sort" className="text-xs text-[#94a3b8] whitespace-nowrap">
         Sort by
       </label>
       <select
         id="search-sort"
         value={currentSort}
         onChange={(e) => handleChange(e.target.value)}
-        className="rounded-lg border border-[#E2E8F0] bg-white px-3 py-2 text-sm text-[#1A1F36] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
+        className="rounded-lg border border-[#e2e8f0] bg-white px-3 py-2 text-sm text-[#0F1D2E] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
       >
         {SORT_OPTIONS.map((opt) => (
           <option key={opt.value} value={opt.value}>

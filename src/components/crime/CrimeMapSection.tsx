@@ -43,24 +43,24 @@ export function CrimeMapSection({ borough, city }: CrimeMapSectionProps) {
 
   if (!mounted) {
     return (
-      <div className="h-[300px] sm:h-[400px] lg:h-[450px] bg-[#FAFBFD] rounded-xl border border-[#E2E8F0] flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-[#6366F1] border-t-transparent rounded-full animate-spin" />
+      <div className="h-[300px] sm:h-[400px] lg:h-[450px] bg-[#f8fafc] rounded-xl border border-[#e2e8f0] flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-[#3B82F6] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="h-[300px] sm:h-[400px] lg:h-[450px] rounded-xl border border-[#E2E8F0] overflow-hidden relative">
+    <div className="h-[300px] sm:h-[400px] lg:h-[450px] rounded-xl border border-[#e2e8f0] overflow-hidden relative">
       {/* Controls overlay */}
       <div className="absolute top-3 left-3 z-[1000] flex flex-col gap-2">
         {/* Layer toggle */}
-        <div className="bg-white rounded-lg shadow-lg border border-[#E2E8F0] p-1 flex gap-1">
+        <div className="bg-white rounded-lg shadow-lg border border-[#e2e8f0] p-1 flex gap-1">
           <button
             onClick={() => setLayer("buildings")}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
               layer === "buildings" || layer === "both"
-                ? "bg-[#6366F1] text-white"
-                : "text-[#5E6687] hover:bg-[#F5F7FA]"
+                ? "bg-[#3B82F6] text-white"
+                : "text-[#64748b] hover:bg-[#f1f5f9]"
             }`}
           >
             <Building2 className="w-3.5 h-3.5" />
@@ -71,7 +71,7 @@ export function CrimeMapSection({ borough, city }: CrimeMapSectionProps) {
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
               layer === "crime" || layer === "both"
                 ? "bg-[#DC2626] text-white"
-                : "text-[#5E6687] hover:bg-[#F5F7FA]"
+                : "text-[#64748b] hover:bg-[#f1f5f9]"
             }`}
           >
             <Siren className="w-3.5 h-3.5" />
@@ -82,7 +82,7 @@ export function CrimeMapSection({ borough, city }: CrimeMapSectionProps) {
             className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
               layer === "both"
                 ? "bg-[#0F1D2E] text-white"
-                : "text-[#5E6687] hover:bg-[#F5F7FA]"
+                : "text-[#64748b] hover:bg-[#f1f5f9]"
             }`}
           >
             Both
@@ -91,22 +91,22 @@ export function CrimeMapSection({ borough, city }: CrimeMapSectionProps) {
 
         {/* Score filter */}
         {(layer === "buildings" || layer === "both") && (
-          <div className="bg-white rounded-lg shadow-lg border border-[#E2E8F0]">
+          <div className="bg-white rounded-lg shadow-lg border border-[#e2e8f0]">
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-[#5E6687] hover:text-[#1A1F36] w-full"
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-[#64748b] hover:text-[#0F1D2E] w-full"
             >
               <Filter className="w-3.5 h-3.5" />
               Score Filter
               {(minScore > 0 || maxScore < 10) && (
-                <span className="ml-auto text-[#6366F1]">
+                <span className="ml-auto text-[#3B82F6]">
                   {minScore}-{maxScore}
                 </span>
               )}
             </button>
             {showFilters && (
               <div className="px-3 pb-3 space-y-2">
-                <div className="flex items-center gap-2 text-xs text-[#5E6687]">
+                <div className="flex items-center gap-2 text-xs text-[#64748b]">
                   <span>Min:</span>
                   <input
                     type="range"
@@ -119,7 +119,7 @@ export function CrimeMapSection({ borough, city }: CrimeMapSectionProps) {
                   />
                   <span className="w-4 text-right">{minScore}</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-[#5E6687]">
+                <div className="flex items-center gap-2 text-xs text-[#64748b]">
                   <span>Max:</span>
                   <input
                     type="range"
@@ -139,10 +139,10 @@ export function CrimeMapSection({ borough, city }: CrimeMapSectionProps) {
       </div>
 
       {/* Legend */}
-      <div className="absolute bottom-3 right-3 z-[1000] bg-white rounded-lg shadow-lg border border-[#E2E8F0] p-3">
+      <div className="absolute bottom-3 right-3 z-[1000] bg-white rounded-lg shadow-lg border border-[#e2e8f0] p-3">
         {(layer === "buildings" || layer === "both") && (
           <div className="mb-2">
-            <p className="text-xs font-semibold text-[#1A1F36] mb-1.5">Building Grade</p>
+            <p className="text-xs font-semibold text-[#0F1D2E] mb-1.5">Building Grade</p>
             <div className="flex items-center gap-2">
               {[
                 { grade: "A", color: "#10b981" },
@@ -156,7 +156,7 @@ export function CrimeMapSection({ borough, city }: CrimeMapSectionProps) {
                     className="w-3 h-3 rounded-full"
                     style={{ backgroundColor: g.color }}
                   />
-                  <span className="text-[10px] text-[#5E6687]">{g.grade}</span>
+                  <span className="text-[10px] text-[#64748b]">{g.grade}</span>
                 </div>
               ))}
             </div>
@@ -164,7 +164,7 @@ export function CrimeMapSection({ borough, city }: CrimeMapSectionProps) {
         )}
         {(layer === "crime" || layer === "both") && (
           <div>
-            <p className="text-xs font-semibold text-[#1A1F36] mb-1.5">Crime Intensity</p>
+            <p className="text-xs font-semibold text-[#0F1D2E] mb-1.5">Crime Intensity</p>
             <div className="flex items-center gap-2">
               {[
                 { label: "High violent", color: "#DC2626" },
@@ -176,7 +176,7 @@ export function CrimeMapSection({ borough, city }: CrimeMapSectionProps) {
                     className="w-3 h-3 rounded-full opacity-60"
                     style={{ backgroundColor: c.color }}
                   />
-                  <span className="text-[10px] text-[#5E6687]">{c.label}</span>
+                  <span className="text-[10px] text-[#64748b]">{c.label}</span>
                 </div>
               ))}
             </div>

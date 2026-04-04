@@ -17,7 +17,7 @@ export function RGBChart() {
 
   return (
     <div>
-      <p className="text-sm text-[#5E6687] mb-4">
+      <p className="text-sm text-[#64748b] mb-4">
         The NYC Rent Guidelines Board (RGB) sets maximum annual rent increases
         for rent-stabilized apartments. These rates apply to lease renewals — a
         0% increase means stabilized tenants pay the same rent upon renewal.

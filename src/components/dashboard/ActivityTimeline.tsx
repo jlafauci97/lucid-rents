@@ -26,7 +26,7 @@ export async function ActivityTimeline({
 }) {
   if (buildingIds.length === 0) {
     return (
-      <p className="text-sm text-[#5E6687] text-center py-6">
+      <p className="text-sm text-[#64748b] text-center py-6">
         No monitored buildings yet. Visit a building page and click
         &quot;Monitor&quot; to start tracking activity.
       </p>
@@ -100,7 +100,7 @@ export async function ActivityTimeline({
 
   if (timeline.length === 0) {
     return (
-      <p className="text-sm text-[#5E6687] text-center py-6">
+      <p className="text-sm text-[#64748b] text-center py-6">
         No recent activity on your monitored buildings.
       </p>
     );
@@ -132,14 +132,14 @@ export async function ActivityTimeline({
             <div className="min-w-0 flex-1">
               <Link
                 href={buildingUrl(item.building)}
-                className="text-sm font-medium text-[#6366F1] hover:text-[#4F46E5] hover:underline"
+                className="text-sm font-medium text-[#3B82F6] hover:text-[#2563EB] hover:underline"
               >
                 {item.building.full_address}
               </Link>
-              <p className="text-sm text-[#1A1F36] mt-0.5 line-clamp-2">
+              <p className="text-sm text-[#0F1D2E] mt-0.5 line-clamp-2">
                 {item.description}
               </p>
-              <p className="text-xs text-[#A3ACBE] mt-1">
+              <p className="text-xs text-[#94a3b8] mt-1">
                 {item.date ? formatRelativeDate(item.date) : "Unknown date"}
               </p>
             </div>

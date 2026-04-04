@@ -213,7 +213,7 @@ function Section({
           <ChevronRight className="w-4 h-4 text-gray-400" />
         )}
         <span className="text-gray-500">{icon}</span>
-        <h2 className="text-base font-semibold text-[#1A1F36] group-hover:text-[#6366F1] transition-colors">
+        <h2 className="text-base font-semibold text-[#0F1D2E] group-hover:text-[#3B82F6] transition-colors">
           {title}
         </h2>
         {badge}
@@ -245,22 +245,22 @@ function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAFBFD] flex items-center justify-center">
-      <form onSubmit={handleSubmit} className={`bg-white border border-[#E2E8F0] rounded-xl p-8 shadow-sm w-full max-w-sm ${shake ? "animate-[shake_0.5s_ease-in-out]" : ""}`}>
+    <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center">
+      <form onSubmit={handleSubmit} className={`bg-white border border-[#e2e8f0] rounded-xl p-8 shadow-sm w-full max-w-sm ${shake ? "animate-[shake_0.5s_ease-in-out]" : ""}`}>
         <div className="flex items-center justify-center mb-6">
           <div className="w-12 h-12 bg-[#0F1D2E] rounded-xl flex items-center justify-center">
             <Lock className="w-6 h-6 text-white" />
           </div>
         </div>
-        <h1 className="text-xl font-bold text-[#1A1F36] text-center mb-1">Mission Control</h1>
-        <p className="text-sm text-[#5E6687] text-center mb-6">Enter admin password to continue</p>
+        <h1 className="text-xl font-bold text-[#0F1D2E] text-center mb-1">Mission Control</h1>
+        <p className="text-sm text-[#64748b] text-center mb-6">Enter admin password to continue</p>
         <input
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Password"
           autoFocus
-          className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent mb-4"
+          className="w-full px-4 py-2.5 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent mb-4"
         />
         <button
           type="submit"
@@ -336,11 +336,11 @@ export default function MissionControlPage() {
 
   if (!health && !error) {
     return (
-      <div className="min-h-screen bg-[#FAFBFD] flex items-center justify-center">
+      <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center">
         <div className="text-center">
-          <RefreshCw className="w-10 h-10 text-[#6366F1] animate-spin mx-auto mb-4" />
-          <p className="text-[#5E6687] text-lg">Loading Mission Control...</p>
-          <p className="text-[#A3ACBE] text-sm mt-1">Running health checks across all systems</p>
+          <RefreshCw className="w-10 h-10 text-[#3B82F6] animate-spin mx-auto mb-4" />
+          <p className="text-[#64748b] text-lg">Loading Mission Control...</p>
+          <p className="text-[#94a3b8] text-sm mt-1">Running health checks across all systems</p>
         </div>
       </div>
     );
@@ -348,14 +348,14 @@ export default function MissionControlPage() {
 
   if (error && !health) {
     return (
-      <div className="min-h-screen bg-[#FAFBFD] flex items-center justify-center">
+      <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center">
         <div className="text-center">
           <XCircle className="w-10 h-10 text-red-500 mx-auto mb-4" />
           <p className="text-red-600 text-lg font-medium">Health Check Failed</p>
-          <p className="text-[#5E6687] text-sm mt-1 max-w-md">{error}</p>
+          <p className="text-[#64748b] text-sm mt-1 max-w-md">{error}</p>
           <button
             onClick={fetchHealth}
-            className="mt-4 px-5 py-2 bg-[#6366F1] text-white rounded-lg text-sm font-medium hover:bg-[#2563EB]"
+            className="mt-4 px-5 py-2 bg-[#3B82F6] text-white rounded-lg text-sm font-medium hover:bg-[#2563EB]"
           >
             Retry
           </button>
@@ -388,7 +388,7 @@ export default function MissionControlPage() {
         : "from-red-500 to-red-600";
 
   return (
-    <div className="min-h-screen bg-[#FAFBFD]">
+    <div className="min-h-screen bg-[#f8fafc]">
       {/* Header */}
       <div className={`bg-gradient-to-r ${overallBg} text-white`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
@@ -427,7 +427,7 @@ export default function MissionControlPage() {
                   disabled={loading}
                   className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
                     metro === tab.key
-                      ? "bg-white text-[#1A1F36] shadow-sm"
+                      ? "bg-white text-[#0F1D2E] shadow-sm"
                       : "text-white/80 hover:text-white hover:bg-white/10"
                   } disabled:opacity-60`}
                 >
@@ -491,17 +491,17 @@ export default function MissionControlPage() {
           icon={<Clock className="w-5 h-5" />}
           badge={<SectionBadge items={dailySyncs} />}
         >
-          <div className="bg-white border border-[#E2E8F0] rounded-xl overflow-hidden">
+          <div className="bg-white border border-[#e2e8f0] rounded-xl overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-[#FAFBFD] border-b border-[#E2E8F0]">
-                    <th className="text-left px-4 py-2.5 text-xs font-semibold text-[#5E6687] uppercase">Source</th>
-                    <th className="text-left px-4 py-2.5 text-xs font-semibold text-[#5E6687] uppercase">Status</th>
-                    <th className="text-left px-4 py-2.5 text-xs font-semibold text-[#5E6687] uppercase">Last Run</th>
-                    <th className="text-left px-4 py-2.5 text-xs font-semibold text-[#5E6687] uppercase hidden sm:table-cell">Schedule</th>
-                    <th className="text-right px-4 py-2.5 text-xs font-semibold text-[#5E6687] uppercase">Records</th>
-                    <th className="text-left px-4 py-2.5 text-xs font-semibold text-[#5E6687] uppercase hidden lg:table-cell">Error</th>
+                  <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
+                    <th className="text-left px-4 py-2.5 text-xs font-semibold text-[#64748b] uppercase">Source</th>
+                    <th className="text-left px-4 py-2.5 text-xs font-semibold text-[#64748b] uppercase">Status</th>
+                    <th className="text-left px-4 py-2.5 text-xs font-semibold text-[#64748b] uppercase">Last Run</th>
+                    <th className="text-left px-4 py-2.5 text-xs font-semibold text-[#64748b] uppercase hidden sm:table-cell">Schedule</th>
+                    <th className="text-right px-4 py-2.5 text-xs font-semibold text-[#64748b] uppercase">Records</th>
+                    <th className="text-left px-4 py-2.5 text-xs font-semibold text-[#64748b] uppercase hidden lg:table-cell">Error</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#f1f5f9]">
@@ -520,17 +520,17 @@ export default function MissionControlPage() {
           icon={<Layers className="w-5 h-5" />}
           badge={<SectionBadge items={monthlySyncs} />}
         >
-          <div className="bg-white border border-[#E2E8F0] rounded-xl overflow-hidden">
+          <div className="bg-white border border-[#e2e8f0] rounded-xl overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-[#FAFBFD] border-b border-[#E2E8F0]">
-                    <th className="text-left px-4 py-2.5 text-xs font-semibold text-[#5E6687] uppercase">Source</th>
-                    <th className="text-left px-4 py-2.5 text-xs font-semibold text-[#5E6687] uppercase">Status</th>
-                    <th className="text-left px-4 py-2.5 text-xs font-semibold text-[#5E6687] uppercase">Last Run</th>
-                    <th className="text-left px-4 py-2.5 text-xs font-semibold text-[#5E6687] uppercase hidden sm:table-cell">Schedule</th>
-                    <th className="text-right px-4 py-2.5 text-xs font-semibold text-[#5E6687] uppercase">Records</th>
-                    <th className="text-left px-4 py-2.5 text-xs font-semibold text-[#5E6687] uppercase hidden lg:table-cell">Error</th>
+                  <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
+                    <th className="text-left px-4 py-2.5 text-xs font-semibold text-[#64748b] uppercase">Source</th>
+                    <th className="text-left px-4 py-2.5 text-xs font-semibold text-[#64748b] uppercase">Status</th>
+                    <th className="text-left px-4 py-2.5 text-xs font-semibold text-[#64748b] uppercase">Last Run</th>
+                    <th className="text-left px-4 py-2.5 text-xs font-semibold text-[#64748b] uppercase hidden sm:table-cell">Schedule</th>
+                    <th className="text-right px-4 py-2.5 text-xs font-semibold text-[#64748b] uppercase">Records</th>
+                    <th className="text-left px-4 py-2.5 text-xs font-semibold text-[#64748b] uppercase hidden lg:table-cell">Error</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#f1f5f9]">
@@ -549,14 +549,14 @@ export default function MissionControlPage() {
           icon={<Rss className="w-5 h-5" />}
           badge={<StatusBadge status={health.activity_feed.status} />}
         >
-          <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
+          <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
             <div className="flex items-center gap-3">
               <StatusIcon status={health.activity_feed.status} />
               <div>
-                <p className="text-sm font-medium text-[#1A1F36]">
+                <p className="text-sm font-medium text-[#0F1D2E]">
                   Feed Status: <span className="capitalize">{health.activity_feed.status}</span>
                 </p>
-                <p className="text-xs text-[#5E6687]">{health.activity_feed.details}</p>
+                <p className="text-xs text-[#64748b]">{health.activity_feed.details}</p>
               </div>
             </div>
           </div>
@@ -576,29 +576,29 @@ export default function MissionControlPage() {
               )
             }
           >
-            <div className="bg-white border border-[#E2E8F0] rounded-xl overflow-hidden">
+            <div className="bg-white border border-[#e2e8f0] rounded-xl overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="bg-[#FAFBFD] border-b border-[#E2E8F0]">
-                      <th className="text-left px-4 py-2.5 text-xs font-semibold text-[#5E6687] uppercase">Source</th>
-                      <th className="text-left px-4 py-2.5 text-xs font-semibold text-[#5E6687] uppercase">City</th>
-                      <th className="text-right px-4 py-2.5 text-xs font-semibold text-[#5E6687] uppercase">Total</th>
-                      <th className="text-right px-4 py-2.5 text-xs font-semibold text-[#5E6687] uppercase">Linked</th>
-                      <th className="text-right px-4 py-2.5 text-xs font-semibold text-[#5E6687] uppercase">Unlinked</th>
-                      <th className="text-right px-4 py-2.5 text-xs font-semibold text-[#5E6687] uppercase">Link %</th>
+                    <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
+                      <th className="text-left px-4 py-2.5 text-xs font-semibold text-[#64748b] uppercase">Source</th>
+                      <th className="text-left px-4 py-2.5 text-xs font-semibold text-[#64748b] uppercase">City</th>
+                      <th className="text-right px-4 py-2.5 text-xs font-semibold text-[#64748b] uppercase">Total</th>
+                      <th className="text-right px-4 py-2.5 text-xs font-semibold text-[#64748b] uppercase">Linked</th>
+                      <th className="text-right px-4 py-2.5 text-xs font-semibold text-[#64748b] uppercase">Unlinked</th>
+                      <th className="text-right px-4 py-2.5 text-xs font-semibold text-[#64748b] uppercase">Link %</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#f1f5f9]">
                     {linking.linking
                       .filter((entry) => metro === "all" || entry.metro === metro)
                       .map((entry) => (
-                        <tr key={`${entry.table}-${entry.metro}`} className="hover:bg-[#FAFBFD]">
-                          <td className="px-4 py-2.5 font-medium text-[#1A1F36]">{entry.label}</td>
-                          <td className="px-4 py-2.5 text-[#5E6687]">{entry.metro}</td>
-                          <td className="px-4 py-2.5 text-right text-[#1A1F36]">{entry.total.toLocaleString()}</td>
-                          <td className="px-4 py-2.5 text-right text-[#1A1F36]">{entry.linked.toLocaleString()}</td>
-                          <td className="px-4 py-2.5 text-right text-[#1A1F36]">{entry.unlinked.toLocaleString()}</td>
+                        <tr key={`${entry.table}-${entry.metro}`} className="hover:bg-[#f8fafc]">
+                          <td className="px-4 py-2.5 font-medium text-[#0F1D2E]">{entry.label}</td>
+                          <td className="px-4 py-2.5 text-[#64748b]">{entry.metro}</td>
+                          <td className="px-4 py-2.5 text-right text-[#334155]">{entry.total.toLocaleString()}</td>
+                          <td className="px-4 py-2.5 text-right text-[#334155]">{entry.linked.toLocaleString()}</td>
+                          <td className="px-4 py-2.5 text-right text-[#334155]">{entry.unlinked.toLocaleString()}</td>
                           <td className="px-4 py-2.5 text-right">
                             <span
                               className={`inline-block px-2 py-0.5 text-xs font-semibold rounded-full ${
@@ -626,13 +626,13 @@ export default function MissionControlPage() {
           title="Database Tables"
           icon={<Database className="w-5 h-5" />}
           badge={
-            <span className="text-xs text-[#5E6687] ml-2">
+            <span className="text-xs text-[#64748b] ml-2">
               {health.data.reduce((s, d) => s + d.row_count, 0).toLocaleString()} total rows
             </span>
           }
         >
           {/* Core */}
-          <p className="text-xs font-semibold text-[#A3ACBE] uppercase tracking-wider mb-2">Core</p>
+          <p className="text-xs font-semibold text-[#94a3b8] uppercase tracking-wider mb-2">Core</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
             {coreData.map((d) => (
               <DataCard key={d.name} data={d} />
@@ -640,7 +640,7 @@ export default function MissionControlPage() {
           </div>
 
           {/* Violations & Complaints */}
-          <p className="text-xs font-semibold text-[#A3ACBE] uppercase tracking-wider mb-2">Violations & Complaints</p>
+          <p className="text-xs font-semibold text-[#94a3b8] uppercase tracking-wider mb-2">Violations & Complaints</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
             {violationData.map((d) => (
               <DataCard key={d.name} data={d} />
@@ -648,7 +648,7 @@ export default function MissionControlPage() {
           </div>
 
           {/* Supplemental */}
-          <p className="text-xs font-semibold text-[#A3ACBE] uppercase tracking-wider mb-2">Supplemental Data</p>
+          <p className="text-xs font-semibold text-[#94a3b8] uppercase tracking-wider mb-2">Supplemental Data</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {supplementalData.map((d) => (
               <DataCard key={d.name} data={d} />
@@ -666,19 +666,19 @@ export default function MissionControlPage() {
             {health.rpcs.map((rpc) => (
               <div
                 key={rpc.name}
-                className="bg-white border border-[#E2E8F0] rounded-xl p-4"
+                className="bg-white border border-[#e2e8f0] rounded-xl p-4"
               >
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-[#1A1F36]">
+                  <span className="text-sm font-medium text-[#0F1D2E]">
                     {friendlyName(rpc.name)}
                   </span>
                   <StatusDot status={rpc.status} />
                 </div>
                 <div className="flex items-center gap-4 text-sm">
-                  <span className={`font-mono ${rpc.response_time_ms > 1000 ? "text-amber-600" : "text-[#5E6687]"}`}>
+                  <span className={`font-mono ${rpc.response_time_ms > 1000 ? "text-amber-600" : "text-[#64748b]"}`}>
                     {rpc.response_time_ms}ms
                   </span>
-                  <span className="text-[#5E6687]">{rpc.row_count} rows</span>
+                  <span className="text-[#64748b]">{rpc.row_count} rows</span>
                 </div>
                 {rpc.error && (
                   <p className="text-xs text-red-600 mt-2 truncate">{rpc.error}</p>
@@ -694,7 +694,7 @@ export default function MissionControlPage() {
           icon={<Globe className="w-5 h-5" />}
           defaultOpen={false}
           badge={
-            <span className="text-xs text-[#5E6687] ml-2">
+            <span className="text-xs text-[#64748b] ml-2">
               {health.pages.length} pages
             </span>
           }
@@ -711,7 +711,7 @@ export default function MissionControlPage() {
           title="Daily Sync Activity"
           icon={<CalendarDays className="w-5 h-5" />}
           badge={
-            <span className="text-xs text-[#5E6687] ml-2">
+            <span className="text-xs text-[#64748b] ml-2">
               Last 7 days
             </span>
           }
@@ -725,15 +725,15 @@ export default function MissionControlPage() {
           icon={<BarChart3 className="w-5 h-5" />}
           defaultOpen={false}
         >
-          <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
+          <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1 text-sm">
               {health.syncs.map((sync) => (
                 <div key={sync.sync_type} className="flex items-center justify-between py-1.5 border-b border-[#f1f5f9]">
                   <div className="flex items-center gap-2">
                     <StatusDot status={sync.status} />
-                    <span className="text-[#1A1F36] font-medium">{friendlyName(sync.sync_type)}</span>
+                    <span className="text-[#334155] font-medium">{friendlyName(sync.sync_type)}</span>
                   </div>
-                  <span className="text-[#A3ACBE] text-xs font-mono">{sync.schedule}</span>
+                  <span className="text-[#94a3b8] text-xs font-mono">{sync.schedule}</span>
                 </div>
               ))}
             </div>
@@ -766,11 +766,11 @@ function SummaryCard({
   return (
     <div className={`bg-white rounded-xl border-2 ${borderColor} p-4 shadow-sm`}>
       <div className="flex items-center justify-between mb-1">
-        <p className="text-xs font-semibold text-[#A3ACBE] uppercase">{label}</p>
+        <p className="text-xs font-semibold text-[#94a3b8] uppercase">{label}</p>
         <StatusDot status={status} />
       </div>
-      <p className="text-xl font-bold text-[#1A1F36]">{value}</p>
-      <p className="text-xs text-[#5E6687] mt-0.5">{sub}</p>
+      <p className="text-xl font-bold text-[#0F1D2E]">{value}</p>
+      <p className="text-xs text-[#64748b] mt-0.5">{sub}</p>
     </div>
   );
 }
@@ -795,13 +795,13 @@ function SyncRow({ sync, syncHistory }: { sync: SyncCheck; syncHistory: SyncHist
   return (
     <>
       <tr
-        className={`hover:bg-[#FAFBFD] ${sync.status === "error" ? "bg-red-50/50" : ""} ${canExpand ? "cursor-pointer" : ""}`}
+        className={`hover:bg-[#f8fafc] ${sync.status === "error" ? "bg-red-50/50" : ""} ${canExpand ? "cursor-pointer" : ""}`}
         onClick={canExpand ? () => setExpanded(!expanded) : undefined}
       >
         <td className="px-4 py-2.5">
           <div className="flex items-center gap-2">
             <StatusDot status={sync.status} />
-            <span className="font-medium text-[#1A1F36]">
+            <span className="font-medium text-[#0F1D2E]">
               {friendlyName(sync.sync_type)}
             </span>
           </div>
@@ -809,7 +809,7 @@ function SyncRow({ sync, syncHistory }: { sync: SyncCheck; syncHistory: SyncHist
         <td className="px-4 py-2.5">
           <StatusBadge status={sync.last_status || "unknown"} />
         </td>
-        <td className="px-4 py-2.5 text-[#5E6687]">
+        <td className="px-4 py-2.5 text-[#64748b]">
           {sync.last_run ? (
             <span title={formatDate(sync.last_run)}>
               {timeAgo(sync.last_run)}
@@ -823,13 +823,13 @@ function SyncRow({ sync, syncHistory }: { sync: SyncCheck; syncHistory: SyncHist
             <span className="text-red-500">Never</span>
           )}
         </td>
-        <td className="px-4 py-2.5 text-[#A3ACBE] text-xs font-mono hidden sm:table-cell">
+        <td className="px-4 py-2.5 text-[#94a3b8] text-xs font-mono hidden sm:table-cell">
           {sync.schedule}
         </td>
-        <td className="px-4 py-2.5 text-right text-[#1A1F36]">
+        <td className="px-4 py-2.5 text-right text-[#334155]">
           <span className="font-medium">{sync.records_added.toLocaleString()}</span>
           {sync.records_linked > 0 && (
-            <span className="text-xs text-[#A3ACBE] ml-1">
+            <span className="text-xs text-[#94a3b8] ml-1">
               +{sync.records_linked.toLocaleString()} linked
             </span>
           )}
@@ -864,15 +864,15 @@ function SyncRow({ sync, syncHistory }: { sync: SyncCheck; syncHistory: SyncHist
 
 function DataCard({ data }: { data: DataCheck }) {
   return (
-    <div className={`bg-white border rounded-xl p-4 ${data.status === "error" ? "border-red-200 bg-red-50/30" : "border-[#E2E8F0]"}`}>
+    <div className={`bg-white border rounded-xl p-4 ${data.status === "error" ? "border-red-200 bg-red-50/30" : "border-[#e2e8f0]"}`}>
       <div className="flex items-center justify-between mb-1">
-        <span className="text-sm font-medium text-[#1A1F36]">{data.label}</span>
+        <span className="text-sm font-medium text-[#0F1D2E]">{data.label}</span>
         <StatusDot status={data.status} />
       </div>
-      <p className="text-2xl font-bold text-[#1A1F36]">
+      <p className="text-2xl font-bold text-[#0F1D2E]">
         {data.row_count.toLocaleString()}
       </p>
-      <p className="text-xs text-[#A3ACBE] mt-1">{data.details}</p>
+      <p className="text-xs text-[#94a3b8] mt-1">{data.details}</p>
     </div>
   );
 }
@@ -890,7 +890,7 @@ function DailySyncActivity({ history }: { history: SyncHistoryEntry[] }) {
 
   if (dates.length === 0) {
     return (
-      <div className="bg-white border border-[#E2E8F0] rounded-xl p-6 text-center text-[#A3ACBE] text-sm">
+      <div className="bg-white border border-[#e2e8f0] rounded-xl p-6 text-center text-[#94a3b8] text-sm">
         No sync activity in the last 7 days
       </div>
     );
@@ -910,14 +910,14 @@ function DailySyncActivity({ history }: { history: SyncHistoryEntry[] }) {
           : new Date(date + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 
         return (
-          <div key={date} className="bg-white border border-[#E2E8F0] rounded-xl overflow-hidden">
+          <div key={date} className="bg-white border border-[#e2e8f0] rounded-xl overflow-hidden">
             {/* Date header */}
-            <div className="flex items-center justify-between px-4 py-3 bg-[#FAFBFD] border-b border-[#E2E8F0]">
+            <div className="flex items-center justify-between px-4 py-3 bg-[#f8fafc] border-b border-[#e2e8f0]">
               <div className="flex items-center gap-3">
-                <span className={`text-sm font-semibold ${isToday ? "text-[#6366F1]" : "text-[#1A1F36]"}`}>
+                <span className={`text-sm font-semibold ${isToday ? "text-[#3B82F6]" : "text-[#0F1D2E]"}`}>
                   {label}
                 </span>
-                <span className="text-xs text-[#A3ACBE]">{date}</span>
+                <span className="text-xs text-[#94a3b8]">{date}</span>
               </div>
               <div className="flex items-center gap-3 text-xs">
                 {completed > 0 && (
@@ -926,7 +926,7 @@ function DailySyncActivity({ history }: { history: SyncHistoryEntry[] }) {
                 {failed > 0 && (
                   <span className="text-red-600 font-medium">{failed} failed</span>
                 )}
-                <span className="text-[#5E6687]">
+                <span className="text-[#64748b]">
                   {totalAdded.toLocaleString()} added
                   {totalLinked > 0 && ` · ${totalLinked.toLocaleString()} linked`}
                 </span>
@@ -948,19 +948,19 @@ function DailySyncActivity({ history }: { history: SyncHistoryEntry[] }) {
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <StatusDot status={entry.status === "completed" ? "healthy" : entry.status === "running" ? "warning" : "error"} />
-                      <span className="font-medium text-[#1A1F36] truncate">
+                      <span className="font-medium text-[#0F1D2E] truncate">
                         {friendlyName(entry.sync_type)}
                       </span>
-                      <span className="text-[#A3ACBE] text-xs flex-shrink-0">{time}</span>
+                      <span className="text-[#94a3b8] text-xs flex-shrink-0">{time}</span>
                     </div>
                     <div className="flex items-center gap-3 flex-shrink-0 ml-3">
                       {entry.records_added > 0 && (
-                        <span className="text-xs text-[#5E6687]">
+                        <span className="text-xs text-[#64748b]">
                           +{entry.records_added.toLocaleString()}
                         </span>
                       )}
                       {entry.records_linked > 0 && (
-                        <span className="text-xs text-[#A3ACBE]">
+                        <span className="text-xs text-[#94a3b8]">
                           {entry.records_linked.toLocaleString()} linked
                         </span>
                       )}
@@ -984,8 +984,8 @@ function DailySyncActivity({ history }: { history: SyncHistoryEntry[] }) {
 
 function PageGroup({ title, pages }: { title: string; pages: PageCheck[] }) {
   return (
-    <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
-      <p className="text-xs font-semibold text-[#A3ACBE] uppercase tracking-wider mb-3">{title}</p>
+    <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
+      <p className="text-xs font-semibold text-[#94a3b8] uppercase tracking-wider mb-3">{title}</p>
       <div className="space-y-1.5">
         {pages.map((page) => (
           <a
@@ -993,10 +993,10 @@ function PageGroup({ title, pages }: { title: string; pages: PageCheck[] }) {
             href={page.path}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-between py-1.5 px-2 -mx-2 rounded-lg hover:bg-[#FAFBFD] group text-sm"
+            className="flex items-center justify-between py-1.5 px-2 -mx-2 rounded-lg hover:bg-[#f8fafc] group text-sm"
           >
-            <span className="text-[#1A1F36] group-hover:text-[#6366F1]">{page.label}</span>
-            <ExternalLink className="w-3.5 h-3.5 text-[#A3ACBE] group-hover:text-[#6366F1]" />
+            <span className="text-[#334155] group-hover:text-[#3B82F6]">{page.label}</span>
+            <ExternalLink className="w-3.5 h-3.5 text-[#cbd5e1] group-hover:text-[#3B82F6]" />
           </a>
         ))}
       </div>

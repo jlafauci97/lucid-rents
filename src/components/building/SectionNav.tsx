@@ -148,15 +148,15 @@ export function SectionNav() {
       <div ref={sentinelRef} className="h-0" aria-hidden="true" />
 
       <nav
-        className={`sticky top-[64px] z-40 backdrop-blur-xl transition-shadow duration-200 ${
-          isSticky ? "shadow-md" : ""
+        className={`sticky top-16 z-30 backdrop-blur-xl transition-shadow duration-200 ${
+          isSticky ? "shadow-sm" : ""
         }`}
         style={{
-          backgroundColor: "#EFF6FF",
+          backgroundColor: `${T.surface}E6`,
           borderBottom: `1px solid ${T.border}`,
         }}
       >
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div
             ref={navRef}
             className="flex overflow-x-auto -mb-px gap-1 py-1"

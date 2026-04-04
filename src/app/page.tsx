@@ -160,7 +160,7 @@ export default function HomePage() {
                   <h2 className="mt-4 text-lg font-bold">
                     {meta.fullName}
                   </h2>
-                  <span className="mt-1 inline-flex items-center gap-1 text-[13px] font-medium text-[#6366F1] group-hover:text-white transition-colors">
+                  <span className="mt-1 inline-flex items-center gap-1 text-[13px] font-medium text-[#3B82F6] group-hover:text-white transition-colors">
                     Explore {meta.name}
                     <ArrowRight className="w-3.5 h-3.5" />
                   </span>
@@ -172,12 +172,12 @@ export default function HomePage() {
       </section>
 
       {/* Violation Ticker */}
-      <Suspense fallback={<div className="bg-[#6366F1] border-y border-blue-400/30 py-3 h-[52px]" />}>
+      <Suspense fallback={<div className="bg-[#3B82F6] border-y border-blue-400/30 py-3 h-[52px]" />}>
         <ViolationTickerServer />
       </Suspense>
 
       {/* Stats */}
-      <section className="border-b border-[#E2E8F0]">
+      <section className="border-b border-[#e2e8f0]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <Suspense fallback={<div className="grid grid-cols-2 md:grid-cols-4 gap-6">{[...Array(4)].map((_, i) => <div key={i} className="text-center"><div className="w-8 h-8 bg-[#e2e8f0] rounded mx-auto mb-2 animate-pulse" /><div className="h-7 w-20 bg-[#e2e8f0] rounded mx-auto mb-1 animate-pulse" /><div className="h-4 w-24 bg-[#e2e8f0] rounded mx-auto animate-pulse" /></div>)}</div>}>
             <LiveStats />
@@ -189,10 +189,10 @@ export default function HomePage() {
       <section className="py-16 bg-[#EFF6FF]">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-[#1A1F36] mb-2">
+            <h2 className="text-3xl font-bold text-[#0F1D2E] mb-2">
               Recent Activity
             </h2>
-            <p className="text-[#5E6687]">
+            <p className="text-[#64748b]">
               The latest violations, complaints, and tenant reviews across all
               cities
             </p>
@@ -204,22 +204,22 @@ export default function HomePage() {
       {/* Features */}
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-center text-[#1A1F36] mb-12">
+          <h2 className="text-3xl font-bold text-center text-[#0F1D2E] mb-12">
             The Apartment Details No One Tells You
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {features.map((feature) => (
               <div
                 key={feature.title}
-                className="bg-white rounded-xl border border-[#E2E8F0] p-8 text-center"
+                className="bg-white rounded-xl border border-[#e2e8f0] p-8 text-center"
               >
                 <div className="w-14 h-14 bg-[#EFF6FF] rounded-xl flex items-center justify-center mx-auto mb-4">
-                  <feature.icon className="w-7 h-7 text-[#6366F1]" />
+                  <feature.icon className="w-7 h-7 text-[#3B82F6]" />
                 </div>
-                <h3 className="text-lg font-semibold text-[#1A1F36] mb-2">
+                <h3 className="text-lg font-semibold text-[#0F1D2E] mb-2">
                   {feature.title}
                 </h3>
-                <p className="text-sm text-[#5E6687] leading-relaxed">
+                <p className="text-sm text-[#64748b] leading-relaxed">
                   {feature.description}
                 </p>
               </div>
@@ -229,9 +229,9 @@ export default function HomePage() {
       </section>
 
       {/* How It Works */}
-      <section className="py-16 bg-white border-t border-[#E2E8F0]">
+      <section className="py-16 bg-white border-t border-[#e2e8f0]">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-2xl sm:text-3xl font-bold text-[#1A1F36] mb-12 text-center">
+          <h2 className="text-2xl sm:text-3xl font-bold text-[#0F1D2E] mb-12 text-center">
             How It Works
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 relative">
@@ -258,13 +258,13 @@ export default function HomePage() {
               },
             ].map((step) => (
               <div key={step.num} className="text-center relative z-10">
-                <div className="w-16 h-16 bg-[#FAFBFD] border-2 border-[#E2E8F0] rounded-2xl flex items-center justify-center mx-auto mb-5">
-                  <step.icon className="w-7 h-7 text-[#6366F1]" />
+                <div className="w-16 h-16 bg-[#f8fafc] border-2 border-[#e2e8f0] rounded-2xl flex items-center justify-center mx-auto mb-5">
+                  <step.icon className="w-7 h-7 text-[#3B82F6]" />
                 </div>
-                <h3 className="text-lg font-semibold text-[#1A1F36] mb-2">
+                <h3 className="text-lg font-semibold text-[#0F1D2E] mb-2">
                   {step.title}
                 </h3>
-                <p className="text-sm text-[#5E6687] leading-relaxed max-w-xs mx-auto">
+                <p className="text-sm text-[#64748b] leading-relaxed max-w-xs mx-auto">
                   {step.desc}
                 </p>
               </div>
@@ -286,7 +286,7 @@ export default function HomePage() {
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <a
               href={cityPath("/review/new", "nyc")}
-              className="inline-flex items-center justify-center px-6 py-3 bg-[#6366F1] hover:bg-[#2563EB] text-white font-semibold rounded-lg transition-colors"
+              className="inline-flex items-center justify-center px-6 py-3 bg-[#3B82F6] hover:bg-[#2563EB] text-white font-semibold rounded-lg transition-colors"
             >
               Review an NYC Building
             </a>

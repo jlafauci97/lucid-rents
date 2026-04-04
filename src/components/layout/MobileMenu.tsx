@@ -149,7 +149,7 @@ export function MobileMenu({ isLoggedIn }: MobileMenuProps) {
                 <Link
                   href="/register"
                   onClick={() => setOpen(false)}
-                  className="text-sm bg-[#6366F1] hover:bg-[#2563EB] text-white font-medium px-4 py-1.5 rounded-lg transition-colors"
+                  className="text-sm bg-[#3B82F6] hover:bg-[#2563EB] text-white font-medium px-4 py-1.5 rounded-lg transition-colors"
                 >
                   Sign Up
                 </Link>

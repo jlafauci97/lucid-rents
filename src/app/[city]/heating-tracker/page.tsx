@@ -115,17 +115,17 @@ export default async function HeatingTrackerPage({
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <Thermometer className="w-12 h-12 text-[#A3ACBE] mx-auto mb-4" />
-          <h1 className="text-xl font-bold text-[#1A1F36] mb-2">
+          <Thermometer className="w-12 h-12 text-[#94a3b8] mx-auto mb-4" />
+          <h1 className="text-xl font-bold text-[#0F1D2E] mb-2">
             Coming Soon
           </h1>
-          <p className="text-sm text-[#5E6687] max-w-md">
+          <p className="text-sm text-[#64748b] max-w-md">
             Heating complaint tracking is currently available for Chicago.
             We&apos;re working on expanding to other cities.
           </p>
           <Link
             href={`/${city}/tenant-rights`}
-            className="inline-block mt-6 text-sm font-medium text-[#6366F1] hover:text-[#4F46E5] transition-colors"
+            className="inline-block mt-6 text-sm font-medium text-[#3B82F6] hover:text-[#2563EB] transition-colors"
           >
             &larr; Back to Tenant Rights
           </Link>
@@ -184,11 +184,11 @@ export default async function HeatingTrackerPage({
             <div className="p-2 bg-amber-50 rounded-lg">
               <Thermometer className="w-6 h-6 text-[#D97706]" />
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#1A1F36]">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#0F1D2E]">
               Heating Complaint Tracker
             </h1>
           </div>
-          <p className="text-[#5E6687] text-sm sm:text-base max-w-3xl">
+          <p className="text-[#64748b] text-sm sm:text-base max-w-3xl">
             Track heating complaints filed through Chicago 311. During heating
             season (October 15 &ndash; June 1), landlords must maintain minimum
             temperatures of 68&deg;F during the day and 66&deg;F at night.
@@ -199,10 +199,10 @@ export default async function HeatingTrackerPage({
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-8 flex items-start gap-3">
           <Flame className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
           <div>
-            <p className="text-sm font-semibold text-[#1A1F36]">
+            <p className="text-sm font-semibold text-[#0F1D2E]">
               Chicago Heating Season: October 15 &ndash; June 1
             </p>
-            <p className="text-xs text-[#1A1F36] mt-1">
+            <p className="text-xs text-[#334155] mt-1">
               During heating season, landlords are required to maintain a minimum
               of 68&deg;F from 8:30 AM to 10:30 PM and 66&deg;F overnight.
               Failure to provide adequate heat is a violation of Chicago&apos;s
@@ -213,30 +213,30 @@ export default async function HeatingTrackerPage({
 
         {/* Summary stats */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
-          <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
-            <p className="text-xs text-[#5E6687] font-medium uppercase tracking-wide">
+          <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
+            <p className="text-xs text-[#64748b] font-medium uppercase tracking-wide">
               Total Complaints
             </p>
-            <p className="text-2xl font-bold text-[#1A1F36] mt-1">
+            <p className="text-2xl font-bold text-[#0F1D2E] mt-1">
               {totalCount > 0 ? totalCount.toLocaleString() : "\u2014"}
             </p>
           </div>
-          <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
+          <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
             <p className="text-xs text-[#F59E0B] font-medium uppercase tracking-wide">
               Last 90 Days
             </p>
-            <p className="text-2xl font-bold text-[#1A1F36] mt-1">
+            <p className="text-2xl font-bold text-[#0F1D2E] mt-1">
               {recentCount > 0 ? recentCount.toLocaleString() : "\u2014"}
             </p>
           </div>
-          <div className="bg-white border border-[#E2E8F0] rounded-xl p-4 col-span-2 sm:col-span-1">
+          <div className="bg-white border border-[#e2e8f0] rounded-xl p-4 col-span-2 sm:col-span-1">
             <p className="text-xs text-[#EF4444] font-medium uppercase tracking-wide">
               Repeat Offenders
             </p>
-            <p className="text-2xl font-bold text-[#1A1F36] mt-1">
+            <p className="text-2xl font-bold text-[#0F1D2E] mt-1">
               {topAddresses.length > 0 ? topAddresses.length : "\u2014"}
             </p>
-            <p className="text-[10px] text-[#A3ACBE] mt-0.5">
+            <p className="text-[10px] text-[#94a3b8] mt-0.5">
               addresses with 2+ complaints
             </p>
           </div>
@@ -244,11 +244,11 @@ export default async function HeatingTrackerPage({
 
         {/* Top offending buildings */}
         {topAddresses.length > 0 && (
-          <section className="bg-white border border-[#E2E8F0] rounded-xl p-5 sm:p-6 mb-6">
-            <h2 className="text-lg font-bold text-[#1A1F36] mb-1">
+          <section className="bg-white border border-[#e2e8f0] rounded-xl p-5 sm:p-6 mb-6">
+            <h2 className="text-lg font-bold text-[#0F1D2E] mb-1">
               Buildings with Most Complaints
             </h2>
-            <p className="text-sm text-[#5E6687] mb-4">
+            <p className="text-sm text-[#64748b] mb-4">
               Addresses with the highest number of heating-related 311
               complaints.
             </p>
@@ -256,9 +256,9 @@ export default async function HeatingTrackerPage({
               {topAddresses.map(([address, count]) => (
                 <div
                   key={address}
-                  className="flex items-center justify-between bg-[#FAFBFD] rounded-lg px-4 py-3"
+                  className="flex items-center justify-between bg-[#f8fafc] rounded-lg px-4 py-3"
                 >
-                  <span className="text-sm font-medium text-[#1A1F36]">
+                  <span className="text-sm font-medium text-[#0F1D2E]">
                     {address}
                   </span>
                   <span className="text-xs font-semibold text-[#DC2626] bg-red-50 px-2.5 py-1 rounded-full">
@@ -271,11 +271,11 @@ export default async function HeatingTrackerPage({
         )}
 
         {/* Complaints table */}
-        <section className="bg-white border border-[#E2E8F0] rounded-xl p-5 sm:p-6 mb-6">
-          <h2 className="text-lg font-bold text-[#1A1F36] mb-1">
+        <section className="bg-white border border-[#e2e8f0] rounded-xl p-5 sm:p-6 mb-6">
+          <h2 className="text-lg font-bold text-[#0F1D2E] mb-1">
             Recent Heating Complaints
           </h2>
-          <p className="text-sm text-[#5E6687] mb-4">
+          <p className="text-sm text-[#64748b] mb-4">
             Showing {offset + 1}–{Math.min(offset + pageSize, totalCount).toLocaleString()} of{" "}
             {totalCount.toLocaleString()} complaints, most recent first.
           </p>
@@ -283,20 +283,20 @@ export default async function HeatingTrackerPage({
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-[#E2E8F0] text-left">
-                  <th className="pb-3 pr-4 text-xs font-medium text-[#5E6687] uppercase tracking-wide">
+                <tr className="border-b border-[#e2e8f0] text-left">
+                  <th className="pb-3 pr-4 text-xs font-medium text-[#64748b] uppercase tracking-wide">
                     Address
                   </th>
-                  <th className="pb-3 pr-4 text-xs font-medium text-[#5E6687] uppercase tracking-wide">
+                  <th className="pb-3 pr-4 text-xs font-medium text-[#64748b] uppercase tracking-wide">
                     <span className="inline-flex items-center gap-1">
                       Date
                       <ArrowUpDown className="w-3 h-3" />
                     </span>
                   </th>
-                  <th className="pb-3 pr-4 text-xs font-medium text-[#5E6687] uppercase tracking-wide">
+                  <th className="pb-3 pr-4 text-xs font-medium text-[#64748b] uppercase tracking-wide">
                     Status
                   </th>
-                  <th className="pb-3 text-xs font-medium text-[#5E6687] uppercase tracking-wide">
+                  <th className="pb-3 text-xs font-medium text-[#64748b] uppercase tracking-wide">
                     Description
                   </th>
                 </tr>
@@ -305,12 +305,12 @@ export default async function HeatingTrackerPage({
                 {complaints.map((c) => (
                   <tr
                     key={c.id}
-                    className="border-b border-[#f1f5f9] hover:bg-[#FAFBFD] transition-colors"
+                    className="border-b border-[#f1f5f9] hover:bg-[#f8fafc] transition-colors"
                   >
-                    <td className="py-3 pr-4 font-medium text-[#1A1F36]">
+                    <td className="py-3 pr-4 font-medium text-[#0F1D2E]">
                       {c.address || "\u2014"}
                     </td>
-                    <td className="py-3 pr-4 text-[#5E6687]">
+                    <td className="py-3 pr-4 text-[#64748b]">
                       {c.created_date
                         ? new Date(c.created_date).toLocaleDateString("en-US", {
                             month: "short",
@@ -338,7 +338,7 @@ export default async function HeatingTrackerPage({
                         "\u2014"
                       )}
                     </td>
-                    <td className="py-3 text-[#5E6687] text-xs max-w-xs truncate">
+                    <td className="py-3 text-[#64748b] text-xs max-w-xs truncate">
                       {c.descriptor || c.complaint_type || "\u2014"}
                     </td>
                   </tr>
@@ -347,7 +347,7 @@ export default async function HeatingTrackerPage({
                   <tr>
                     <td
                       colSpan={4}
-                      className="py-12 text-center text-[#A3ACBE]"
+                      className="py-12 text-center text-[#94a3b8]"
                     >
                       No heating complaint data available yet.
                     </td>
@@ -359,32 +359,32 @@ export default async function HeatingTrackerPage({
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4 pt-4 border-t border-[#E2E8F0]">
-              <span className="text-xs text-[#5E6687]">
+            <div className="flex items-center justify-between mt-4 pt-4 border-t border-[#e2e8f0]">
+              <span className="text-xs text-[#64748b]">
                 Page {currentPage} of {totalPages}
               </span>
               <div className="flex items-center gap-2">
                 {currentPage > 1 ? (
                   <Link
                     href={`/${city}/heating-tracker?page=${currentPage - 1}`}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#E2E8F0] text-[#1A1F36] hover:bg-[#FAFBFD] transition-colors"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e2e8f0] text-[#334155] hover:bg-[#f8fafc] transition-colors"
                   >
                     <ChevronLeft className="w-3 h-3" /> Previous
                   </Link>
                 ) : (
-                  <span className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#E2E8F0] text-[#1A1F36] opacity-40 cursor-not-allowed">
+                  <span className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e2e8f0] text-[#334155] opacity-40 cursor-not-allowed">
                     <ChevronLeft className="w-3 h-3" /> Previous
                   </span>
                 )}
                 {currentPage < totalPages ? (
                   <Link
                     href={`/${city}/heating-tracker?page=${currentPage + 1}`}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#E2E8F0] text-[#1A1F36] hover:bg-[#FAFBFD] transition-colors"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e2e8f0] text-[#334155] hover:bg-[#f8fafc] transition-colors"
                   >
                     Next <ChevronRight className="w-3 h-3" />
                   </Link>
                 ) : (
-                  <span className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#E2E8F0] text-[#1A1F36] opacity-40 cursor-not-allowed">
+                  <span className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e2e8f0] text-[#334155] opacity-40 cursor-not-allowed">
                     Next <ChevronRight className="w-3 h-3" />
                   </span>
                 )}
@@ -399,14 +399,14 @@ export default async function HeatingTrackerPage({
             href="https://311.chicago.gov/"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-start gap-3 bg-white border border-[#E2E8F0] rounded-xl p-4 hover:border-[#6366F1] hover:shadow-sm transition-all group"
+            className="flex items-start gap-3 bg-white border border-[#e2e8f0] rounded-xl p-4 hover:border-[#3B82F6] hover:shadow-sm transition-all group"
           >
-            <ExternalLink className="w-5 h-5 text-[#6366F1] mt-0.5 flex-shrink-0" />
+            <ExternalLink className="w-5 h-5 text-[#3B82F6] mt-0.5 flex-shrink-0" />
             <div>
-              <p className="text-sm font-semibold text-[#1A1F36] group-hover:text-[#6366F1]">
+              <p className="text-sm font-semibold text-[#0F1D2E] group-hover:text-[#3B82F6]">
                 File a 311 Complaint
               </p>
-              <p className="text-xs text-[#5E6687] mt-0.5">
+              <p className="text-xs text-[#64748b] mt-0.5">
                 Report a no-heat or heating issue through Chicago&apos;s 311
                 service system online or by phone.
               </p>
@@ -416,14 +416,14 @@ export default async function HeatingTrackerPage({
             href="https://www.chicago.gov/city/en/depts/bldgs.html"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-start gap-3 bg-white border border-[#E2E8F0] rounded-xl p-4 hover:border-[#6366F1] hover:shadow-sm transition-all group"
+            className="flex items-start gap-3 bg-white border border-[#e2e8f0] rounded-xl p-4 hover:border-[#3B82F6] hover:shadow-sm transition-all group"
           >
-            <ExternalLink className="w-5 h-5 text-[#6366F1] mt-0.5 flex-shrink-0" />
+            <ExternalLink className="w-5 h-5 text-[#3B82F6] mt-0.5 flex-shrink-0" />
             <div>
-              <p className="text-sm font-semibold text-[#1A1F36] group-hover:text-[#6366F1]">
+              <p className="text-sm font-semibold text-[#0F1D2E] group-hover:text-[#3B82F6]">
                 Dept. of Buildings
               </p>
-              <p className="text-xs text-[#5E6687] mt-0.5">
+              <p className="text-xs text-[#64748b] mt-0.5">
                 Chicago Department of Buildings — building code enforcement,
                 inspections, and complaint status.
               </p>
@@ -433,7 +433,7 @@ export default async function HeatingTrackerPage({
 
         {/* Emergency contacts */}
         <section className="mb-6">
-          <h2 className="text-lg font-bold text-[#1A1F36] mb-3">
+          <h2 className="text-lg font-bold text-[#0F1D2E] mb-3">
             Emergency Contacts
           </h2>
           <div className="grid sm:grid-cols-2 gap-3">
@@ -453,21 +453,21 @@ export default async function HeatingTrackerPage({
             ].map((contact) => (
               <div
                 key={contact.name}
-                className="bg-white rounded-xl border border-[#E2E8F0] p-4 flex items-start gap-3"
+                className="bg-white rounded-xl border border-[#e2e8f0] p-4 flex items-start gap-3"
               >
                 <div className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-50 text-blue-600 border border-blue-200 flex-shrink-0">
                   <Phone className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-[#1A1F36]">
+                  <h3 className="text-sm font-semibold text-[#0F1D2E]">
                     {contact.name}
                   </h3>
-                  <p className="text-xs text-[#5E6687] mt-0.5">
+                  <p className="text-xs text-[#64748b] mt-0.5">
                     {contact.description}
                   </p>
                   <a
                     href={`tel:${contact.phone}`}
-                    className="inline-block mt-1 text-xs font-medium text-[#6366F1] hover:text-[#4F46E5] transition-colors"
+                    className="inline-block mt-1 text-xs font-medium text-[#3B82F6] hover:text-[#2563EB] transition-colors"
                   >
                     {contact.phone}
                   </a>

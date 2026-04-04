@@ -45,37 +45,37 @@ export function LandlordPortfolioSummary({
   const diffFormatted = Math.abs(diff).toFixed(1);
 
   return (
-    <div className="bg-white rounded-xl border border-[#E2E8F0] p-6 mb-8">
-      <h2 className="text-lg font-bold text-[#1A1F36] mb-4">
+    <div className="bg-white rounded-xl border border-[#e2e8f0] p-6 mb-8">
+      <h2 className="text-lg font-bold text-[#0F1D2E] mb-4">
         Portfolio Summary
       </h2>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
         <div className="text-center">
-          <Building2 className="w-5 h-5 text-[#6366F1] mx-auto mb-1" />
-          <p className="text-2xl font-bold text-[#1A1F36]">
+          <Building2 className="w-5 h-5 text-[#3B82F6] mx-auto mb-1" />
+          <p className="text-2xl font-bold text-[#0F1D2E]">
             {totalBuildings}
           </p>
-          <p className="text-xs text-[#A3ACBE]">Buildings</p>
+          <p className="text-xs text-[#94a3b8]">Buildings</p>
         </div>
         <div className="text-center">
-          <p className="text-2xl font-bold text-[#1A1F36] mt-6">
+          <p className="text-2xl font-bold text-[#0F1D2E] mt-6">
             {totalUnits > 0 ? totalUnits.toLocaleString() : "---"}
           </p>
-          <p className="text-xs text-[#A3ACBE]">Total Units</p>
+          <p className="text-xs text-[#94a3b8]">Total Units</p>
         </div>
         <div className="text-center">
           <AlertTriangle className="w-5 h-5 text-[#EF4444] mx-auto mb-1" />
-          <p className="text-2xl font-bold text-[#1A1F36]">
+          <p className="text-2xl font-bold text-[#0F1D2E]">
             {totalViolations.toLocaleString()}
           </p>
-          <p className="text-xs text-[#A3ACBE]">Total Violations</p>
+          <p className="text-xs text-[#94a3b8]">Total Violations</p>
         </div>
         <div className="text-center">
           <div className="flex justify-center mb-1">
             <LetterGrade score={avgScore} size="sm" />
           </div>
-          <p className="text-xs text-[#A3ACBE]">Avg Score</p>
+          <p className="text-xs text-[#94a3b8]">Avg Score</p>
         </div>
       </div>
 
@@ -93,7 +93,7 @@ export function LandlordPortfolioSummary({
           <TrendingDown className="w-5 h-5 text-red-600 flex-shrink-0" />
         )}
         <p className="text-sm">
-          <span className="text-[#5E6687]">
+          <span className="text-[#64748b]">
             This landlord&apos;s buildings average{" "}
           </span>
           <span
@@ -101,18 +101,18 @@ export function LandlordPortfolioSummary({
           >
             {avgScore.toFixed(1)}/10
           </span>
-          <span className="text-[#5E6687]">, compared to the city average of </span>
-          <span className="font-bold text-[#1A1F36]">
+          <span className="text-[#64748b]">, compared to the city average of </span>
+          <span className="font-bold text-[#0F1D2E]">
             {cityAvgScore.toFixed(1)}/10
           </span>
-          <span className="text-[#5E6687]"> (</span>
+          <span className="text-[#64748b]"> (</span>
           <span
             className={`font-semibold ${isAboveAverage ? "text-emerald-700" : "text-red-700"}`}
           >
             {isAboveAverage ? "+" : "-"}
             {diffFormatted}
           </span>
-          <span className="text-[#5E6687]">)</span>
+          <span className="text-[#64748b]">)</span>
         </p>
       </div>
     </div>

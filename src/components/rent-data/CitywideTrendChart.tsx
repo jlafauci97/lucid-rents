@@ -18,7 +18,7 @@ interface DataPoint {
 export function CitywideTrendChart({ data }: { data: DataPoint[] }) {
   if (data.length === 0) {
     return (
-      <div className="text-center py-12 text-[#A3ACBE]">
+      <div className="text-center py-12 text-[#94a3b8]">
         No rent trend data available yet. Run the Zillow sync to populate.
       </div>
     );

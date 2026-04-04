@@ -170,7 +170,7 @@ export function HazardZonesCard({
                   >
                     <Icon
                       className={`w-4 h-4 flex-shrink-0 ${
-                        info.inZone ? colors.icon : "text-[#A3ACBE]"
+                        info.inZone ? colors.icon : "text-[#cbd5e1]"
                       }`}
                     />
                     <div className="flex-1 min-w-0">

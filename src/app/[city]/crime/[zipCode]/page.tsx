@@ -11,7 +11,7 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
 import dynamic from "next/dynamic";
 
-const ChartSkeleton = () => <div className="bg-white rounded-xl border border-[#E2E8F0] p-6"><div className="h-6 w-48 bg-[#e2e8f0] rounded animate-pulse mb-4" /><div className="h-[300px] bg-[#FAFBFD] rounded-lg animate-pulse" /></div>;
+const ChartSkeleton = () => <div className="bg-white rounded-xl border border-[#e2e8f0] p-6"><div className="h-6 w-48 bg-[#e2e8f0] rounded animate-pulse mb-4" /><div className="h-[300px] bg-[#f8fafc] rounded-lg animate-pulse" /></div>;
 const CrimeTrend = dynamic(() => import("@/components/crime/CrimeTrend").then(m => m.CrimeTrend), { loading: ChartSkeleton });
 const CrimeCategoryBreakdown = dynamic(() => import("@/components/crime/CrimeCategoryBreakdown").then(m => m.CrimeCategoryBreakdown), { loading: ChartSkeleton });
 import { FAQSection } from "@/components/seo/FAQSection";
@@ -171,47 +171,47 @@ export default async function CrimeZipPage({
             <Siren className="w-6 h-6 text-[#DC2626]" />
           </div>
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#1A1F36]">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#0F1D2E]">
               Crime in {displayName}
             </h1>
           </div>
         </div>
-        <p className="text-[#5E6687] text-sm">
+        <p className="text-[#64748b] text-sm">
           {CITY_META[city].crimeSource} crime data for the last 2 years
         </p>
       </div>
 
       {/* Summary stat cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
-          <p className="text-xs text-[#5E6687] font-medium uppercase tracking-wide">
+        <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
+          <p className="text-xs text-[#64748b] font-medium uppercase tracking-wide">
             Total
           </p>
-          <p className="text-2xl font-bold text-[#1A1F36] mt-1">
+          <p className="text-2xl font-bold text-[#0F1D2E] mt-1">
             {Number(summary.total).toLocaleString()}
           </p>
         </div>
-        <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
+        <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
           <p className="text-xs text-[#EF4444] font-medium uppercase tracking-wide">
             Violent
           </p>
-          <p className="text-2xl font-bold text-[#1A1F36] mt-1">
+          <p className="text-2xl font-bold text-[#0F1D2E] mt-1">
             {Number(summary.violent).toLocaleString()}
           </p>
         </div>
-        <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
+        <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
           <p className="text-xs text-[#F59E0B] font-medium uppercase tracking-wide">
             Property
           </p>
-          <p className="text-2xl font-bold text-[#1A1F36] mt-1">
+          <p className="text-2xl font-bold text-[#0F1D2E] mt-1">
             {Number(summary.property).toLocaleString()}
           </p>
         </div>
-        <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
-          <p className="text-xs text-[#6366F1] font-medium uppercase tracking-wide">
+        <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
+          <p className="text-xs text-[#3B82F6] font-medium uppercase tracking-wide">
             Quality of Life
           </p>
-          <p className="text-2xl font-bold text-[#1A1F36] mt-1">
+          <p className="text-2xl font-bold text-[#0F1D2E] mt-1">
             {Number(summary.quality_of_life).toLocaleString()}
           </p>
         </div>
@@ -229,12 +229,12 @@ export default async function CrimeZipPage({
           href={neighborhoodUrl(zipCode)}
           className="flex items-center gap-3 bg-[#EFF6FF] border border-[#BFDBFE] rounded-xl p-4 mb-8 hover:bg-[#DBEAFE] transition-colors"
         >
-          <MapPin className="w-5 h-5 text-[#6366F1] shrink-0" />
+          <MapPin className="w-5 h-5 text-[#3B82F6] shrink-0" />
           <div>
-            <p className="text-sm font-semibold text-[#1A1F36]">
+            <p className="text-sm font-semibold text-[#0F1D2E]">
               {neighborhoodName} Report Card
             </p>
-            <p className="text-xs text-[#5E6687]">See building grades, violations, and landlord info for {displayName}</p>
+            <p className="text-xs text-[#64748b]">See building grades, violations, and landlord info for {displayName}</p>
           </div>
         </Link>
       )}
@@ -245,16 +245,16 @@ export default async function CrimeZipPage({
         <div className="lg:col-span-2">
           <Card>
             <CardHeader>
-              <h2 className="text-xl font-bold text-[#1A1F36]">
+              <h2 className="text-xl font-bold text-[#0F1D2E]">
                 Recent Crimes
               </h2>
-              <p className="text-sm text-[#5E6687]">
+              <p className="text-sm text-[#64748b]">
                 Most recent incidents reported by {CITY_META[city].crimeSource}
               </p>
             </CardHeader>
             <CardContent>
               {recentCrimes.length === 0 ? (
-                <p className="text-center text-[#5E6687] py-8">
+                <p className="text-center text-[#64748b] py-8">
                   No recent crimes recorded in this zip code.
                 </p>
               ) : (
@@ -275,18 +275,18 @@ export default async function CrimeZipPage({
                         }}
                       />
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-[#1A1F36] truncate">
+                        <p className="text-sm font-medium text-[#0F1D2E] truncate">
                           {crime.offense_description || "Unknown Offense"}
                         </p>
                         {crime.pd_description && (
-                          <p className="text-xs text-[#5E6687] mt-0.5 truncate">
+                          <p className="text-xs text-[#64748b] mt-0.5 truncate">
                             {crime.pd_description}
                           </p>
                         )}
-                        <div className="flex items-center gap-3 mt-1 text-xs text-[#A3ACBE]">
+                        <div className="flex items-center gap-3 mt-1 text-xs text-[#94a3b8]">
                           <span>{formatDate(crime.cmplnt_date)}</span>
                           {crime.law_category && (
-                            <span className="px-1.5 py-0.5 rounded bg-[#F5F7FA] text-[#5E6687]">
+                            <span className="px-1.5 py-0.5 rounded bg-[#f1f5f9] text-[#64748b]">
                               {crime.law_category}
                             </span>
                           )}
@@ -323,15 +323,15 @@ export default async function CrimeZipPage({
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
-                <Building2 className="w-4.5 h-4.5 text-[#6366F1]" />
-                <h3 className="text-base font-bold text-[#1A1F36]">
+                <Building2 className="w-4.5 h-4.5 text-[#3B82F6]" />
+                <h3 className="text-base font-bold text-[#0F1D2E]">
                   Buildings in {zipCode}
                 </h3>
               </div>
             </CardHeader>
             <CardContent>
               {buildings.length === 0 ? (
-                <p className="text-sm text-[#5E6687] text-center py-4">
+                <p className="text-sm text-[#64748b] text-center py-4">
                   No buildings tracked in this zip code.
                 </p>
               ) : (
@@ -348,12 +348,12 @@ export default async function CrimeZipPage({
                       <Link
                         key={b.id}
                         href={buildingUrl(b, city)}
-                        className="block p-3 rounded-lg border border-[#E2E8F0] hover:border-[#6366F1] hover:bg-[#FAFBFD] transition-colors"
+                        className="block p-3 rounded-lg border border-[#e2e8f0] hover:border-[#3B82F6] hover:bg-[#f8fafc] transition-colors"
                       >
-                        <p className="text-sm font-medium text-[#1A1F36] truncate">
+                        <p className="text-sm font-medium text-[#0F1D2E] truncate">
                           {b.full_address}
                         </p>
-                        <div className="flex items-center gap-3 mt-1 text-xs text-[#5E6687]">
+                        <div className="flex items-center gap-3 mt-1 text-xs text-[#64748b]">
                           {b.overall_score !== null && (
                             <span>
                               Score:{" "}

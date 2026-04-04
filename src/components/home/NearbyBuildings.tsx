@@ -67,12 +67,12 @@ export function NearbyBuildings() {
       <div className="text-center py-8">
         <button
           onClick={handleClick}
-          className="inline-flex items-center gap-2 px-5 py-3 bg-[#6366F1] hover:bg-[#2563EB] text-white font-semibold rounded-xl transition-colors shadow-sm"
+          className="inline-flex items-center gap-2 px-5 py-3 bg-[#3B82F6] hover:bg-[#2563EB] text-white font-semibold rounded-xl transition-colors shadow-sm"
         >
           <Navigation className="w-5 h-5" />
           Show Buildings Near Me
         </button>
-        <p className="text-xs text-[#A3ACBE] mt-2">
+        <p className="text-xs text-[#94a3b8] mt-2">
           Uses your location to find buildings in nearby zip codes
         </p>
       </div>
@@ -82,8 +82,8 @@ export function NearbyBuildings() {
   if (loading) {
     return (
       <div className="text-center py-12">
-        <Loader2 className="w-8 h-8 text-[#6366F1] mx-auto animate-spin mb-3" />
-        <p className="text-sm text-[#5E6687]">Finding buildings near you...</p>
+        <Loader2 className="w-8 h-8 text-[#3B82F6] mx-auto animate-spin mb-3" />
+        <p className="text-sm text-[#64748b]">Finding buildings near you...</p>
       </div>
     );
   }
@@ -91,10 +91,10 @@ export function NearbyBuildings() {
   if (error) {
     return (
       <div className="text-center py-8">
-        <p className="text-sm text-[#5E6687]">{error}</p>
+        <p className="text-sm text-[#64748b]">{error}</p>
         <button
           onClick={handleClick}
-          className="mt-3 text-sm text-[#6366F1] hover:text-[#4F46E5] font-medium"
+          className="mt-3 text-sm text-[#3B82F6] hover:text-[#2563EB] font-medium"
         >
           Try again
         </button>
@@ -109,18 +109,18 @@ export function NearbyBuildings() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {buildings.map((b) => (
           <Link key={b.id} href={buildingUrl(b, city)}>
-            <div className="bg-white rounded-xl border border-[#E2E8F0] p-4 hover:border-[#6366F1] hover:shadow-sm transition-all">
+            <div className="bg-white rounded-xl border border-[#e2e8f0] p-4 hover:border-[#3B82F6] hover:shadow-sm transition-all">
               <div className="flex items-start gap-3">
                 <LetterGrade score={b.overall_score} size="sm" />
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-[#1A1F36] truncate">
+                  <p className="text-sm font-semibold text-[#0F1D2E] truncate">
                     {b.full_address}
                   </p>
-                  <div className="flex items-center gap-1 text-xs text-[#5E6687] mt-0.5">
+                  <div className="flex items-center gap-1 text-xs text-[#64748b] mt-0.5">
                     <MapPin className="w-3 h-3" />
                     {b.borough} {b.zip_code}
                   </div>
-                  <div className="flex items-center gap-3 mt-2 text-xs text-[#A3ACBE]">
+                  <div className="flex items-center gap-3 mt-2 text-xs text-[#94a3b8]">
                     {b.violation_count > 0 && (
                       <span className="text-[#EF4444] font-medium">
                         {b.violation_count} violations

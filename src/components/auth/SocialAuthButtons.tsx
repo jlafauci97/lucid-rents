@@ -16,7 +16,7 @@ export function SocialAuthButtons() {
   return (
     <button
       onClick={handleGoogleLogin}
-      className="w-full flex items-center justify-center gap-3 border border-[#E2E8F0] rounded-lg px-4 py-2.5 text-sm font-medium text-[#1A1F36] hover:bg-gray-50 transition-colors"
+      className="w-full flex items-center justify-center gap-3 border border-[#e2e8f0] rounded-lg px-4 py-2.5 text-sm font-medium text-[#0F1D2E] hover:bg-gray-50 transition-colors"
     >
       <svg className="w-5 h-5" viewBox="0 0 24 24">
         <path

@@ -35,7 +35,7 @@ export function SearchFilters() {
       <select
         value={currentBorough}
         onChange={(e) => updateFilter("borough", e.target.value)}
-        className="rounded-lg border border-[#E2E8F0] bg-white px-3 py-2 text-sm text-[#1A1F36] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
+        className="rounded-lg border border-[#e2e8f0] bg-white px-3 py-2 text-sm text-[#0F1D2E] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
       >
         <option value="">All {getRegionLabel(city)}s</option>
         {getRegions(city).map((b) => (
@@ -56,7 +56,7 @@ export function SearchFilters() {
           }
         }}
         maxLength={5}
-        className="w-24 rounded-lg border border-[#E2E8F0] bg-white px-3 py-2 text-sm text-[#1A1F36] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
+        className="w-24 rounded-lg border border-[#e2e8f0] bg-white px-3 py-2 text-sm text-[#0F1D2E] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
       />
     </div>
   );

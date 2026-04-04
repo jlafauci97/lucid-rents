@@ -17,10 +17,10 @@ export default function BoroughError({
   return (
     <div className="min-h-[60vh] flex items-center justify-center px-4">
       <div className="text-center max-w-md">
-        <h2 className="text-2xl font-bold text-[#1A1F36] mb-2">
+        <h2 className="text-2xl font-bold text-[#0F1D2E] mb-2">
           Something went wrong
         </h2>
-        <p className="text-[#5E6687] mb-6">
+        <p className="text-[#64748b] mb-6">
           We had trouble loading the buildings list. This is usually
           temporary — please try again.
         </p>

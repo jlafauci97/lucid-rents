@@ -44,7 +44,7 @@ export function TemplateCard({ template, city }: TemplateCardProps) {
   return (
     <Link
       href={`/${city}/tenant-tools/templates/${template.slug}`}
-      className="group bg-white rounded-xl border border-[#E2E8F0] hover:shadow-md hover:border-[#E2E8F0] transition-all p-6 flex flex-col"
+      className="group bg-white rounded-xl border border-[#e2e8f0] hover:shadow-md hover:border-[#cbd5e1] transition-all p-6 flex flex-col"
     >
       <div className="flex items-start justify-between mb-4">
         <div className={`inline-flex items-center justify-center w-11 h-11 rounded-xl border ${iconColor}`}>
@@ -56,11 +56,11 @@ export function TemplateCard({ template, city }: TemplateCardProps) {
           {template.category}
         </span>
       </div>
-      <h3 className="text-base font-semibold text-[#1A1F36] mb-2 group-hover:text-[#6366F1] transition-colors leading-snug">
+      <h3 className="text-base font-semibold text-[#0F1D2E] mb-2 group-hover:text-[#3B82F6] transition-colors leading-snug">
         {template.title}
       </h3>
       <p className="text-sm text-gray-500 leading-relaxed flex-1">{template.description}</p>
-      <div className="mt-5 flex items-center gap-1.5 text-sm font-semibold text-[#6366F1] group-hover:gap-2.5 transition-all">
+      <div className="mt-5 flex items-center gap-1.5 text-sm font-semibold text-[#3B82F6] group-hover:gap-2.5 transition-all">
         Use Template
         <ArrowRight className="w-4 h-4" />
       </div>

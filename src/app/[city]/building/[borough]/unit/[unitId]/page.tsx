@@ -85,7 +85,7 @@ export default async function UnitPage({ params }: UnitPageProps) {
       {/* Back link */}
       <Link
         href={buildingUrl(building, city)}
-        className="inline-flex items-center gap-1.5 text-sm text-[#5E6687] hover:text-[#6366F1] transition-colors mb-6"
+        className="inline-flex items-center gap-1.5 text-sm text-[#64748b] hover:text-[#3B82F6] transition-colors mb-6"
       >
         <ArrowLeft className="w-4 h-4" />
         Back to {building.full_address}
@@ -97,13 +97,13 @@ export default async function UnitPage({ params }: UnitPageProps) {
           <ScoreGauge score={unit.overall_score} size="lg" />
         )}
         <div>
-          <h1 className="text-2xl font-bold text-[#1A1F36]">
+          <h1 className="text-2xl font-bold text-[#0F1D2E]">
             Unit {unit.unit_number}
           </h1>
-          <p className="text-[#5E6687] mt-1">
+          <p className="text-[#64748b] mt-1">
             {building.full_address}, {building.borough}
           </p>
-          <div className="flex items-center gap-4 mt-2 text-sm text-[#5E6687]">
+          <div className="flex items-center gap-4 mt-2 text-sm text-[#64748b]">
             {unit.floor && (
               <span className="flex items-center gap-1">
                 <Layers className="w-4 h-4" />
@@ -131,7 +131,7 @@ export default async function UnitPage({ params }: UnitPageProps) {
         <div className="lg:col-span-2 space-y-8">
           {/* Reviews */}
           <section>
-            <h2 className="text-xl font-bold text-[#1A1F36] mb-4">
+            <h2 className="text-xl font-bold text-[#0F1D2E] mb-4">
               Reviews ({reviews.length})
             </h2>
             {reviews.length > 0 ? (
@@ -143,7 +143,7 @@ export default async function UnitPage({ params }: UnitPageProps) {
             ) : (
               <Card>
                 <CardContent>
-                  <p className="text-center text-[#5E6687] py-8">
+                  <p className="text-center text-[#64748b] py-8">
                     No reviews yet for this unit.
                   </p>
                 </CardContent>
@@ -154,7 +154,7 @@ export default async function UnitPage({ params }: UnitPageProps) {
           {/* HPD Violations */}
           <section>
             <div className="flex items-center gap-2 mb-4">
-              <h2 className="text-xl font-bold text-[#1A1F36]">
+              <h2 className="text-xl font-bold text-[#0F1D2E]">
                 HPD Violations ({violations.length})
               </h2>
               {openViolations > 0 && (
@@ -172,39 +172,39 @@ export default async function UnitPage({ params }: UnitPageProps) {
           {/* Unit details */}
           <Card>
             <CardHeader>
-              <h3 className="font-semibold text-[#1A1F36]">Unit Details</h3>
+              <h3 className="font-semibold text-[#0F1D2E]">Unit Details</h3>
             </CardHeader>
             <CardContent>
               <dl className="space-y-3 text-sm">
                 <div>
-                  <dt className="text-[#A3ACBE]">Unit Number</dt>
-                  <dd className="text-[#1A1F36] font-medium">{unit.unit_number}</dd>
+                  <dt className="text-[#94a3b8]">Unit Number</dt>
+                  <dd className="text-[#0F1D2E] font-medium">{unit.unit_number}</dd>
                 </div>
                 {unit.floor && (
                   <div>
-                    <dt className="text-[#A3ACBE]">Floor</dt>
-                    <dd className="text-[#1A1F36] font-medium">{unit.floor}</dd>
+                    <dt className="text-[#94a3b8]">Floor</dt>
+                    <dd className="text-[#0F1D2E] font-medium">{unit.floor}</dd>
                   </div>
                 )}
                 {unit.bedrooms != null && (
                   <div>
-                    <dt className="text-[#A3ACBE]">Bedrooms</dt>
-                    <dd className="text-[#1A1F36] font-medium">{unit.bedrooms}</dd>
+                    <dt className="text-[#94a3b8]">Bedrooms</dt>
+                    <dd className="text-[#0F1D2E] font-medium">{unit.bedrooms}</dd>
                   </div>
                 )}
                 {unit.bathrooms != null && (
                   <div>
-                    <dt className="text-[#A3ACBE]">Bathrooms</dt>
-                    <dd className="text-[#1A1F36] font-medium">{unit.bathrooms}</dd>
+                    <dt className="text-[#94a3b8]">Bathrooms</dt>
+                    <dd className="text-[#0F1D2E] font-medium">{unit.bathrooms}</dd>
                   </div>
                 )}
                 <div>
-                  <dt className="text-[#A3ACBE]">Reviews</dt>
-                  <dd className="text-[#1A1F36] font-medium">{unit.review_count}</dd>
+                  <dt className="text-[#94a3b8]">Reviews</dt>
+                  <dd className="text-[#0F1D2E] font-medium">{unit.review_count}</dd>
                 </div>
                 <div>
-                  <dt className="text-[#A3ACBE]">HPD Violations</dt>
-                  <dd className="text-[#1A1F36] font-medium">
+                  <dt className="text-[#94a3b8]">HPD Violations</dt>
+                  <dd className="text-[#0F1D2E] font-medium">
                     {violations.length}
                     {openViolations > 0 && (
                       <span className="text-red-600 ml-1">({openViolations} open)</span>
@@ -218,24 +218,24 @@ export default async function UnitPage({ params }: UnitPageProps) {
           {/* Building context */}
           <Card>
             <CardHeader>
-              <h3 className="font-semibold text-[#1A1F36]">Building</h3>
+              <h3 className="font-semibold text-[#0F1D2E]">Building</h3>
             </CardHeader>
             <CardContent>
               <Link
                 href={buildingUrl(building, city)}
                 className="flex items-start gap-3 group"
               >
-                <Building2 className="w-5 h-5 text-[#6366F1] mt-0.5 flex-shrink-0" />
+                <Building2 className="w-5 h-5 text-[#3B82F6] mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="text-sm font-medium text-[#1A1F36] group-hover:text-[#6366F1] transition-colors">
+                  <p className="text-sm font-medium text-[#0F1D2E] group-hover:text-[#3B82F6] transition-colors">
                     {building.full_address}
                   </p>
-                  <p className="text-xs text-[#A3ACBE] mt-0.5">
+                  <p className="text-xs text-[#94a3b8] mt-0.5">
                     {building.borough}
                     {building.zip_code ? `, ${building.zip_code}` : ""}
                   </p>
                   {building.owner_name && (
-                    <p className="text-xs text-[#A3ACBE] mt-1">
+                    <p className="text-xs text-[#94a3b8] mt-1">
                       Owner: {building.owner_name}
                     </p>
                   )}

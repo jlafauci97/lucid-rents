@@ -60,7 +60,7 @@ export function CompareGrid({ buildings }: CompareGridProps) {
       getValue: (b) => (
         <Link
           href={buildingUrl(b)}
-          className="text-[#6366F1] hover:text-[#4F46E5] hover:underline font-medium text-sm leading-tight"
+          className="text-[#3B82F6] hover:text-[#2563EB] hover:underline font-medium text-sm leading-tight"
         >
           {b.full_address}
         </Link>
@@ -70,7 +70,7 @@ export function CompareGrid({ buildings }: CompareGridProps) {
       label: "Borough",
       icon: <MapPin className="w-4 h-4" />,
       getValue: (b) => (
-        <span className="text-sm text-[#1A1F36]">{b.borough}</span>
+        <span className="text-sm text-[#0F1D2E]">{b.borough}</span>
       ),
     },
     {
@@ -84,7 +84,7 @@ export function CompareGrid({ buildings }: CompareGridProps) {
       label: "Year Built",
       icon: <Calendar className="w-4 h-4" />,
       getValue: (b) => (
-        <span className="text-sm text-[#1A1F36]">
+        <span className="text-sm text-[#0F1D2E]">
           {b.year_built ?? "Unknown"}
         </span>
       ),
@@ -93,7 +93,7 @@ export function CompareGrid({ buildings }: CompareGridProps) {
       label: "Floors",
       icon: <Layers className="w-4 h-4" />,
       getValue: (b) => (
-        <span className="text-sm text-[#1A1F36]">
+        <span className="text-sm text-[#0F1D2E]">
           {b.num_floors ?? "Unknown"}
         </span>
       ),
@@ -102,7 +102,7 @@ export function CompareGrid({ buildings }: CompareGridProps) {
       label: "Total Units",
       icon: <Building2 className="w-4 h-4" />,
       getValue: (b) => (
-        <span className="text-sm text-[#1A1F36]">
+        <span className="text-sm text-[#0F1D2E]">
           {b.total_units ?? "Unknown"}
         </span>
       ),
@@ -114,12 +114,12 @@ export function CompareGrid({ buildings }: CompareGridProps) {
         b.owner_name ? (
           <Link
             href={landlordUrl(b.owner_name)}
-            className="text-[#6366F1] hover:text-[#4F46E5] hover:underline text-sm"
+            className="text-[#3B82F6] hover:text-[#2563EB] hover:underline text-sm"
           >
             {b.owner_name}
           </Link>
         ) : (
-          <span className="text-sm text-[#A3ACBE]">Unknown</span>
+          <span className="text-sm text-[#94a3b8]">Unknown</span>
         ),
     },
     {
@@ -162,7 +162,7 @@ export function CompareGrid({ buildings }: CompareGridProps) {
       label: "Rent Stabilized",
       icon: <ShieldCheck className="w-4 h-4" />,
       getValue: (b) => (
-        <span className={`text-sm font-medium ${b.is_rent_stabilized ? "text-emerald-600" : "text-[#A3ACBE]"}`}>
+        <span className={`text-sm font-medium ${b.is_rent_stabilized ? "text-emerald-600" : "text-[#94a3b8]"}`}>
           {b.is_rent_stabilized ? `Yes${b.stabilized_units ? ` (${b.stabilized_units} units)` : ""}` : "No"}
         </span>
       ),
@@ -171,7 +171,7 @@ export function CompareGrid({ buildings }: CompareGridProps) {
       label: "Reviews",
       icon: <Star className="w-4 h-4" />,
       getValue: (b) => (
-        <span className="text-sm text-[#1A1F36]">{b.review_count}</span>
+        <span className="text-sm text-[#0F1D2E]">{b.review_count}</span>
       ),
       highlight: "higher-is-better",
       getNumericValue: (b) => b.review_count,
@@ -198,7 +198,7 @@ export function CompareGrid({ buildings }: CompareGridProps) {
             >
               <Link
                 href={buildingUrl(b)}
-                className="text-white font-semibold text-sm hover:text-[#6366F1] transition-colors leading-tight block"
+                className="text-white font-semibold text-sm hover:text-[#3B82F6] transition-colors leading-tight block"
               >
                 {b.full_address}
               </Link>
@@ -224,7 +224,7 @@ export function CompareGrid({ buildings }: CompareGridProps) {
               }}
             >
               {/* Row label */}
-              <div className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-[#5E6687]">
+              <div className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-[#64748b]">
                 {row.icon}
                 {row.label}
               </div>

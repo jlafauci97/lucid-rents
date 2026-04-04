@@ -70,13 +70,13 @@ async function CompareContent({ params: paramsPromise, searchParams }: ComparePa
       <div className="mb-8 mt-4">
         <div className="flex items-center gap-3 mb-2">
           <div className="p-2 bg-blue-50 rounded-lg">
-            <ArrowLeftRight className="w-6 h-6 text-[#6366F1]" />
+            <ArrowLeftRight className="w-6 h-6 text-[#3B82F6]" />
           </div>
-          <h1 className="text-2xl font-bold text-[#1A1F36]">
+          <h1 className="text-2xl font-bold text-[#0F1D2E]">
             {cityName} Apartment Comparison
           </h1>
         </div>
-        <p className="text-[#5E6687] text-sm ml-[52px]">
+        <p className="text-[#64748b] text-sm ml-[52px]">
           Compare up to 3 {cityName} apartments side by side on violations, scores, reviews, rent trends, and more — so you can rent with confidence.
         </p>
       </div>
@@ -102,10 +102,10 @@ async function CompareContent({ params: paramsPromise, searchParams }: ComparePa
           <CardContent>
             <div className="text-center py-12">
               <ArrowLeftRight className="w-12 h-12 text-[#e2e8f0] mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-[#1A1F36] mb-2">
+              <h3 className="text-lg font-semibold text-[#0F1D2E] mb-2">
                 Add Another Building
               </h3>
-              <p className="text-sm text-[#5E6687] max-w-md mx-auto">
+              <p className="text-sm text-[#64748b] max-w-md mx-auto">
                 You have 1 building selected. Add at least one more to start
                 comparing.
               </p>
@@ -117,10 +117,10 @@ async function CompareContent({ params: paramsPromise, searchParams }: ComparePa
           <CardContent>
             <div className="text-center py-12">
               <ArrowLeftRight className="w-12 h-12 text-[#e2e8f0] mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-[#1A1F36] mb-2">
+              <h3 className="text-lg font-semibold text-[#0F1D2E] mb-2">
                 Start Comparing
               </h3>
-              <p className="text-sm text-[#5E6687] max-w-md mx-auto">
+              <p className="text-sm text-[#64748b] max-w-md mx-auto">
                 Use the search above to find and add buildings. You can compare
                 up to 3 buildings at a time.
               </p>

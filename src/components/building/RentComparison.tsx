@@ -222,7 +222,7 @@ export function RentComparison({
           {/* Historical context & trajectory */}
           {(historicalContext || rentTrajectory) && (
             <>
-              <div className="border-t border-[#E2E8F0]" />
+              <div className="border-t border-[#e2e8f0]" />
 
               {historicalContext && (
                 <p className="text-xs text-[#5E6687]">{historicalContext}</p>

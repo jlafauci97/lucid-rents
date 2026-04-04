@@ -10,7 +10,7 @@ import { ScaffoldingTable } from "@/components/scaffolding/ScaffoldingTable";
 import dynamic from "next/dynamic";
 
 const BoroughBreakdown = dynamic(() => import("@/components/scaffolding/BoroughBreakdown").then(m => m.BoroughBreakdown), {
-  loading: () => <div className="bg-white rounded-xl border border-[#E2E8F0] p-6"><div className="h-6 w-48 bg-[#e2e8f0] rounded animate-pulse mb-4" /><div className="h-[300px] bg-[#FAFBFD] rounded-lg animate-pulse" /></div>,
+  loading: () => <div className="bg-white rounded-xl border border-[#e2e8f0] p-6"><div className="h-6 w-48 bg-[#e2e8f0] rounded animate-pulse mb-4" /><div className="h-[300px] bg-[#f8fafc] rounded-lg animate-pulse" /></div>,
 });
 
 export async function generateMetadata({ params }: { params: Promise<{ city: string }> }): Promise<Metadata> {
@@ -112,16 +112,16 @@ export default async function ScaffoldingPage() {
             <div className="p-2 bg-amber-50 rounded-lg">
               <Construction className="w-6 h-6 text-[#F59E0B]" />
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#1A1F36]">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#0F1D2E]">
               NYC Scaffolding Tracker
             </h1>
           </div>
-          <p className="text-[#5E6687] text-sm sm:text-base max-w-3xl">
+          <p className="text-[#64748b] text-sm sm:text-base max-w-3xl">
             Track active sidewalk sheds and scaffolding across NYC. See how long
             they&apos;ve been up, which neighborhoods have the most, and when
             permits expire. Data from NYC DOB permits.
           </p>
-          <p className="text-[#A3ACBE] text-xs mt-2 max-w-3xl">
+          <p className="text-[#94a3b8] text-xs mt-2 max-w-3xl">
             Sidewalk shed permits must be renewed every 3 months. Sheds that
             remain up for years reflect repeated renewals — not a single
             long-term permit.
@@ -130,19 +130,19 @@ export default async function ScaffoldingPage() {
 
         {/* Summary stats */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
-          <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
-            <p className="text-xs text-[#5E6687] font-medium uppercase tracking-wide">
+          <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
+            <p className="text-xs text-[#64748b] font-medium uppercase tracking-wide">
               Active Sheds
             </p>
-            <p className="text-2xl font-bold text-[#1A1F36] mt-1">
+            <p className="text-2xl font-bold text-[#0F1D2E] mt-1">
               {totalActive > 0 ? totalActive.toLocaleString() : "—"}
             </p>
           </div>
-          <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
-            <p className="text-xs text-[#5E6687] font-medium uppercase tracking-wide">
+          <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
+            <p className="text-xs text-[#64748b] font-medium uppercase tracking-wide">
               Avg Duration
             </p>
-            <p className="text-2xl font-bold text-[#1A1F36] mt-1">
+            <p className="text-2xl font-bold text-[#0F1D2E] mt-1">
               {overallAvgDays > 0
                 ? overallAvgDays > 365
                   ? `${Math.floor(overallAvgDays / 365)}y ${Math.floor((overallAvgDays % 365) / 30)}mo`
@@ -150,22 +150,22 @@ export default async function ScaffoldingPage() {
                 : "—"}
             </p>
           </div>
-          <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
-            <p className="text-xs text-[#5E6687] font-medium uppercase tracking-wide">
+          <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
+            <p className="text-xs text-[#64748b] font-medium uppercase tracking-wide">
               Most Sheds
             </p>
-            <p className="text-sm font-semibold text-[#1A1F36] mt-2">
+            <p className="text-sm font-semibold text-[#0F1D2E] mt-2">
               {BOROUGH_NAME[topBorough?.toUpperCase()] || topBorough}
             </p>
           </div>
         </div>
 
         {/* Section 1: Map */}
-        <section className="bg-white border border-[#E2E8F0] rounded-xl p-5 sm:p-6 mb-6">
-          <h2 className="text-lg font-bold text-[#1A1F36] mb-1">
+        <section className="bg-white border border-[#e2e8f0] rounded-xl p-5 sm:p-6 mb-6">
+          <h2 className="text-lg font-bold text-[#0F1D2E] mb-1">
             Scaffolding Density Map
           </h2>
-          <p className="text-sm text-[#5E6687] mb-4">
+          <p className="text-sm text-[#64748b] mb-4">
             Active sidewalk sheds by zip code. Darker areas have more active
             scaffolding.
           </p>
@@ -173,11 +173,11 @@ export default async function ScaffoldingPage() {
         </section>
 
         {/* Section 2: Longest-standing sheds */}
-        <section className="bg-white border border-[#E2E8F0] rounded-xl p-5 sm:p-6 mb-6">
-          <h2 className="text-lg font-bold text-[#1A1F36] mb-1">
+        <section className="bg-white border border-[#e2e8f0] rounded-xl p-5 sm:p-6 mb-6">
+          <h2 className="text-lg font-bold text-[#0F1D2E] mb-1">
             Longest-Standing Sidewalk Sheds
           </h2>
-          <p className="text-sm text-[#5E6687] mb-4">
+          <p className="text-sm text-[#64748b] mb-4">
             Active sidewalk shed permits sorted by how long they&apos;ve been
             up. Sheds over a year are highlighted.
           </p>
@@ -185,19 +185,19 @@ export default async function ScaffoldingPage() {
         </section>
 
         {/* Section 3: Borough Breakdown */}
-        <section className="bg-white border border-[#E2E8F0] rounded-xl p-5 sm:p-6 mb-6">
-          <h2 className="text-lg font-bold text-[#1A1F36] mb-1">
+        <section className="bg-white border border-[#e2e8f0] rounded-xl p-5 sm:p-6 mb-6">
+          <h2 className="text-lg font-bold text-[#0F1D2E] mb-1">
             Borough Breakdown
           </h2>
-          <p className="text-sm text-[#5E6687] mb-4">
+          <p className="text-sm text-[#64748b] mb-4">
             Active sidewalk shed count and average duration by borough.
           </p>
           <BoroughBreakdown data={boroughStats} />
         </section>
 
         {/* Editorial content */}
-        <section className="mt-8 space-y-4 text-sm leading-relaxed text-[#1A1F36]">
-          <h2 className="text-lg font-bold text-[#1A1F36]">
+        <section className="mt-8 space-y-4 text-sm leading-relaxed text-[#334155]">
+          <h2 className="text-lg font-bold text-[#0F1D2E]">
             Understanding NYC Sidewalk Sheds
           </h2>
           <p>

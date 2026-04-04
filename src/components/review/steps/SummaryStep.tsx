@@ -69,13 +69,13 @@ function SectionHeader({
 }) {
   return (
     <div className="flex items-center justify-between mb-3">
-      <h3 className="text-sm font-semibold text-[#1A1F36] uppercase tracking-wide">
+      <h3 className="text-sm font-semibold text-[#0F1D2E] uppercase tracking-wide">
         {title}
       </h3>
       <button
         type="button"
         onClick={() => onEdit(step)}
-        className="flex items-center gap-1 text-sm font-medium text-[#6366F1] hover:text-[#2563eb] transition-colors"
+        className="flex items-center gap-1 text-sm font-medium text-[#3B82F6] hover:text-[#2563eb] transition-colors"
       >
         <Pencil className="h-3.5 w-3.5" />
         Edit
@@ -110,26 +110,26 @@ export function SummaryStep({
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-[#1A1F36]">Review Summary</h2>
-        <p className="mt-1 text-sm text-[#5E6687]">
+        <h2 className="text-xl font-semibold text-[#0F1D2E]">Review Summary</h2>
+        <p className="mt-1 text-sm text-[#64748b]">
           Please review your submission before posting
         </p>
       </div>
 
-      <div className="rounded-xl border border-[#E2E8F0] bg-white divide-y divide-[#e2e8f0]">
+      <div className="rounded-xl border border-[#e2e8f0] bg-white divide-y divide-[#e2e8f0]">
         {/* Section 1 - Building */}
         <div className="p-5">
           <SectionHeader title="Building" step={0} onEdit={onEditStep} />
-          <div className="space-y-1 text-sm text-[#1A1F36]">
+          <div className="space-y-1 text-sm text-[#0F1D2E]">
             <p>{building.full_address}</p>
             {unitNumber && (
-              <p className="text-[#5E6687]">
+              <p className="text-[#64748b]">
                 Unit {unitNumber}
                 {bedrooms && ` · ${bedrooms === "Studio" ? "Studio" : `${bedrooms} BR`}`}
                 {bathrooms && ` / ${bathrooms} BA`}
               </p>
             )}
-            <p className="text-[#5E6687]">
+            <p className="text-[#64748b]">
               Posting as:{" "}
               {displayPreference === "anonymous"
                 ? "Anonymous"
@@ -146,7 +146,7 @@ export function SummaryStep({
               {categoryRatings.map((cr) => (
                 <div key={cr.category_slug}>
                   <div className="flex items-center gap-3">
-                    <span className="text-sm text-[#1A1F36] w-40 shrink-0">
+                    <span className="text-sm text-[#0F1D2E] w-40 shrink-0">
                       {getCategoryName(cr.category_slug)}
                     </span>
                     <StarRating value={cr.rating} size="sm" readonly />
@@ -156,7 +156,7 @@ export function SummaryStep({
                       {cr.subcategory_flags.map((flag) => (
                         <span
                           key={flag}
-                          className="inline-block px-2 py-0.5 text-xs rounded-full bg-gray-100 text-[#5E6687]"
+                          className="inline-block px-2 py-0.5 text-xs rounded-full bg-gray-100 text-[#64748b]"
                         >
                           {getSubcategoryName(cr.category_slug, flag)}
                         </span>
@@ -174,10 +174,10 @@ export function SummaryStep({
           <SectionHeader title="Review" step={2} onEdit={onEditStep} />
           <div className="space-y-3">
             {title && (
-              <p className="text-sm font-medium text-[#1A1F36]">{title}</p>
+              <p className="text-sm font-medium text-[#0F1D2E]">{title}</p>
             )}
             {body && (
-              <p className="text-sm text-[#5E6687] line-clamp-3">{body}</p>
+              <p className="text-sm text-[#64748b] line-clamp-3">{body}</p>
             )}
             {proTags.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
@@ -212,37 +212,37 @@ export function SummaryStep({
           <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
             {moveInDate && (
               <div>
-                <span className="text-[#5E6687]">Move-in:</span>{" "}
-                <span className="text-[#1A1F36]">{moveInDate}</span>
+                <span className="text-[#64748b]">Move-in:</span>{" "}
+                <span className="text-[#0F1D2E]">{moveInDate}</span>
               </div>
             )}
             {moveOutDate && (
               <div>
-                <span className="text-[#5E6687]">Move-out:</span>{" "}
-                <span className="text-[#1A1F36]">{moveOutDate}</span>
+                <span className="text-[#64748b]">Move-out:</span>{" "}
+                <span className="text-[#0F1D2E]">{moveOutDate}</span>
               </div>
             )}
             {leaseType && (
               <div>
-                <span className="text-[#5E6687]">Lease type:</span>{" "}
-                <span className="text-[#1A1F36]">{getLeaseLabel(leaseType)}</span>
+                <span className="text-[#64748b]">Lease type:</span>{" "}
+                <span className="text-[#0F1D2E]">{getLeaseLabel(leaseType)}</span>
               </div>
             )}
             {rentAmount && (
               <div>
-                <span className="text-[#5E6687]">Rent:</span>{" "}
-                <span className="text-[#1A1F36]">${rentAmount}/mo</span>
+                <span className="text-[#64748b]">Rent:</span>{" "}
+                <span className="text-[#0F1D2E]">${rentAmount}/mo</span>
               </div>
             )}
             {landlordName && (
               <div>
-                <span className="text-[#5E6687]">Landlord:</span>{" "}
-                <span className="text-[#1A1F36]">{landlordName}</span>
+                <span className="text-[#64748b]">Landlord:</span>{" "}
+                <span className="text-[#0F1D2E]">{landlordName}</span>
               </div>
             )}
             {wouldRecommend !== null && (
               <div>
-                <span className="text-[#5E6687]">Recommend:</span>{" "}
+                <span className="text-[#64748b]">Recommend:</span>{" "}
                 <span className={wouldRecommend ? "text-[#10b981]" : "text-[#ef4444]"}>
                   {wouldRecommend ? "Yes" : "No"}
                 </span>
@@ -250,7 +250,7 @@ export function SummaryStep({
             )}
             {isPetFriendly !== null && (
               <div>
-                <span className="text-[#5E6687]">Pet friendly:</span>{" "}
+                <span className="text-[#64748b]">Pet friendly:</span>{" "}
                 <span className={isPetFriendly ? "text-[#10b981]" : "text-[#ef4444]"}>
                   {isPetFriendly ? "Yes" : "No"}
                 </span>
@@ -269,7 +269,7 @@ export function SummaryStep({
                   {amenities.map((a) => (
                     <span
                       key={`${a.category}-${a.amenity}`}
-                      className="inline-block px-2.5 py-1 text-xs font-medium rounded-full bg-gray-100 text-[#1A1F36]"
+                      className="inline-block px-2.5 py-1 text-xs font-medium rounded-full bg-gray-100 text-[#0F1D2E]"
                     >
                       {a.amenity}
                     </span>
@@ -281,7 +281,7 @@ export function SummaryStep({
                   {photos.map((path, i) => (
                     <div
                       key={path}
-                      className="aspect-square rounded-lg overflow-hidden border border-[#E2E8F0]"
+                      className="aspect-square rounded-lg overflow-hidden border border-[#e2e8f0]"
                     >
                       <img
                         src={getPhotoUrl(path)}
@@ -293,7 +293,7 @@ export function SummaryStep({
                 </div>
               )}
               {amenities.length === 0 && photos.length === 0 && (
-                <div className="flex items-center gap-2 text-[#A3ACBE] text-sm">
+                <div className="flex items-center gap-2 text-[#94a3b8] text-sm">
                   <ImageIcon className="h-4 w-4" />
                   <span>No unit details added</span>
                 </div>

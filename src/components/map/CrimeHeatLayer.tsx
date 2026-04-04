@@ -74,18 +74,18 @@ export function CrimeHeatLayer({ borough, visible }: CrimeHeatLayerProps) {
         >
           <Popup>
             <div className="text-sm min-w-[160px]">
-              <p className="font-bold text-[#1A1F36] mb-1">
+              <p className="font-bold text-[#0F1D2E] mb-1">
                 {p.zip} · {p.borough}
               </p>
-              <div className="space-y-0.5 text-xs text-[#5E6687]">
-                <p>Total: <span className="font-semibold text-[#1A1F36]">{p.total.toLocaleString()}</span></p>
+              <div className="space-y-0.5 text-xs text-[#64748b]">
+                <p>Total: <span className="font-semibold text-[#0F1D2E]">{p.total.toLocaleString()}</span></p>
                 <p>Violent: <span className="font-semibold text-[#EF4444]">{p.violent.toLocaleString()}</span></p>
                 <p>Property: <span className="font-semibold text-[#F59E0B]">{p.property.toLocaleString()}</span></p>
-                <p>QoL: <span className="font-semibold text-[#6366F1]">{p.qol.toLocaleString()}</span></p>
+                <p>QoL: <span className="font-semibold text-[#3B82F6]">{p.qol.toLocaleString()}</span></p>
               </div>
               <Link
                 href={`/${city}/crime/${p.zip}`}
-                className="text-xs text-[#6366F1] font-medium mt-1 inline-block"
+                className="text-xs text-[#3B82F6] font-medium mt-1 inline-block"
               >
                 View crime data →
               </Link>

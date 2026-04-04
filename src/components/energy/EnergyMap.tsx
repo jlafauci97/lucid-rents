@@ -79,7 +79,7 @@ export function EnergyMap({ data, city = "nyc" }: EnergyMapProps) {
 
   if (!isClient) {
     return (
-      <div className="h-[450px] bg-[#F5F7FA] rounded-lg flex items-center justify-center text-[#A3ACBE]">
+      <div className="h-[450px] bg-[#f1f5f9] rounded-lg flex items-center justify-center text-[#94a3b8]">
         Loading map...
       </div>
     );
@@ -87,7 +87,7 @@ export function EnergyMap({ data, city = "nyc" }: EnergyMapProps) {
 
   if (data.length === 0) {
     return (
-      <div className="text-center py-12 text-[#A3ACBE]">
+      <div className="text-center py-12 text-[#94a3b8]">
         No energy data available for the map yet.
       </div>
     );
@@ -100,20 +100,20 @@ export function EnergyMap({ data, city = "nyc" }: EnergyMapProps) {
     const topZips = [...data].sort((a, b) => b.avg_score - a.avg_score).slice(0, 20);
     return (
       <div>
-        <p className="text-sm text-[#5E6687] mb-3">
+        <p className="text-sm text-[#64748b] mb-3">
           Map view is not yet available for {cityMeta.fullName}. Showing top zip codes by average score.
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {topZips.map((z) => (
             <div
               key={z.zip_code}
-              className="bg-[#FAFBFD] border border-[#E2E8F0] rounded-lg p-3"
+              className="bg-[#f8fafc] border border-[#e2e8f0] rounded-lg p-3"
             >
-              <p className="font-semibold text-[#1A1F36]">{z.zip_code}</p>
-              <p className="text-sm text-[#5E6687]">
-                Score: <span className="font-medium text-[#1A1F36]">{z.avg_score}</span>
+              <p className="font-semibold text-[#0F1D2E]">{z.zip_code}</p>
+              <p className="text-sm text-[#64748b]">
+                Score: <span className="font-medium text-[#0F1D2E]">{z.avg_score}</span>
               </p>
-              <p className="text-xs text-[#A3ACBE]">{z.building_count} buildings</p>
+              <p className="text-xs text-[#94a3b8]">{z.building_count} buildings</p>
             </div>
           ))}
         </div>
@@ -123,7 +123,7 @@ export function EnergyMap({ data, city = "nyc" }: EnergyMapProps) {
 
   return (
     <div>
-      <div className="h-[450px] rounded-lg overflow-hidden border border-[#E2E8F0]">
+      <div className="h-[450px] rounded-lg overflow-hidden border border-[#e2e8f0]">
         <MapContainer
           center={[cityMeta.center.lat, cityMeta.center.lng]}
           zoom={cityMeta.zoom}
@@ -169,7 +169,7 @@ export function EnergyMap({ data, city = "nyc" }: EnergyMapProps) {
         </MapContainer>
       </div>
       {/* Legend */}
-      <div className="flex flex-wrap items-center gap-3 mt-3 text-xs text-[#5E6687]">
+      <div className="flex flex-wrap items-center gap-3 mt-3 text-xs text-[#64748b]">
         <span className="font-medium">Avg ENERGY STAR Score:</span>
         {[
           { color: "#ef4444", label: "<30" },

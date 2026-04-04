@@ -154,10 +154,10 @@ export async function NeighborhoodRankCard({
   if (percentiles.length === 0) return null;
 
   return (
-    <div className="bg-white rounded-xl border border-[#E2E8F0] p-6 mb-8">
+    <div className="bg-white rounded-xl border border-[#e2e8f0] p-6 mb-8">
       <div className="flex items-center gap-2 mb-5">
-        <BarChart3 className="w-5 h-5 text-[#6366F1]" />
-        <h2 className="text-lg font-bold text-[#1A1F36]">
+        <BarChart3 className="w-5 h-5 text-[#3B82F6]" />
+        <h2 className="text-lg font-bold text-[#0F1D2E]">
           Neighborhood Rankings
         </h2>
       </div>
@@ -165,7 +165,7 @@ export async function NeighborhoodRankCard({
         {percentiles.map((p) => (
           <div key={p.label}>
             <div className="flex items-baseline justify-between mb-1.5">
-              <p className="text-sm text-[#5E6687]">
+              <p className="text-sm text-[#64748b]">
                 {p.label}{" "}
                 <span className={`font-bold ${getTextColor(p.percentile)}`}>
                   {p.percentile}%
@@ -173,7 +173,7 @@ export async function NeighborhoodRankCard({
                 of neighborhoods
               </p>
             </div>
-            <div className="w-full h-3 bg-[#F5F7FA] rounded-full overflow-hidden">
+            <div className="w-full h-3 bg-[#f1f5f9] rounded-full overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all ${getBarColor(p.percentile)}`}
                 style={{ width: `${p.percentile}%` }}

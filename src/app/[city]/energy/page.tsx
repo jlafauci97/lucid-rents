@@ -9,7 +9,7 @@ import { EnergyMap } from "@/components/energy/EnergyMap";
 import dynamic from "next/dynamic";
 
 const ScoreDistribution = dynamic(() => import("@/components/energy/ScoreDistribution").then(m => m.ScoreDistribution), {
-  loading: () => <div className="bg-white rounded-xl border border-[#E2E8F0] p-6"><div className="h-6 w-48 bg-[#e2e8f0] rounded animate-pulse mb-4" /><div className="h-[300px] bg-[#FAFBFD] rounded-lg animate-pulse" /></div>,
+  loading: () => <div className="bg-white rounded-xl border border-[#e2e8f0] p-6"><div className="h-6 w-48 bg-[#e2e8f0] rounded animate-pulse mb-4" /><div className="h-[300px] bg-[#f8fafc] rounded-lg animate-pulse" /></div>,
 });
 import { EnergyTable } from "@/components/energy/EnergyTable";
 
@@ -213,23 +213,23 @@ export default async function EnergyPage({ params }: { params: Promise<{ city: s
             <div className="p-2 bg-emerald-50 rounded-lg">
               <Zap className="w-6 h-6 text-[#059669]" />
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#1A1F36]">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#0F1D2E]">
               {cfg.headerTitle}
             </h1>
           </div>
-          <p className="text-[#5E6687] text-sm sm:text-base max-w-3xl">
+          <p className="text-[#64748b] text-sm sm:text-base max-w-3xl">
             {cfg.headerDescription}
           </p>
         </div>
 
         {!hasData ? (
           /* No data message */
-          <div className="bg-white border border-[#E2E8F0] rounded-xl p-8 text-center">
-            <Zap className="w-10 h-10 text-[#A3ACBE] mx-auto mb-3" />
-            <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
+          <div className="bg-white border border-[#e2e8f0] rounded-xl p-8 text-center">
+            <Zap className="w-10 h-10 text-[#94a3b8] mx-auto mb-3" />
+            <h2 className="text-lg font-semibold text-[#0F1D2E] mb-2">
               Energy Data Coming Soon
             </h2>
-            <p className="text-sm text-[#5E6687] max-w-md mx-auto">
+            <p className="text-sm text-[#64748b] max-w-md mx-auto">
               We&apos;re working on importing {meta.fullName} energy benchmarking data
               from the {cfg.programName} program. Check back soon for ENERGY STAR
               scores, EUI, and emissions data for {meta.fullName} buildings.
@@ -239,30 +239,30 @@ export default async function EnergyPage({ params }: { params: Promise<{ city: s
           <>
             {/* Summary stats */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-              <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
-                <p className="text-xs text-[#5E6687] font-medium uppercase tracking-wide">
+              <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
+                <p className="text-xs text-[#64748b] font-medium uppercase tracking-wide">
                   Avg Score
                 </p>
-                <p className="text-2xl font-bold text-[#1A1F36] mt-1">{avgScore}</p>
+                <p className="text-2xl font-bold text-[#0F1D2E] mt-1">{avgScore}</p>
               </div>
-              <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
-                <p className="text-xs text-[#5E6687] font-medium uppercase tracking-wide">
+              <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
+                <p className="text-xs text-[#64748b] font-medium uppercase tracking-wide">
                   Buildings Benchmarked
                 </p>
-                <p className="text-2xl font-bold text-[#1A1F36] mt-1">
+                <p className="text-2xl font-bold text-[#0F1D2E] mt-1">
                   {totalBuildings > 0 ? totalBuildings.toLocaleString() : "\u2014"}
                 </p>
               </div>
-              <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
-                <p className="text-xs text-[#5E6687] font-medium uppercase tracking-wide">
+              <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
+                <p className="text-xs text-[#64748b] font-medium uppercase tracking-wide">
                   Highest Avg {regionLabel}
                 </p>
                 <p className="text-sm font-semibold text-emerald-600 mt-2">
                   {highestBorough}
                 </p>
               </div>
-              <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
-                <p className="text-xs text-[#5E6687] font-medium uppercase tracking-wide">
+              <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
+                <p className="text-xs text-[#64748b] font-medium uppercase tracking-wide">
                   Lowest Avg {regionLabel}
                 </p>
                 <p className="text-sm font-semibold text-red-600 mt-2">
@@ -272,11 +272,11 @@ export default async function EnergyPage({ params }: { params: Promise<{ city: s
             </div>
 
             {/* Section 1: Map */}
-            <section className="bg-white border border-[#E2E8F0] rounded-xl p-5 sm:p-6 mb-6">
-              <h2 className="text-lg font-bold text-[#1A1F36] mb-1">
+            <section className="bg-white border border-[#e2e8f0] rounded-xl p-5 sm:p-6 mb-6">
+              <h2 className="text-lg font-bold text-[#0F1D2E] mb-1">
                 Energy Score Map
               </h2>
-              <p className="text-sm text-[#5E6687] mb-4">
+              <p className="text-sm text-[#64748b] mb-4">
                 Average ENERGY STAR score by zip code. Green areas have higher
                 efficiency, red areas have lower efficiency.
               </p>
@@ -284,22 +284,22 @@ export default async function EnergyPage({ params }: { params: Promise<{ city: s
             </section>
 
             {/* Section 2: Score Distribution */}
-            <section className="bg-white border border-[#E2E8F0] rounded-xl p-5 sm:p-6 mb-6">
-              <h2 className="text-lg font-bold text-[#1A1F36] mb-1">
+            <section className="bg-white border border-[#e2e8f0] rounded-xl p-5 sm:p-6 mb-6">
+              <h2 className="text-lg font-bold text-[#0F1D2E] mb-1">
                 Score Distribution
               </h2>
-              <p className="text-sm text-[#5E6687] mb-4">
+              <p className="text-sm text-[#64748b] mb-4">
                 How buildings score across the ENERGY STAR scale (1-100).
               </p>
               <ScoreDistribution data={distribution || []} />
             </section>
 
             {/* Section 3: Top Buildings */}
-            <section className="bg-white border border-[#E2E8F0] rounded-xl p-5 sm:p-6 mb-6">
-              <h2 className="text-lg font-bold text-[#1A1F36] mb-1">
+            <section className="bg-white border border-[#e2e8f0] rounded-xl p-5 sm:p-6 mb-6">
+              <h2 className="text-lg font-bold text-[#0F1D2E] mb-1">
                 Top-Scored Buildings
               </h2>
-              <p className="text-sm text-[#5E6687] mb-4">
+              <p className="text-sm text-[#64748b] mb-4">
                 Buildings with the highest ENERGY STAR scores.
               </p>
               <EnergyTable data={topBuildings || []} dataSourceLabel={cfg.dataSourceLabel} />

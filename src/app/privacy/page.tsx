@@ -11,16 +11,16 @@ export const metadata: Metadata = {
 export default function PrivacyPolicyPage() {
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <h1 className="text-3xl font-bold text-[#1A1F36] mb-2">
+      <h1 className="text-3xl font-bold text-[#0F1D2E] mb-2">
         Privacy Policy
       </h1>
-      <p className="text-sm text-[#A3ACBE] mb-8">
+      <p className="text-sm text-[#94a3b8] mb-8">
         Last updated: March 4, 2026
       </p>
 
-      <div className="prose prose-slate max-w-none space-y-6 text-[#1A1F36] text-sm leading-relaxed">
+      <div className="prose prose-slate max-w-none space-y-6 text-[#334155] text-sm leading-relaxed">
         <section>
-          <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
+          <h2 className="text-lg font-semibold text-[#0F1D2E] mb-2">
             1. Introduction
           </h2>
           <p>
@@ -32,10 +32,10 @@ export default function PrivacyPolicyPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
+          <h2 className="text-lg font-semibold text-[#0F1D2E] mb-2">
             2. Information We Collect
           </h2>
-          <h3 className="text-sm font-semibold text-[#1A1F36] mt-3 mb-1">
+          <h3 className="text-sm font-semibold text-[#0F1D2E] mt-3 mb-1">
             Account Information
           </h3>
           <p>
@@ -43,7 +43,7 @@ export default function PrivacyPolicyPage() {
             display name. We use Supabase for authentication and data storage.
           </p>
 
-          <h3 className="text-sm font-semibold text-[#1A1F36] mt-3 mb-1">
+          <h3 className="text-sm font-semibold text-[#0F1D2E] mt-3 mb-1">
             User-Generated Content
           </h3>
           <p>
@@ -53,7 +53,7 @@ export default function PrivacyPolicyPage() {
             publicly visible and attributed to your display name.
           </p>
 
-          <h3 className="text-sm font-semibold text-[#1A1F36] mt-3 mb-1">
+          <h3 className="text-sm font-semibold text-[#0F1D2E] mt-3 mb-1">
             Automatically Collected Information
           </h3>
           <p>
@@ -64,7 +64,7 @@ export default function PrivacyPolicyPage() {
             analytics tools.
           </p>
 
-          <h3 className="text-sm font-semibold text-[#1A1F36] mt-3 mb-1">
+          <h3 className="text-sm font-semibold text-[#0F1D2E] mt-3 mb-1">
             Cookies and Tracking Technologies
           </h3>
           <p>
@@ -78,7 +78,7 @@ export default function PrivacyPolicyPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
+          <h2 className="text-lg font-semibold text-[#0F1D2E] mb-2">
             3. How We Use Your Information
           </h2>
           <ul className="list-disc pl-5 space-y-1">
@@ -96,7 +96,7 @@ export default function PrivacyPolicyPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
+          <h2 className="text-lg font-semibold text-[#0F1D2E] mb-2">
             4. Public Data
           </h2>
           <p>
@@ -119,7 +119,7 @@ export default function PrivacyPolicyPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
+          <h2 className="text-lg font-semibold text-[#0F1D2E] mb-2">
             5. Third-Party Services
           </h2>
           <p>We use the following third-party services:</p>
@@ -136,7 +136,7 @@ export default function PrivacyPolicyPage() {
                 href="https://www.google.com/settings/ads"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[#6366F1] hover:underline"
+                className="text-[#3B82F6] hover:underline"
               >
                 Google Ad Settings
               </a>
@@ -152,7 +152,7 @@ export default function PrivacyPolicyPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
+          <h2 className="text-lg font-semibold text-[#0F1D2E] mb-2">
             6. Data Sharing
           </h2>
           <p>
@@ -180,7 +180,7 @@ export default function PrivacyPolicyPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
+          <h2 className="text-lg font-semibold text-[#0F1D2E] mb-2">
             7. Data Retention
           </h2>
           <p>
@@ -192,7 +192,7 @@ export default function PrivacyPolicyPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
+          <h2 className="text-lg font-semibold text-[#0F1D2E] mb-2">
             8. Your Rights
           </h2>
           <p>You have the right to:</p>
@@ -212,7 +212,7 @@ export default function PrivacyPolicyPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
+          <h2 className="text-lg font-semibold text-[#0F1D2E] mb-2">
             9. Children&apos;s Privacy
           </h2>
           <p>
@@ -224,7 +224,7 @@ export default function PrivacyPolicyPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
+          <h2 className="text-lg font-semibold text-[#0F1D2E] mb-2">
             10. Security
           </h2>
           <p>
@@ -236,7 +236,7 @@ export default function PrivacyPolicyPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
+          <h2 className="text-lg font-semibold text-[#0F1D2E] mb-2">
             11. Changes to This Policy
           </h2>
           <p>
@@ -248,14 +248,14 @@ export default function PrivacyPolicyPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
+          <h2 className="text-lg font-semibold text-[#0F1D2E] mb-2">
             12. Contact Us
           </h2>
           <p>
             If you have questions about this Privacy Policy, contact us at{" "}
             <a
               href="mailto:privacy@lucidrents.com"
-              className="text-[#6366F1] hover:underline"
+              className="text-[#3B82F6] hover:underline"
             >
               privacy@lucidrents.com
             </a>

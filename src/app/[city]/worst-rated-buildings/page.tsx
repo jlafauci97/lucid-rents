@@ -112,11 +112,11 @@ export default async function RankingsPage({ params: routeParams, searchParams }
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-[#1A1F36]">
-          <BarChart3 className="inline w-8 h-8 text-[#6366F1] mr-2 -mt-1" />
+        <h1 className="text-3xl font-bold text-[#0F1D2E]">
+          <BarChart3 className="inline w-8 h-8 text-[#3B82F6] mr-2 -mt-1" />
           Building Rankings
         </h1>
-        <p className="text-[#5E6687] mt-2">
+        <p className="text-[#64748b] mt-2">
           {isBest
             ? `Top-rated ${CITY_META[city].fullName} buildings with the best reviews and fewest issues.`
             : `${CITY_META[city].fullName} buildings ranked by the most violations, 311 complaints, and reported issues.`}
@@ -124,13 +124,13 @@ export default async function RankingsPage({ params: routeParams, searchParams }
       </div>
 
       {/* Mode toggle */}
-      <div className="flex gap-0 mb-6 w-fit rounded-lg border border-[#E2E8F0] overflow-hidden">
+      <div className="flex gap-0 mb-6 w-fit rounded-lg border border-[#e2e8f0] overflow-hidden">
         <Link
           href={buildUrl({ mode: "worst", page: "1" })}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors ${
             !isBest
               ? "bg-red-500 text-white"
-              : "bg-white text-[#5E6687] hover:bg-red-50"
+              : "bg-white text-[#64748b] hover:bg-red-50"
           }`}
         >
           <AlertTriangle className="w-4 h-4" />
@@ -141,7 +141,7 @@ export default async function RankingsPage({ params: routeParams, searchParams }
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors ${
             isBest
               ? "bg-green-500 text-white"
-              : "bg-white text-[#5E6687] hover:bg-green-50"
+              : "bg-white text-[#64748b] hover:bg-green-50"
           }`}
         >
           <Trophy className="w-4 h-4" />
@@ -160,7 +160,7 @@ export default async function RankingsPage({ params: routeParams, searchParams }
               className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${
                 borough === b
                   ? "bg-[#0F1D2E] text-white border-[#0F1D2E]"
-                  : "bg-white text-[#5E6687] border-[#E2E8F0] hover:border-[#94a3b8]"
+                  : "bg-white text-[#64748b] border-[#e2e8f0] hover:border-[#94a3b8]"
               }`}
             >
               {b === "all" ? `All ${regionLabel}s` : b}
@@ -180,8 +180,8 @@ export default async function RankingsPage({ params: routeParams, searchParams }
                 href={buildUrl({ sort: opt.key, page: "1" })}
                 className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${
                   sortBy === opt.key
-                    ? "bg-[#6366F1] text-white border-[#6366F1] font-medium"
-                    : "bg-white text-[#5E6687] border-[#E2E8F0] hover:border-[#94a3b8]"
+                    ? "bg-[#3B82F6] text-white border-[#3B82F6] font-medium"
+                    : "bg-white text-[#64748b] border-[#e2e8f0] hover:border-[#94a3b8]"
                 }`}
               >
                 Sort by {opt.label}
@@ -192,7 +192,7 @@ export default async function RankingsPage({ params: routeParams, searchParams }
       </div>
 
       {/* Results count */}
-      <p className="text-sm text-[#5E6687] mb-4">
+      <p className="text-sm text-[#64748b] mb-4">
         {buildings.length > 0
           ? `Showing ${offset + 1}–${offset + buildings.length} buildings`
           : "No buildings found"}
@@ -201,40 +201,40 @@ export default async function RankingsPage({ params: routeParams, searchParams }
 
       {/* Rankings table */}
       {buildings && buildings.length > 0 ? (
-        <div className="bg-white rounded-xl border border-[#E2E8F0] overflow-hidden">
+        <div className="bg-white rounded-xl border border-[#e2e8f0] overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="bg-gray-50 border-b border-[#E2E8F0]">
-                  <th className="text-left text-xs font-semibold text-[#5E6687] uppercase tracking-wider px-4 py-3 w-12">
+                <tr className="bg-gray-50 border-b border-[#e2e8f0]">
+                  <th className="text-left text-xs font-semibold text-[#64748b] uppercase tracking-wider px-4 py-3 w-12">
                     #
                   </th>
-                  <th className="text-left text-xs font-semibold text-[#5E6687] uppercase tracking-wider px-4 py-3">
+                  <th className="text-left text-xs font-semibold text-[#64748b] uppercase tracking-wider px-4 py-3">
                     Building
                   </th>
-                  <th className="text-left text-xs font-semibold text-[#5E6687] uppercase tracking-wider px-4 py-3 hidden md:table-cell">
+                  <th className="text-left text-xs font-semibold text-[#64748b] uppercase tracking-wider px-4 py-3 hidden md:table-cell">
                     Owner
                   </th>
                   {isBest ? (
                     <>
-                      <th className="text-center text-xs font-semibold text-[#5E6687] uppercase tracking-wider px-4 py-3">
+                      <th className="text-center text-xs font-semibold text-[#64748b] uppercase tracking-wider px-4 py-3">
                         Rating
                       </th>
-                      <th className="text-center text-xs font-semibold text-[#5E6687] uppercase tracking-wider px-4 py-3">
+                      <th className="text-center text-xs font-semibold text-[#64748b] uppercase tracking-wider px-4 py-3">
                         Reviews
                       </th>
                     </>
                   ) : (
                     <>
-                      <th className="text-center text-xs font-semibold text-[#5E6687] uppercase tracking-wider px-4 py-3">
+                      <th className="text-center text-xs font-semibold text-[#64748b] uppercase tracking-wider px-4 py-3">
                         Violations
                       </th>
-                      <th className="text-center text-xs font-semibold text-[#5E6687] uppercase tracking-wider px-4 py-3">
+                      <th className="text-center text-xs font-semibold text-[#64748b] uppercase tracking-wider px-4 py-3">
                         Complaints
                       </th>
                     </>
                   )}
-                  <th className="text-center text-xs font-semibold text-[#5E6687] uppercase tracking-wider px-4 py-3 hidden sm:table-cell">
+                  <th className="text-center text-xs font-semibold text-[#64748b] uppercase tracking-wider px-4 py-3 hidden sm:table-cell">
                     Units
                   </th>
                 </tr>
@@ -245,16 +245,16 @@ export default async function RankingsPage({ params: routeParams, searchParams }
                   return (
                     <tr key={building.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-4 py-3">
-                        <span className={`text-sm font-bold ${rank <= 3 ? (isBest ? "text-green-500" : "text-[#ef4444]") : "text-[#A3ACBE]"}`}>
+                        <span className={`text-sm font-bold ${rank <= 3 ? (isBest ? "text-green-500" : "text-[#ef4444]") : "text-[#94a3b8]"}`}>
                           {rank}
                         </span>
                       </td>
                       <td className="px-4 py-3">
                         <Link href={buildingUrl(building, city)} className="group">
-                          <p className="text-sm font-medium text-[#1A1F36] group-hover:text-[#6366F1] transition-colors truncate max-w-xs">
+                          <p className="text-sm font-medium text-[#0F1D2E] group-hover:text-[#3B82F6] transition-colors truncate max-w-xs">
                             {building.full_address}
                           </p>
-                          <div className="flex items-center gap-1 text-xs text-[#5E6687] mt-0.5">
+                          <div className="flex items-center gap-1 text-xs text-[#64748b] mt-0.5">
                             <MapPin className="w-3 h-3" />
                             {building.borough}
                             {building.zip_code && ` · ${building.zip_code}`}
@@ -266,12 +266,12 @@ export default async function RankingsPage({ params: routeParams, searchParams }
                         {building.owner_name ? (
                           <Link
                             href={landlordUrl(building.owner_name, city)}
-                            className="text-xs text-[#5E6687] hover:text-[#6366F1] transition-colors truncate max-w-[200px] block"
+                            className="text-xs text-[#64748b] hover:text-[#3B82F6] transition-colors truncate max-w-[200px] block"
                           >
                             {building.owner_name}
                           </Link>
                         ) : (
-                          <p className="text-xs text-[#5E6687]">—</p>
+                          <p className="text-xs text-[#64748b]">—</p>
                         )}
                       </td>
                       {isBest ? (
@@ -282,7 +282,7 @@ export default async function RankingsPage({ params: routeParams, searchParams }
                             </span>
                           </td>
                           <td className="px-4 py-3 text-center">
-                            <span className="text-sm font-semibold text-[#5E6687]">
+                            <span className="text-sm font-semibold text-[#64748b]">
                               {building.review_count || 0}
                             </span>
                           </td>
@@ -295,7 +295,7 @@ export default async function RankingsPage({ params: routeParams, searchParams }
                                 ? "text-[#ef4444]"
                                 : building.violation_count > 10
                                 ? "text-[#f97316]"
-                                : "text-[#5E6687]"
+                                : "text-[#64748b]"
                             }`}>
                               {building.violation_count.toLocaleString()}
                             </span>
@@ -306,7 +306,7 @@ export default async function RankingsPage({ params: routeParams, searchParams }
                                 ? "text-[#ef4444]"
                                 : building.complaint_count > 10
                                 ? "text-[#f97316]"
-                                : "text-[#5E6687]"
+                                : "text-[#64748b]"
                             }`}>
                               {building.complaint_count.toLocaleString()}
                             </span>
@@ -314,7 +314,7 @@ export default async function RankingsPage({ params: routeParams, searchParams }
                         </>
                       )}
                       <td className="px-4 py-3 text-center hidden sm:table-cell">
-                        <span className="text-sm text-[#5E6687]">
+                        <span className="text-sm text-[#64748b]">
                           {building.total_units || "—"}
                         </span>
                       </td>
@@ -327,15 +327,15 @@ export default async function RankingsPage({ params: routeParams, searchParams }
 
           {/* Pagination */}
           {(page > 1 || hasNextPage) && (
-            <div className="flex items-center justify-between px-4 py-3 border-t border-[#E2E8F0] bg-gray-50">
-              <p className="text-sm text-[#5E6687]">
+            <div className="flex items-center justify-between px-4 py-3 border-t border-[#e2e8f0] bg-gray-50">
+              <p className="text-sm text-[#64748b]">
                 Page {page}
               </p>
               <div className="flex gap-2">
                 {page > 1 && (
                   <Link
                     href={buildUrl({ page: String(page - 1) })}
-                    className="flex items-center gap-1 px-3 py-1.5 text-sm border border-[#E2E8F0] rounded-lg hover:bg-white transition-colors text-[#5E6687]"
+                    className="flex items-center gap-1 px-3 py-1.5 text-sm border border-[#e2e8f0] rounded-lg hover:bg-white transition-colors text-[#64748b]"
                   >
                     <ChevronLeft className="w-4 h-4" />
                     Previous
@@ -344,7 +344,7 @@ export default async function RankingsPage({ params: routeParams, searchParams }
                 {hasNextPage && (
                   <Link
                     href={buildUrl({ page: String(page + 1) })}
-                    className="flex items-center gap-1 px-3 py-1.5 text-sm border border-[#E2E8F0] rounded-lg hover:bg-white transition-colors text-[#5E6687]"
+                    className="flex items-center gap-1 px-3 py-1.5 text-sm border border-[#e2e8f0] rounded-lg hover:bg-white transition-colors text-[#64748b]"
                   >
                     Next
                     <ChevronRight className="w-4 h-4" />
@@ -355,10 +355,10 @@ export default async function RankingsPage({ params: routeParams, searchParams }
           )}
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-[#E2E8F0] p-12 text-center">
-          <Building2 className="w-12 h-12 text-[#A3ACBE] mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-[#1A1F36] mb-2">No buildings found</h3>
-          <p className="text-sm text-[#5E6687]">
+        <div className="bg-white rounded-xl border border-[#e2e8f0] p-12 text-center">
+          <Building2 className="w-12 h-12 text-[#94a3b8] mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-[#0F1D2E] mb-2">No buildings found</h3>
+          <p className="text-sm text-[#64748b]">
             Building violation data is still being imported. Check back soon.
           </p>
         </div>
@@ -368,7 +368,7 @@ export default async function RankingsPage({ params: routeParams, searchParams }
 
       {/* Cross-links */}
       <section className="mt-10">
-        <h2 className="text-lg font-bold text-[#1A1F36] mb-4">Related</h2>
+        <h2 className="text-lg font-bold text-[#0F1D2E] mb-4">Related</h2>
         <div className="flex flex-wrap gap-3">
           <Link
             href={cityPath("/landlords", city)}
@@ -379,7 +379,7 @@ export default async function RankingsPage({ params: routeParams, searchParams }
           </Link>
           <Link
             href={cityPath("/buildings", city)}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-blue-50 text-[#6366F1] border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-blue-50 text-[#3B82F6] border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
           >
             <Building2 className="w-4 h-4" />
             All Buildings

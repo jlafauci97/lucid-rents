@@ -24,7 +24,7 @@ function FieldInput({
   onChange: (v: string) => void;
 }) {
   const baseClass =
-    "w-full rounded-lg border border-[#E2E8F0] bg-white px-3 py-2 text-sm text-[#1A1F36] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent transition";
+    "w-full rounded-lg border border-[#e2e8f0] bg-white px-3 py-2 text-sm text-[#0F1D2E] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent transition";
 
   if (field.type === "textarea") {
     return (
@@ -115,8 +115,8 @@ export function TemplateViewer({ template, cityAgencyName, cityName }: TemplateV
   return (
     <div className="grid lg:grid-cols-2 gap-8 items-start">
       {/* Left: Form */}
-      <div className="bg-white rounded-xl border border-[#E2E8F0] p-6 shadow-sm">
-        <h2 className="text-lg font-bold text-[#1A1F36] mb-1">Fill in Your Details</h2>
+      <div className="bg-white rounded-xl border border-[#e2e8f0] p-6 shadow-sm">
+        <h2 className="text-lg font-bold text-[#0F1D2E] mb-1">Fill in Your Details</h2>
         <p className="text-sm text-gray-500 mb-6">
           Fields update the letter preview in real-time. All information stays in your browser.
         </p>
@@ -125,7 +125,7 @@ export function TemplateViewer({ template, cityAgencyName, cityName }: TemplateV
             <div key={field.id}>
               <label
                 htmlFor={field.id}
-                className="block text-xs font-semibold text-[#1A1F36] mb-1.5 uppercase tracking-wide"
+                className="block text-xs font-semibold text-[#0F1D2E] mb-1.5 uppercase tracking-wide"
               >
                 {field.label}
                 {field.required && <span className="text-red-500 ml-1">*</span>}
@@ -151,14 +151,14 @@ export function TemplateViewer({ template, cityAgencyName, cityName }: TemplateV
         <div className="flex flex-wrap gap-3">
           <button
             onClick={handleCopy}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#6366F1] hover:bg-[#2563EB] text-white text-sm font-semibold transition-colors"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#3B82F6] hover:bg-[#2563EB] text-white text-sm font-semibold transition-colors"
           >
             {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
             {copied ? "Copied!" : "Copy Letter"}
           </button>
           <button
             onClick={handlePrint}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white border border-[#E2E8F0] hover:border-[#E2E8F0] text-[#1A1F36] text-sm font-semibold transition-colors"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white border border-[#e2e8f0] hover:border-[#cbd5e1] text-[#0F1D2E] text-sm font-semibold transition-colors"
           >
             <Printer className="w-4 h-4" />
             Print / Save PDF
@@ -167,7 +167,7 @@ export function TemplateViewer({ template, cityAgencyName, cityName }: TemplateV
 
         {/* Mobile toggle for preview */}
         <button
-          className="lg:hidden w-full flex items-center justify-between px-4 py-3 rounded-xl border border-[#E2E8F0] bg-white text-sm font-semibold text-[#1A1F36]"
+          className="lg:hidden w-full flex items-center justify-between px-4 py-3 rounded-xl border border-[#e2e8f0] bg-white text-sm font-semibold text-[#0F1D2E]"
           onClick={() => setShowPreview((v) => !v)}
         >
           Letter Preview
@@ -176,9 +176,9 @@ export function TemplateViewer({ template, cityAgencyName, cityName }: TemplateV
 
         {/* Letter preview paper */}
         <div className={`${showPreview ? "block" : "hidden"} lg:block`}>
-          <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm overflow-hidden">
+          <div className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm overflow-hidden">
             {/* Paper header bar */}
-            <div className="px-6 py-3 bg-gray-50 border-b border-[#E2E8F0] flex items-center gap-2">
+            <div className="px-6 py-3 bg-gray-50 border-b border-[#e2e8f0] flex items-center gap-2">
               <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
               <div className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
               <div className="w-2.5 h-2.5 rounded-full bg-green-400" />

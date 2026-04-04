@@ -98,17 +98,14 @@ export async function DeferredBuildingContent({ building, buildingId, city, rent
 
   const dateFmt = (d: string) => new Date(d).toLocaleDateString("en-US", { month: "short", year: "numeric" });
 
-  // Find best positive review (highest rated WITH body text)
+  // Find best positive (highest rated) and most critical (lowest rated) reviews WITH body text
   const reviewsWithBody = reviews.filter(r => r.body && r.body.trim().length > 0);
-  const positivePool = reviewsWithBody.filter(r => (r.overall_rating ?? 0) >= 3);
-  const criticalPool = reviewsWithBody.filter(r => (r.overall_rating ?? 0) < 3);
+  const sorted = [...reviewsWithBody].sort((a, b) => (b.overall_rating ?? 0) - (a.overall_rating ?? 0));
 
-  const bestPositiveReview = positivePool.length > 0
-    ? positivePool.reduce((best, r) => ((r.overall_rating ?? 0) > (best.overall_rating ?? 0) ? r : best), positivePool[0])
-    : reviewsWithBody.length > 0 ? reviewsWithBody[0] : null;
-  const bestCriticalReview = criticalPool.length > 0
-    ? criticalPool.reduce((worst, r) => ((r.overall_rating ?? 0) < (worst.overall_rating ?? 0) ? r : worst), criticalPool[0])
-    : null;
+  const bestPositiveReview = sorted.length > 0 ? sorted[0] : null;
+  // Always pick the lowest-rated review as critical, even if it's rated >= 3
+  // Just make sure it's a different review than the positive one
+  const bestCriticalReview = sorted.length > 1 ? sorted[sorted.length - 1] : null;
 
   const bestPositive = bestPositiveReview
     ? { text: bestPositiveReview.body!.slice(0, 150), author: bestPositiveReview.profile?.display_name || "Anonymous", date: dateFmt(bestPositiveReview.created_at) }

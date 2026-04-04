@@ -504,7 +504,7 @@ export function ReviewWizard({
       />
 
       <div className="flex-1">
-        <div className="bg-white rounded-xl border border-[#E2E8F0] p-6">
+        <div className="bg-white rounded-xl border border-[#e2e8f0] p-6">
           {renderStep()}
         </div>
 

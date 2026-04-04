@@ -157,13 +157,13 @@ export default async function TenantToolsPage({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Tools grid */}
         <section className="mb-14">
-          <h2 className="text-2xl font-bold text-[#1A1F36] mb-6">All Tenant Tools</h2>
+          <h2 className="text-2xl font-bold text-[#0F1D2E] mb-6">All Tenant Tools</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {TOOL_CARDS.map((tool) => (
               <Link
                 key={tool.href}
                 href={tool.global ? tool.href : cityPath(tool.href, city as City)}
-                className="group bg-white rounded-xl border border-[#E2E8F0] hover:shadow-md hover:border-[#E2E8F0] transition-all p-6 flex flex-col"
+                className="group bg-white rounded-xl border border-[#e2e8f0] hover:shadow-md hover:border-[#cbd5e1] transition-all p-6 flex flex-col"
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-[#0F1D2E] text-blue-400">
@@ -175,11 +175,11 @@ export default async function TenantToolsPage({
                     {tool.badge}
                   </span>
                 </div>
-                <h3 className="text-base font-semibold text-[#1A1F36] mb-2 group-hover:text-[#6366F1] transition-colors">
+                <h3 className="text-base font-semibold text-[#0F1D2E] mb-2 group-hover:text-[#3B82F6] transition-colors">
                   {tool.label}
                 </h3>
                 <p className="text-sm text-gray-500 leading-relaxed flex-1">{tool.description}</p>
-                <div className="mt-5 flex items-center gap-1.5 text-sm font-semibold text-[#6366F1] group-hover:gap-2.5 transition-all">
+                <div className="mt-5 flex items-center gap-1.5 text-sm font-semibold text-[#3B82F6] group-hover:gap-2.5 transition-all">
                   {tool.cta}
                   <ArrowRight className="w-4 h-4" />
                 </div>
@@ -192,14 +192,14 @@ export default async function TenantToolsPage({
         <section className="mb-14">
           <div className="flex items-center justify-between mb-5">
             <div>
-              <h2 className="text-2xl font-bold text-[#1A1F36]">Popular Letter Templates</h2>
+              <h2 className="text-2xl font-bold text-[#0F1D2E]">Popular Letter Templates</h2>
               <p className="text-gray-500 text-sm mt-1">
                 Free, ready-to-use letters for the most common tenant situations in {cityName}.
               </p>
             </div>
             <Link
               href={cityPath("/tenant-tools/templates", city as City)}
-              className="hidden sm:flex items-center gap-1.5 text-sm font-semibold text-[#6366F1] hover:text-[#4F46E5] transition-colors whitespace-nowrap"
+              className="hidden sm:flex items-center gap-1.5 text-sm font-semibold text-[#3B82F6] hover:text-[#2563EB] transition-colors whitespace-nowrap"
             >
               View all {TEMPLATES.length}
               <ArrowRight className="w-4 h-4" />
@@ -212,18 +212,18 @@ export default async function TenantToolsPage({
                 <Link
                   key={template.slug}
                   href={cityPath(`/tenant-tools/templates/${template.slug}`, city as City)}
-                  className="group bg-white rounded-xl border border-[#E2E8F0] hover:shadow-md hover:border-[#E2E8F0] transition-all p-5 flex items-center gap-4"
+                  className="group bg-white rounded-xl border border-[#e2e8f0] hover:shadow-md hover:border-[#cbd5e1] transition-all p-5 flex items-center gap-4"
                 >
                   <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-blue-50 text-blue-600 border border-blue-200 flex-shrink-0">
                     <Icon className="w-5 h-5" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-[#1A1F36] group-hover:text-[#6366F1] transition-colors truncate">
+                    <p className="text-sm font-semibold text-[#0F1D2E] group-hover:text-[#3B82F6] transition-colors truncate">
                       {template.title}
                     </p>
                     <p className="text-xs text-gray-400 mt-0.5">{template.category} Letter</p>
                   </div>
-                  <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-[#6366F1] flex-shrink-0 transition-colors" />
+                  <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-[#3B82F6] flex-shrink-0 transition-colors" />
                 </Link>
               );
             })}
@@ -231,7 +231,7 @@ export default async function TenantToolsPage({
           <div className="mt-4 sm:hidden text-center">
             <Link
               href={cityPath("/tenant-tools/templates", city as City)}
-              className="text-sm font-semibold text-[#6366F1] hover:text-[#4F46E5] transition-colors"
+              className="text-sm font-semibold text-[#3B82F6] hover:text-[#2563EB] transition-colors"
             >
               View all {TEMPLATES.length} templates →
             </Link>
@@ -249,7 +249,7 @@ export default async function TenantToolsPage({
           </div>
           <Link
             href={cityPath("/tenant-rights", city as City)}
-            className="flex-shrink-0 px-6 py-3 bg-[#6366F1] hover:bg-[#2563EB] text-white font-semibold rounded-full text-sm transition-colors whitespace-nowrap"
+            className="flex-shrink-0 px-6 py-3 bg-[#3B82F6] hover:bg-[#2563EB] text-white font-semibold rounded-full text-sm transition-colors whitespace-nowrap"
           >
             Read the Guide
           </Link>

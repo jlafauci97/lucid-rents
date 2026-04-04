@@ -294,11 +294,11 @@ export default async function RentStabilizationPage({
             <div className="p-2 bg-emerald-50 rounded-lg">
               <ShieldCheck className="w-6 h-6 text-[#10b981]" />
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#1A1F36]">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#0F1D2E]">
               {cfg.title}
             </h1>
           </div>
-          <p className="text-[#5E6687] text-sm sm:text-base max-w-3xl">
+          <p className="text-[#64748b] text-sm sm:text-base max-w-3xl">
             {cfg.headerDescription}
           </p>
         </div>
@@ -313,33 +313,33 @@ export default async function RentStabilizationPage({
 
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
-            <p className="text-xs text-[#5E6687] font-medium uppercase tracking-wide">
+          <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
+            <p className="text-xs text-[#64748b] font-medium uppercase tracking-wide">
               {isLA ? "RSO Buildings" : "Stabilized Buildings"}
             </p>
-            <p className="text-2xl font-bold text-[#1A1F36] mt-1">
+            <p className="text-2xl font-bold text-[#0F1D2E] mt-1">
               {totalStabilized.toLocaleString()}
             </p>
           </div>
-          <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
+          <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
             <p className="text-xs text-[#10b981] font-medium uppercase tracking-wide">
               {isLA ? "RSO Units" : "Stabilized Units"}
             </p>
-            <p className="text-2xl font-bold text-[#1A1F36] mt-1">
+            <p className="text-2xl font-bold text-[#0F1D2E] mt-1">
               {totalUnits.toLocaleString()}
             </p>
           </div>
-          <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
-            <p className="text-xs text-[#5E6687] font-medium uppercase tracking-wide">
+          <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
+            <p className="text-xs text-[#64748b] font-medium uppercase tracking-wide">
               {regionLabel}s
             </p>
-            <p className="text-2xl font-bold text-[#1A1F36] mt-1">{regions.length}</p>
+            <p className="text-2xl font-bold text-[#0F1D2E] mt-1">{regions.length}</p>
           </div>
-          <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
-            <p className="text-xs text-[#5E6687] font-medium uppercase tracking-wide">
+          <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
+            <p className="text-xs text-[#64748b] font-medium uppercase tracking-wide">
               Data Source
             </p>
-            <p className="text-sm font-semibold text-[#1A1F36] mt-2">
+            <p className="text-sm font-semibold text-[#0F1D2E] mt-2">
               {cfg.dataSourceLabel}
             </p>
           </div>
@@ -352,16 +352,16 @@ export default async function RentStabilizationPage({
               <Link
                 key={b.borough}
                 href={cityPath(`/rent-stabilization?borough=${encodeURIComponent(b.borough)}`, city)}
-                className={`bg-white border rounded-xl p-4 hover:border-[#6366F1] transition-colors ${
+                className={`bg-white border rounded-xl p-4 hover:border-[#3B82F6] transition-colors ${
                   borough === b.borough
-                    ? "border-[#6366F1] ring-1 ring-[#3B82F6]"
-                    : "border-[#E2E8F0]"
+                    ? "border-[#3B82F6] ring-1 ring-[#3B82F6]"
+                    : "border-[#e2e8f0]"
                 }`}
               >
-                <p className="text-sm font-semibold text-[#1A1F36]">
+                <p className="text-sm font-semibold text-[#0F1D2E]">
                   {b.borough}
                 </p>
-                <p className="text-xs text-[#5E6687] mt-1">
+                <p className="text-xs text-[#64748b] mt-1">
                   {b.stabilized_buildings.toLocaleString()} buildings
                 </p>
                 <p className="text-xs text-[#10b981]">
@@ -379,7 +379,7 @@ export default async function RentStabilizationPage({
             className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
               !borough
                 ? "bg-[#0F1D2E] text-white"
-                : "bg-[#F5F7FA] text-[#5E6687] hover:bg-[#e2e8f0]"
+                : "bg-[#f1f5f9] text-[#64748b] hover:bg-[#e2e8f0]"
             }`}
           >
             All {regionLabel}s
@@ -391,7 +391,7 @@ export default async function RentStabilizationPage({
               className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
                 borough === b
                   ? "bg-[#0F1D2E] text-white"
-                  : "bg-[#F5F7FA] text-[#5E6687] hover:bg-[#e2e8f0]"
+                  : "bg-[#f1f5f9] text-[#64748b] hover:bg-[#e2e8f0]"
               }`}
             >
               {b}
@@ -401,9 +401,9 @@ export default async function RentStabilizationPage({
 
         {/* Results table */}
         {rows.length === 0 ? (
-          <div className="text-center py-16 bg-white border border-[#E2E8F0] rounded-xl">
-            <ShieldCheck className="w-12 h-12 text-[#A3ACBE] mx-auto mb-3" />
-            <p className="text-[#5E6687] max-w-md mx-auto">
+          <div className="text-center py-16 bg-white border border-[#e2e8f0] rounded-xl">
+            <ShieldCheck className="w-12 h-12 text-[#cbd5e1] mx-auto mb-3" />
+            <p className="text-[#64748b] max-w-md mx-auto">
               {borough
                 ? `No rent stabilized buildings found in ${borough}. Try selecting a different ${regionLabel.toLowerCase()} or searching for a specific address.`
                 : city === "los-angeles"
@@ -416,7 +416,7 @@ export default async function RentStabilizationPage({
                   href="https://housing.lacity.gov/rental-property-owners/rso-property-search"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-sm text-[#6366F1] hover:text-[#4F46E5] font-medium transition-colors"
+                  className="inline-flex items-center gap-1.5 text-sm text-[#3B82F6] hover:text-[#2563EB] font-medium transition-colors"
                 >
                   LAHD RSO Property Search <ExternalLink className="w-3.5 h-3.5" />
                 </a>
@@ -440,39 +440,39 @@ export default async function RentStabilizationPage({
                 </a>.
               </div>
             )}
-            <div className="bg-white border border-[#E2E8F0] rounded-xl overflow-hidden">
+            <div className="bg-white border border-[#e2e8f0] rounded-xl overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="bg-[#FAFBFD] border-b border-[#E2E8F0]">
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-[#5E6687] uppercase tracking-wide">
+                    <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide">
                         <Link
                           href={sortUrl("full_address")}
-                          className="inline-flex items-center gap-1 hover:text-[#1A1F36]"
+                          className="inline-flex items-center gap-1 hover:text-[#0F1D2E]"
                         >
                           Address <ArrowUpDown className="w-3 h-3" />
                         </Link>
                       </th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-[#5E6687] uppercase tracking-wide hidden sm:table-cell">
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide hidden sm:table-cell">
                         {regionLabel}
                       </th>
                       <th className="text-right px-4 py-3 text-xs font-semibold text-[#10b981] uppercase tracking-wide">
                         <Link
                           href={sortUrl("stabilized_units")}
-                          className="inline-flex items-center gap-1 hover:text-[#1A1F36] ml-auto"
+                          className="inline-flex items-center gap-1 hover:text-[#0F1D2E] ml-auto"
                         >
                           {isLA ? "RSO Units" : "Stabilized"} <ArrowUpDown className="w-3 h-3" />
                         </Link>
                       </th>
-                      <th className="text-right px-4 py-3 text-xs font-semibold text-[#5E6687] uppercase tracking-wide hidden md:table-cell">
+                      <th className="text-right px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide hidden md:table-cell">
                         Total Units
                       </th>
                       {isLA && (
-                        <th className="text-right px-4 py-3 text-xs font-semibold text-[#5E6687] uppercase tracking-wide hidden md:table-cell">
+                        <th className="text-right px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide hidden md:table-cell">
                           Year Built
                         </th>
                       )}
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-[#5E6687] uppercase tracking-wide hidden lg:table-cell">
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide hidden lg:table-cell">
                         Owner
                       </th>
                     </tr>
@@ -481,31 +481,31 @@ export default async function RentStabilizationPage({
                     {rows.map((row, i) => (
                       <tr
                         key={`${row.slug}-${i}`}
-                        className="hover:bg-[#FAFBFD] transition-colors"
+                        className="hover:bg-[#f8fafc] transition-colors"
                       >
                         <td className="px-4 py-3">
                           <Link
                             href={buildingUrl(row, city)}
-                            className="text-sm font-semibold text-[#4F46E5] hover:text-[#1d4ed8] hover:underline"
+                            className="text-sm font-semibold text-[#2563EB] hover:text-[#1d4ed8] hover:underline"
                           >
                             {row.full_address}
                           </Link>
                         </td>
-                        <td className="px-4 py-3 text-sm text-[#1A1F36] hidden sm:table-cell">
+                        <td className="px-4 py-3 text-sm text-[#334155] hidden sm:table-cell">
                           {row.borough}
                         </td>
                         <td className="px-4 py-3 text-sm font-semibold text-[#10b981] text-right">
                           {row.stabilized_units?.toLocaleString() ?? "—"}
                         </td>
-                        <td className="px-4 py-3 text-sm text-[#1A1F36] text-right hidden md:table-cell">
+                        <td className="px-4 py-3 text-sm text-[#334155] text-right hidden md:table-cell">
                           {row.residential_units?.toLocaleString() ?? "—"}
                         </td>
                         {isLA && (
-                          <td className="px-4 py-3 text-sm text-[#1A1F36] text-right hidden md:table-cell">
+                          <td className="px-4 py-3 text-sm text-[#334155] text-right hidden md:table-cell">
                             {row.year_built ?? "—"}
                           </td>
                         )}
-                        <td className="px-4 py-3 text-sm text-[#5E6687] truncate max-w-[200px] hidden lg:table-cell">
+                        <td className="px-4 py-3 text-sm text-[#64748b] truncate max-w-[200px] hidden lg:table-cell">
                           {row.owner_name || "—"}
                         </td>
                       </tr>
@@ -518,8 +518,8 @@ export default async function RentStabilizationPage({
         )}
 
         {/* Editorial content */}
-        <section className="mt-8 space-y-4 text-sm leading-relaxed text-[#1A1F36]">
-          <h2 className="text-lg font-bold text-[#1A1F36]">
+        <section className="mt-8 space-y-4 text-sm leading-relaxed text-[#334155]">
+          <h2 className="text-lg font-bold text-[#0F1D2E]">
             {cfg.editorialTitle}
           </h2>
           {cfg.editorialParagraphs.map((p, i) => (

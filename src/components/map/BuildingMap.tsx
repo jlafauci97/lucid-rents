@@ -68,7 +68,7 @@ export function BuildingMap({ borough, minScore, maxScore, visible }: BuildingMa
         >
           <Popup>
             <div className="text-sm min-w-[180px]">
-              <p className="font-bold text-[#1A1F36] mb-1">{p.address}</p>
+              <p className="font-bold text-[#0F1D2E] mb-1">{p.address}</p>
               <div className="flex items-center gap-2 mb-1">
                 <span
                   className="inline-flex items-center justify-center w-6 h-6 rounded text-xs font-bold text-white"
@@ -76,14 +76,14 @@ export function BuildingMap({ borough, minScore, maxScore, visible }: BuildingMa
                 >
                   {grade}
                 </span>
-                <span className="text-[#5E6687] text-xs">{p.score.toFixed(1)}/10</span>
+                <span className="text-[#64748b] text-xs">{p.score.toFixed(1)}/10</span>
               </div>
-              <p className="text-xs text-[#5E6687]">
+              <p className="text-xs text-[#64748b]">
                 {p.violations} violations · {p.reviews} reviews
               </p>
               <Link
                 href={buildingUrl({ borough: p.borough, slug: p.slug }, city)}
-                className="text-xs text-[#6366F1] font-medium mt-1 inline-block"
+                className="text-xs text-[#3B82F6] font-medium mt-1 inline-block"
               >
                 View details →
               </Link>

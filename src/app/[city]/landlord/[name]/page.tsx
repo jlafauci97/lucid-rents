@@ -16,7 +16,7 @@ import { LetterGrade } from "@/components/ui/LetterGrade";
 import dynamic from "next/dynamic";
 
 const LandlordViolationTrend = dynamic(() => import("@/components/landlord/LandlordViolationTrend").then(m => m.LandlordViolationTrend), {
-  loading: () => <div className="bg-white rounded-xl border border-[#E2E8F0] p-6"><div className="h-6 w-48 bg-[#e2e8f0] rounded animate-pulse mb-4" /><div className="h-[300px] bg-[#FAFBFD] rounded-lg animate-pulse" /></div>,
+  loading: () => <div className="bg-white rounded-xl border border-[#e2e8f0] p-6"><div className="h-6 w-48 bg-[#e2e8f0] rounded animate-pulse mb-4" /><div className="h-[300px] bg-[#f8fafc] rounded-lg animate-pulse" /></div>,
 });
 import { LandlordActionLinks } from "@/components/landlord/LandlordActionLinks";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
@@ -241,17 +241,17 @@ export default async function LandlordDetailPage({
             return (
               <div
                 key={stat.label}
-                className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm hover:shadow-md transition-shadow p-4"
+                className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm hover:shadow-md transition-shadow p-4"
               >
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${stat.color}14` }}>
                     <Icon className="w-3.5 h-3.5" style={{ color: stat.color }} />
                   </div>
-                  <p className="text-[11px] font-semibold text-[#A3ACBE] uppercase tracking-wider">
+                  <p className="text-[11px] font-semibold text-[#94a3b8] uppercase tracking-wider">
                     {stat.label}
                   </p>
                 </div>
-                <p className="text-2xl font-bold text-[#1A1F36]">
+                <p className="text-2xl font-bold text-[#0F1D2E]">
                   {stat.value !== null ? stat.value.toLocaleString() : "---"}
                 </p>
               </div>
@@ -269,24 +269,24 @@ export default async function LandlordDetailPage({
               <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
                 <AlertTriangle className="w-4 h-4 text-[#EF4444]" />
               </div>
-              <h2 className="text-lg font-bold text-[#1A1F36]">Worst Buildings</h2>
+              <h2 className="text-lg font-bold text-[#0F1D2E]">Worst Buildings</h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {buildings.slice(0, 3).map((b, i) => {
                 const score = b.overall_score ?? deriveScore(b.violation_count || 0, b.complaint_count || 0);
                 return (
                   <Link key={b.id} href={buildingUrl(b, city)}>
-                    <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm hover:shadow-md hover:border-red-200 p-4 transition-all group relative overflow-hidden">
+                    <div className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm hover:shadow-md hover:border-red-200 p-4 transition-all group relative overflow-hidden">
                       <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-[#EF4444] to-[#F59E0B] rounded-l-xl" />
                       <div className="pl-2">
                         <div className="flex items-center gap-2 mb-3">
                           <span className="text-xs font-bold text-[#EF4444] bg-red-50 w-5 h-5 rounded flex items-center justify-center">#{i + 1}</span>
-                          <p className="text-sm font-semibold text-[#1A1F36] truncate group-hover:text-[#6366F1] transition-colors flex-1">{b.full_address}</p>
+                          <p className="text-sm font-semibold text-[#0F1D2E] truncate group-hover:text-[#3B82F6] transition-colors flex-1">{b.full_address}</p>
                           <LetterGrade score={score} size="sm" />
                         </div>
                         <div className="flex items-center gap-4 text-xs">
                           <span className="text-[#EF4444] font-semibold">{(b.violation_count || 0).toLocaleString()} violations</span>
-                          <span className="text-[#5E6687]">{(b.complaint_count || 0).toLocaleString()} complaints</span>
+                          <span className="text-[#64748b]">{(b.complaint_count || 0).toLocaleString()} complaints</span>
                         </div>
                       </div>
                     </div>
@@ -310,14 +310,14 @@ export default async function LandlordDetailPage({
         {/* Buildings section */}
         <div className="mb-5 flex items-end justify-between">
           <div>
-            <h2 className="text-xl font-bold text-[#1A1F36]">
+            <h2 className="text-xl font-bold text-[#0F1D2E]">
               Building Portfolio
             </h2>
-            <p className="text-sm text-[#5E6687] mt-1">
+            <p className="text-sm text-[#64748b] mt-1">
               {totalBuildings} propert{totalBuildings !== 1 ? "ies" : "y"} owned by {displayName}
             </p>
           </div>
-          <span className="text-xs font-medium text-[#A3ACBE] bg-[#F5F7FA] px-3 py-1.5 rounded-full">
+          <span className="text-xs font-medium text-[#94a3b8] bg-[#f1f5f9] px-3 py-1.5 rounded-full">
             Sorted by violations
           </span>
         </div>
@@ -328,13 +328,13 @@ export default async function LandlordDetailPage({
             const score = building.overall_score ?? deriveScore(building.violation_count || 0, building.complaint_count || 0);
             return (
               <Link key={building.id} href={buildingUrl(building, city)}>
-                <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm hover:shadow-md hover:border-[#E2E8F0] transition-all h-full p-5 group">
+                <div className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm hover:shadow-md hover:border-[#cbd5e1] transition-all h-full p-5 group">
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-[#1A1F36] truncate group-hover:text-[#6366F1] transition-colors">
+                      <p className="text-sm font-semibold text-[#0F1D2E] truncate group-hover:text-[#3B82F6] transition-colors">
                         {building.full_address}
                       </p>
-                      <div className="flex items-center gap-1 text-xs text-[#A3ACBE] mt-0.5">
+                      <div className="flex items-center gap-1 text-xs text-[#94a3b8] mt-0.5">
                         <MapPin className="w-3 h-3 flex-shrink-0" />
                         <span>
                           {building.borough}
@@ -346,7 +346,7 @@ export default async function LandlordDetailPage({
                   </div>
 
                   {/* Building info row */}
-                  <div className="flex items-center gap-1 text-xs text-[#5E6687] mb-3">
+                  <div className="flex items-center gap-1 text-xs text-[#64748b] mb-3">
                     {building.year_built && (
                       <span>Built {building.year_built}</span>
                     )}
@@ -371,38 +371,38 @@ export default async function LandlordDetailPage({
                         className={`w-3.5 h-3.5 ${
                           (building.violation_count || 0) > 10
                             ? "text-[#EF4444]"
-                            : "text-[#A3ACBE]"
+                            : "text-[#94a3b8]"
                         }`}
                       />
                       <span
                         className={`text-sm font-semibold ${
                           (building.violation_count || 0) > 10
                             ? "text-[#EF4444]"
-                            : "text-[#5E6687]"
+                            : "text-[#64748b]"
                         }`}
                       >
                         {(building.violation_count || 0).toLocaleString()}
                       </span>
-                      <span className="text-xs text-[#A3ACBE]">violations</span>
+                      <span className="text-xs text-[#94a3b8]">violations</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <MessageSquare
                         className={`w-3.5 h-3.5 ${
                           (building.complaint_count || 0) > 10
                             ? "text-[#F59E0B]"
-                            : "text-[#A3ACBE]"
+                            : "text-[#94a3b8]"
                         }`}
                       />
                       <span
                         className={`text-sm font-semibold ${
                           (building.complaint_count || 0) > 10
                             ? "text-[#F59E0B]"
-                            : "text-[#5E6687]"
+                            : "text-[#64748b]"
                         }`}
                       >
                         {(building.complaint_count || 0).toLocaleString()}
                       </span>
-                      <span className="text-xs text-[#A3ACBE]">complaints</span>
+                      <span className="text-xs text-[#94a3b8]">complaints</span>
                     </div>
                     {(building.litigation_count || 0) > 0 && (
                       <div className="flex items-center gap-1.5">
@@ -410,22 +410,22 @@ export default async function LandlordDetailPage({
                         <span className="text-sm font-semibold text-[#8B5CF6]">
                           {(building.litigation_count || 0).toLocaleString()}
                         </span>
-                        <span className="text-xs text-[#A3ACBE]">litigations</span>
+                        <span className="text-xs text-[#94a3b8]">litigations</span>
                       </div>
                     )}
                     {(building.dob_violation_count || 0) > 0 && (
                       <div className="flex items-center gap-1.5">
-                        <HardHat className="w-3.5 h-3.5 text-[#6366F1]" />
-                        <span className="text-sm font-semibold text-[#6366F1]">
+                        <HardHat className="w-3.5 h-3.5 text-[#3B82F6]" />
+                        <span className="text-sm font-semibold text-[#3B82F6]">
                           {(building.dob_violation_count || 0).toLocaleString()}
                         </span>
-                        <span className="text-xs text-[#A3ACBE]">DOB</span>
+                        <span className="text-xs text-[#94a3b8]">DOB</span>
                       </div>
                     )}
                   </div>
 
                   {/* View link */}
-                  <div className="mt-3 flex items-center gap-1 text-xs font-medium text-[#6366F1] opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="mt-3 flex items-center gap-1 text-xs font-medium text-[#3B82F6] opacity-0 group-hover:opacity-100 transition-opacity">
                     <ExternalLink className="w-3 h-3" />
                     View building details
                   </div>

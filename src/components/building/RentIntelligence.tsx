@@ -147,9 +147,25 @@ function computeBestMonth(seasonalIndex: RentIntelligenceProps["seasonalIndex"])
 } | null {
   if (seasonalIndex.length === 0) return null;
 
-  let minIdx = seasonalIndex[0];
-  let maxIdx = seasonalIndex[0];
+  // Average rent_index per month (multiple rows per month from different bed types)
+  const monthMap = new Map<number, { total: number; count: number }>();
   for (const s of seasonalIndex) {
+    const prev = monthMap.get(s.month_of_year) || { total: 0, count: 0 };
+    prev.total += s.rent_index;
+    prev.count += 1;
+    monthMap.set(s.month_of_year, prev);
+  }
+
+  const monthAvgs = [...monthMap.entries()].map(([month, { total, count }]) => ({
+    month_of_year: month,
+    rent_index: total / count,
+  }));
+
+  if (monthAvgs.length === 0) return null;
+
+  let minIdx = monthAvgs[0];
+  let maxIdx = monthAvgs[0];
+  for (const s of monthAvgs) {
     if (s.rent_index < minIdx.rent_index) minIdx = s;
     if (s.rent_index > maxIdx.rent_index) maxIdx = s;
   }
@@ -262,6 +278,9 @@ function PricePerSqft({
 
   const buildingMedian = latestBuilding.median_rent;
   const neighborhoodMedian = latestNeighborhood?.median_rent ?? 0;
+
+  // Hide if medians are identical (building IS the only data point in the neighborhood)
+  if (neighborhoodMedian > 0 && buildingMedian === neighborhoodMedian) return null;
 
   const percentile = neighborhoodMedian > 0
     ? Math.round((buildingMedian / neighborhoodMedian) * 50)

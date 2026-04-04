@@ -57,16 +57,16 @@ export function AffordabilityGauge({
         </svg>
         {/* Center text */}
         <div className="absolute inset-0 flex flex-col items-center justify-end pb-1">
-          <span className="text-2xl sm:text-3xl font-bold text-[#1A1F36]">
+          <span className="text-2xl sm:text-3xl font-bold text-[#0F1D2E]">
             {formatCurrency(recommendedMax)}
           </span>
-          <span className="text-[10px] text-[#A3ACBE] font-medium">
+          <span className="text-[10px] text-[#94a3b8] font-medium">
             /month
           </span>
         </div>
       </div>
 
-      <p className="text-sm font-medium text-[#5E6687]">
+      <p className="text-sm font-medium text-[#64748b]">
         {rentToIncomePercent}% of your income
       </p>
     </div>

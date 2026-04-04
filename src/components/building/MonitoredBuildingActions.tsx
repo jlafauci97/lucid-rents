@@ -67,8 +67,8 @@ export function MonitoredBuildingActions({
         disabled={togglingEmail}
         className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
           emailEnabled
-            ? "bg-blue-50 text-[#6366F1] hover:bg-blue-100"
-            : "bg-gray-100 text-[#5E6687] hover:bg-gray-200"
+            ? "bg-blue-50 text-[#3B82F6] hover:bg-blue-100"
+            : "bg-gray-100 text-[#64748b] hover:bg-gray-200"
         } disabled:opacity-50`}
         title={emailEnabled ? "Email alerts on" : "Email alerts off"}
       >
@@ -84,7 +84,7 @@ export function MonitoredBuildingActions({
         variant="ghost"
         loading={removing}
         onClick={handleRemove}
-        className="text-[#5E6687] hover:text-[#ef4444]"
+        className="text-[#64748b] hover:text-[#ef4444]"
       >
         <BellOff className="w-4 h-4" />
       </Button>

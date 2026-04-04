@@ -221,7 +221,7 @@ export function RentHistory({ history }: RentHistoryProps) {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <History className="w-4.5 h-4.5 text-[#4F46E5]" />
+            <History className="w-4.5 h-4.5 text-[#2563EB]" />
             <h3 className="text-base font-bold" style={{ color: T.text1 }}>
               Unit Rent Data ({groups.length})
             </h3>

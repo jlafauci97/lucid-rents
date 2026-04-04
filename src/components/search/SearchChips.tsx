@@ -39,8 +39,8 @@ export function SearchChips() {
             onClick={() => handleChip(chip.param, chip.value)}
             className={`px-3.5 py-1.5 rounded-full text-sm font-medium border transition-colors ${
               isActive
-                ? "bg-[#EFF6FF] border-[#6366F1] text-[#6366F1]"
-                : "bg-white border-[#E2E8F0] text-[#5E6687] hover:border-[#94a3b8] hover:text-[#1A1F36]"
+                ? "bg-[#EFF6FF] border-[#3B82F6] text-[#3B82F6]"
+                : "bg-white border-[#e2e8f0] text-[#64748b] hover:border-[#94a3b8] hover:text-[#0F1D2E]"
             }`}
           >
             {chip.label}

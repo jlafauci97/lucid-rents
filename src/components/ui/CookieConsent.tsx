@@ -51,7 +51,7 @@ export function CookieConsent() {
               you consent to the use of cookies for personalized ads.{" "}
               <a
                 href="/privacy"
-                className="text-[#6366F1] hover:underline"
+                className="text-[#3B82F6] hover:underline"
               >
                 Privacy Policy
               </a>
@@ -65,7 +65,7 @@ export function CookieConsent() {
               </button>
               <button
                 onClick={accept}
-                className="px-4 py-2 text-sm font-medium text-white bg-[#6366F1] hover:bg-[#2563EB] rounded-lg transition-colors"
+                className="px-4 py-2 text-sm font-medium text-white bg-[#3B82F6] hover:bg-[#2563EB] rounded-lg transition-colors"
               >
                 Accept
               </button>

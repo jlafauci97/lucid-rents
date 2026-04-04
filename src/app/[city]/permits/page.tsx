@@ -11,7 +11,7 @@ import { PermitTable } from "@/components/permits/PermitTable";
 import dynamic from "next/dynamic";
 
 const WorkTypeBreakdown = dynamic(() => import("@/components/permits/WorkTypeBreakdown").then(m => m.WorkTypeBreakdown), {
-  loading: () => <div className="bg-white rounded-xl border border-[#E2E8F0] p-6"><div className="h-6 w-48 bg-[#e2e8f0] rounded animate-pulse mb-4" /><div className="h-[300px] bg-[#FAFBFD] rounded-lg animate-pulse" /></div>,
+  loading: () => <div className="bg-white rounded-xl border border-[#e2e8f0] p-6"><div className="h-6 w-48 bg-[#e2e8f0] rounded animate-pulse mb-4" /><div className="h-[300px] bg-[#f8fafc] rounded-lg animate-pulse" /></div>,
 });
 
 export async function generateMetadata({ params }: { params: Promise<{ city: string }> }): Promise<Metadata> {
@@ -143,11 +143,11 @@ export default async function PermitsPage({ params }: { params: Promise<{ city: 
             <div className="p-2 bg-teal-50 rounded-lg">
               <ClipboardList className="w-6 h-6 text-[#0D9488]" />
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#1A1F36]">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#0F1D2E]">
               {meta.name} Permits Tracker
             </h1>
           </div>
-          <p className="text-[#5E6687] text-sm sm:text-base max-w-3xl">
+          <p className="text-[#64748b] text-sm sm:text-base max-w-3xl">
             Track active {labels.agency} building permits across {meta.fullName}. See what construction
             and work is happening in your neighborhood, including permit types,
             costs, and timelines. Data from {labels.dataSource}.
@@ -156,38 +156,38 @@ export default async function PermitsPage({ params }: { params: Promise<{ city: 
 
         {/* Summary stats */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
-          <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
-            <p className="text-xs text-[#5E6687] font-medium uppercase tracking-wide">
+          <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
+            <p className="text-xs text-[#64748b] font-medium uppercase tracking-wide">
               Active Permits
             </p>
-            <p className="text-2xl font-bold text-[#1A1F36] mt-1">
+            <p className="text-2xl font-bold text-[#0F1D2E] mt-1">
               {totalActive > 0 ? totalActive.toLocaleString() : "\u2014"}
             </p>
           </div>
-          <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
-            <p className="text-xs text-[#5E6687] font-medium uppercase tracking-wide">
+          <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
+            <p className="text-xs text-[#64748b] font-medium uppercase tracking-wide">
               Top Work Type
             </p>
-            <p className="text-sm font-semibold text-[#1A1F36] mt-2">
+            <p className="text-sm font-semibold text-[#0F1D2E] mt-2">
               {topWorkType}
             </p>
           </div>
-          <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
-            <p className="text-xs text-[#5E6687] font-medium uppercase tracking-wide">
+          <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
+            <p className="text-xs text-[#64748b] font-medium uppercase tracking-wide">
               Most Permits
             </p>
-            <p className="text-sm font-semibold text-[#1A1F36] mt-2">
+            <p className="text-sm font-semibold text-[#0F1D2E] mt-2">
               {topArea}
             </p>
           </div>
         </div>
 
         {/* Section 1: Map */}
-        <section className="bg-white border border-[#E2E8F0] rounded-xl p-5 sm:p-6 mb-6">
-          <h2 className="text-lg font-bold text-[#1A1F36] mb-1">
+        <section className="bg-white border border-[#e2e8f0] rounded-xl p-5 sm:p-6 mb-6">
+          <h2 className="text-lg font-bold text-[#0F1D2E] mb-1">
             Permit Density Map
           </h2>
-          <p className="text-sm text-[#5E6687] mb-4">
+          <p className="text-sm text-[#64748b] mb-4">
             Active building permits by zip code. Darker areas have more active
             permits.
           </p>
@@ -195,22 +195,22 @@ export default async function PermitsPage({ params }: { params: Promise<{ city: 
         </section>
 
         {/* Section 2: Recent Permits */}
-        <section className="bg-white border border-[#E2E8F0] rounded-xl p-5 sm:p-6 mb-6">
-          <h2 className="text-lg font-bold text-[#1A1F36] mb-1">
+        <section className="bg-white border border-[#e2e8f0] rounded-xl p-5 sm:p-6 mb-6">
+          <h2 className="text-lg font-bold text-[#0F1D2E] mb-1">
             Recently Issued Permits
           </h2>
-          <p className="text-sm text-[#5E6687] mb-4">
+          <p className="text-sm text-[#64748b] mb-4">
             Most recently issued active building permits across {meta.fullName}.
           </p>
           <PermitTable data={recentPermits || []} />
         </section>
 
         {/* Section 3: Work Type Breakdown */}
-        <section className="bg-white border border-[#E2E8F0] rounded-xl p-5 sm:p-6 mb-6">
-          <h2 className="text-lg font-bold text-[#1A1F36] mb-1">
+        <section className="bg-white border border-[#e2e8f0] rounded-xl p-5 sm:p-6 mb-6">
+          <h2 className="text-lg font-bold text-[#0F1D2E] mb-1">
             Work Type Breakdown
           </h2>
-          <p className="text-sm text-[#5E6687] mb-4">
+          <p className="text-sm text-[#64748b] mb-4">
             Active permit count by work type. Top 10 shown.
           </p>
           <WorkTypeBreakdown data={typeData || []} />

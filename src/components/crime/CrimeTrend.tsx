@@ -61,7 +61,7 @@ function TrendBadge({ trend }: { trend: "improving" | "declining" | "stable" }) 
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#F5F7FA] text-[#5E6687]">
+    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#f1f5f9] text-[#64748b]">
       <Minus className="w-3.5 h-3.5" />
       Stable
     </span>
@@ -78,8 +78,8 @@ function SkeletonChart() {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="h-[300px] w-full bg-[#FAFBFD] rounded-lg animate-pulse flex items-center justify-center">
-          <div className="text-[#A3ACBE] text-sm">Loading chart data...</div>
+        <div className="h-[300px] w-full bg-[#f8fafc] rounded-lg animate-pulse flex items-center justify-center">
+          <div className="text-[#94a3b8] text-sm">Loading chart data...</div>
         </div>
       </CardContent>
     </Card>
@@ -118,10 +118,10 @@ export function CrimeTrend({ zipCode, city }: CrimeTrendProps) {
     return (
       <Card>
         <CardHeader>
-          <h2 className="text-xl font-bold text-[#1A1F36]">Crime Trends</h2>
+          <h2 className="text-xl font-bold text-[#0F1D2E]">Crime Trends</h2>
         </CardHeader>
         <CardContent>
-          <p className="text-center text-[#5E6687] py-8">
+          <p className="text-center text-[#64748b] py-8">
             Unable to load crime trend data. Please try again later.
           </p>
         </CardContent>
@@ -133,10 +133,10 @@ export function CrimeTrend({ zipCode, city }: CrimeTrendProps) {
     return (
       <Card>
         <CardHeader>
-          <h2 className="text-xl font-bold text-[#1A1F36]">Crime Trends</h2>
+          <h2 className="text-xl font-bold text-[#0F1D2E]">Crime Trends</h2>
         </CardHeader>
         <CardContent>
-          <p className="text-center text-[#5E6687] py-8">
+          <p className="text-center text-[#64748b] py-8">
             No crime data available for this zip code.
           </p>
         </CardContent>
@@ -151,12 +151,12 @@ export function CrimeTrend({ zipCode, city }: CrimeTrendProps) {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-[#1A1F36]">Crime Trends</h2>
+            <h2 className="text-xl font-bold text-[#0F1D2E]">Crime Trends</h2>
             <TrendBadge trend="stable" />
           </div>
         </CardHeader>
         <CardContent>
-          <p className="text-center text-[#5E6687] py-8">
+          <p className="text-center text-[#64748b] py-8">
             No crimes recorded in the last 2 years.
           </p>
         </CardContent>
@@ -174,10 +174,10 @@ export function CrimeTrend({ zipCode, city }: CrimeTrendProps) {
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold text-[#1A1F36]">Crime Trends</h2>
+          <h2 className="text-xl font-bold text-[#0F1D2E]">Crime Trends</h2>
           <TrendBadge trend={data.trend} />
         </div>
-        <p className="text-sm text-[#5E6687] mt-1">
+        <p className="text-sm text-[#64748b] mt-1">
           Monthly crime counts by category over the last 2 years
         </p>
       </CardHeader>

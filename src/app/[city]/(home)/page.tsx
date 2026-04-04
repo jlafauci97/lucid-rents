@@ -121,12 +121,12 @@ export default async function CityHomePage({
         </section>
 
         {/* Violation Ticker */}
-        <Suspense fallback={<div className="bg-[#6366F1] border-y border-blue-400/30 py-3 h-[52px]" />}>
+        <Suspense fallback={<div className="bg-[#3B82F6] border-y border-blue-400/30 py-3 h-[52px]" />}>
           <ViolationTickerServer metro={city} />
         </Suspense>
 
         {/* Stats */}
-        <section className="border-b border-[#E2E8F0]">
+        <section className="border-b border-[#e2e8f0]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <Suspense fallback={<div className="grid grid-cols-2 md:grid-cols-4 gap-6">{[...Array(4)].map((_, i) => <div key={i} className="text-center"><div className="w-8 h-8 bg-[#e2e8f0] rounded mx-auto mb-2 animate-pulse" /><div className="h-7 w-20 bg-[#e2e8f0] rounded mx-auto mb-1 animate-pulse" /><div className="h-4 w-24 bg-[#e2e8f0] rounded mx-auto animate-pulse" /></div>)}</div>}>
               <LiveStats metro={city} />
@@ -138,10 +138,10 @@ export default async function CityHomePage({
         <section className="py-12 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-[#1A1F36] mb-2">
+              <h2 className="text-2xl font-bold text-[#0F1D2E] mb-2">
                 Buildings Near You
               </h2>
-              <p className="text-[#5E6687] text-sm">
+              <p className="text-[#64748b] text-sm">
                 Discover what&apos;s happening in buildings around your location
               </p>
             </div>
@@ -153,10 +153,10 @@ export default async function CityHomePage({
         <section className="py-16 bg-[#EFF6FF]">
           <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-[#1A1F36] mb-2">
+              <h2 className="text-3xl font-bold text-[#0F1D2E] mb-2">
                 Recent Activity
               </h2>
-              <p className="text-[#5E6687]">
+              <p className="text-[#64748b]">
                 The latest violations, complaints, and tenant reviews across{" "}
                 {meta.name} buildings
               </p>
@@ -169,9 +169,9 @@ export default async function CityHomePage({
         <AdBlock adSlot="HOME_MID_2" adFormat="horizontal" />
 
         {/* Explore */}
-        <section className="py-12 bg-white border-t border-[#E2E8F0]">
+        <section className="py-12 bg-white border-t border-[#e2e8f0]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 className="text-2xl font-bold text-center text-[#1A1F36] mb-8">
+            <h2 className="text-2xl font-bold text-center text-[#0F1D2E] mb-8">
               Explore {meta.name} Housing Data
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -215,10 +215,10 @@ export default async function CityHomePage({
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="flex flex-col items-center gap-2 p-4 rounded-xl border border-[#E2E8F0] hover:border-[#6366F1] hover:bg-[#EFF6FF] transition-colors text-center"
+                  className="flex flex-col items-center gap-2 p-4 rounded-xl border border-[#e2e8f0] hover:border-[#3B82F6] hover:bg-[#EFF6FF] transition-colors text-center"
                 >
-                  <item.icon className="w-6 h-6 text-[#6366F1]" />
-                  <span className="text-sm font-medium text-[#1A1F36]">
+                  <item.icon className="w-6 h-6 text-[#3B82F6]" />
+                  <span className="text-sm font-medium text-[#0F1D2E]">
                     {item.label}
                   </span>
                 </Link>
@@ -239,7 +239,7 @@ export default async function CityHomePage({
             </p>
             <a
               href={cityPath("/review/new", city)}
-              className="inline-flex items-center px-6 py-3 bg-[#6366F1] hover:bg-[#2563EB] text-white font-semibold rounded-lg transition-colors"
+              className="inline-flex items-center px-6 py-3 bg-[#3B82F6] hover:bg-[#2563EB] text-white font-semibold rounded-lg transition-colors"
             >
               Submit a Review
             </a>

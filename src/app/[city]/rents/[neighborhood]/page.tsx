@@ -309,14 +309,14 @@ export default async function NeighborhoodRentsPage({
   if (rents.length === 0) {
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
-        <DollarSign className="w-12 h-12 text-[#A3ACBE] mx-auto mb-4" />
-        <h1 className="text-2xl font-bold text-[#1A1F36] mb-2">
+        <DollarSign className="w-12 h-12 text-[#94a3b8] mx-auto mb-4" />
+        <h1 className="text-2xl font-bold text-[#0F1D2E] mb-2">
           No Rent Data for {neighborhoodName ? `${neighborhoodName} (${zipCode})` : zipCode}
         </h1>
-        <p className="text-[#5E6687]">
+        <p className="text-[#64748b]">
           We don&apos;t have rent trend data for this zip code yet.
         </p>
-        <Link href={cityPath("/search", city)} className="text-[#6366F1] text-sm mt-4 inline-block">
+        <Link href={cityPath("/search", city)} className="text-[#3B82F6] text-sm mt-4 inline-block">
           Search buildings
         </Link>
       </div>
@@ -370,10 +370,10 @@ export default async function NeighborhoodRentsPage({
 
         {/* ── Page Header ──────────────────────────────────────────── */}
         <div className="mt-6 mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#1A1F36]">
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#0F1D2E]">
             Rent Trends in {displayName}
           </h1>
-          <p className="text-[#5E6687] mt-1">
+          <p className="text-[#64748b] mt-1">
             Median, historical trends, and seasonal patterns for ZIP {zipCode}
           </p>
 
@@ -392,7 +392,7 @@ export default async function NeighborhoodRentsPage({
                     ? "bg-[#fee2e2] text-[#dc2626]"
                     : trend.yoy < 0
                       ? "bg-[#dcfce7] text-[#16a34a]"
-                      : "bg-[#F5F7FA] text-[#5E6687]"
+                      : "bg-[#f1f5f9] text-[#475569]"
                 }`}
               >
                 {trend.yoy > 0 ? (
@@ -404,7 +404,7 @@ export default async function NeighborhoodRentsPage({
               </span>
             )}
             {buildingCount > 0 && (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F5F7FA] text-[#5E6687] text-sm font-semibold">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#f1f5f9] text-[#475569] text-sm font-semibold">
                 <Building2 className="w-4 h-4" />
                 {buildingCount.toLocaleString()} buildings
               </span>
@@ -421,8 +421,8 @@ export default async function NeighborhoodRentsPage({
         {trend && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
             {/* YoY Change */}
-            <div className="bg-white rounded-xl border border-[#E2E8F0] p-5">
-              <p className="text-xs text-[#A3ACBE] uppercase tracking-wide font-medium mb-1">
+            <div className="bg-white rounded-xl border border-[#e2e8f0] p-5">
+              <p className="text-xs text-[#94a3b8] uppercase tracking-wide font-medium mb-1">
                 Year-over-Year
               </p>
               {trend.yoy != null ? (
@@ -433,7 +433,7 @@ export default async function NeighborhoodRentsPage({
                         ? "text-[#dc2626]"
                         : trend.yoy < 0
                           ? "text-[#16a34a]"
-                          : "text-[#1A1F36]"
+                          : "text-[#0F1D2E]"
                     }`}
                   >
                     {formatPct(trend.yoy)}
@@ -445,13 +445,13 @@ export default async function NeighborhoodRentsPage({
                   ) : null}
                 </div>
               ) : (
-                <p className="text-lg text-[#A3ACBE]">N/A</p>
+                <p className="text-lg text-[#94a3b8]">N/A</p>
               )}
             </div>
 
             {/* 5-Year Change */}
-            <div className="bg-white rounded-xl border border-[#E2E8F0] p-5">
-              <p className="text-xs text-[#A3ACBE] uppercase tracking-wide font-medium mb-1">
+            <div className="bg-white rounded-xl border border-[#e2e8f0] p-5">
+              <p className="text-xs text-[#94a3b8] uppercase tracking-wide font-medium mb-1">
                 5-Year Change
               </p>
               {trend.fiveYear != null ? (
@@ -461,19 +461,19 @@ export default async function NeighborhoodRentsPage({
                       ? "text-[#dc2626]"
                       : trend.fiveYear < 0
                         ? "text-[#16a34a]"
-                        : "text-[#1A1F36]"
+                        : "text-[#0F1D2E]"
                   }`}
                 >
                   {formatPct(trend.fiveYear)}
                 </p>
               ) : (
-                <p className="text-lg text-[#A3ACBE]">N/A</p>
+                <p className="text-lg text-[#94a3b8]">N/A</p>
               )}
             </div>
 
             {/* Since earliest data */}
-            <div className="bg-white rounded-xl border border-[#E2E8F0] p-5">
-              <p className="text-xs text-[#A3ACBE] uppercase tracking-wide font-medium mb-1">
+            <div className="bg-white rounded-xl border border-[#e2e8f0] p-5">
+              <p className="text-xs text-[#94a3b8] uppercase tracking-wide font-medium mb-1">
                 Since {trend.startYear}
               </p>
               <p
@@ -482,7 +482,7 @@ export default async function NeighborhoodRentsPage({
                     ? "text-[#dc2626]"
                     : trend.sinceStart < 0
                       ? "text-[#16a34a]"
-                      : "text-[#1A1F36]"
+                      : "text-[#0F1D2E]"
                 }`}
               >
                 {formatPct(trend.sinceStart)}
@@ -495,8 +495,8 @@ export default async function NeighborhoodRentsPage({
         {seasonalFiltered.length === 12 && (
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-4">
-              <CalendarDays className="w-5 h-5 text-[#6366F1]" />
-              <h2 className="text-lg font-bold text-[#1A1F36]">
+              <CalendarDays className="w-5 h-5 text-[#3B82F6]" />
+              <h2 className="text-lg font-bold text-[#0F1D2E]">
                 Best Time to Rent in {displayName}
               </h2>
             </div>
@@ -507,8 +507,8 @@ export default async function NeighborhoodRentsPage({
                 const idx = Number(s.rent_index);
 
                 let bgColor = "bg-white";
-                let textColor = "text-[#1A1F36]";
-                let borderColor = "border-[#E2E8F0]";
+                let textColor = "text-[#0F1D2E]";
+                let borderColor = "border-[#e2e8f0]";
                 if (isCheapest) {
                   bgColor = "bg-[#dcfce7]";
                   textColor = "text-[#16a34a]";
@@ -524,7 +524,7 @@ export default async function NeighborhoodRentsPage({
                     key={s.month_of_year}
                     className={`rounded-xl border ${borderColor} ${bgColor} p-3 text-center`}
                   >
-                    <p className="text-xs font-medium text-[#A3ACBE] mb-1">
+                    <p className="text-xs font-medium text-[#94a3b8] mb-1">
                       {MONTH_SHORT[s.month_of_year - 1]}
                     </p>
                     <p className={`text-sm font-bold ${textColor}`}>
@@ -545,7 +545,7 @@ export default async function NeighborhoodRentsPage({
               })}
             </div>
             {peakSavings != null && peakSavings > 0 && cheapestMonth && (
-              <p className="text-sm text-[#5E6687] mt-3">
+              <p className="text-sm text-[#64748b] mt-3">
                 Sign in{" "}
                 <span className="font-semibold text-[#16a34a]">
                   {MONTH_NAMES[cheapestMonth.month_of_year - 1]}
@@ -553,7 +553,7 @@ export default async function NeighborhoodRentsPage({
                 to save ~<span className="font-semibold">${peakSavings.toLocaleString()}/mo</span> vs peak season.
               </p>
             )}
-            <p className="text-[10px] text-[#A3ACBE] mt-1">
+            <p className="text-[10px] text-[#94a3b8] mt-1">
               Index of 1.00 = annual average. Below 1.00 = cheaper than average.
             </p>
           </div>
@@ -566,7 +566,7 @@ export default async function NeighborhoodRentsPage({
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-4">
               <Sparkles className="w-5 h-5 text-[#F59E0B]" />
-              <h2 className="text-lg font-bold text-[#1A1F36]">
+              <h2 className="text-lg font-bold text-[#0F1D2E]">
                 What Amenities Cost in {displayName}
               </h2>
             </div>
@@ -574,28 +574,28 @@ export default async function NeighborhoodRentsPage({
               {aggregatedAmenities.map((a) => (
                 <div
                   key={a.amenity}
-                  className="bg-white rounded-xl border border-[#E2E8F0] p-4 flex items-center justify-between"
+                  className="bg-white rounded-xl border border-[#e2e8f0] p-4 flex items-center justify-between"
                 >
                   <div>
-                    <p className="text-sm font-semibold text-[#1A1F36]">
+                    <p className="text-sm font-semibold text-[#0F1D2E]">
                       {amenityLabel(a.amenity)}
                     </p>
-                    <p className="text-xs text-[#A3ACBE] mt-0.5">
+                    <p className="text-xs text-[#94a3b8] mt-0.5">
                       {a.sampleSize.toLocaleString()} listing{a.sampleSize !== 1 ? "s" : ""}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-lg font-bold text-[#1A1F36]">
+                    <p className="text-lg font-bold text-[#0F1D2E]">
                       +${a.premiumDollars.toLocaleString()}
                     </p>
-                    <p className="text-xs text-[#5E6687]">
+                    <p className="text-xs text-[#64748b]">
                       +{a.premiumPct}%
                     </p>
                   </div>
                 </div>
               ))}
             </div>
-            <p className="text-[10px] text-[#A3ACBE] mt-2">
+            <p className="text-[10px] text-[#94a3b8] mt-2">
               Premium = median rent with amenity minus median rent without. Averaged across bed types.
             </p>
           </div>
@@ -624,26 +624,26 @@ export default async function NeighborhoodRentsPage({
 
           return (
             <div className="mb-8">
-              <h2 className="text-lg font-bold text-[#1A1F36] mb-4">
+              <h2 className="text-lg font-bold text-[#0F1D2E] mb-4">
                 Price Distribution
               </h2>
-              <div className="bg-white rounded-xl border border-[#E2E8F0] p-6">
+              <div className="bg-white rounded-xl border border-[#e2e8f0] p-6">
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
                   {tiers.map((tier, i) => (
                     <div key={tier.label} className="flex-1 text-center">
                       {i > 0 && (
                         <div className="hidden sm:block w-px h-10 bg-[#e2e8f0] mx-auto" />
                       )}
-                      <p className="text-xs text-[#A3ACBE] uppercase tracking-wide font-medium mb-1">
+                      <p className="text-xs text-[#94a3b8] uppercase tracking-wide font-medium mb-1">
                         {tier.label}
                       </p>
-                      <p className="text-xl font-bold text-[#1A1F36]">
+                      <p className="text-xl font-bold text-[#0F1D2E]">
                         {formatDollar(tier.value!)}
                       </p>
                     </div>
                   ))}
                 </div>
-                <p className="text-xs text-[#5E6687] mt-4 text-center">
+                <p className="text-xs text-[#64748b] mt-4 text-center">
                   Based on recent {BED_LABELS[trend.bed] || `${trend.bed}BR`} listings in {displayName}.
                 </p>
               </div>
@@ -661,7 +661,7 @@ export default async function NeighborhoodRentsPage({
           </p>
           <Link
             href={cityPath(`/search?zip=${zipCode}`, city)}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-[#1E40AF] rounded-lg font-semibold text-sm hover:bg-[#F5F7FA] transition-colors"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-[#1E40AF] rounded-lg font-semibold text-sm hover:bg-[#f1f5f9] transition-colors"
           >
             <Search className="w-4 h-4" />
             Search {displayName}

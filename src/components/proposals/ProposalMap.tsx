@@ -74,7 +74,7 @@ export function ProposalMap({ city }: Props) {
 
   if (!mounted) {
     return (
-      <div className="h-[500px] lg:h-[600px] bg-[#FAFBFD] rounded-xl border border-[#E2E8F0] flex items-center justify-center">
+      <div className="h-[500px] lg:h-[600px] bg-[#f8fafc] rounded-xl border border-[#e2e8f0] flex items-center justify-center">
         <div className="w-12 h-12 border-4 border-[#3b82f6] border-t-transparent rounded-full animate-spin" />
       </div>
     );
@@ -82,7 +82,7 @@ export function ProposalMap({ city }: Props) {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-      <div className="lg:col-span-2 h-[500px] lg:h-[600px] rounded-xl border border-[#E2E8F0] overflow-hidden">
+      <div className="lg:col-span-2 h-[500px] lg:h-[600px] rounded-xl border border-[#e2e8f0] overflow-hidden">
         <MapContainer
           center={[meta.center.lat, meta.center.lng]}
           zoom={meta.zoom}
@@ -110,9 +110,9 @@ export function ProposalMap({ city }: Props) {
               >
                 <Popup>
                   <div className="text-xs min-w-[200px]">
-                    <p className="font-bold text-[#1A1F36] mb-1">{p.title}</p>
-                    {p.sponsor && <p className="text-[#5E6687]">Sponsor: {p.sponsor}</p>}
-                    <p className="text-[#5E6687]">Status: {p.status}</p>
+                    <p className="font-bold text-[#0F1D2E] mb-1">{p.title}</p>
+                    {p.sponsor && <p className="text-[#64748b]">Sponsor: {p.sponsor}</p>}
+                    <p className="text-[#64748b]">Status: {p.status}</p>
                     <a
                       href={p.url}
                       target="_blank"

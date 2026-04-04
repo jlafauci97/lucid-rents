@@ -25,7 +25,7 @@ export function MarketingDashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b border-[#E2E8F0]">
+      <div className="bg-white border-b border-[#e2e8f0]">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -33,17 +33,17 @@ export function MarketingDashboard() {
                 <Megaphone className="h-5 w-5 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-semibold text-[#1A1F36]">
+                <h1 className="text-xl font-semibold text-[#0F1D2E]">
                   Marketing Dashboard
                 </h1>
-                <p className="text-sm text-[#5E6687]">
+                <p className="text-sm text-[#64748b]">
                   Content pipeline & social publishing
                 </p>
               </div>
             </div>
             <button
               onClick={() => setShowActivity(!showActivity)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm text-[#5E6687] hover:bg-gray-100 transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm text-[#64748b] hover:bg-gray-100 transition-colors"
             >
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
@@ -61,8 +61,8 @@ export function MarketingDashboard() {
                 onClick={() => setActiveTab(tab)}
                 className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-t-lg border-b-2 transition-colors ${
                   activeTab === tab
-                    ? "border-[#6366F1] text-[#6366F1] bg-blue-50/50"
-                    : "border-transparent text-[#5E6687] hover:text-[#1A1F36] hover:bg-gray-50"
+                    ? "border-[#3B82F6] text-[#3B82F6] bg-blue-50/50"
+                    : "border-transparent text-[#64748b] hover:text-[#0F1D2E] hover:bg-gray-50"
                 }`}
               >
                 {TAB_ICONS[tab]}

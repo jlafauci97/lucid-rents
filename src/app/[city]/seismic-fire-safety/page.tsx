@@ -98,15 +98,15 @@ export default async function SeismicFireZonesPage({
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <ShieldAlert className="w-12 h-12 text-[#A3ACBE] mx-auto mb-4" />
-          <h1 className="text-xl font-bold text-[#1A1F36] mb-2">Coming Soon</h1>
-          <p className="text-sm text-[#5E6687] max-w-md">
+          <ShieldAlert className="w-12 h-12 text-[#94a3b8] mx-auto mb-4" />
+          <h1 className="text-xl font-bold text-[#0F1D2E] mb-2">Coming Soon</h1>
+          <p className="text-sm text-[#64748b] max-w-md">
             Seismic and fire zone data is currently available for Los Angeles.
             We&apos;re working on expanding to other cities.
           </p>
           <Link
             href={`/${city}/tenant-rights`}
-            className="inline-block mt-6 text-sm font-medium text-[#6366F1] hover:text-[#4F46E5] transition-colors"
+            className="inline-block mt-6 text-sm font-medium text-[#3B82F6] hover:text-[#2563EB] transition-colors"
           >
             &larr; Back to Tenant Rights
           </Link>
@@ -144,7 +144,7 @@ export default async function SeismicFireZonesPage({
 
         {/* Zone explainers in a compact grid */}
         <section className="mb-12">
-          <h2 className="text-2xl font-bold text-[#1A1F36] mb-6">
+          <h2 className="text-2xl font-bold text-[#0F1D2E] mb-6">
             What These Zones Mean
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -153,7 +153,7 @@ export default async function SeismicFireZonesPage({
               return (
                 <div
                   key={hazard.title}
-                  className="bg-white rounded-xl border border-[#E2E8F0] p-5"
+                  className="bg-white rounded-xl border border-[#e2e8f0] p-5"
                 >
                   <div className="flex items-center gap-2.5 mb-3">
                     <div
@@ -161,7 +161,7 @@ export default async function SeismicFireZonesPage({
                     >
                       <Icon className="w-4 h-4" />
                     </div>
-                    <h3 className="text-sm font-bold text-[#1A1F36]">
+                    <h3 className="text-sm font-bold text-[#0F1D2E]">
                       {hazard.title}
                     </h3>
                   </div>
@@ -169,14 +169,14 @@ export default async function SeismicFireZonesPage({
                     {hazard.what}
                   </p>
                   <p className="text-xs text-gray-500 leading-relaxed mb-3">
-                    <span className="font-semibold text-[#1A1F36]">Risk: </span>
+                    <span className="font-semibold text-[#0F1D2E]">Risk: </span>
                     {hazard.risk}
                   </p>
                   <a
                     href={hazard.sourceUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-[10px] font-medium text-[#6366F1] hover:text-[#4F46E5] transition-colors"
+                    className="inline-flex items-center gap-1 text-[10px] font-medium text-[#3B82F6] hover:text-[#2563EB] transition-colors"
                   >
                     {hazard.source}
                     <ExternalLink className="w-2.5 h-2.5" />
@@ -186,12 +186,12 @@ export default async function SeismicFireZonesPage({
             })}
 
             {/* Soft-Story card */}
-            <div className="bg-white rounded-xl border border-[#E2E8F0] p-5">
+            <div className="bg-white rounded-xl border border-[#e2e8f0] p-5">
               <div className="flex items-center gap-2.5 mb-3">
                 <div className="inline-flex items-center justify-center w-8 h-8 rounded-lg border bg-teal-50 text-teal-600 border-teal-200">
                   <Home className="w-4 h-4" />
                 </div>
-                <h3 className="text-sm font-bold text-[#1A1F36]">
+                <h3 className="text-sm font-bold text-[#0F1D2E]">
                   Soft-Story Retrofit
                 </h3>
               </div>
@@ -201,7 +201,7 @@ export default async function SeismicFireZonesPage({
                 strengthened.
               </p>
               <p className="text-xs text-gray-500 leading-relaxed mb-3">
-                <span className="font-semibold text-[#1A1F36]">Risk: </span>
+                <span className="font-semibold text-[#0F1D2E]">Risk: </span>
                 Soft-story buildings are among the most vulnerable in
                 earthquakes. The weak ground floor can collapse, causing upper
                 floors to pancake.
@@ -210,7 +210,7 @@ export default async function SeismicFireZonesPage({
                 href="https://www.ladbs.org/services/core-services/plan-check-permit/mandatory-retrofit-programs"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-[10px] font-medium text-[#6366F1] hover:text-[#4F46E5] transition-colors"
+                className="inline-flex items-center gap-1 text-[10px] font-medium text-[#3B82F6] hover:text-[#2563EB] transition-colors"
               >
                 LADBS Retrofit Program
                 <ExternalLink className="w-2.5 h-2.5" />
@@ -221,10 +221,10 @@ export default async function SeismicFireZonesPage({
 
         {/* Tenant rights around retrofits — compact */}
         <section className="mb-12">
-          <h2 className="text-xl font-bold text-[#1A1F36] mb-4">
+          <h2 className="text-xl font-bold text-[#0F1D2E] mb-4">
             Your Rights During Seismic Retrofit
           </h2>
-          <div className="bg-white rounded-xl border border-[#E2E8F0] p-6">
+          <div className="bg-white rounded-xl border border-[#e2e8f0] p-6">
             <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {[
                 "Landlords may pass through up to 50% of retrofit costs to RSO tenants, only with LAHD approval.",
@@ -250,7 +250,7 @@ export default async function SeismicFireZonesPage({
         <section className="mb-12 grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Preparedness */}
           <div>
-            <h2 className="text-xl font-bold text-[#1A1F36] mb-4">
+            <h2 className="text-xl font-bold text-[#0F1D2E] mb-4">
               Renter Preparedness
             </h2>
             <div className="space-y-3">
@@ -270,9 +270,9 @@ export default async function SeismicFireZonesPage({
               ].map((tip) => (
                 <div
                   key={tip.title}
-                  className="bg-white rounded-xl border border-[#E2E8F0] p-4"
+                  className="bg-white rounded-xl border border-[#e2e8f0] p-4"
                 >
-                  <h3 className="text-sm font-semibold text-[#1A1F36] mb-1">
+                  <h3 className="text-sm font-semibold text-[#0F1D2E] mb-1">
                     {tip.title}
                   </h3>
                   <p className="text-xs text-gray-500 leading-relaxed">
@@ -285,7 +285,7 @@ export default async function SeismicFireZonesPage({
 
           {/* Emergency contacts */}
           <div>
-            <h2 className="text-xl font-bold text-[#1A1F36] mb-4">
+            <h2 className="text-xl font-bold text-[#0F1D2E] mb-4">
               Emergency Contacts
             </h2>
             <div className="space-y-3">
@@ -313,13 +313,13 @@ export default async function SeismicFireZonesPage({
               ].map((contact) => (
                 <div
                   key={contact.name}
-                  className="bg-white rounded-xl border border-[#E2E8F0] p-4 flex items-start gap-3"
+                  className="bg-white rounded-xl border border-[#e2e8f0] p-4 flex items-start gap-3"
                 >
                   <div className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-50 text-blue-600 border border-blue-200 flex-shrink-0">
                     <Phone className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-semibold text-[#1A1F36]">
+                    <h3 className="text-sm font-semibold text-[#0F1D2E]">
                       {contact.name}
                     </h3>
                     <p className="text-xs text-gray-500 mt-0.5">
@@ -327,7 +327,7 @@ export default async function SeismicFireZonesPage({
                     </p>
                     <a
                       href={`tel:${contact.phone}`}
-                      className="inline-block mt-1 text-xs font-medium text-[#6366F1] hover:text-[#4F46E5] transition-colors"
+                      className="inline-block mt-1 text-xs font-medium text-[#3B82F6] hover:text-[#2563EB] transition-colors"
                     >
                       {contact.phone}
                     </a>

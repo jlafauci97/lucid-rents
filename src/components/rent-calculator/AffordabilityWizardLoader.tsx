@@ -9,7 +9,7 @@ const AffordabilityWizard = dynamic(
     ssr: false,
     loading: () => (
       <div className="flex items-center justify-center py-20">
-        <div className="w-6 h-6 border-2 border-[#6366F1] border-t-transparent rounded-full animate-spin" />
+        <div className="w-6 h-6 border-2 border-[#3B82F6] border-t-transparent rounded-full animate-spin" />
       </div>
     ),
   }

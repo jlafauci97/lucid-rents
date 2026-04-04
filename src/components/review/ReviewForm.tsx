@@ -194,15 +194,15 @@ export function ReviewForm({ preselectedBuildingId, categories }: ReviewFormProp
                 i < step
                   ? "bg-[#10b981] text-white"
                   : i === step
-                  ? "bg-[#6366F1] text-[#1A1F36]"
-                  : "bg-gray-200 text-[#A3ACBE]"
+                  ? "bg-[#3B82F6] text-[#0F1D2E]"
+                  : "bg-gray-200 text-[#94a3b8]"
               }`}
             >
               {i < step ? <Check className="w-4 h-4" /> : i + 1}
             </div>
             <span
               className={`ml-2 text-sm hidden sm:inline ${
-                i === step ? "text-[#1A1F36] font-medium" : "text-[#A3ACBE]"
+                i === step ? "text-[#0F1D2E] font-medium" : "text-[#94a3b8]"
               }`}
             >
               {s}
@@ -221,19 +221,19 @@ export function ReviewForm({ preselectedBuildingId, categories }: ReviewFormProp
       {/* Step 0: Building Selection */}
       {step === 0 && (
         <div className="space-y-6">
-          <h2 className="text-xl font-bold text-[#1A1F36]">
+          <h2 className="text-xl font-bold text-[#0F1D2E]">
             Select Your Building
           </h2>
 
           {selectedBuilding ? (
-            <div className="bg-white rounded-xl border border-[#E2E8F0] p-4 flex items-center justify-between">
+            <div className="bg-white rounded-xl border border-[#e2e8f0] p-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <MapPin className="w-5 h-5 text-[#6366F1]" />
+                <MapPin className="w-5 h-5 text-[#3B82F6]" />
                 <div>
-                  <p className="text-sm font-medium text-[#1A1F36]">
+                  <p className="text-sm font-medium text-[#0F1D2E]">
                     {selectedBuilding.full_address}
                   </p>
-                  <p className="text-xs text-[#5E6687]">
+                  <p className="text-xs text-[#64748b]">
                     {selectedBuilding.borough}
                   </p>
                 </div>
@@ -249,21 +249,21 @@ export function ReviewForm({ preselectedBuildingId, categories }: ReviewFormProp
           ) : (
             <div ref={searchRef} className="relative">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#A3ACBE]" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#94a3b8]" />
                 <input
                   type="text"
                   value={buildingSearch}
                   onChange={(e) => setBuildingSearch(e.target.value)}
                   onFocus={() => buildingResults.length > 0 && setSearchOpen(true)}
                   placeholder="Search for your building address..."
-                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-[#E2E8F0] bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
+                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-[#e2e8f0] bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
                 />
                 {searchLoading && (
-                  <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#A3ACBE] animate-spin" />
+                  <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#94a3b8] animate-spin" />
                 )}
               </div>
               {searchOpen && buildingResults.length > 0 && (
-                <div className="absolute z-10 w-full mt-1 bg-white rounded-lg border border-[#E2E8F0] shadow-lg overflow-hidden">
+                <div className="absolute z-10 w-full mt-1 bg-white rounded-lg border border-[#e2e8f0] shadow-lg overflow-hidden">
                   {buildingResults.map((b) => (
                     <button
                       key={b.id}
@@ -275,8 +275,8 @@ export function ReviewForm({ preselectedBuildingId, categories }: ReviewFormProp
                       }}
                       className="w-full text-left px-4 py-3 hover:bg-gray-50 text-sm"
                     >
-                      <p className="font-medium text-[#1A1F36]">{b.full_address}</p>
-                      <p className="text-xs text-[#5E6687]">{b.borough}</p>
+                      <p className="font-medium text-[#0F1D2E]">{b.full_address}</p>
+                      <p className="text-xs text-[#64748b]">{b.borough}</p>
                     </button>
                   ))}
                 </div>
@@ -292,7 +292,7 @@ export function ReviewForm({ preselectedBuildingId, categories }: ReviewFormProp
           />
 
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-[#1A1F36]">
+            <label className="block text-sm font-medium text-[#0F1D2E]">
               Residency Status
             </label>
             <div className="flex gap-3">
@@ -301,8 +301,8 @@ export function ReviewForm({ preselectedBuildingId, categories }: ReviewFormProp
                 onClick={() => setIsCurrentResident(true)}
                 className={`flex-1 py-2 rounded-lg text-sm font-medium border ${
                   isCurrentResident
-                    ? "bg-[#6366F1] text-[#1A1F36] border-[#6366F1]"
-                    : "border-[#E2E8F0] text-[#5E6687] hover:bg-gray-50"
+                    ? "bg-[#3B82F6] text-[#0F1D2E] border-[#3B82F6]"
+                    : "border-[#e2e8f0] text-[#64748b] hover:bg-gray-50"
                 }`}
               >
                 Current Resident
@@ -312,8 +312,8 @@ export function ReviewForm({ preselectedBuildingId, categories }: ReviewFormProp
                 onClick={() => setIsCurrentResident(false)}
                 className={`flex-1 py-2 rounded-lg text-sm font-medium border ${
                   !isCurrentResident
-                    ? "bg-[#6366F1] text-[#1A1F36] border-[#6366F1]"
-                    : "border-[#E2E8F0] text-[#5E6687] hover:bg-gray-50"
+                    ? "bg-[#3B82F6] text-[#0F1D2E] border-[#3B82F6]"
+                    : "border-[#e2e8f0] text-[#64748b] hover:bg-gray-50"
                 }`}
               >
                 Past Resident
@@ -326,10 +326,10 @@ export function ReviewForm({ preselectedBuildingId, categories }: ReviewFormProp
       {/* Step 1: Category Ratings */}
       {step === 1 && (
         <div className="space-y-6">
-          <h2 className="text-xl font-bold text-[#1A1F36]">
+          <h2 className="text-xl font-bold text-[#0F1D2E]">
             Rate Your Experience
           </h2>
-          <p className="text-sm text-[#5E6687]">
+          <p className="text-sm text-[#64748b]">
             Rate each category and flag specific issues you experienced.
           </p>
 
@@ -340,14 +340,14 @@ export function ReviewForm({ preselectedBuildingId, categories }: ReviewFormProp
             return (
               <div
                 key={cat.slug}
-                className="bg-white rounded-xl border border-[#E2E8F0] p-4"
+                className="bg-white rounded-xl border border-[#e2e8f0] p-4"
               >
                 <div className="flex items-center justify-between mb-2">
                   <div>
-                    <h3 className="text-sm font-semibold text-[#1A1F36]">
+                    <h3 className="text-sm font-semibold text-[#0F1D2E]">
                       {cat.name}
                     </h3>
-                    <p className="text-xs text-[#A3ACBE]">{cat.description}</p>
+                    <p className="text-xs text-[#94a3b8]">{cat.description}</p>
                   </div>
                   <StarRating
                     value={cr?.rating || 0}
@@ -357,8 +357,8 @@ export function ReviewForm({ preselectedBuildingId, categories }: ReviewFormProp
                 </div>
 
                 {cr && cr.rating > 0 && cr.rating <= 3 && (
-                  <div className="mt-3 pt-3 border-t border-[#E2E8F0]">
-                    <p className="text-xs text-[#5E6687] mb-2">
+                  <div className="mt-3 pt-3 border-t border-[#e2e8f0]">
+                    <p className="text-xs text-[#64748b] mb-2">
                       What issues did you experience?
                     </p>
                     <div className="flex flex-wrap gap-2">
@@ -373,8 +373,8 @@ export function ReviewForm({ preselectedBuildingId, categories }: ReviewFormProp
                             }
                             className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                               active
-                                ? "bg-[#6366F1] text-[#1A1F36]"
-                                : "bg-gray-100 text-[#5E6687] hover:bg-gray-200"
+                                ? "bg-[#3B82F6] text-[#0F1D2E]"
+                                : "bg-gray-100 text-[#64748b] hover:bg-gray-200"
                             }`}
                           >
                             {sub.name}
@@ -393,12 +393,12 @@ export function ReviewForm({ preselectedBuildingId, categories }: ReviewFormProp
       {/* Step 2: Details */}
       {step === 2 && (
         <div className="space-y-6">
-          <h2 className="text-xl font-bold text-[#1A1F36]">
+          <h2 className="text-xl font-bold text-[#0F1D2E]">
             Review Details
           </h2>
 
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-[#1A1F36]">
+            <label className="block text-sm font-medium text-[#0F1D2E]">
               Overall Rating *
             </label>
             <StarRating
@@ -417,7 +417,7 @@ export function ReviewForm({ preselectedBuildingId, categories }: ReviewFormProp
           />
 
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-[#1A1F36]">
+            <label className="block text-sm font-medium text-[#0F1D2E]">
               Your Review *
             </label>
             <textarea
@@ -425,10 +425,10 @@ export function ReviewForm({ preselectedBuildingId, categories }: ReviewFormProp
               onChange={(e) => setBody(e.target.value)}
               placeholder="Tell future renters what it's really like living here. Be specific about what you liked and didn't like..."
               rows={6}
-              className="w-full rounded-lg border border-[#E2E8F0] bg-white px-3 py-2 text-sm text-[#1A1F36] placeholder:text-[#A3ACBE] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
+              className="w-full rounded-lg border border-[#e2e8f0] bg-white px-3 py-2 text-sm text-[#0F1D2E] placeholder:text-[#94a3b8] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
               required
             />
-            <p className="text-xs text-[#A3ACBE]">
+            <p className="text-xs text-[#94a3b8]">
               {body.length}/5000 characters (minimum 10)
             </p>
           </div>
@@ -475,15 +475,15 @@ export function ReviewForm({ preselectedBuildingId, categories }: ReviewFormProp
       {/* Step 3: Review & Submit */}
       {step === 3 && (
         <div className="space-y-6">
-          <h2 className="text-xl font-bold text-[#1A1F36]">
+          <h2 className="text-xl font-bold text-[#0F1D2E]">
             Review Your Submission
           </h2>
 
-          <div className="bg-white rounded-xl border border-[#E2E8F0] p-6 space-y-4">
+          <div className="bg-white rounded-xl border border-[#e2e8f0] p-6 space-y-4">
             {selectedBuilding && (
               <div>
-                <p className="text-xs text-[#A3ACBE]">Building</p>
-                <p className="text-sm font-medium text-[#1A1F36]">
+                <p className="text-xs text-[#94a3b8]">Building</p>
+                <p className="text-sm font-medium text-[#0F1D2E]">
                   {selectedBuilding.full_address}
                   {unitNumber && ` · Unit ${unitNumber}`}
                 </p>
@@ -491,24 +491,24 @@ export function ReviewForm({ preselectedBuildingId, categories }: ReviewFormProp
             )}
 
             <div>
-              <p className="text-xs text-[#A3ACBE]">Overall Rating</p>
+              <p className="text-xs text-[#94a3b8]">Overall Rating</p>
               <StarRating value={overallRating} readonly size="md" />
             </div>
 
             <div>
-              <p className="text-xs text-[#A3ACBE]">Title</p>
-              <p className="text-sm font-medium text-[#1A1F36]">{title}</p>
+              <p className="text-xs text-[#94a3b8]">Title</p>
+              <p className="text-sm font-medium text-[#0F1D2E]">{title}</p>
             </div>
 
             <div>
-              <p className="text-xs text-[#A3ACBE]">Review</p>
-              <p className="text-sm text-[#5E6687] whitespace-pre-wrap">
+              <p className="text-xs text-[#94a3b8]">Review</p>
+              <p className="text-sm text-[#64748b] whitespace-pre-wrap">
                 {body}
               </p>
             </div>
 
             <div>
-              <p className="text-xs text-[#A3ACBE] mb-2">Category Ratings</p>
+              <p className="text-xs text-[#94a3b8] mb-2">Category Ratings</p>
               <div className="space-y-2">
                 {categoryRatings
                   .filter((cr) => cr.rating > 0)
@@ -518,12 +518,12 @@ export function ReviewForm({ preselectedBuildingId, categories }: ReviewFormProp
                     );
                     return (
                       <div key={cr.category_slug} className="flex items-center gap-2">
-                        <span className="text-sm text-[#5E6687] w-40">
+                        <span className="text-sm text-[#64748b] w-40">
                           {cat?.name}
                         </span>
                         <StarRating value={cr.rating} readonly size="sm" />
                         {cr.subcategory_flags.length > 0 && (
-                          <span className="text-xs text-[#A3ACBE]">
+                          <span className="text-xs text-[#94a3b8]">
                             ({cr.subcategory_flags.map((f) => f.replace(/_/g, " ")).join(", ")})
                           </span>
                         )}
@@ -534,7 +534,7 @@ export function ReviewForm({ preselectedBuildingId, categories }: ReviewFormProp
             </div>
 
             {(rentAmount || leaseType) && (
-              <div className="flex gap-4 text-sm text-[#5E6687]">
+              <div className="flex gap-4 text-sm text-[#64748b]">
                 {rentAmount && <span>Rent: ${parseInt(rentAmount).toLocaleString()}/mo</span>}
                 {leaseType && (
                   <span>

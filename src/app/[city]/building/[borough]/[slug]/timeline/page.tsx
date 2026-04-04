@@ -136,32 +136,32 @@ export default async function TimelinePage({
         <div className="mb-8 mt-4">
           <Link
             href={buildingHref}
-            className="inline-flex items-center gap-1 text-sm text-[#5E6687] hover:text-[#6366F1] transition-colors mb-4"
+            className="inline-flex items-center gap-1 text-sm text-[#64748b] hover:text-[#3B82F6] transition-colors mb-4"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Building
           </Link>
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-slate-100 rounded-lg">
-              <Clock className="w-6 h-6 text-[#5E6687]" />
+              <Clock className="w-6 h-6 text-[#475569]" />
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#1A1F36]">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#0F1D2E]">
               Full History Timeline
             </h1>
           </div>
-          <p className="text-[#5E6687] text-sm max-w-2xl">
+          <p className="text-[#64748b] text-sm max-w-2xl">
             {building.full_address} · {meta.fullName} ·{" "}
             <span className="font-medium">{events.length} total events</span>
           </p>
         </div>
 
         {events.length === 0 ? (
-          <div className="bg-white border border-[#E2E8F0] rounded-xl p-12 text-center">
-            <Clock className="w-12 h-12 text-[#A3ACBE] mx-auto mb-3" />
-            <p className="text-[#5E6687]">No recorded history for this building yet.</p>
+          <div className="bg-white border border-[#e2e8f0] rounded-xl p-12 text-center">
+            <Clock className="w-12 h-12 text-[#cbd5e1] mx-auto mb-3" />
+            <p className="text-[#64748b]">No recorded history for this building yet.</p>
           </div>
         ) : (
-          <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 sm:p-6">
+          <div className="bg-white border border-[#e2e8f0] rounded-xl p-5 sm:p-6">
             <TimelineView events={events} />
           </div>
         )}

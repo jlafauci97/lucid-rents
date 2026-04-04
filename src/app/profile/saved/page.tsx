@@ -26,7 +26,7 @@ export default async function SavedBuildingsPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-2xl font-bold text-[#1A1F36] mb-6">
+      <h1 className="text-2xl font-bold text-[#0F1D2E] mb-6">
         Saved Buildings
       </h1>
       {buildings.length > 0 ? (
@@ -38,11 +38,11 @@ export default async function SavedBuildingsPage() {
       ) : (
         <Card>
           <CardContent>
-            <p className="text-center text-[#5E6687] py-8">
+            <p className="text-center text-[#64748b] py-8">
               No saved buildings yet.{" "}
               <Link
                 href={cityPath("/search")}
-                className="text-[#6366F1] hover:text-[#4F46E5] font-medium"
+                className="text-[#3B82F6] hover:text-[#2563EB] font-medium"
               >
                 Search for buildings
               </Link>

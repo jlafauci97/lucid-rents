@@ -86,19 +86,19 @@ export function BuildingStep({
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-bold text-[#1A1F36]">
+      <h2 className="text-xl font-bold text-[#0F1D2E]">
         Select Your Building
       </h2>
 
       {selectedBuilding ? (
-        <div className="bg-white rounded-xl border border-[#E2E8F0] p-4 flex items-center justify-between">
+        <div className="bg-white rounded-xl border border-[#e2e8f0] p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <MapPin className="w-5 h-5 text-[#6366F1]" />
+            <MapPin className="w-5 h-5 text-[#3B82F6]" />
             <div>
-              <p className="text-sm font-medium text-[#1A1F36]">
+              <p className="text-sm font-medium text-[#0F1D2E]">
                 {selectedBuilding.full_address}
               </p>
-              <p className="text-xs text-[#5E6687]">
+              <p className="text-xs text-[#64748b]">
                 {selectedBuilding.borough}
               </p>
             </div>
@@ -114,21 +114,21 @@ export function BuildingStep({
       ) : (
         <div ref={searchRef} className="relative">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#A3ACBE]" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#94a3b8]" />
             <input
               type="text"
               value={buildingSearch}
               onChange={(e) => setBuildingSearch(e.target.value)}
               onFocus={() => buildingResults.length > 0 && setSearchOpen(true)}
               placeholder="Search for your building address..."
-              className="w-full pl-10 pr-4 py-3 rounded-lg border border-[#E2E8F0] bg-white text-sm text-[#1A1F36] placeholder:text-[#A3ACBE] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
+              className="w-full pl-10 pr-4 py-3 rounded-lg border border-[#e2e8f0] bg-white text-sm text-[#0F1D2E] placeholder:text-[#94a3b8] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
             />
             {searchLoading && (
-              <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#A3ACBE] animate-spin" />
+              <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#94a3b8] animate-spin" />
             )}
           </div>
           {searchOpen && buildingResults.length > 0 && (
-            <div className="absolute z-10 w-full mt-1 bg-white rounded-lg border border-[#E2E8F0] shadow-lg overflow-hidden">
+            <div className="absolute z-10 w-full mt-1 bg-white rounded-lg border border-[#e2e8f0] shadow-lg overflow-hidden">
               {buildingResults.map((b) => (
                 <button
                   key={b.id}
@@ -140,10 +140,10 @@ export function BuildingStep({
                   }}
                   className="w-full text-left px-4 py-3 hover:bg-gray-50 text-sm"
                 >
-                  <p className="font-medium text-[#1A1F36]">
+                  <p className="font-medium text-[#0F1D2E]">
                     {b.full_address}
                   </p>
-                  <p className="text-xs text-[#5E6687]">{b.borough}</p>
+                  <p className="text-xs text-[#64748b]">{b.borough}</p>
                 </button>
               ))}
             </div>
@@ -161,7 +161,7 @@ export function BuildingStep({
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-[#1A1F36]">
+          <label className="block text-sm font-medium text-[#0F1D2E]">
             Bedrooms *
           </label>
           <div className="flex flex-wrap gap-1.5">
@@ -172,8 +172,8 @@ export function BuildingStep({
                 onClick={() => onBedroomsChange(opt)}
                 className={`rounded-full px-3 py-1.5 text-sm font-medium border transition-colors ${
                   bedrooms === opt
-                    ? "bg-[#6366F1] text-white border-[#6366F1]"
-                    : "border-[#E2E8F0] text-[#5E6687] hover:bg-gray-50"
+                    ? "bg-[#3B82F6] text-white border-[#3B82F6]"
+                    : "border-[#e2e8f0] text-[#64748b] hover:bg-gray-50"
                 }`}
               >
                 {opt === "Studio" ? "Studio" : `${opt} BR`}
@@ -182,7 +182,7 @@ export function BuildingStep({
           </div>
         </div>
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-[#1A1F36]">
+          <label className="block text-sm font-medium text-[#0F1D2E]">
             Bathrooms *
           </label>
           <div className="flex flex-wrap gap-1.5">
@@ -193,8 +193,8 @@ export function BuildingStep({
                 onClick={() => onBathroomsChange(opt)}
                 className={`rounded-full px-3 py-1.5 text-sm font-medium border transition-colors ${
                   bathrooms === opt
-                    ? "bg-[#6366F1] text-white border-[#6366F1]"
-                    : "border-[#E2E8F0] text-[#5E6687] hover:bg-gray-50"
+                    ? "bg-[#3B82F6] text-white border-[#3B82F6]"
+                    : "border-[#e2e8f0] text-[#64748b] hover:bg-gray-50"
                 }`}
               >
                 {opt} BA
@@ -216,7 +216,7 @@ export function BuildingStep({
       />
 
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-[#1A1F36]">
+        <label className="block text-sm font-medium text-[#0F1D2E]">
           Display Preference
         </label>
         <div className="flex gap-2">
@@ -225,8 +225,8 @@ export function BuildingStep({
             onClick={() => onDisplayPreferenceChange("name")}
             className={`rounded-full px-4 py-1.5 text-sm font-medium border transition-colors ${
               displayPreference === "name"
-                ? "bg-[#6366F1] text-white border-[#6366F1]"
-                : "border-[#E2E8F0] text-[#5E6687] hover:bg-gray-50"
+                ? "bg-[#3B82F6] text-white border-[#3B82F6]"
+                : "border-[#e2e8f0] text-[#64748b] hover:bg-gray-50"
             }`}
           >
             First name + last initial
@@ -236,16 +236,16 @@ export function BuildingStep({
             onClick={() => onDisplayPreferenceChange("anonymous")}
             className={`rounded-full px-4 py-1.5 text-sm font-medium border transition-colors ${
               displayPreference === "anonymous"
-                ? "bg-[#6366F1] text-white border-[#6366F1]"
-                : "border-[#E2E8F0] text-[#5E6687] hover:bg-gray-50"
+                ? "bg-[#3B82F6] text-white border-[#3B82F6]"
+                : "border-[#e2e8f0] text-[#64748b] hover:bg-gray-50"
             }`}
           >
             Anonymous
           </button>
         </div>
-        <p className="text-xs text-[#A3ACBE]">
+        <p className="text-xs text-[#94a3b8]">
           Your review will appear as:{" "}
-          <span className="font-medium text-[#1A1F36]">
+          <span className="font-medium text-[#0F1D2E]">
             {displayPreference === "name" ? formatDisplayName() : "Anonymous"}
           </span>
         </p>

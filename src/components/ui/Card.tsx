@@ -11,7 +11,7 @@ export function Card({ children, className = "", hover = false, id }: CardProps)
   return (
     <div
       id={id}
-      className={`bg-white rounded-2xl border ${hover ? "hover:shadow-md transition-all cursor-pointer" : "shadow-sm"} ${className}`}
+      className={`bg-white rounded-xl border ${hover ? "hover:shadow-md transition-all cursor-pointer" : "shadow-sm"} ${className}`}
       style={{ borderColor: T.border }}
     >
       {children}

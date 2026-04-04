@@ -5,11 +5,11 @@ export default function BuildingNotFound() {
   return (
     <div className="min-h-[60vh] flex items-center justify-center">
       <div className="text-center max-w-md mx-auto px-4">
-        <Building2 className="w-12 h-12 text-[#A3ACBE] mx-auto mb-4" />
-        <h1 className="text-xl font-bold text-[#1A1F36] mb-2">
+        <Building2 className="w-12 h-12 text-[#94a3b8] mx-auto mb-4" />
+        <h1 className="text-xl font-bold text-[#0F1D2E] mb-2">
           Building Not Found
         </h1>
-        <p className="text-sm text-[#5E6687] mb-6">
+        <p className="text-sm text-[#64748b] mb-6">
           We couldn&apos;t find this building. It may have been removed or the
           address may be incorrect. Try searching for the building instead.
         </p>

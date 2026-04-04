@@ -22,7 +22,7 @@ export function PillToggle({
 }: PillToggleProps) {
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-[#1A1F36]">
+      <label className="block text-sm font-medium text-[#0F1D2E]">
         {label}
         {required && <span className="text-[#ef4444] ml-0.5">*</span>}
       </label>
@@ -36,8 +36,8 @@ export function PillToggle({
               onClick={() => onChange(option.value)}
               className={`rounded-full px-4 py-1.5 text-sm font-medium border transition-colors ${
                 isActive
-                  ? "bg-[#6366F1] text-white border-[#6366F1]"
-                  : "border-[#E2E8F0] text-[#5E6687] hover:bg-gray-50"
+                  ? "bg-[#3B82F6] text-white border-[#3B82F6]"
+                  : "border-[#e2e8f0] text-[#64748b] hover:bg-gray-50"
               }`}
             >
               {option.label}

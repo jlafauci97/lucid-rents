@@ -105,19 +105,19 @@ export default function TenantRightsGuidePage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <JsonLd data={faqJsonLd} />
-      <nav className="text-sm text-[#5E6687] mb-6">
-        <Link href="/" className="hover:text-[#6366F1]">Home</Link>
+      <nav className="text-sm text-[#64748b] mb-6">
+        <Link href="/" className="hover:text-[#3B82F6]">Home</Link>
         {" / "}
-        <span className="text-[#1A1F36]">NYC Tenant Rights Guide</span>
+        <span className="text-[#0F1D2E]">NYC Tenant Rights Guide</span>
       </nav>
 
-      <h1 className="text-3xl font-bold text-[#1A1F36] mb-2">
+      <h1 className="text-3xl font-bold text-[#0F1D2E] mb-2">
         NYC Tenant Rights Guide
       </h1>
-      <p className="text-sm text-[#A3ACBE] mb-4">
+      <p className="text-sm text-[#94a3b8] mb-4">
         Last updated: March 2026
       </p>
-      <p className="text-[#5E6687] text-sm sm:text-base max-w-3xl mb-10">
+      <p className="text-[#64748b] text-sm sm:text-base max-w-3xl mb-10">
         Whether you are signing your first NYC lease or have been renting for
         years, understanding your rights as a tenant is essential. This guide
         covers the key legal protections available to New York City renters.
@@ -125,7 +125,7 @@ export default function TenantRightsGuidePage() {
 
       <div className="space-y-10">
         {sections.map((section) => (
-          <section key={section.title} className="border border-[#E2E8F0] rounded-xl p-6">
+          <section key={section.title} className="border border-[#e2e8f0] rounded-xl p-6">
             <div className="flex items-center gap-3 mb-4">
               <div
                 className="p-2 rounded-lg"
@@ -136,11 +136,11 @@ export default function TenantRightsGuidePage() {
                   style={{ color: section.color }}
                 />
               </div>
-              <h2 className="text-lg font-bold text-[#1A1F36]">
+              <h2 className="text-lg font-bold text-[#0F1D2E]">
                 {section.title}
               </h2>
             </div>
-            <div className="text-sm leading-relaxed text-[#1A1F36] space-y-4">
+            <div className="text-sm leading-relaxed text-[#334155] space-y-4">
               {section.content.split("\n\n").map((para, i) => (
                 <p key={i}>{para}</p>
               ))}
@@ -150,10 +150,10 @@ export default function TenantRightsGuidePage() {
       </div>
 
       <section className="mt-10 bg-[#EFF6FF] rounded-xl p-6">
-        <h2 className="text-lg font-bold text-[#1A1F36] mb-3">
+        <h2 className="text-lg font-bold text-[#0F1D2E] mb-3">
           Free Legal Resources
         </h2>
-        <ul className="space-y-2 text-sm text-[#1A1F36]">
+        <ul className="space-y-2 text-sm text-[#334155]">
           <li>
             <strong>Right to Counsel NYC:</strong> Free legal representation
             for tenants facing eviction &mdash; 917-661-4500
@@ -177,7 +177,7 @@ export default function TenantRightsGuidePage() {
         </ul>
       </section>
 
-      <p className="text-xs text-[#A3ACBE] mt-8">
+      <p className="text-xs text-[#94a3b8] mt-8">
         This guide is for informational purposes only and does not constitute
         legal advice. Laws and regulations change frequently. For
         advice specific to your situation, consult a licensed attorney or

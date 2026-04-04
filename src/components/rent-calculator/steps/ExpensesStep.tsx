@@ -97,10 +97,10 @@ export function ExpensesStep({
   return (
     <div className="max-w-lg mx-auto">
       <div className="mb-6">
-        <h2 className="text-xl font-bold text-[#1A1F36] mb-1">
+        <h2 className="text-xl font-bold text-[#0F1D2E] mb-1">
           Monthly expenses & debts
         </h2>
-        <p className="text-sm text-[#5E6687]">
+        <p className="text-sm text-[#64748b]">
           Tell us about your recurring monthly obligations. We only need debts
           and housing costs — skip groceries and subscriptions.
         </p>
@@ -109,8 +109,8 @@ export function ExpensesStep({
       <div className="space-y-4">
         {fields.map((field) => (
           <div key={field.key} className="flex items-start gap-3">
-            <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-[#FAFBFD] border border-[#E2E8F0] flex-shrink-0 mt-6">
-              <field.icon className="w-4 h-4 text-[#5E6687]" />
+            <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-[#f8fafc] border border-[#e2e8f0] flex-shrink-0 mt-6">
+              <field.icon className="w-4 h-4 text-[#64748b]" />
             </div>
             <div className="flex-1">
               <Input
@@ -121,18 +121,18 @@ export function ExpensesStep({
                 value={expenses[field.key] > 0 ? expenses[field.key].toLocaleString() : ""}
                 onChange={(e) => handleChange(field.key, e.target.value)}
               />
-              <p className="text-[10px] text-[#A3ACBE] mt-0.5">{field.hint}</p>
+              <p className="text-[10px] text-[#94a3b8] mt-0.5">{field.hint}</p>
             </div>
           </div>
         ))}
       </div>
 
       {/* Running total */}
-      <div className="mt-6 bg-[#FAFBFD] border border-[#E2E8F0] rounded-lg px-4 py-3 flex items-center justify-between">
-        <span className="text-sm font-medium text-[#5E6687]">
+      <div className="mt-6 bg-[#f8fafc] border border-[#e2e8f0] rounded-lg px-4 py-3 flex items-center justify-between">
+        <span className="text-sm font-medium text-[#64748b]">
           Total monthly obligations
         </span>
-        <span className="text-lg font-bold text-[#1A1F36]">
+        <span className="text-lg font-bold text-[#0F1D2E]">
           {formatCurrency(totalExpenses)}
         </span>
       </div>

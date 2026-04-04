@@ -11,16 +11,16 @@ export const metadata: Metadata = {
 export default function TermsOfServicePage() {
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <h1 className="text-3xl font-bold text-[#1A1F36] mb-2">
+      <h1 className="text-3xl font-bold text-[#0F1D2E] mb-2">
         Terms of Service
       </h1>
-      <p className="text-sm text-[#A3ACBE] mb-8">
+      <p className="text-sm text-[#94a3b8] mb-8">
         Last updated: April 2, 2026
       </p>
 
-      <div className="prose prose-slate max-w-none space-y-6 text-[#1A1F36] text-sm leading-relaxed">
+      <div className="prose prose-slate max-w-none space-y-6 text-[#334155] text-sm leading-relaxed">
         <section>
-          <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
+          <h2 className="text-lg font-semibold text-[#0F1D2E] mb-2">
             1. Acceptance of Terms
           </h2>
           <p>
@@ -30,7 +30,7 @@ export default function TermsOfServicePage() {
             Rents,&quot; &quot;we,&quot; &quot;us,&quot; &quot;our&quot;), you
             acknowledge that you have read, understood, and agree to be bound
             by these Terms of Service (&quot;Terms&quot;), our{" "}
-            <a href="/privacy" className="text-[#6366F1] hover:underline">
+            <a href="/privacy" className="text-[#3B82F6] hover:underline">
               Privacy Policy
             </a>
             , and all applicable laws and regulations. If you do not agree to
@@ -46,7 +46,7 @@ export default function TermsOfServicePage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
+          <h2 className="text-lg font-semibold text-[#0F1D2E] mb-2">
             2. Description of Service
           </h2>
           <p>
@@ -66,7 +66,7 @@ export default function TermsOfServicePage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
+          <h2 className="text-lg font-semibold text-[#0F1D2E] mb-2">
             3. CRITICAL DISCLAIMER — NOT A BASIS FOR DECISION-MAKING
           </h2>
           <p className="font-semibold uppercase">
@@ -121,7 +121,7 @@ export default function TermsOfServicePage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
+          <h2 className="text-lg font-semibold text-[#0F1D2E] mb-2">
             4. Data Accuracy and Limitations
           </h2>
           <p>
@@ -190,7 +190,7 @@ export default function TermsOfServicePage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
+          <h2 className="text-lg font-semibold text-[#0F1D2E] mb-2">
             5. No Professional Relationship
           </h2>
           <p>
@@ -220,7 +220,7 @@ export default function TermsOfServicePage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
+          <h2 className="text-lg font-semibold text-[#0F1D2E] mb-2">
             6. Fair Housing Compliance
           </h2>
           <p>
@@ -255,7 +255,7 @@ export default function TermsOfServicePage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
+          <h2 className="text-lg font-semibold text-[#0F1D2E] mb-2">
             7. User Accounts
           </h2>
           <ul className="list-disc pl-5 space-y-1">
@@ -289,7 +289,7 @@ export default function TermsOfServicePage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
+          <h2 className="text-lg font-semibold text-[#0F1D2E] mb-2">
             8. User-Generated Content (Reviews)
           </h2>
           <p>
@@ -356,7 +356,7 @@ export default function TermsOfServicePage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
+          <h2 className="text-lg font-semibold text-[#0F1D2E] mb-2">
             9. Section 230 Notice
           </h2>
           <p>
@@ -372,7 +372,7 @@ export default function TermsOfServicePage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
+          <h2 className="text-lg font-semibold text-[#0F1D2E] mb-2">
             10. Prohibited Uses
           </h2>
           <p>You agree not to:</p>
@@ -439,7 +439,7 @@ export default function TermsOfServicePage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
+          <h2 className="text-lg font-semibold text-[#0F1D2E] mb-2">
             11. Intellectual Property
           </h2>
           <p>
@@ -460,7 +460,7 @@ export default function TermsOfServicePage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
+          <h2 className="text-lg font-semibold text-[#0F1D2E] mb-2">
             12. DMCA and Copyright Claims
           </h2>
           <p>
@@ -468,7 +468,7 @@ export default function TermsOfServicePage() {
             please send a notice to our designated DMCA agent at{" "}
             <a
               href="mailto:legal@lucidrents.com"
-              className="text-[#6366F1] hover:underline"
+              className="text-[#3B82F6] hover:underline"
             >
               legal@lucidrents.com
             </a>{" "}
@@ -498,7 +498,7 @@ export default function TermsOfServicePage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
+          <h2 className="text-lg font-semibold text-[#0F1D2E] mb-2">
             13. Disclaimers and Warranty Exclusion
           </h2>
           <p className="font-semibold uppercase">
@@ -553,7 +553,7 @@ export default function TermsOfServicePage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
+          <h2 className="text-lg font-semibold text-[#0F1D2E] mb-2">
             14. Limitation of Liability
           </h2>
           <p className="font-semibold uppercase">
@@ -617,7 +617,7 @@ export default function TermsOfServicePage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
+          <h2 className="text-lg font-semibold text-[#0F1D2E] mb-2">
             15. Assumption of Risk
           </h2>
           <p>
@@ -633,7 +633,7 @@ export default function TermsOfServicePage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
+          <h2 className="text-lg font-semibold text-[#0F1D2E] mb-2">
             16. Indemnification
           </h2>
           <p>
@@ -668,7 +668,7 @@ export default function TermsOfServicePage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
+          <h2 className="text-lg font-semibold text-[#0F1D2E] mb-2">
             17. Binding Arbitration and Class Action Waiver
           </h2>
           <p className="font-semibold">
@@ -715,7 +715,7 @@ export default function TermsOfServicePage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
+          <h2 className="text-lg font-semibold text-[#0F1D2E] mb-2">
             18. Third-Party Links, Data, and Services
           </h2>
           <p>
@@ -736,7 +736,7 @@ export default function TermsOfServicePage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
+          <h2 className="text-lg font-semibold text-[#0F1D2E] mb-2">
             19. Termination
           </h2>
           <p>
@@ -752,7 +752,7 @@ export default function TermsOfServicePage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
+          <h2 className="text-lg font-semibold text-[#0F1D2E] mb-2">
             20. Modifications to Terms
           </h2>
           <p>
@@ -767,7 +767,7 @@ export default function TermsOfServicePage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
+          <h2 className="text-lg font-semibold text-[#0F1D2E] mb-2">
             21. Governing Law and Jurisdiction
           </h2>
           <p>
@@ -783,7 +783,7 @@ export default function TermsOfServicePage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
+          <h2 className="text-lg font-semibold text-[#0F1D2E] mb-2">
             22. Severability
           </h2>
           <p>
@@ -799,7 +799,7 @@ export default function TermsOfServicePage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
+          <h2 className="text-lg font-semibold text-[#0F1D2E] mb-2">
             23. Entire Agreement
           </h2>
           <p>
@@ -813,7 +813,7 @@ export default function TermsOfServicePage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
+          <h2 className="text-lg font-semibold text-[#0F1D2E] mb-2">
             24. Waiver
           </h2>
           <p>
@@ -825,7 +825,7 @@ export default function TermsOfServicePage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
+          <h2 className="text-lg font-semibold text-[#0F1D2E] mb-2">
             25. Force Majeure
           </h2>
           <p>
@@ -838,7 +838,7 @@ export default function TermsOfServicePage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
+          <h2 className="text-lg font-semibold text-[#0F1D2E] mb-2">
             26. Contact
           </h2>
           <p>
@@ -846,7 +846,7 @@ export default function TermsOfServicePage() {
             Terms, contact us at{" "}
             <a
               href="mailto:legal@lucidrents.com"
-              className="text-[#6366F1] hover:underline"
+              className="text-[#3B82F6] hover:underline"
             >
               legal@lucidrents.com
             </a>

@@ -100,7 +100,7 @@ export function NearbyCrimeSummary({ zipCode }: NearbyCrimeSummaryProps) {
           </div>
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#6366F1]" />
+              <span className="w-2 h-2 rounded-full bg-[#3B82F6]" />
               <span className="text-[#5E6687]">Quality of Life</span>
             </div>
             <span className="font-semibold text-[#1A1F36]">

@@ -52,7 +52,7 @@ export default function RentTimingCalculatorPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAFBFD]">
+    <div className="min-h-screen bg-[#f8fafc]">
       {/* JSON-LD */}
       <script
         type="application/ld+json"
@@ -77,7 +77,7 @@ export default function RentTimingCalculatorPage() {
         <Suspense
           fallback={
             <div className="flex items-center justify-center py-20">
-              <div className="w-6 h-6 border-2 border-[#6366F1] border-t-transparent rounded-full animate-spin" />
+              <div className="w-6 h-6 border-2 border-[#3B82F6] border-t-transparent rounded-full animate-spin" />
             </div>
           }
         >
@@ -85,7 +85,7 @@ export default function RentTimingCalculatorPage() {
         </Suspense>
 
         {/* Disclaimer */}
-        <div className="mt-8 border-t border-[#E2E8F0] pt-6">
+        <div className="mt-8 border-t border-[#e2e8f0] pt-6">
           <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
             <svg
               className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0"

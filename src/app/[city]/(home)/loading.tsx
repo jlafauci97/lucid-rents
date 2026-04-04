@@ -11,7 +11,7 @@ export default function CityLoading() {
       </div>
 
       {/* Stats skeleton */}
-      <div className="border-b border-[#E2E8F0] py-8">
+      <div className="border-b border-[#e2e8f0] py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {[...Array(4)].map((_, i) => (
@@ -31,7 +31,7 @@ export default function CityLoading() {
           <div className="h-8 w-48 bg-[#e2e8f0] rounded mx-auto mb-6" />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="h-40 bg-[#F5F7FA] rounded-xl" />
+              <div key={i} className="h-40 bg-[#f1f5f9] rounded-xl" />
             ))}
           </div>
         </div>

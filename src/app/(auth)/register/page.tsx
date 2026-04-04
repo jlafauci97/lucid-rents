@@ -53,11 +53,11 @@ export default function RegisterPage() {
     return (
       <div className="min-h-[60vh] flex items-center justify-center px-4">
         <div className="w-full max-w-md text-center">
-          <div className="bg-white rounded-xl border border-[#E2E8F0] p-8">
-            <h2 className="text-xl font-bold text-[#1A1F36] mb-2">
+          <div className="bg-white rounded-xl border border-[#e2e8f0] p-8">
+            <h2 className="text-xl font-bold text-[#0F1D2E] mb-2">
               Check Your Email
             </h2>
-            <p className="text-sm text-[#5E6687]">
+            <p className="text-sm text-[#64748b]">
               We sent a confirmation link to <strong>{email}</strong>. Click
               the link to activate your account.
             </p>
@@ -71,21 +71,21 @@ export default function RegisterPage() {
     <div className="min-h-[60vh] flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-[#1A1F36]">Create Account</h1>
-          <p className="text-sm text-[#5E6687] mt-1">
+          <h1 className="text-2xl font-bold text-[#0F1D2E]">Create Account</h1>
+          <p className="text-sm text-[#64748b] mt-1">
             Join Lucid Rents and share your apartment experience
           </p>
         </div>
 
-        <div className="bg-white rounded-xl border border-[#E2E8F0] p-8">
+        <div className="bg-white rounded-xl border border-[#e2e8f0] p-8">
           <SocialAuthButtons />
 
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-[#E2E8F0]" />
+              <div className="w-full border-t border-[#e2e8f0]" />
             </div>
             <div className="relative flex justify-center text-xs">
-              <span className="bg-white px-2 text-[#A3ACBE]">
+              <span className="bg-white px-2 text-[#94a3b8]">
                 or sign up with email
               </span>
             </div>
@@ -125,11 +125,11 @@ export default function RegisterPage() {
           </form>
         </div>
 
-        <p className="text-center text-sm text-[#5E6687] mt-4">
+        <p className="text-center text-sm text-[#64748b] mt-4">
           Already have an account?{" "}
           <Link
             href="/login"
-            className="text-[#6366F1] hover:text-[#4F46E5] font-medium"
+            className="text-[#3B82F6] hover:text-[#2563EB] font-medium"
           >
             Log in
           </Link>

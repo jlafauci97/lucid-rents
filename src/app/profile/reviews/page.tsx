@@ -25,7 +25,7 @@ export default async function MyReviewsPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-2xl font-bold text-[#1A1F36] mb-6">My Reviews</h1>
+      <h1 className="text-2xl font-bold text-[#0F1D2E] mb-6">My Reviews</h1>
       {reviews && reviews.length > 0 ? (
         <div className="space-y-4">
           {reviews.map((review) => {
@@ -38,15 +38,15 @@ export default async function MyReviewsPage() {
                   <Link href={building ? buildingUrl(building) : "#"}>
                     <div className="flex items-start justify-between">
                       <div>
-                        <p className="text-base font-semibold text-[#1A1F36]">
+                        <p className="text-base font-semibold text-[#0F1D2E]">
                           {building?.full_address}
                         </p>
-                        <p className="text-sm text-[#5E6687]">
+                        <p className="text-sm text-[#64748b]">
                           {building?.borough} ·{" "}
                           {formatRelativeDate(review.created_at)}
                         </p>
                         {title ? (
-                          <p className="text-sm text-[#1A1F36] mt-2">
+                          <p className="text-sm text-[#0F1D2E] mt-2">
                             {title}
                           </p>
                         ) : null}
@@ -79,11 +79,11 @@ export default async function MyReviewsPage() {
       ) : (
         <Card>
           <CardContent>
-            <p className="text-center text-[#5E6687] py-8">
+            <p className="text-center text-[#64748b] py-8">
               You haven&apos;t written any reviews yet.{" "}
               <Link
                 href={cityPath("/review/new")}
-                className="text-[#6366F1] hover:text-[#4F46E5] font-medium"
+                className="text-[#3B82F6] hover:text-[#2563EB] font-medium"
               >
                 Write your first review
               </Link>

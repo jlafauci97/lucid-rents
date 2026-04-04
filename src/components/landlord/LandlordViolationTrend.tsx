@@ -53,7 +53,7 @@ function TrendBadge({ trend }: { trend: "improving" | "declining" | "stable" }) 
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#F5F7FA] text-[#5E6687]">
+    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#f1f5f9] text-[#64748b]">
       <Minus className="w-3.5 h-3.5" />
       Stable
     </span>
@@ -79,8 +79,8 @@ export function LandlordViolationTrend({ landlordName }: { landlordName: string 
           <div className="h-6 w-48 bg-[#e2e8f0] rounded animate-pulse" />
         </CardHeader>
         <CardContent>
-          <div className="h-[300px] w-full bg-[#FAFBFD] rounded-lg animate-pulse flex items-center justify-center">
-            <span className="text-[#A3ACBE] text-sm">Loading trend data...</span>
+          <div className="h-[300px] w-full bg-[#f8fafc] rounded-lg animate-pulse flex items-center justify-center">
+            <span className="text-[#94a3b8] text-sm">Loading trend data...</span>
           </div>
         </CardContent>
       </Card>
@@ -102,10 +102,10 @@ export function LandlordViolationTrend({ landlordName }: { landlordName: string 
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold text-[#1A1F36]">Violation & Complaint Trend</h2>
+          <h2 className="text-xl font-bold text-[#0F1D2E]">Violation & Complaint Trend</h2>
           <TrendBadge trend={data.trend} />
         </div>
-        <p className="text-sm text-[#5E6687] mt-1">
+        <p className="text-sm text-[#64748b] mt-1">
           Monthly violations and complaints across all properties
         </p>
       </CardHeader>

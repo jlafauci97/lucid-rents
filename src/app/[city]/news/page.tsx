@@ -96,10 +96,10 @@ export default async function NewsPage({
 
         {/* Header */}
         <div className="mb-6 mt-4">
-          <h1 className="text-2xl font-bold text-[#1A1F36]">
+          <h1 className="text-2xl font-bold text-[#0F1D2E]">
             {cityName} Housing News
           </h1>
-          <p className="text-sm text-[#5E6687] mt-1">
+          <p className="text-sm text-[#64748b] mt-1">
             Latest news on {cityName} rentals, tenant rights, and housing policy
           </p>
         </div>
@@ -116,7 +116,7 @@ export default async function NewsPage({
             <Link
               key={slug}
               href={cityPath(`/news/${slug}`, cityParam as import("@/lib/cities").City)}
-              className="px-3 py-1.5 text-sm font-medium rounded-full bg-[#F5F7FA] text-[#5E6687] hover:bg-[#e2e8f0] transition-colors"
+              className="px-3 py-1.5 text-sm font-medium rounded-full bg-[#f1f5f9] text-[#475569] hover:bg-[#e2e8f0] transition-colors"
             >
               {meta.label}
             </Link>
@@ -137,9 +137,9 @@ export default async function NewsPage({
 
           {/* Sidebar */}
           <aside className="hidden lg:block space-y-6">
-            <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm overflow-hidden">
-              <div className="px-4 py-3 border-b border-[#E2E8F0]">
-                <h3 className="text-sm font-bold text-[#1A1F36]">
+            <div className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm overflow-hidden">
+              <div className="px-4 py-3 border-b border-[#e2e8f0]">
+                <h3 className="text-sm font-bold text-[#0F1D2E]">
                   Categories
                 </h3>
               </div>
@@ -148,7 +148,7 @@ export default async function NewsPage({
                   <Link
                     key={slug}
                     href={cityPath(`/news/${slug}`, cityParam as import("@/lib/cities").City)}
-                    className="flex items-start gap-3 px-4 py-3 hover:bg-[#FAFBFD] transition-colors"
+                    className="flex items-start gap-3 px-4 py-3 hover:bg-[#f8fafc] transition-colors"
                   >
                     <div
                       className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
@@ -157,10 +157,10 @@ export default async function NewsPage({
                       <CategoryIcon icon={meta.icon} color={meta.color} />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-[#1A1F36]">
+                      <p className="text-sm font-medium text-[#0F1D2E]">
                         {meta.label}
                       </p>
-                      <p className="text-xs text-[#A3ACBE] mt-0.5">
+                      <p className="text-xs text-[#94a3b8] mt-0.5">
                         {meta.description}
                       </p>
                     </div>

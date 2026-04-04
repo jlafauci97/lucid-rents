@@ -54,7 +54,7 @@ export default function RentCalculatorPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAFBFD]">
+    <div className="min-h-screen bg-[#f8fafc]">
       {/* JSON-LD */}
       <script
         type="application/ld+json"
@@ -79,7 +79,7 @@ export default function RentCalculatorPage() {
         <Suspense
           fallback={
             <div className="flex items-center justify-center py-20">
-              <div className="w-6 h-6 border-2 border-[#6366F1] border-t-transparent rounded-full animate-spin" />
+              <div className="w-6 h-6 border-2 border-[#3B82F6] border-t-transparent rounded-full animate-spin" />
             </div>
           }
         >

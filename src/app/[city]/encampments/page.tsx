@@ -106,11 +106,11 @@ export default async function EncampmentsPage({
             <div className="p-2 bg-[#FEF3C7] rounded-lg">
               <Tent className="w-6 h-6 text-[#D97706]" />
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#1A1F36]">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#0F1D2E]">
               Homeless Encampment Reports
             </h1>
           </div>
-          <p className="text-[#5E6687] text-sm sm:text-base">
+          <p className="text-[#64748b] text-sm sm:text-base">
             LA 311 service requests for homeless encampments across{" "}
             {meta.fullName}. Data updated periodically from the City of Los
             Angeles MyLA311 system.
@@ -119,27 +119,27 @@ export default async function EncampmentsPage({
 
         {/* Summary stats */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
-            <p className="text-xs text-[#5E6687] font-medium uppercase tracking-wide">
+          <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
+            <p className="text-xs text-[#64748b] font-medium uppercase tracking-wide">
               Total Reports
             </p>
-            <p className="text-2xl font-bold text-[#1A1F36] mt-1">
+            <p className="text-2xl font-bold text-[#0F1D2E] mt-1">
               {stats.total.toLocaleString()}
             </p>
           </div>
-          <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
+          <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
             <p className="text-xs text-[#F59E0B] font-medium uppercase tracking-wide">
               Last 90 Days
             </p>
-            <p className="text-2xl font-bold text-[#1A1F36] mt-1">
+            <p className="text-2xl font-bold text-[#0F1D2E] mt-1">
               {stats.recent.toLocaleString()}
             </p>
           </div>
-          <div className="bg-white border border-[#E2E8F0] rounded-xl p-4 col-span-2 sm:col-span-1">
+          <div className="bg-white border border-[#e2e8f0] rounded-xl p-4 col-span-2 sm:col-span-1">
             <p className="text-xs text-[#EF4444] font-medium uppercase tracking-wide">
               Open / Pending
             </p>
-            <p className="text-2xl font-bold text-[#1A1F36] mt-1">
+            <p className="text-2xl font-bold text-[#0F1D2E] mt-1">
               {stats.open.toLocaleString()}
             </p>
           </div>
@@ -156,14 +156,14 @@ export default async function EncampmentsPage({
             href="https://homeless.lacounty.gov/ua-homeless-encampment-dashboard/"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-start gap-3 bg-white border border-[#E2E8F0] rounded-xl p-4 hover:border-[#6366F1] hover:shadow-sm transition-all group"
+            className="flex items-start gap-3 bg-white border border-[#e2e8f0] rounded-xl p-4 hover:border-[#3B82F6] hover:shadow-sm transition-all group"
           >
-            <ExternalLink className="w-5 h-5 text-[#6366F1] mt-0.5 flex-shrink-0" />
+            <ExternalLink className="w-5 h-5 text-[#3B82F6] mt-0.5 flex-shrink-0" />
             <div>
-              <p className="text-sm font-semibold text-[#1A1F36] group-hover:text-[#6366F1]">
+              <p className="text-sm font-semibold text-[#0F1D2E] group-hover:text-[#3B82F6]">
                 LA County Encampment Dashboard
               </p>
-              <p className="text-xs text-[#5E6687] mt-0.5">
+              <p className="text-xs text-[#64748b] mt-0.5">
                 Official LA County dashboard with encampment tracking, cleanup
                 schedules, and outreach data.
               </p>
@@ -173,14 +173,14 @@ export default async function EncampmentsPage({
             href="https://www.lahsa.org/"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-start gap-3 bg-white border border-[#E2E8F0] rounded-xl p-4 hover:border-[#6366F1] hover:shadow-sm transition-all group"
+            className="flex items-start gap-3 bg-white border border-[#e2e8f0] rounded-xl p-4 hover:border-[#3B82F6] hover:shadow-sm transition-all group"
           >
-            <ExternalLink className="w-5 h-5 text-[#6366F1] mt-0.5 flex-shrink-0" />
+            <ExternalLink className="w-5 h-5 text-[#3B82F6] mt-0.5 flex-shrink-0" />
             <div>
-              <p className="text-sm font-semibold text-[#1A1F36] group-hover:text-[#6366F1]">
+              <p className="text-sm font-semibold text-[#0F1D2E] group-hover:text-[#3B82F6]">
                 LAHSA — Homeless Services Authority
               </p>
-              <p className="text-xs text-[#5E6687] mt-0.5">
+              <p className="text-xs text-[#64748b] mt-0.5">
                 Resources, shelter access, outreach programs, and the annual
                 homeless count data.
               </p>

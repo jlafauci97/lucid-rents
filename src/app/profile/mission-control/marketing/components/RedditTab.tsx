@@ -83,7 +83,7 @@ export function RedditTab() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16 text-[#5E6687]">
+      <div className="flex items-center justify-center py-16 text-[#64748b]">
         <RefreshCw className="h-5 w-5 animate-spin mr-2" />
         Loading Reddit threads...
       </div>
@@ -104,7 +104,7 @@ export function RedditTab() {
               className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
                 filter === key
                   ? "bg-[#0F1D2E] text-white"
-                  : "bg-gray-100 text-[#5E6687] hover:bg-gray-200"
+                  : "bg-gray-100 text-[#64748b] hover:bg-gray-200"
               }`}
             >
               {label}
@@ -127,7 +127,7 @@ export function RedditTab() {
         <Card>
           <CardContent className="py-16 text-center">
             <MessageSquare className="h-10 w-10 mx-auto text-[#e2e8f0] mb-3" />
-            <p className="text-[#5E6687]">
+            <p className="text-[#64748b]">
               {filter === "draft_ready"
                 ? "No Reddit threads awaiting review"
                 : `No ${filter === "all" ? "" : filter} threads`}
@@ -145,17 +145,17 @@ export function RedditTab() {
                 <div className="flex items-center gap-2 mb-1">
                   <Badge variant="info">r/{thread.subreddit}</Badge>
                   {thread.relevance_score != null && (
-                    <span className="text-xs text-[#5E6687]">
+                    <span className="text-xs text-[#64748b]">
                       Score: {thread.relevance_score}
                     </span>
                   )}
-                  <span className="text-xs text-[#5E6687]">
+                  <span className="text-xs text-[#64748b]">
                     {formatRelativeTime(thread.created_at)}
                   </span>
                 </div>
                 {thread.title && (
                   <div className="flex items-center gap-1">
-                    <h3 className="text-sm font-medium text-[#1A1F36] truncate">
+                    <h3 className="text-sm font-medium text-[#0F1D2E] truncate">
                       {thread.title}
                     </h3>
                     {thread.url && (
@@ -165,7 +165,7 @@ export function RedditTab() {
                         rel="noopener noreferrer"
                         className="flex-shrink-0"
                       >
-                        <ExternalLink className="h-3.5 w-3.5 text-[#5E6687] hover:text-[#6366F1]" />
+                        <ExternalLink className="h-3.5 w-3.5 text-[#64748b] hover:text-[#3B82F6]" />
                       </a>
                     )}
                   </div>
@@ -179,7 +179,7 @@ export function RedditTab() {
                 {thread.keywords_matched.map((kw) => (
                   <span
                     key={kw}
-                    className="px-2 py-0.5 bg-gray-100 text-[#5E6687] text-xs rounded"
+                    className="px-2 py-0.5 bg-gray-100 text-[#64748b] text-xs rounded"
                   >
                     {kw}
                   </span>
@@ -189,7 +189,7 @@ export function RedditTab() {
 
             {/* Reply */}
             {isReadOnly ? (
-              <div className="rounded-lg bg-gray-50 border border-[#E2E8F0] px-3 py-2 text-sm text-[#1A1F36] whitespace-pre-wrap">
+              <div className="rounded-lg bg-gray-50 border border-[#e2e8f0] px-3 py-2 text-sm text-[#0F1D2E] whitespace-pre-wrap">
                 {thread.draft_reply ?? "No reply"}
               </div>
             ) : (
@@ -202,7 +202,7 @@ export function RedditTab() {
                   }))
                 }
                 rows={4}
-                className="w-full rounded-lg border border-[#E2E8F0] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6] resize-y"
+                className="w-full rounded-lg border border-[#e2e8f0] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6] resize-y"
               />
             )}
 
@@ -230,7 +230,7 @@ export function RedditTab() {
 
             {/* Status + timestamp for non-pending */}
             {isReadOnly && thread.replied_at && (
-              <p className="text-xs text-[#5E6687]">
+              <p className="text-xs text-[#64748b]">
                 Replied {formatRelativeTime(thread.replied_at)}
               </p>
             )}

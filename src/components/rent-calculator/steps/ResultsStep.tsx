@@ -129,17 +129,17 @@ export function ResultsStep({
     <div className="max-w-3xl mx-auto">
       {/* ── Section A: Affordability Summary ────────────────── */}
       <div className="text-center mb-6">
-        <h2 className="text-xl font-bold text-[#1A1F36] mb-1">
+        <h2 className="text-xl font-bold text-[#0F1D2E] mb-1">
           Your Rent Affordability
         </h2>
-        <p className="text-sm text-[#5E6687]">
+        <p className="text-sm text-[#64748b]">
           Based on expert financial guidelines, here&rsquo;s what you can
           comfortably spend on rent.
         </p>
       </div>
 
       {/* Gauge */}
-      <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm p-6 mb-4">
+      <div className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm p-6 mb-4">
         <AffordabilityGauge
           recommendedMax={result.recommendedMax}
           rentToIncomePercent={result.rentToIncomePercent}
@@ -154,30 +154,30 @@ export function ResultsStep({
                 key={rule.label}
                 className={`rounded-lg border px-4 py-3 text-center ${
                   isMin
-                    ? "border-[#6366F1] bg-[#6366F1]/5"
-                    : "border-[#E2E8F0]"
+                    ? "border-[#3B82F6] bg-[#3B82F6]/5"
+                    : "border-[#e2e8f0]"
                 }`}
               >
                 <rule.icon
                   className={`w-4 h-4 mx-auto mb-1 ${
-                    isMin ? "text-[#6366F1]" : "text-[#A3ACBE]"
+                    isMin ? "text-[#3B82F6]" : "text-[#94a3b8]"
                   }`}
                 />
-                <p className="text-xs font-medium text-[#5E6687]">
+                <p className="text-xs font-medium text-[#64748b]">
                   {rule.label}
                 </p>
                 <p
                   className={`text-lg font-bold ${
-                    isMin ? "text-[#6366F1]" : "text-[#1A1F36]"
+                    isMin ? "text-[#3B82F6]" : "text-[#0F1D2E]"
                   }`}
                 >
                   {formatCurrency(rule.value)}
                 </p>
-                <p className="text-[10px] text-[#A3ACBE] mt-0.5">
+                <p className="text-[10px] text-[#94a3b8] mt-0.5">
                   {rule.description}
                 </p>
                 {isMin && (
-                  <span className="inline-block text-[10px] font-semibold text-[#6366F1] bg-[#6366F1]/10 rounded-full px-2 py-0.5 mt-1">
+                  <span className="inline-block text-[10px] font-semibold text-[#3B82F6] bg-[#3B82F6]/10 rounded-full px-2 py-0.5 mt-1">
                     Recommended
                   </span>
                 )}
@@ -188,20 +188,20 @@ export function ResultsStep({
       </div>
 
       {/* ── Section B: Budget Breakdown ─────────────────────── */}
-      <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm p-6 mb-4">
+      <div className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm p-6 mb-4">
         <BudgetBreakdownChart breakdown={result.budgetBreakdown} />
       </div>
 
       {/* ── "What If" Slider ────────────────────────────────── */}
-      <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm p-6 mb-4">
-        <h3 className="text-sm font-semibold text-[#1A1F36] mb-1">
+      <div className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm p-6 mb-4">
+        <h3 className="text-sm font-semibold text-[#0F1D2E] mb-1">
           &ldquo;What If&rdquo; — Adjust Your Income
         </h3>
-        <p className="text-xs text-[#5E6687] mb-4">
+        <p className="text-xs text-[#64748b] mb-4">
           Slide to see how a raise or pay cut would change your options.
         </p>
         <div className="flex items-center gap-4">
-          <span className="text-xs text-[#A3ACBE] w-16 text-right">
+          <span className="text-xs text-[#94a3b8] w-16 text-right">
             {formatCurrency((baseIncome + sliderMin) * 12)}/yr
           </span>
           <input
@@ -213,12 +213,12 @@ export function ResultsStep({
             onChange={(e) => setIncomeAdjust(Number(e.target.value))}
             className="flex-1 accent-[#3B82F6] h-2 cursor-pointer"
           />
-          <span className="text-xs text-[#A3ACBE] w-16">
+          <span className="text-xs text-[#94a3b8] w-16">
             {formatCurrency((baseIncome + sliderMax) * 12)}/yr
           </span>
         </div>
         {incomeAdjust !== 0 && (
-          <p className="text-center text-xs text-[#6366F1] font-medium mt-2">
+          <p className="text-center text-xs text-[#3B82F6] font-medium mt-2">
             Adjusted income: {formatCurrency((baseIncome + incomeAdjust) * 12)}
             /yr → Max rent: {formatCurrency(result.recommendedMax)}/mo
           </p>
@@ -228,21 +228,21 @@ export function ResultsStep({
       {/* ── Section C: City Snapshot ────────────────────────── */}
       {!loading && neighborhoods.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
-          <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm px-4 py-3 text-center">
-            <p className="text-xs text-[#A3ACBE]">Avg Rent in {meta.name}</p>
-            <p className="text-lg font-bold text-[#1A1F36]">
+          <div className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm px-4 py-3 text-center">
+            <p className="text-xs text-[#94a3b8]">Avg Rent in {meta.name}</p>
+            <p className="text-lg font-bold text-[#0F1D2E]">
               {formatCurrency(avgRent)}
             </p>
           </div>
-          <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm px-4 py-3 text-center">
-            <p className="text-xs text-[#A3ACBE]">Neighborhoods That Fit</p>
+          <div className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm px-4 py-3 text-center">
+            <p className="text-xs text-[#94a3b8]">Neighborhoods That Fit</p>
             <p className="text-lg font-bold text-[#10b981]">
               {affordableCount}
             </p>
           </div>
-          <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm px-4 py-3 text-center col-span-2 sm:col-span-1">
-            <p className="text-xs text-[#A3ACBE]">Budget Coverage</p>
-            <p className="text-lg font-bold text-[#1A1F36]">
+          <div className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm px-4 py-3 text-center col-span-2 sm:col-span-1">
+            <p className="text-xs text-[#94a3b8]">Budget Coverage</p>
+            <p className="text-lg font-bold text-[#0F1D2E]">
               {affordablePercent}%
             </p>
           </div>
@@ -253,15 +253,15 @@ export function ResultsStep({
       {cityTips.length > 0 && (
         <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 mb-4">
           <div className="flex items-center gap-2 mb-2">
-            <Lightbulb className="w-4 h-4 text-[#6366F1]" />
-            <span className="text-xs font-semibold text-[#6366F1]">
+            <Lightbulb className="w-4 h-4 text-[#3B82F6]" />
+            <span className="text-xs font-semibold text-[#3B82F6]">
               {meta.name} Tips
             </span>
           </div>
           <ul className="space-y-1">
             {cityTips.map((tip, i) => (
-              <li key={i} className="text-xs text-[#6366F1]/80 flex gap-2">
-                <span className="text-[#6366F1]/40">•</span>
+              <li key={i} className="text-xs text-[#3B82F6]/80 flex gap-2">
+                <span className="text-[#3B82F6]/40">•</span>
                 {tip}
               </li>
             ))}
@@ -270,9 +270,9 @@ export function ResultsStep({
       )}
 
       {/* ── Section D: Neighborhood Matches ─────────────────── */}
-      <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm p-6 mb-4">
+      <div className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm p-6 mb-4">
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-12 text-[#A3ACBE]">
+          <div className="flex flex-col items-center justify-center py-12 text-[#94a3b8]">
             <Loader2 className="w-6 h-6 animate-spin mb-2" />
             <p className="text-sm">Loading neighborhoods...</p>
           </div>

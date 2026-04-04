@@ -46,15 +46,15 @@ export default function UpdatePasswordPage() {
     <div className="min-h-[60vh] flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-[#1A1F36]">
+          <h1 className="text-2xl font-bold text-[#0F1D2E]">
             Set New Password
           </h1>
-          <p className="text-sm text-[#5E6687] mt-1">
+          <p className="text-sm text-[#64748b] mt-1">
             Enter your new password below
           </p>
         </div>
 
-        <div className="bg-white rounded-xl border border-[#E2E8F0] p-8">
+        <div className="bg-white rounded-xl border border-[#e2e8f0] p-8">
           <form onSubmit={handleUpdate} className="space-y-4">
             <Input
               label="New Password"

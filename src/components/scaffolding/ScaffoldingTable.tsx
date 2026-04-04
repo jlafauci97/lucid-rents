@@ -77,7 +77,7 @@ export function ScaffoldingTable({ data }: { data: ShedRow[] }) {
 
   if (data.length === 0) {
     return (
-      <div className="text-center py-12 text-[#A3ACBE]">
+      <div className="text-center py-12 text-[#94a3b8]">
         No scaffolding data available yet.
       </div>
     );
@@ -92,7 +92,7 @@ export function ScaffoldingTable({ data }: { data: ShedRow[] }) {
           className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
             !borough
               ? "bg-[#0F1D2E] text-white"
-              : "bg-[#F5F7FA] text-[#5E6687] hover:bg-[#e2e8f0]"
+              : "bg-[#f1f5f9] text-[#64748b] hover:bg-[#e2e8f0]"
           }`}
         >
           All {getRegionLabel(city)}s
@@ -104,7 +104,7 @@ export function ScaffoldingTable({ data }: { data: ShedRow[] }) {
             className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
               borough === b
                 ? "bg-[#0F1D2E] text-white"
-                : "bg-[#F5F7FA] text-[#5E6687] hover:bg-[#e2e8f0]"
+                : "bg-[#f1f5f9] text-[#64748b] hover:bg-[#e2e8f0]"
             }`}
           >
             {b}
@@ -116,69 +116,69 @@ export function ScaffoldingTable({ data }: { data: ShedRow[] }) {
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="bg-[#FAFBFD] border-b border-[#E2E8F0]">
-              <th className="text-left px-4 py-3 text-xs font-semibold text-[#5E6687] uppercase tracking-wide">
+            <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
+              <th className="text-left px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide">
                 Address
               </th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-[#5E6687] uppercase tracking-wide hidden sm:table-cell">
+              <th className="text-left px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide hidden sm:table-cell">
                 Borough
               </th>
               <th className="text-right px-4 py-3 text-xs font-semibold text-[#F59E0B] uppercase tracking-wide">
                 <button
                   onClick={() => toggleSort("total_days")}
-                  className="inline-flex items-center gap-1 hover:text-[#1A1F36] ml-auto"
+                  className="inline-flex items-center gap-1 hover:text-[#0F1D2E] ml-auto"
                 >
                   Total Time <ArrowUpDown className="w-3 h-3" />
                 </button>
               </th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-[#5E6687] uppercase tracking-wide">
+              <th className="text-right px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide">
                 <button
                   onClick={() => toggleSort("permit_count")}
-                  className="inline-flex items-center gap-1 hover:text-[#1A1F36] ml-auto"
+                  className="inline-flex items-center gap-1 hover:text-[#0F1D2E] ml-auto"
                 >
                   Renewals <ArrowUpDown className="w-3 h-3" />
                 </button>
               </th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-[#5E6687] uppercase tracking-wide hidden md:table-cell">
+              <th className="text-right px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide hidden md:table-cell">
                 <button
                   onClick={() => toggleSort("first_issued")}
-                  className="inline-flex items-center gap-1 hover:text-[#1A1F36] ml-auto"
+                  className="inline-flex items-center gap-1 hover:text-[#0F1D2E] ml-auto"
                 >
                   First Permit <ArrowUpDown className="w-3 h-3" />
                 </button>
               </th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-[#5E6687] uppercase tracking-wide hidden xl:table-cell">
+              <th className="text-left px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide hidden xl:table-cell">
                 Owner
               </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#e2e8f0]">
             {filtered.map((row, i) => (
-              <tr key={`${row.house_no}-${row.street_name}-${row.borough}-${i}`} className="hover:bg-[#FAFBFD] transition-colors">
-                <td className="px-4 py-3 text-sm font-semibold text-[#1A1F36]">
+              <tr key={`${row.house_no}-${row.street_name}-${row.borough}-${i}`} className="hover:bg-[#f8fafc] transition-colors">
+                <td className="px-4 py-3 text-sm font-semibold text-[#0F1D2E]">
                   {row.house_no} {row.street_name}
                 </td>
-                <td className="px-4 py-3 text-sm text-[#1A1F36] hidden sm:table-cell">
+                <td className="px-4 py-3 text-sm text-[#334155] hidden sm:table-cell">
                   {normalizeBorough(row.borough)}
                 </td>
                 <td className="px-4 py-3 text-sm font-semibold text-right">
-                  <span className={row.total_days > 1825 ? "text-red-600" : row.total_days > 365 ? "text-[#F59E0B]" : "text-[#1A1F36]"}>
+                  <span className={row.total_days > 1825 ? "text-red-600" : row.total_days > 365 ? "text-[#F59E0B]" : "text-[#0F1D2E]"}>
                     {formatDuration(row.total_days)}
                   </span>
                 </td>
                 <td className="px-4 py-3 text-sm text-right">
-                  <span className={`inline-flex items-center gap-1 ${row.permit_count > 5 ? "text-red-600 font-semibold" : "text-[#1A1F36]"}`}>
+                  <span className={`inline-flex items-center gap-1 ${row.permit_count > 5 ? "text-red-600 font-semibold" : "text-[#334155]"}`}>
                     {row.permit_count}x
                   </span>
                 </td>
-                <td className="px-4 py-3 text-sm text-[#1A1F36] text-right hidden md:table-cell">
+                <td className="px-4 py-3 text-sm text-[#334155] text-right hidden md:table-cell">
                   {new Date(row.first_issued).toLocaleDateString("en-US", {
                     month: "short",
                     day: "numeric",
                     year: "numeric",
                   })}
                 </td>
-                <td className="px-4 py-3 text-sm text-[#1A1F36] hidden xl:table-cell max-w-[200px] truncate">
+                <td className="px-4 py-3 text-sm text-[#334155] hidden xl:table-cell max-w-[200px] truncate">
                   {row.owner_business_name || "\u2014"}
                 </td>
               </tr>
@@ -187,7 +187,7 @@ export function ScaffoldingTable({ data }: { data: ShedRow[] }) {
         </table>
       </div>
 
-      <p className="text-xs text-[#A3ACBE] mt-3">
+      <p className="text-xs text-[#94a3b8] mt-3">
         {filtered.length} addresses shown. Renewals = total permits issued at address. Data: NYC DOB Permits.
       </p>
     </div>

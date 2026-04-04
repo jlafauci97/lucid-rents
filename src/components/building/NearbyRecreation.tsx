@@ -31,7 +31,7 @@ const REC_CONFIG: {
   { key: "park", label: "Parks & Green Spaces", icon: TreePine, color: "text-[#16a34a]" },
   { key: "gym", label: "Gyms & Fitness", icon: Dumbbell, color: "text-[#7C3AED]" },
   { key: "entertainment", label: "Entertainment", icon: Clapperboard, color: "text-[#EA580C]" },
-  { key: "sports", label: "Sports Venues", icon: Trophy, color: "text-[#4F46E5]" },
+  { key: "sports", label: "Sports Venues", icon: Trophy, color: "text-[#2563EB]" },
 ];
 
 export function NearbyRecreation({ latitude, longitude }: NearbyRecreationProps) {
