@@ -82,7 +82,7 @@ export async function DeferredBuildingContent({ building, buildingId, city, rent
       ? safe(supabase.from("dewey_neighborhood_rents").select("month, beds, median_rent, p25_rent, p75_rent").eq("zip", building.zip_code).order("month", { ascending: true }), [])
       : Promise.resolve([]),
     building.zip_code
-      ? safe(supabase.from("dewey_amenity_premiums").select("amenity, premium_dollars, premium_pct, sample_size").eq("city", city).eq("zip", building.zip_code).eq("period", "all_time"), [])
+      ? safe(supabase.from("dewey_amenity_premiums").select("amenity, premium_dollars, premium_pct, sample_size").eq("city", city).eq("zip", building.zip_code).eq("period", "dwellsy_2024"), [])
       : Promise.resolve([]),
     building.zip_code
       ? safe(supabase.from("dewey_seasonal_index").select("month_of_year, rent_index").eq("city", city).eq("zip", building.zip_code), [])
