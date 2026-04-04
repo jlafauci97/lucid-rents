@@ -16,6 +16,7 @@ import { ViolationTrend } from "@/components/building/ViolationTrend";
 import { RentIntelligence } from "@/components/building/RentIntelligence";
 import { VerdictBanner } from "@/components/building/VerdictBanner";
 import { ReportCard } from "@/components/building/ReportCard";
+import { AmenityPremiums } from "@/components/building/AmenityPremiums";
 import { getLetterGrade, deriveScore } from "@/lib/constants";
 import type { City } from "@/lib/cities";
 import type { Building, HpdViolation, Complaint311, HpdLitigation, DobViolation, BedBugReport, Eviction, DobPermit, ReviewWithDetails, LahdViolationSummary } from "@/types";
@@ -157,6 +158,70 @@ export async function DeferredBuildingContent({ building, buildingId, city, rent
             overallScore={rcOverallScore}
             summary={summaryText}
             grades={gradeDimensions}
+          />
+        );
+      })()}
+
+      {/* Amenity Premiums */}
+      {(() => {
+        // Compute values for AmenityPremiums from dewey data
+        const latestMonth = deweyBuildingRents.length > 0 ? deweyBuildingRents[deweyBuildingRents.length - 1]?.month : null;
+        const latestBuildingRows = latestMonth ? deweyBuildingRents.filter((r: any) => r.month === latestMonth) : [];
+        const latestNeighborhoodRows = latestMonth ? (deweyNeighborhoodRents || []).filter((r: any) => r.month === latestMonth) : [];
+
+        // Pick most common bed count for display
+        const bedCounts = new Map<number, number>();
+        for (const r of latestBuildingRows) {
+          bedCounts.set(r.beds, (bedCounts.get(r.beds) || 0) + (r.listing_count || 1));
+        }
+        let bestBeds = 1;
+        let bestCount = 0;
+        for (const [beds, count] of bedCounts) {
+          if (count > bestCount) { bestBeds = beds; bestCount = count; }
+        }
+
+        const buildingRow = latestBuildingRows.find((r: any) => r.beds === bestBeds);
+        const neighborhoodRow = latestNeighborhoodRows.find((r: any) => r.beds === bestBeds);
+        const neighborhoodMedian = neighborhoodRow?.median_rent || 0;
+        const buildingMedian = buildingRow?.median_rent || 0;
+        const violationDiscount = Math.min(building.violation_count || 0, 100) * -0.5;
+        const bedLabels: Record<number, string> = { 0: "Studio", 1: "1BR", 2: "2BR", 3: "3BR", 4: "4BR+" };
+
+        // Reuse the value grade computed later for RentIntelligence (compute inline)
+        let apValueGrade = "C";
+        if (latestBuildingRows.length > 0 && latestNeighborhoodRows.length > 0) {
+          let totalDiff = 0; let totalWeight = 0;
+          for (const br of latestBuildingRows) {
+            const nr = latestNeighborhoodRows.find((n: any) => n.beds === br.beds);
+            if (nr && nr.median_rent > 0 && br.median_rent > 0) {
+              const diff = (br.median_rent - nr.median_rent) / nr.median_rent;
+              const weight = br.listing_count || 1;
+              totalDiff += diff * weight; totalWeight += weight;
+            }
+          }
+          if (totalWeight > 0) {
+            const avgDiff = totalDiff / totalWeight;
+            const qualityBonus = ((building.overall_score ?? 5) - 5) * 0.02;
+            const violationPenalty = Math.min((building.violation_count || 0) / 100, 0.1);
+            const adjustedDiff = avgDiff - qualityBonus + violationPenalty;
+            if (adjustedDiff <= -0.15) apValueGrade = "A";
+            else if (adjustedDiff <= -0.05) apValueGrade = "B";
+            else if (adjustedDiff <= 0.05) apValueGrade = "C";
+            else if (adjustedDiff <= 0.15) apValueGrade = "D";
+            else apValueGrade = "F";
+          }
+        }
+
+        if (!neighborhoodMedian || !buildingMedian) return null;
+
+        return (
+          <AmenityPremiums
+            neighborhoodMedian={neighborhoodMedian}
+            buildingMedian={buildingMedian}
+            amenityPremiums={(deweyAmenityPremiums || []).filter((a: any) => a.premium_dollars > 0)}
+            violationDiscount={violationDiscount}
+            valueGrade={apValueGrade}
+            bedLabel={bedLabels[bestBeds] ?? `${bestBeds}BR`}
           />
         );
       })()}
