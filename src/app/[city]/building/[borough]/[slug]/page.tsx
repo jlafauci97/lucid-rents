@@ -26,6 +26,7 @@ import { SLUG_TO_BOROUGH, regionFromSlug, buildingUrl, canonicalUrl, buildingJso
 import { CITY_META, VALID_CITIES, type City } from "@/lib/cities";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { TrackBuildingView } from "@/components/building/TrackBuildingView";
+import { T } from "@/lib/design-tokens";
 import { cache } from "react";
 import type { Building, EnergyBenchmark } from "@/types";
 import type { Metadata } from "next";
@@ -340,7 +341,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
         { name: shortAddress, url: buildingUrl(building, city) },
       ])} />
 
-      <div className="bg-[#0F1D2E]">
+      <div style={{ backgroundColor: T.surface }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-2">
           <Breadcrumbs
             items={[
@@ -349,7 +350,6 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
               { label: building.borough, href: cityPath(`/buildings/${boroughSlug}`, city) },
               { label: shortAddress, href: buildingUrl(building, city) },
             ]}
-            variant="dark"
           />
         </div>
       </div>
@@ -378,7 +378,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
             {/* Building Info */}
             <Card id="building-details" className="scroll-mt-28">
               <CardHeader>
-                <h3 className="font-semibold text-[#0F1D2E]">
+                <h3 className="font-semibold" style={{ color: T.text1 }}>
                   Building Details
                 </h3>
               </CardHeader>
@@ -386,14 +386,15 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
                 <dl className="space-y-3 text-sm">
                   {building.owner_name && (
                     <div>
-                      <dt className="text-[#94a3b8]">Owner</dt>
-                      <dd className="text-[#0F1D2E] font-medium">
+                      <dt style={{ color: T.text3 }}>Owner</dt>
+                      <dd className="font-medium" style={{ color: T.text1 }}>
                         {building.owner_name}
                       </dd>
                       {building.owner_name !== "UNAVAILABLE OWNER" && (
                         <Link
                           href={landlordUrl(building.owner_name)}
-                          className="text-xs text-[#3B82F6] hover:text-[#2563EB] font-medium mt-0.5 inline-block transition-colors"
+                          className="text-xs font-medium mt-0.5 inline-block transition-colors hover:opacity-80"
+                          style={{ color: T.blue }}
                         >
                           View Portfolio &rarr;
                         </Link>
@@ -402,24 +403,24 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
                   )}
                   {building.building_class && (
                     <div>
-                      <dt className="text-[#94a3b8]">Building Class</dt>
-                      <dd className="text-[#0F1D2E] font-medium">
+                      <dt style={{ color: T.text3 }}>Building Class</dt>
+                      <dd className="font-medium" style={{ color: T.text1 }}>
                         {building.building_class}
                       </dd>
                     </div>
                   )}
                   {building.land_use && (
                     <div>
-                      <dt className="text-[#94a3b8]">Land Use</dt>
-                      <dd className="text-[#0F1D2E] font-medium">
+                      <dt style={{ color: T.text3 }}>Land Use</dt>
+                      <dd className="font-medium" style={{ color: T.text1 }}>
                         {building.land_use}
                       </dd>
                     </div>
                   )}
                   {building.residential_units != null && (
                     <div>
-                      <dt className="text-[#94a3b8]">Residential Units</dt>
-                      <dd className="text-[#0F1D2E] font-medium">
+                      <dt style={{ color: T.text3 }}>Residential Units</dt>
+                      <dd className="font-medium" style={{ color: T.text1 }}>
                         {building.residential_units}
                       </dd>
                     </div>
@@ -427,16 +428,16 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
                   {building.commercial_units != null &&
                     building.commercial_units > 0 && (
                       <div>
-                        <dt className="text-[#94a3b8]">Commercial Units</dt>
-                        <dd className="text-[#0F1D2E] font-medium">
+                        <dt style={{ color: T.text3 }}>Commercial Units</dt>
+                        <dd className="font-medium" style={{ color: T.text1 }}>
                           {building.commercial_units}
                         </dd>
                       </div>
                     )}
                   {(building.bbl || building.apn || building.pin) && (
                     <div>
-                      <dt className="text-[#94a3b8]">{building.pin ? "PIN" : building.apn ? "APN" : "BBL"}</dt>
-                      <dd className="text-[#0F1D2E] font-mono text-xs">
+                      <dt style={{ color: T.text3 }}>{building.pin ? "PIN" : building.apn ? "APN" : "BBL"}</dt>
+                      <dd className="font-mono text-xs" style={{ color: T.text1 }}>
                         {building.pin || building.apn || building.bbl}
                       </dd>
                     </div>
@@ -494,44 +495,44 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
             {isChicago && (
               <Card>
                 <CardHeader>
-                  <h3 className="font-semibold text-[#0F1D2E]">Chicago Info</h3>
+                  <h3 className="font-semibold" style={{ color: T.text1 }}>Chicago Info</h3>
                 </CardHeader>
                 <CardContent>
                   <dl className="space-y-3 text-sm">
                     {building.is_rlto_protected != null && (
                       <div>
-                        <dt className="text-[#94a3b8]">RLTO Protection</dt>
-                        <dd className="text-[#0F1D2E] font-medium">
+                        <dt style={{ color: T.text3 }}>RLTO Protection</dt>
+                        <dd className="font-medium" style={{ color: T.text1 }}>
                           {building.is_rlto_protected ? (
-                            <span className="text-green-600">Protected</span>
+                            <span style={{ color: T.sage }}>Protected</span>
                           ) : (
-                            <span className="text-[#94a3b8]">Not covered</span>
+                            <span style={{ color: T.text3 }}>Not covered</span>
                           )}
                         </dd>
                       </div>
                     )}
                     {building.is_scofflaw != null && (
                       <div>
-                        <dt className="text-[#94a3b8]">Scofflaw Status</dt>
-                        <dd className="text-[#0F1D2E] font-medium">
+                        <dt style={{ color: T.text3 }}>Scofflaw Status</dt>
+                        <dd className="font-medium" style={{ color: T.text1 }}>
                           {building.is_scofflaw ? (
-                            <span className="text-red-600">Scofflaw</span>
+                            <span style={{ color: T.danger }}>Scofflaw</span>
                           ) : (
-                            <span className="text-green-600">Clear</span>
+                            <span style={{ color: T.sage }}>Clear</span>
                           )}
                         </dd>
                       </div>
                     )}
                     {building.ward && (
                       <div>
-                        <dt className="text-[#94a3b8]">Ward</dt>
-                        <dd className="text-[#0F1D2E] font-medium">{building.ward}</dd>
+                        <dt style={{ color: T.text3 }}>Ward</dt>
+                        <dd className="font-medium" style={{ color: T.text1 }}>{building.ward}</dd>
                       </div>
                     )}
                     {building.community_area && (
                       <div>
-                        <dt className="text-[#94a3b8]">Community Area</dt>
-                        <dd className="text-[#0F1D2E] font-medium">{building.community_area}</dd>
+                        <dt style={{ color: T.text3 }}>Community Area</dt>
+                        <dd className="font-medium" style={{ color: T.text1 }}>{building.community_area}</dd>
                       </div>
                     )}
                   </dl>
