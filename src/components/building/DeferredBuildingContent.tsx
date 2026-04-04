@@ -15,6 +15,8 @@ import { BuildingLocationMap } from "@/components/building/BuildingLocationMap";
 import { ViolationTrend } from "@/components/building/ViolationTrend";
 import { RentIntelligence } from "@/components/building/RentIntelligence";
 import { VerdictBanner } from "@/components/building/VerdictBanner";
+import { ReportCard } from "@/components/building/ReportCard";
+import { getLetterGrade, deriveScore } from "@/lib/constants";
 import type { City } from "@/lib/cities";
 import type { Building, HpdViolation, Complaint311, HpdLitigation, DobViolation, BedBugReport, Eviction, DobPermit, ReviewWithDetails, LahdViolationSummary } from "@/types";
 
@@ -117,6 +119,47 @@ export async function DeferredBuildingContent({ building, buildingId, city, rent
         bestPositive={bestPositive}
         bestCritical={bestCritical}
       />
+
+      {/* Report Card */}
+      {(() => {
+        // Aggregate review category ratings into per-dimension scores
+        const categoryScores = new Map<string, { total: number; count: number; name: string }>();
+        for (const review of reviews) {
+          for (const cr of review.category_ratings || []) {
+            const slug = cr.category?.slug || "unknown";
+            const name = cr.category?.name || slug;
+            const existing = categoryScores.get(slug) || { total: 0, count: 0, name };
+            existing.total += cr.rating;
+            existing.count += 1;
+            categoryScores.set(slug, existing);
+          }
+        }
+
+        const gradeDimensions = [...categoryScores.entries()]
+          .map(([, { total, count, name }]) => {
+            const avg = total / count;
+            const grade = getLetterGrade(avg);
+            return { label: name, grade, score: Math.round(avg * 10) / 10 };
+          })
+          .sort((a, b) => b.score - a.score);
+
+        const rcOverallScore = building.overall_score ?? deriveScore(building.violation_count || 0, building.complaint_count || 0);
+        const rcOverallGrade = getLetterGrade(rcOverallScore);
+        const summaryText = rcOverallScore >= 4 ? "Excellent building — top-rated by tenants with minimal issues."
+          : rcOverallScore >= 3 ? "Good building with responsive management and moderate concerns."
+          : rcOverallScore >= 2 ? "Decent building but has room for improvement in some areas."
+          : rcOverallScore >= 1 ? "Below average — tenants report significant concerns."
+          : "Poor conditions — multiple serious issues reported by tenants.";
+
+        return (
+          <ReportCard
+            overallGrade={rcOverallGrade}
+            overallScore={rcOverallScore}
+            summary={summaryText}
+            grades={gradeDimensions}
+          />
+        );
+      })()}
 
       {/* Reviews */}
       <ReviewSection
