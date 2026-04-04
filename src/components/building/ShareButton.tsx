@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { T } from "@/lib/design-tokens";
 import { Share2, Link2, Check, Code2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { EmbedCodeModal } from "@/components/building/EmbedCodeModal";
@@ -86,28 +87,31 @@ export function ShareButton({ address, url, buildingId }: ShareButtonProps) {
       </Button>
 
       {open && (
-        <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-[#e2e8f0] py-1 z-50">
+        <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border py-1 z-50" style={{ borderColor: T.border }}>
           <button
             onClick={copyLink}
-            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-[#0F1D2E] hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-2 w-full px-4 py-2 text-sm hover:bg-gray-50 transition-colors"
+            style={{ color: T.text1 }}
           >
-            <Link2 className="w-4 h-4 text-[#64748b]" />
+            <Link2 className="w-4 h-4" style={{ color: T.text2 }} />
             Copy Link
           </button>
           <button
             onClick={shareTwitter}
-            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-[#0F1D2E] hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-2 w-full px-4 py-2 text-sm hover:bg-gray-50 transition-colors"
+            style={{ color: T.text1 }}
           >
-            <svg className="w-4 h-4 text-[#64748b]" viewBox="0 0 24 24" fill="currentColor">
+            <svg className="w-4 h-4" style={{ color: T.text2 }} viewBox="0 0 24 24" fill="currentColor">
               <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
             </svg>
             Share on X
           </button>
           <button
             onClick={shareFacebook}
-            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-[#0F1D2E] hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-2 w-full px-4 py-2 text-sm hover:bg-gray-50 transition-colors"
+            style={{ color: T.text1 }}
           >
-            <svg className="w-4 h-4 text-[#64748b]" viewBox="0 0 24 24" fill="currentColor">
+            <svg className="w-4 h-4" style={{ color: T.text2 }} viewBox="0 0 24 24" fill="currentColor">
               <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
             </svg>
             Share on Facebook
@@ -115,9 +119,10 @@ export function ShareButton({ address, url, buildingId }: ShareButtonProps) {
           {buildingId && (
             <button
               onClick={() => { setOpen(false); setShowEmbed(true); }}
-              className="flex items-center gap-2 w-full px-4 py-2 text-sm text-[#0F1D2E] hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-2 w-full px-4 py-2 text-sm hover:bg-gray-50 transition-colors"
+              style={{ color: T.text1 }}
             >
-              <Code2 className="w-4 h-4 text-[#64748b]" />
+              <Code2 className="w-4 h-4" style={{ color: T.text2 }} />
               Embed
             </button>
           )}

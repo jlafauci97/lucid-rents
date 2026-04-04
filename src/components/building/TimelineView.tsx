@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { T } from "@/lib/design-tokens";
 import type { TimelineEvent, TimelineEventType } from "@/lib/timeline";
 import { EVENT_TYPE_LABELS, TYPE_COLORS } from "@/lib/timeline";
 
@@ -67,9 +68,12 @@ export function TimelineView({ events }: TimelineViewProps) {
           onClick={() => { setActiveFilters(new Set()); setPage(1); }}
           className={`px-3 py-1.5 text-sm font-medium rounded-full transition-colors ${
             activeFilters.size === 0
-              ? "bg-[#0F1D2E] text-white"
-              : "bg-[#f1f5f9] text-[#475569] hover:bg-[#e2e8f0]"
+              ? "text-white"
+              : ""
           }`}
+          style={activeFilters.size === 0
+            ? { backgroundColor: T.text1, color: "#fff" }
+            : { backgroundColor: T.elevated, color: T.text2 }}
         >
           All ({events.length})
         </button>
@@ -81,11 +85,11 @@ export function TimelineView({ events }: TimelineViewProps) {
               key={type}
               onClick={() => toggleFilter(type)}
               className={`px-3 py-1.5 text-sm font-medium rounded-full transition-colors ${
-                isActive
-                  ? "text-white"
-                  : "bg-[#f1f5f9] text-[#475569] hover:bg-[#e2e8f0]"
+                isActive ? "text-white" : ""
               }`}
-              style={isActive ? { backgroundColor: TYPE_COLORS[type] } : {}}
+              style={isActive
+                ? { backgroundColor: TYPE_COLORS[type] }
+                : { backgroundColor: T.elevated, color: T.text2 }}
             >
               {EVENT_TYPE_LABELS[type]} ({count})
             </button>
@@ -94,21 +98,21 @@ export function TimelineView({ events }: TimelineViewProps) {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="text-center py-12 text-[#64748b]">No events match the selected filters.</div>
+        <div className="text-center py-12" style={{ color: T.text2 }}>No events match the selected filters.</div>
       ) : (
         <>
           {grouped.map(({ year, items }) => (
             <div key={year}>
               {/* Year divider */}
               <div className="flex items-center gap-3 mb-4 mt-6 first:mt-0">
-                <div className="h-px flex-1 bg-[#e2e8f0]" />
-                <span className="text-xs font-bold text-[#94a3b8] uppercase tracking-widest">{year}</span>
-                <div className="h-px flex-1 bg-[#e2e8f0]" />
+                <div className="h-px flex-1" style={{ backgroundColor: T.border }} />
+                <span className="text-xs font-bold uppercase tracking-widest" style={{ color: T.text3 }}>{year}</span>
+                <div className="h-px flex-1" style={{ backgroundColor: T.border }} />
               </div>
 
               <div className="relative pl-6">
                 {/* Vertical line */}
-                <div className="absolute left-2 top-0 bottom-0 w-px bg-[#e2e8f0]" />
+                <div className="absolute left-2 top-0 bottom-0 w-px" style={{ backgroundColor: T.border }} />
 
                 <div className="space-y-3">
                   {items.map((event) => (
@@ -118,11 +122,11 @@ export function TimelineView({ events }: TimelineViewProps) {
                         className="absolute -left-4 top-3 w-3 h-3 rounded-full border-2 border-white shadow-sm"
                         style={{ backgroundColor: event.color }}
                       />
-                      <div className="bg-white border border-[#e2e8f0] rounded-xl p-4 hover:shadow-sm transition-shadow">
+                      <div className="bg-white rounded-xl p-4 hover:shadow-sm transition-shadow border" style={{ borderColor: T.border }}>
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
                             <div className="flex items-center gap-2 flex-wrap mb-1">
-                              <span className="text-sm font-semibold text-[#0F1D2E]">
+                              <span className="text-sm font-semibold" style={{ color: T.text1 }}>
                                 {event.title}
                               </span>
                               <span
@@ -131,11 +135,11 @@ export function TimelineView({ events }: TimelineViewProps) {
                                 {event.severity}
                               </span>
                             </div>
-                            <p className="text-sm text-[#64748b] line-clamp-2">
+                            <p className="text-sm line-clamp-2" style={{ color: T.text2 }}>
                               {event.description}
                             </p>
                           </div>
-                          <span className="text-xs text-[#94a3b8] whitespace-nowrap flex-shrink-0">
+                          <span className="text-xs whitespace-nowrap flex-shrink-0" style={{ color: T.text3 }}>
                             {new Date(event.date).toLocaleDateString("en-US", {
                               month: "short",
                               day: "numeric",
@@ -156,17 +160,19 @@ export function TimelineView({ events }: TimelineViewProps) {
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="px-3 py-1.5 text-sm rounded-lg border border-[#e2e8f0] hover:bg-[#f8fafc] disabled:opacity-40 disabled:cursor-not-allowed"
+                className="px-3 py-1.5 text-sm rounded-lg border disabled:opacity-40 disabled:cursor-not-allowed"
+                style={{ borderColor: T.border }}
               >
                 Previous
               </button>
-              <span className="text-sm text-[#64748b]">
+              <span className="text-sm" style={{ color: T.text2 }}>
                 Page {page} of {totalPages}
               </span>
               <button
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
-                className="px-3 py-1.5 text-sm rounded-lg border border-[#e2e8f0] hover:bg-[#f8fafc] disabled:opacity-40 disabled:cursor-not-allowed"
+                className="px-3 py-1.5 text-sm rounded-lg border disabled:opacity-40 disabled:cursor-not-allowed"
+                style={{ borderColor: T.border }}
               >
                 Next
               </button>

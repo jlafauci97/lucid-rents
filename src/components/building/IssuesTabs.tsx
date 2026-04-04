@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { T } from "@/lib/design-tokens";
 import { AlertTriangle, MessageSquare, Scale, HardHat, Bug, DoorOpen, ClipboardList } from "lucide-react";
 import { ViolationTimeline } from "./ViolationTimeline";
 import { ViolationSummaryTable } from "./ViolationSummaryTable";
@@ -80,8 +81,9 @@ export function IssuesTabs({ violations, complaints, litigations, dobViolations,
               className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
                 isActive
                   ? `${tab.activeBg} ${tab.activeText}`
-                  : "bg-gray-100 text-[#64748b] hover:bg-gray-200 hover:text-[#0F1D2E]"
+                  : "bg-gray-100 hover:bg-gray-200"
               }`}
+              style={isActive ? {} : { color: T.text2 }}
             >
               <Icon className="w-4 h-4" />
               {tab.label} ({counts[tab.key]})

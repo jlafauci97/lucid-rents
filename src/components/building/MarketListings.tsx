@@ -1,4 +1,5 @@
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
+import { T } from "@/lib/design-tokens";
 import {
   TrendingDown, Building2, DollarSign, BedDouble, Bath, Ruler,
   Clock, CheckCircle, Home,
@@ -149,7 +150,7 @@ export function MarketListings({ listings: rawListings, amenities, rentHistory =
 
   return (
     <section>
-      <h2 className="text-xl font-bold text-[#0F1D2E] mb-4 flex items-center gap-2">
+      <h2 className="text-xl font-bold mb-4 flex items-center gap-2" style={{ color: T.text1 }}>
         <DollarSign className="w-5 h-5 text-[#16a34a]" />
         Market Data & Availability
       </h2>
@@ -162,13 +163,13 @@ export function MarketListings({ listings: rawListings, amenities, rentHistory =
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
                 <div>
                   {listing.listing_name && (
-                    <h3 className="text-lg font-semibold text-[#0F1D2E]">
+                    <h3 className="text-lg font-semibold" style={{ color: T.text1 }}>
                       {listing.listing_name}
                     </h3>
                   )}
                   <div className="flex flex-wrap items-center gap-2 mt-1">
                     {listing.property_type && (
-                      <span className="text-xs bg-[#f1f5f9] text-[#475569] px-2 py-0.5 rounded-full">
+                      <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: T.elevated, color: T.text2 }}>
                         {listing.property_type}
                       </span>
                     )}
@@ -196,29 +197,29 @@ export function MarketListings({ listings: rawListings, amenities, rentHistory =
               </div>
 
               {/* Quick Stats Row */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 py-3 border-t border-[#e2e8f0]">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 py-3 border-t" style={{ borderColor: T.border }}>
                 {listing.bed_text && (
                   <div className="flex items-center gap-1.5">
-                    <BedDouble className="w-4 h-4 text-[#64748b]" />
-                    <span className="text-sm text-[#334155]">{listing.bed_text}</span>
+                    <BedDouble className="w-4 h-4" style={{ color: T.text2 }} />
+                    <span className="text-sm" style={{ color: T.text1 }}>{listing.bed_text}</span>
                   </div>
                 )}
                 {listing.bath_text && (
                   <div className="flex items-center gap-1.5">
-                    <Bath className="w-4 h-4 text-[#64748b]" />
-                    <span className="text-sm text-[#334155]">{listing.bath_text}</span>
+                    <Bath className="w-4 h-4" style={{ color: T.text2 }} />
+                    <span className="text-sm" style={{ color: T.text1 }}>{listing.bath_text}</span>
                   </div>
                 )}
                 {listing.sqft_text && (
                   <div className="flex items-center gap-1.5">
-                    <Ruler className="w-4 h-4 text-[#64748b]" />
-                    <span className="text-sm text-[#334155]">{listing.sqft_text}</span>
+                    <Ruler className="w-4 h-4" style={{ color: T.text2 }} />
+                    <span className="text-sm" style={{ color: T.text1 }}>{listing.sqft_text}</span>
                   </div>
                 )}
                 {listing.management_company && (
                   <div className="flex items-center gap-1.5">
-                    <Building2 className="w-4 h-4 text-[#64748b]" />
-                    <span className="text-sm text-[#334155] truncate">{listing.management_company}</span>
+                    <Building2 className="w-4 h-4" style={{ color: T.text2 }} />
+                    <span className="text-sm truncate" style={{ color: T.text1 }}>{listing.management_company}</span>
                   </div>
                 )}
               </div>
@@ -230,24 +231,24 @@ export function MarketListings({ listings: rawListings, amenities, rentHistory =
         {listing && listing.bed_price_data.length > 0 && (
           <Card>
             <CardHeader>
-              <h3 className="text-base font-bold text-[#0F1D2E]">Rent by Bedroom</h3>
+              <h3 className="text-base font-bold" style={{ color: T.text1 }}>Rent by Bedroom</h3>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-[#e2e8f0]">
-                      <th className="text-left py-2 text-[#64748b] font-medium">Type</th>
-                      <th className="text-right py-2 text-[#64748b] font-medium">Price Range</th>
-                      <th className="text-right py-2 text-[#64748b] font-medium hidden sm:table-cell">Sq Ft</th>
+                    <tr className="border-b" style={{ borderColor: T.border }}>
+                      <th className="text-left py-2 font-medium" style={{ color: T.text2 }}>Type</th>
+                      <th className="text-right py-2 font-medium" style={{ color: T.text2 }}>Price Range</th>
+                      <th className="text-right py-2 font-medium hidden sm:table-cell" style={{ color: T.text2 }}>Sq Ft</th>
                     </tr>
                   </thead>
                   <tbody>
                     {listing.bed_price_data
                       .sort((a, b) => a.beds - b.beds)
                       .map((entry) => (
-                        <tr key={entry.beds} className="border-b border-[#f1f5f9] last:border-0">
-                          <td className="py-2.5 font-medium text-[#0F1D2E]">
+                        <tr key={entry.beds} className="border-b last:border-0" style={{ borderColor: T.elevated }}>
+                          <td className="py-2.5 font-medium" style={{ color: T.text1 }}>
                             {BED_LABELS[entry.beds] || `${entry.beds} Bed`}
                           </td>
                           <td className="py-2.5 text-right">
@@ -257,7 +258,7 @@ export function MarketListings({ listings: rawListings, amenities, rentHistory =
                                 : `${formatPrice(entry.priceMin)} – ${formatPrice(entry.priceMax)}`}
                             </span>
                           </td>
-                          <td className="py-2.5 text-right text-[#64748b] hidden sm:table-cell">
+                          <td className="py-2.5 text-right hidden sm:table-cell" style={{ color: T.text2 }}>
                             {formatSqft(entry.sqftMin, entry.sqftMax)}
                           </td>
                         </tr>
@@ -275,7 +276,7 @@ export function MarketListings({ listings: rawListings, amenities, rentHistory =
             <CardHeader>
               <div className="flex items-center gap-2">
                 <Home className="w-4.5 h-4.5 text-[#2563EB]" />
-                <h3 className="text-base font-bold text-[#0F1D2E]">
+                <h3 className="text-base font-bold" style={{ color: T.text1 }}>
                   Units Historic Rent ({rentHistory.length})
                 </h3>
               </div>
@@ -303,35 +304,35 @@ export function MarketListings({ listings: rawListings, amenities, rentHistory =
                         : `$${minRent.toLocaleString()} – $${maxRent.toLocaleString()}/mo`;
 
                       return (
-                        <details key={bedKey} className="group border border-[#e2e8f0] rounded-lg">
-                          <summary className="flex items-center justify-between cursor-pointer px-4 py-3 hover:bg-[#f8fafc] select-none list-none [&::-webkit-details-marker]:hidden">
+                        <details key={bedKey} className="group border rounded-lg" style={{ borderColor: T.border }}>
+                          <summary className="flex items-center justify-between cursor-pointer px-4 py-3 hover:bg-gray-50 select-none list-none [&::-webkit-details-marker]:hidden">
                             <div className="flex items-center gap-3">
-                              <span className="font-semibold text-[#0F1D2E]">{label}</span>
-                              <span className="text-xs text-[#64748b] bg-[#f1f5f9] px-2 py-0.5 rounded-full">
+                              <span className="font-semibold" style={{ color: T.text1 }}>{label}</span>
+                              <span className="text-xs px-2 py-0.5 rounded-full" style={{ color: T.text2, backgroundColor: T.elevated }}>
                                 {rows.length} {rows.length === 1 ? "listing" : "listings"}
                               </span>
                             </div>
                             <div className="flex items-center gap-3">
                               <span className="text-sm font-medium text-[#16a34a]">{rangeText}</span>
-                              <svg className="w-4 h-4 text-[#94a3b8] transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <svg className="w-4 h-4 transition-transform group-open:rotate-180" style={{ color: T.text3 }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                               </svg>
                             </div>
                           </summary>
-                          <div className="overflow-x-auto border-t border-[#e2e8f0]">
+                          <div className="overflow-x-auto border-t" style={{ borderColor: T.border }}>
                             <table className="w-full text-sm">
                               <thead>
-                                <tr className="border-b border-[#e2e8f0]">
-                                  <th className="text-left py-2 px-4 text-[#64748b] font-medium">Unit</th>
-                                  <th className="text-right py-2 px-4 text-[#64748b] font-medium">Rent</th>
-                                  <th className="text-right py-2 px-4 text-[#64748b] font-medium hidden sm:table-cell">Sq Ft</th>
-                                  <th className="text-right py-2 px-4 text-[#64748b] font-medium">As Of</th>
+                                <tr className="border-b" style={{ borderColor: T.border }}>
+                                  <th className="text-left py-2 px-4 font-medium" style={{ color: T.text2 }}>Unit</th>
+                                  <th className="text-right py-2 px-4 font-medium" style={{ color: T.text2 }}>Rent</th>
+                                  <th className="text-right py-2 px-4 font-medium hidden sm:table-cell" style={{ color: T.text2 }}>Sq Ft</th>
+                                  <th className="text-right py-2 px-4 font-medium" style={{ color: T.text2 }}>As Of</th>
                                 </tr>
                               </thead>
                               <tbody>
                                 {rows.map((entry) => (
-                                  <tr key={entry.id} className="border-b border-[#f1f5f9] last:border-0">
-                                    <td className="py-2.5 px-4 font-medium text-[#0F1D2E]">
+                                  <tr key={entry.id} className="border-b last:border-0" style={{ borderColor: T.elevated }}>
+                                    <td className="py-2.5 px-4 font-medium" style={{ color: T.text1 }}>
                                       {entry.unit_number || "—"}
                                     </td>
                                     <td className="py-2.5 px-4 text-right">
@@ -339,10 +340,10 @@ export function MarketListings({ listings: rawListings, amenities, rentHistory =
                                         ${entry.rent.toLocaleString()}/mo
                                       </span>
                                     </td>
-                                    <td className="py-2.5 px-4 text-right text-[#64748b] hidden sm:table-cell">
+                                    <td className="py-2.5 px-4 text-right hidden sm:table-cell" style={{ color: T.text2 }}>
                                       {entry.sqft ? `${entry.sqft.toLocaleString()}` : "—"}
                                     </td>
-                                    <td className="py-2.5 px-4 text-right text-[#64748b] text-xs">
+                                    <td className="py-2.5 px-4 text-right text-xs" style={{ color: T.text2 }}>
                                       {new Date(entry.observed_at).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
                                     </td>
                                   </tr>
@@ -356,7 +357,7 @@ export function MarketListings({ listings: rawListings, amenities, rentHistory =
                   </div>
                 );
               })()}
-              <p className="text-[10px] text-[#94a3b8] mt-3">
+              <p className="text-[10px] mt-3" style={{ color: T.text3 }}>
                 Based on listing data
               </p>
             </CardContent>
@@ -370,16 +371,16 @@ export function MarketListings({ listings: rawListings, amenities, rentHistory =
           <Card id="office-hours">
             <CardHeader>
               <div className="flex items-center gap-2">
-                <Clock className="w-4.5 h-4.5 text-[#64748b]" />
-                <h3 className="text-base font-bold text-[#0F1D2E]">Leasing Office Hours</h3>
+                <Clock className="w-4.5 h-4.5" style={{ color: T.text2 }} />
+                <h3 className="text-base font-bold" style={{ color: T.text1 }}>Leasing Office Hours</h3>
               </div>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm">
                 {listing.office_hours.map((oh) => (
                   <div key={oh.day} className="flex justify-between gap-2">
-                    <span className="text-[#64748b]">{oh.day}</span>
-                    <span className="text-[#0F1D2E] font-medium">{oh.open} – {oh.close}</span>
+                    <span style={{ color: T.text2 }}>{oh.day}</span>
+                    <span className="font-medium" style={{ color: T.text1 }}>{oh.open} – {oh.close}</span>
                   </div>
                 ))}
               </div>

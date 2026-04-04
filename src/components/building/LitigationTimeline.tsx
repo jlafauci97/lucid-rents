@@ -1,6 +1,7 @@
 import { Scale, CheckCircle } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { formatDate } from "@/lib/utils";
+import { T } from "@/lib/design-tokens";
 import type { HpdLitigation } from "@/types";
 
 interface LitigationTimelineProps {
@@ -26,7 +27,7 @@ function getStatusStyle(status: string | null) {
 export function LitigationTimeline({ litigations, agencyLabel = "HPD" }: LitigationTimelineProps) {
   if (litigations.length === 0) {
     return (
-      <p className="text-sm text-[#64748b] py-4">
+      <p className="text-sm py-4" style={{ color: T.text2 }}>
         No {agencyLabel} litigations on record.
       </p>
     );
@@ -40,7 +41,8 @@ export function LitigationTimeline({ litigations, agencyLabel = "HPD" }: Litigat
         return (
           <div
             key={lit.id}
-            className={`rounded-lg border border-[#e2e8f0] p-4 ${style.bg}`}
+            className={`rounded-lg border p-4 ${style.bg}`}
+            style={{ borderColor: T.border }}
           >
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-start gap-3">
@@ -61,17 +63,17 @@ export function LitigationTimeline({ litigations, agencyLabel = "HPD" }: Litigat
                     </Badge>
                   </div>
                   {lit.respondent && (
-                    <p className="text-sm text-[#0F1D2E] mt-1">
+                    <p className="text-sm mt-1" style={{ color: T.text1 }}>
                       Respondent: {lit.respondent}
                     </p>
                   )}
                   {lit.case_judgment && (
-                    <p className="text-xs text-[#64748b] mt-1">
+                    <p className="text-xs mt-1" style={{ color: T.text2 }}>
                       Judgment: {lit.case_judgment}
                     </p>
                   )}
                   {lit.penalty && (
-                    <p className="text-xs text-[#64748b] mt-1">
+                    <p className="text-xs mt-1" style={{ color: T.text2 }}>
                       Penalty: {lit.penalty}
                     </p>
                   )}
@@ -79,7 +81,7 @@ export function LitigationTimeline({ litigations, agencyLabel = "HPD" }: Litigat
               </div>
               <div className="text-right shrink-0">
                 {lit.case_open_date && (
-                  <span className="text-xs text-[#64748b] block">
+                  <span className="text-xs block" style={{ color: T.text2 }}>
                     Filed: {formatDate(lit.case_open_date)}
                   </span>
                 )}

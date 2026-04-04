@@ -1,6 +1,7 @@
 import { ClipboardList, Clock, DollarSign } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { formatDate } from "@/lib/utils";
+import { T } from "@/lib/design-tokens";
 import type { DobPermit } from "@/types";
 
 interface PermitTimelineProps {
@@ -25,7 +26,7 @@ function formatCost(cost: number | null): string | null {
 export function PermitTimeline({ permits, agencyLabel = "DOB" }: PermitTimelineProps) {
   if (permits.length === 0) {
     return (
-      <p className="text-sm text-[#64748b] py-4">
+      <p className="text-sm py-4" style={{ color: T.text2 }}>
         No {agencyLabel} permits on record.
       </p>
     );
@@ -40,7 +41,8 @@ export function PermitTimeline({ permits, agencyLabel = "DOB" }: PermitTimelineP
         return (
           <div
             key={p.id}
-            className={`rounded-lg border border-[#e2e8f0] p-4 ${colors.bg}`}
+            className={`rounded-lg border p-4 ${colors.bg}`}
+            style={{ borderColor: T.border }}
           >
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-start gap-3">
@@ -64,11 +66,11 @@ export function PermitTimeline({ permits, agencyLabel = "DOB" }: PermitTimelineP
                     )}
                   </div>
                   {p.job_description && (
-                    <p className="text-sm text-[#0F1D2E] mt-1 line-clamp-2">
+                    <p className="text-sm mt-1 line-clamp-2" style={{ color: T.text1 }}>
                       {p.job_description}
                     </p>
                   )}
-                  <div className="flex items-center gap-4 mt-2 text-xs text-[#64748b]">
+                  <div className="flex items-center gap-4 mt-2 text-xs" style={{ color: T.text2 }}>
                     {cost && (
                       <span className="inline-flex items-center gap-1">
                         <DollarSign className="w-3 h-3" />
@@ -90,7 +92,7 @@ export function PermitTimeline({ permits, agencyLabel = "DOB" }: PermitTimelineP
                 </div>
               </div>
               {p.issued_date && (
-                <span className="text-xs text-[#64748b] shrink-0">
+                <span className="text-xs shrink-0" style={{ color: T.text2 }}>
                   {formatDate(p.issued_date)}
                 </span>
               )}

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
+import { T } from "@/lib/design-tokens";
 import { History, ChevronDown, ChevronUp } from "lucide-react";
 
 export interface RentHistoryEntry {
@@ -104,23 +105,23 @@ function UnitRow({ group }: { group: UnitGroup }) {
   const hasHistory = group.entries.length > 1;
 
   return (
-    <div className="border-b border-[#f1f5f9] last:border-0">
+    <div className="border-b last:border-0" style={{ borderColor: T.elevated }}>
       <button
         type="button"
         onClick={() => hasHistory && setExpanded(!expanded)}
         className={`w-full flex items-center justify-between py-3 px-1 text-left ${hasHistory ? "cursor-pointer hover:bg-gray-50" : "cursor-default"} transition-colors`}
       >
         <div className="flex items-center gap-3">
-          <span className="text-sm font-medium text-[#0F1D2E]">
+          <span className="text-sm font-medium" style={{ color: T.text1 }}>
             {group.label}
           </span>
           {group.entries[0].unit_number && group.bedrooms !== null && (
-            <span className="text-xs bg-[#f1f5f9] text-[#475569] px-2 py-0.5 rounded-full">
+            <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: T.elevated, color: T.text2 }}>
               {bedLabel(group.bedrooms)}
             </span>
           )}
           {hasHistory && (
-            <span className="text-[10px] text-[#94a3b8]">
+            <span className="text-[10px]" style={{ color: T.text3 }}>
               {group.entries.length} records
             </span>
           )}
@@ -130,15 +131,15 @@ function UnitRow({ group }: { group: UnitGroup }) {
             <span className="text-sm font-semibold text-[#16a34a]">
               {formatRent(group.latestRent)}/mo
             </span>
-            <span className="text-[10px] text-[#94a3b8] ml-1.5">
+            <span className="text-[10px] ml-1.5" style={{ color: T.text3 }}>
               {formatDate(group.latestDate)}
             </span>
           </div>
           {hasHistory &&
             (expanded ? (
-              <ChevronUp className="w-4 h-4 text-[#94a3b8]" />
+              <ChevronUp className="w-4 h-4" style={{ color: T.text3 }} />
             ) : (
-              <ChevronDown className="w-4 h-4 text-[#94a3b8]" />
+              <ChevronDown className="w-4 h-4" style={{ color: T.text3 }} />
             ))}
         </div>
       </button>
@@ -147,7 +148,7 @@ function UnitRow({ group }: { group: UnitGroup }) {
         <div className="pb-3 pl-4 pr-1">
           <table className="w-full text-xs">
             <thead>
-              <tr className="text-[#94a3b8]">
+              <tr style={{ color: T.text3 }}>
                 <th className="text-left py-1 font-medium">Date</th>
                 <th className="text-right py-1 font-medium">Rent</th>
                 <th className="text-right py-1 font-medium hidden sm:table-cell">
@@ -163,13 +164,14 @@ function UnitRow({ group }: { group: UnitGroup }) {
                 return (
                   <tr
                     key={entry.id}
-                    className="border-t border-[#f8fafc]"
+                    className="border-t"
+                    style={{ borderColor: T.elevated }}
                   >
-                    <td className="py-1.5 text-[#334155]">
+                    <td className="py-1.5" style={{ color: T.text1 }}>
                       {formatDate(entry.observed_at)}
                     </td>
                     <td className="py-1.5 text-right">
-                      <span className="font-medium text-[#0F1D2E]">
+                      <span className="font-medium" style={{ color: T.text1 }}>
                         {formatRent(entry.rent)}
                       </span>
                       {diff !== 0 && (
@@ -181,10 +183,10 @@ function UnitRow({ group }: { group: UnitGroup }) {
                         </span>
                       )}
                     </td>
-                    <td className="py-1.5 text-right text-[#64748b] hidden sm:table-cell">
+                    <td className="py-1.5 text-right hidden sm:table-cell" style={{ color: T.text2 }}>
                       {entry.sqft ? `${entry.sqft.toLocaleString()}` : "—"}
                     </td>
-                    <td className="py-1.5 text-right text-[#64748b]">
+                    <td className="py-1.5 text-right" style={{ color: T.text2 }}>
                       {sourceLabel(entry.source)}
                     </td>
                   </tr>
@@ -220,11 +222,11 @@ export function RentHistory({ history }: RentHistoryProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <History className="w-4.5 h-4.5 text-[#2563EB]" />
-            <h3 className="text-base font-bold text-[#0F1D2E]">
+            <h3 className="text-base font-bold" style={{ color: T.text1 }}>
               Unit Rent Data ({groups.length})
             </h3>
           </div>
-          <span className="text-xs text-[#94a3b8]">
+          <span className="text-xs" style={{ color: T.text3 }}>
             Last checked {formatDate(lastChecked)}
           </span>
         </div>
@@ -239,7 +241,8 @@ export function RentHistory({ history }: RentHistoryProps) {
           <button
             type="button"
             onClick={() => setShowAll(!showAll)}
-            className="w-full flex items-center justify-center gap-1.5 py-2.5 mt-2 text-sm font-medium text-[#2563EB] hover:bg-[#f1f5f9] rounded-lg transition-colors"
+            className="w-full flex items-center justify-center gap-1.5 py-2.5 mt-2 text-sm font-medium rounded-lg transition-colors"
+            style={{ color: T.accent }}
           >
             {showAll ? (
               <>
@@ -252,7 +255,7 @@ export function RentHistory({ history }: RentHistoryProps) {
             )}
           </button>
         )}
-        <p className="text-[10px] text-[#94a3b8] mt-3">
+        <p className="text-[10px] mt-3" style={{ color: T.text3 }}>
           Based on listing data
         </p>
       </CardContent>

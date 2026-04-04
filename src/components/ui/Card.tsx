@@ -1,3 +1,5 @@
+import { T } from "@/lib/design-tokens";
+
 interface CardProps {
   children: React.ReactNode;
   className?: string;
@@ -9,7 +11,8 @@ export function Card({ children, className = "", hover = false, id }: CardProps)
   return (
     <div
       id={id}
-      className={`bg-white rounded-xl border border-[#e2e8f0] ${hover ? "hover:shadow-md hover:border-[#cbd5e1] transition-all cursor-pointer" : "shadow-sm"} ${className}`}
+      className={`bg-white rounded-xl border ${hover ? "hover:shadow-md transition-all cursor-pointer" : "shadow-sm"} ${className}`}
+      style={{ borderColor: T.border }}
     >
       {children}
     </div>
@@ -17,7 +20,7 @@ export function Card({ children, className = "", hover = false, id }: CardProps)
 }
 
 export function CardHeader({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <div className={`px-6 py-4 border-b border-[#e2e8f0] ${className}`}>{children}</div>;
+  return <div className={`px-6 py-4 border-b ${className}`} style={{ borderColor: T.border }}>{children}</div>;
 }
 
 export function CardContent({ children, className = "" }: { children: React.ReactNode; className?: string }) {

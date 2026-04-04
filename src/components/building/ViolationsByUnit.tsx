@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { ChevronDown, Shield } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import { T } from "@/lib/design-tokens";
 
 interface ViolationSummary {
   id?: number;
@@ -120,18 +121,18 @@ export function ViolationsByUnit({ violationSummaries, units, buildingId }: Viol
   return (
     <section>
       <div className="flex items-center gap-2 mb-4">
-        <Shield className="w-5 h-5 text-[#EF4444]" />
-        <h2 className="text-xl font-bold text-[#0F1D2E]">
+        <Shield className="w-5 h-5" style={{ color: T.danger }} />
+        <h2 className="text-xl font-bold" style={{ color: T.text1 }}>
           Violations by Unit
         </h2>
-        <span className="text-sm text-[#94a3b8]">
+        <span className="text-sm" style={{ color: T.text3 }}>
           ({groups.length} {groups.length === 1 ? "unit" : "units"})
         </span>
       </div>
 
-      <div className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm overflow-hidden">
+      <div className="bg-white rounded-xl border shadow-sm overflow-hidden" style={{ borderColor: T.border }}>
         {/* Header row */}
-        <div className="grid grid-cols-[1fr_auto_auto_auto] gap-4 px-4 py-2.5 border-b border-[#e2e8f0] bg-[#f8fafc] text-xs font-medium text-[#64748b]">
+        <div className="grid grid-cols-[1fr_auto_auto_auto] gap-4 px-4 py-2.5 border-b text-xs font-medium" style={{ borderColor: T.border, backgroundColor: T.elevated, color: T.text2 }}>
           <span>Unit</span>
           <span className="text-right">Violations</span>
           <span className="text-right">Open</span>
@@ -139,7 +140,7 @@ export function ViolationsByUnit({ violationSummaries, units, buildingId }: Viol
         </div>
 
         {/* Rows */}
-        <div className="divide-y divide-[#f1f5f9]">
+        <div className="divide-y divide-gray-100">
           {visible.map((group) => {
             const isExpanded = expandedUnit === group.key;
 
@@ -148,14 +149,15 @@ export function ViolationsByUnit({ violationSummaries, units, buildingId }: Viol
                 {/* Summary row — clickable to expand */}
                 <button
                   onClick={() => setExpandedUnit(isExpanded ? null : group.key)}
-                  className="w-full grid grid-cols-[1fr_auto_auto_auto] gap-4 items-center px-4 py-3 hover:bg-[#f8fafc] transition-colors text-left"
+                  className="w-full grid grid-cols-[1fr_auto_auto_auto] gap-4 items-center px-4 py-3 transition-colors text-left hover:bg-gray-50"
                 >
                   {/* Unit label + class badges */}
                   <div className="flex items-center gap-2 min-w-0">
                     <ChevronDown
-                      className={`w-4 h-4 text-[#94a3b8] flex-shrink-0 transition-transform ${isExpanded ? "rotate-0" : "-rotate-90"}`}
+                      className={`w-4 h-4 flex-shrink-0 transition-transform ${isExpanded ? "rotate-0" : "-rotate-90"}`}
+                      style={{ color: T.text3 }}
                     />
-                    <span className="text-sm font-semibold text-[#0F1D2E] truncate">
+                    <span className="text-sm font-semibold truncate" style={{ color: T.text1 }}>
                       {group.key === "__COMMON__" ? "Common Areas" : `Apt ${group.label}`}
                     </span>
                     <div className="flex items-center gap-1 flex-shrink-0">
@@ -178,40 +180,40 @@ export function ViolationsByUnit({ violationSummaries, units, buildingId }: Viol
                   </div>
 
                   {/* Total */}
-                  <span className="text-sm font-medium text-[#0F1D2E] text-right tabular-nums">
+                  <span className="text-sm font-medium text-right tabular-nums" style={{ color: T.text1 }}>
                     {group.total}
                   </span>
 
                   {/* Open count */}
-                  <span className={`text-sm text-right tabular-nums ${group.open > 0 ? "font-medium text-[#EF4444]" : "text-[#94a3b8]"}`}>
+                  <span className="text-sm text-right tabular-nums" style={{ color: group.open > 0 ? T.danger : T.text3, fontWeight: group.open > 0 ? 500 : undefined }}>
                     {group.open}
                   </span>
 
                   {/* Date */}
-                  <span className="text-xs text-[#94a3b8] text-right hidden sm:block">
+                  <span className="text-xs text-right hidden sm:block" style={{ color: T.text3 }}>
                     {group.latestDate ? formatDate(group.latestDate) : "\u2014"}
                   </span>
                 </button>
 
                 {/* Expanded violation details */}
                 {isExpanded && (
-                  <div className="bg-[#f8fafc] border-t border-[#e2e8f0]">
-                    <div className="px-4 py-2 grid grid-cols-[auto_1fr_auto_auto] gap-3 text-[11px] font-medium text-[#64748b] uppercase tracking-wide">
+                  <div className="border-t" style={{ backgroundColor: T.elevated, borderColor: T.border }}>
+                    <div className="px-4 py-2 grid grid-cols-[auto_1fr_auto_auto] gap-3 text-[11px] font-medium uppercase tracking-wide" style={{ color: T.text2 }}>
                       <span>Date</span>
                       <span>Description</span>
                       <span className="text-center">Class</span>
                       <span className="text-center">Status</span>
                     </div>
-                    <div className="divide-y divide-[#e2e8f0] max-h-[400px] overflow-y-auto">
+                    <div className="max-h-[400px] overflow-y-auto" style={{ borderColor: T.border }}>
                       {group.violations.map((v, i) => (
                         <div
                           key={v.id ?? i}
                           className="px-4 py-2.5 grid grid-cols-[auto_1fr_auto_auto] gap-3 items-start text-sm hover:bg-white transition-colors"
                         >
-                          <span className="text-xs text-[#64748b] whitespace-nowrap pt-0.5">
+                          <span className="text-xs whitespace-nowrap pt-0.5" style={{ color: T.text2 }}>
                             {v.inspection_date ? formatDate(v.inspection_date) : "\u2014"}
                           </span>
-                          <p className="text-[#334155] text-sm leading-snug">
+                          <p className="text-sm leading-snug" style={{ color: T.text1 }}>
                             {v.nov_description || "No description available"}
                           </p>
                           <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-bold ${classColor(v.class)}`}>
@@ -234,7 +236,8 @@ export function ViolationsByUnit({ violationSummaries, units, buildingId }: Viol
         {hasMore && (
           <button
             onClick={() => setShowAll(!showAll)}
-            className="w-full px-4 py-3 text-sm font-medium text-[#3B82F6] hover:bg-[#EFF6FF] transition-colors border-t border-[#f1f5f9] flex items-center justify-center gap-1"
+            className="w-full px-4 py-3 text-sm font-medium hover:bg-blue-50 transition-colors border-t flex items-center justify-center gap-1"
+            style={{ color: T.blue, borderColor: T.elevated }}
           >
             {showAll ? "Show less" : `Show all ${groups.length} units`}
             <ChevronDown className={`w-4 h-4 transition-transform ${showAll ? "rotate-180" : ""}`} />

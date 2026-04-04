@@ -1,6 +1,7 @@
 import { AlertTriangle, CheckCircle } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { formatDate } from "@/lib/utils";
+import { T } from "@/lib/design-tokens";
 import type { HpdViolation } from "@/types";
 
 interface ViolationTimelineProps {
@@ -18,7 +19,7 @@ const classColors: Record<string, { bg: string; text: string; label: string }> =
 export function ViolationTimeline({ violations, agencyLabel = "HPD" }: ViolationTimelineProps) {
   if (violations.length === 0) {
     return (
-      <p className="text-sm text-[#64748b] py-4">
+      <p className="text-sm py-4" style={{ color: T.text2 }}>
         No {agencyLabel} violations on record.
       </p>
     );
@@ -32,7 +33,8 @@ export function ViolationTimeline({ violations, agencyLabel = "HPD" }: Violation
         return (
           <div
             key={v.id}
-            className={`rounded-lg border border-[#e2e8f0] p-4 ${cls.bg}`}
+            className={`rounded-lg border p-4 ${cls.bg}`}
+            style={{ borderColor: T.border }}
           >
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-start gap-3">
@@ -59,19 +61,19 @@ export function ViolationTimeline({ violations, agencyLabel = "HPD" }: Violation
                     </Badge>
                   </div>
                   {v.nov_description && (
-                    <p className="text-sm text-[#0F1D2E] mt-1">
+                    <p className="text-sm mt-1" style={{ color: T.text1 }}>
                       {v.nov_description}
                     </p>
                   )}
                   {v.apartment && (
-                    <p className="text-xs text-[#64748b] mt-1">
+                    <p className="text-xs mt-1" style={{ color: T.text2 }}>
                       Apt: {v.apartment}
                     </p>
                   )}
                 </div>
               </div>
               {v.inspection_date && (
-                <span className="text-xs text-[#64748b] shrink-0">
+                <span className="text-xs shrink-0" style={{ color: T.text2 }}>
                   {formatDate(v.inspection_date)}
                 </span>
               )}

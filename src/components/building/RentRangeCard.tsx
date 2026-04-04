@@ -1,4 +1,5 @@
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
+import { T } from "@/lib/design-tokens";
 import { DollarSign } from "lucide-react";
 
 interface RentEntry {
@@ -58,7 +59,7 @@ export function RentRangeCard({ rents }: RentRangeCardProps) {
       <CardHeader>
         <div className="flex items-center gap-2">
           <DollarSign className={`w-4.5 h-4.5 ${isEstimate ? "text-amber-500" : "text-[#16a34a]"}`} />
-          <h3 className="text-base font-bold text-[#0F1D2E]">Rent Range</h3>
+          <h3 className="text-base font-bold" style={{ color: T.text1 }}>Rent Range</h3>
           {isEstimate && (
             <span className="text-[10px] font-medium text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">
               Neighborhood Estimate
@@ -71,11 +72,11 @@ export function RentRangeCard({ rents }: RentRangeCardProps) {
           {entries.map((entry) => (
             <div key={entry.bedrooms} className="flex items-center justify-between">
               <div>
-                <span className="text-sm font-medium text-[#0F1D2E]">
+                <span className="text-sm font-medium" style={{ color: T.text1 }}>
                   {BED_LABELS[entry.bedrooms] || `${entry.bedrooms} Bed`}
                 </span>
                 {entry.listing_count > 0 && (
-                  <span className="text-[10px] text-[#94a3b8] ml-1.5">
+                  <span className="text-[10px] ml-1.5" style={{ color: T.text3 }}>
                     ({entry.listing_count} listing{entry.listing_count !== 1 ? "s" : ""})
                   </span>
                 )}
@@ -94,7 +95,7 @@ export function RentRangeCard({ rents }: RentRangeCardProps) {
             </div>
           ))}
         </div>
-        <p className="text-[10px] text-[#94a3b8] mt-3">
+        <p className="text-[10px] mt-3" style={{ color: T.text3 }}>
           {isEstimate
             ? "Based on HUD Fair Market Rent estimates for this ZIP code"
             : "Based on recent listings"}
