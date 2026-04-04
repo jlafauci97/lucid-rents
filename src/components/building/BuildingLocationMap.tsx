@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { MapPin } from "lucide-react";
+import { T } from "@/lib/design-tokens";
 import "leaflet/dist/leaflet.css";
 
 const MapContainer = dynamic(
@@ -56,8 +57,8 @@ export function BuildingLocationMap({
 
   if (!mounted || !icon) {
     return (
-      <div className="h-[300px] bg-[#f8fafc] rounded-xl border border-[#e2e8f0] flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-[#3B82F6] border-t-transparent rounded-full animate-spin" />
+      <div className="h-[300px] rounded-2xl border shadow-sm flex items-center justify-center" style={{ backgroundColor: T.elevated, borderColor: T.border }}>
+        <div className="w-10 h-10 border-4 border-t-transparent rounded-full animate-spin" style={{ borderColor: T.accent, borderTopColor: "transparent" }} />
       </div>
     );
   }
@@ -65,10 +66,10 @@ export function BuildingLocationMap({
   return (
     <section>
       <div className="flex items-center gap-2 mb-4">
-        <MapPin className="w-5 h-5 text-[#3B82F6]" />
-        <h2 className="text-xl font-bold text-[#0F1D2E]">Building Location</h2>
+        <MapPin className="w-5 h-5" style={{ color: T.blue }} />
+        <h2 className="text-xl font-bold" style={{ color: T.text1 }}>Building Location</h2>
       </div>
-      <div className="h-[300px] rounded-xl border border-[#e2e8f0] overflow-hidden">
+      <div className="h-[300px] rounded-2xl border shadow-sm overflow-hidden" style={{ borderColor: T.border }}>
         <MapContainer
           center={[latitude, longitude]}
           zoom={16}
