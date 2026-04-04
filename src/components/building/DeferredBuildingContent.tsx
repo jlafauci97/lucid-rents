@@ -82,10 +82,10 @@ export async function DeferredBuildingContent({ building, buildingId, city, rent
       ? safe(supabase.from("dewey_neighborhood_rents").select("month, beds, median_rent, p25_rent, p75_rent").eq("zip", building.zip_code).order("month", { ascending: true }), [])
       : Promise.resolve([]),
     building.zip_code
-      ? safe(supabase.from("dewey_amenity_premiums").select("amenity, premium_dollars, premium_pct, sample_size").eq("city", building.city || city).eq("zip", building.zip_code).eq("period", "all_time"), [])
+      ? safe(supabase.from("dewey_amenity_premiums").select("amenity, premium_dollars, premium_pct, sample_size").eq("city", city).eq("zip", building.zip_code).eq("period", "all_time"), [])
       : Promise.resolve([]),
     building.zip_code
-      ? safe(supabase.from("dewey_seasonal_index").select("month_of_year, rent_index").eq("city", building.city || city).eq("zip", building.zip_code), [])
+      ? safe(supabase.from("dewey_seasonal_index").select("month_of_year, rent_index").eq("city", city).eq("zip", building.zip_code), [])
       : Promise.resolve([]),
   ]);
 
@@ -98,18 +98,23 @@ export async function DeferredBuildingContent({ building, buildingId, city, rent
 
   const dateFmt = (d: string) => new Date(d).toLocaleDateString("en-US", { month: "short", year: "numeric" });
 
-  const bestPositiveReview = reviews.length > 0
-    ? reviews.reduce((best, r) => ((r.overall_rating ?? 0) > (best.overall_rating ?? 0) ? r : best), reviews[0])
-    : null;
-  const bestCriticalReview = reviews.length > 0
-    ? reviews.reduce((worst, r) => ((r.overall_rating ?? 0) < (worst.overall_rating ?? 0) ? r : worst), reviews[0])
+  // Find best positive review (highest rated WITH body text)
+  const reviewsWithBody = reviews.filter(r => r.body && r.body.trim().length > 0);
+  const positivePool = reviewsWithBody.filter(r => (r.overall_rating ?? 0) >= 3);
+  const criticalPool = reviewsWithBody.filter(r => (r.overall_rating ?? 0) < 3);
+
+  const bestPositiveReview = positivePool.length > 0
+    ? positivePool.reduce((best, r) => ((r.overall_rating ?? 0) > (best.overall_rating ?? 0) ? r : best), positivePool[0])
+    : reviewsWithBody.length > 0 ? reviewsWithBody[0] : null;
+  const bestCriticalReview = criticalPool.length > 0
+    ? criticalPool.reduce((worst, r) => ((r.overall_rating ?? 0) < (worst.overall_rating ?? 0) ? r : worst), criticalPool[0])
     : null;
 
   const bestPositive = bestPositiveReview
-    ? { text: bestPositiveReview.body?.slice(0, 120) || "", author: bestPositiveReview.profile?.display_name || "Anonymous", date: dateFmt(bestPositiveReview.created_at) }
+    ? { text: bestPositiveReview.body!.slice(0, 150), author: bestPositiveReview.profile?.display_name || "Anonymous", date: dateFmt(bestPositiveReview.created_at) }
     : null;
-  const bestCritical = bestCriticalReview && bestCriticalReview !== bestPositiveReview
-    ? { text: bestCriticalReview.body?.slice(0, 120) || "", author: bestCriticalReview.profile?.display_name || "Anonymous", date: dateFmt(bestCriticalReview.created_at) }
+  const bestCritical = bestCriticalReview
+    ? { text: bestCriticalReview.body!.slice(0, 150), author: bestCriticalReview.profile?.display_name || "Anonymous", date: dateFmt(bestCriticalReview.created_at) }
     : null;
 
   return (

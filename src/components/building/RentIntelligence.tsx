@@ -1,5 +1,6 @@
 import { TrendingUp, TrendingDown, MapPin, Calendar, DollarSign, Snowflake, Sun } from "lucide-react";
 import { MarketListings } from "@/components/building/MarketListings";
+import { RentHistoryChart } from "@/components/building/RentHistoryChart";
 import { T, gradeColor } from "@/lib/design-tokens";
 import { SectionTitle } from "@/components/ui/SectionTitle";
 
@@ -387,6 +388,7 @@ export async function RentIntelligence({
       {/* Rent History Chart */}
       {hasRentData && (
         <RentHistoryChart
+          buildingId={buildingId}
           buildingRents={buildingRents}
           neighborhoodRents={neighborhoodRents}
         />
@@ -432,61 +434,8 @@ export async function RentIntelligence({
 }
 
 /* ------------------------------------------------------------------ */
-/*  Placeholder sub-components (to be implemented in their own files)  */
+/*  Placeholder sub-components                                         */
 /* ------------------------------------------------------------------ */
-
-/**
- * Placeholder for RentHistoryChart — renders a simple summary table
- * until the full chart component is built in ./RentHistoryChart.tsx
- */
-function RentHistoryChart({
-  buildingRents,
-  neighborhoodRents,
-}: {
-  buildingRents: RentIntelligenceProps["buildingRents"];
-  neighborhoodRents: RentIntelligenceProps["neighborhoodRents"];
-}) {
-  const beds = mostCommonBeds(buildingRents);
-  const filtered = buildingRents
-    .filter((r) => r.beds === beds)
-    .sort((a, b) => a.month.localeCompare(b.month));
-
-  const recent = filtered.slice(-6);
-
-  return (
-    <div className="rounded-2xl border shadow-sm p-4" style={{ backgroundColor: T.surface, borderColor: T.border }}>
-      <h3 className="text-sm font-semibold mb-3" style={{ color: T.text1, fontFamily: "var(--font-display)" }}>
-        Rent History ({beds === 0 ? "Studio" : `${beds} Bed`})
-      </h3>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr style={{ borderBottom: `1px solid ${T.border}` }}>
-              <th className="text-left py-1.5 text-xs font-medium" style={{ color: T.text2, fontFamily: "var(--font-body)" }}>Month</th>
-              <th className="text-right py-1.5 text-xs font-medium" style={{ color: T.text2, fontFamily: "var(--font-body)" }}>Median</th>
-              <th className="text-right py-1.5 text-xs font-medium" style={{ color: T.text2, fontFamily: "var(--font-body)" }}>Range</th>
-              <th className="text-right py-1.5 text-xs font-medium" style={{ color: T.text2, fontFamily: "var(--font-body)" }}>Listings</th>
-            </tr>
-          </thead>
-          <tbody>
-            {recent.map((r, i) => (
-              <tr key={r.month} style={{ borderBottom: i < recent.length - 1 ? `1px solid ${T.subtle}` : "none" }}>
-                <td className="py-1.5" style={{ color: T.text2 }}>{r.month}</td>
-                <td className="py-1.5 text-right font-semibold" style={{ color: T.text1, fontFamily: "var(--font-mono)" }}>
-                  {formatDollars(r.median_rent)}
-                </td>
-                <td className="py-1.5 text-right" style={{ color: T.text2, fontFamily: "var(--font-mono)" }}>
-                  {formatDollars(r.min_rent)}&ndash;{formatDollars(r.max_rent)}
-                </td>
-                <td className="py-1.5 text-right" style={{ color: T.text3, fontFamily: "var(--font-mono)" }}>{r.listing_count}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
 
 /**
  * Placeholder for ValueBreakdown — renders amenity premiums summary
