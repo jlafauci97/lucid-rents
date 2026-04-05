@@ -1,14 +1,17 @@
 import { NextResponse } from "next/server";
 
 /**
- * Sitemap index — proxies the static index XML through a Vercel Function.
+ * Sitemap index — proxies from Supabase Storage.
  */
 
-export async function GET(req: Request) {
-  const url = new URL(req.url);
+const STORAGE_BASE =
+  "https://okjehevpqvymuayyqkek.supabase.co/storage/v1/object/public/sitemaps";
 
+export async function GET() {
   try {
-    const res = await fetch(`${url.origin}/sitemap.xml?raw=1`);
+    const res = await fetch(`${STORAGE_BASE}/index.xml`, {
+      next: { revalidate: 86400 },
+    });
     if (!res.ok) throw new Error("fetch failed");
     const xml = await res.text();
     return new NextResponse(xml, {
