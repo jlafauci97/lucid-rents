@@ -141,9 +141,9 @@ async function landlordPage(page: number): Promise<MetadataRoute.Sitemap> {
 // ─── Main sitemap export ──────────────────────────────────────
 
 export default async function sitemap(
-  props: { id: number } | Promise<{ id: number }>
+  props: { id: number | Promise<number> }
 ): Promise<MetadataRoute.Sitemap> {
-  const { id } = props instanceof Promise ? await props : props;
+  const id = await Promise.resolve(props.id);
 
   if (id === 0) return staticPages();
 
