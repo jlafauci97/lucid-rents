@@ -99,6 +99,18 @@ METRO_AREA_URLS = {
         "Kendall": "https://www.zumper.com/apartments-for-rent/kendall-miami-fl",
         "Edgewater": "https://www.zumper.com/apartments-for-rent/edgewater-miami-fl",
     },
+    "houston": {
+        "Houston": "https://www.zumper.com/apartments-for-rent/houston-tx",
+        "Midtown": "https://www.zumper.com/apartments-for-rent/midtown-houston-tx",
+        "Montrose": "https://www.zumper.com/apartments-for-rent/montrose-houston-tx",
+        "Heights": "https://www.zumper.com/apartments-for-rent/the-heights-houston-tx",
+        "Galleria": "https://www.zumper.com/apartments-for-rent/galleria-houston-tx",
+        "Medical Center": "https://www.zumper.com/apartments-for-rent/medical-center-houston-tx",
+        "Rice Village": "https://www.zumper.com/apartments-for-rent/rice-village-houston-tx",
+        "Downtown": "https://www.zumper.com/apartments-for-rent/downtown-houston-tx",
+        "Memorial": "https://www.zumper.com/apartments-for-rent/memorial-houston-tx",
+        "Katy": "https://www.zumper.com/apartments-for-rent/katy-tx",
+    },
 }
 
 # Backward compatibility
@@ -765,7 +777,25 @@ def parse_html_card(card, default_borough: str) -> dict | None:
 
 
 # ── BUILDING MATCHING ────────────────────────────────────────────────────────
-def match_building(listing: dict) -> str | None:
+def extract_unit_number(listing: dict) -> str | None:
+    """Extract unit/apartment number from a Zumper listing."""
+    # Check explicit fields from JSON-LD
+    for key in ("unitNumber", "unit", "floorPlanName", "aptNumber"):
+        val = listing.get(key)
+        if val:
+            return str(val).strip()
+    # Try parsing from address or listing name
+    for field in ("address", "address_full", "listing_name"):
+        text = listing.get(field, "")
+        if not text:
+            continue
+        m = re.search(r'(?:Unit|Apt|Apartment|Suite|Ste|#)\s*([A-Za-z0-9-]+)', text, re.IGNORECASE)
+        if m:
+            return m.group(1).strip()
+    return None
+
+
+def match_building(listing: dict, metro: str = "nyc") -> str | None:
     """Try to match a listing to an existing building by address + zip."""
     addr = listing.get("address", "")
     zip_code = listing.get("zip_code", "")
@@ -781,6 +811,7 @@ def match_building(listing: dict) -> str | None:
             result = supabase.table("buildings") \
                 .select("id") \
                 .eq("zip_code", zip_code) \
+                .eq("metro", metro) \
                 .ilike("full_address", f"%{normalized}%") \
                 .limit(1) \
                 .execute()
@@ -795,6 +826,7 @@ def match_building(listing: dict) -> str | None:
                 result = supabase.table("buildings") \
                     .select("id") \
                     .eq("zip_code", zip_code) \
+                    .eq("metro", metro) \
                     .eq("house_number", house_num) \
                     .limit(1) \
                     .execute()
@@ -807,6 +839,7 @@ def match_building(listing: dict) -> str | None:
             result = supabase.table("buildings") \
                 .select("id") \
                 .eq("borough", borough) \
+                .eq("metro", metro) \
                 .ilike("full_address", f"%{normalized}%") \
                 .limit(1) \
                 .execute()
@@ -821,7 +854,7 @@ def match_building(listing: dict) -> str | None:
 
 
 # ── DATABASE WRITES ──────────────────────────────────────────────────────────
-def upsert_rents(building_id: str, rent_by_beds: dict) -> int:
+def upsert_rents(building_id: str, rent_by_beds: dict, unit_number: str | None = None) -> int:
     if not rent_by_beds:
         return 0
 
@@ -843,15 +876,16 @@ def upsert_rents(building_id: str, rent_by_beds: dict) -> int:
             "scraped_at": now,
             "updated_at": now,
         })
-        history_rows.append({
+        history_row = {
             "building_id": building_id,
             "source": SOURCE,
-            "unit_number": "",
+            "unit_number": unit_number or "",
             "bedrooms": beds,
             "rent": median,
             "sqft": data.get("sqft_min"),
             "observed_at": now,
-        })
+        }
+        history_rows.append(history_row)
 
     try:
         supabase.table("building_rents") \
@@ -1071,7 +1105,7 @@ def main():
                     print(f"    [DRY RUN] {addr} | beds={listing.get('bed_min')} | amenities={len(listing['amenities'])}")
                     continue
 
-                building_id = match_building(listing)
+                building_id = match_building(listing, metro=metro)
 
                 if building_id:
                     total_matched += 1
@@ -1086,7 +1120,8 @@ def main():
                         print(f"    SKIP {addr} (could not match or create)")
                         continue
 
-                rents_added = upsert_rents(building_id, listing["rent_by_beds"])
+                unit_number = extract_unit_number(listing)
+                rents_added = upsert_rents(building_id, listing["rent_by_beds"], unit_number=unit_number)
                 amenities_added = upsert_amenities(building_id, listing["amenities"], metro)
                 listing_saved = upsert_listing(building_id, listing)
 

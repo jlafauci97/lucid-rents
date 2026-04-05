@@ -328,12 +328,115 @@ STATEN_ISLAND = [
     ("Bay Terrace SI", "bay-terrace-staten-island-new-york-ny"),
 ]
 
+# ── LOS ANGELES ──────────────────────────────────────────────────────────────
+LOS_ANGELES = [
+    ("Hollywood", "hollywood-los-angeles-ca"),
+    ("Downtown LA", "downtown-los-angeles-ca"),
+    ("Koreatown", "koreatown-los-angeles-ca"),
+    ("Silver Lake", "silver-lake-los-angeles-ca"),
+    ("Echo Park", "echo-park-los-angeles-ca"),
+    ("Venice", "venice-los-angeles-ca"),
+    ("Los Feliz", "los-feliz-los-angeles-ca"),
+    ("Mar Vista", "mar-vista-los-angeles-ca"),
+    ("Palms", "palms-los-angeles-ca"),
+    ("Westwood", "westwood-los-angeles-ca"),
+    ("Atwater Village", "atwater-village-los-angeles-ca"),
+    ("Eagle Rock", "eagle-rock-los-angeles-ca"),
+    ("Highland Park", "highland-park-los-angeles-ca"),
+    ("West Hollywood", "west-hollywood-ca"),
+    ("Santa Monica", "santa-monica-ca"),
+    ("Culver City", "culver-city-ca"),
+    ("Beverly Hills", "beverly-hills-ca"),
+    ("Pasadena", "pasadena-ca"),
+    ("Glendale", "glendale-ca"),
+    ("Burbank", "burbank-ca"),
+    ("Inglewood", "inglewood-ca"),
+]
+
+# ── CHICAGO ──────────────────────────────────────────────────────────────────
+CHICAGO = [
+    ("Lincoln Park", "lincoln-park-chicago-il"),
+    ("Lake View", "lake-view-chicago-il"),
+    ("South Loop", "south-loop-chicago-il"),
+    ("West Loop", "west-loop-chicago-il"),
+    ("Wicker Park", "wicker-park-chicago-il"),
+    ("Logan Square", "logan-square-chicago-il"),
+    ("Hyde Park", "hyde-park-chicago-il"),
+    ("Old Town", "old-town-chicago-il"),
+    ("River North", "river-north-chicago-il"),
+    ("Gold Coast", "gold-coast-chicago-il"),
+    ("Uptown", "uptown-chicago-il"),
+    ("Ravenswood", "ravenswood-chicago-il"),
+    ("Edgewater", "edgewater-chicago-il"),
+    ("Pilsen", "pilsen-chicago-il"),
+    ("Bridgeport", "bridgeport-chicago-il"),
+    ("Andersonville", "andersonville-chicago-il"),
+    ("Bucktown", "bucktown-chicago-il"),
+    ("Rogers Park", "rogers-park-chicago-il"),
+]
+
+# ── MIAMI ────────────────────────────────────────────────────────────────────
+MIAMI = [
+    ("Brickell", "brickell-miami-fl"),
+    ("Miami Beach", "miami-beach-fl"),
+    ("Coral Gables", "coral-gables-fl"),
+    ("Wynwood", "wynwood-miami-fl"),
+    ("Coconut Grove", "coconut-grove-miami-fl"),
+    ("Little Havana", "little-havana-miami-fl"),
+    ("Doral", "doral-fl"),
+    ("Hialeah", "hialeah-fl"),
+    ("Aventura", "aventura-fl"),
+    ("North Miami", "north-miami-fl"),
+    ("Kendall", "kendall-fl"),
+    ("Homestead", "homestead-fl"),
+    ("Sunny Isles Beach", "sunny-isles-beach-fl"),
+    ("Key Biscayne", "key-biscayne-fl"),
+    ("South Miami", "south-miami-fl"),
+    ("North Miami Beach", "north-miami-beach-fl"),
+    ("Miami Gardens", "miami-gardens-fl"),
+    ("Palmetto Bay", "palmetto-bay-fl"),
+    ("Pinecrest", "pinecrest-fl"),
+    ("Hallandale Beach", "hallandale-beach-fl"),
+]
+
+# ── HOUSTON ──────────────────────────────────────────────────────────────────
+HOUSTON = [
+    ("Montrose", "montrose-houston-tx"),
+    ("Midtown", "midtown-houston-tx"),
+    ("Heights", "heights-houston-tx"),
+    ("River Oaks", "river-oaks-houston-tx"),
+    ("Galleria", "galleria-houston-tx"),
+    ("Medical Center", "medical-center-houston-tx"),
+    ("Memorial", "memorial-houston-tx"),
+    ("Downtown", "downtown-houston-tx"),
+    ("Third Ward", "third-ward-houston-tx"),
+    ("Rice Military", "rice-military-houston-tx"),
+    ("Greenway", "greenway-houston-tx"),
+    ("Spring Branch", "spring-branch-houston-tx"),
+    ("Westchase", "westchase-houston-tx"),
+    ("Sharpstown", "sharpstown-houston-tx"),
+    ("Clear Lake", "clear-lake-houston-tx"),
+    ("Sugar Land", "sugar-land-tx"),
+    ("Katy", "katy-tx"),
+    ("Pearland", "pearland-tx"),
+    ("Spring", "spring-tx"),
+    ("Cypress", "cypress-tx"),
+]
+
 ALL_BOROUGHS = {
     "Manhattan": MANHATTAN,
     "Brooklyn": BROOKLYN,
     "Queens": QUEENS,
     "Bronx": BRONX,
     "Staten Island": STATEN_ISLAND,
+}
+
+ALL_METROS = {
+    "nyc": ALL_BOROUGHS,
+    "los-angeles": {"Los Angeles": LOS_ANGELES},
+    "chicago": {"Chicago": CHICAGO},
+    "miami": {"Miami": MIAMI},
+    "houston": {"Houston": HOUSTON},
 }
 
 

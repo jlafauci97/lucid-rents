@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
 """
-Scrape rent data from zillow.com for NYC neighborhoods using Scrapling.
+Scrape rent data from zillow.com for multi-city neighborhoods using Scrapling.
 
+Supports NYC, Los Angeles, Chicago, Miami, and Houston metro areas.
 Uses StealthyFetcher with real_chrome=True to bypass anti-bot protection,
 then extracts structured JSON from Next.js __NEXT_DATA__ payload.
 
-Scrapes neighborhood-by-neighborhood (283 total) to bypass Zillow's 820-result
-cap per search, capturing far more listings than borough-level scraping.
+Scrapes neighborhood-by-neighborhood to bypass Zillow's 820-result
+cap per search, capturing far more listings than city-level scraping.
 
 Usage:
-    python3 scripts/scrape-zillow.py                              # all neighborhoods, 20 pages each
-    python3 scripts/scrape-zillow.py --borough=Manhattan          # all Manhattan neighborhoods
+    python3 scripts/scrape-zillow.py                              # NYC, all neighborhoods, 20 pages each
+    python3 scripts/scrape-zillow.py --metro=los-angeles          # scrape LA neighborhoods
+    python3 scripts/scrape-zillow.py --metro=chicago              # scrape Chicago neighborhoods
+    python3 scripts/scrape-zillow.py --borough=Manhattan          # all Manhattan neighborhoods (NYC)
     python3 scripts/scrape-zillow.py --neighborhood="Upper East Side"  # single neighborhood
     python3 scripts/scrape-zillow.py --pages=5                    # limit pages per neighborhood
     python3 scripts/scrape-zillow.py --start-index=10             # start from 10th neighborhood (resume)
@@ -57,6 +60,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from importlib import import_module
 _nbhd_mod = import_module("zillow-neighborhoods")
 ALL_BOROUGHS = _nbhd_mod.ALL_BOROUGHS
+ALL_METROS = _nbhd_mod.ALL_METROS
 get_url = _nbhd_mod.get_url
 
 MAX_RETRIES = 3
@@ -387,6 +391,11 @@ def extract_listings(data: dict) -> tuple[list[dict], int]:
             # Extract street part (before city) for normalization
             # addressStreet may contain unit info like "23-10 42nd Rd # 19D"
             unit_number = parse_unit_number(address_street) or parse_unit_number(address)
+            # Fallback: check hdpData.homeInfo.unit
+            if not unit_number:
+                hdp_unit = (item.get("hdpData") or {}).get("homeInfo", {}).get("unit")
+                if hdp_unit and isinstance(hdp_unit, str) and len(hdp_unit) <= 6:
+                    unit_number = hdp_unit.upper()
             street = address_street.split("#")[0].strip() if address_street else ""
             # Also strip APT/UNIT from street for matching
             for sep in [" APT ", " apt ", " Apt ", " UNIT ", " unit ", " Unit "]:
@@ -571,8 +580,10 @@ def extract_listings(data: dict) -> tuple[list[dict], int]:
 
 
 # ── BUILDING MATCHING ────────────────────────────────────────────────────────
-def match_building(listing: dict) -> str | None:
-    """Try to match a Zillow listing to an existing building by address + zip."""
+def match_building(listing: dict, metro: str = "nyc") -> str | None:
+    """Try to match a Zillow listing to an existing building by address + zip.
+    Uses metro to scope the query via p_metro for non-NYC metros.
+    """
     street = listing.get("address_street", "")
     zip_code = listing.get("zip_code", "")
 
@@ -581,14 +592,25 @@ def match_building(listing: dict) -> str | None:
 
     normalized = normalize_address(street)
 
+    # Map metro slug to buildings.p_metro value
+    METRO_TO_P_METRO = {
+        "nyc": "nyc",
+        "los-angeles": "los-angeles",
+        "chicago": "chicago",
+        "miami": "miami",
+        "houston": "houston",
+    }
+    p_metro = METRO_TO_P_METRO.get(metro, metro)
+
     try:
         # Try exact match on full_address containing the street + zip
-        result = supabase.table("buildings") \
+        query = supabase.table("buildings") \
             .select("id") \
             .eq("zip_code", zip_code) \
-            .ilike("full_address", f"%{normalized}%") \
-            .limit(1) \
-            .execute()
+            .ilike("full_address", f"%{normalized}%")
+        if metro != "nyc":
+            query = query.eq("metro", p_metro)
+        result = query.limit(1).execute()
 
         if result.data and len(result.data) > 0:
             return result.data[0]["id"]
@@ -597,12 +619,13 @@ def match_building(listing: dict) -> str | None:
         parts = normalized.split()
         if len(parts) >= 2:
             house_num = parts[0]
-            result = supabase.table("buildings") \
+            query = supabase.table("buildings") \
                 .select("id") \
                 .eq("zip_code", zip_code) \
-                .eq("house_number", house_num) \
-                .limit(1) \
-                .execute()
+                .eq("house_number", house_num)
+            if metro != "nyc":
+                query = query.eq("metro", p_metro)
+            result = query.limit(1).execute()
 
             if result.data and len(result.data) > 0:
                 return result.data[0]["id"]
@@ -614,7 +637,7 @@ def match_building(listing: dict) -> str | None:
 
 
 # ── DATABASE WRITES ──────────────────────────────────────────────────────────
-def upsert_rents(building_id: str, rent_by_beds: dict) -> int:
+def upsert_rents(building_id: str, rent_by_beds: dict, unit_number: str | None = None) -> int:
     """Upsert rent data for a building and append to rent history."""
     if not rent_by_beds:
         return 0
@@ -637,14 +660,17 @@ def upsert_rents(building_id: str, rent_by_beds: dict) -> int:
             "scraped_at": now,
             "updated_at": now,
         })
-        history_rows.append({
+        history_row = {
             "building_id": building_id,
             "source": SOURCE,
             "bedrooms": beds,
             "rent": median,
             "sqft": data.get("sqft_min"),
             "observed_at": now,
-        })
+        }
+        if unit_number:
+            history_row["unit_number"] = unit_number
+        history_rows.append(history_row)
 
     try:
         supabase.table("building_rents") \
@@ -696,20 +722,36 @@ def upsert_amenities(building_id: str, amenities: list[str]) -> int:
         return 0
 
 
-def create_building(listing: dict) -> str | None:
+def create_building(listing: dict, metro: str = "nyc") -> str | None:
     """Create a new building record from a Zillow listing. Returns building ID."""
     street = listing.get("address_street", "")
     if not street:
         return None
 
-    borough = detect_borough(listing)
+    # Metro-specific city/state/borough configuration
+    METRO_CONFIG = {
+        "nyc": {"city": "New York", "state": "NY"},
+        "los-angeles": {"city": "Los Angeles", "state": "CA"},
+        "chicago": {"city": "Chicago", "state": "IL"},
+        "miami": {"city": "Miami", "state": "FL"},
+        "houston": {"city": "Houston", "state": "TX"},
+    }
+    metro_cfg = METRO_CONFIG.get(metro, METRO_CONFIG["nyc"])
+
+    if metro == "nyc":
+        borough = detect_borough(listing)
+    else:
+        # For non-NYC metros, use the city from the listing or fall back to metro city
+        borough = listing.get("address_city", "") or metro_cfg["city"]
+
     parts = street.upper().split(None, 1)
     house_number = parts[0] if parts else ""
     street_name = parts[1] if len(parts) > 1 else ""
     zip_code = listing.get("zip_code", "")
+    state = listing.get("address_state", "") or metro_cfg["state"]
 
-    # Build full_address in the same format as the sync: "23-10 42ND RD, Queens, NY, 11101"
-    full_address = f"{street.upper()}, {borough}, NY"
+    # Build full_address: "123 MAIN ST, Los Angeles, CA, 90028"
+    full_address = f"{street.upper()}, {borough}, {state}"
     if zip_code:
         full_address += f", {zip_code}"
 
@@ -720,12 +762,13 @@ def create_building(listing: dict) -> str | None:
         "house_number": house_number,
         "street_name": street_name,
         "borough": borough,
-        "city": "New York",
-        "state": "NY",
+        "city": metro_cfg["city"],
+        "state": state,
         "zip_code": zip_code or None,
         "slug": slug,
         "latitude": listing.get("latitude"),
         "longitude": listing.get("longitude"),
+        "metro": metro,
         "overall_score": 0,
         "review_count": 0,
         "violation_count": 0,
@@ -885,34 +928,41 @@ def upsert_unit_listing(building_id: str, unit_id: str, unit_number: str,
 
 # ── MAIN ─────────────────────────────────────────────────────────────────────
 def main():
-    parser = argparse.ArgumentParser(description="Scrape zillow.com for NYC rent data by neighborhood")
-    parser.add_argument("--borough", type=str, default="", help="Single borough to scrape")
+    parser = argparse.ArgumentParser(description="Scrape zillow.com for rent data by neighborhood (multi-city)")
+    parser.add_argument("--metro", type=str, default="nyc",
+                        choices=["nyc", "los-angeles", "chicago", "miami", "houston"],
+                        help="Metro area to scrape (default: nyc)")
+    parser.add_argument("--borough", type=str, default="", help="Single borough/area to scrape")
     parser.add_argument("--neighborhood", type=str, default="", help="Single neighborhood name (e.g. 'Upper East Side')")
     parser.add_argument("--pages", type=int, default=20, help="Max pages per neighborhood (41 listings/page)")
     parser.add_argument("--dry-run", action="store_true", help="Preview without writing to DB")
     parser.add_argument("--start-index", type=int, default=0, help="Skip first N neighborhoods (for resuming)")
     args = parser.parse_args()
 
+    # Select neighborhood dict based on metro
+    metro = args.metro
+    metro_boroughs = ALL_METROS.get(metro, ALL_BOROUGHS)
+
     # Build neighborhood list
     neighborhoods = []
     if args.neighborhood:
-        # Find specific neighborhood
-        for borough, nbhds in ALL_BOROUGHS.items():
+        # Find specific neighborhood across the selected metro
+        for borough, nbhds in metro_boroughs.items():
             for name, slug in nbhds:
                 if name.lower() == args.neighborhood.lower():
                     neighborhoods.append((borough, name, slug))
                     break
         if not neighborhoods:
-            print(f"ERROR: Neighborhood '{args.neighborhood}' not found")
+            print(f"ERROR: Neighborhood '{args.neighborhood}' not found in metro '{metro}'")
             sys.exit(1)
     elif args.borough:
-        if args.borough not in ALL_BOROUGHS:
-            print(f"ERROR: Borough '{args.borough}' not found. Choose from: {list(ALL_BOROUGHS.keys())}")
+        if args.borough not in metro_boroughs:
+            print(f"ERROR: Borough/area '{args.borough}' not found. Choose from: {list(metro_boroughs.keys())}")
             sys.exit(1)
-        for name, slug in ALL_BOROUGHS[args.borough]:
+        for name, slug in metro_boroughs[args.borough]:
             neighborhoods.append((args.borough, name, slug))
     else:
-        for borough, nbhds in ALL_BOROUGHS.items():
+        for borough, nbhds in metro_boroughs.items():
             for name, slug in nbhds:
                 neighborhoods.append((borough, name, slug))
 
@@ -934,7 +984,7 @@ def main():
     neighborhoods_scraped = 0
     neighborhoods_empty = 0
 
-    print(f"Scraping zillow.com — {len(neighborhoods)} neighborhoods, max {max_pages} pages each, dry_run={dry_run}")
+    print(f"Scraping zillow.com — metro={metro}, {len(neighborhoods)} neighborhoods, max {max_pages} pages each, dry_run={dry_run}")
     if args.start_index > 0:
         print(f"Resuming from index {args.start_index}")
     print(f"Start time: {datetime.now()}\n")
@@ -989,14 +1039,14 @@ def main():
 
                 try:
                     # Try to match existing building
-                    building_id = match_building(listing)
+                    building_id = match_building(listing, metro=metro)
 
                     if building_id:
                         total_matched += 1
                         label = "MATCHED"
                     else:
                         # Create new building
-                        building_id = create_building(listing)
+                        building_id = create_building(listing, metro=metro)
                         if building_id:
                             total_created += 1
                             label = "CREATED"
@@ -1006,7 +1056,8 @@ def main():
                             continue
 
                     # Upsert all data for this building
-                    rents_added = upsert_rents(building_id, listing["rent_by_beds"])
+                    rents_added = upsert_rents(building_id, listing["rent_by_beds"],
+                                               unit_number=listing.get("unit_number"))
                     amenities_added = upsert_amenities(building_id, listing["amenities"])
                     listing_saved = upsert_listing(building_id, listing)
 

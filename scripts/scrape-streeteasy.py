@@ -382,6 +382,12 @@ def parse_listing_card(card, default_borough: str) -> dict | None:
     if not address:
         return None
 
+    # ── Unit / Apartment number ─────────────────────────────────────────
+    unit_number = ""
+    unit_match = re.search(r'(?:#|apt\.?\s*|unit\s*|suite\s*)([a-zA-Z0-9-]+)', address, re.IGNORECASE)
+    if unit_match:
+        unit_number = unit_match.group(1).strip().upper()
+
     # ── Listing URL ──────────────────────────────────────────────────────
     listing_url = ""
     links = card.css("a")
@@ -393,6 +399,12 @@ def parse_listing_card(card, default_borough: str) -> dict | None:
             else:
                 listing_url = href
             break
+
+    # Try to extract unit from listing URL if not found in address
+    if not unit_number and listing_url:
+        url_unit_match = re.search(r'/unit[-_]([a-zA-Z0-9]+)', listing_url, re.IGNORECASE)
+        if url_unit_match:
+            unit_number = url_unit_match.group(1).strip().upper()
 
     if not listing_url and links and len(links) > 0:
         href = links[0].attrib.get("href", "")
@@ -556,6 +568,7 @@ def parse_listing_card(card, default_borough: str) -> dict | None:
         "longitude": None,
         "property_type": "apartment",
         "listing_url": listing_url,
+        "unit_number": unit_number,
         # Amenities
         "amenities": amenities,
         # Rent data
@@ -607,6 +620,7 @@ def match_building(listing: dict) -> str | None:
             # Try exact match on full_address containing the street + zip
             result = supabase.table("buildings") \
                 .select("id") \
+                .eq("metro", "nyc") \
                 .eq("zip_code", zip_code) \
                 .ilike("full_address", f"%{normalized}%") \
                 .limit(1) \
@@ -622,6 +636,7 @@ def match_building(listing: dict) -> str | None:
             if zip_code:
                 result = supabase.table("buildings") \
                     .select("id") \
+                    .eq("metro", "nyc") \
                     .eq("zip_code", zip_code) \
                     .eq("house_number", house_num) \
                     .limit(1) \
@@ -635,6 +650,7 @@ def match_building(listing: dict) -> str | None:
         if borough:
             result = supabase.table("buildings") \
                 .select("id") \
+                .eq("metro", "nyc") \
                 .eq("borough", borough) \
                 .ilike("full_address", f"%{normalized}%") \
                 .limit(1) \
@@ -650,7 +666,7 @@ def match_building(listing: dict) -> str | None:
 
 
 # ── DATABASE WRITES ──────────────────────────────────────────────────────────
-def upsert_rents(building_id: str, rent_by_beds: dict) -> int:
+def upsert_rents(building_id: str, rent_by_beds: dict, unit_number: str = "") -> int:
     """Upsert rent data for a building and append to rent history."""
     if not rent_by_beds:
         return 0
@@ -679,6 +695,7 @@ def upsert_rents(building_id: str, rent_by_beds: dict) -> int:
             "bedrooms": beds,
             "rent": median,
             "sqft": data.get("sqft_min"),
+            "unit_number": unit_number or "",
             "observed_at": now,
         })
 
@@ -757,6 +774,7 @@ def create_building(listing: dict) -> str | None:
         "house_number": house_number,
         "street_name": street_name,
         "borough": borough,
+        "metro": "nyc",
         "city": "New York",
         "state": "NY",
         "zip_code": zip_code or None,
@@ -918,7 +936,7 @@ def main():
                         continue
 
                 # Upsert all data for this building
-                rents_added = upsert_rents(building_id, listing["rent_by_beds"])
+                rents_added = upsert_rents(building_id, listing["rent_by_beds"], listing.get("unit_number", ""))
                 amenities_added = upsert_amenities(building_id, listing["amenities"])
                 listing_saved = upsert_listing(building_id, listing)
 

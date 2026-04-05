@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
 """
-Scrape rent and amenity data from rent.com for NYC's five boroughs using Scrapling.
+Scrape rent and amenity data from rent.com for multiple metro areas using Scrapling.
 
-Uses StealthyFetcher with real_chrome=True to bypass anti-bot protection,
-then extracts structured JSON from Next.js __NEXT_DATA__ payload.
+Supports NYC, Los Angeles, Chicago, Miami, and Houston. Uses StealthyFetcher
+with real_chrome=True to bypass anti-bot protection, then extracts structured
+JSON from Next.js __NEXT_DATA__ payload.
 
 Usage:
-    python3 scripts/scrape-rent-com.py                        # all boroughs, 5 pages each
-    python3 scripts/scrape-rent-com.py --borough=Manhattan    # single borough
-    python3 scripts/scrape-rent-com.py --pages=20             # more pages per borough
-    python3 scripts/scrape-rent-com.py --dry-run              # preview without DB writes
+    python3 scripts/scrape-rent-com.py                            # NYC, all boroughs, 5 pages each
+    python3 scripts/scrape-rent-com.py --metro=los-angeles        # LA metro area
+    python3 scripts/scrape-rent-com.py --borough=Manhattan        # single borough/area
+    python3 scripts/scrape-rent-com.py --pages=20                 # more pages per area
+    python3 scripts/scrape-rent-com.py --dry-run                  # preview without DB writes
 """
 
 import json
@@ -46,13 +48,64 @@ from supabase import create_client
 supabase = create_client(SUPABASE_URL, SERVICE_KEY)
 
 # ── CONSTANTS ────────────────────────────────────────────────────────────────
-BOROUGH_URLS = {
-    "Manhattan": "https://www.rent.com/new-york/new-york-apartments",
-    "Brooklyn": "https://www.rent.com/new-york/brooklyn-apartments",
-    "Queens": "https://www.rent.com/new-york/queens-apartments",
-    "Bronx": "https://www.rent.com/new-york/bronx-apartments",
-    "Staten Island": "https://www.rent.com/new-york/staten-island-apartments",
+METRO_AREA_URLS = {
+    "nyc": {
+        "Manhattan": "https://www.rent.com/new-york/new-york-apartments",
+        "Brooklyn": "https://www.rent.com/new-york/brooklyn-apartments",
+        "Queens": "https://www.rent.com/new-york/queens-apartments",
+        "Bronx": "https://www.rent.com/new-york/bronx-apartments",
+        "Staten Island": "https://www.rent.com/new-york/staten-island-apartments",
+    },
+    "los-angeles": {
+        "Los Angeles": "https://www.rent.com/california/los-angeles-apartments",
+        "Hollywood": "https://www.rent.com/california/hollywood-apartments",
+        "West Hollywood": "https://www.rent.com/california/west-hollywood-apartments",
+        "Santa Monica": "https://www.rent.com/california/santa-monica-apartments",
+        "Culver City": "https://www.rent.com/california/culver-city-apartments",
+        "Glendale": "https://www.rent.com/california/glendale-apartments",
+        "Burbank": "https://www.rent.com/california/burbank-apartments",
+        "Pasadena": "https://www.rent.com/california/pasadena-apartments",
+        "Long Beach": "https://www.rent.com/california/long-beach-apartments",
+    },
+    "chicago": {
+        "Chicago": "https://www.rent.com/illinois/chicago-apartments",
+        "Evanston": "https://www.rent.com/illinois/evanston-apartments",
+        "Oak Park": "https://www.rent.com/illinois/oak-park-apartments",
+        "Cicero": "https://www.rent.com/illinois/cicero-apartments",
+        "Berwyn": "https://www.rent.com/illinois/berwyn-apartments",
+    },
+    "miami": {
+        "Miami": "https://www.rent.com/florida/miami-apartments",
+        "Miami Beach": "https://www.rent.com/florida/miami-beach-apartments",
+        "Coral Gables": "https://www.rent.com/florida/coral-gables-apartments",
+        "Doral": "https://www.rent.com/florida/doral-apartments",
+        "Aventura": "https://www.rent.com/florida/aventura-apartments",
+        "Hialeah": "https://www.rent.com/florida/hialeah-apartments",
+        "Homestead": "https://www.rent.com/florida/homestead-apartments",
+        "North Miami": "https://www.rent.com/florida/north-miami-apartments",
+    },
+    "houston": {
+        "Houston": "https://www.rent.com/texas/houston-apartments",
+        "Katy": "https://www.rent.com/texas/katy-apartments",
+        "Sugar Land": "https://www.rent.com/texas/sugar-land-apartments",
+        "Pearland": "https://www.rent.com/texas/pearland-apartments",
+        "Spring": "https://www.rent.com/texas/spring-apartments",
+        "Cypress": "https://www.rent.com/texas/cypress-apartments",
+        "Pasadena": "https://www.rent.com/texas/pasadena-apartments",
+        "Missouri City": "https://www.rent.com/texas/missouri-city-apartments",
+    },
 }
+
+METRO_INFO = {
+    "nyc": {"city": "New York", "state": "NY"},
+    "los-angeles": {"city": "Los Angeles", "state": "CA"},
+    "chicago": {"city": "Chicago", "state": "IL"},
+    "miami": {"city": "Miami", "state": "FL"},
+    "houston": {"city": "Houston", "state": "TX"},
+}
+
+# Backward compatibility
+BOROUGH_URLS = METRO_AREA_URLS["nyc"]
 
 MAX_RETRIES = 3
 RETRY_DELAY = 5  # seconds between retries
@@ -200,6 +253,25 @@ def fetch_page(url: str) -> dict | None:
     return None
 
 
+def extract_unit_number(listing_raw: dict) -> str | None:
+    """Extract unit/apartment number from a rent.com listing."""
+    import re
+    # Check explicit fields
+    for key in ("unitNumber", "unit", "aptNumber", "apartmentNumber"):
+        val = listing_raw.get(key)
+        if val:
+            return str(val).strip()
+    # Try parsing from name or address
+    for field in ("name", "address", "addressFull"):
+        text = listing_raw.get(field, "")
+        if not text:
+            continue
+        m = re.search(r'(?:Unit|Apt|Apartment|Suite|Ste|#)\s*([A-Za-z0-9-]+)', text, re.IGNORECASE)
+        if m:
+            return m.group(1).strip()
+    return None
+
+
 def extract_listings(data: dict) -> tuple[list[dict], int]:
     """Extract full listing data and total count from __NEXT_DATA__."""
     try:
@@ -298,6 +370,9 @@ def extract_listings(data: dict) -> tuple[list[dict], int]:
             # Management company
             mgmt = l.get("propertyManagementCompany", {}) or {}
 
+            # Extract unit number
+            unit_number = extract_unit_number(l)
+
             listings.append({
                 # Identity
                 "name": l.get("name", ""),
@@ -308,6 +383,7 @@ def extract_listings(data: dict) -> tuple[list[dict], int]:
                 "longitude": l.get("location", {}).get("lng"),
                 "property_type": l.get("propertyType", ""),
                 "listing_url": l.get("urlPathname", ""),
+                "unit_number": unit_number,
                 # Amenities
                 "amenities": l.get("amenitiesHighlighted", []),
                 # Rent data (aggregated for building_rents)
@@ -398,7 +474,7 @@ def generate_slug(full_address: str) -> str:
 
 
 # ── BUILDING MATCHING ────────────────────────────────────────────────────────
-def match_building(listing: dict) -> str | None:
+def match_building(listing: dict, metro: str = "nyc") -> str | None:
     """Try to match a rent.com listing to an existing building by address + zip."""
     addr = listing.get("address_full", "")
     zip_code = listing.get("zip_code", "")
@@ -415,6 +491,7 @@ def match_building(listing: dict) -> str | None:
     result = supabase.table("buildings") \
         .select("id") \
         .eq("zip_code", zip_code) \
+        .eq("metro", metro) \
         .ilike("full_address", f"%{normalized}%") \
         .limit(1) \
         .execute()
@@ -430,6 +507,7 @@ def match_building(listing: dict) -> str | None:
         result = supabase.table("buildings") \
             .select("id") \
             .eq("zip_code", zip_code) \
+            .eq("metro", metro) \
             .eq("house_number", house_num) \
             .limit(1) \
             .execute()
@@ -441,7 +519,7 @@ def match_building(listing: dict) -> str | None:
 
 
 # ── DATABASE WRITES ──────────────────────────────────────────────────────────
-def upsert_rents(building_id: str, rent_by_beds: dict) -> int:
+def upsert_rents(building_id: str, rent_by_beds: dict, unit_number: str | None = None) -> int:
     """Upsert rent data for a building and append to rent history."""
     if not rent_by_beds:
         return 0
@@ -464,14 +542,17 @@ def upsert_rents(building_id: str, rent_by_beds: dict) -> int:
             "scraped_at": now,
             "updated_at": now,
         })
-        history_rows.append({
+        history_row = {
             "building_id": building_id,
             "source": SOURCE,
             "bedrooms": beds,
             "rent": median,
             "sqft": data.get("sqft_min"),
             "observed_at": now,
-        })
+        }
+        if unit_number:
+            history_row["unit_number"] = unit_number
+        history_rows.append(history_row)
 
     try:
         supabase.table("building_rents") \
@@ -523,13 +604,14 @@ def upsert_amenities(building_id: str, amenities: list[str]) -> int:
         return 0
 
 
-def create_building(listing: dict) -> str | None:
+def create_building(listing: dict, metro: str = "nyc") -> str | None:
     """Create a new building record from a rent.com listing. Returns building ID."""
     addr_full = listing.get("address_full", "")
     if not addr_full:
         return None
 
-    borough = detect_borough(listing)
+    info = METRO_INFO[metro]
+    borough = detect_borough(listing) if metro == "nyc" else listing.get("_area", info["city"])
     street = addr_full.split(",")[0].strip() if "," in addr_full else addr_full
     parts = street.split(None, 1)
     house_number = parts[0].upper() if parts else ""
@@ -537,7 +619,7 @@ def create_building(listing: dict) -> str | None:
     zip_code = listing.get("zip_code", "")
 
     # Build full_address in the same format as the sync: "400 W 61ST ST, Manhattan, NY, 10023"
-    full_address = f"{street.upper()}, {borough}, NY"
+    full_address = f"{street.upper()}, {borough}, {info['state']}"
     if zip_code:
         full_address += f", {zip_code}"
 
@@ -548,10 +630,11 @@ def create_building(listing: dict) -> str | None:
         "house_number": house_number,
         "street_name": street_name,
         "borough": borough,
-        "city": "New York",
-        "state": "NY",
+        "city": info["city"],
+        "state": info["state"],
         "zip_code": zip_code or None,
         "slug": slug,
+        "metro": metro,
         "latitude": listing.get("latitude"),
         "longitude": listing.get("longitude"),
         "overall_score": 0,
@@ -636,14 +719,18 @@ def upsert_listing(building_id: str, listing: dict) -> bool:
 
 # ── MAIN ─────────────────────────────────────────────────────────────────────
 def main():
-    parser = argparse.ArgumentParser(description="Scrape rent.com for NYC rent & amenity data")
-    parser.add_argument("--borough", type=str, default="", help="Single borough to scrape")
-    parser.add_argument("--pages", type=int, default=5, help="Pages per borough (30 listings/page)")
+    parser = argparse.ArgumentParser(description="Scrape rent.com for rent & amenity data")
+    parser.add_argument("--metro", type=str, default="nyc",
+                        choices=["nyc", "los-angeles", "chicago", "miami", "houston"],
+                        help="Metro area to scrape (default: nyc)")
+    parser.add_argument("--borough", type=str, default="", help="Single borough/area to scrape")
+    parser.add_argument("--pages", type=int, default=5, help="Pages per area (30 listings/page)")
     parser.add_argument("--dry-run", action="store_true", help="Preview without writing to DB")
     parser.add_argument("--start-page", type=int, default=1, help="Starting page number")
     args = parser.parse_args()
 
-    boroughs = {args.borough: BOROUGH_URLS[args.borough]} if args.borough else BOROUGH_URLS
+    metro_urls = METRO_AREA_URLS[args.metro]
+    boroughs = {args.borough: metro_urls[args.borough]} if args.borough else metro_urls
     max_pages = args.pages
     dry_run = args.dry_run
 
@@ -655,7 +742,7 @@ def main():
     total_listings_saved = 0
     total_listings = 0
 
-    print(f"Scraping rent.com — boroughs={list(boroughs.keys())}, pages={max_pages}, dry_run={dry_run}")
+    print(f"Scraping rent.com — metro={args.metro}, areas={list(boroughs.keys())}, pages={max_pages}, dry_run={dry_run}")
     print(f"Start time: {datetime.now()}\n")
 
     for borough, base_url in boroughs.items():
@@ -682,23 +769,26 @@ def main():
             total_listings += len(listings)
 
             for listing in listings:
+                # Tag listing with the area name for create_building
+                listing["_area"] = borough
+
                 addr = listing["address_full"] or listing["address"]
                 beds_available = list(listing["rent_by_beds"].keys())
                 amenity_count = len(listing["amenities"])
 
                 if dry_run:
-                    print(f"    [DRY RUN] {addr} | beds={beds_available} | amenities={amenity_count}")
+                    print(f"    [DRY RUN] {addr} | beds={beds_available} | amenities={amenity_count} | unit={listing.get('unit_number')}")
                     continue
 
                 # Try to match existing building
-                building_id = match_building(listing)
+                building_id = match_building(listing, metro=args.metro)
 
                 if building_id:
                     total_matched += 1
                     label = "MATCHED"
                 else:
                     # Create new building
-                    building_id = create_building(listing)
+                    building_id = create_building(listing, metro=args.metro)
                     if building_id:
                         total_created += 1
                         label = "CREATED"
@@ -708,7 +798,7 @@ def main():
                         continue
 
                 # Upsert all data for this building
-                rents_added = upsert_rents(building_id, listing["rent_by_beds"])
+                rents_added = upsert_rents(building_id, listing["rent_by_beds"], unit_number=listing.get("unit_number"))
                 amenities_added = upsert_amenities(building_id, listing["amenities"])
                 listing_saved = upsert_listing(building_id, listing)
 

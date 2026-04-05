@@ -7,9 +7,13 @@ on:
   workflow_dispatch:
     inputs:
       pages:
-        description: "Pages per borough to scrape"
+        description: "Pages per area to scrape"
         required: false
         default: "3"
+      metro:
+        description: "Metro to scrape (all, nyc, los-angeles, chicago, miami, houston)"
+        required: false
+        default: "all"
       source:
         description: "Source to scrape (all, rent_com, zillow, streeteasy, zumper, compass)"
         required: false
@@ -22,19 +26,31 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        borough: [Manhattan, Brooklyn, Queens, Bronx, "Staten Island"]
-    name: "${{ matrix.borough }}"
+        metro: [nyc, los-angeles, chicago, miami, houston]
+    name: "${{ matrix.metro }}"
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Check metro filter
+        id: check
+        run: |
+          FILTER="${{ github.event.inputs.metro || 'all' }}"
+          if [ "$FILTER" != "all" ] && [ "$FILTER" != "${{ matrix.metro }}" ]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Set up Python
+        if: steps.check.outputs.skip != 'true'
         uses: actions/setup-python@v5
         with:
           python-version: "3.13"
 
       - name: Install dependencies
+        if: steps.check.outputs.skip != 'true'
         run: |
           pip install "scrapling[all]" supabase playwright
           playwright install --with-deps chromium
@@ -42,46 +58,46 @@ jobs:
           scrapling install
 
       - name: Scrape Rent.com
-        if: ${{ github.event.inputs.source == 'all' || github.event.inputs.source == 'rent_com' || github.event_name == 'schedule' }}
+        if: steps.check.outputs.skip != 'true' && (github.event.inputs.source == 'all' || github.event.inputs.source == 'rent_com' || github.event_name == 'schedule')
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           PAGES="${{ github.event.inputs.pages || '3' }}"
-          python scripts/scrape-rent-com.py --pages=$PAGES --borough="${{ matrix.borough }}"
+          python scripts/scrape-rent-com.py --metro=${{ matrix.metro }} --pages=$PAGES
 
       - name: Scrape Zillow
-        if: ${{ github.event.inputs.source == 'all' || github.event.inputs.source == 'zillow' || github.event_name == 'schedule' }}
+        if: steps.check.outputs.skip != 'true' && (github.event.inputs.source == 'all' || github.event.inputs.source == 'zillow' || github.event_name == 'schedule')
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           PAGES="${{ github.event.inputs.pages || '3' }}"
-          python scripts/scrape-zillow.py --pages=$PAGES --borough="${{ matrix.borough }}"
+          python scripts/scrape-zillow.py --metro=${{ matrix.metro }} --pages=$PAGES
 
-      - name: Scrape StreetEasy
-        if: ${{ github.event.inputs.source == 'all' || github.event.inputs.source == 'streeteasy' || github.event_name == 'schedule' }}
+      - name: Scrape StreetEasy (NYC only)
+        if: steps.check.outputs.skip != 'true' && matrix.metro == 'nyc' && (github.event.inputs.source == 'all' || github.event.inputs.source == 'streeteasy' || github.event_name == 'schedule')
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           PAGES="${{ github.event.inputs.pages || '25' }}"
-          python scripts/scrape-streeteasy.py --pages=$PAGES --borough="${{ matrix.borough }}"
+          python scripts/scrape-streeteasy.py --pages=$PAGES
 
       - name: Scrape Zumper
-        if: ${{ github.event.inputs.source == 'all' || github.event.inputs.source == 'zumper' || github.event_name == 'schedule' }}
+        if: steps.check.outputs.skip != 'true' && (github.event.inputs.source == 'all' || github.event.inputs.source == 'zumper' || github.event_name == 'schedule')
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           PAGES="${{ github.event.inputs.pages || '5' }}"
-          python scripts/scrape-zumper.py --pages=$PAGES --borough="${{ matrix.borough }}"
+          python scripts/scrape-zumper.py --metro=${{ matrix.metro }} --pages=$PAGES
 
       - name: Scrape Compass
-        if: ${{ github.event.inputs.source == 'all' || github.event.inputs.source == 'compass' || github.event_name == 'schedule' }}
+        if: steps.check.outputs.skip != 'true' && (github.event.inputs.source == 'all' || github.event.inputs.source == 'compass' || github.event_name == 'schedule')
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           PAGES="${{ github.event.inputs.pages || '5' }}"
-          python scripts/scrape-compass.py --pages=$PAGES --borough="${{ matrix.borough }}"
+          python scripts/scrape-compass.py --metro=${{ matrix.metro }} --pages=$PAGES
