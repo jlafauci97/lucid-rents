@@ -49,6 +49,8 @@ export default async function sitemap(
   const files = getSitemapFiles();
   const filename = files[id];
   if (!filename) return [];
+
+  const xml = readFileSync(join(SITEMAP_DIR, filename), "utf-8");
   const entries: MetadataRoute.Sitemap = [];
 
   // Parse <url> blocks from our well-structured generated XML
