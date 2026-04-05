@@ -4,18 +4,11 @@ const nextConfig: NextConfig = {
   images: {
     formats: ["image/avif", "image/webp"],
   },
-  // Exclude 627MB of sitemap XML from all function bundles EXCEPT the
-  // sitemap API routes that need them.
+  // Exclude 627MB of sitemap XML from ALL function bundles.
+  // The sitemap API route uses require("fs") at runtime to read them
+  // from the deployment filesystem (public/ files are available at runtime).
   outputFileTracingExcludes: {
-    "/\\[city\\]/:path*": ["./public/sitemap/**"],
-    "/api/(?!sitemap-xml)/:path*": ["./public/sitemap/**"],
-    "/profile/:path*": ["./public/sitemap/**"],
-    "/about": ["./public/sitemap/**"],
-    "/contact": ["./public/sitemap/**"],
-    "/login": ["./public/sitemap/**"],
-    "/register": ["./public/sitemap/**"],
-    "/privacy": ["./public/sitemap/**"],
-    "/terms": ["./public/sitemap/**"],
+    "*": ["./public/sitemap/**"],
   },
   redirects: async () => [
     {
