@@ -28,7 +28,10 @@ export default function robots(): MetadataRoute.Robots {
         "/compare",         // non-city-prefixed compare (redirects)
       ],
     },
-    sitemap: "https://lucidrents.com/sitemap.xml",
+    sitemap: [
+      "https://lucidrents.com/sitemap.xml",
+      "https://lucidrents.com/sitemap-index.xml",
+    ],
   };
 }
 

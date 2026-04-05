@@ -25,6 +25,7 @@ const nextConfig: NextConfig = {
     beforeFiles: [
       // Serve sitemaps via API routes (dynamic, on-demand) instead of static files
       { source: "/sitemap.xml", destination: "/api/sitemap-xml" },
+      { source: "/sitemap-index.xml", destination: "/api/sitemap-xml" },
       { source: "/sitemap/:id.xml", destination: "/api/sitemap-xml/:id" },
     ],
   }),
