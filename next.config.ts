@@ -4,6 +4,11 @@ const nextConfig: NextConfig = {
   images: {
     formats: ["image/avif", "image/webp"],
   },
+  // Exclude sitemap data from serverless function bundles — these are only
+  // read at build time by the SSG sitemap generation in src/app/sitemap.ts.
+  outputFileTracingExcludes: {
+    "*": ["./data/sitemap/**"],
+  },
   redirects: async () => [
     {
       source: "/dashboard/:path*",
