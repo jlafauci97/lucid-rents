@@ -1,5 +1,5 @@
 {
-  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- src/ public/sitemap/ next.config.ts package.json tsconfig.json vercel.json",
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- src/ data/sitemap/ next.config.ts package.json tsconfig.json vercel.json",
   "crons": [
     {
       "path": "/api/cron/refresh-stats",

@@ -16,7 +16,7 @@ import { join } from "path";
  *   3. Next.js generates /sitemap.xml (index) + /sitemap/0.xml … /sitemap/N.xml
  */
 
-const SITEMAP_DIR = join(process.cwd(), "public", "sitemap");
+const SITEMAP_DIR = join(process.cwd(), "data", "sitemap");
 
 /** Stable sort matching generate-sitemaps.mjs index ordering */
 function sortKey(name: string): string {
