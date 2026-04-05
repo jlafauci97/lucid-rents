@@ -1339,12 +1339,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://lucidrents.com/FL/Miami/building/miami-dade/1-miad-skyride-sign-%231-miami</loc>
-    <lastmod>2026-03-26T01:42:43.170Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://lucidrents.com/IL/Chicago/building/chicago/3558-s-francisco-ave</loc>
     <lastmod>2026-04-01T18:33:01.619Z</lastmod>
     <changefreq>weekly</changefreq>
@@ -3225,12 +3219,6 @@
   <url>
     <loc>https://lucidrents.com/IL/Chicago/building/avondale/2216-w-belmont-ave</loc>
     <lastmod>2026-03-30T17:56:49.986Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://lucidrents.com/FL/Miami/building/miami-dade/6861-nw-179-st-aka-bldg-%236865-miami</loc>
-    <lastmod>2026-03-26T01:46:00.365Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>

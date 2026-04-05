@@ -1861,12 +1861,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://lucidrents.com/FL/Miami/building/miami-dade/12754-sw-146-ln-%23i-12-miami</loc>
-    <lastmod>2026-03-26T01:42:43.170Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://lucidrents.com/TX/Houston/building/houston/2114-gentryside-dr</loc>
     <lastmod>2026-04-01T18:41:45.731Z</lastmod>
     <changefreq>weekly</changefreq>
@@ -44385,12 +44379,6 @@
   <url>
     <loc>https://lucidrents.com/CA/Los-Angeles/building/mission-hills/15545-w-devonshire-st</loc>
     <lastmod>2026-03-30T15:36:31.740Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://lucidrents.com/FL/Miami/building/miami-dade/9415-sw-8-ter-%239415-miami</loc>
-    <lastmod>2026-03-26T01:46:00.365Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>

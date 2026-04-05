@@ -146,7 +146,7 @@ async function rpcFetch(fn, params) {
 // ─── XML builders ───────────────────────────────────────────────
 
 function escapeXml(s) {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/#/g, "%23");
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 function buildSitemapXml(entries) {
@@ -387,7 +387,7 @@ async function fullGenerate() {
 
     if (!rows || rows.length === 0) { done = true; } else {
       for (const b of rows) {
-        if (b.slug && b.borough) {
+        if (b.slug && b.borough && !b.slug.includes("#")) {
           currentEntries.push({ url: `${BASE_URL}${buildingUrl(b, metroToCity(b.metro))}`, lastmod: b.updated_at ? new Date(b.updated_at).toISOString() : undefined, changefreq: "weekly", priority: 0.6 });
         }
         if (currentEntries.length >= URLS_PER_FILE) {

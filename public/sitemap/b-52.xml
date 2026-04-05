@@ -13207,12 +13207,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://lucidrents.com/FL/Miami/building/miami-dade/1-opf-14950-nw-44-ct-%23106-miami</loc>
-    <lastmod>2026-03-26T01:42:43.170Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://lucidrents.com/nyc/building/brooklyn/4624-avenue-d-brooklyn-ny-11203</loc>
     <lastmod>2026-03-20T22:17:16.253Z</lastmod>
     <changefreq>weekly</changefreq>
@@ -53535,12 +53529,6 @@
   <url>
     <loc>https://lucidrents.com/CA/Los-Angeles/building/los-angeles/434-n-laurel-ave-90048</loc>
     <lastmod>2026-04-02T13:40:22.991Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://lucidrents.com/FL/Miami/building/miami-dade/5300-nw-36-st--bldg-%23850-miami</loc>
-    <lastmod>2026-03-31T13:31:39.551Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>

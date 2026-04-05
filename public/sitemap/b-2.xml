@@ -18055,12 +18055,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://lucidrents.com/FL/Miami/building/miami-dade/12699-sw-285-st-dormitory-bldg-%23-639-miami</loc>
-    <lastmod>2026-03-26T01:46:00.365Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://lucidrents.com/nyc/building/newark/752-s-16th-st-7103</loc>
     <lastmod>2026-04-02T14:48:11.956Z</lastmod>
     <changefreq>weekly</changefreq>
@@ -38115,12 +38109,6 @@
   <url>
     <loc>https://lucidrents.com/nyc/building/manhattan/853-7th-ave</loc>
     <lastmod>2026-04-01T19:52:45.462Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://lucidrents.com/FL/Miami/building/miami-dade/2756-nw-72-ave-%23f3-miami-a7c25c6c8828f4d92dbcb68cc9193fe9</loc>
-    <lastmod>2026-03-31T04:44:15.190Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
