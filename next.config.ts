@@ -4,10 +4,11 @@ const nextConfig: NextConfig = {
   images: {
     formats: ["image/avif", "image/webp"],
   },
-  // Exclude sitemap data from serverless function bundles — these are only
-  // read at build time by the SSG sitemap generation in src/app/sitemap.ts.
+  // Exclude sitemap XML from all serverless function bundles. The sitemap
+  // route is SSG (pre-rendered at build time) so it doesn't need these files
+  // at runtime. Without this, the 627MB of XML exceeds Vercel's 250MB limit.
   outputFileTracingExcludes: {
-    "*": ["./data/sitemap/**"],
+    "*": ["./public/sitemap/**"],
   },
   redirects: async () => [
     {

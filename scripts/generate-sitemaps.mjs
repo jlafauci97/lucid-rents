@@ -10,7 +10,7 @@
 import { writeFileSync, mkdirSync, rmSync, readFileSync, existsSync, readdirSync } from "node:fs";
 
 const BASE_URL = "https://lucidrents.com";
-const OUT_DIR = "data/sitemap";
+const OUT_DIR = "public/sitemap";
 const CONCURRENCY = 2;
 const PROGRESS_FILE = "scripts/.sitemap-progress.json";
 const INCREMENTAL = process.argv.includes("--incremental");
