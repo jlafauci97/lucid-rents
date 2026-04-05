@@ -24,9 +24,17 @@ const nextConfig: NextConfig = {
   ],
   rewrites: async () => ({
     beforeFiles: [
-      { source: "/sitemap.xml", destination: "/api/sitemap-xml" },
+      {
+        source: "/sitemap.xml",
+        destination: "/api/sitemap-xml",
+        missing: [{ type: "query", key: "raw" }],
+      },
       { source: "/sitemap-index.xml", destination: "/api/sitemap-xml" },
-      { source: "/sitemap/:id.xml", destination: "/api/sitemap-xml/:id" },
+      {
+        source: "/sitemap/:id.xml",
+        destination: "/api/sitemap-xml/:id",
+        missing: [{ type: "query", key: "raw" }],
+      },
     ],
   }),
   headers: async () => [

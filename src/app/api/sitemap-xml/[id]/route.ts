@@ -1,23 +1,24 @@
 import { NextResponse } from "next/server";
-import { join } from "path";
 
 /**
- * Child sitemap — reads the static XML file and serves it via API route.
- * Uses dynamic require to avoid Vercel file tracing bundling 627MB of XML.
+ * Child sitemap — proxies the static XML file through a Vercel Function.
+ * Google's sitemap crawler can't fetch Vercel static files directly.
+ * The ?raw=1 param bypasses the rewrite to avoid infinite loops.
  */
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const fs = require("fs") as typeof import("fs");
-
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const filePath = join(process.cwd(), "public", "sitemap", `${id}.xml`);
+  const url = new URL(req.url);
 
   try {
-    const xml = fs.readFileSync(filePath, "utf-8");
+    const res = await fetch(`${url.origin}/sitemap/${id}.xml?raw=1`);
+    if (!res.ok) {
+      return new NextResponse("Not found", { status: 404 });
+    }
+    const xml = await res.text();
     return new NextResponse(xml, {
       headers: {
         "Content-Type": "application/xml",
