@@ -19,7 +19,7 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: "*",
       allow: "/",
       disallow: [
-        "/api/",            // all API endpoints
+        "/api/",             // all API endpoints (sitemap API is accessed via /sitemap/*.xml rewrites)
         "/_next/",          // static JS/CSS chunks
         "/profile/",
         "/review/new",      // legacy non-prefixed path

@@ -17,7 +17,11 @@ const nextConfig: NextConfig = {
     },
   ],
   rewrites: async () => ({
-    beforeFiles: [],
+    beforeFiles: [
+      { source: "/sitemap.xml", destination: "/api/sitemap-xml" },
+      { source: "/sitemap-index.xml", destination: "/api/sitemap-xml" },
+      { source: "/sitemap/:id.xml", destination: "/api/sitemap-xml/:id" },
+    ],
   }),
   headers: async () => [
     // Allow embed pages to be iframed by any domain
