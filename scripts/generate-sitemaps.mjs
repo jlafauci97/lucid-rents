@@ -146,7 +146,7 @@ async function rpcFetch(fn, params) {
 // ─── XML builders ───────────────────────────────────────────────
 
 function escapeXml(s) {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/#/g, "%23");
 }
 
 function buildSitemapXml(entries) {
