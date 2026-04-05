@@ -104,7 +104,8 @@ export function buildingJsonLd(
 
   const schema: Record<string, unknown> = {
     "@context": "https://schema.org",
-    "@type": "ApartmentComplex",
+    "@type": "LocalBusiness",
+    "@additionalType": "https://schema.org/ApartmentComplex",
     name: building.full_address,
     url,
     address: {
@@ -113,7 +114,10 @@ export function buildingJsonLd(
       addressLocality: building.borough,
       addressRegion: meta.stateCode,
       postalCode: building.zip_code,
-      addressCountry: "US",
+      addressCountry: {
+        "@type": "Country",
+        name: "US",
+      },
     },
   };
 
