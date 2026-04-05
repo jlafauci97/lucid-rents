@@ -130,9 +130,9 @@ export function buildingJsonLd(
     schema.aggregateRating = {
       "@type": "AggregateRating",
       ratingValue: building.overall_score,
-      bestRating: 10,
-      worstRating: 0,
-      ratingCount: building.review_count,
+      bestRating: 5,
+      worstRating: 1,
+      reviewCount: building.review_count,
     };
   }
 
