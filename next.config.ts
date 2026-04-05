@@ -22,7 +22,11 @@ const nextConfig: NextConfig = {
     },
   ],
   rewrites: async () => ({
-    beforeFiles: [],
+    beforeFiles: [
+      // Serve sitemaps via API routes (dynamic, on-demand) instead of static files
+      { source: "/sitemap.xml", destination: "/api/sitemap-xml" },
+      { source: "/sitemap/:id.xml", destination: "/api/sitemap-xml/:id" },
+    ],
   }),
   headers: async () => [
     // Allow embed pages to be iframed by any domain
