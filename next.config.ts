@@ -4,13 +4,10 @@ const nextConfig: NextConfig = {
   images: {
     formats: ["image/avif", "image/webp"],
   },
-  // Exclude sitemap XML from all function bundles EXCEPT the sitemap route
-  // itself. The sitemap is SSG so it reads files at build time only, but
-  // file tracing still needs them during prerender.
+  // Exclude pre-generated sitemap XML from function bundles — sitemap.ts
+  // queries Supabase at build time instead of reading these files.
   outputFileTracingExcludes: {
-    "/\\[city\\]/*": ["./public/sitemap/**"],
-    "/api/*": ["./public/sitemap/**"],
-    "/profile/*": ["./public/sitemap/**"],
+    "*": ["./public/sitemap/**"],
   },
   redirects: async () => [
     {
