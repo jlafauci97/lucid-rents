@@ -276,10 +276,22 @@ function saveProgress(data) {
 }
 
 function rebuildIndex() {
-  // Next.js generates the sitemap index automatically via src/app/sitemap.ts.
-  // We just count the files for the summary log.
   const files = readdirSync(OUT_DIR).filter(f => f.endsWith(".xml") && f !== "index.xml");
-  return files.length;
+  const now = new Date().toISOString();
+  const indexEntries = files.map(f => ({ name: f, lastmod: now }));
+  indexEntries.sort((a, b) => {
+    const order = (n) => {
+      if (n === "0.xml") return "0-0";
+      if (n.startsWith("l-")) return `1-${n.slice(2).replace(".xml", "").padStart(6, "0")}`;
+      if (n.startsWith("b-")) return `2-${n.slice(2).replace(".xml", "").padStart(6, "0")}`;
+      return n;
+    };
+    return order(a.name).localeCompare(order(b.name));
+  });
+  const indexXml = buildSitemapIndex(indexEntries);
+  writeFileSync(`${OUT_DIR}/index.xml`, indexXml);
+  writeFileSync("public/sitemap.xml", indexXml);
+  return indexEntries.length;
 }
 
 // ─── Full regeneration ─────────────────────────────────────────

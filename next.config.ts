@@ -4,11 +4,6 @@ const nextConfig: NextConfig = {
   images: {
     formats: ["image/avif", "image/webp"],
   },
-  // Exclude pre-generated sitemap XML from function bundles — sitemap.ts
-  // queries Supabase at build time instead of reading these files.
-  outputFileTracingExcludes: {
-    "*": ["./public/sitemap/**"],
-  },
   redirects: async () => [
     {
       source: "/dashboard/:path*",
@@ -22,11 +17,7 @@ const nextConfig: NextConfig = {
     },
   ],
   rewrites: async () => ({
-    beforeFiles: [
-      // Serve sitemaps via API routes (dynamic, on-demand) instead of static files
-      { source: "/sitemap.xml", destination: "/api/sitemap-xml" },
-      { source: "/sitemap/:id.xml", destination: "/api/sitemap-xml/:id" },
-    ],
+    beforeFiles: [],
   }),
   headers: async () => [
     // Allow embed pages to be iframed by any domain
@@ -47,6 +38,14 @@ const nextConfig: NextConfig = {
           key: "Permissions-Policy",
           value: "camera=(), microphone=(), geolocation=(self)",
         },
+      ],
+    },
+    // Cache static sitemaps (regenerated at build time)
+    {
+      source: "/sitemap/:path*",
+      headers: [
+        { key: "Cache-Control", value: "public, max-age=86400, s-maxage=86400" },
+        { key: "Content-Type", value: "application/xml" },
       ],
     },
     // Cache static assets aggressively (fonts, images, JS/CSS bundles)
