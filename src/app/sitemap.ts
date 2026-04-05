@@ -39,26 +39,16 @@ function getSitemapFiles(): string[] {
 }
 
 export async function generateSitemaps() {
-  const files = getSitemapFiles();
-  console.log(`[sitemap] generateSitemaps: dir=${SITEMAP_DIR}, files=${files.length}, first=${files[0]}, last=${files[files.length - 1]}`);
-  return files.map((_, i) => ({ id: i }));
+  return getSitemapFiles().map((_, i) => ({ id: i }));
 }
 
-export default async function sitemap({
-  id,
-}: {
-  id: number;
-}): Promise<MetadataRoute.Sitemap> {
+export default async function sitemap(
+  props: { id: number } | Promise<{ id: number }>
+): Promise<MetadataRoute.Sitemap> {
+  const { id } = props instanceof Promise ? await props : props;
   const files = getSitemapFiles();
   const filename = files[id];
-  if (!filename) {
-    console.error(`[sitemap] id=${id}: no filename found (${files.length} files)`);
-    return [];
-  }
-
-  const filePath = join(SITEMAP_DIR, filename);
-  const xml = readFileSync(filePath, "utf-8");
-  console.log(`[sitemap] id=${id} file=${filename}: ${xml.length} chars, urls=${(xml.match(/<url>/g) || []).length}`);
+  if (!filename) return [];
   const entries: MetadataRoute.Sitemap = [];
 
   // Parse <url> blocks from our well-structured generated XML
