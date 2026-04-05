@@ -3,7 +3,6 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { BuildingHeader } from "@/components/building/BuildingHeader";
-import { QuickSummary } from "@/components/building/QuickSummary";
 import { DeferredBuildingContent } from "@/components/building/DeferredBuildingContent";
 import { DeferredBuildingFAQ } from "@/components/building/DeferredBuildingFAQ";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
@@ -67,6 +66,24 @@ function metroToCity(metro: string | null): import("@/lib/cities").City {
   return "nyc";
 }
 
+/**
+ * Extract candidate short slugs from a long-format slug with city/state/zip suffix.
+ * e.g. "7438-n-fallbrook-ave-los-angeles-ca-91307" → ["7438-n-fallbrook-ave-los-angeles", "7438-n-fallbrook-ave"]
+ */
+function slugCandidates(slug: string): string[] {
+  // Strip trailing state-zip (-xx-ddddd)
+  const base = slug.replace(/-[a-z]{2}-\d{5}$/, "");
+  if (base === slug) return []; // no suffix found
+  // Try progressively shorter versions by removing trailing segments (city name)
+  const candidates: string[] = [];
+  let s = base;
+  while (s.includes("-")) {
+    s = s.slice(0, s.lastIndexOf("-"));
+    if (s.length > 3) candidates.push(s);
+  }
+  return candidates;
+}
+
 /** Find a building by slug across all cities — used for cross-city redirects */
 const findBuildingAnywhere = cache(async (slug: string) => {
   const supabase = await createClient();
@@ -75,7 +92,20 @@ const findBuildingAnywhere = cache(async (slug: string) => {
     .select("borough, slug, metro")
     .eq("slug", slug)
     .limit(1);
-  return data?.[0] ?? null;
+  if (data?.[0]) return data[0];
+
+  // Fallback: try stripping city/state/zip suffix from long-format slugs
+  const candidates = slugCandidates(slug);
+  for (const candidate of candidates) {
+    const { data: fallback } = await supabase
+      .from("buildings")
+      .select("borough, slug, metro")
+      .eq("slug", candidate)
+      .limit(1);
+    if (fallback?.[0]) return fallback[0];
+  }
+
+  return null;
 });
 
 export async function generateMetadata({
@@ -214,12 +244,13 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
   const isHouston = city === "houston";
 
   // Critical data only — just what's needed for above-the-fold content
-  const [rents, energyData, neighborhoodRentsRaw, deweyLatestRaw, deweyNeighborhoodLatestRaw] = await Promise.all([
+  const [rents, energyData, neighborhoodRents, deweyLatestRaw, deweyNeighborhoodLatestRaw] = await Promise.all([
     safe(supabase.from("building_rents").select("bedrooms, min_rent, max_rent, median_rent, listing_count, source").eq("building_id", buildingId), []),
     safe(supabase.from("energy_benchmarks").select("*").eq("building_id", buildingId).order("report_year", { ascending: false }).limit(1), [] as EnergyBenchmark[]),
+    // Neighborhood median rents via RPC — computes median server-side, returns ~5 rows instead of 1500+
     building.zip_code
-      ? safe(supabase.from("building_rents").select("bedrooms, median_rent, buildings!inner(zip_code)").eq("buildings.zip_code", building.zip_code!).neq("building_id", buildingId), [] as { bedrooms: number; median_rent: number; buildings: { zip_code: string }[] }[])
-      : Promise.resolve([] as { bedrooms: number; median_rent: number; buildings: { zip_code: string }[] }[]),
+      ? safe(supabase.rpc("get_neighborhood_median_rents", { p_zip: building.zip_code, p_exclude_building: buildingId }), [] as { bedrooms: number; median_rent: number }[])
+      : Promise.resolve([] as { bedrooms: number; median_rent: number }[]),
     // Dewey: latest month building rents for above-the-fold badges
     safe(supabase.from("dewey_building_rents").select("month, beds, median_rent, avg_price_per_sqft, listing_count").eq("building_id", buildingId).order("month", { ascending: false }).limit(10), [] as { month: string; beds: number; median_rent: number; avg_price_per_sqft: number; listing_count: number }[]),
     // Dewey: latest month neighborhood rents for comparison
@@ -227,24 +258,6 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
       ? safe(supabase.from("dewey_neighborhood_rents").select("month, beds, median_rent").eq("zip", building.zip_code).order("month", { ascending: false }).limit(10), [] as { month: string; beds: number; median_rent: number }[])
       : Promise.resolve([] as { month: string; beds: number; median_rent: number }[]),
   ]);
-
-  // Compute zip-level median rents per bedroom for neighborhood comparison
-  const neighborhoodRents = (() => {
-    const byBedroom = new Map<number, number[]>();
-    for (const r of (neighborhoodRentsRaw as { bedrooms: number; median_rent: number }[]) || []) {
-      if (r.median_rent > 0) {
-        const arr = byBedroom.get(r.bedrooms) || [];
-        arr.push(r.median_rent);
-        byBedroom.set(r.bedrooms, arr);
-      }
-    }
-    return [...byBedroom.entries()].map(([bedrooms, medians]) => {
-      medians.sort((a, b) => a - b);
-      const mid = Math.floor(medians.length / 2);
-      const median_rent = medians.length % 2 === 0 ? Math.round((medians[mid - 1] + medians[mid]) / 2) : medians[mid];
-      return { bedrooms, median_rent };
-    });
-  })();
 
   // For non-NYC cities, violation_count may be 0 because it tracks HPD violations only.
   // Use dob_violation_count as the primary violation metric for Chicago.
@@ -375,7 +388,10 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
 
           {/* Sidebar — static props render immediately, client components fetch independently */}
           <div className="space-y-6">
-            {/* Building Info */}
+            {/* Building Info — hide if every field is empty */}
+            {(building.owner_name || building.building_class || building.land_use ||
+              building.residential_units != null || (building.commercial_units != null && building.commercial_units > 0) ||
+              building.bbl || building.apn || building.pin) && (
             <Card id="building-details" className="scroll-mt-28">
               <CardHeader>
                 <h3 className="font-semibold" style={{ color: T.text1 }}>
@@ -445,6 +461,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
                 </dl>
               </CardContent>
             </Card>
+            )}
 
             {/* Rent Stabilization */}
             <div id="rent-stabilization">
