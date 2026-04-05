@@ -377,6 +377,62 @@ def fetch_page(url: str):
     return None
 
 
+def enrich_from_detail_page(listing: dict, default_borough: str) -> dict:
+    """Fetch the listing detail page and merge richer rent/amenity data."""
+    detail_url = listing.get("listing_url", "")
+    if not detail_url:
+        return listing
+
+    print(f"      Enriching from detail page: {detail_url}")
+    page = fetch_page(detail_url)
+    if page is None:
+        print(f"      Failed to fetch detail page")
+        return listing
+
+    # Parse JSON-LD from detail page
+    scripts = page.css('script[type="application/ld+json"]')
+    for script in scripts:
+        try:
+            data = json.loads(script.text)
+        except (json.JSONDecodeError, TypeError):
+            continue
+
+        items = []
+        if isinstance(data, list):
+            items = data
+        elif isinstance(data, dict):
+            if data.get("@type") in ("ApartmentComplex", "Apartment", "Residence"):
+                items = [data]
+            elif data.get("@type") == "ItemList":
+                items = data.get("itemListElement", [])
+
+        for item in items:
+            if item.get("@type") == "ListItem":
+                item = item.get("item", item)
+            if item.get("@type") not in ("ApartmentComplex", "Apartment", "Residence"):
+                continue
+
+            detail = parse_jsonld_item(item, default_borough)
+            if not detail:
+                continue
+
+            # Merge rent data if we got some
+            if detail["rent_by_beds"] and not listing["rent_by_beds"]:
+                listing["rent_by_beds"] = detail["rent_by_beds"]
+            # Merge amenities if we got some
+            if detail["amenities"] and not listing["amenities"]:
+                listing["amenities"] = detail["amenities"]
+            # Update bed/bath/sqft if available
+            if detail.get("bed_min") is not None and listing.get("bed_min") is None:
+                listing["bed_min"] = detail["bed_min"]
+                listing["bed_max"] = detail["bed_max"]
+            break
+
+    # Short delay to be polite
+    time.sleep(random.uniform(2, 4))
+    return listing
+
+
 def extract_listings_from_jsonld(page, default_borough: str) -> list[dict]:
     """Extract listing data from JSON-LD ApartmentComplex items on Zumper pages."""
     listings = []
@@ -1119,6 +1175,10 @@ def main():
                         total_failed += 1
                         print(f"    SKIP {addr} (could not match or create)")
                         continue
+
+                # Enrich from detail page if search results lack rent/amenity data
+                if not listing["rent_by_beds"] or not listing["amenities"]:
+                    listing = enrich_from_detail_page(listing, borough)
 
                 unit_number = extract_unit_number(listing)
                 rents_added = upsert_rents(building_id, listing["rent_by_beds"], unit_number=unit_number)

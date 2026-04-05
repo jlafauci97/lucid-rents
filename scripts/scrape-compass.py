@@ -346,6 +346,79 @@ def fetch_page(url: str):
     return None
 
 
+def enrich_from_detail_page(listing: dict, default_borough: str) -> dict:
+    """Fetch the listing detail page and merge richer amenity/rent data."""
+    detail_url = listing.get("listing_url", "")
+    if not detail_url:
+        return listing
+
+    print(f"      Enriching from detail page: {detail_url}")
+    page = fetch_page(detail_url)
+    if page is None:
+        print(f"      Failed to fetch detail page")
+        return listing
+
+    # Parse JSON-LD from detail page for amenities
+    scripts = page.css('script[type="application/ld+json"]')
+    for script in scripts:
+        try:
+            data = json.loads(script.text)
+        except (json.JSONDecodeError, TypeError):
+            continue
+
+        items = []
+        if isinstance(data, list):
+            items = data
+        elif isinstance(data, dict):
+            if data.get("@type") in ("Apartment", "Residence", "SingleFamilyResidence", "ApartmentComplex"):
+                items = [data]
+
+        for item in items:
+            # Extract amenities from amenityFeature
+            amenities = []
+            for af in item.get("amenityFeature", []):
+                if isinstance(af, dict):
+                    name = af.get("name", "")
+                elif isinstance(af, str):
+                    name = af
+                else:
+                    continue
+                if name and len(name) < 60:
+                    amenities.append(name)
+
+            if amenities and not listing["amenities"]:
+                listing["amenities"] = amenities
+
+            # Extract rent from offers if we don't have it
+            if not listing["rent_by_beds"]:
+                offers = item.get("offers", {})
+                if isinstance(offers, dict):
+                    price = parse_price(str(offers.get("price", "")))
+                    beds_val = item.get("numberOfBedrooms")
+                    if price and beds_val is not None:
+                        try:
+                            beds_int = int(beds_val)
+                            listing["rent_by_beds"] = {beds_int: {
+                                "min_rent": price, "max_rent": price,
+                                "sqft_min": None, "sqft_max": None,
+                            }}
+                        except (ValueError, TypeError):
+                            pass
+            break
+
+    # Also try to scrape amenities from HTML on the detail page
+    if not listing["amenities"]:
+        amenity_els = page.css('[class*="amenity"], [class*="Amenity"], [data-tn*="amenity"]')
+        for el in amenity_els:
+            text = (el.text or "").strip()
+            if text and len(text) < 60 and text not in listing["amenities"]:
+                listing["amenities"].append(text)
+
+    # Short delay to be polite
+    time.sleep(random.uniform(2, 4))
+    return listing
+
+
 def extract_listings_from_embedded_json(page, default_borough: str) -> list[dict]:
     """Extract listings from Compass's embedded window.uc JSON data."""
     listings = []
@@ -1121,6 +1194,10 @@ def main():
                         total_failed += 1
                         print(f"    SKIP {addr} (could not match or create)")
                         continue
+
+                # Enrich from detail page if search results lack rent/amenity data
+                if not listing["rent_by_beds"] or not listing["amenities"]:
+                    listing = enrich_from_detail_page(listing, borough)
 
                 unit_number = extract_unit_number(listing)
                 rents_added = upsert_rents(building_id, listing["rent_by_beds"], unit_number=unit_number)
