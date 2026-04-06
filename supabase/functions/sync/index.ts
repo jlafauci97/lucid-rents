@@ -27,7 +27,7 @@ const BOROUGH_MAP: Record<string, string> = {
 const PAGE_SIZE = 5000;
 const BATCH_SIZE = 500;
 const MAX_PAGES = 10; // Safety limit: max API pages per sync
-const SYNC_TIME_BUDGET_MS = 350_000; // Stop fetching new pages after 350s to leave time for linking + response
+const SYNC_TIME_BUDGET_MS = 120_000; // Stop fetching new pages after 120s to leave buffer before 150s edge function limit
 const STALE_SYNC_MINUTES = 30; // Mark "running" syncs older than this as "failed"
 
 const COMPLAINT_TYPES = [
@@ -458,7 +458,7 @@ async function linkByAddress(
   syncStartTime: string,
   errors: string[],
   label: string,
-  maxLookups = 200,
+  maxLookups = 500,
   metro?: string,
   createMissing = false,
   fullAddressColumn?: string
@@ -467,62 +467,128 @@ async function linkByAddress(
   const affectedBuildingIds = new Set<string>();
 
   const linkCutoff = new Date();
-  linkCutoff.setDate(linkCutoff.getDate() - 90);
+  linkCutoff.setDate(linkCutoff.getDate() - 14);
 
   const cols = Array.isArray(addressColumns) ? addressColumns : [addressColumns];
   const selectCols = [idColumn, ...cols].join(", ");
   const primaryAddrCol = cols[cols.length - 1];
 
-  let allUnlinked: Record<string, unknown>[] = [];
-  let offset = 0;
-  const PAGE = 5000;
-  while (true) {
-    let query = supabase
-      .from(table)
-      .select(selectCols)
-      .is("building_id", null)
-      .not(primaryAddrCol, "is", null)
-      .gte("imported_at", linkCutoff.toISOString());
-    if (metro) query = query.eq("metro", metro);
-    const { data: batch } = await query.range(offset, offset + PAGE - 1);
+  // Fetch a limited batch of recent unlinked records (newest first)
+  const FETCH_LIMIT = 10000;
+  let query = supabase
+    .from(table)
+    .select(selectCols)
+    .is("building_id", null)
+    .not(primaryAddrCol, "is", null)
+    .gte("imported_at", linkCutoff.toISOString())
+    .order("imported_at", { ascending: false })
+    .limit(FETCH_LIMIT);
+  if (metro) query = query.eq("metro", metro);
+  const { data: allUnlinked } = await query;
 
-    if (!batch || batch.length === 0) break;
-    allUnlinked = allUnlinked.concat(batch as unknown as Record<string, unknown>[]);
-    if (batch.length < PAGE) break;
-    offset += PAGE;
+  if (!allUnlinked || allUnlinked.length === 0) return { linked, affectedBuildingIds };
+
+  // All sources are parsed into house_number + street_name pairs and matched
+  // directly against buildings columns using btree index.
+  const isMultiCol = cols.length > 1;
+
+  // Strip ordinal suffixes from numbers: "54TH" → "54", "1ST" → "1"
+  function stripOrdinals(s: string): string {
+    return s.replace(/\b(\d+)(ST|ND|RD|TH)\b/gi, "$1");
   }
 
-  if (allUnlinked.length === 0) return { linked, affectedBuildingIds };
+  // Strip range prefixes from Miami-style addresses: "- 8918 SW 4TH ST" → "SW 4TH ST"
+  function stripRangePrefix(s: string): string {
+    return s.replace(/^-\s*\d+\s+/, "");
+  }
 
-  // Group by normalized address
+  // Parse a single incident_address into [houseNum, street]
+  // "7103 WAXAHACHIE ST HOUSTON TX 77020" → ["7103", "WAXAHACHIE ST"]
+  // "5957 CALVIN AVE, LOS ANGELES, CA, 91356" → ["5957", "CALVIN AVE"]
+  // "19304 NW 54TH CT" → ["19304", "NW 54TH CT"]
+  function parseAddress(raw: string): [string, string] | null {
+    // Strip apt/unit/suite suffixes
+    let addr = raw.replace(/\s+(APT|UNIT|#|FL|FLOOR|STE|SUITE|RM|ROOM)\b.*$/i, "").trim();
+    // Strip everything after first comma (city, state, zip)
+    const commaIdx = addr.indexOf(",");
+    if (commaIdx > 0) addr = addr.substring(0, commaIdx).trim();
+    // Split into house number + street at first space after leading digits
+    const match = addr.match(/^(\d[\d-]*)\s+(.+)/);
+    if (!match) return null;
+    const houseNum = match[1];
+    let street = match[2].trim();
+    // Strip city/state/zip from end for formats without commas
+    // e.g. "WAXAHACHIE ST HOUSTON TX 77020" → "WAXAHACHIE ST"
+    // Pattern: known city names + state + optional zip at end
+    street = street.replace(/\s+(HOUSTON|LOS ANGELES|CHICAGO|MIAMI|NEW YORK|BROOKLYN|BRONX|QUEENS|MANHATTAN|STATEN ISLAND)\s+[A-Z]{2}\s*\d{0,5}\s*$/i, "").trim();
+    // Also strip bare "STATE ZIP" at end: "ST SOME TX 77020" → already handled above
+    // Strip trailing zip code if preceded by state code: "... TX 77020" → "..."
+    street = street.replace(/\s+[A-Z]{2}\s+\d{5}(-\d{4})?\s*$/, "").trim();
+    if (!street || street.length < 2) return null;
+    return [houseNum, street];
+  }
+
+  // Key format: "house_number\tstreet_name"
   const addressToIds = new Map<string, string[]>();
   for (const r of allUnlinked) {
-    let raw: string;
-    if (cols.length > 1) {
-      raw = cols.map(c => String(r[c] || "").trim()).filter(Boolean).join(" ");
+    let houseNum: string;
+    let street: string;
+
+    if (isMultiCol) {
+      houseNum = String(r[cols[0]] || "").trim().toUpperCase();
+      street = String(r[cols[1]] || "").trim().toUpperCase().replace(/\s+/g, " ");
+      // Strip range prefixes: "- 8918 SW 4TH ST" → "SW 4TH ST"
+      street = stripRangePrefix(street);
+      if (!houseNum || !street || houseNum.length < 1 || street.length < 2) continue;
     } else {
-      raw = String(r[cols[0]] || "").trim();
+      const raw = String(r[cols[0]] || "").trim().toUpperCase().replace(/\s+/g, " ");
+      if (!raw || raw.length < 5) continue;
+      const parsed = parseAddress(raw);
+      if (!parsed) continue;
+      [houseNum, street] = parsed;
     }
-    raw = raw.toUpperCase().replace(/\s+/g, " ");
-    if (!raw || raw.length < 5) continue;
-    const addr = raw.replace(/\s+(APT|UNIT|#|FL|FLOOR|STE|SUITE|RM|ROOM)\b.*$/i, "").trim();
-    if (!addr) continue;
-    if (!addressToIds.has(addr)) addressToIds.set(addr, []);
-    addressToIds.get(addr)!.push(String(r[idColumn]));
+
+    const key = `${houseNum}\t${street}`;
+    if (!addressToIds.has(key)) addressToIds.set(key, []);
+    addressToIds.get(key)!.push(String(r[idColumn]));
   }
 
   let lookupCount = 0;
+  const linkStartMs = Date.now();
   for (const [address, recordIds] of addressToIds) {
     if (lookupCount >= maxLookups) break;
+    if (Date.now() - linkStartMs > 110_000) break; // Stop before 150s edge function limit
     lookupCount++;
 
+    const [houseNum, street] = address.split("\t");
+    let matched: { id: string }[] | null = null;
+
+    // Direct column match using btree index idx_buildings_street_address
     let buildingQuery = supabase
       .from("buildings")
       .select("id")
-      .ilike("full_address", `${address},%`)
+      .eq("house_number", houseNum)
+      .ilike("street_name", `${street}%`)
       .limit(1);
     if (metro) buildingQuery = buildingQuery.eq("metro", metro);
-    const { data: matched } = await buildingQuery;
+    const { data } = await buildingQuery;
+    matched = data;
+
+    // Ordinal fallback: "NW 54TH CT" → "NW 54 CT" (or vice versa)
+    if (!matched || matched.length === 0) {
+      const stripped = stripOrdinals(street);
+      if (stripped !== street) {
+        let fallbackQuery = supabase
+          .from("buildings")
+          .select("id")
+          .eq("house_number", houseNum)
+          .ilike("street_name", `${stripped}%`)
+          .limit(1);
+        if (metro) fallbackQuery = fallbackQuery.eq("metro", metro);
+        const { data: fallbackData } = await fallbackQuery;
+        matched = fallbackData;
+      }
+    }
 
     let buildingId: string | null = null;
 
@@ -901,14 +967,14 @@ async function sync311Complaints(supabase: SupabaseClient): Promise<SyncResult> 
     }
 
     const elapsedMs = Date.now() - fnStart;
-    if (elapsedMs < 45_000 && addressToKeys.size > 0) {
+    if (elapsedMs < 100_000 && addressToKeys.size > 0) {
       try {
         let lookupCount = 0;
-        const MAX_LOOKUPS = 500;
+        const MAX_LOOKUPS = 2000;
 
         for (const [address, uniqueKeys] of addressToKeys) {
           if (lookupCount >= MAX_LOOKUPS) break;
-          if (Date.now() - fnStart > 50_000) break;
+          if (Date.now() - fnStart > 110_000) break;
           lookupCount++;
 
           const { data: matchedBuildings } = await supabase
@@ -1210,6 +1276,7 @@ interface NYPDRawRecord {
 async function syncNYPDComplaints(supabase: SupabaseClient): Promise<SyncResult> {
   const lastSync = await getLastSyncDate(supabase, "nypd_complaints");
   const logId = await createSyncLog(supabase, "nypd_complaints");
+  const syncStartMs = Date.now();
 
   let totalAdded = 0;
   const totalLinked = 0;
@@ -1266,7 +1333,7 @@ async function syncNYPDComplaints(supabase: SupabaseClient): Promise<SyncResult>
       }
 
       pagesFetched++;
-      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
+      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES || isTimeBudgetExceeded(syncStartMs)) {
         hasMore = false;
       } else {
         offset += PAGE_SIZE;
@@ -1777,6 +1844,7 @@ async function syncDobPermits(supabase: SupabaseClient): Promise<SyncResult> {
   const lastSync = await getLastSyncDate(supabase, "dob_permits");
   const logId = await createSyncLog(supabase, "dob_permits");
   const syncStartTime = new Date().toISOString();
+  const syncStartMs = Date.now();
 
   let totalAdded = 0;
   let totalLinked = 0;
@@ -1849,7 +1917,7 @@ async function syncDobPermits(supabase: SupabaseClient): Promise<SyncResult> {
       }
 
       pagesFetched++;
-      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
+      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES || isTimeBudgetExceeded(syncStartMs)) {
         hasMore = false;
       } else {
         offset += PAGE_SIZE;
@@ -2076,6 +2144,7 @@ async function syncLAHDViolations(supabase: SupabaseClient): Promise<SyncResult>
   const lastSync = await getLastSyncDate(supabase, "lahd_violations");
   const logId = await createSyncLog(supabase, "lahd_violations");
   const syncStartTime = new Date().toISOString();
+  const syncStartMs = Date.now();
 
   let totalAdded = 0;
   let totalLinked = 0;
@@ -2125,7 +2194,7 @@ async function syncLAHDViolations(supabase: SupabaseClient): Promise<SyncResult>
       }
 
       pagesFetched++;
-      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) { hasMore = false; } else { offset += PAGE_SIZE; }
+      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES || isTimeBudgetExceeded(syncStartMs)) { hasMore = false; } else { offset += PAGE_SIZE; }
     }
 
     try {
@@ -2228,6 +2297,7 @@ async function syncLADBSViolations(supabase: SupabaseClient): Promise<SyncResult
   const lastSync = await getLastSyncDate(supabase, "ladbs_violations");
   const logId = await createSyncLog(supabase, "ladbs_violations");
   const syncStartTime = new Date().toISOString();
+  const syncStartMs = Date.now();
 
   let totalAdded = 0;
   let totalLinked = 0;
@@ -2278,7 +2348,7 @@ async function syncLADBSViolations(supabase: SupabaseClient): Promise<SyncResult
       }
 
       pagesFetched++;
-      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) { hasMore = false; } else { offset += PAGE_SIZE; }
+      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES || isTimeBudgetExceeded(syncStartMs)) { hasMore = false; } else { offset += PAGE_SIZE; }
     }
 
     try {
@@ -2301,6 +2371,7 @@ async function syncLADBSViolations(supabase: SupabaseClient): Promise<SyncResult
 async function syncLAPDCrimeData(supabase: SupabaseClient): Promise<SyncResult> {
   const lastSync = await getLastSyncDate(supabase, "lapd_crime");
   const logId = await createSyncLog(supabase, "lapd_crime");
+  const syncStartMs = Date.now();
 
   let totalAdded = 0;
   const totalLinked = 0;
@@ -2358,7 +2429,7 @@ async function syncLAPDCrimeData(supabase: SupabaseClient): Promise<SyncResult> 
       }
 
       pagesFetched++;
-      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) { hasMore = false; } else { offset += PAGE_SIZE; }
+      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES || isTimeBudgetExceeded(syncStartMs)) { hasMore = false; } else { offset += PAGE_SIZE; }
     }
 
     try {
@@ -2379,6 +2450,7 @@ async function syncLAPermits(supabase: SupabaseClient): Promise<SyncResult> {
   const lastSync = await getLastSyncDate(supabase, "la_permits");
   const logId = await createSyncLog(supabase, "la_permits");
   const syncStartTime = new Date().toISOString();
+  const syncStartMs = Date.now();
 
   let totalAdded = 0;
   let totalLinked = 0;
@@ -2427,7 +2499,7 @@ async function syncLAPermits(supabase: SupabaseClient): Promise<SyncResult> {
       }
 
       pagesFetched++;
-      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) { hasMore = false; } else { offset += PAGE_SIZE; }
+      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES || isTimeBudgetExceeded(syncStartMs)) { hasMore = false; } else { offset += PAGE_SIZE; }
     }
 
     try {
@@ -2503,6 +2575,7 @@ async function syncLAHDEvictions(supabase: SupabaseClient): Promise<SyncResult> 
   const lastSync = await getLastSyncDate(supabase, "lahd_evictions");
   const logId = await createSyncLog(supabase, "lahd_evictions");
   const syncStartTime = new Date().toISOString();
+  const syncStartMs = Date.now();
 
   let totalAdded = 0;
   let totalLinked = 0;
@@ -2550,7 +2623,7 @@ async function syncLAHDEvictions(supabase: SupabaseClient): Promise<SyncResult> 
       }
 
       pagesFetched++;
-      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) { hasMore = false; } else { offset += PAGE_SIZE; }
+      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES || isTimeBudgetExceeded(syncStartMs)) { hasMore = false; } else { offset += PAGE_SIZE; }
     }
 
     try {
@@ -2574,6 +2647,7 @@ async function syncLAHDTenantBuyouts(supabase: SupabaseClient): Promise<SyncResu
   const lastSync = await getLastSyncDate(supabase, "lahd_tenant_buyouts");
   const logId = await createSyncLog(supabase, "lahd_tenant_buyouts");
   const syncStartTime = new Date().toISOString();
+  const syncStartMs = Date.now();
 
   let totalAdded = 0;
   let totalLinked = 0;
@@ -2610,7 +2684,7 @@ async function syncLAHDTenantBuyouts(supabase: SupabaseClient): Promise<SyncResu
       }
 
       pagesFetched++;
-      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) { hasMore = false; } else { offset += PAGE_SIZE; }
+      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES || isTimeBudgetExceeded(syncStartMs)) { hasMore = false; } else { offset += PAGE_SIZE; }
     }
 
     try {
@@ -2697,6 +2771,7 @@ async function syncLAHDCCRIS(supabase: SupabaseClient): Promise<SyncResult> {
 async function syncLAHDViolationSummary(supabase: SupabaseClient): Promise<SyncResult> {
   const logId = await createSyncLog(supabase, "lahd_violation_summary");
   const syncStartTime = new Date().toISOString();
+  const syncStartMs = Date.now();
 
   let totalAdded = 0;
   let totalLinked = 0;
@@ -2734,7 +2809,7 @@ async function syncLAHDViolationSummary(supabase: SupabaseClient): Promise<SyncR
       }
 
       pagesFetched++;
-      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) { hasMore = false; } else { offset += PAGE_SIZE; }
+      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES || isTimeBudgetExceeded(syncStartMs)) { hasMore = false; } else { offset += PAGE_SIZE; }
     }
 
     try {
@@ -2835,7 +2910,7 @@ async function syncChicagoViolations(supabase: SupabaseClient): Promise<SyncResu
         });
 
       if (rows.length > 0) {
-        totalAdded += await batchUpsert(supabase, "dob_violations", rows, "isn_dob_bis_vio", errors, "Chicago Violations");
+        totalAdded += await batchUpsert(supabase, "dob_violations", rows, "isn_dob_bis_vio", errors, "Chicago Violations", true);
       }
 
       pagesFetched++;
@@ -3318,10 +3393,93 @@ async function syncMiami311(supabase: SupabaseClient): Promise<SyncResult> {
 
 async function syncMiamiCrimes(supabase: SupabaseClient): Promise<SyncResult> {
   const logId = await createSyncLog(supabase, "miami_crimes");
+  const syncStartMs = Date.now();
+
+  let totalAdded = 0;
+  const totalLinked = 0;
   const errors: string[] = [];
-  errors.push("Miami crimes sync: MDPD crime data not yet available via ArcGIS API");
-  await finalizeSyncLog(supabase, logId, "completed", 0, 0, errors);
-  return { totalAdded: 0, totalLinked: 0, errors, affectedBuildingIds: new Set() };
+  const affectedBuildingIds = new Set<string>();
+
+  const CRIME_ENDPOINTS = [
+    "https://services1.arcgis.com/CY1LXxl9zlJeBuRZ/ArcGIS/rest/services/Crime_Data_Public/FeatureServer/0/query",
+    "https://gis-mdc.opendata.arcgis.com/datasets/miami-dade-county-crime-data/FeatureServer/0/query",
+  ];
+
+  try {
+    let offset = 0;
+    let hasMore = true;
+    let pagesFetched = 0;
+
+    while (hasMore) {
+      const params = new URLSearchParams({
+        where: "1=1",
+        outFields: "*",
+        resultOffset: String(offset),
+        resultRecordCount: String(PAGE_SIZE),
+        orderByFields: "OBJECTID ASC",
+        f: "json",
+      });
+
+      let json: Record<string, unknown> | null = null;
+      for (const baseUrl of CRIME_ENDPOINTS) {
+        try {
+          const res = await fetch(`${baseUrl}?${params}`, { signal: AbortSignal.timeout(30_000) });
+          if (res.ok) {
+            json = await res.json();
+            break;
+          }
+        } catch {
+          // try next endpoint
+        }
+      }
+
+      if (!json) {
+        errors.push(`Miami Crimes: all endpoints failed at offset ${offset}`);
+        break;
+      }
+
+      const features = (json.features || []) as { attributes: Record<string, unknown> }[];
+      if (features.length === 0) { hasMore = false; break; }
+
+      const records = features.map((f) => f.attributes);
+      const rows = records
+        .filter((r) => r.OBJECTID)
+        .map((r) => ({
+          cmplnt_num: `MIA-${r.OBJECTID}`,
+          cmplnt_date: r.DateOccurred ? new Date(Number(r.DateOccurred)).toISOString().slice(0, 10) : null,
+          borough: "Miami-Dade",
+          precinct: null,
+          offense_description: r.OffenseType ? String(r.OffenseType) : null,
+          crime_category: categorizeCrime(r.OffenseType ? String(r.OffenseType) : null),
+          latitude: r.Latitude ? parseFloat(String(r.Latitude)) : null,
+          longitude: r.Longitude ? parseFloat(String(r.Longitude)) : null,
+          zip_code: r.ZipCode ? String(r.ZipCode).slice(0, 5) : null,
+          metro: "miami",
+          imported_at: new Date().toISOString(),
+        }));
+
+      if (rows.length > 0) {
+        totalAdded += await batchUpsert(supabase, "nypd_complaints", rows, "cmplnt_num", errors, "Miami Crimes");
+      }
+
+      pagesFetched++;
+      if (features.length < PAGE_SIZE || pagesFetched >= MAX_PAGES || isTimeBudgetExceeded(syncStartMs)) { hasMore = false; } else { offset += PAGE_SIZE; }
+    }
+
+    try {
+      const { error: zipErr } = await supabase.rpc("backfill_crime_zip_codes", { target_metro: "miami" });
+      if (zipErr) errors.push(`Miami Crimes zip backfill error: ${zipErr.message}`);
+    } catch (zipBackfillErr) {
+      errors.push(`Miami Crimes zip backfill fatal: ${String(zipBackfillErr)}`);
+    }
+
+    await finalizeSyncLog(supabase, logId, errors.length > 0 ? "failed" : "completed", totalAdded, totalLinked, errors);
+  } catch (err) {
+    errors.push(`Miami Crimes fatal error: ${String(err)}`);
+    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
+  }
+
+  return { totalAdded, totalLinked, errors, affectedBuildingIds };
 }
 
 async function syncMiamiPermits(supabase: SupabaseClient): Promise<SyncResult> {
@@ -3701,6 +3859,7 @@ async function syncHoustonCrimes(supabase: SupabaseClient): Promise<SyncResult> 
 
   try {
     const CRIME_PAGE = 2000;
+    const seenIncidents = new Set<string>();
 
     for (const layer of [0, 1, 2, 3]) {
       let offset = 0;
@@ -3754,8 +3913,14 @@ async function syncHoustonCrimes(supabase: SupabaseClient): Promise<SyncResult> 
             };
           });
 
-        if (rows.length > 0) {
-          totalAdded += await batchUpsert(supabase, "nypd_complaints", rows, "cmplnt_num", errors, `Houston Crimes L${layer}`);
+        const dedupedRows = rows.filter((r: { cmplnt_num: string }) => {
+          if (seenIncidents.has(r.cmplnt_num)) return false;
+          seenIncidents.add(r.cmplnt_num);
+          return true;
+        });
+
+        if (dedupedRows.length > 0) {
+          totalAdded += await batchUpsert(supabase, "nypd_complaints", dedupedRows, "cmplnt_num", errors, `Houston Crimes L${layer}`);
         }
 
         pagesFetched++;
@@ -3837,10 +4002,47 @@ const LINK_TABLES: Record<string, { table: string; label: string }> = {
   permits: { table: "dob_permits", label: "Permits" },
 };
 
+// Address-based link registry: maps source param to linkByAddress args
+interface AddrLinkConfig {
+  table: string;
+  idColumn: string;
+  addressColumns: string | string[];
+  label: string;
+  metro: string;
+  maxLookups?: number;
+  createMissing?: boolean;
+  fullAddressColumn?: string;
+}
+
+const ADDRESS_LINK_TABLES: Record<string, AddrLinkConfig> = {
+  // NYC
+  complaints: { table: "complaints_311", idColumn: "unique_key", addressColumns: "incident_address", label: "NYC 311", metro: "nyc", maxLookups: 500 },
+  // LA
+  lahd: { table: "hpd_violations", idColumn: "id", addressColumns: ["house_number", "street_name"], label: "LAHD", metro: "los-angeles" },
+  ladbs: { table: "dob_violations", idColumn: "id", addressColumns: ["house_number", "street_name"], label: "LADBS", metro: "los-angeles" },
+  "la-311": { table: "complaints_311", idColumn: "unique_key", addressColumns: "incident_address", label: "LA311", metro: "los-angeles" },
+  "la-permits": { table: "dob_permits", idColumn: "id", addressColumns: ["house_no", "street_name"], label: "LA Permits", metro: "los-angeles" },
+  "la-evictions": { table: "lahd_evictions", idColumn: "id", addressColumns: "address", label: "LAHD Evictions", metro: "los-angeles", createMissing: true, fullAddressColumn: "address" },
+  "la-buyouts": { table: "lahd_tenant_buyouts", idColumn: "id", addressColumns: "address", label: "LAHD Buyouts", metro: "los-angeles", createMissing: true, fullAddressColumn: "address" },
+  "la-ccris": { table: "lahd_ccris_cases", idColumn: "id", addressColumns: "address", label: "LAHD CCRIS", metro: "los-angeles", createMissing: true, fullAddressColumn: "address" },
+  "lapd": { table: "nypd_complaints", idColumn: "cmplnt_num", addressColumns: "incident_address", label: "LAPD", metro: "los-angeles" },
+  // Chicago
+  "chicago-violations": { table: "dob_violations", idColumn: "id", addressColumns: ["house_number", "street_name"], label: "Chicago Violations", metro: "chicago" },
+  "chicago-311": { table: "complaints_311", idColumn: "unique_key", addressColumns: "incident_address", label: "Chicago 311", metro: "chicago" },
+  "chicago-crimes": { table: "nypd_complaints", idColumn: "cmplnt_num", addressColumns: "incident_address", label: "Chicago Crimes", metro: "chicago" },
+  "chicago-permits": { table: "dob_permits", idColumn: "id", addressColumns: ["house_no", "street_name"], label: "Chicago Permits", metro: "chicago" },
+  // Miami
+  "miami-violations": { table: "dob_violations", idColumn: "id", addressColumns: ["house_number", "street_name"], label: "Miami Violations", metro: "miami" },
+  "miami-311": { table: "complaints_311", idColumn: "unique_key", addressColumns: "incident_address", label: "Miami 311", metro: "miami" },
+  "miami-permits": { table: "dob_permits", idColumn: "id", addressColumns: ["house_no", "street_name"], label: "Miami Permits", metro: "miami" },
+  // Houston
+  "houston-violations": { table: "hpd_violations", idColumn: "id", addressColumns: ["house_number", "street_name"], label: "Houston Violations", metro: "houston" },
+  "houston-311": { table: "complaints_311", idColumn: "unique_key", addressColumns: "incident_address", label: "Houston 311", metro: "houston" },
+  "houston-crimes": { table: "nypd_complaints", idColumn: "cmplnt_num", addressColumns: "incident_address", label: "Houston Crimes", metro: "houston" },
+};
+
 // ---------------------------------------------------------------------------
-// Link-only mode (abbreviated — the full link-only logic from the Vercel
-// version is ported here but omitted for brevity; the pattern is identical
-// except NextResponse.json is replaced with new Response(JSON.stringify(...)))
+// Link-only mode
 // ---------------------------------------------------------------------------
 async function runLinkOnly(
   supabase: SupabaseClient,
@@ -3852,28 +4054,22 @@ async function runLinkOnly(
   const linkResults: Record<string, { linked: number; errors: string[] }> = {};
   const syncStartTime = new Date().toISOString();
 
-  const tablesToLink = sourceParam
-    ? (LINK_TABLES[sourceParam] ? { [sourceParam]: LINK_TABLES[sourceParam] } : null)
-    : LINK_TABLES;
+  const allValidSources = [...Object.keys(LINK_TABLES), ...Object.keys(ADDRESS_LINK_TABLES)];
 
-  const LA_ADDR_SOURCES = ["lahd", "ladbs", "la-311", "la-permits", "la-evictions", "la-buyouts", "la-ccris", "la-violation-summary"];
-  const CHICAGO_ADDR_SOURCES = ["chicago-violations", "chicago-311", "chicago-crimes", "chicago-permits", "chicago-rlto", "chicago-lead"];
-  const MIAMI_ADDR_SOURCES = ["miami-violations", "miami-311", "miami-permits", "miami-unsafe", "miami-recerts"];
-  const HOUSTON_ADDR_SOURCES = ["houston-violations", "houston-311", "houston-crimes"];
-  const isChicagoLink = sourceParam === "chicago" || (sourceParam && CHICAGO_ADDR_SOURCES.includes(sourceParam));
-  const isMiamiLink = sourceParam === "miami" || (sourceParam && MIAMI_ADDR_SOURCES.includes(sourceParam));
-  const isHoustonLink = sourceParam === "houston" || (sourceParam && HOUSTON_ADDR_SOURCES.includes(sourceParam));
-
-  if (sourceParam && !tablesToLink && sourceParam !== "complaints" && !LA_ADDR_SOURCES.includes(sourceParam) && !isChicagoLink && !isMiamiLink && !isHoustonLink) {
+  if (sourceParam && !LINK_TABLES[sourceParam] && !ADDRESS_LINK_TABLES[sourceParam]) {
     return new Response(
-      JSON.stringify({ error: `Unknown link source: ${sourceParam}. Valid: ${[...Object.keys(LINK_TABLES), "complaints", ...LA_ADDR_SOURCES, "chicago", ...CHICAGO_ADDR_SOURCES, "miami", ...MIAMI_ADDR_SOURCES, "houston", ...HOUSTON_ADDR_SOURCES].join(", ")}` }),
+      JSON.stringify({ error: `Unknown link source: ${sourceParam}. Valid: ${allValidSources.join(", ")}` }),
       { status: 400, headers: { "Content-Type": "application/json" } }
     );
   }
 
-  // Link BBL-based tables
-  if (tablesToLink) {
-    for (const [name, { table, label }] of Object.entries(tablesToLink)) {
+  // Link BBL-based tables (NYC only)
+  const bblTablesToLink = sourceParam
+    ? (LINK_TABLES[sourceParam] ? { [sourceParam]: LINK_TABLES[sourceParam] } : null)
+    : LINK_TABLES;
+
+  if (bblTablesToLink) {
+    for (const [name, { table, label }] of Object.entries(bblTablesToLink)) {
       const tableErrors: string[] = [];
       try {
         const result = await linkByBbl(supabase, table, syncStartTime, tableErrors, label);
@@ -3881,6 +4077,41 @@ async function runLinkOnly(
         linkResults[name] = { linked: result.linked, errors: tableErrors };
       } catch (err) {
         tableErrors.push(`${label} link error: ${String(err)}`);
+        linkResults[name] = { linked: 0, errors: tableErrors };
+      }
+    }
+  }
+
+  // Link address-based tables (all cities)
+  const addrTablesToLink = sourceParam
+    ? (ADDRESS_LINK_TABLES[sourceParam] ? { [sourceParam]: ADDRESS_LINK_TABLES[sourceParam] } : null)
+    : null; // Don't run ALL address links when no source — too slow
+
+  if (addrTablesToLink) {
+    for (const [name, config] of Object.entries(addrTablesToLink)) {
+      if ((Date.now() - startTime) / 1000 > 120) {
+        errors.push(`Skipping ${name} address link — time budget exceeded`);
+        break;
+      }
+      const tableErrors: string[] = [];
+      try {
+        const result = await linkByAddress(
+          supabase,
+          config.table,
+          config.idColumn,
+          config.addressColumns,
+          syncStartTime,
+          tableErrors,
+          config.label,
+          config.maxLookups ?? 5000,
+          config.metro,
+          config.createMissing ?? false,
+          config.fullAddressColumn
+        );
+        for (const id of result.affectedBuildingIds) allAffectedIds.add(id);
+        linkResults[name] = { linked: result.linked, errors: tableErrors };
+      } catch (err) {
+        tableErrors.push(`${config.label} address link error: ${String(err)}`);
         linkResults[name] = { linked: 0, errors: tableErrors };
       }
     }
@@ -4024,7 +4255,7 @@ Deno.serve(async (req) => {
 
     // Backfill slugs for any buildings missing them
     let slugsBackfilled = 0;
-    if ((Date.now() - startTime) / 1000 < 330) {
+    if ((Date.now() - startTime) / 1000 < 130) {
       try {
         const { data: noSlugs } = await supabase
           .from("buildings")
