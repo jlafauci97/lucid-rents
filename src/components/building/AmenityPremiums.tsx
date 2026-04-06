@@ -41,7 +41,7 @@ function groupPremiums(
     }))
     .filter((a) => a.premium_dollars > 0)
     .sort((a, b) => b.premium_dollars - a.premium_dollars)
-    .slice(0, 8); // Top 8 amenities
+    .slice(0, 6);
 }
 
 export function AmenityPremiums({
@@ -56,8 +56,26 @@ export function AmenityPremiums({
     return null;
 
   const grouped = groupPremiums(amenityPremiums);
-  const totalPremiums = grouped.reduce((s, a) => s + a.premium_dollars, 0);
+  const rawSum = grouped.reduce((s, a) => s + a.premium_dollars, 0);
+
+  // The raw premiums are correlated (each measured independently), so summing
+  // them wildly overestimates. Instead, use the actual building-vs-neighborhood
+  // gap as the total premium, then distribute proportionally across amenities
+  // to show what's driving the difference.
+  const actualGap = Math.max(0, buildingMedian - neighborhoodMedian);
+  // Cap the amenity contribution explanation at the actual gap or 25% of base
+  const maxExplainable = Math.max(actualGap, neighborhoodMedian * 0.1);
+  const totalPremiums = Math.round(Math.min(rawSum, maxExplainable));
+
   const estimatedFair = neighborhoodMedian + totalPremiums + violationDiscount;
+
+  // Scale display premiums so line items sum to the adjusted total
+  const scaleFactor = rawSum > 0 ? totalPremiums / rawSum : 0;
+  const displayPremiums = grouped.map((a) => ({
+    amenity: a.amenity,
+    premium_dollars: Math.round(a.premium_dollars * scaleFactor),
+  })).filter((a) => a.premium_dollars > 0);
+
   const diff = buildingMedian - estimatedFair;
   const isGoodValue = diff <= 0;
 
@@ -85,8 +103,8 @@ export function AmenityPremiums({
             </span>
           </div>
 
-          {/* Grouped amenity premiums */}
-          {grouped.map((a) => (
+          {/* Grouped amenity premiums (scaled to actual gap) */}
+          {displayPremiums.map((a) => (
             <div key={a.amenity} className="flex items-center justify-between">
               <span className="text-sm" style={{ color: T.text2 }}>
                 + {formatLabel(a.amenity)}

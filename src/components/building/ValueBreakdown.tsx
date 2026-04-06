@@ -45,10 +45,13 @@ export function ValueBreakdown({
   beds,
   valueGrade,
 }: ValueBreakdownProps) {
-  const totalPremiums = amenityPremiums.reduce(
-    (sum, a) => sum + a.premium_dollars,
-    0,
-  );
+  // Raw premiums are correlated (each measured independently), so summing
+  // overestimates. Use the actual building-vs-neighborhood gap as the total,
+  // then distribute proportionally across amenities.
+  const rawSum = amenityPremiums.reduce((s, a) => s + a.premium_dollars, 0);
+  const actualGap = Math.max(0, buildingMedianRent - neighborhoodMedian);
+  const maxExplainable = Math.max(actualGap, neighborhoodMedian * 0.1);
+  const totalPremiums = Math.round(Math.min(rawSum, maxExplainable));
   const estimatedFairRent =
     neighborhoodMedian + totalPremiums + violationDiscount;
   const difference = buildingMedianRent - estimatedFairRent;
