@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """
-Scrape rent and amenity data from apartments.com for NYC's five boroughs using Scrapling.
+Scrape rent and amenity data from apartments.com for multiple metro areas using Scrapling.
 
 Uses StealthyFetcher with real_chrome=True to bypass anti-bot protection,
 then extracts structured data from HTML article elements.
 
 Usage:
-    python3 scripts/scrape-apartments-com.py                        # all boroughs, 5 pages each
-    python3 scripts/scrape-apartments-com.py --borough=Manhattan    # single borough
-    python3 scripts/scrape-apartments-com.py --pages=18             # more pages per borough
-    python3 scripts/scrape-apartments-com.py --dry-run              # preview without DB writes
+    python3 scripts/scrape-apartments-com.py                            # NYC, all areas, 5 pages each
+    python3 scripts/scrape-apartments-com.py --metro=los-angeles        # LA metro area
+    python3 scripts/scrape-apartments-com.py --borough=Manhattan        # single area
+    python3 scripts/scrape-apartments-com.py --pages=18                 # more pages per area
+    python3 scripts/scrape-apartments-com.py --dry-run                  # preview without DB writes
 """
 
 import json
@@ -47,13 +48,64 @@ from supabase import create_client
 supabase = create_client(SUPABASE_URL, SERVICE_KEY)
 
 # ── CONSTANTS ────────────────────────────────────────────────────────────────
-BOROUGH_URLS = {
-    "Manhattan": "https://www.apartments.com/manhattan-ny/",
-    "Brooklyn": "https://www.apartments.com/brooklyn-ny/",
-    "Queens": "https://www.apartments.com/queens-ny/",
-    "Bronx": "https://www.apartments.com/bronx-ny/",
-    "Staten Island": "https://www.apartments.com/staten-island-ny/",
+METRO_AREA_URLS = {
+    "nyc": {
+        "Manhattan": "https://www.apartments.com/manhattan-ny/",
+        "Brooklyn": "https://www.apartments.com/brooklyn-ny/",
+        "Queens": "https://www.apartments.com/queens-ny/",
+        "Bronx": "https://www.apartments.com/bronx-ny/",
+        "Staten Island": "https://www.apartments.com/staten-island-ny/",
+    },
+    "los-angeles": {
+        "Los Angeles": "https://www.apartments.com/los-angeles-ca/",
+        "Hollywood": "https://www.apartments.com/hollywood-los-angeles-ca/",
+        "West Hollywood": "https://www.apartments.com/west-hollywood-ca/",
+        "Santa Monica": "https://www.apartments.com/santa-monica-ca/",
+        "Culver City": "https://www.apartments.com/culver-city-ca/",
+        "Glendale": "https://www.apartments.com/glendale-ca/",
+        "Burbank": "https://www.apartments.com/burbank-ca/",
+        "Pasadena": "https://www.apartments.com/pasadena-ca/",
+        "Long Beach": "https://www.apartments.com/long-beach-ca/",
+    },
+    "chicago": {
+        "Chicago": "https://www.apartments.com/chicago-il/",
+        "Evanston": "https://www.apartments.com/evanston-il/",
+        "Oak Park": "https://www.apartments.com/oak-park-il/",
+        "Cicero": "https://www.apartments.com/cicero-il/",
+        "Berwyn": "https://www.apartments.com/berwyn-il/",
+    },
+    "miami": {
+        "Miami": "https://www.apartments.com/miami-fl/",
+        "Miami Beach": "https://www.apartments.com/miami-beach-fl/",
+        "Coral Gables": "https://www.apartments.com/coral-gables-fl/",
+        "Doral": "https://www.apartments.com/doral-fl/",
+        "Aventura": "https://www.apartments.com/aventura-fl/",
+        "Hialeah": "https://www.apartments.com/hialeah-fl/",
+        "Homestead": "https://www.apartments.com/homestead-fl/",
+        "North Miami": "https://www.apartments.com/north-miami-fl/",
+    },
+    "houston": {
+        "Houston": "https://www.apartments.com/houston-tx/",
+        "Katy": "https://www.apartments.com/katy-tx/",
+        "Sugar Land": "https://www.apartments.com/sugar-land-tx/",
+        "Pearland": "https://www.apartments.com/pearland-tx/",
+        "Spring": "https://www.apartments.com/spring-tx/",
+        "Cypress": "https://www.apartments.com/cypress-tx/",
+        "Pasadena": "https://www.apartments.com/pasadena-tx/",
+        "Missouri City": "https://www.apartments.com/missouri-city-tx/",
+    },
 }
+
+METRO_INFO = {
+    "nyc": {"city": "New York", "state": "NY"},
+    "los-angeles": {"city": "Los Angeles", "state": "CA"},
+    "chicago": {"city": "Chicago", "state": "IL"},
+    "miami": {"city": "Miami", "state": "FL"},
+    "houston": {"city": "Houston", "state": "TX"},
+}
+
+# Backward compatibility
+BOROUGH_URLS = METRO_AREA_URLS["nyc"]
 
 MAX_RETRIES = 5
 RETRY_DELAY = 3  # seconds between retries
@@ -580,13 +632,14 @@ def upsert_amenities(building_id: str, amenities: list[str]) -> int:
         return 0
 
 
-def create_building(listing: dict) -> str | None:
+def create_building(listing: dict, metro: str = "nyc") -> str | None:
     """Create a new building record from an apartments.com listing. Returns building ID."""
     addr_full = listing.get("address_full", "")
     if not addr_full:
         return None
 
-    borough = detect_borough(listing)
+    info = METRO_INFO[metro]
+    borough = detect_borough(listing) if metro == "nyc" else listing.get("_area", info["city"])
     street = addr_full.split(",")[0].strip() if "," in addr_full else addr_full
     parts = street.split(None, 1)
     house_number = parts[0].upper() if parts else ""
@@ -594,7 +647,7 @@ def create_building(listing: dict) -> str | None:
     zip_code = listing.get("zip_code", "")
 
     # Build full_address in the same format as the sync: "400 W 61ST ST, Manhattan, NY, 10023"
-    full_address = f"{street.upper()}, {borough}, NY"
+    full_address = f"{street.upper()}, {borough}, {info['state']}"
     if zip_code:
         full_address += f", {zip_code}"
 
@@ -605,10 +658,11 @@ def create_building(listing: dict) -> str | None:
         "house_number": house_number,
         "street_name": street_name,
         "borough": borough,
-        "city": "New York",
-        "state": "NY",
+        "city": info["city"],
+        "state": info["state"],
         "zip_code": zip_code or None,
         "slug": slug,
+        "metro": metro,
         "latitude": listing.get("latitude"),
         "longitude": listing.get("longitude"),
         "overall_score": 0,
@@ -693,14 +747,16 @@ def upsert_listing(building_id: str, listing: dict) -> bool:
 
 # ── MAIN ─────────────────────────────────────────────────────────────────────
 def main():
-    parser = argparse.ArgumentParser(description="Scrape apartments.com for NYC rent data")
-    parser.add_argument("--borough", type=str, default="", help="Single borough to scrape")
-    parser.add_argument("--pages", type=int, default=5, help="Pages per borough (40 listings/page)")
+    parser = argparse.ArgumentParser(description="Scrape apartments.com for rent data")
+    parser.add_argument("--metro", type=str, default="nyc", choices=["nyc", "los-angeles", "chicago", "miami", "houston"], help="Metro area")
+    parser.add_argument("--borough", type=str, default="", help="Single area to scrape")
+    parser.add_argument("--pages", type=int, default=5, help="Pages per area (40 listings/page)")
     parser.add_argument("--dry-run", action="store_true", help="Preview without writing to DB")
     parser.add_argument("--start-page", type=int, default=1, help="Starting page number")
     args = parser.parse_args()
 
-    boroughs = {args.borough: BOROUGH_URLS[args.borough]} if args.borough else BOROUGH_URLS
+    metro_urls = METRO_AREA_URLS[args.metro]
+    boroughs = {args.borough: metro_urls[args.borough]} if args.borough else metro_urls
     max_pages = min(args.pages, 18)  # apartments.com caps at 18 pages (~700 results)
     dry_run = args.dry_run
 
@@ -712,7 +768,7 @@ def main():
     total_listings_saved = 0
     total_listings = 0
 
-    print(f"Scraping apartments.com — boroughs={list(boroughs.keys())}, pages={max_pages}, dry_run={dry_run}")
+    print(f"Scraping apartments.com — metro={args.metro}, areas={list(boroughs.keys())}, pages={max_pages}, dry_run={dry_run}")
     print(f"Start time: {datetime.now()}\n")
 
     for borough, base_url in boroughs.items():
@@ -737,12 +793,13 @@ def main():
             print(f"    Got {len(listings)} listings")
 
             if len(listings) == 0:
-                print(f"    No more listings. Moving to next borough.")
+                print(f"    No more listings. Moving to next area.")
                 break
 
             total_listings += len(listings)
 
             for listing in listings:
+                listing["_area"] = borough
                 addr = listing["address_full"] or listing["address"]
                 beds_available = list(listing["rent_by_beds"].keys())
                 amenity_count = len(listing["amenities"])
@@ -760,7 +817,7 @@ def main():
                     label = "MATCHED"
                 else:
                     # Create new building
-                    building_id = create_building(listing)
+                    building_id = create_building(listing, metro=args.metro)
                     if building_id:
                         total_created += 1
                         label = "CREATED"
