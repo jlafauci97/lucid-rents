@@ -3,8 +3,13 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { BuildingHeader } from "@/components/building/BuildingHeader";
-import { DeferredBuildingContent } from "@/components/building/DeferredBuildingContent";
 import { DeferredBuildingFAQ } from "@/components/building/DeferredBuildingFAQ";
+import { DeferredVerdictSection } from "@/components/building/sections/DeferredVerdictSection";
+import { DeferredRentIntelligenceSection } from "@/components/building/sections/DeferredRentIntelligenceSection";
+import { DeferredIssuesSection } from "@/components/building/sections/DeferredIssuesSection";
+import { DeferredReviewsSection } from "@/components/building/sections/DeferredReviewsSection";
+import { DeferredRentListingsSection } from "@/components/building/sections/DeferredRentListingsSection";
+import { DeferredMapSection } from "@/components/building/sections/DeferredMapSection";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { SectionNav } from "@/components/building/SectionNav";
 import { NearbyCrimeSummary } from "@/components/crime/NearbyCrimeSummary";
@@ -19,6 +24,9 @@ import { RentComparison } from "@/components/building/RentComparison";
 import { EnergyScoreCard } from "@/components/building/EnergyScoreCard";
 import { SeismicSafetyCard } from "@/components/building/SeismicSafetyCard";
 import { HazardZonesCard } from "@/components/building/HazardZonesCard";
+import { ChicagoInfoCard } from "@/components/building/ChicagoInfoCard";
+import { MiamiInfoCard } from "@/components/building/MiamiInfoCard";
+import { HoustonInfoCard } from "@/components/building/HoustonInfoCard";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { SLUG_TO_BOROUGH, regionFromSlug, buildingUrl, canonicalUrl, buildingJsonLd, breadcrumbJsonLd, landlordUrl, cityPath } from "@/lib/seo";
@@ -176,27 +184,13 @@ const safe = <T,>(promise: PromiseLike<{ data: T | null; error: unknown }>, fall
     return fallback;
   });
 
-// Loading skeleton for the main content area
-function ContentSkeleton() {
+// Lightweight skeleton for individual Suspense sections
+function SectionSkeleton({ h = "h-48" }: { h?: string }) {
   return (
-    <div className="space-y-8 animate-pulse">
-      {/* Reviews skeleton */}
+    <div className="animate-pulse">
       <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6">
         <div className="h-6 w-40 bg-[#e2e8f0] rounded mb-4" />
-        <div className="space-y-3">
-          <div className="h-24 bg-[#FAFBFD] rounded-lg" />
-          <div className="h-24 bg-[#FAFBFD] rounded-lg" />
-        </div>
-      </div>
-      {/* Rent skeleton */}
-      <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6">
-        <div className="h-6 w-36 bg-[#e2e8f0] rounded mb-4" />
-        <div className="h-[200px] bg-[#FAFBFD] rounded-lg" />
-      </div>
-      {/* Chart skeleton */}
-      <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6">
-        <div className="h-6 w-48 bg-[#e2e8f0] rounded mb-4" />
-        <div className="h-[300px] bg-[#FAFBFD] rounded-lg" />
+        <div className={`${h} bg-[#FAFBFD] rounded-lg`} />
       </div>
     </div>
   );
@@ -242,6 +236,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
   const isChicago = city === "chicago";
   const isNYC = city === "nyc";
   const isHouston = city === "houston";
+  const isMiami = city === "miami";
 
   // Critical data only — just what's needed for above-the-fold content
   const [rents, energyData, neighborhoodRents, deweyLatestRaw, deweyNeighborhoodLatestRaw] = await Promise.all([
@@ -264,6 +259,35 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
   const effectiveViolationCount = (isChicago || isHouston)
     ? (building.dob_violation_count || 0)
     : (building.violation_count || 0);
+
+  // City-specific data queries — only fetch for the relevant city
+  const [
+    chicagoDemolitions,
+    chicagoLeadInspections,
+    chicagoAffordableUnits,
+    miamiRecerts,
+    miamiUnsafeStructures,
+    miamiStormDamage,
+    miamiFloodClaims,
+    houstonDangerous,
+    houstonIndustrial,
+    houstonTaxProtests,
+    houstonAffordable,
+    laRetrofit,
+  ] = await Promise.all([
+    isChicago ? safe(supabase.from("chicago_demolitions").select("id, permit_number, issue_date, status, work_description, contractor").eq("building_id", buildingId).order("issue_date", { ascending: false }).limit(5), []) : Promise.resolve([]),
+    isChicago ? safe(supabase.from("chicago_lead_inspections").select("id, inspection_date, result, risk_level, hazard_type").eq("building_id", buildingId).order("inspection_date", { ascending: false }).limit(10), []) : Promise.resolve([]),
+    isChicago ? safe(supabase.from("chicago_affordable_units").select("id, project_name, affordable_units, total_units, income_requirement, status").eq("building_id", buildingId).limit(5), []) : Promise.resolve([]),
+    isMiami ? safe(supabase.from("miami_forty_year_recerts").select("id, recertification_status, due_date, completion_date, engineer_name").eq("building_id", buildingId).limit(1), []) : Promise.resolve([]),
+    isMiami ? safe(supabase.from("miami_unsafe_structures").select("id, case_number, violation_type, violation_description, case_date, status").eq("building_id", buildingId).order("case_date", { ascending: false }).limit(5), []) : Promise.resolve([]),
+    isMiami ? safe(supabase.from("miami_storm_damage").select("id, disaster_name, disaster_date, damage_category, fema_verified_loss, flood_damage, wind_damage").eq("building_id", buildingId).order("disaster_date", { ascending: false }).limit(5), []) : Promise.resolve([]),
+    isMiami ? safe(supabase.from("miami_flood_claims").select("id, claim_date, flood_zone, amount_paid, cause_of_damage").eq("building_id", buildingId).order("claim_date", { ascending: false }).limit(10), []) : Promise.resolve([]),
+    isHouston ? safe(supabase.from("houston_dangerous_buildings").select("id, case_number, status, case_type, case_date, violation_description").eq("building_id", buildingId).order("case_date", { ascending: false }).limit(5), []) : Promise.resolve([]),
+    isHouston ? safe(supabase.from("houston_industrial_proximity").select("id, facility_name, distance_miles, industry_type, total_releases_lbs, release_year, chemicals").eq("building_id", buildingId).order("distance_miles", { ascending: true }).limit(5), []) : Promise.resolve([]),
+    isHouston ? safe(supabase.from("houston_tax_protests").select("id, protest_year, original_value, final_value, reduction_pct, outcome").eq("building_id", buildingId).order("protest_year", { ascending: false }).limit(10), []) : Promise.resolve([]),
+    isHouston ? safe(supabase.from("houston_affordable_housing").select("id, project_name, affordable_units, total_units, income_requirement, program_type, status").eq("building_id", buildingId).limit(5), []) : Promise.resolve([]),
+    isLA ? safe(supabase.from("la_earthquake_retrofit").select("id, retrofit_type, compliance_status, ordinance, deadline, completion_date").eq("building_id", buildingId).limit(1), []) : Promise.resolve([]),
+  ]);
 
   // Dewey rent intelligence: compute above-the-fold metrics
   const deweyMetrics = (() => {
@@ -375,15 +399,28 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-10">
           {/* Main column */}
           <div className="lg:col-span-2 space-y-12">
-            {/* Below-fold content streams in via Suspense */}
-            <Suspense fallback={<ContentSkeleton />}>
-              <DeferredBuildingContent
-                building={building}
-                buildingId={buildingId}
-                city={city}
-                rents={rents}
-              />
+            {/* Each section streams independently via its own Suspense boundary */}
+            <Suspense fallback={<SectionSkeleton h="h-48" />}>
+              <DeferredVerdictSection building={building} buildingId={buildingId} />
             </Suspense>
+
+            <Suspense fallback={<SectionSkeleton h="h-[300px]" />}>
+              <DeferredRentIntelligenceSection building={building} buildingId={buildingId} city={city} />
+            </Suspense>
+
+            <Suspense fallback={<SectionSkeleton h="h-64" />}>
+              <DeferredIssuesSection buildingId={buildingId} city={city} />
+            </Suspense>
+
+            <Suspense fallback={<SectionSkeleton h="h-48" />}>
+              <DeferredReviewsSection building={building} buildingId={buildingId} city={city} />
+            </Suspense>
+
+            <Suspense fallback={<SectionSkeleton h="h-[200px]" />}>
+              <DeferredRentListingsSection building={building} buildingId={buildingId} city={city} rents={rents} />
+            </Suspense>
+
+            <DeferredMapSection building={building} city={city} />
           </div>
 
           {/* Sidebar — static props render immediately, client components fetch independently */}
@@ -500,6 +537,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
                 isSoftStory={building.is_soft_story}
                 softStoryStatus={building.soft_story_status}
                 city={city}
+                earthquakeRetrofit={laRetrofit[0] || null}
               />
             ) : isNYC ? (
               <SeismicSafetyCard
@@ -510,51 +548,40 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
 
             {/* Chicago Info */}
             {isChicago && (
-              <Card>
-                <CardHeader>
-                  <h3 className="font-semibold" style={{ color: T.text1 }}>Chicago Info</h3>
-                </CardHeader>
-                <CardContent>
-                  <dl className="space-y-3 text-sm">
-                    {building.is_rlto_protected != null && (
-                      <div>
-                        <dt style={{ color: T.text3 }}>RLTO Protection</dt>
-                        <dd className="font-medium" style={{ color: T.text1 }}>
-                          {building.is_rlto_protected ? (
-                            <span style={{ color: T.sage }}>Protected</span>
-                          ) : (
-                            <span style={{ color: T.text3 }}>Not covered</span>
-                          )}
-                        </dd>
-                      </div>
-                    )}
-                    {building.is_scofflaw != null && (
-                      <div>
-                        <dt style={{ color: T.text3 }}>Scofflaw Status</dt>
-                        <dd className="font-medium" style={{ color: T.text1 }}>
-                          {building.is_scofflaw ? (
-                            <span style={{ color: T.danger }}>Scofflaw</span>
-                          ) : (
-                            <span style={{ color: T.sage }}>Clear</span>
-                          )}
-                        </dd>
-                      </div>
-                    )}
-                    {building.ward && (
-                      <div>
-                        <dt style={{ color: T.text3 }}>Ward</dt>
-                        <dd className="font-medium" style={{ color: T.text1 }}>{building.ward}</dd>
-                      </div>
-                    )}
-                    {building.community_area && (
-                      <div>
-                        <dt style={{ color: T.text3 }}>Community Area</dt>
-                        <dd className="font-medium" style={{ color: T.text1 }}>{building.community_area}</dd>
-                      </div>
-                    )}
-                  </dl>
-                </CardContent>
-              </Card>
+              <ChicagoInfoCard
+                isRltoProtected={building.is_rlto_protected}
+                isScofflaw={building.is_scofflaw}
+                ward={building.ward}
+                communityArea={building.community_area}
+                demolitions={chicagoDemolitions}
+                leadInspections={chicagoLeadInspections}
+                affordableUnits={chicagoAffordableUnits}
+              />
+            )}
+
+            {/* Miami-Dade Info */}
+            {isMiami && (
+              <MiamiInfoCard
+                fortyYearRecertStatus={building.forty_year_recert_status}
+                fortyYearRecertDueDate={building.forty_year_recert_due_date}
+                unsafeStructureCount={building.unsafe_structure_count}
+                seaLevelRiskZone={building.sea_level_risk_zone}
+                seaLevelRiskFeet={building.sea_level_risk_feet}
+                recerts={miamiRecerts}
+                unsafeStructures={miamiUnsafeStructures}
+                stormDamage={miamiStormDamage}
+                floodClaims={miamiFloodClaims}
+              />
+            )}
+
+            {/* Houston Info */}
+            {isHouston && (
+              <HoustonInfoCard
+                dangerousBuildings={houstonDangerous}
+                industrialProximity={houstonIndustrial}
+                taxProtests={houstonTaxProtests}
+                affordableHousing={houstonAffordable}
+              />
             )}
 
             {/* Nearby Transit */}
