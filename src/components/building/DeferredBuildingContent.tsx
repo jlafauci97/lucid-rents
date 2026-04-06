@@ -89,6 +89,16 @@ export async function DeferredBuildingContent({ building, buildingId, city, rent
       : Promise.resolve([]),
   ]);
 
+  // Filter dewey amenity premiums to only amenities this building actually has.
+  // Dewey uses snake_case keys (e.g. "pool", "in_unit_laundry") while building_amenities
+  // has freeform text (e.g. "Swimming Pool", "In-Unit Washer/Dryer"). Match by checking
+  // if the dewey keyword (with underscores→spaces) appears in any building amenity name.
+  const buildingAmenityNames = amenities.map((a: { amenity: string }) => a.amenity.toLowerCase());
+  const filteredDeweyPremiums = (deweyAmenityPremiums || []).filter((dp: { amenity: string }) => {
+    const keyword = dp.amenity.replace(/_/g, " ");
+    return buildingAmenityNames.some((name: string) => name.includes(keyword));
+  });
+
   const shortAddress = building.full_address.split(",")[0]?.trim() || building.full_address;
 
   // Verdict banner computations
@@ -208,7 +218,7 @@ export async function DeferredBuildingContent({ building, buildingId, city, rent
               building={{ id: building.id, full_address: building.full_address, zip_code: building.zip_code || "", violation_count: building.violation_count || 0, overall_score: building.overall_score }}
               buildingRents={deweyBuildingRents}
               neighborhoodRents={deweyNeighborhoodRents || []}
-              amenityPremiums={deweyAmenityPremiums || []}
+              amenityPremiums={filteredDeweyPremiums}
               seasonalIndex={deweySeasonalIndex || []}
               valueGrade={computedValueGrade}
             />
@@ -271,7 +281,7 @@ export async function DeferredBuildingContent({ building, buildingId, city, rent
           <AmenityPremiums
             neighborhoodMedian={neighborhoodMedian}
             buildingMedian={buildingMedian}
-            amenityPremiums={(deweyAmenityPremiums || []).filter((a: any) => a.premium_dollars > 0)}
+            amenityPremiums={filteredDeweyPremiums.filter((a: any) => a.premium_dollars > 0)}
             violationDiscount={violationDiscount}
             valueGrade={apValueGrade}
             bedLabel={bedLabels[bestBeds] ?? `${bestBeds}BR`}
