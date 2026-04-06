@@ -15,7 +15,7 @@ on:
         required: false
         default: "all"
       source:
-        description: "Source to scrape (all, rent_com, zillow, streeteasy, zumper, compass, realtor, apartments_com)"
+        description: "Source to scrape (all, rent_com, zillow, streeteasy, compass, realtor, apartments_com)"
         required: false
         default: "all"
 
@@ -83,15 +83,6 @@ jobs:
         run: |
           PAGES="${{ github.event.inputs.pages || '25' }}"
           python scripts/scrape-streeteasy.py --pages=$PAGES
-
-      - name: Scrape Zumper
-        if: steps.check.outputs.skip != 'true' && (github.event.inputs.source == 'all' || github.event.inputs.source == 'zumper' || github.event_name == 'schedule')
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: |
-          PAGES="${{ github.event.inputs.pages || '5' }}"
-          python scripts/scrape-zumper.py --metro=${{ matrix.metro }} --pages=$PAGES
 
       - name: Scrape Compass
         if: steps.check.outputs.skip != 'true' && (github.event.inputs.source == 'all' || github.event.inputs.source == 'compass' || github.event_name == 'schedule')
