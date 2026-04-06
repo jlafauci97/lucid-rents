@@ -258,6 +258,61 @@ async function generateStaticSitemap() {
   return entries;
 }
 
+// ─── Crawl hub sitemap (hubs.xml) ─────────────────────────────
+// A small, high-priority sitemap of "gateway" pages that link to
+// thousands of building/landlord pages.  Google crawls these first
+// and fans out through internal links — bypassing any issues with
+// the 200+ building sitemaps.
+
+async function generateHubSitemap() {
+  const entries = [];
+  const now = new Date().toISOString();
+
+  // Tier 1 — City home pages (priority 1.0)
+  for (const city of VALID_CITIES) {
+    entries.push({ url: `${BASE_URL}/${CITY_META[city].urlPrefix}`, lastmod: now, changefreq: "daily", priority: 1.0 });
+  }
+
+  // Tier 2 — Borough/region building indexes (priority 0.9)
+  // These are the highest-value hubs: each links to thousands of building pages
+  for (const city of VALID_CITIES) {
+    for (const region of CITY_META[city].regions) {
+      entries.push({ url: `${BASE_URL}${cityPath(`/buildings/${regionSlug(region)}`, city)}`, lastmod: now, changefreq: "daily", priority: 0.9 });
+    }
+  }
+
+  // Tier 3 — City-level listing hubs (priority 0.8)
+  const hubPages = ["/buildings", "/landlords", "/worst-rated-buildings", "/rankings", "/search"];
+  for (const city of VALID_CITIES) {
+    for (const page of hubPages) {
+      entries.push({ url: `${BASE_URL}${cityPath(page, city)}`, lastmod: now, changefreq: "daily", priority: 0.8 });
+    }
+  }
+
+  // Tier 4 — Neighborhood pages (priority 0.7)
+  // Each links to buildings, rent data, and crime in that area
+  const zipData = await supabaseFetch("buildings?select=zip_code,metro&zip_code=not.is.null&limit=10000");
+  const seenZips = new Set();
+  for (const b of zipData) {
+    if (!b.zip_code) continue;
+    const city = metroToCity(b.metro);
+    const key = `${city}:${b.zip_code}`;
+    if (seenZips.has(key)) continue;
+    seenZips.add(key);
+    entries.push({ url: `${BASE_URL}${neighborhoodUrl(b.zip_code, city)}`, lastmod: now, changefreq: "weekly", priority: 0.7 });
+  }
+
+  // Tier 5 — Other discovery hubs (priority 0.6)
+  const secondaryHubs = ["/crime", "/news", "/rent-data", "/tenant-rights", "/tenant-tools/templates", "/permits", "/energy", "/scaffolding"];
+  for (const city of VALID_CITIES) {
+    for (const page of secondaryHubs) {
+      entries.push({ url: `${BASE_URL}${cityPath(page, city)}`, lastmod: now, changefreq: "weekly", priority: 0.6 });
+    }
+  }
+
+  return entries;
+}
+
 // ─── Main ───────────────────────────────────────────────────────
 
 const SITEMAP_TIMEOUT_MS = 60 * 60 * 1000; // 60 minutes max for entire sitemap generation
@@ -281,7 +336,8 @@ function rebuildIndex() {
   const indexEntries = files.map(f => ({ name: f, lastmod: now }));
   indexEntries.sort((a, b) => {
     const order = (n) => {
-      if (n === "0.xml") return "0-0";
+      if (n === "hubs.xml") return "0-0-hubs";
+      if (n === "0.xml") return "0-1-static";
       if (n.startsWith("l-")) return `1-${n.slice(2).replace(".xml", "").padStart(6, "0")}`;
       if (n.startsWith("b-")) return `2-${n.slice(2).replace(".xml", "").padStart(6, "0")}`;
       return n;
@@ -305,6 +361,12 @@ async function fullGenerate() {
   mkdirSync(OUT_DIR, { recursive: true });
 
   const now = new Date().toISOString();
+
+  // Crawl hub sitemap
+  console.log("  [hubs.xml] crawl hub pages...");
+  const hubEntries = await generateHubSitemap();
+  writeFileSync(`${OUT_DIR}/hubs.xml`, buildSitemapXml(hubEntries));
+  console.log(`  [hubs.xml] ${hubEntries.length} URLs`);
 
   // Static sitemap
   console.log("  [0.xml] static pages...");
@@ -436,7 +498,12 @@ async function incrementalGenerate() {
   const since = progress.lastRun;
   let newUrls = 0;
 
-  // Always refresh static sitemap (fast, no DB pagination)
+  // Always refresh hub + static sitemaps (fast, no DB pagination)
+  console.log("  [hubs.xml] refreshing crawl hub pages...");
+  const hubEntries = await generateHubSitemap();
+  writeFileSync(`${OUT_DIR}/hubs.xml`, buildSitemapXml(hubEntries));
+  console.log(`  [hubs.xml] ${hubEntries.length} URLs`);
+
   console.log("  [0.xml] refreshing static pages...");
   const staticEntries = await generateStaticSitemap();
   writeFileSync(`${OUT_DIR}/0.xml`, buildSitemapXml(staticEntries));
