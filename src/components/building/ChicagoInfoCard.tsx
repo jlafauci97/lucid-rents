@@ -7,8 +7,8 @@ import { Badge } from "@/components/ui/Badge";
 interface ChicagoInfoCardProps {
   isRltoProtected?: boolean;
   isScofflaw?: boolean;
-  ward?: string | null;
-  communityArea?: string | null;
+  ward?: string | number | null;
+  communityArea?: string | number | null;
   demolitions?: { id: string; permit_number: string; issue_date: string; status: string; work_description: string; contractor: string }[];
   leadInspections?: { id: string; inspection_date: string; result: string; risk_level: string; hazard_type: string }[];
   affordableUnits?: unknown[];
