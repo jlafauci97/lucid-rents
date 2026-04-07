@@ -50,17 +50,30 @@ export async function GET(req: NextRequest) {
 
   // Use ranked search function for text queries to get proper relevance ordering
   if (q) {
-    const { abbreviated, expanded } = normalizeAddressQuery(q);
-    const { data, error } = await supabase.rpc("search_buildings_ranked", {
-      search_query: abbreviated,
-      search_query_alt: abbreviated !== expanded ? expanded : null,
-      city_filter: cityParam || null,
-      borough_filter: borough || null,
-      zip_filter: zip || null,
-      sort_by: sort || "relevance",
-      page_offset: offset,
-      page_limit: limit,
-    });
+    const { abbreviated } = normalizeAddressQuery(q);
+    // Address queries (start with digit) use fast btree index path;
+    // name/owner queries fall back to GIN full-text search
+    const isAddressQuery = /^\d/.test(abbreviated.trim());
+
+    const { data, error } = isAddressQuery
+      ? await supabase.rpc("search_buildings_fast", {
+          search_query: abbreviated,
+          city_filter: cityParam || null,
+          borough_filter: borough || null,
+          zip_filter: zip || null,
+          sort_by: sort || "relevance",
+          page_offset: offset,
+          page_limit: limit,
+        })
+      : await supabase.rpc("search_buildings_ranked", {
+          search_query: abbreviated,
+          city_filter: cityParam || null,
+          borough_filter: borough || null,
+          zip_filter: zip || null,
+          sort_by: sort || "relevance",
+          page_offset: offset,
+          page_limit: limit,
+        });
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
@@ -72,13 +85,16 @@ export async function GET(req: NextRequest) {
     });
     const total = data?.[0]?.total_count ?? 0;
 
-    return NextResponse.json({ buildings, total, page });
+    return NextResponse.json({ buildings, total, page }, {
+      headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" },
+    });
   }
 
-  // Non-text queries: browse by filters only
+  // Non-text queries: browse by filters only — select only fields used by BuildingCard
+  const BROWSE_COLUMNS = "id,metro,borough,slug,full_address,name,zip_code,year_built,total_units,review_count,violation_count,complaint_count,overall_score,is_rent_stabilized,latitude,longitude";
   let query = supabase
     .from("buildings")
-    .select("*", { count: "exact" })
+    .select(BROWSE_COLUMNS, { count: "exact" })
     .range(offset, offset + limit - 1);
 
   if (cityParam) {
@@ -103,5 +119,7 @@ export async function GET(req: NextRequest) {
     buildings: data || [],
     total: count || 0,
     page,
+  }, {
+    headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" },
   });
 }
