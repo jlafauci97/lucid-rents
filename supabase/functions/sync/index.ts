@@ -27,7 +27,8 @@ const BOROUGH_MAP: Record<string, string> = {
 const PAGE_SIZE = 5000;
 const BATCH_SIZE = 500;
 const MAX_PAGES = 10; // Safety limit: max API pages per sync
-const SYNC_TIME_BUDGET_MS = 120_000; // Stop fetching new pages after 120s to leave buffer before 150s edge function limit
+const SYNC_TIME_BUDGET_MS = 240_000; // Stop fetching new pages after 240s to leave buffer before 300s edge function limit
+const MAX_CHAIN_DEPTH = 10; // Max self-chaining invocations to drain backlog
 const STALE_SYNC_MINUTES = 30; // Mark "running" syncs older than this as "failed"
 
 const COMPLAINT_TYPES = [
@@ -227,6 +228,141 @@ async function finalizeSyncLog(
       errors: errors.length > 0 ? errors : null,
     })
     .eq("id", logId);
+}
+
+/** Read the saved cursor for a sync type. Returns null if none exists. */
+async function getCursor(
+  supabase: SupabaseClient,
+  syncType: string
+): Promise<CursorState | null> {
+  const { data } = await supabase
+    .from("sync_cursors")
+    .select("cursor_value, cursor_offset")
+    .eq("sync_type", syncType)
+    .single();
+
+  if (!data) return null;
+  return { cursorValue: data.cursor_value, cursorOffset: data.cursor_offset };
+}
+
+/** Save/update cursor position. Called after each batch for crash safety. */
+async function saveCursor(
+  supabase: SupabaseClient,
+  syncType: string,
+  cursor: CursorState
+): Promise<void> {
+  await supabase
+    .from("sync_cursors")
+    .upsert({
+      sync_type: syncType,
+      cursor_value: cursor.cursorValue,
+      cursor_offset: cursor.cursorOffset,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "sync_type" });
+}
+
+/** Clear cursor when sync completes all available data. */
+async function clearCursor(
+  supabase: SupabaseClient,
+  syncType: string
+): Promise<void> {
+  await supabase
+    .from("sync_cursors")
+    .delete()
+    .eq("sync_type", syncType);
+}
+
+/**
+ * Wraps a sync function with cursor management, crash-safe logging, and self-chaining.
+ * The sync function receives a start date (from cursor or getLastSyncDate fallback)
+ * and the global sync start time for time budget checks.
+ */
+async function runWithCursor(
+  supabase: SupabaseClient,
+  syncType: string,
+  syncLogType: string,
+  syncFn: (startDate: string, syncStartMs: number) => Promise<SyncResult>,
+  chainDepth: number = 0,
+  sinceOverride?: string,
+): Promise<SyncResult> {
+  // Race condition guard: skip if another run is active or a chain is in progress
+  const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+  const { data: activeRuns } = await supabase
+    .from("sync_log")
+    .select("id, status, started_at")
+    .eq("sync_type", syncLogType)
+    .in("status", ["running", "partial"])
+    .gte("started_at", fiveMinAgo)
+    .limit(1);
+
+  if (activeRuns && activeRuns.length > 0) {
+    const activeStatus = activeRuns[0].status;
+    return {
+      totalAdded: 0,
+      totalLinked: 0,
+      errors: [`Skipped: ${syncLogType} has a recent "${activeStatus}" entry (chain in progress or already running)`],
+      affectedBuildingIds: new Set(),
+    };
+  }
+
+  // Determine start position: sinceOverride > cursor > getLastSyncDate
+  let startDate: string;
+  if (sinceOverride) {
+    startDate = sinceOverride;
+  } else {
+    const cursor = await getCursor(supabase, syncLogType);
+    if (cursor) {
+      startDate = cursor.cursorValue;
+    } else {
+      startDate = await getLastSyncDate(supabase, syncLogType);
+    }
+  }
+
+  const logId = await createSyncLog(supabase, syncLogType);
+  const syncStartMs = Date.now();
+
+  let result: SyncResult;
+  try {
+    result = await syncFn(startDate, syncStartMs);
+  } catch (err) {
+    // Crash-safe: always finalize log even on error
+    await finalizeSyncLog(supabase, logId, "failed", 0, 0, [String(err)]).catch(() => {});
+    return {
+      totalAdded: 0,
+      totalLinked: 0,
+      errors: [`${syncLogType} fatal error: ${String(err)}`],
+      affectedBuildingIds: new Set(),
+    };
+  }
+
+  // Save or clear cursor
+  if (result.timeBudgetExceeded && result.newCursor) {
+    await saveCursor(supabase, syncLogType, result.newCursor);
+  } else {
+    await clearCursor(supabase, syncLogType);
+  }
+
+  // Finalize log
+  const status = result.timeBudgetExceeded ? "partial" : "completed";
+  await finalizeSyncLog(supabase, logId, status, result.totalAdded, result.totalLinked, result.errors);
+
+  // Self-chain on partial if under max depth
+  if (result.timeBudgetExceeded && chainDepth < MAX_CHAIN_DEPTH) {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") || Deno.env.get("NEXT_PUBLIC_SUPABASE_URL");
+    const cronSecret = Deno.env.get("CRON_SECRET");
+    if (supabaseUrl && cronSecret) {
+      fetch(`${supabaseUrl}/functions/v1/sync`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${cronSecret}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ source: syncType, chainDepth: chainDepth + 1 }),
+      }).catch((err) => console.error(`Self-chain failed for ${syncType}:`, err));
+    }
+  }
+
+  return result;
 }
 
 /** Look up address info for a BBL from the source table that has it. */
@@ -722,11 +858,18 @@ async function linkByApn(
 // ---------------------------------------------------------------------------
 // Sync result type
 // ---------------------------------------------------------------------------
+interface CursorState {
+  cursorValue: string;   // ISO date or offset string
+  cursorOffset: number;  // page offset within range
+}
+
 interface SyncResult {
   totalAdded: number;
   totalLinked: number;
   errors: string[];
   affectedBuildingIds: Set<string>;
+  timeBudgetExceeded?: boolean;
+  newCursor?: CursorState;
 }
 
 // ---------------------------------------------------------------------------
@@ -753,91 +896,98 @@ interface HPDRawRecord {
   [key: string]: unknown;
 }
 
-async function syncHPDViolations(supabase: SupabaseClient, sinceOverride?: string): Promise<SyncResult> {
-  const lastSync = sinceOverride || await getLastSyncDate(supabase, "hpd_violations");
-  const logId = await createSyncLog(supabase, "hpd_violations");
+async function syncHPDViolations(supabase: SupabaseClient, startDate: string, syncStartMs: number): Promise<SyncResult> {
   const syncStartTime = new Date().toISOString();
 
   let totalAdded = 0;
   let totalLinked = 0;
   const errors: string[] = [];
   const affectedBuildingIds = new Set<string>();
+  let timeBudgetExceeded = false;
+  let lastRecordDate = startDate;
 
-  try {
-    let offset = 0;
-    let hasMore = true;
-    let pagesFetched = 0;
+  let offset = 0;
+  let hasMore = true;
+  let pagesFetched = 0;
 
-    while (hasMore) {
-      const url = buildSodaUrl(
-        "wvxf-dwi5",
-        `inspectiondate > '${lastSync}'`,
-        PAGE_SIZE,
-        offset,
-        "inspectiondate ASC"
-      );
+  while (hasMore) {
+    const url = buildSodaUrl(
+      "wvxf-dwi5",
+      `inspectiondate > '${startDate}'`,
+      PAGE_SIZE,
+      offset,
+      "inspectiondate ASC"
+    );
 
-      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
-      if (!res.ok) {
-        const errText = await res.text();
-        errors.push(`HPD API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
-        break;
-      }
-
-      const records: HPDRawRecord[] = await res.json();
-
-      if (records.length === 0) {
-        hasMore = false;
-        break;
-      }
-
-      const rows = records
-        .filter((r) => r.violationid)
-        .map((r) => {
-          let bbl: string | null = null;
-          const boroRaw = r.boroid as string | undefined;
-          const blockRaw = r.block as string | undefined;
-          const lotRaw = r.lot as string | undefined;
-          if (boroRaw && blockRaw && lotRaw) {
-            if (/^\d$/.test(boroRaw)) {
-              const block = String(blockRaw).padStart(5, "0").slice(-5);
-              const lot = String(lotRaw).padStart(4, "0").slice(-4);
-              bbl = `${boroRaw}${block}${lot}`;
-            }
-          }
-          return {
-            violation_id: String(r.violationid),
-            bbl,
-            bin: r.bin || null,
-            class: r.class && ["A", "B", "C", "I"].includes(r.class.toUpperCase())
-              ? r.class.toUpperCase()
-              : null,
-            inspection_date: r.inspectiondate ? r.inspectiondate.slice(0, 10) : null,
-            approved_date: r.approveddate ? r.approveddate.slice(0, 10) : null,
-            nov_description: r.novdescription || null,
-            nov_issue_date: r.novissueddate ? r.novissueddate.slice(0, 10) : null,
-            status: r.currentstatus || null,
-            status_date: r.currentstatusdate ? r.currentstatusdate.slice(0, 10) : null,
-            borough: r.boroid ? BOROUGH_MAP[r.boroid] || null : null,
-            house_number: r.housenumber || null,
-            street_name: r.streetname || null,
-            apartment: r.apartment || null,
-            imported_at: new Date().toISOString(),
-          };
-        });
-
-      if (rows.length > 0) {
-        totalAdded += await batchUpsert(supabase, "hpd_violations", rows, "violation_id", errors, "HPD");
-      }
-
-      pagesFetched++;
-      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
-        hasMore = false;
-      } else {
-        offset += PAGE_SIZE;
-      }
+    const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+    if (!res.ok) {
+      const errText = await res.text();
+      errors.push(`HPD API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
+      break;
     }
 
+    const records: HPDRawRecord[] = await res.json();
+
+    if (records.length === 0) {
+      hasMore = false;
+      break;
+    }
+
+    const rows = records
+      .filter((r) => r.violationid)
+      .map((r) => {
+        let bbl: string | null = null;
+        const boroRaw = r.boroid as string | undefined;
+        const blockRaw = r.block as string | undefined;
+        const lotRaw = r.lot as string | undefined;
+        if (boroRaw && blockRaw && lotRaw) {
+          if (/^\d$/.test(boroRaw)) {
+            const block = String(blockRaw).padStart(5, "0").slice(-5);
+            const lot = String(lotRaw).padStart(4, "0").slice(-4);
+            bbl = `${boroRaw}${block}${lot}`;
+          }
+        }
+        return {
+          violation_id: String(r.violationid),
+          bbl,
+          bin: r.bin || null,
+          class: r.class && ["A", "B", "C", "I"].includes(r.class.toUpperCase())
+            ? r.class.toUpperCase()
+            : null,
+          inspection_date: r.inspectiondate ? r.inspectiondate.slice(0, 10) : null,
+          approved_date: r.approveddate ? r.approveddate.slice(0, 10) : null,
+          nov_description: r.novdescription || null,
+          nov_issue_date: r.novissueddate ? r.novissueddate.slice(0, 10) : null,
+          status: r.currentstatus || null,
+          status_date: r.currentstatusdate ? r.currentstatusdate.slice(0, 10) : null,
+          borough: r.boroid ? BOROUGH_MAP[r.boroid] || null : null,
+          house_number: r.housenumber || null,
+          street_name: r.streetname || null,
+          apartment: r.apartment || null,
+          imported_at: new Date().toISOString(),
+        };
+      });
+
+    if (rows.length > 0) {
+      totalAdded += await batchUpsert(supabase, "hpd_violations", rows, "violation_id", errors, "HPD");
+    }
+
+    if (records.length > 0 && records[records.length - 1].inspectiondate) {
+      lastRecordDate = records[records.length - 1].inspectiondate!.slice(0, 10);
+    }
+    pagesFetched++;
+    if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
+      hasMore = false;
+    } else if (isTimeBudgetExceeded(syncStartMs)) {
+      timeBudgetExceeded = true;
+      hasMore = false;
+    } else {
+      offset += PAGE_SIZE;
+    }
+    await saveCursor(supabase, "hpd_violations", { cursorValue: lastRecordDate, cursorOffset: offset });
+  }
+
+  if (!timeBudgetExceeded) {
     try {
       const linkResult = await linkByBbl(supabase, "hpd_violations", syncStartTime, errors, "HPD", true);
       totalLinked = linkResult.linked;
@@ -845,14 +995,16 @@ async function syncHPDViolations(supabase: SupabaseClient, sinceOverride?: strin
     } catch (linkErr) {
       errors.push(`HPD linking phase error: ${String(linkErr)}`);
     }
-
-    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
-  } catch (err) {
-    errors.push(`HPD fatal error: ${String(err)}`);
-    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
   }
 
-  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+  return {
+    totalAdded,
+    totalLinked,
+    errors,
+    affectedBuildingIds,
+    timeBudgetExceeded,
+    newCursor: timeBudgetExceeded ? { cursorValue: lastRecordDate, cursorOffset: offset } : undefined,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -875,148 +1027,147 @@ interface Complaint311RawRecord {
   [key: string]: unknown;
 }
 
-async function sync311Complaints(supabase: SupabaseClient): Promise<SyncResult> {
-  const fnStart = Date.now();
-
-  const lastSync = await getLastSyncDate(supabase, "complaints_311");
-  const logId = await createSyncLog(supabase, "complaints_311");
+async function sync311Complaints(supabase: SupabaseClient, startDate: string, syncStartMs: number): Promise<SyncResult> {
+  const syncStartTime = new Date().toISOString();
 
   let totalAdded = 0;
   let totalLinked = 0;
   const errors: string[] = [];
   const affectedBuildingIds = new Set<string>();
+  let timeBudgetExceeded = false;
+  let lastRecordDate = startDate;
 
   const COMPLAINTS_PAGE_SIZE = 2000;
   const COMPLAINTS_SELECT = "unique_key,complaint_type,descriptor,agency,status,created_date,closed_date,resolution_description,borough,incident_address,latitude,longitude";
 
-  try {
-    let offset = 0;
-    let hasMore = true;
-    let pagesFetched = 0;
+  let offset = 0;
+  let hasMore = true;
+  let pagesFetched = 0;
 
-    const typesIn = COMPLAINT_TYPES.map((t) => `'${t}'`).join(",");
+  const typesIn = COMPLAINT_TYPES.map((t) => `'${t}'`).join(",");
 
-    const addressToKeys = new Map<string, string[]>();
+  const addressToKeys = new Map<string, string[]>();
 
-    while (hasMore) {
-      const url = buildSodaUrl(
-        "erm2-nwe9",
-        `created_date > '${lastSync}' AND complaint_type IN (${typesIn})`,
-        COMPLAINTS_PAGE_SIZE,
-        offset,
-        "created_date ASC"
-      ) + `&$select=${encodeURIComponent(COMPLAINTS_SELECT)}`;
+  while (hasMore) {
+    const url = buildSodaUrl(
+      "erm2-nwe9",
+      `created_date > '${startDate}' AND complaint_type IN (${typesIn})`,
+      COMPLAINTS_PAGE_SIZE,
+      offset,
+      "created_date ASC"
+    ) + `&$select=${encodeURIComponent(COMPLAINTS_SELECT)}`;
 
-      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
-      if (!res.ok) {
-        const errText = await res.text();
-        errors.push(`311 API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
-        break;
-      }
+    const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+    if (!res.ok) {
+      const errText = await res.text();
+      errors.push(`311 API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
+      break;
+    }
 
-      const records: Complaint311RawRecord[] = await res.json();
+    const records: Complaint311RawRecord[] = await res.json();
 
-      if (records.length === 0) {
-        hasMore = false;
-        break;
-      }
+    if (records.length === 0) {
+      hasMore = false;
+      break;
+    }
 
-      const rows = records
-        .filter((r) => r.unique_key)
-        .map((r) => ({
-          unique_key: String(r.unique_key),
-          complaint_type: r.complaint_type || null,
-          descriptor: r.descriptor || null,
-          agency: r.agency || null,
-          status: r.status || null,
-          created_date: r.created_date || null,
-          closed_date: r.closed_date || null,
-          resolution_description: r.resolution_description || null,
-          borough: r.borough || null,
-          incident_address: r.incident_address || null,
-          latitude: r.latitude ? parseFloat(r.latitude) : null,
-          longitude: r.longitude ? parseFloat(r.longitude) : null,
-          imported_at: new Date().toISOString(),
-        }));
+    const rows = records
+      .filter((r) => r.unique_key)
+      .map((r) => ({
+        unique_key: String(r.unique_key),
+        complaint_type: r.complaint_type || null,
+        descriptor: r.descriptor || null,
+        agency: r.agency || null,
+        status: r.status || null,
+        created_date: r.created_date || null,
+        closed_date: r.closed_date || null,
+        resolution_description: r.resolution_description || null,
+        borough: r.borough || null,
+        incident_address: r.incident_address || null,
+        latitude: r.latitude ? parseFloat(r.latitude) : null,
+        longitude: r.longitude ? parseFloat(r.longitude) : null,
+        imported_at: new Date().toISOString(),
+      }));
 
-      for (const row of rows) {
-        if (row.incident_address) {
-          const addr = (row.incident_address as string).trim();
-          if (!addressToKeys.has(addr)) {
-            addressToKeys.set(addr, []);
-          }
-          addressToKeys.get(addr)!.push(row.unique_key as string);
+    for (const row of rows) {
+      if (row.incident_address) {
+        const addr = (row.incident_address as string).trim();
+        if (!addressToKeys.has(addr)) {
+          addressToKeys.set(addr, []);
         }
-      }
-
-      if (rows.length > 0) {
-        totalAdded += await batchUpsert(supabase, "complaints_311", rows, "unique_key", errors, "311", true);
-      }
-
-      pagesFetched++;
-      if (records.length < COMPLAINTS_PAGE_SIZE || pagesFetched >= MAX_PAGES) {
-        hasMore = false;
-      } else {
-        offset += COMPLAINTS_PAGE_SIZE;
-      }
-
-      if (Date.now() - fnStart > 35_000) {
-        errors.push(`311 stopped fetching after ${pagesFetched} pages (time budget)`);
-        hasMore = false;
+        addressToKeys.get(addr)!.push(row.unique_key as string);
       }
     }
 
-    const elapsedMs = Date.now() - fnStart;
-    if (elapsedMs < 100_000 && addressToKeys.size > 0) {
-      try {
-        let lookupCount = 0;
-        const MAX_LOOKUPS = 2000;
-
-        for (const [address, uniqueKeys] of addressToKeys) {
-          if (lookupCount >= MAX_LOOKUPS) break;
-          if (Date.now() - fnStart > 110_000) break;
-          lookupCount++;
-
-          const { data: matchedBuildings } = await supabase
-            .from("buildings")
-            .select("id")
-            .ilike("full_address", `${address},%`)
-            .eq("metro", "nyc")
-            .limit(1);
-
-          if (matchedBuildings && matchedBuildings.length > 0) {
-            const buildingId = matchedBuildings[0].id;
-
-            for (let i = 0; i < uniqueKeys.length; i += 500) {
-              const keyBatch = uniqueKeys.slice(i, i + 500);
-              const { error: linkError } = await supabase
-                .from("complaints_311")
-                .update({ building_id: buildingId })
-                .in("unique_key", keyBatch);
-
-              if (!linkError) {
-                totalLinked += keyBatch.length;
-              } else {
-                errors.push(`311 link error (${address}): ${linkError.message}`);
-              }
-            }
-            affectedBuildingIds.add(buildingId);
-          }
-        }
-      } catch (linkErr) {
-        errors.push(`311 linking phase error: ${String(linkErr)}`);
-      }
-    } else if (elapsedMs >= 45_000) {
-      errors.push(`311 skipped linking (time budget: ${(elapsedMs / 1000).toFixed(1)}s elapsed)`);
+    if (rows.length > 0) {
+      totalAdded += await batchUpsert(supabase, "complaints_311", rows, "unique_key", errors, "311", true);
     }
 
-    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
-  } catch (err) {
-    errors.push(`311 fatal error: ${String(err)}`);
-    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
+    if (records.length > 0 && records[records.length - 1].created_date) {
+      lastRecordDate = records[records.length - 1].created_date!.slice(0, 10);
+    }
+    pagesFetched++;
+    if (records.length < COMPLAINTS_PAGE_SIZE || pagesFetched >= MAX_PAGES) {
+      hasMore = false;
+    } else if (isTimeBudgetExceeded(syncStartMs)) {
+      timeBudgetExceeded = true;
+      errors.push(`311 stopped fetching after ${pagesFetched} pages (time budget)`);
+      hasMore = false;
+    } else {
+      offset += COMPLAINTS_PAGE_SIZE;
+    }
+    await saveCursor(supabase, "complaints_311", { cursorValue: lastRecordDate, cursorOffset: offset });
   }
 
-  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+  if (!timeBudgetExceeded && addressToKeys.size > 0) {
+    try {
+      let lookupCount = 0;
+      const MAX_LOOKUPS = 2000;
+
+      for (const [address, uniqueKeys] of addressToKeys) {
+        if (lookupCount >= MAX_LOOKUPS) break;
+        if (isTimeBudgetExceeded(syncStartMs)) break;
+        lookupCount++;
+
+        const { data: matchedBuildings } = await supabase
+          .from("buildings")
+          .select("id")
+          .ilike("full_address", `${address},%`)
+          .eq("metro", "nyc")
+          .limit(1);
+
+        if (matchedBuildings && matchedBuildings.length > 0) {
+          const buildingId = matchedBuildings[0].id;
+
+          for (let i = 0; i < uniqueKeys.length; i += 500) {
+            const keyBatch = uniqueKeys.slice(i, i + 500);
+            const { error: linkError } = await supabase
+              .from("complaints_311")
+              .update({ building_id: buildingId })
+              .in("unique_key", keyBatch);
+
+            if (!linkError) {
+              totalLinked += keyBatch.length;
+            } else {
+              errors.push(`311 link error (${address}): ${linkError.message}`);
+            }
+          }
+          affectedBuildingIds.add(buildingId);
+        }
+      }
+    } catch (linkErr) {
+      errors.push(`311 linking phase error: ${String(linkErr)}`);
+    }
+  }
+
+  return {
+    totalAdded,
+    totalLinked,
+    errors,
+    affectedBuildingIds,
+    timeBudgetExceeded,
+    newCursor: timeBudgetExceeded ? { cursorValue: lastRecordDate, cursorOffset: offset } : undefined,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -1040,75 +1191,82 @@ interface HPDLitigationRawRecord {
   [key: string]: unknown;
 }
 
-async function syncHPDLitigations(supabase: SupabaseClient): Promise<SyncResult> {
-  const lastSync = await getLastSyncDate(supabase, "hpd_litigations");
-  const logId = await createSyncLog(supabase, "hpd_litigations");
+async function syncHPDLitigations(supabase: SupabaseClient, startDate: string, syncStartMs: number): Promise<SyncResult> {
   const syncStartTime = new Date().toISOString();
 
   let totalAdded = 0;
   let totalLinked = 0;
   const errors: string[] = [];
   const affectedBuildingIds = new Set<string>();
+  let timeBudgetExceeded = false;
+  let lastRecordDate = startDate;
 
-  try {
-    let offset = 0;
-    let hasMore = true;
-    let pagesFetched = 0;
+  let offset = 0;
+  let hasMore = true;
+  let pagesFetched = 0;
 
-    while (hasMore) {
-      const url = buildSodaUrl(
-        "59kj-x8nc",
-        `(caseopendate > '${lastSync}' OR (caseopendate IS NULL AND :updated_at > '${lastSync}'))`,
-        PAGE_SIZE,
-        offset,
-        ":updated_at ASC"
-      );
+  while (hasMore) {
+    const url = buildSodaUrl(
+      "59kj-x8nc",
+      `(caseopendate > '${startDate}' OR (caseopendate IS NULL AND :updated_at > '${startDate}'))`,
+      PAGE_SIZE,
+      offset,
+      ":updated_at ASC"
+    );
 
-      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
-      if (!res.ok) {
-        const errText = await res.text();
-        errors.push(`HPD Litigations API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
-        break;
-      }
-
-      const records: HPDLitigationRawRecord[] = await res.json();
-
-      if (records.length === 0) {
-        hasMore = false;
-        break;
-      }
-
-      const rows = records
-        .filter((r) => r.litigationid)
-        .map((r) => ({
-          litigation_id: String(r.litigationid),
-          bbl: r.bbl || null,
-          case_type: r.casetype || null,
-          case_status: r.casestatus || null,
-          case_open_date: parseDate(r.caseopendate),
-          case_close_date: r.caseclosedate ? r.caseclosedate.slice(0, 10) : null,
-          case_judgment: r.casejudgment || null,
-          penalty: r.penalty || null,
-          respondent: r.respondent || null,
-          borough: r.boroid ? BOROUGH_MAP[r.boroid] || null : null,
-          house_number: r.housenumber || null,
-          street_name: r.streetname || null,
-          zip: r.zip || null,
-          imported_at: new Date().toISOString(),
-        }));
-
-      if (rows.length > 0) {
-        totalAdded += await batchUpsert(supabase, "hpd_litigations", rows, "litigation_id", errors, "HPD Litigations");
-      }
-
-      pagesFetched++;
-      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
-        hasMore = false;
-      } else {
-        offset += PAGE_SIZE;
-      }
+    const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+    if (!res.ok) {
+      const errText = await res.text();
+      errors.push(`HPD Litigations API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
+      break;
     }
 
+    const records: HPDLitigationRawRecord[] = await res.json();
+
+    if (records.length === 0) {
+      hasMore = false;
+      break;
+    }
+
+    const rows = records
+      .filter((r) => r.litigationid)
+      .map((r) => ({
+        litigation_id: String(r.litigationid),
+        bbl: r.bbl || null,
+        case_type: r.casetype || null,
+        case_status: r.casestatus || null,
+        case_open_date: parseDate(r.caseopendate),
+        case_close_date: r.caseclosedate ? r.caseclosedate.slice(0, 10) : null,
+        case_judgment: r.casejudgment || null,
+        penalty: r.penalty || null,
+        respondent: r.respondent || null,
+        borough: r.boroid ? BOROUGH_MAP[r.boroid] || null : null,
+        house_number: r.housenumber || null,
+        street_name: r.streetname || null,
+        zip: r.zip || null,
+        imported_at: new Date().toISOString(),
+      }));
+
+    if (rows.length > 0) {
+      totalAdded += await batchUpsert(supabase, "hpd_litigations", rows, "litigation_id", errors, "HPD Litigations");
+    }
+
+    if (records.length > 0 && records[records.length - 1].caseopendate) {
+      lastRecordDate = records[records.length - 1].caseopendate!.slice(0, 10);
+    }
+    pagesFetched++;
+    if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
+      hasMore = false;
+    } else if (isTimeBudgetExceeded(syncStartMs)) {
+      timeBudgetExceeded = true;
+      hasMore = false;
+    } else {
+      offset += PAGE_SIZE;
+    }
+    await saveCursor(supabase, "hpd_litigations", { cursorValue: lastRecordDate, cursorOffset: offset });
+  }
+
+  if (!timeBudgetExceeded) {
     try {
       const linkResult = await linkByBbl(supabase, "hpd_litigations", syncStartTime, errors, "HPD Litigations", true);
       totalLinked = linkResult.linked;
@@ -1116,14 +1274,16 @@ async function syncHPDLitigations(supabase: SupabaseClient): Promise<SyncResult>
     } catch (linkErr) {
       errors.push(`HPD Litigations linking phase error: ${String(linkErr)}`);
     }
-
-    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
-  } catch (err) {
-    errors.push(`HPD Litigations fatal error: ${String(err)}`);
-    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
   }
 
-  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+  return {
+    totalAdded,
+    totalLinked,
+    errors,
+    affectedBuildingIds,
+    timeBudgetExceeded,
+    newCursor: timeBudgetExceeded ? { cursorValue: lastRecordDate, cursorOffset: offset } : undefined,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -1149,88 +1309,95 @@ interface DOBViolationRawRecord {
   [key: string]: unknown;
 }
 
-async function syncDOBViolations(supabase: SupabaseClient): Promise<SyncResult> {
-  const lastSync = await getLastSyncDate(supabase, "dob_violations");
-  const logId = await createSyncLog(supabase, "dob_violations");
+async function syncDOBViolations(supabase: SupabaseClient, startDate: string, syncStartMs: number): Promise<SyncResult> {
   const syncStartTime = new Date().toISOString();
 
   let totalAdded = 0;
   let totalLinked = 0;
   const errors: string[] = [];
   const affectedBuildingIds = new Set<string>();
+  let timeBudgetExceeded = false;
+  let lastRecordDate = startDate;
 
-  try {
-    let offset = 0;
-    let hasMore = true;
-    let pagesFetched = 0;
+  let offset = 0;
+  let hasMore = true;
+  let pagesFetched = 0;
 
-    while (hasMore) {
-      const url = buildSodaUrl(
-        "3h2n-5cm9",
-        `issue_date > '${lastSync}'`,
-        PAGE_SIZE,
-        offset,
-        "issue_date ASC"
-      );
+  while (hasMore) {
+    const url = buildSodaUrl(
+      "3h2n-5cm9",
+      `issue_date > '${startDate}'`,
+      PAGE_SIZE,
+      offset,
+      "issue_date ASC"
+    );
 
-      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
-      if (!res.ok) {
-        const errText = await res.text();
-        errors.push(`DOB Violations API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
-        break;
-      }
-
-      const records: DOBViolationRawRecord[] = await res.json();
-
-      if (records.length === 0) {
-        hasMore = false;
-        break;
-      }
-
-      const rows = records
-        .filter((r) => r.isn_dob_bis_viol)
-        .map((r) => {
-          let bbl: string | null = null;
-          if (r.boro && r.block && r.lot) {
-            const boroMap: Record<string, string> = { "1": "1", "2": "2", "3": "3", "4": "4", "5": "5", MANHATTAN: "1", BRONX: "2", BROOKLYN: "3", QUEENS: "4", "STATEN ISLAND": "5" };
-            const boroCode = boroMap[r.boro.toUpperCase()] || r.boro;
-            if (/^\d$/.test(boroCode)) {
-              const block = r.block.padStart(5, "0").slice(-5);
-              const lot = r.lot.padStart(4, "0").slice(-4);
-              bbl = `${boroCode}${block}${lot}`;
-            }
-          }
-
-          return {
-            isn_dob_bis_vio: String(r.isn_dob_bis_viol),
-            bbl,
-            bin: r.bin || null,
-            violation_type: r.violation_type || null,
-            violation_category: r.violation_category || null,
-            description: r.description || null,
-            issue_date: parseDate(r.issue_date),
-            disposition_date: parseDate(r.disposition_date),
-            disposition_comments: r.disposition_comments || null,
-            penalty_amount: r.penalty_applied ? parseFloat(r.penalty_applied) || null : null,
-            borough: r.boro ? BOROUGH_MAP[r.boro] || null : null,
-            house_number: r.house_number || null,
-            street_name: r.street || null,
-            imported_at: new Date().toISOString(),
-          };
-        });
-
-      if (rows.length > 0) {
-        totalAdded += await batchUpsert(supabase, "dob_violations", rows, "isn_dob_bis_vio", errors, "DOB Violations");
-      }
-
-      pagesFetched++;
-      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
-        hasMore = false;
-      } else {
-        offset += PAGE_SIZE;
-      }
+    const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+    if (!res.ok) {
+      const errText = await res.text();
+      errors.push(`DOB Violations API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
+      break;
     }
 
+    const records: DOBViolationRawRecord[] = await res.json();
+
+    if (records.length === 0) {
+      hasMore = false;
+      break;
+    }
+
+    const rows = records
+      .filter((r) => r.isn_dob_bis_viol)
+      .map((r) => {
+        let bbl: string | null = null;
+        if (r.boro && r.block && r.lot) {
+          const boroMap: Record<string, string> = { "1": "1", "2": "2", "3": "3", "4": "4", "5": "5", MANHATTAN: "1", BRONX: "2", BROOKLYN: "3", QUEENS: "4", "STATEN ISLAND": "5" };
+          const boroCode = boroMap[r.boro.toUpperCase()] || r.boro;
+          if (/^\d$/.test(boroCode)) {
+            const block = r.block.padStart(5, "0").slice(-5);
+            const lot = r.lot.padStart(4, "0").slice(-4);
+            bbl = `${boroCode}${block}${lot}`;
+          }
+        }
+
+        return {
+          isn_dob_bis_vio: String(r.isn_dob_bis_viol),
+          bbl,
+          bin: r.bin || null,
+          violation_type: r.violation_type || null,
+          violation_category: r.violation_category || null,
+          description: r.description || null,
+          issue_date: parseDate(r.issue_date),
+          disposition_date: parseDate(r.disposition_date),
+          disposition_comments: r.disposition_comments || null,
+          penalty_amount: r.penalty_applied ? parseFloat(r.penalty_applied) || null : null,
+          borough: r.boro ? BOROUGH_MAP[r.boro] || null : null,
+          house_number: r.house_number || null,
+          street_name: r.street || null,
+          imported_at: new Date().toISOString(),
+        };
+      });
+
+    if (rows.length > 0) {
+      totalAdded += await batchUpsert(supabase, "dob_violations", rows, "isn_dob_bis_vio", errors, "DOB Violations");
+    }
+
+    if (records.length > 0 && records[records.length - 1].issue_date) {
+      lastRecordDate = records[records.length - 1].issue_date!.slice(0, 10);
+    }
+    pagesFetched++;
+    if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
+      hasMore = false;
+    } else if (isTimeBudgetExceeded(syncStartMs)) {
+      timeBudgetExceeded = true;
+      hasMore = false;
+    } else {
+      offset += PAGE_SIZE;
+    }
+    await saveCursor(supabase, "dob_violations", { cursorValue: lastRecordDate, cursorOffset: offset });
+  }
+
+  if (!timeBudgetExceeded) {
     try {
       const linkResult = await linkByBbl(supabase, "dob_violations", syncStartTime, errors, "DOB", true);
       totalLinked = linkResult.linked;
@@ -1238,14 +1405,16 @@ async function syncDOBViolations(supabase: SupabaseClient): Promise<SyncResult> 
     } catch (linkErr) {
       errors.push(`DOB Violations linking phase error: ${String(linkErr)}`);
     }
-
-    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
-  } catch (err) {
-    errors.push(`DOB Violations fatal error: ${String(err)}`);
-    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
   }
 
-  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+  return {
+    totalAdded,
+    totalLinked,
+    errors,
+    affectedBuildingIds,
+    timeBudgetExceeded,
+    newCursor: timeBudgetExceeded ? { cursorValue: lastRecordDate, cursorOffset: offset } : undefined,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -1273,73 +1442,80 @@ interface NYPDRawRecord {
   [key: string]: unknown;
 }
 
-async function syncNYPDComplaints(supabase: SupabaseClient): Promise<SyncResult> {
-  const lastSync = await getLastSyncDate(supabase, "nypd_complaints");
-  const logId = await createSyncLog(supabase, "nypd_complaints");
-  const syncStartMs = Date.now();
+async function syncNYPDComplaints(supabase: SupabaseClient, startDate: string, syncStartMs: number): Promise<SyncResult> {
+  const syncStartTime = new Date().toISOString();
 
   let totalAdded = 0;
   const totalLinked = 0;
   const errors: string[] = [];
   const affectedBuildingIds = new Set<string>();
+  let timeBudgetExceeded = false;
+  let lastRecordDate = startDate;
 
-  try {
-    let offset = 0;
-    let hasMore = true;
-    let pagesFetched = 0;
+  let offset = 0;
+  let hasMore = true;
+  let pagesFetched = 0;
 
-    while (hasMore) {
-      const url = buildSodaUrl(
-        "5uac-w243",
-        `cmplnt_fr_dt > '${lastSync}' AND cmplnt_fr_dt > '2022-01-01T00:00:00'`,
-        PAGE_SIZE,
-        offset,
-        "cmplnt_fr_dt ASC"
-      );
+  while (hasMore) {
+    const url = buildSodaUrl(
+      "5uac-w243",
+      `cmplnt_fr_dt > '${startDate}' AND cmplnt_fr_dt > '2022-01-01T00:00:00'`,
+      PAGE_SIZE,
+      offset,
+      "cmplnt_fr_dt ASC"
+    );
 
-      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
-      if (!res.ok) {
-        const errText = await res.text();
-        errors.push(`NYPD API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
-        break;
-      }
-
-      const records: NYPDRawRecord[] = await res.json();
-
-      if (records.length === 0) {
-        hasMore = false;
-        break;
-      }
-
-      const rows = records
-        .filter((r) => r.cmplnt_num)
-        .map((r) => ({
-          cmplnt_num: String(r.cmplnt_num),
-          cmplnt_date: r.cmplnt_fr_dt ? r.cmplnt_fr_dt.slice(0, 10) : null,
-          borough: r.boro_nm ? NYPD_BOROUGH_MAP[r.boro_nm.toUpperCase()] || r.boro_nm : null,
-          precinct: r.addr_pct_cd ? parseInt(r.addr_pct_cd, 10) || null : null,
-          offense_description: r.ofns_desc || null,
-          law_category: r.law_cat_cd || null,
-          crime_category: categorizeCrime(r.ofns_desc),
-          pd_description: r.pd_desc || null,
-          latitude: r.latitude ? parseFloat(r.latitude) : null,
-          longitude: r.longitude ? parseFloat(r.longitude) : null,
-          zip_code: null,
-          imported_at: new Date().toISOString(),
-        }));
-
-      if (rows.length > 0) {
-        totalAdded += await batchUpsert(supabase, "nypd_complaints", rows, "cmplnt_num", errors, "NYPD");
-      }
-
-      pagesFetched++;
-      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES || isTimeBudgetExceeded(syncStartMs)) {
-        hasMore = false;
-      } else {
-        offset += PAGE_SIZE;
-      }
+    const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+    if (!res.ok) {
+      const errText = await res.text();
+      errors.push(`NYPD API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
+      break;
     }
 
+    const records: NYPDRawRecord[] = await res.json();
+
+    if (records.length === 0) {
+      hasMore = false;
+      break;
+    }
+
+    const rows = records
+      .filter((r) => r.cmplnt_num)
+      .map((r) => ({
+        cmplnt_num: String(r.cmplnt_num),
+        cmplnt_date: r.cmplnt_fr_dt ? r.cmplnt_fr_dt.slice(0, 10) : null,
+        borough: r.boro_nm ? NYPD_BOROUGH_MAP[r.boro_nm.toUpperCase()] || r.boro_nm : null,
+        precinct: r.addr_pct_cd ? parseInt(r.addr_pct_cd, 10) || null : null,
+        offense_description: r.ofns_desc || null,
+        law_category: r.law_cat_cd || null,
+        crime_category: categorizeCrime(r.ofns_desc),
+        pd_description: r.pd_desc || null,
+        latitude: r.latitude ? parseFloat(r.latitude) : null,
+        longitude: r.longitude ? parseFloat(r.longitude) : null,
+        zip_code: null,
+        imported_at: new Date().toISOString(),
+      }));
+
+    if (rows.length > 0) {
+      totalAdded += await batchUpsert(supabase, "nypd_complaints", rows, "cmplnt_num", errors, "NYPD");
+    }
+
+    if (records.length > 0 && records[records.length - 1].cmplnt_fr_dt) {
+      lastRecordDate = records[records.length - 1].cmplnt_fr_dt!.slice(0, 10);
+    }
+    pagesFetched++;
+    if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES || isTimeBudgetExceeded(syncStartMs)) {
+      if (isTimeBudgetExceeded(syncStartMs) && records.length >= PAGE_SIZE && pagesFetched < MAX_PAGES) {
+        timeBudgetExceeded = true;
+      }
+      hasMore = false;
+    } else {
+      offset += PAGE_SIZE;
+    }
+    await saveCursor(supabase, "nypd_complaints", { cursorValue: lastRecordDate, cursorOffset: offset });
+  }
+
+  if (!timeBudgetExceeded) {
     // Backfill zip_code from lat/lon
     try {
       const { error: zipErr } = await supabase.rpc("backfill_crime_zip_codes", { target_metro: "nyc" });
@@ -1390,14 +1566,19 @@ async function syncNYPDComplaints(supabase: SupabaseClient): Promise<SyncResult>
     } catch (countErr) {
       errors.push(`NYPD crime count update error: ${String(countErr)}`);
     }
-
-    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
-  } catch (err) {
-    errors.push(`NYPD fatal error: ${String(err)}`);
-    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
   }
 
-  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+  // suppress unused variable warning
+  void syncStartTime;
+
+  return {
+    totalAdded,
+    totalLinked,
+    errors,
+    affectedBuildingIds,
+    timeBudgetExceeded,
+    newCursor: timeBudgetExceeded ? { cursorValue: lastRecordDate, cursorOffset: offset } : undefined,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -1423,76 +1604,83 @@ interface BedBugRawRecord {
   [key: string]: unknown;
 }
 
-async function syncBedBugReports(supabase: SupabaseClient): Promise<SyncResult> {
-  const lastSync = await getLastSyncDate(supabase, "bedbug_reports");
-  const logId = await createSyncLog(supabase, "bedbug_reports");
+async function syncBedBugReports(supabase: SupabaseClient, startDate: string, syncStartMs: number): Promise<SyncResult> {
   const syncStartTime = new Date().toISOString();
 
   let totalAdded = 0;
   let totalLinked = 0;
   const errors: string[] = [];
   const affectedBuildingIds = new Set<string>();
+  let timeBudgetExceeded = false;
+  let lastRecordDate = startDate;
 
-  try {
-    let offset = 0;
-    let hasMore = true;
-    let pagesFetched = 0;
+  let offset = 0;
+  let hasMore = true;
+  let pagesFetched = 0;
 
-    while (hasMore) {
-      const url = buildSodaUrl(
-        "wz6d-d3jb",
-        `filing_date > '${lastSync}'`,
-        PAGE_SIZE,
-        offset,
-        "filing_date ASC"
-      );
+  while (hasMore) {
+    const url = buildSodaUrl(
+      "wz6d-d3jb",
+      `filing_date > '${startDate}'`,
+      PAGE_SIZE,
+      offset,
+      "filing_date ASC"
+    );
 
-      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
-      if (!res.ok) {
-        const errText = await res.text();
-        errors.push(`Bedbug API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
-        break;
-      }
-
-      const records: BedBugRawRecord[] = await res.json();
-
-      if (records.length === 0) {
-        hasMore = false;
-        break;
-      }
-
-      const rows = records
-        .filter((r) => r.bbl && r.filing_period_start_date)
-        .map((r) => ({
-          bbl: r.bbl || null,
-          bin: r.bin || null,
-          registration_id: r.registration_id || null,
-          house_number: r.house_number || null,
-          street_name: r.street_name || null,
-          borough: r.borough || null,
-          postcode: r.postcode || null,
-          infested_dwelling_unit_count: r.infested_dwelling_unit_count ? parseInt(r.infested_dwelling_unit_count) || null : null,
-          eradicated_unit_count: r.eradicated_unit_count ? parseInt(r.eradicated_unit_count) || null : null,
-          reinfested_unit_count: r.re_infested_dwelling_unit ? parseInt(r.re_infested_dwelling_unit) || null : null,
-          total_dwelling_units: r.of_dwelling_units ? parseInt(r.of_dwelling_units) || null : null,
-          filing_date: r.filing_date ? r.filing_date.slice(0, 10) : null,
-          filing_period_start_date: r.filing_period_start_date ? r.filing_period_start_date.slice(0, 10) : null,
-          filing_period_end_date: r.filling_period_end_date ? r.filling_period_end_date.slice(0, 10) : null,
-          imported_at: new Date().toISOString(),
-        }));
-
-      if (rows.length > 0) {
-        totalAdded += await batchUpsert(supabase, "bedbug_reports", rows, "bbl,filing_period_start_date", errors, "Bedbugs", true);
-      }
-
-      pagesFetched++;
-      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
-        hasMore = false;
-      } else {
-        offset += PAGE_SIZE;
-      }
+    const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+    if (!res.ok) {
+      const errText = await res.text();
+      errors.push(`Bedbug API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
+      break;
     }
 
+    const records: BedBugRawRecord[] = await res.json();
+
+    if (records.length === 0) {
+      hasMore = false;
+      break;
+    }
+
+    const rows = records
+      .filter((r) => r.bbl && r.filing_period_start_date)
+      .map((r) => ({
+        bbl: r.bbl || null,
+        bin: r.bin || null,
+        registration_id: r.registration_id || null,
+        house_number: r.house_number || null,
+        street_name: r.street_name || null,
+        borough: r.borough || null,
+        postcode: r.postcode || null,
+        infested_dwelling_unit_count: r.infested_dwelling_unit_count ? parseInt(r.infested_dwelling_unit_count) || null : null,
+        eradicated_unit_count: r.eradicated_unit_count ? parseInt(r.eradicated_unit_count) || null : null,
+        reinfested_unit_count: r.re_infested_dwelling_unit ? parseInt(r.re_infested_dwelling_unit) || null : null,
+        total_dwelling_units: r.of_dwelling_units ? parseInt(r.of_dwelling_units) || null : null,
+        filing_date: r.filing_date ? r.filing_date.slice(0, 10) : null,
+        filing_period_start_date: r.filing_period_start_date ? r.filing_period_start_date.slice(0, 10) : null,
+        filing_period_end_date: r.filling_period_end_date ? r.filling_period_end_date.slice(0, 10) : null,
+        imported_at: new Date().toISOString(),
+      }));
+
+    if (rows.length > 0) {
+      totalAdded += await batchUpsert(supabase, "bedbug_reports", rows, "bbl,filing_period_start_date", errors, "Bedbugs", true);
+    }
+
+    if (records.length > 0 && records[records.length - 1].filing_date) {
+      lastRecordDate = records[records.length - 1].filing_date!.slice(0, 10);
+    }
+    pagesFetched++;
+    if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
+      hasMore = false;
+    } else if (isTimeBudgetExceeded(syncStartMs)) {
+      timeBudgetExceeded = true;
+      hasMore = false;
+    } else {
+      offset += PAGE_SIZE;
+    }
+    await saveCursor(supabase, "bedbug_reports", { cursorValue: lastRecordDate, cursorOffset: offset });
+  }
+
+  if (!timeBudgetExceeded) {
     try {
       const linkResult = await linkByBbl(supabase, "bedbug_reports", syncStartTime, errors, "Bedbugs", true);
       totalLinked = linkResult.linked;
@@ -1500,14 +1688,16 @@ async function syncBedBugReports(supabase: SupabaseClient): Promise<SyncResult> 
     } catch (linkErr) {
       errors.push(`Bedbugs linking phase error: ${String(linkErr)}`);
     }
-
-    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
-  } catch (err) {
-    errors.push(`Bedbugs fatal error: ${String(err)}`);
-    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
   }
 
-  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+  return {
+    totalAdded,
+    totalLinked,
+    errors,
+    affectedBuildingIds,
+    timeBudgetExceeded,
+    newCursor: timeBudgetExceeded ? { cursorValue: lastRecordDate, cursorOffset: offset } : undefined,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -1534,76 +1724,83 @@ interface EvictionRawRecord {
   [key: string]: unknown;
 }
 
-async function syncEvictions(supabase: SupabaseClient): Promise<SyncResult> {
-  const lastSync = await getLastSyncDate(supabase, "evictions");
-  const logId = await createSyncLog(supabase, "evictions");
+async function syncEvictions(supabase: SupabaseClient, startDate: string, syncStartMs: number): Promise<SyncResult> {
   const syncStartTime = new Date().toISOString();
 
   let totalAdded = 0;
   let totalLinked = 0;
   const errors: string[] = [];
   const affectedBuildingIds = new Set<string>();
+  let timeBudgetExceeded = false;
+  let lastRecordDate = startDate;
 
-  try {
-    let offset = 0;
-    let hasMore = true;
-    let pagesFetched = 0;
+  let offset = 0;
+  let hasMore = true;
+  let pagesFetched = 0;
 
-    while (hasMore) {
-      const url = buildSodaUrl(
-        "6z8x-wfk4",
-        `executed_date > '${lastSync}'`,
-        PAGE_SIZE,
-        offset,
-        "executed_date ASC"
-      );
+  while (hasMore) {
+    const url = buildSodaUrl(
+      "6z8x-wfk4",
+      `executed_date > '${startDate}'`,
+      PAGE_SIZE,
+      offset,
+      "executed_date ASC"
+    );
 
-      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
-      if (!res.ok) {
-        const errText = await res.text();
-        errors.push(`Evictions API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
-        break;
-      }
-
-      const records: EvictionRawRecord[] = await res.json();
-
-      if (records.length === 0) {
-        hasMore = false;
-        break;
-      }
-
-      const rows = records
-        .filter((r) => r.court_index_number)
-        .map((r) => ({
-          court_index_number: String(r.court_index_number),
-          docket_number: r.docket_number || null,
-          eviction_address: r.eviction_address || null,
-          eviction_apt_num: r.eviction_apt_num || null,
-          eviction_zip: r.eviction_zip || null,
-          borough: r.borough || null,
-          bbl: r.bbl || null,
-          bin: r.bin || null,
-          executed_date: r.executed_date ? r.executed_date.slice(0, 10) : null,
-          residential_commercial: r.residential_commercial_ind || null,
-          eviction_possession: r.eviction_possession || null,
-          ejectment: r.ejectment || null,
-          marshal_first_name: r.marshal_first_name || null,
-          marshal_last_name: r.marshal_last_name || null,
-          imported_at: new Date().toISOString(),
-        }));
-
-      if (rows.length > 0) {
-        totalAdded += await batchUpsert(supabase, "evictions", rows, "court_index_number", errors, "Evictions", true);
-      }
-
-      pagesFetched++;
-      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
-        hasMore = false;
-      } else {
-        offset += PAGE_SIZE;
-      }
+    const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+    if (!res.ok) {
+      const errText = await res.text();
+      errors.push(`Evictions API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
+      break;
     }
 
+    const records: EvictionRawRecord[] = await res.json();
+
+    if (records.length === 0) {
+      hasMore = false;
+      break;
+    }
+
+    const rows = records
+      .filter((r) => r.court_index_number)
+      .map((r) => ({
+        court_index_number: String(r.court_index_number),
+        docket_number: r.docket_number || null,
+        eviction_address: r.eviction_address || null,
+        eviction_apt_num: r.eviction_apt_num || null,
+        eviction_zip: r.eviction_zip || null,
+        borough: r.borough || null,
+        bbl: r.bbl || null,
+        bin: r.bin || null,
+        executed_date: r.executed_date ? r.executed_date.slice(0, 10) : null,
+        residential_commercial: r.residential_commercial_ind || null,
+        eviction_possession: r.eviction_possession || null,
+        ejectment: r.ejectment || null,
+        marshal_first_name: r.marshal_first_name || null,
+        marshal_last_name: r.marshal_last_name || null,
+        imported_at: new Date().toISOString(),
+      }));
+
+    if (rows.length > 0) {
+      totalAdded += await batchUpsert(supabase, "evictions", rows, "court_index_number", errors, "Evictions", true);
+    }
+
+    if (records.length > 0 && records[records.length - 1].executed_date) {
+      lastRecordDate = records[records.length - 1].executed_date!.slice(0, 10);
+    }
+    pagesFetched++;
+    if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
+      hasMore = false;
+    } else if (isTimeBudgetExceeded(syncStartMs)) {
+      timeBudgetExceeded = true;
+      hasMore = false;
+    } else {
+      offset += PAGE_SIZE;
+    }
+    await saveCursor(supabase, "evictions", { cursorValue: lastRecordDate, cursorOffset: offset });
+  }
+
+  if (!timeBudgetExceeded) {
     // Linking: match by BBL
     try {
       const linkResult = await linkByBbl(supabase, "evictions", syncStartTime, errors, "Evictions", true);
@@ -1669,14 +1866,16 @@ async function syncEvictions(supabase: SupabaseClient): Promise<SyncResult> {
     } catch (addrErr) {
       errors.push(`Evictions address linking error: ${String(addrErr)}`);
     }
-
-    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
-  } catch (err) {
-    errors.push(`Evictions fatal error: ${String(err)}`);
-    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
   }
 
-  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+  return {
+    totalAdded,
+    totalLinked,
+    errors,
+    affectedBuildingIds,
+    timeBudgetExceeded,
+    newCursor: timeBudgetExceeded ? { cursorValue: lastRecordDate, cursorOffset: offset } : undefined,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -1717,86 +1916,93 @@ interface ShedRawRecord {
   [key: string]: unknown;
 }
 
-async function syncSidewalkSheds(supabase: SupabaseClient): Promise<SyncResult> {
-  const lastSync = await getLastSyncDate(supabase, "sidewalk_sheds");
-  const logId = await createSyncLog(supabase, "sidewalk_sheds");
+async function syncSidewalkSheds(supabase: SupabaseClient, startDate: string, syncStartMs: number): Promise<SyncResult> {
   const syncStartTime = new Date().toISOString();
 
   let totalAdded = 0;
   let totalLinked = 0;
   const errors: string[] = [];
   const affectedBuildingIds = new Set<string>();
+  let timeBudgetExceeded = false;
+  let lastRecordDate = startDate;
 
-  try {
-    let offset = 0;
-    let hasMore = true;
-    let pagesFetched = 0;
+  let offset = 0;
+  let hasMore = true;
+  let pagesFetched = 0;
 
-    while (hasMore) {
-      const url = buildSodaUrl(
-        "ipu4-2q9a",
-        `permit_type='SH' AND issuance_date > '${lastSync}'`,
-        PAGE_SIZE,
-        offset,
-        "issuance_date ASC"
-      );
+  while (hasMore) {
+    const url = buildSodaUrl(
+      "ipu4-2q9a",
+      `permit_type='SH' AND issuance_date > '${startDate}'`,
+      PAGE_SIZE,
+      offset,
+      "issuance_date ASC"
+    );
 
-      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
-      if (!res.ok) {
-        const errText = await res.text();
-        errors.push(`Sheds API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
-        break;
-      }
-
-      const records: ShedRawRecord[] = await res.json();
-
-      if (records.length === 0) {
-        hasMore = false;
-        break;
-      }
-
-      const rows = records
-        .filter((r) => r.job__)
-        .map((r) => {
-          const boroCode = r.borough ? BOROUGH_TO_CODE[r.borough.toUpperCase()] : null;
-          const block = r.block ? r.block.padStart(5, "0") : null;
-          const lot = r.lot ? r.lot.padStart(4, "0").slice(-4) : null;
-          const bbl = boroCode && block && lot ? `${boroCode}${block}${lot}` : null;
-
-          return {
-            work_permit: String(r.job__),
-            house_no: r.house_no || null,
-            street_name: r.street_name || null,
-            borough: r.borough || null,
-            zip_code: r.zip_code || null,
-            bin: r.bin__ || null,
-            block: r.block || null,
-            lot: r.lot || null,
-            bbl,
-            permit_status: r.permit_status || null,
-            filing_reason: r.filing_reason || r.permit_type || null,
-            issued_date: parseDate(r.issuance_date),
-            expired_date: parseDate(r.expiration_date),
-            job_description: r.job_description || null,
-            estimated_job_costs: r.estimated_job_costs ? parseFloat(r.estimated_job_costs) || null : null,
-            owner_business_name: r.owner_s_business_name || r.owner_s_first_name || null,
-            permittee_business_name: r.permittee_s_business_name || null,
-            imported_at: new Date().toISOString(),
-          };
-        });
-
-      if (rows.length > 0) {
-        totalAdded += await batchUpsert(supabase, "sidewalk_sheds", rows, "work_permit", errors, "Sheds");
-      }
-
-      pagesFetched++;
-      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
-        hasMore = false;
-      } else {
-        offset += PAGE_SIZE;
-      }
+    const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+    if (!res.ok) {
+      const errText = await res.text();
+      errors.push(`Sheds API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
+      break;
     }
 
+    const records: ShedRawRecord[] = await res.json();
+
+    if (records.length === 0) {
+      hasMore = false;
+      break;
+    }
+
+    const rows = records
+      .filter((r) => r.job__)
+      .map((r) => {
+        const boroCode = r.borough ? BOROUGH_TO_CODE[r.borough.toUpperCase()] : null;
+        const block = r.block ? r.block.padStart(5, "0") : null;
+        const lot = r.lot ? r.lot.padStart(4, "0").slice(-4) : null;
+        const bbl = boroCode && block && lot ? `${boroCode}${block}${lot}` : null;
+
+        return {
+          work_permit: String(r.job__),
+          house_no: r.house_no || null,
+          street_name: r.street_name || null,
+          borough: r.borough || null,
+          zip_code: r.zip_code || null,
+          bin: r.bin__ || null,
+          block: r.block || null,
+          lot: r.lot || null,
+          bbl,
+          permit_status: r.permit_status || null,
+          filing_reason: r.filing_reason || r.permit_type || null,
+          issued_date: parseDate(r.issuance_date),
+          expired_date: parseDate(r.expiration_date),
+          job_description: r.job_description || null,
+          estimated_job_costs: r.estimated_job_costs ? parseFloat(r.estimated_job_costs) || null : null,
+          owner_business_name: r.owner_s_business_name || r.owner_s_first_name || null,
+          permittee_business_name: r.permittee_s_business_name || null,
+          imported_at: new Date().toISOString(),
+        };
+      });
+
+    if (rows.length > 0) {
+      totalAdded += await batchUpsert(supabase, "sidewalk_sheds", rows, "work_permit", errors, "Sheds");
+    }
+
+    if (records.length > 0 && records[records.length - 1].issuance_date) {
+      lastRecordDate = records[records.length - 1].issuance_date!.slice(0, 10);
+    }
+    pagesFetched++;
+    if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
+      hasMore = false;
+    } else if (isTimeBudgetExceeded(syncStartMs)) {
+      timeBudgetExceeded = true;
+      hasMore = false;
+    } else {
+      offset += PAGE_SIZE;
+    }
+    await saveCursor(supabase, "sidewalk_sheds", { cursorValue: lastRecordDate, cursorOffset: offset });
+  }
+
+  if (!timeBudgetExceeded) {
     try {
       const linkResult = await linkByBbl(supabase, "sidewalk_sheds", syncStartTime, errors, "Sheds", true);
       totalLinked = linkResult.linked;
@@ -1804,14 +2010,16 @@ async function syncSidewalkSheds(supabase: SupabaseClient): Promise<SyncResult> 
     } catch (linkErr) {
       errors.push(`Sheds linking phase error: ${String(linkErr)}`);
     }
-
-    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
-  } catch (err) {
-    errors.push(`Sheds fatal error: ${String(err)}`);
-    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
   }
 
-  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+  return {
+    totalAdded,
+    totalLinked,
+    errors,
+    affectedBuildingIds,
+    timeBudgetExceeded,
+    newCursor: timeBudgetExceeded ? { cursorValue: lastRecordDate, cursorOffset: offset } : undefined,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -1840,90 +2048,96 @@ interface PermitRawRecord {
   [key: string]: unknown;
 }
 
-async function syncDobPermits(supabase: SupabaseClient): Promise<SyncResult> {
-  const lastSync = await getLastSyncDate(supabase, "dob_permits");
-  const logId = await createSyncLog(supabase, "dob_permits");
+async function syncDobPermits(supabase: SupabaseClient, startDate: string, syncStartMs: number): Promise<SyncResult> {
   const syncStartTime = new Date().toISOString();
-  const syncStartMs = Date.now();
 
   let totalAdded = 0;
   let totalLinked = 0;
   const errors: string[] = [];
   const affectedBuildingIds = new Set<string>();
+  let timeBudgetExceeded = false;
+  let lastRecordDate = startDate;
 
-  try {
-    let offset = 0;
-    let hasMore = true;
-    let pagesFetched = 0;
+  let offset = 0;
+  let hasMore = true;
+  let pagesFetched = 0;
 
-    while (hasMore) {
-      const url = buildSodaUrl(
-        "rbx6-tga4",
-        `work_permit IS NOT NULL AND permit_status != 'Permit is not yet issued' AND issued_date > '${lastSync}'`,
-        PAGE_SIZE,
-        offset,
-        "issued_date ASC"
-      );
+  while (hasMore) {
+    const url = buildSodaUrl(
+      "rbx6-tga4",
+      `work_permit IS NOT NULL AND permit_status != 'Permit is not yet issued' AND issued_date > '${startDate}'`,
+      PAGE_SIZE,
+      offset,
+      "issued_date ASC"
+    );
 
-      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
-      if (!res.ok) {
-        const errText = await res.text();
-        errors.push(`Permits API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
-        break;
-      }
-
-      const records: PermitRawRecord[] = await res.json();
-
-      if (records.length === 0) {
-        hasMore = false;
-        break;
-      }
-
-      const rows = records
-        .filter((r) => r.work_permit)
-        .map((r) => {
-          const boroCode = r.borough ? BOROUGH_TO_CODE[r.borough.toUpperCase()] : null;
-          const block = r.block ? r.block.padStart(5, "0") : null;
-          const lot = r.lot ? r.lot.padStart(4, "0").slice(-4) : null;
-          const bbl = boroCode && block && lot ? `${boroCode}${block}${lot}` : null;
-
-          return {
-            work_permit: String(r.work_permit),
-            house_no: r.house_no || null,
-            street_name: r.street_name || null,
-            borough: r.borough || null,
-            zip_code: r.zip_code || null,
-            bin: r.bin__ || null,
-            block: r.block || null,
-            lot: r.lot || null,
-            bbl,
-            work_type: r.work_type || null,
-            permit_status: r.permit_status || null,
-            filing_reason: r.filing_reason || null,
-            issued_date: parseDate(r.issued_date),
-            expired_date: parseDate(r.expired_date),
-            job_description: r.job_description || null,
-            estimated_job_costs: r.estimated_job_costs ? parseFloat(r.estimated_job_costs) || null : null,
-            owner_business_name: r.owner_s_business_name || null,
-            permittee_business_name: r.permittee_s_business_name || null,
-            latitude: r.latitude ? parseFloat(r.latitude) || null : null,
-            longitude: r.longitude ? parseFloat(r.longitude) || null : null,
-            imported_at: new Date().toISOString(),
-          };
-        });
-
-      if (rows.length > 0) {
-        totalAdded += await batchUpsert(supabase, "dob_permits", rows, "work_permit", errors, "Permits");
-      }
-
-      pagesFetched++;
-      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES || isTimeBudgetExceeded(syncStartMs)) {
-        hasMore = false;
-      } else {
-        offset += PAGE_SIZE;
-      }
+    const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+    if (!res.ok) {
+      const errText = await res.text();
+      errors.push(`Permits API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
+      break;
     }
 
+    const records: PermitRawRecord[] = await res.json();
+
+    if (records.length === 0) {
+      hasMore = false;
+      break;
+    }
+
+    const rows = records
+      .filter((r) => r.work_permit)
+      .map((r) => {
+        const boroCode = r.borough ? BOROUGH_TO_CODE[r.borough.toUpperCase()] : null;
+        const block = r.block ? r.block.padStart(5, "0") : null;
+        const lot = r.lot ? r.lot.padStart(4, "0").slice(-4) : null;
+        const bbl = boroCode && block && lot ? `${boroCode}${block}${lot}` : null;
+
+        return {
+          work_permit: String(r.work_permit),
+          house_no: r.house_no || null,
+          street_name: r.street_name || null,
+          borough: r.borough || null,
+          zip_code: r.zip_code || null,
+          bin: r.bin__ || null,
+          block: r.block || null,
+          lot: r.lot || null,
+          bbl,
+          work_type: r.work_type || null,
+          permit_status: r.permit_status || null,
+          filing_reason: r.filing_reason || null,
+          issued_date: parseDate(r.issued_date),
+          expired_date: parseDate(r.expired_date),
+          job_description: r.job_description || null,
+          estimated_job_costs: r.estimated_job_costs ? parseFloat(r.estimated_job_costs) || null : null,
+          owner_business_name: r.owner_s_business_name || null,
+          permittee_business_name: r.permittee_s_business_name || null,
+          latitude: r.latitude ? parseFloat(r.latitude) || null : null,
+          longitude: r.longitude ? parseFloat(r.longitude) || null : null,
+          imported_at: new Date().toISOString(),
+        };
+      });
+
+    if (rows.length > 0) {
+      totalAdded += await batchUpsert(supabase, "dob_permits", rows, "work_permit", errors, "Permits");
+    }
+
+    if (records.length > 0 && records[records.length - 1].issued_date) {
+      lastRecordDate = records[records.length - 1].issued_date!.slice(0, 10);
+    }
+    pagesFetched++;
+    if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES || isTimeBudgetExceeded(syncStartMs)) {
+      if (isTimeBudgetExceeded(syncStartMs) && records.length >= PAGE_SIZE && pagesFetched < MAX_PAGES) {
+        timeBudgetExceeded = true;
+      }
+      hasMore = false;
+    } else {
+      offset += PAGE_SIZE;
+    }
+    await saveCursor(supabase, "dob_permits", { cursorValue: lastRecordDate, cursorOffset: offset });
+  }
+
+  if (!timeBudgetExceeded) {
     try {
       const linkResult = await linkByBbl(supabase, "dob_permits", syncStartTime, errors, "Permits", true);
       totalLinked = linkResult.linked;
@@ -1931,14 +2145,16 @@ async function syncDobPermits(supabase: SupabaseClient): Promise<SyncResult> {
     } catch (linkErr) {
       errors.push(`Permits linking phase error: ${String(linkErr)}`);
     }
-
-    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
-  } catch (err) {
-    errors.push(`Permits fatal error: ${String(err)}`);
-    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
   }
 
-  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+  return {
+    totalAdded,
+    totalLinked,
+    errors,
+    affectedBuildingIds,
+    timeBudgetExceeded,
+    newCursor: timeBudgetExceeded ? { cursorValue: lastRecordDate, cursorOffset: offset } : undefined,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -3947,17 +4163,17 @@ async function syncHoustonCrimes(supabase: SupabaseClient): Promise<SyncResult> 
 // ---------------------------------------------------------------------------
 // Source registry
 // ---------------------------------------------------------------------------
-const SOURCES: Record<string, (supabase: SupabaseClient, sinceOverride?: string) => Promise<SyncResult>> = {
-  // NYC sources
-  hpd: syncHPDViolations,
-  complaints: sync311Complaints,
-  litigations: syncHPDLitigations,
-  dob: syncDOBViolations,
-  nypd: syncNYPDComplaints,
-  bedbugs: syncBedBugReports,
-  evictions: syncEvictions,
-  sheds: syncSidewalkSheds,
-  permits: syncDobPermits,
+const SOURCES: Record<string, (supabase: SupabaseClient, sinceOverride?: string, chainDepth?: number) => Promise<SyncResult>> = {
+  // NYC sources (wrapped in runWithCursor for resumable sync)
+  hpd: (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "hpd", "hpd_violations", (startDate, syncStartMs) => syncHPDViolations(supabase, startDate, syncStartMs), cd, sinceOverride),
+  complaints: (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "complaints", "complaints_311", (startDate, syncStartMs) => sync311Complaints(supabase, startDate, syncStartMs), cd, sinceOverride),
+  litigations: (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "litigations", "hpd_litigations", (startDate, syncStartMs) => syncHPDLitigations(supabase, startDate, syncStartMs), cd, sinceOverride),
+  dob: (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "dob", "dob_violations", (startDate, syncStartMs) => syncDOBViolations(supabase, startDate, syncStartMs), cd, sinceOverride),
+  nypd: (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "nypd", "nypd_complaints", (startDate, syncStartMs) => syncNYPDComplaints(supabase, startDate, syncStartMs), cd, sinceOverride),
+  bedbugs: (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "bedbugs", "bedbug_reports", (startDate, syncStartMs) => syncBedBugReports(supabase, startDate, syncStartMs), cd, sinceOverride),
+  evictions: (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "evictions", "evictions", (startDate, syncStartMs) => syncEvictions(supabase, startDate, syncStartMs), cd, sinceOverride),
+  sheds: (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "sheds", "sidewalk_sheds", (startDate, syncStartMs) => syncSidewalkSheds(supabase, startDate, syncStartMs), cd, sinceOverride),
+  permits: (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "permits", "dob_permits", (startDate, syncStartMs) => syncDobPermits(supabase, startDate, syncStartMs), cd, sinceOverride),
   // LA sources
   lahd: syncLAHDViolations,
   "la-311": syncLA311Complaints,
@@ -4196,15 +4412,17 @@ Deno.serve(async (req) => {
 
   const startTime = Date.now();
 
-  // Parse { source, mode, since } from request body JSON
+  // Parse { source, mode, since, chainDepth } from request body JSON
   let sourceParam: string | null = null;
   let mode: string | null = null;
   let sinceOverride: string | undefined;
+  let chainDepth = 0;
 
   try {
     const body = await req.json();
     sourceParam = body.source || null;
     mode = body.mode || null;
+    chainDepth = typeof body.chainDepth === "number" ? body.chainDepth : 0;
     if (body.since) {
       sinceOverride = toSodaDate(new Date(body.since).toISOString());
     }
@@ -4224,7 +4442,7 @@ Deno.serve(async (req) => {
     }
 
     // Determine which sources to sync
-    let sourcesToRun: [string, (supabase: SupabaseClient, sinceOverride?: string) => Promise<SyncResult>][];
+    let sourcesToRun: [string, (supabase: SupabaseClient, sinceOverride?: string, chainDepth?: number) => Promise<SyncResult>][];
 
     if (sourceParam) {
       const fn = SOURCES[sourceParam];
@@ -4244,7 +4462,7 @@ Deno.serve(async (req) => {
     const allAffectedIds = new Set<string>();
 
     for (const [name, syncFn] of sourcesToRun) {
-      const result = await syncFn(supabase, sinceOverride);
+      const result = await syncFn(supabase, sinceOverride, chainDepth);
       results[name] = result;
       for (const id of result.affectedBuildingIds) {
         allAffectedIds.add(id);
