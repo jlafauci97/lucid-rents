@@ -252,16 +252,20 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
       : Promise.resolve([] as { month: string; beds: number; median_rent: number }[]),
   ]);
 
-  // Top violation/complaint type for header preview cards
-  // Fetch recent 100 of each, count types client-side (fast: indexed by building_id)
+  // Top violation class / complaint type for header preview cards
+  const VIOLATION_CLASS_LABELS: Record<string, string> = {
+    A: "Non-hazardous", B: "Hazardous", C: "Immediately hazardous", I: "Info",
+  };
   const [recentViolations, recentComplaints] = await Promise.all([
-    safe(supabase.from("hpd_violations").select("violation_type").eq("building_id", buildingId).not("violation_type", "is", null).order("inspection_date", { ascending: false }).limit(100), [] as { violation_type: string }[]),
+    safe(supabase.from("hpd_violations").select("class").eq("building_id", buildingId).not("class", "is", null).order("inspection_date", { ascending: false }).limit(100), [] as { class: string }[]),
     safe(supabase.from("complaints_311").select("complaint_type").eq("building_id", buildingId).not("complaint_type", "is", null).order("created_date", { ascending: false }).limit(100), [] as { complaint_type: string }[]),
   ]);
   const topViolationType = (() => {
     const c: Record<string, number> = {};
-    for (const v of recentViolations) c[v.violation_type] = (c[v.violation_type] || 0) + 1;
-    return Object.entries(c).sort((a, b) => b[1] - a[1])[0]?.[0];
+    for (const v of recentViolations) c[v.class] = (c[v.class] || 0) + 1;
+    const top = Object.entries(c).sort((a, b) => b[1] - a[1])[0];
+    if (!top) return undefined;
+    return `Class ${top[0]} (${VIOLATION_CLASS_LABELS[top[0]] || top[0]})`;
   })();
   const topComplaintType = (() => {
     const c: Record<string, number> = {};
