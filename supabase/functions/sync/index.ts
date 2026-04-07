@@ -27,7 +27,7 @@ const BOROUGH_MAP: Record<string, string> = {
 const PAGE_SIZE = 5000;
 const BATCH_SIZE = 500;
 const MAX_PAGES = 10; // Safety limit: max API pages per sync
-const SYNC_TIME_BUDGET_MS = 240_000; // Stop fetching new pages after 240s to leave buffer before 300s edge function limit
+const SYNC_TIME_BUDGET_MS = 120_000; // Stop fetching new pages after 120s — reduced from 240s to lower sustained CPU pressure
 const MAX_CHAIN_DEPTH = 10; // Max self-chaining invocations to drain backlog
 const STALE_SYNC_MINUTES = 30; // Mark "running" syncs older than this as "failed"
 
@@ -273,6 +273,38 @@ async function clearCursor(
 }
 
 /**
+ * Derive a stable int64 lock key from a sync type string.
+ * Uses a simple hash to map sync names to advisory lock IDs.
+ */
+function syncLockKey(syncType: string): number {
+  let hash = 0x4C554349; // "LUCI" prefix to avoid collisions with other locks
+  for (let i = 0; i < syncType.length; i++) {
+    hash = ((hash << 5) - hash + syncType.charCodeAt(i)) | 0;
+  }
+  return hash;
+}
+
+/**
+ * Try to acquire a Postgres advisory lock (non-blocking).
+ * Returns true if lock acquired, false if another session holds it.
+ */
+async function tryAdvisoryLock(supabase: SupabaseClient, key: number): Promise<boolean> {
+  const { data, error } = await supabase.rpc("pg_try_advisory_lock", { lock_key: key });
+  if (error) {
+    console.error(`Advisory lock error for key ${key}: ${error.message}`);
+    return true; // On error, proceed anyway (fail-open) to not block all syncs
+  }
+  return data === true;
+}
+
+/**
+ * Release a Postgres advisory lock.
+ */
+async function releaseAdvisoryLock(supabase: SupabaseClient, key: number): Promise<void> {
+  try { await supabase.rpc("pg_advisory_unlock", { lock_key: key }); } catch { /* best-effort */ }
+}
+
+/**
  * Wraps a sync function with cursor management, crash-safe logging, and self-chaining.
  * The sync function receives a start date (from cursor or getLastSyncDate fallback)
  * and the global sync start time for time budget checks.
@@ -285,26 +317,33 @@ async function runWithCursor(
   chainDepth: number = 0,
   sinceOverride?: string,
 ): Promise<SyncResult> {
-  // Race condition guard: skip if another run is active or a chain is in progress
-  const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-  const { data: activeRuns } = await supabase
-    .from("sync_log")
-    .select("id, status, started_at")
-    .eq("sync_type", syncLogType)
-    .in("status", ["running", "partial"])
-    .gte("started_at", fiveMinAgo)
-    .limit(1);
-
-  if (activeRuns && activeRuns.length > 0) {
-    const activeStatus = activeRuns[0].status;
+  // Acquire advisory lock — prevents concurrent syncs of the same source
+  const lockKey = syncLockKey(syncLogType);
+  const acquired = await tryAdvisoryLock(supabase, lockKey);
+  if (!acquired) {
     return {
       totalAdded: 0,
       totalLinked: 0,
-      errors: [`Skipped: ${syncLogType} has a recent "${activeStatus}" entry (chain in progress or already running)`],
+      errors: [`Skipped: ${syncLogType} could not acquire advisory lock (another sync in progress)`],
       affectedBuildingIds: new Set(),
     };
   }
 
+  try {
+    return await _runWithCursorInner(supabase, syncType, syncLogType, syncFn, chainDepth, sinceOverride);
+  } finally {
+    await releaseAdvisoryLock(supabase, lockKey);
+  }
+}
+
+async function _runWithCursorInner(
+  supabase: SupabaseClient,
+  syncType: string,
+  syncLogType: string,
+  syncFn: (startDate: string, syncStartMs: number) => Promise<SyncResult>,
+  chainDepth: number = 0,
+  sinceOverride?: string,
+): Promise<SyncResult> {
   // Determine start position: sinceOverride > cursor > getLastSyncDate
   let startDate: string;
   if (sinceOverride) {
