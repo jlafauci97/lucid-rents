@@ -15,7 +15,7 @@ on:
         required: false
         default: "all"
       source:
-        description: "Source to scrape (all, rent_com, zillow, streeteasy, compass, realtor, apartments_com)"
+        description: "Source to scrape (all, rent_com, zillow, streeteasy, compass, realtor)"
         required: false
         default: "all"
 
@@ -107,12 +107,3 @@ jobs:
           pip install homeharvest pandas
           python scripts/scrape-realtor-backfill.py --metro=${{ matrix.metro }} --limit=500 --threads=2
 
-      - name: Scrape Apartments.com
-        continue-on-error: true
-        if: steps.check.outputs.skip != 'true' && (github.event.inputs.source == 'all' || github.event.inputs.source == 'apartments_com' || github.event_name == 'schedule')
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: |
-          PAGES="${{ github.event.inputs.pages || '5' }}"
-          python scripts/scrape-apartments-com.py --metro=${{ matrix.metro }} --pages=$PAGES
