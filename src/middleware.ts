@@ -29,6 +29,17 @@ const CITY_ROUTES = new Set([
 
 const PRODUCTION_HOST = "lucidrents.com";
 
+/** Bad bots that inflate server load without providing value */
+const BLOCKED_BOTS = [
+  "AhrefsBot", "SemrushBot", "MJ12bot", "DotBot", "BLEXBot",
+  "PetalBot", "YandexBot", "Bytespider", "DataForSeoBot",
+  "Go-http-client", "python-requests",
+  "GPTBot", "CCBot", "anthropic-ai", "Claude-Web",
+  "Scrapy", "colly", "HeadlessChrome",
+];
+
+const BLOCKED_BOTS_LOWER = BLOCKED_BOTS.map((b) => b.toLowerCase());
+
 function isProduction(request: NextRequest): boolean {
   return request.headers.get("host")?.replace(/:\d+$/, "") === PRODUCTION_HOST;
 }
@@ -42,6 +53,12 @@ function withNoindex(response: NextResponse, request: NextRequest): NextResponse
 }
 
 export function middleware(request: NextRequest) {
+  // Block bad bots before any processing
+  const ua = (request.headers.get("user-agent") || "").toLowerCase();
+  if (ua && BLOCKED_BOTS_LOWER.some((bot) => ua.includes(bot))) {
+    return new NextResponse("Forbidden", { status: 403 });
+  }
+
   const { pathname } = request.nextUrl;
 
   // Split path segments: "/nyc/buildings" => ["", "nyc", "buildings"]

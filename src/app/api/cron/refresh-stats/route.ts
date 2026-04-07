@@ -29,6 +29,25 @@ export async function GET(req: NextRequest) {
     errors.push(`mv_borough_stats refresh error: ${String(err)}`);
   }
 
+  // Reconcile building count drift per metro (chunked to avoid timeouts)
+  let buildingsFixed = 0;
+  const metros = ["nyc", "los-angeles", "chicago", "miami", "houston"];
+  for (const metro of metros) {
+    try {
+      const { data } = await supabase.rpc("reconcile_building_counts" as never, { target_metro: metro } as never);
+      buildingsFixed += data?.[0]?.buildings_fixed ?? 0;
+    } catch (err) {
+      errors.push(`reconcile_building_counts (${metro}) error: ${String(err)}`);
+    }
+  }
+
+  // Refresh neighborhood median rents pre-computed table
+  try {
+    await supabase.rpc("refresh_neighborhood_median_rents" as never);
+  } catch (err) {
+    errors.push(`refresh_neighborhood_median_rents error: ${String(err)}`);
+  }
+
   // Invalidate borough/city pages after stats refresh
   try {
     revalidatePath("/[city]", "page");
@@ -44,6 +63,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     success: errors.length === 0,
     duration_seconds: parseFloat(elapsed),
+    buildings_counts_reconciled: buildingsFixed,
     errors,
   });
 }
