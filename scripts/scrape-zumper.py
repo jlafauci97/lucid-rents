@@ -862,7 +862,7 @@ def match_building(listing: dict, metro: str = "nyc") -> str | None:
     street = addr.split(",")[0].strip() if "," in addr else addr
     normalized = normalize_address(street)
 
-    try:
+    def _try_match():
         if zip_code:
             result = supabase.table("buildings") \
                 .select("id") \
@@ -903,10 +903,30 @@ def match_building(listing: dict, metro: str = "nyc") -> str | None:
             if result.data and len(result.data) > 0:
                 return result.data[0]["id"]
 
+        return None
+
+    try:
+        return retry_supabase(_try_match)
     except Exception as e:
-        print(f"    DB match error (will create new): {e}")
+        print(f"    ❌ DB match error (will create new): {e}")
 
     return None
+
+
+# ── RETRY HELPER ─────────────────────────────────────────────────────────────
+def retry_supabase(fn, max_retries=3, backoff=5):
+    """Retry a Supabase call on transient errors (502, 503, timeout, pool)."""
+    for attempt in range(max_retries):
+        try:
+            return fn()
+        except Exception as e:
+            err_str = str(e)
+            if any(code in err_str for code in ("502", "503", "504", "Bad gateway", "timeout", "pool", "PGRST002", "PGRST003", "schema cache")) and attempt < max_retries - 1:
+                wait = backoff * (attempt + 1)
+                print(f"    Supabase transient error, retrying in {wait}s (attempt {attempt + 1}/{max_retries})...")
+                time.sleep(wait)
+            else:
+                raise
 
 
 # ── DATABASE WRITES ──────────────────────────────────────────────────────────
@@ -944,19 +964,20 @@ def upsert_rents(building_id: str, rent_by_beds: dict, unit_number: str | None =
         history_rows.append(history_row)
 
     try:
-        supabase.table("building_rents") \
-            .upsert(rows, on_conflict="building_id,source,bedrooms") \
-            .execute()
+        retry_supabase(lambda: supabase.table("building_rents")
+            .upsert(rows, on_conflict="building_id,source,bedrooms")
+            .execute())
     except Exception as e:
-        print(f"    Rent upsert error: {e}")
+        print(f"    ❌ Rent upsert FAILED: {e}")
         return 0
 
     try:
-        supabase.table("unit_rent_history") \
-            .upsert(history_rows, on_conflict="building_id,source,unit_number,bedrooms,rent,observed_at") \
-            .execute()
+        retry_supabase(lambda: supabase.table("unit_rent_history")
+            .upsert(history_rows, on_conflict="building_id,source,unit_number,bedrooms,rent,observed_at")
+            .execute())
     except Exception as e:
-        print(f"    Rent history insert error: {e}")
+        print(f"    ❌ Rent history insert FAILED: {e}")
+        return -1
 
     return len(rows)
 
@@ -984,12 +1005,12 @@ def upsert_amenities(building_id: str, amenities: list[str], metro: str = "nyc")
         })
 
     try:
-        supabase.table("building_amenities") \
-            .upsert(rows, on_conflict="building_id,source,amenity") \
-            .execute()
+        retry_supabase(lambda: supabase.table("building_amenities")
+            .upsert(rows, on_conflict="building_id,source,amenity")
+            .execute())
         return len(rows)
     except Exception as e:
-        print(f"    Amenity upsert error: {e}")
+        print(f"    ❌ Amenity upsert FAILED: {e}")
         return 0
 
 
@@ -1041,21 +1062,28 @@ def create_building(listing: dict, metro: str = "nyc") -> str | None:
         "lead_violation_count": 0,
     }
 
-    try:
+    def _try_create():
         result = supabase.table("buildings").insert(row).execute()
         if result.data and len(result.data) > 0:
             return result.data[0]["id"]
+        return None
+
+    try:
+        return retry_supabase(_try_create)
     except Exception as e:
         err_msg = str(e)
         if "duplicate" in err_msg.lower() or "unique" in err_msg.lower():
-            existing = supabase.table("buildings") \
-                .select("id") \
-                .eq("slug", slug) \
-                .limit(1) \
-                .execute()
-            if existing.data and len(existing.data) > 0:
-                return existing.data[0]["id"]
-        print(f"    Building creation error: {e}")
+            try:
+                existing = retry_supabase(lambda: supabase.table("buildings")
+                    .select("id")
+                    .eq("slug", slug)
+                    .limit(1)
+                    .execute())
+                if existing.data and len(existing.data) > 0:
+                    return existing.data[0]["id"]
+            except Exception as e2:
+                print(f"    ❌ Building lookup after dup error: {e2}")
+        print(f"    ❌ Building creation FAILED: {e}")
     return None
 
 
@@ -1095,12 +1123,12 @@ def upsert_listing(building_id: str, listing: dict) -> bool:
     }
 
     try:
-        supabase.table("building_listings") \
-            .upsert(row, on_conflict="building_id,source") \
-            .execute()
+        retry_supabase(lambda: supabase.table("building_listings")
+            .upsert(row, on_conflict="building_id,source")
+            .execute())
         return True
     except Exception as e:
-        print(f"    Listing upsert error: {e}")
+        print(f"    ❌ Listing upsert FAILED: {e}")
         return False
 
 
@@ -1190,7 +1218,8 @@ def main():
                 if listing_saved:
                     total_listings_saved += 1
 
-                print(f"    {label} {addr} -> {rents_added} rents, {amenities_added} amenities, listing={'OK' if listing_saved else 'FAIL'}")
+                history_status = " ⚠️ HISTORY_FAIL" if rents_added < 0 else ""
+                print(f"    {label} {addr} -> {abs(rents_added)} rents, {amenities_added} amenities, listing={'OK' if listing_saved else 'FAIL'}{history_status}")
 
             # Polite delay between pages
             delay = random.uniform(PAGE_DELAY_MIN, PAGE_DELAY_MAX)
