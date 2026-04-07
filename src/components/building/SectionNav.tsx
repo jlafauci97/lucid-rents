@@ -148,12 +148,12 @@ export function SectionNav() {
       <div ref={sentinelRef} className="h-0" aria-hidden="true" />
 
       <nav
-        className={`sticky top-16 z-30 backdrop-blur-xl transition-shadow duration-200 ${
-          isSticky ? "shadow-sm" : ""
+        className={`sticky top-16 z-30 transition-shadow duration-200 ${
+          isSticky ? "shadow-lg shadow-black/20" : ""
         }`}
         style={{
-          backgroundColor: `${T.surface}E6`,
-          borderBottom: `1px solid ${T.border}`,
+          backgroundColor: "#0F1D2E",
+          borderBottom: "1px solid rgba(255,255,255,0.1)",
         }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -173,17 +173,20 @@ export function SectionNav() {
                   onClick={() => scrollToSection(section.id)}
                   className="group shrink-0 flex items-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150"
                   style={{
-                    color: isActive ? T.accent : T.text3,
-                    backgroundColor: isActive ? `${T.accent}10` : "transparent",
+                    color: isActive ? "#FFFFFF" : "rgba(255,255,255,0.5)",
+                    backgroundColor: isActive ? `${T.accent}25` : "transparent",
+                    boxShadow: isActive ? `0 0 12px ${T.accent}40` : "none",
                   }}
                   onMouseEnter={(e) => {
                     if (!isActive) {
-                      e.currentTarget.style.color = T.text2;
+                      e.currentTarget.style.color = "rgba(255,255,255,0.85)";
+                      e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.05)";
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (!isActive) {
-                      e.currentTarget.style.color = T.text3;
+                      e.currentTarget.style.color = "rgba(255,255,255,0.5)";
+                      e.currentTarget.style.backgroundColor = "transparent";
                     }
                   }}
                 >
