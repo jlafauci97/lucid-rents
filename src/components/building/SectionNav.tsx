@@ -47,12 +47,20 @@ export function SectionNav() {
   const sentinelRef = useRef<HTMLDivElement>(null);
   const isClickScrolling = useRef(false);
 
-  // On mount, determine which sections actually exist on the page
+  // Watch for sections appearing in the DOM (Suspense boundaries stream them in)
   useEffect(() => {
-    const found = SECTIONS.filter((s) => document.getElementById(s.id)).map(
-      (s) => s.id
-    );
-    setExistingSections(found);
+    function scan() {
+      const found = SECTIONS.filter((s) => document.getElementById(s.id)).map((s) => s.id);
+      setExistingSections((prev) => {
+        if (prev.length === found.length && prev.every((id, i) => id === found[i])) return prev;
+        return found;
+      });
+    }
+    scan();
+    // Re-scan as Suspense boundaries resolve and new sections appear
+    const observer = new MutationObserver(scan);
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
   }, []);
 
   // Track when nav becomes sticky using a sentinel element
