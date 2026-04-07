@@ -4698,40 +4698,46 @@ Deno.serve(async (req) => {
     }
 
     const countErrors: string[] = [];
+    const anyPartial = Object.values(results).some(r => r.timeBudgetExceeded);
+    const isChainedRun = chainDepth > 0;
 
-    // Backfill slugs for any buildings missing them
+    // Skip slug backfill, revalidation, and IndexNow on partial/chained runs
     let slugsBackfilled = 0;
-    if ((Date.now() - startTime) / 1000 < 130) {
-      try {
-        const { data: noSlugs } = await supabase
-          .from("buildings")
-          .select("id, full_address")
-          .is("slug", null)
-          .limit(500);
+    let indexNowResult: { notified: number; error?: string } = { notified: 0 };
 
-        if (noSlugs && noSlugs.length > 0) {
-          for (const b of noSlugs) {
-            const slug = generateBuildingSlug(b.full_address);
-            await supabase.from("buildings").update({ slug }).eq("id", b.id);
+    if (!anyPartial && !isChainedRun) {
+      if ((Date.now() - startTime) / 1000 < 260) {
+        try {
+          const { data: noSlugs } = await supabase
+            .from("buildings")
+            .select("id, full_address")
+            .is("slug", null)
+            .limit(500);
+
+          if (noSlugs && noSlugs.length > 0) {
+            for (const b of noSlugs) {
+              const slug = generateBuildingSlug(b.full_address);
+              await supabase.from("buildings").update({ slug }).eq("id", b.id);
+            }
+            slugsBackfilled = noSlugs.length;
           }
-          slugsBackfilled = noSlugs.length;
+        } catch (slugErr) {
+          countErrors.push(`Slug backfill error: ${String(slugErr)}`);
         }
-      } catch (slugErr) {
-        countErrors.push(`Slug backfill error: ${String(slugErr)}`);
       }
+
+      // Trigger revalidation on the Next.js app
+      const revalidationPaths = [
+        "/[city]",
+        "/[city]/building/[borough]/[slug]",
+        "/[city]/worst-rated-buildings",
+        "/[city]/buildings/[borough]",
+      ];
+      await triggerRevalidation(revalidationPaths);
+
+      // Notify search engines about updated building pages
+      indexNowResult = await notifyIndexNowForBuildings(supabase, allAffectedIds);
     }
-
-    // Trigger revalidation on the Next.js app instead of direct revalidatePath
-    const revalidationPaths = [
-      "/[city]",
-      "/[city]/building/[borough]/[slug]",
-      "/[city]/worst-rated-buildings",
-      "/[city]/buildings/[borough]",
-    ];
-    await triggerRevalidation(revalidationPaths);
-
-    // Notify search engines about updated building pages
-    const indexNowResult = await notifyIndexNowForBuildings(supabase, allAffectedIds);
 
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 
