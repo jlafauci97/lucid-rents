@@ -32,7 +32,6 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { SLUG_TO_BOROUGH, regionFromSlug, buildingUrl, canonicalUrl, buildingJsonLd, breadcrumbJsonLd, landlordUrl, cityPath } from "@/lib/seo";
 import { CITY_META, VALID_CITIES, type City } from "@/lib/cities";
-import { AdSidebar } from "@/components/ui/AdSidebar";
 import { TrackBuildingView } from "@/components/building/TrackBuildingView";
 import { T } from "@/lib/design-tokens";
 import { cache } from "react";
@@ -358,7 +357,6 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
   const shortAddress = building.full_address.split(",")[0]?.trim() || building.full_address;
 
   return (
-    <AdSidebar>
     <div>
       <TrackBuildingView
         building={{
@@ -675,6 +673,5 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
         </Suspense>
       </div>
     </div>
-    </AdSidebar>
   );
 }
