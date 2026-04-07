@@ -388,7 +388,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
         </div>
       </div>
 
-      <BuildingHeader building={building} city={city} violationCount={effectiveViolationCount} valueGrade={deweyMetrics?.valueGrade} medianRent={deweyMetrics?.medianRent} pricePerSqft={deweyMetrics?.pricePerSqft} />
+      <BuildingHeader building={building} city={city} violationCount={effectiveViolationCount} valueGrade={deweyMetrics?.valueGrade} medianRent={deweyMetrics?.medianRent ?? (rents.length > 0 ? Math.round(rents.reduce((sum, r) => sum + (r.median_rent || 0), 0) / rents.filter(r => r.median_rent > 0).length) || undefined : undefined)} pricePerSqft={deweyMetrics?.pricePerSqft} />
 
       <SectionNav />
 
