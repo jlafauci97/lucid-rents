@@ -14,20 +14,45 @@ export default function robots(): MetadataRoute.Robots {
     };
   }
 
+  const sharedDisallow = [
+    "/api/",             // all API endpoints (sitemap API is accessed via /sitemap/*.xml rewrites)
+    "/_next/",          // static JS/CSS chunks
+    "/profile/",
+    "/review/new",      // legacy non-prefixed path
+    "/*/review/new",    // city-prefixed review pages (e.g. /nyc/review/new?building=...)
+    "/*?ids=",          // compare pages with building IDs
+    "/compare",         // non-city-prefixed compare (redirects)
+  ];
+
   return {
-    rules: {
-      userAgent: "*",
-      allow: "/",
-      disallow: [
-        "/api/",            // all API endpoints
-        "/_next/",          // static JS/CSS chunks
-        "/profile/",
-        "/review/new",      // legacy non-prefixed path
-        "/*/review/new",    // city-prefixed review pages (e.g. /nyc/review/new?building=...)
-        "/*?ids=",          // compare pages with building IDs
-        "/compare",         // non-city-prefixed compare (redirects)
-      ],
-    },
+    rules: [
+      // Default rule for all crawlers
+      {
+        userAgent: "*",
+        allow: "/",
+        disallow: sharedDisallow,
+      },
+      // Explicitly welcome AI crawlers for LLM search / recommendations
+      ...([
+        "GPTBot",
+        "ChatGPT-User",
+        "Google-Extended",
+        "GoogleOther",
+        "PerplexityBot",
+        "ClaudeBot",
+        "Claude-Web",
+        "Applebot-Extended",
+        "cohere-ai",
+        "Bytespider",
+        "CCBot",
+        "anthropic-ai",
+        "OAI-SearchBot",
+      ] as const).map((bot) => ({
+        userAgent: bot,
+        allow: ["/", "/llms.txt", "/llms-full.txt", "/for-ai"],
+        disallow: sharedDisallow,
+      })),
+    ],
     sitemap: "https://lucidrents.com/sitemap.xml",
   };
 }
