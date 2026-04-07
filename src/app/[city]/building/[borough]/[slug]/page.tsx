@@ -21,6 +21,7 @@ import { NearbyBuildings } from "@/components/building/NearbyBuildings";
 import { SameLandlordBuildings } from "@/components/building/SameLandlordBuildings";
 import { RentStabilizationCard } from "@/components/building/RentStabilizationCard";
 import { RentComparison } from "@/components/building/RentComparison";
+import { DeferredRentComparison } from "@/components/building/DeferredRentComparison";
 import { EnergyScoreCard } from "@/components/building/EnergyScoreCard";
 import { SeismicSafetyCard } from "@/components/building/SeismicSafetyCard";
 import { HazardZonesCard } from "@/components/building/HazardZonesCard";
@@ -239,13 +240,11 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
   const isMiami = city === "miami";
 
   // Critical data only — just what's needed for above-the-fold content
-  const [rents, energyData, neighborhoodRents, deweyLatestRaw, deweyNeighborhoodLatestRaw] = await Promise.all([
+  // NOTE: neighborhood median rents moved to DeferredRentComparison (Suspense boundary)
+  // so it doesn't block the entire page render
+  const [rents, energyData, deweyLatestRaw, deweyNeighborhoodLatestRaw] = await Promise.all([
     safe(supabase.from("building_rents").select("bedrooms, min_rent, max_rent, median_rent, listing_count, source").eq("building_id", buildingId), []),
     safe(supabase.from("energy_benchmarks").select("*").eq("building_id", buildingId).order("report_year", { ascending: false }).limit(1), [] as EnergyBenchmark[]),
-    // Neighborhood median rents via RPC — computes median server-side, returns ~5 rows instead of 1500+
-    building.zip_code
-      ? safe(supabase.rpc("get_neighborhood_median_rents", { p_zip: building.zip_code, p_exclude_building: buildingId }), [] as { bedrooms: number; median_rent: number }[])
-      : Promise.resolve([] as { bedrooms: number; median_rent: number }[]),
     // Dewey: latest month building rents for above-the-fold badges
     safe(supabase.from("dewey_building_rents").select("month, beds, median_rent, avg_price_per_sqft, listing_count").eq("building_id", buildingId).order("month", { ascending: false }).limit(10), [] as { month: string; beds: number; median_rent: number; avg_price_per_sqft: number; listing_count: number }[]),
     // Dewey: latest month neighborhood rents for comparison
@@ -513,15 +512,17 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
             </div>
 
 
-            {/* Rent Comparison */}
+            {/* Rent Comparison — streams independently so it doesn't block page render */}
             {building.zip_code && (
               <div id="rent-comparison">
-                <RentComparison
-                  buildingRents={rents}
-                  neighborhoodRents={neighborhoodRents}
-                  zipCode={building.zip_code}
-                  borough={building.borough}
-                />
+                <Suspense fallback={<div className="bg-white rounded-xl border border-[#E2E8F0] p-6 animate-pulse h-48" />}>
+                  <DeferredRentComparison
+                    buildingRents={rents}
+                    buildingId={buildingId}
+                    zipCode={building.zip_code}
+                    borough={building.borough}
+                  />
+                </Suspense>
               </div>
             )}
             {/* Energy Score */}
@@ -669,7 +670,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
             buildingId={buildingId}
             city={city}
             rents={rents}
-            neighborhoodRents={neighborhoodRents}
+            neighborhoodRents={[]}
           />
         </Suspense>
       </div>
