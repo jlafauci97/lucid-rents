@@ -5,24 +5,6 @@ import { searchSchema } from "@/lib/validators";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { NextRequest, NextResponse } from "next/server";
 
-function applySortOrder(
-  query: ReturnType<ReturnType<Awaited<ReturnType<typeof createClient>>["from"]>["select"]>,
-  sort: string
-) {
-  switch (sort) {
-    case "score-desc":
-      return query.order("overall_score", { ascending: false, nullsFirst: false });
-    case "score-asc":
-      return query.order("overall_score", { ascending: true, nullsFirst: false });
-    case "violations-desc":
-      return query.order("violation_count", { ascending: false });
-    case "reviews-desc":
-      return query.order("review_count", { ascending: false });
-    case "relevance":
-    default:
-      return query.order("review_count", { ascending: false });
-  }
-}
 
 export async function GET(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0] ?? "anonymous";
@@ -91,10 +73,9 @@ export async function GET(req: NextRequest) {
   }
 
   // Non-text queries: browse by filters only — select only fields used by BuildingCard
-  const BROWSE_COLUMNS = "id,metro,borough,slug,full_address,name,zip_code,year_built,total_units,review_count,violation_count,complaint_count,overall_score,is_rent_stabilized,latitude,longitude";
   let query = supabase
     .from("buildings")
-    .select(BROWSE_COLUMNS, { count: "exact" })
+    .select("id,metro,borough,slug,full_address,name,zip_code,year_built,total_units,review_count,violation_count,complaint_count,overall_score,is_rent_stabilized,latitude,longitude", { count: "exact" })
     .range(offset, offset + limit - 1);
 
   if (cityParam) {
@@ -107,7 +88,19 @@ export async function GET(req: NextRequest) {
     query = query.eq("zip_code", zip);
   }
 
-  query = applySortOrder(query, sort);
+  // Inline sort to avoid type mismatch with partial column select
+  switch (sort) {
+    case "score-desc":
+      query = query.order("overall_score", { ascending: false, nullsFirst: false }); break;
+    case "score-asc":
+      query = query.order("overall_score", { ascending: true, nullsFirst: false }); break;
+    case "violations-desc":
+      query = query.order("violation_count", { ascending: false }); break;
+    case "reviews-desc":
+      query = query.order("review_count", { ascending: false }); break;
+    default:
+      query = query.order("review_count", { ascending: false }); break;
+  }
 
   const { data, count, error } = await query;
 
