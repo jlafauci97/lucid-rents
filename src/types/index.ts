@@ -64,6 +64,8 @@ export interface Building {
   is_condo: boolean;
   condo_association: string | null;
   unsafe_structure_count: number;
+  sea_level_risk_zone: string | null;
+  sea_level_risk_feet: number | null;
   created_at: string;
   updated_at: string;
 }
