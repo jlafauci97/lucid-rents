@@ -3625,63 +3625,68 @@ function categorizeMiamiCrime(offense: string | null | undefined): string | null
   return "other";
 }
 
-async function syncMiamiViolations(supabase: SupabaseClient): Promise<SyncResult> {
-  const lastSync = await getLastSyncDate(supabase, "miami_violations");
-  const logId = await createSyncLog(supabase, "miami_violations");
+async function syncMiamiViolations(supabase: SupabaseClient, startDate: string, syncStartMs: number): Promise<SyncResult> {
   const syncStartTime = new Date().toISOString();
-  const syncStartMs = Date.now();
 
   let totalAdded = 0;
   let totalLinked = 0;
   const errors: string[] = [];
   const affectedBuildingIds = new Set<string>();
+  let timeBudgetExceeded = false;
 
-  try {
-    let offset = 0;
-    let hasMore = true;
-    let pagesFetched = 0;
+  let offset = parseInt(startDate) || 0;
+  let hasMore = true;
+  let pagesFetched = 0;
 
-    while (hasMore) {
-      const cutoffMs = lastSync ? new Date(lastSync).getTime() : 0;
-      const url = buildMiamiArcGISUrl("CodeComplianceViolation_Open_View", cutoffMs > 0 ? `CASE_DATE > ${cutoffMs}` : `1=1`, PAGE_SIZE, offset, "CASE_DATE ASC");
+  while (hasMore) {
+    const url = buildMiamiArcGISUrl("CodeComplianceViolation_Open_View", `1=1`, PAGE_SIZE, offset, "OBJECTID ASC");
 
-      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
-      if (!res.ok) {
-        const errText = await res.text();
-        errors.push(`Miami Violations API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
-        break;
-      }
-
-      const json = await res.json();
-      const features = json.features || [];
-      if (features.length === 0) { hasMore = false; break; }
-
-      const records = features.map((f: { attributes: Record<string, unknown> }) => f.attributes);
-      const rows = records
-        .filter((r: Record<string, unknown>) => r.CASE_NUM)
-        .map((r: Record<string, unknown>) => {
-          const parsed = parseMiamiAddress(r.ADDRESS as string | undefined);
-          const caseDate = r.CASE_DATE ? new Date(Number(r.CASE_DATE)).toISOString().slice(0, 10) : null;
-          return {
-            isn_dob_bis_vio: `MIA-${r.CASE_NUM}`,
-            issue_date: caseDate,
-            description: r.PROBLEM_DESC ? String(r.PROBLEM_DESC).trim() : null,
-            borough: "Miami-Dade",
-            house_number: parsed.house_number,
-            street_name: parsed.street_name,
-            metro: "miami",
-            imported_at: new Date().toISOString(),
-          };
-        });
-
-      if (rows.length > 0) {
-        totalAdded += await batchUpsert(supabase, "dob_violations", rows, "isn_dob_bis_vio", errors, "Miami Violations");
-      }
-
-      pagesFetched++;
-      if (features.length < PAGE_SIZE || pagesFetched >= MAX_PAGES || isTimeBudgetExceeded(syncStartMs)) { hasMore = false; } else { offset += PAGE_SIZE; }
+    const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+    if (!res.ok) {
+      const errText = await res.text();
+      errors.push(`Miami Violations API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
+      break;
     }
 
+    const json = await res.json();
+    const features = json.features || [];
+    if (features.length === 0) { hasMore = false; break; }
+
+    const records = features.map((f: { attributes: Record<string, unknown> }) => f.attributes);
+    const rows = records
+      .filter((r: Record<string, unknown>) => r.CASE_NUM)
+      .map((r: Record<string, unknown>) => {
+        const parsed = parseMiamiAddress(r.ADDRESS as string | undefined);
+        const caseDate = r.CASE_DATE ? new Date(Number(r.CASE_DATE)).toISOString().slice(0, 10) : null;
+        return {
+          isn_dob_bis_vio: `MIA-${r.CASE_NUM}`,
+          issue_date: caseDate,
+          description: r.PROBLEM_DESC ? String(r.PROBLEM_DESC).trim() : null,
+          borough: "Miami-Dade",
+          house_number: parsed.house_number,
+          street_name: parsed.street_name,
+          metro: "miami",
+          imported_at: new Date().toISOString(),
+        };
+      });
+
+    if (rows.length > 0) {
+      totalAdded += await batchUpsert(supabase, "dob_violations", rows, "isn_dob_bis_vio", errors, "Miami Violations");
+    }
+
+    pagesFetched++;
+    if (features.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
+      hasMore = false;
+    } else if (isTimeBudgetExceeded(syncStartMs)) {
+      timeBudgetExceeded = true;
+      hasMore = false;
+    } else {
+      offset += PAGE_SIZE;
+    }
+    await saveCursor(supabase, "miami_violations", { cursorValue: String(offset), cursorOffset: offset });
+  }
+
+  if (!timeBudgetExceeded) {
     try {
       const linkResult = await linkByAddress(supabase, "dob_violations", "id", ["house_number", "street_name"], syncStartTime, errors, "Miami Violations", 500, "miami");
       totalLinked = linkResult.linked;
@@ -3689,70 +3694,79 @@ async function syncMiamiViolations(supabase: SupabaseClient): Promise<SyncResult
     } catch (linkErr) {
       errors.push(`Miami Violations address linking error: ${String(linkErr)}`);
     }
-
-    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
-  } catch (err) {
-    errors.push(`Miami Violations fatal error: ${String(err)}`);
-    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
   }
 
-  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+  return {
+    totalAdded,
+    totalLinked,
+    errors,
+    affectedBuildingIds,
+    timeBudgetExceeded,
+    newCursor: timeBudgetExceeded ? { cursorValue: String(offset), cursorOffset: offset } : undefined,
+  };
 }
 
-async function syncMiami311(supabase: SupabaseClient): Promise<SyncResult> {
-  const logId = await createSyncLog(supabase, "miami_311");
+async function syncMiami311(supabase: SupabaseClient, startDate: string, syncStartMs: number): Promise<SyncResult> {
   const syncStartTime = new Date().toISOString();
-  const syncStartMs = Date.now();
 
   let totalAdded = 0;
   let totalLinked = 0;
   const errors: string[] = [];
   const affectedBuildingIds = new Set<string>();
+  let timeBudgetExceeded = false;
 
-  try {
-    let offset = 0;
-    let hasMore = true;
-    let pagesFetched = 0;
+  let offset = parseInt(startDate) || 0;
+  let hasMore = true;
+  let pagesFetched = 0;
 
-    while (hasMore) {
-      const url = buildMiamiArcGISUrl("data_311_2023", `OBJECTID > 0`, PAGE_SIZE, offset, "OBJECTID ASC");
+  while (hasMore) {
+    const url = buildMiamiArcGISUrl("data_311_2023", `OBJECTID > 0`, PAGE_SIZE, offset, "OBJECTID ASC");
 
-      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
-      if (!res.ok) {
-        const errText = await res.text();
-        errors.push(`Miami 311 API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
-        break;
-      }
-
-      const json = await res.json();
-      const features = json.features || [];
-      if (features.length === 0) { hasMore = false; break; }
-
-      const records = features.map((f: { attributes: Record<string, unknown> }) => f.attributes);
-      const rows = records
-        .filter((r: Record<string, unknown>) => r.CASE_NUMBER || r.OBJECTID)
-        .map((r: Record<string, unknown>) => ({
-          unique_key: `MIA311-${r.CASE_NUMBER || r.OBJECTID}`,
-          complaint_type: r.ISSUE_TYPE ? String(r.ISSUE_TYPE) : null,
-          descriptor: r.ISSUE_DESCRIPTION ? String(r.ISSUE_DESCRIPTION) : null,
-          status: r.STATUS ? String(r.STATUS) : null,
-          created_date: r.DATE_CREATED ? new Date(Number(r.DATE_CREATED)).toISOString().slice(0, 10) : null,
-          incident_address: r.ADDRESS ? String(r.ADDRESS) : null,
-          borough: "Miami-Dade",
-          latitude: r.LATITUDE ? parseFloat(String(r.LATITUDE)) : null,
-          longitude: r.LONGITUDE ? parseFloat(String(r.LONGITUDE)) : null,
-          metro: "miami",
-          imported_at: new Date().toISOString(),
-        }));
-
-      if (rows.length > 0) {
-        totalAdded += await batchUpsert(supabase, "complaints_311", rows, "unique_key", errors, "Miami 311", true);
-      }
-
-      pagesFetched++;
-      if (features.length < PAGE_SIZE || pagesFetched >= MAX_PAGES || isTimeBudgetExceeded(syncStartMs)) { hasMore = false; } else { offset += PAGE_SIZE; }
+    const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+    if (!res.ok) {
+      const errText = await res.text();
+      errors.push(`Miami 311 API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
+      break;
     }
 
+    const json = await res.json();
+    const features = json.features || [];
+    if (features.length === 0) { hasMore = false; break; }
+
+    const records = features.map((f: { attributes: Record<string, unknown> }) => f.attributes);
+    const rows = records
+      .filter((r: Record<string, unknown>) => r.CASE_NUMBER || r.OBJECTID)
+      .map((r: Record<string, unknown>) => ({
+        unique_key: `MIA311-${r.CASE_NUMBER || r.OBJECTID}`,
+        complaint_type: r.ISSUE_TYPE ? String(r.ISSUE_TYPE) : null,
+        descriptor: r.ISSUE_DESCRIPTION ? String(r.ISSUE_DESCRIPTION) : null,
+        status: r.STATUS ? String(r.STATUS) : null,
+        created_date: r.DATE_CREATED ? new Date(Number(r.DATE_CREATED)).toISOString().slice(0, 10) : null,
+        incident_address: r.ADDRESS ? String(r.ADDRESS) : null,
+        borough: "Miami-Dade",
+        latitude: r.LATITUDE ? parseFloat(String(r.LATITUDE)) : null,
+        longitude: r.LONGITUDE ? parseFloat(String(r.LONGITUDE)) : null,
+        metro: "miami",
+        imported_at: new Date().toISOString(),
+      }));
+
+    if (rows.length > 0) {
+      totalAdded += await batchUpsert(supabase, "complaints_311", rows, "unique_key", errors, "Miami 311", true);
+    }
+
+    pagesFetched++;
+    if (features.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
+      hasMore = false;
+    } else if (isTimeBudgetExceeded(syncStartMs)) {
+      timeBudgetExceeded = true;
+      hasMore = false;
+    } else {
+      offset += PAGE_SIZE;
+    }
+    await saveCursor(supabase, "miami_311", { cursorValue: String(offset), cursorOffset: offset });
+  }
+
+  if (!timeBudgetExceeded) {
     try {
       const linkResult = await linkByAddress(supabase, "complaints_311", "unique_key", ["incident_address"], syncStartTime, errors, "Miami 311", 500, "miami");
       totalLinked = linkResult.linked;
@@ -3760,166 +3774,182 @@ async function syncMiami311(supabase: SupabaseClient): Promise<SyncResult> {
     } catch (linkErr) {
       errors.push(`Miami 311 address linking error: ${String(linkErr)}`);
     }
-
-    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
-  } catch (err) {
-    errors.push(`Miami 311 fatal error: ${String(err)}`);
-    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
   }
 
-  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+  return {
+    totalAdded,
+    totalLinked,
+    errors,
+    affectedBuildingIds,
+    timeBudgetExceeded,
+    newCursor: timeBudgetExceeded ? { cursorValue: String(offset), cursorOffset: offset } : undefined,
+  };
 }
 
-async function syncMiamiCrimes(supabase: SupabaseClient): Promise<SyncResult> {
-  const logId = await createSyncLog(supabase, "miami_crimes");
-  const syncStartMs = Date.now();
-
+async function syncMiamiCrimes(supabase: SupabaseClient, startDate: string, syncStartMs: number): Promise<SyncResult> {
   let totalAdded = 0;
   const totalLinked = 0;
   const errors: string[] = [];
   const affectedBuildingIds = new Set<string>();
+  let timeBudgetExceeded = false;
 
   const CRIME_ENDPOINTS = [
     "https://services1.arcgis.com/CY1LXxl9zlJeBuRZ/ArcGIS/rest/services/Crime_Data_Public/FeatureServer/0/query",
     "https://gis-mdc.opendata.arcgis.com/datasets/miami-dade-county-crime-data/FeatureServer/0/query",
   ];
 
-  try {
-    let offset = 0;
-    let hasMore = true;
-    let pagesFetched = 0;
+  let offset = parseInt(startDate) || 0;
+  let hasMore = true;
+  let pagesFetched = 0;
 
-    while (hasMore) {
-      const params = new URLSearchParams({
-        where: "1=1",
-        outFields: "*",
-        resultOffset: String(offset),
-        resultRecordCount: String(PAGE_SIZE),
-        orderByFields: "OBJECTID ASC",
-        f: "json",
-      });
+  while (hasMore) {
+    const params = new URLSearchParams({
+      where: "1=1",
+      outFields: "*",
+      resultOffset: String(offset),
+      resultRecordCount: String(PAGE_SIZE),
+      orderByFields: "OBJECTID ASC",
+      f: "json",
+    });
 
-      let json: Record<string, unknown> | null = null;
-      for (const baseUrl of CRIME_ENDPOINTS) {
-        try {
-          const res = await fetch(`${baseUrl}?${params}`, { signal: AbortSignal.timeout(30_000) });
-          if (res.ok) {
-            json = await res.json();
-            break;
-          }
-        } catch {
-          // try next endpoint
+    let json: Record<string, unknown> | null = null;
+    for (const baseUrl of CRIME_ENDPOINTS) {
+      try {
+        const res = await fetch(`${baseUrl}?${params}`, { signal: AbortSignal.timeout(30_000) });
+        if (res.ok) {
+          json = await res.json();
+          break;
         }
+      } catch {
+        // try next endpoint
       }
-
-      if (!json) {
-        errors.push(`Miami Crimes: all endpoints failed at offset ${offset}`);
-        break;
-      }
-
-      const features = (json.features || []) as { attributes: Record<string, unknown> }[];
-      if (features.length === 0) { hasMore = false; break; }
-
-      const records = features.map((f) => f.attributes);
-      const rows = records
-        .filter((r) => r.OBJECTID)
-        .map((r) => ({
-          cmplnt_num: `MIA-${r.OBJECTID}`,
-          cmplnt_date: r.DateOccurred ? new Date(Number(r.DateOccurred)).toISOString().slice(0, 10) : null,
-          borough: "Miami-Dade",
-          precinct: null,
-          offense_description: r.OffenseType ? String(r.OffenseType) : null,
-          crime_category: categorizeCrime(r.OffenseType ? String(r.OffenseType) : null),
-          latitude: r.Latitude ? parseFloat(String(r.Latitude)) : null,
-          longitude: r.Longitude ? parseFloat(String(r.Longitude)) : null,
-          zip_code: r.ZipCode ? String(r.ZipCode).slice(0, 5) : null,
-          metro: "miami",
-          imported_at: new Date().toISOString(),
-        }));
-
-      if (rows.length > 0) {
-        totalAdded += await batchUpsert(supabase, "nypd_complaints", rows, "cmplnt_num", errors, "Miami Crimes");
-      }
-
-      pagesFetched++;
-      if (features.length < PAGE_SIZE || pagesFetched >= MAX_PAGES || isTimeBudgetExceeded(syncStartMs)) { hasMore = false; } else { offset += PAGE_SIZE; }
     }
 
+    if (!json) {
+      errors.push(`Miami Crimes: all endpoints failed at offset ${offset}`);
+      break;
+    }
+
+    const features = (json.features || []) as { attributes: Record<string, unknown> }[];
+    if (features.length === 0) { hasMore = false; break; }
+
+    const records = features.map((f) => f.attributes);
+    const rows = records
+      .filter((r) => r.OBJECTID)
+      .map((r) => ({
+        cmplnt_num: `MIA-${r.OBJECTID}`,
+        cmplnt_date: r.DateOccurred ? new Date(Number(r.DateOccurred)).toISOString().slice(0, 10) : null,
+        borough: "Miami-Dade",
+        precinct: null,
+        offense_description: r.OffenseType ? String(r.OffenseType) : null,
+        crime_category: categorizeCrime(r.OffenseType ? String(r.OffenseType) : null),
+        latitude: r.Latitude ? parseFloat(String(r.Latitude)) : null,
+        longitude: r.Longitude ? parseFloat(String(r.Longitude)) : null,
+        zip_code: r.ZipCode ? String(r.ZipCode).slice(0, 5) : null,
+        metro: "miami",
+        imported_at: new Date().toISOString(),
+      }));
+
+    if (rows.length > 0) {
+      totalAdded += await batchUpsert(supabase, "nypd_complaints", rows, "cmplnt_num", errors, "Miami Crimes");
+    }
+
+    pagesFetched++;
+    if (features.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
+      hasMore = false;
+    } else if (isTimeBudgetExceeded(syncStartMs)) {
+      timeBudgetExceeded = true;
+      hasMore = false;
+    } else {
+      offset += PAGE_SIZE;
+    }
+    await saveCursor(supabase, "miami_crimes", { cursorValue: String(offset), cursorOffset: offset });
+  }
+
+  if (!timeBudgetExceeded) {
     try {
       const { error: zipErr } = await supabase.rpc("backfill_crime_zip_codes", { target_metro: "miami" });
       if (zipErr) errors.push(`Miami Crimes zip backfill error: ${zipErr.message}`);
     } catch (zipBackfillErr) {
       errors.push(`Miami Crimes zip backfill fatal: ${String(zipBackfillErr)}`);
     }
-
-    await finalizeSyncLog(supabase, logId, errors.length > 0 ? "failed" : "completed", totalAdded, totalLinked, errors);
-  } catch (err) {
-    errors.push(`Miami Crimes fatal error: ${String(err)}`);
-    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
   }
 
-  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+  return {
+    totalAdded,
+    totalLinked,
+    errors,
+    affectedBuildingIds,
+    timeBudgetExceeded,
+    newCursor: timeBudgetExceeded ? { cursorValue: String(offset), cursorOffset: offset } : undefined,
+  };
 }
 
-async function syncMiamiPermits(supabase: SupabaseClient): Promise<SyncResult> {
-  const lastSync = await getLastSyncDate(supabase, "miami_permits");
-  const logId = await createSyncLog(supabase, "miami_permits");
+async function syncMiamiPermits(supabase: SupabaseClient, startDate: string, syncStartMs: number): Promise<SyncResult> {
   const syncStartTime = new Date().toISOString();
-  const syncStartMs = Date.now();
 
   let totalAdded = 0;
   let totalLinked = 0;
   const errors: string[] = [];
   const affectedBuildingIds = new Set<string>();
+  let timeBudgetExceeded = false;
 
-  try {
-    let offset = 0;
-    let hasMore = true;
-    let pagesFetched = 0;
+  let offset = parseInt(startDate) || 0;
+  let hasMore = true;
+  let pagesFetched = 0;
 
-    while (hasMore) {
-      const url = buildMiamiArcGISUrl("BuildingPermit_gdb", `OBJECTID > 0`, PAGE_SIZE, offset, "OBJECTID ASC");
+  while (hasMore) {
+    const url = buildMiamiArcGISUrl("BuildingPermit_gdb", `OBJECTID > 0`, PAGE_SIZE, offset, "OBJECTID ASC");
 
-      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
-      if (!res.ok) {
-        const errText = await res.text();
-        errors.push(`Miami Permits API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
-        break;
-      }
-
-      const json = await res.json();
-      const features = json.features || [];
-      if (features.length === 0) { hasMore = false; break; }
-
-      const records = features.map((f: { attributes: Record<string, unknown> }) => f.attributes);
-      const rows = records
-        .filter((r: Record<string, unknown>) => r.PROCNUM || r.ID)
-        .map((r: Record<string, unknown>) => {
-          const parsed = parseMiamiAddress((r.ADDRESS as string | undefined) ?? (r.STNDADDR as string | undefined));
-          return {
-            work_permit: `MIA-${r.PROCNUM || r.ID}`,
-            work_type: r.TYPE ? String(r.TYPE) : null,
-            permit_status: r.CAT1 ? String(r.CAT1) : null,
-            issued_date: r.ISSUEDATE ? new Date(Number(r.ISSUEDATE)).toISOString().slice(0, 10) : null,
-            borough: "Miami-Dade",
-            house_no: parsed.house_number,
-            street_name: parsed.street_name,
-            job_description: r.DESC1 ? String(r.DESC1) : null,
-            latitude: null,
-            longitude: null,
-            metro: "miami",
-            imported_at: new Date().toISOString(),
-          };
-        });
-
-      if (rows.length > 0) {
-        totalAdded += await batchUpsert(supabase, "dob_permits", rows, "work_permit", errors, "Miami Permits");
-      }
-
-      pagesFetched++;
-      if (features.length < PAGE_SIZE || pagesFetched >= MAX_PAGES || isTimeBudgetExceeded(syncStartMs)) { hasMore = false; } else { offset += PAGE_SIZE; }
+    const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+    if (!res.ok) {
+      const errText = await res.text();
+      errors.push(`Miami Permits API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
+      break;
     }
 
+    const json = await res.json();
+    const features = json.features || [];
+    if (features.length === 0) { hasMore = false; break; }
+
+    const records = features.map((f: { attributes: Record<string, unknown> }) => f.attributes);
+    const rows = records
+      .filter((r: Record<string, unknown>) => r.PROCNUM || r.ID)
+      .map((r: Record<string, unknown>) => {
+        const parsed = parseMiamiAddress((r.ADDRESS as string | undefined) ?? (r.STNDADDR as string | undefined));
+        return {
+          work_permit: `MIA-${r.PROCNUM || r.ID}`,
+          work_type: r.TYPE ? String(r.TYPE) : null,
+          permit_status: r.CAT1 ? String(r.CAT1) : null,
+          issued_date: r.ISSUEDATE ? new Date(Number(r.ISSUEDATE)).toISOString().slice(0, 10) : null,
+          borough: "Miami-Dade",
+          house_no: parsed.house_number,
+          street_name: parsed.street_name,
+          job_description: r.DESC1 ? String(r.DESC1) : null,
+          latitude: null,
+          longitude: null,
+          metro: "miami",
+          imported_at: new Date().toISOString(),
+        };
+      });
+
+    if (rows.length > 0) {
+      totalAdded += await batchUpsert(supabase, "dob_permits", rows, "work_permit", errors, "Miami Permits");
+    }
+
+    pagesFetched++;
+    if (features.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
+      hasMore = false;
+    } else if (isTimeBudgetExceeded(syncStartMs)) {
+      timeBudgetExceeded = true;
+      hasMore = false;
+    } else {
+      offset += PAGE_SIZE;
+    }
+    await saveCursor(supabase, "miami_permits", { cursorValue: String(offset), cursorOffset: offset });
+  }
+
+  if (!timeBudgetExceeded) {
     try {
       const linkResult = await linkByAddress(supabase, "dob_permits", "id", ["house_no", "street_name"], syncStartTime, errors, "Miami Permits", 500, "miami");
       totalLinked = linkResult.linked;
@@ -3927,70 +3957,77 @@ async function syncMiamiPermits(supabase: SupabaseClient): Promise<SyncResult> {
     } catch (linkErr) {
       errors.push(`Miami Permits address linking error: ${String(linkErr)}`);
     }
-
-    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
-  } catch (err) {
-    errors.push(`Miami Permits fatal error: ${String(err)}`);
-    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
   }
 
-  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+  return {
+    totalAdded,
+    totalLinked,
+    errors,
+    affectedBuildingIds,
+    timeBudgetExceeded,
+    newCursor: timeBudgetExceeded ? { cursorValue: String(offset), cursorOffset: offset } : undefined,
+  };
 }
 
-async function syncMiamiUnsafeStructures(supabase: SupabaseClient): Promise<SyncResult> {
-  const lastSync = await getLastSyncDate(supabase, "miami_unsafe");
-  const logId = await createSyncLog(supabase, "miami_unsafe");
+async function syncMiamiUnsafeStructures(supabase: SupabaseClient, startDate: string, syncStartMs: number): Promise<SyncResult> {
   const syncStartTime = new Date().toISOString();
-  const syncStartMs = Date.now();
 
   let totalAdded = 0;
   let totalLinked = 0;
   const errors: string[] = [];
   const affectedBuildingIds = new Set<string>();
+  let timeBudgetExceeded = false;
 
-  try {
-    let offset = 0;
-    let hasMore = true;
-    let pagesFetched = 0;
+  let offset = parseInt(startDate) || 0;
+  let hasMore = true;
+  let pagesFetched = 0;
 
-    while (hasMore) {
-      const cutoffMs = lastSync ? new Date(lastSync).getTime() : 0;
-      const url = buildMiamiArcGISUrl("Open_Building_Violations", cutoffMs > 0 ? `OPEN_DATE > ${cutoffMs}` : `1=1`, PAGE_SIZE, offset, "OPEN_DATE ASC");
+  while (hasMore) {
+    const url = buildMiamiArcGISUrl("Open_Building_Violations", `1=1`, PAGE_SIZE, offset, "OBJECTID ASC");
 
-      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
-      if (!res.ok) {
-        const errText = await res.text();
-        errors.push(`Miami Unsafe API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
-        break;
-      }
-
-      const json = await res.json();
-      const features = json.features || [];
-      if (features.length === 0) { hasMore = false; break; }
-
-      const records = features.map((f: { attributes: Record<string, unknown> }) => f.attributes);
-      const rows = records
-        .filter((r: Record<string, unknown>) => r.CASE_NUM)
-        .map((r: Record<string, unknown>) => ({
-          case_number: String(r.CASE_NUM),
-          address: r.PROP_ADDR ? String(r.PROP_ADDR) : null,
-          violation_description: r.VIOL_NAME ? String(r.VIOL_NAME) : null,
-          violation_date: r.OPEN_DATE ? new Date(Number(r.OPEN_DATE)).toISOString().slice(0, 10) : null,
-          status: r.CLOSED_DATE ? "CLOSED" : "OPEN",
-          latitude: null,
-          longitude: null,
-          metro: "miami",
-          imported_at: new Date().toISOString(),
-        }));
-
-      if (rows.length > 0) {
-        totalAdded += await batchUpsert(supabase, "miami_unsafe_structures", rows, "case_number", errors, "Miami Unsafe", true);
-      }
-
-      pagesFetched++;
-      if (features.length < PAGE_SIZE || pagesFetched >= MAX_PAGES || isTimeBudgetExceeded(syncStartMs)) { hasMore = false; } else { offset += PAGE_SIZE; }
+    const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+    if (!res.ok) {
+      const errText = await res.text();
+      errors.push(`Miami Unsafe API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
+      break;
     }
 
+    const json = await res.json();
+    const features = json.features || [];
+    if (features.length === 0) { hasMore = false; break; }
+
+    const records = features.map((f: { attributes: Record<string, unknown> }) => f.attributes);
+    const rows = records
+      .filter((r: Record<string, unknown>) => r.CASE_NUM)
+      .map((r: Record<string, unknown>) => ({
+        case_number: String(r.CASE_NUM),
+        address: r.PROP_ADDR ? String(r.PROP_ADDR) : null,
+        violation_description: r.VIOL_NAME ? String(r.VIOL_NAME) : null,
+        violation_date: r.OPEN_DATE ? new Date(Number(r.OPEN_DATE)).toISOString().slice(0, 10) : null,
+        status: r.CLOSED_DATE ? "CLOSED" : "OPEN",
+        latitude: null,
+        longitude: null,
+        metro: "miami",
+        imported_at: new Date().toISOString(),
+      }));
+
+    if (rows.length > 0) {
+      totalAdded += await batchUpsert(supabase, "miami_unsafe_structures", rows, "case_number", errors, "Miami Unsafe", true);
+    }
+
+    pagesFetched++;
+    if (features.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
+      hasMore = false;
+    } else if (isTimeBudgetExceeded(syncStartMs)) {
+      timeBudgetExceeded = true;
+      hasMore = false;
+    } else {
+      offset += PAGE_SIZE;
+    }
+    await saveCursor(supabase, "miami_unsafe", { cursorValue: String(offset), cursorOffset: offset });
+  }
+
+  if (!timeBudgetExceeded) {
     try {
       const linkResult = await linkByAddress(supabase, "miami_unsafe_structures", "id", "address", syncStartTime, errors, "Miami Unsafe", 500, "miami", true, "address");
       totalLinked = linkResult.linked;
@@ -3998,21 +4035,21 @@ async function syncMiamiUnsafeStructures(supabase: SupabaseClient): Promise<Sync
     } catch (linkErr) {
       errors.push(`Miami Unsafe address linking error: ${String(linkErr)}`);
     }
-
-    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
-  } catch (err) {
-    errors.push(`Miami Unsafe fatal error: ${String(err)}`);
-    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
   }
 
-  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+  return {
+    totalAdded,
+    totalLinked,
+    errors,
+    affectedBuildingIds,
+    timeBudgetExceeded,
+    newCursor: timeBudgetExceeded ? { cursorValue: String(offset), cursorOffset: offset } : undefined,
+  };
 }
 
-async function syncMiamiRecertifications(supabase: SupabaseClient): Promise<SyncResult> {
-  const logId = await createSyncLog(supabase, "miami_recerts");
+async function syncMiamiRecertifications(_supabase: SupabaseClient, _startDate: string, _syncStartMs: number): Promise<SyncResult> {
   const errors: string[] = [];
   errors.push("Miami recertifications sync: data source not yet available via ArcGIS API");
-  await finalizeSyncLog(supabase, logId, "completed", 0, 0, errors);
   return { totalAdded: 0, totalLinked: 0, errors, affectedBuildingIds: new Set() };
 }
 
@@ -4355,13 +4392,13 @@ const SOURCES: Record<string, (supabase: SupabaseClient, sinceOverride?: string,
   "chicago-permits": (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "chicago-permits", "chicago_permits", (startDate, syncStartMs) => syncChicagoPermits(supabase, startDate, syncStartMs), cd, sinceOverride),
   "chicago-rlto": (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "chicago-rlto", "chicago_rlto", (startDate, syncStartMs) => syncChicagoRLTO(supabase, startDate, syncStartMs), cd, sinceOverride),
   "chicago-lead": (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "chicago-lead", "chicago_lead", (startDate, syncStartMs) => syncChicagoLead(supabase, startDate, syncStartMs), cd, sinceOverride),
-  // Miami sources
-  "miami-violations": syncMiamiViolations,
-  "miami-311": syncMiami311,
-  "miami-crimes": syncMiamiCrimes,
-  "miami-permits": syncMiamiPermits,
-  "miami-unsafe": syncMiamiUnsafeStructures,
-  "miami-recerts": syncMiamiRecertifications,
+  // Miami sources (wrapped in runWithCursor for resumable sync)
+  "miami-violations": (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "miami-violations", "miami_violations", (startDate, syncStartMs) => syncMiamiViolations(supabase, startDate, syncStartMs), cd, sinceOverride),
+  "miami-311": (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "miami-311", "miami_311", (startDate, syncStartMs) => syncMiami311(supabase, startDate, syncStartMs), cd, sinceOverride),
+  "miami-crimes": (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "miami-crimes", "miami_crimes", (startDate, syncStartMs) => syncMiamiCrimes(supabase, startDate, syncStartMs), cd, sinceOverride),
+  "miami-permits": (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "miami-permits", "miami_permits", (startDate, syncStartMs) => syncMiamiPermits(supabase, startDate, syncStartMs), cd, sinceOverride),
+  "miami-unsafe": (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "miami-unsafe", "miami_unsafe", (startDate, syncStartMs) => syncMiamiUnsafeStructures(supabase, startDate, syncStartMs), cd, sinceOverride),
+  "miami-recerts": (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "miami-recerts", "miami_recerts", (startDate, syncStartMs) => syncMiamiRecertifications(supabase, startDate, syncStartMs), cd, sinceOverride),
   // Houston sources
   "houston-violations": syncHoustonViolations,
   "houston-311": syncHouston311,
