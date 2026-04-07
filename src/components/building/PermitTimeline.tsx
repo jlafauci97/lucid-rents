@@ -7,14 +7,10 @@ import type { DobPermit } from "@/types";
 interface PermitTimelineProps {
   permits: DobPermit[];
   agencyLabel?: string;
+  viewAllHref?: string;
+  limit?: number;
+  totalCount?: number;
 }
-
-const statusColors: Record<string, { bg: string; text: string }> = {
-  "Permit Issued": { bg: "bg-green-50", text: "text-green-700" },
-  "Permit Entire": { bg: "bg-blue-50", text: "text-blue-700" },
-  "Permit Renewed": { bg: "bg-teal-50", text: "text-teal-700" },
-  "Sign-Off": { bg: "bg-gray-50", text: "text-gray-700" },
-};
 
 function formatCost(cost: number | null): string | null {
   if (cost == null || cost === 0) return null;
@@ -23,7 +19,7 @@ function formatCost(cost: number | null): string | null {
   return `$${cost.toLocaleString()}`;
 }
 
-export function PermitTimeline({ permits, agencyLabel = "DOB" }: PermitTimelineProps) {
+export function PermitTimeline({ permits, agencyLabel = "DOB", viewAllHref, limit = 10, totalCount }: PermitTimelineProps) {
   if (permits.length === 0) {
     return (
       <p className="text-sm py-4" style={{ color: T.text2 }}>
@@ -32,21 +28,22 @@ export function PermitTimeline({ permits, agencyLabel = "DOB" }: PermitTimelineP
     );
   }
 
+  const displayed = permits.slice(0, limit);
+  const hasMore = permits.length > limit;
+
   return (
     <div className="space-y-3">
-      {permits.map((p) => {
-        const colors = statusColors[p.permit_status || ""] || { bg: "bg-gray-50", text: "text-gray-700" };
+      {displayed.map((p) => {
         const cost = formatCost(p.estimated_job_costs);
-
         return (
           <div
             key={p.id}
-            className={`rounded-lg border p-4 ${colors.bg}`}
+            className="rounded-lg border p-4 bg-teal-50"
             style={{ borderColor: T.border }}
           >
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-start gap-3">
-                <ClipboardList className={`w-5 h-5 mt-0.5 ${colors.text}`} />
+                <ClipboardList className="w-5 h-5 mt-0.5 text-teal-600" />
                 <div>
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
                     {p.work_type && (
@@ -58,11 +55,6 @@ export function PermitTimeline({ permits, agencyLabel = "DOB" }: PermitTimelineP
                       <Badge variant={p.filing_reason === "Initial" ? "success" : "warning"}>
                         {p.filing_reason}
                       </Badge>
-                    )}
-                    {p.permit_status && (
-                      <span className={`text-xs font-medium ${colors.text}`}>
-                        {p.permit_status}
-                      </span>
                     )}
                   </div>
                   {p.job_description && (
@@ -100,6 +92,18 @@ export function PermitTimeline({ permits, agencyLabel = "DOB" }: PermitTimelineP
           </div>
         );
       })}
+
+      {hasMore && viewAllHref && (
+        <a
+          href={viewAllHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block text-center py-3 px-4 rounded-lg border text-sm font-medium transition-colors hover:bg-gray-50"
+          style={{ color: T.accent, borderColor: T.border }}
+        >
+          View All {totalCount ?? permits.length} Permits
+        </a>
+      )}
     </div>
   );
 }

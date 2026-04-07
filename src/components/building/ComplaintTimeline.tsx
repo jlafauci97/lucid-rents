@@ -1,4 +1,4 @@
-import { MessageSquare, CheckCircle, Clock } from "lucide-react";
+import { MessageSquare } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { formatDate } from "@/lib/utils";
 import { T } from "@/lib/design-tokens";
@@ -6,6 +6,9 @@ import type { Complaint311 } from "@/types";
 
 interface ComplaintTimelineProps {
   complaints: Complaint311[];
+  viewAllHref?: string;
+  limit?: number;
+  totalCount?: number;
 }
 
 const typeColors: Record<string, { bg: string; text: string }> = {
@@ -30,7 +33,7 @@ function getTypeStyle(type: string | null) {
   return { bg: "bg-gray-50", text: "text-gray-700" };
 }
 
-export function ComplaintTimeline({ complaints }: ComplaintTimelineProps) {
+export function ComplaintTimeline({ complaints, viewAllHref, limit = 10, totalCount }: ComplaintTimelineProps) {
   if (complaints.length === 0) {
     return (
       <p className="text-sm py-4" style={{ color: T.text2 }}>
@@ -39,11 +42,13 @@ export function ComplaintTimeline({ complaints }: ComplaintTimelineProps) {
     );
   }
 
+  const displayed = complaints.slice(0, limit);
+  const hasMore = complaints.length > limit;
+
   return (
     <div className="space-y-3">
-      {complaints.map((c) => {
+      {displayed.map((c) => {
         const style = getTypeStyle(c.complaint_type);
-        const isClosed = c.status?.toLowerCase() === "closed";
         return (
           <div
             key={c.id}
@@ -52,30 +57,16 @@ export function ComplaintTimeline({ complaints }: ComplaintTimelineProps) {
           >
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-start gap-3">
-                {isClosed ? (
-                  <CheckCircle className="w-5 h-5 mt-0.5 text-green-600" />
-                ) : (
-                  <MessageSquare className={`w-5 h-5 mt-0.5 ${style.text}`} />
-                )}
+                <MessageSquare className={`w-5 h-5 mt-0.5 ${style.text}`} />
                 <div>
-                  <div className="flex flex-wrap items-center gap-2 mb-1">
-                    {c.complaint_type && (
-                      <Badge variant="default">
-                        {c.complaint_type}
-                      </Badge>
-                    )}
-                    <Badge variant={isClosed ? "success" : "warning"}>
-                      {isClosed ? "Closed" : c.status || "Open"}
+                  {c.complaint_type && (
+                    <Badge variant="default">
+                      {c.complaint_type}
                     </Badge>
-                  </div>
+                  )}
                   {c.descriptor && (
                     <p className="text-sm mt-1" style={{ color: T.text1 }}>
                       {c.descriptor}
-                    </p>
-                  )}
-                  {c.resolution_description && isClosed && (
-                    <p className="text-xs mt-1" style={{ color: T.text2 }}>
-                      Resolution: {c.resolution_description}
                     </p>
                   )}
                   {c.agency && (
@@ -91,17 +82,23 @@ export function ComplaintTimeline({ complaints }: ComplaintTimelineProps) {
                     {formatDate(c.created_date)}
                   </span>
                 )}
-                {c.closed_date && isClosed && (
-                  <span className="text-xs text-green-600 flex items-center gap-1 mt-0.5 justify-end">
-                    <Clock className="w-3 h-3" />
-                    {formatDate(c.closed_date)}
-                  </span>
-                )}
               </div>
             </div>
           </div>
         );
       })}
+
+      {hasMore && viewAllHref && (
+        <a
+          href={viewAllHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block text-center py-3 px-4 rounded-lg border text-sm font-medium transition-colors hover:bg-gray-50"
+          style={{ color: T.accent, borderColor: T.border }}
+        >
+          View All {totalCount ?? complaints.length} Complaints
+        </a>
+      )}
     </div>
   );
 }

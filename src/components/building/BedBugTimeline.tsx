@@ -6,9 +6,12 @@ import type { BedBugReport } from "@/types";
 
 interface BedBugTimelineProps {
   reports: BedBugReport[];
+  viewAllHref?: string;
+  limit?: number;
+  totalCount?: number;
 }
 
-export function BedBugTimeline({ reports }: BedBugTimelineProps) {
+export function BedBugTimeline({ reports, viewAllHref, limit = 10, totalCount }: BedBugTimelineProps) {
   if (reports.length === 0) {
     return (
       <p className="text-sm py-4" style={{ color: T.text2 }}>
@@ -17,9 +20,12 @@ export function BedBugTimeline({ reports }: BedBugTimelineProps) {
     );
   }
 
+  const displayed = reports.slice(0, limit);
+  const hasMore = reports.length > limit;
+
   return (
     <div className="space-y-3">
-      {reports.map((r) => {
+      {displayed.map((r) => {
         const hasInfestation = r.infested_dwelling_unit_count != null && r.infested_dwelling_unit_count > 0;
         return (
           <div
@@ -40,11 +46,6 @@ export function BedBugTimeline({ reports }: BedBugTimelineProps) {
                     {r.eradicated_unit_count != null && r.eradicated_unit_count > 0 && (
                       <Badge variant="success">
                         {r.eradicated_unit_count} eradicated
-                      </Badge>
-                    )}
-                    {r.reinfested_unit_count != null && r.reinfested_unit_count > 0 && (
-                      <Badge variant="warning">
-                        {r.reinfested_unit_count} reinfested
                       </Badge>
                     )}
                   </div>
@@ -71,6 +72,18 @@ export function BedBugTimeline({ reports }: BedBugTimelineProps) {
           </div>
         );
       })}
+
+      {hasMore && viewAllHref && (
+        <a
+          href={viewAllHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block text-center py-3 px-4 rounded-lg border text-sm font-medium transition-colors hover:bg-gray-50"
+          style={{ color: T.accent, borderColor: T.border }}
+        >
+          View All {totalCount ?? reports.length} Reports
+        </a>
+      )}
     </div>
   );
 }

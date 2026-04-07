@@ -1,10 +1,13 @@
-import { AlertTriangle, CheckCircle2 } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { T } from "@/lib/design-tokens";
 import type { LahdViolationSummary } from "@/types";
 
 interface ViolationSummaryTableProps {
   violations: LahdViolationSummary[];
   agencyLabel?: string;
+  viewAllHref?: string;
+  limit?: number;
+  totalCount?: number;
 }
 
 function titleCase(str: string) {
@@ -15,7 +18,7 @@ function titleCase(str: string) {
     .join(" ");
 }
 
-export function ViolationSummaryTable({ violations, agencyLabel = "LAHD" }: ViolationSummaryTableProps) {
+export function ViolationSummaryTable({ violations, agencyLabel = "LAHD", viewAllHref, limit = 10, totalCount }: ViolationSummaryTableProps) {
   if (violations.length === 0) {
     return (
       <p className="text-sm py-4" style={{ color: T.text2 }}>
@@ -25,81 +28,38 @@ export function ViolationSummaryTable({ violations, agencyLabel = "LAHD" }: Viol
   }
 
   const sorted = [...violations].sort((a, b) => b.violations_cited - a.violations_cited);
-  const totalCited = sorted.reduce((sum, v) => sum + v.violations_cited, 0);
-  const totalCleared = sorted.reduce((sum, v) => sum + v.violations_cleared, 0);
-  const totalOpen = totalCited - totalCleared;
-  const overallPct = totalCited > 0 ? Math.round((totalCleared / totalCited) * 100) : 100;
+  const displayed = sorted.slice(0, limit);
+  const hasMore = sorted.length > limit;
 
   return (
-    <div className="space-y-4">
-      {/* Summary header */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="rounded-lg border bg-red-50 p-3 text-center">
-          <p className="text-2xl font-bold text-red-700">{totalCited.toLocaleString()}</p>
-          <p className="text-xs text-red-600">Cited</p>
+    <div className="space-y-2">
+      {displayed.map((v) => (
+        <div
+          key={v.id}
+          className="rounded-lg border px-4 py-3 bg-white flex items-center gap-3"
+          style={{ borderColor: T.border }}
+        >
+          <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />
+          <span className="text-sm font-medium" style={{ color: T.text1 }}>
+            {titleCase(v.violation_type)}
+          </span>
+          <span className="text-xs ml-auto shrink-0" style={{ color: T.text2 }}>
+            {v.violations_cited} cited
+          </span>
         </div>
-        <div className="rounded-lg border bg-emerald-50 p-3 text-center">
-          <p className="text-2xl font-bold text-emerald-700">{totalCleared.toLocaleString()}</p>
-          <p className="text-xs text-emerald-600">Cleared</p>
-        </div>
-        <div className="rounded-lg border bg-amber-50 p-3 text-center">
-          <p className="text-2xl font-bold text-amber-700">{totalOpen.toLocaleString()}</p>
-          <p className="text-xs text-amber-600">Outstanding</p>
-        </div>
-      </div>
+      ))}
 
-      {/* Overall progress */}
-      <div className="flex items-center gap-3">
-        <div className="flex-1 h-2.5 rounded-full bg-red-100 overflow-hidden">
-          <div
-            className="h-full rounded-full bg-emerald-500 transition-all"
-            style={{ width: `${overallPct}%` }}
-          />
-        </div>
-        <span className="text-sm font-medium shrink-0" style={{ color: T.text2 }}>{overallPct}% cleared</span>
-      </div>
-
-      {/* Per-type breakdown */}
-      <div className="space-y-2">
-        {sorted.map((v) => {
-          const pct = v.violations_cited > 0 ? Math.round((v.violations_cleared / v.violations_cited) * 100) : 100;
-          const open = v.violations_cited - v.violations_cleared;
-          const allCleared = open === 0;
-          return (
-            <div
-              key={v.id}
-              className="rounded-lg border px-4 py-3 bg-white"
-              style={{ borderColor: T.border }}
-            >
-              <div className="flex items-center justify-between gap-2 mb-1.5">
-                <div className="flex items-center gap-2 min-w-0">
-                  {allCleared ? (
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                  ) : (
-                    <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />
-                  )}
-                  <span className="text-sm font-medium truncate" style={{ color: T.text1 }}>
-                    {titleCase(v.violation_type)}
-                  </span>
-                </div>
-                <div className="flex items-center gap-3 text-xs shrink-0" style={{ color: T.text2 }}>
-                  <span>{v.violations_cited} cited</span>
-                  <span>{v.violations_cleared} cleared</span>
-                  {open > 0 && (
-                    <span className="text-red-600 font-medium">{open} open</span>
-                  )}
-                </div>
-              </div>
-              <div className="h-1.5 rounded-full bg-red-100 overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-emerald-500 transition-all"
-                  style={{ width: `${pct}%` }}
-                />
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      {hasMore && viewAllHref && (
+        <a
+          href={viewAllHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block text-center py-3 px-4 rounded-lg border text-sm font-medium transition-colors hover:bg-gray-50 mt-3"
+          style={{ color: T.accent, borderColor: T.border }}
+        >
+          View All {totalCount ?? sorted.length} Violation Types
+        </a>
+      )}
     </div>
   );
 }

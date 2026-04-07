@@ -1,4 +1,4 @@
-import { HardHat, CheckCircle } from "lucide-react";
+import { HardHat } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { formatDate } from "@/lib/utils";
 import { T } from "@/lib/design-tokens";
@@ -7,30 +7,12 @@ import type { DobViolation } from "@/types";
 interface DobViolationTimelineProps {
   violations: DobViolation[];
   agencyLabel?: string;
+  viewAllHref?: string;
+  limit?: number;
+  totalCount?: number;
 }
 
-const categoryColors: Record<string, { bg: string; text: string }> = {
-  "V*-DOB VIOLATION - ACTIVE": { bg: "bg-red-50", text: "text-red-700" },
-  "V-DOB VIOLATION - DISMISSED": { bg: "bg-green-50", text: "text-green-700" },
-  "V-DOB VIOLATION - RESOLVE": { bg: "bg-green-50", text: "text-green-700" },
-};
-
-function getCategoryStyle(category: string | null) {
-  if (!category) return { bg: "bg-gray-50", text: "text-gray-700" };
-  const upper = category.toUpperCase();
-  for (const [key, style] of Object.entries(categoryColors)) {
-    if (upper.includes(key)) return style;
-  }
-  if (upper.includes("ACTIVE") || upper.includes("FAIL")) {
-    return { bg: "bg-red-50", text: "text-red-700" };
-  }
-  if (upper.includes("DISMISS") || upper.includes("RESOLVE") || upper.includes("CLOSED")) {
-    return { bg: "bg-green-50", text: "text-green-700" };
-  }
-  return { bg: "bg-orange-50", text: "text-orange-700" };
-}
-
-export function DobViolationTimeline({ violations, agencyLabel = "DOB" }: DobViolationTimelineProps) {
+export function DobViolationTimeline({ violations, agencyLabel = "DOB", viewAllHref, limit = 10, totalCount }: DobViolationTimelineProps) {
   if (violations.length === 0) {
     return (
       <p className="text-sm py-4" style={{ color: T.text2 }}>
@@ -39,68 +21,60 @@ export function DobViolationTimeline({ violations, agencyLabel = "DOB" }: DobVio
     );
   }
 
+  const displayed = violations.slice(0, limit);
+  const hasMore = violations.length > limit;
+
   return (
     <div className="space-y-3">
-      {violations.map((v) => {
-        const style = getCategoryStyle(v.violation_category);
-        const isResolved = v.disposition_date != null;
-        return (
-          <div
-            key={v.id}
-            className={`rounded-lg border p-4 ${style.bg}`}
-            style={{ borderColor: T.border }}
-          >
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex items-start gap-3">
-                {isResolved ? (
-                  <CheckCircle className="w-5 h-5 mt-0.5 text-green-600" />
-                ) : (
-                  <HardHat className={`w-5 h-5 mt-0.5 ${style.text}`} />
+      {displayed.map((v) => (
+        <div
+          key={v.id}
+          className="rounded-lg border p-4 bg-blue-50"
+          style={{ borderColor: T.border }}
+        >
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-start gap-3">
+              <HardHat className="w-5 h-5 mt-0.5 text-blue-600" />
+              <div>
+                {v.violation_type && (
+                  <Badge variant="default">
+                    {v.violation_type}
+                  </Badge>
                 )}
-                <div>
-                  <div className="flex flex-wrap items-center gap-2 mb-1">
-                    {v.violation_type && (
-                      <Badge variant="default">
-                        {v.violation_type}
-                      </Badge>
-                    )}
-                    <Badge variant={isResolved ? "success" : "warning"}>
-                      {isResolved ? "Resolved" : "Open"}
-                    </Badge>
-                  </div>
-                  {v.description && (
-                    <p className="text-sm mt-1" style={{ color: T.text1 }}>
-                      {v.description}
-                    </p>
-                  )}
-                  {v.disposition_comments && isResolved && (
-                    <p className="text-xs mt-1" style={{ color: T.text2 }}>
-                      Disposition: {v.disposition_comments}
-                    </p>
-                  )}
-                  {v.penalty_amount != null && v.penalty_amount > 0 && (
-                    <p className="text-xs mt-1" style={{ color: T.text2 }}>
-                      Penalty: ${v.penalty_amount.toLocaleString()}
-                    </p>
-                  )}
-                </div>
-              </div>
-              <div className="text-right shrink-0">
-                {v.issue_date && (
-                  <span className="text-xs block" style={{ color: T.text2 }}>
-                    {formatDate(v.issue_date)}
-                  </span>
+                {v.description && (
+                  <p className="text-sm mt-1" style={{ color: T.text1 }}>
+                    {v.description}
+                  </p>
                 )}
-                {v.disposition_date && isResolved && (
-                  <span className="text-xs text-green-600 block mt-0.5">
-                    Resolved: {formatDate(v.disposition_date)}
-                  </span>
+                {v.penalty_amount != null && v.penalty_amount > 0 && (
+                  <p className="text-xs mt-1" style={{ color: T.text2 }}>
+                    Penalty: ${v.penalty_amount.toLocaleString()}
+                  </p>
                 )}
               </div>
             </div>
+            <div className="text-right shrink-0">
+              {v.issue_date && (
+                <span className="text-xs block" style={{ color: T.text2 }}>
+                  {formatDate(v.issue_date)}
+                </span>
+              )}
+            </div>
           </div>
-        );
-      })}
+        </div>
+      ))}
+
+      {hasMore && viewAllHref && (
+        <a
+          href={viewAllHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block text-center py-3 px-4 rounded-lg border text-sm font-medium transition-colors hover:bg-gray-50"
+          style={{ color: T.accent, borderColor: T.border }}
+        >
+          View All {totalCount ?? violations.length} Violations
+        </a>
+      )}
     </div>
   );
 }

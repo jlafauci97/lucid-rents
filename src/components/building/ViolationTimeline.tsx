@@ -1,4 +1,4 @@
-import { AlertTriangle, CheckCircle } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { formatDate } from "@/lib/utils";
 import { T } from "@/lib/design-tokens";
@@ -7,6 +7,9 @@ import type { HpdViolation } from "@/types";
 interface ViolationTimelineProps {
   violations: HpdViolation[];
   agencyLabel?: string;
+  viewAllHref?: string;
+  limit?: number;
+  totalCount?: number;
 }
 
 const classColors: Record<string, { bg: string; text: string; label: string }> = {
@@ -16,7 +19,7 @@ const classColors: Record<string, { bg: string; text: string; label: string }> =
   I: { bg: "bg-blue-50", text: "text-blue-700", label: "Info" },
 };
 
-export function ViolationTimeline({ violations, agencyLabel = "HPD" }: ViolationTimelineProps) {
+export function ViolationTimeline({ violations, agencyLabel = "HPD", viewAllHref, limit = 10, totalCount }: ViolationTimelineProps) {
   if (violations.length === 0) {
     return (
       <p className="text-sm py-4" style={{ color: T.text2 }}>
@@ -25,11 +28,13 @@ export function ViolationTimeline({ violations, agencyLabel = "HPD" }: Violation
     );
   }
 
+  const displayed = violations.slice(0, limit);
+  const hasMore = violations.length > limit;
+
   return (
     <div className="space-y-3">
-      {violations.map((v) => {
+      {displayed.map((v) => {
         const cls = classColors[v.class] || classColors.A;
-        const isOpen = v.status === "Open";
         return (
           <div
             key={v.id}
@@ -38,28 +43,19 @@ export function ViolationTimeline({ violations, agencyLabel = "HPD" }: Violation
           >
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-start gap-3">
-                {isOpen ? (
-                  <AlertTriangle className={`w-5 h-5 mt-0.5 ${cls.text}`} />
-                ) : (
-                  <CheckCircle className="w-5 h-5 mt-0.5 text-green-600" />
-                )}
+                <AlertTriangle className={`w-5 h-5 mt-0.5 ${cls.text}`} />
                 <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <Badge
-                      variant={
-                        v.class === "C"
-                          ? "danger"
-                          : v.class === "B"
-                          ? "warning"
-                          : "default"
-                      }
-                    >
-                      Class {v.class} - {cls.label}
-                    </Badge>
-                    <Badge variant={isOpen ? "danger" : "success"}>
-                      {v.status}
-                    </Badge>
-                  </div>
+                  <Badge
+                    variant={
+                      v.class === "C"
+                        ? "danger"
+                        : v.class === "B"
+                        ? "warning"
+                        : "default"
+                    }
+                  >
+                    Class {v.class} - {cls.label}
+                  </Badge>
                   {v.nov_description && (
                     <p className="text-sm mt-1" style={{ color: T.text1 }}>
                       {v.nov_description}
@@ -81,6 +77,18 @@ export function ViolationTimeline({ violations, agencyLabel = "HPD" }: Violation
           </div>
         );
       })}
+
+      {hasMore && viewAllHref && (
+        <a
+          href={viewAllHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block text-center py-3 px-4 rounded-lg border text-sm font-medium transition-colors hover:bg-gray-50"
+          style={{ color: T.accent, borderColor: T.border }}
+        >
+          View All {totalCount ?? violations.length} Violations
+        </a>
+      )}
     </div>
   );
 }

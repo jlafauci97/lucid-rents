@@ -27,6 +27,8 @@ interface IssuesTabsProps {
   permits: DobPermit[];
   lahdViolationSummary?: LahdViolationSummary[];
   city?: City;
+  buildingHref?: string;
+  totalCounts?: Partial<Record<TabKey, number>>;
 }
 
 // Tabs available per city
@@ -44,7 +46,7 @@ function getTabs(city: City) {
     violations: { key: "violations", label: `${agencies.housing} Violations`, icon: AlertTriangle, activeBg: "bg-red-50 ring-1 ring-[#EF4444]", activeText: "text-[#EF4444]" },
     complaints: { key: "complaints", label: "311 Complaints", icon: MessageSquare, activeBg: "bg-amber-50 ring-1 ring-[#F59E0B]", activeText: "text-[#F59E0B]" },
     litigations: { key: "litigations", label: `${agencies.housing} Litigations`, icon: Scale, activeBg: "bg-violet-50 ring-1 ring-[#8B5CF6]", activeText: "text-[#8B5CF6]" },
-    dob: { key: "dob", label: `${agencies.building} Violations`, icon: HardHat, activeBg: "bg-blue-50 ring-1 ring-[#3B82F6]", activeText: "text-[#3B82F6]" },
+    dob: { key: "dob", label: `${agencies.building} Violations`, icon: HardHat, activeBg: "bg-blue-50 ring-1 ring-[#3B82F6]", activeText: "text-[#6366F1]" },
     bedbugs: { key: "bedbugs", label: "Bedbugs", icon: Bug, activeBg: "bg-purple-50 ring-1 ring-[#9333EA]", activeText: "text-[#9333EA]" },
     evictions: { key: "evictions", label: "Evictions", icon: DoorOpen, activeBg: "bg-pink-50 ring-1 ring-[#EC4899]", activeText: "text-[#EC4899]" },
     permits: { key: "permits", label: city === "los-angeles" ? "LADBS Permits" : city === "chicago" ? "CDBS Permits" : "Permits", icon: ClipboardList, activeBg: "bg-teal-50 ring-1 ring-[#0D9488]", activeText: "text-[#0D9488]" },
@@ -53,19 +55,21 @@ function getTabs(city: City) {
   return enabledKeys.map(k => allTabs[k]);
 }
 
-export function IssuesTabs({ violations, complaints, litigations, dobViolations, bedbugs, evictions, permits, lahdViolationSummary = [], city = DEFAULT_CITY }: IssuesTabsProps) {
+export function IssuesTabs({ violations, complaints, litigations, dobViolations, bedbugs, evictions, permits, lahdViolationSummary = [], city = DEFAULT_CITY, buildingHref, totalCounts = {} }: IssuesTabsProps) {
   const enabledTabs = CITY_TABS[city] || CITY_TABS.nyc;
   const [activeTab, setActiveTab] = useState<TabKey>(enabledTabs[0]);
 
   const counts: Record<TabKey, number> = {
-    violations: city === "los-angeles" ? lahdViolationSummary.length : violations.length,
-    complaints: complaints.length,
-    litigations: litigations.length,
-    dob: dobViolations.length,
-    bedbugs: bedbugs.length,
-    evictions: evictions.length,
-    permits: permits.length,
+    violations: totalCounts.violations ?? (city === "los-angeles" ? lahdViolationSummary.length : violations.length),
+    complaints: totalCounts.complaints ?? complaints.length,
+    litigations: totalCounts.litigations ?? litigations.length,
+    dob: totalCounts.dob ?? dobViolations.length,
+    bedbugs: totalCounts.bedbugs ?? bedbugs.length,
+    evictions: totalCounts.evictions ?? evictions.length,
+    permits: totalCounts.permits ?? permits.length,
   };
+
+  const issuesHref = (type: string) => buildingHref ? `${buildingHref}/violations?type=${type}` : undefined;
 
   return (
     <section>
@@ -99,15 +103,15 @@ export function IssuesTabs({ violations, complaints, litigations, dobViolations,
           <>
             {activeTab === "violations" && (
               city === "los-angeles"
-                ? <ViolationSummaryTable violations={lahdViolationSummary} agencyLabel={agencies.housing} />
-                : <ViolationTimeline violations={violations} agencyLabel={agencies.housing} />
+                ? <ViolationSummaryTable violations={lahdViolationSummary} agencyLabel={agencies.housing} viewAllHref={issuesHref("violations")} totalCount={counts.violations} />
+                : <ViolationTimeline violations={violations} agencyLabel={agencies.housing} viewAllHref={issuesHref("violations")} totalCount={counts.violations} />
             )}
-            {activeTab === "complaints" && <ComplaintTimeline complaints={complaints} />}
-            {activeTab === "litigations" && <LitigationTimeline litigations={litigations} agencyLabel={agencies.housing} />}
-            {activeTab === "dob" && <DobViolationTimeline violations={dobViolations} agencyLabel={agencies.building} />}
-            {activeTab === "bedbugs" && <BedBugTimeline reports={bedbugs} />}
-            {activeTab === "evictions" && <EvictionTimeline evictions={evictions} />}
-            {activeTab === "permits" && <PermitTimeline permits={permits} agencyLabel={agencies.building} />}
+            {activeTab === "complaints" && <ComplaintTimeline complaints={complaints} viewAllHref={issuesHref("complaints")} totalCount={counts.complaints} />}
+            {activeTab === "litigations" && <LitigationTimeline litigations={litigations} agencyLabel={agencies.housing} viewAllHref={issuesHref("litigations")} totalCount={counts.litigations} />}
+            {activeTab === "dob" && <DobViolationTimeline violations={dobViolations} agencyLabel={agencies.building} viewAllHref={issuesHref("dob")} totalCount={counts.dob} />}
+            {activeTab === "bedbugs" && <BedBugTimeline reports={bedbugs} viewAllHref={issuesHref("bedbugs")} totalCount={counts.bedbugs} />}
+            {activeTab === "evictions" && <EvictionTimeline evictions={evictions} viewAllHref={issuesHref("evictions")} totalCount={counts.evictions} />}
+            {activeTab === "permits" && <PermitTimeline permits={permits} agencyLabel={agencies.building} viewAllHref={issuesHref("permits")} totalCount={counts.permits} />}
           </>
         );
       })()}

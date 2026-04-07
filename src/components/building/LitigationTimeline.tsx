@@ -1,4 +1,4 @@
-import { Scale, CheckCircle } from "lucide-react";
+import { Scale } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { formatDate } from "@/lib/utils";
 import { T } from "@/lib/design-tokens";
@@ -7,24 +7,12 @@ import type { HpdLitigation } from "@/types";
 interface LitigationTimelineProps {
   litigations: HpdLitigation[];
   agencyLabel?: string;
+  viewAllHref?: string;
+  limit?: number;
+  totalCount?: number;
 }
 
-const statusColors: Record<string, { bg: string; text: string }> = {
-  ACTIVE: { bg: "bg-red-50", text: "text-red-700" },
-  CLOSED: { bg: "bg-green-50", text: "text-green-700" },
-  PENDING: { bg: "bg-amber-50", text: "text-amber-700" },
-};
-
-function getStatusStyle(status: string | null) {
-  if (!status) return { bg: "bg-gray-50", text: "text-gray-700" };
-  const upper = status.toUpperCase();
-  for (const [key, style] of Object.entries(statusColors)) {
-    if (upper.includes(key)) return style;
-  }
-  return { bg: "bg-gray-50", text: "text-gray-700" };
-}
-
-export function LitigationTimeline({ litigations, agencyLabel = "HPD" }: LitigationTimelineProps) {
+export function LitigationTimeline({ litigations, agencyLabel = "HPD", viewAllHref, limit = 10, totalCount }: LitigationTimelineProps) {
   if (litigations.length === 0) {
     return (
       <p className="text-sm py-4" style={{ color: T.text2 }}>
@@ -33,68 +21,65 @@ export function LitigationTimeline({ litigations, agencyLabel = "HPD" }: Litigat
     );
   }
 
+  const displayed = litigations.slice(0, limit);
+  const hasMore = litigations.length > limit;
+
   return (
     <div className="space-y-3">
-      {litigations.map((lit) => {
-        const style = getStatusStyle(lit.case_status);
-        const isClosed = lit.case_status?.toUpperCase().includes("CLOSED");
-        return (
-          <div
-            key={lit.id}
-            className={`rounded-lg border p-4 ${style.bg}`}
-            style={{ borderColor: T.border }}
-          >
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex items-start gap-3">
-                {isClosed ? (
-                  <CheckCircle className="w-5 h-5 mt-0.5 text-green-600" />
-                ) : (
-                  <Scale className={`w-5 h-5 mt-0.5 ${style.text}`} />
+      {displayed.map((lit) => (
+        <div
+          key={lit.id}
+          className="rounded-lg border p-4 bg-violet-50"
+          style={{ borderColor: T.border }}
+        >
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-start gap-3">
+              <Scale className="w-5 h-5 mt-0.5 text-violet-600" />
+              <div>
+                {lit.case_type && (
+                  <Badge variant="default">
+                    {lit.case_type}
+                  </Badge>
                 )}
-                <div>
-                  <div className="flex flex-wrap items-center gap-2 mb-1">
-                    {lit.case_type && (
-                      <Badge variant="default">
-                        {lit.case_type}
-                      </Badge>
-                    )}
-                    <Badge variant={isClosed ? "success" : "danger"}>
-                      {lit.case_status || "Unknown"}
-                    </Badge>
-                  </div>
-                  {lit.respondent && (
-                    <p className="text-sm mt-1" style={{ color: T.text1 }}>
-                      Respondent: {lit.respondent}
-                    </p>
-                  )}
-                  {lit.case_judgment && (
-                    <p className="text-xs mt-1" style={{ color: T.text2 }}>
-                      Judgment: {lit.case_judgment}
-                    </p>
-                  )}
-                  {lit.penalty && (
-                    <p className="text-xs mt-1" style={{ color: T.text2 }}>
-                      Penalty: {lit.penalty}
-                    </p>
-                  )}
-                </div>
-              </div>
-              <div className="text-right shrink-0">
-                {lit.case_open_date && (
-                  <span className="text-xs block" style={{ color: T.text2 }}>
-                    Filed: {formatDate(lit.case_open_date)}
-                  </span>
+                {lit.respondent && (
+                  <p className="text-sm mt-1" style={{ color: T.text1 }}>
+                    Respondent: {lit.respondent}
+                  </p>
                 )}
-                {lit.case_close_date && isClosed && (
-                  <span className="text-xs text-green-600 block mt-0.5">
-                    Closed: {formatDate(lit.case_close_date)}
-                  </span>
+                {lit.case_judgment && (
+                  <p className="text-xs mt-1" style={{ color: T.text2 }}>
+                    Judgment: {lit.case_judgment}
+                  </p>
+                )}
+                {lit.penalty && (
+                  <p className="text-xs mt-1" style={{ color: T.text2 }}>
+                    Penalty: {lit.penalty}
+                  </p>
                 )}
               </div>
             </div>
+            <div className="text-right shrink-0">
+              {lit.case_open_date && (
+                <span className="text-xs block" style={{ color: T.text2 }}>
+                  {formatDate(lit.case_open_date)}
+                </span>
+              )}
+            </div>
           </div>
-        );
-      })}
+        </div>
+      ))}
+
+      {hasMore && viewAllHref && (
+        <a
+          href={viewAllHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block text-center py-3 px-4 rounded-lg border text-sm font-medium transition-colors hover:bg-gray-50"
+          style={{ color: T.accent, borderColor: T.border }}
+        >
+          View All {totalCount ?? litigations.length} Litigations
+        </a>
+      )}
     </div>
   );
 }

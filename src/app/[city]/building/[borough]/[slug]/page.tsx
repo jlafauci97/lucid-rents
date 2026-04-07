@@ -409,7 +409,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
             </Suspense>
 
             <Suspense fallback={<SectionSkeleton h="h-64" />}>
-              <DeferredIssuesSection buildingId={buildingId} city={city} />
+              <DeferredIssuesSection buildingId={buildingId} city={city} buildingHref={buildingUrl(building, city)} />
             </Suspense>
 
             <Suspense fallback={<SectionSkeleton h="h-48" />}>

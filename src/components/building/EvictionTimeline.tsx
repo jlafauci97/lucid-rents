@@ -6,9 +6,12 @@ import type { Eviction } from "@/types";
 
 interface EvictionTimelineProps {
   evictions: Eviction[];
+  viewAllHref?: string;
+  limit?: number;
+  totalCount?: number;
 }
 
-export function EvictionTimeline({ evictions }: EvictionTimelineProps) {
+export function EvictionTimeline({ evictions, viewAllHref, limit = 10, totalCount }: EvictionTimelineProps) {
   if (evictions.length === 0) {
     return (
       <p className="text-sm py-4" style={{ color: T.text2 }}>
@@ -17,9 +20,12 @@ export function EvictionTimeline({ evictions }: EvictionTimelineProps) {
     );
   }
 
+  const displayed = evictions.slice(0, limit);
+  const hasMore = evictions.length > limit;
+
   return (
     <div className="space-y-3">
-      {evictions.map((e) => (
+      {displayed.map((e) => (
         <div
           key={e.id}
           className="rounded-lg border p-4 bg-pink-50"
@@ -46,11 +52,6 @@ export function EvictionTimeline({ evictions }: EvictionTimelineProps) {
                     Unit: {e.eviction_apt_num}
                   </p>
                 )}
-                {e.marshal_first_name && e.marshal_last_name && (
-                  <p className="text-xs mt-1" style={{ color: T.text2 }}>
-                    Marshal: {e.marshal_first_name} {e.marshal_last_name}
-                  </p>
-                )}
                 {e.court_index_number && (
                   <p className="text-xs mt-1" style={{ color: T.text2 }}>
                     Court Index: {e.court_index_number}
@@ -68,6 +69,18 @@ export function EvictionTimeline({ evictions }: EvictionTimelineProps) {
           </div>
         </div>
       ))}
+
+      {hasMore && viewAllHref && (
+        <a
+          href={viewAllHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block text-center py-3 px-4 rounded-lg border text-sm font-medium transition-colors hover:bg-gray-50"
+          style={{ color: T.accent, borderColor: T.border }}
+        >
+          View All {totalCount ?? evictions.length} Evictions
+        </a>
+      )}
     </div>
   );
 }
