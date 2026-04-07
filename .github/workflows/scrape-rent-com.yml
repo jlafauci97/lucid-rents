@@ -58,6 +58,7 @@ jobs:
           scrapling install
 
       - name: Scrape Rent.com
+        continue-on-error: true
         if: steps.check.outputs.skip != 'true' && (github.event.inputs.source == 'all' || github.event.inputs.source == 'rent_com' || github.event_name == 'schedule')
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
@@ -67,6 +68,7 @@ jobs:
           python scripts/scrape-rent-com.py --metro=${{ matrix.metro }} --pages=$PAGES
 
       - name: Scrape Zillow
+        continue-on-error: true
         if: steps.check.outputs.skip != 'true' && (github.event.inputs.source == 'all' || github.event.inputs.source == 'zillow' || github.event_name == 'schedule')
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
@@ -76,6 +78,7 @@ jobs:
           python scripts/scrape-zillow.py --metro=${{ matrix.metro }} --pages=$PAGES
 
       - name: Scrape StreetEasy (NYC only)
+        continue-on-error: true
         if: steps.check.outputs.skip != 'true' && matrix.metro == 'nyc' && (github.event.inputs.source == 'all' || github.event.inputs.source == 'streeteasy' || github.event_name == 'schedule')
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
@@ -85,6 +88,7 @@ jobs:
           python scripts/scrape-streeteasy.py --pages=$PAGES
 
       - name: Scrape Compass
+        continue-on-error: true
         if: steps.check.outputs.skip != 'true' && (github.event.inputs.source == 'all' || github.event.inputs.source == 'compass' || github.event_name == 'schedule')
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
@@ -94,6 +98,7 @@ jobs:
           python scripts/scrape-compass.py --metro=${{ matrix.metro }} --pages=$PAGES
 
       - name: Scrape Realtor.com
+        continue-on-error: true
         if: steps.check.outputs.skip != 'true' && (github.event.inputs.source == 'all' || github.event.inputs.source == 'realtor' || github.event_name == 'schedule')
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
@@ -103,6 +108,7 @@ jobs:
           python scripts/scrape-realtor-backfill.py --metro=${{ matrix.metro }} --limit=500 --threads=2
 
       - name: Scrape Apartments.com
+        continue-on-error: true
         if: steps.check.outputs.skip != 'true' && (github.event.inputs.source == 'all' || github.event.inputs.source == 'apartments_com' || github.event_name == 'schedule')
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
