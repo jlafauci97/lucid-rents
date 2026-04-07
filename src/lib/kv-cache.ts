@@ -1,0 +1,83 @@
+import { Redis } from "@upstash/redis";
+
+/**
+ * Edge-compatible KV cache using existing Upstash Redis connection.
+ * Falls back gracefully when Redis is unavailable — cache misses just hit Supabase.
+ */
+
+let redis: Redis | null = null;
+
+function getRedis(): Redis | null {
+  if (redis) return redis;
+  if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
+    return null;
+  }
+  redis = new Redis({
+    url: process.env.UPSTASH_REDIS_REST_URL,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN,
+  });
+  return redis;
+}
+
+/**
+ * Get a cached value, or compute and cache it.
+ * @param key - Cache key (e.g., "trending:nyc")
+ * @param ttlSeconds - Time-to-live in seconds
+ * @param compute - Async function to compute the value on cache miss
+ */
+export async function cached<T>(
+  key: string,
+  ttlSeconds: number,
+  compute: () => Promise<T>
+): Promise<T> {
+  const r = getRedis();
+  if (!r) return compute();
+
+  try {
+    const cached = await r.get<T>(key);
+    if (cached !== null && cached !== undefined) {
+      return cached;
+    }
+  } catch {
+    // Redis down — fall through to compute
+  }
+
+  const value = await compute();
+
+  try {
+    await r.set(key, JSON.stringify(value), { ex: ttlSeconds });
+  } catch {
+    // Best-effort cache write
+  }
+
+  return value;
+}
+
+/**
+ * Invalidate a cache key.
+ */
+export async function invalidate(key: string): Promise<void> {
+  const r = getRedis();
+  if (!r) return;
+  try {
+    await r.del(key);
+  } catch {
+    // Best-effort
+  }
+}
+
+/**
+ * Invalidate all keys matching a pattern (e.g., "trending:*").
+ */
+export async function invalidatePattern(pattern: string): Promise<void> {
+  const r = getRedis();
+  if (!r) return;
+  try {
+    const keys = await r.keys(pattern);
+    if (keys.length > 0) {
+      await r.del(...keys);
+    }
+  } catch {
+    // Best-effort
+  }
+}

@@ -3,6 +3,7 @@ import { normalizeAddressQuery } from "@/lib/address-normalization";
 import { createClient } from "@/lib/supabase/server";
 import { searchSchema } from "@/lib/validators";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { cached } from "@/lib/kv-cache";
 import { NextRequest, NextResponse } from "next/server";
 
 
@@ -33,41 +34,52 @@ export async function GET(req: NextRequest) {
   // Use ranked search function for text queries to get proper relevance ordering
   if (q) {
     const { abbreviated } = normalizeAddressQuery(q);
-    // Address queries (start with digit) use fast btree index path;
-    // name/owner queries fall back to GIN full-text search
     const isAddressQuery = /^\d/.test(abbreviated.trim());
 
-    const { data, error } = isAddressQuery
-      ? await supabase.rpc("search_buildings_fast", {
-          search_query: abbreviated,
-          city_filter: cityParam || null,
-          borough_filter: borough || null,
-          zip_filter: zip || null,
-          sort_by: sort || "relevance",
-          page_offset: offset,
-          page_limit: limit,
-        })
-      : await supabase.rpc("search_buildings_ranked", {
-          search_query: abbreviated,
-          city_filter: cityParam || null,
-          borough_filter: borough || null,
-          zip_filter: zip || null,
-          sort_by: sort || "relevance",
-          page_offset: offset,
-          page_limit: limit,
-        });
+    // Cache autocomplete queries (limit=5) in Redis for 5 minutes
+    const isAutocomplete = limit <= 5;
+    const cacheKey = isAutocomplete ? `search:${cityParam || "all"}:${abbreviated}:${borough || ""}:${zip || ""}` : null;
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    const result = await cached(
+      cacheKey || `nocache:${Date.now()}`,
+      isAutocomplete ? 300 : 0, // 5 min TTL for autocomplete, skip cache for full results
+      async () => {
+        const { data, error } = isAddressQuery
+          ? await supabase.rpc("search_buildings_fast", {
+              search_query: abbreviated,
+              city_filter: cityParam || null,
+              borough_filter: borough || null,
+              zip_filter: zip || null,
+              sort_by: sort || "relevance",
+              page_offset: offset,
+              page_limit: limit,
+            })
+          : await supabase.rpc("search_buildings_ranked", {
+              search_query: abbreviated,
+              city_filter: cityParam || null,
+              borough_filter: borough || null,
+              zip_filter: zip || null,
+              sort_by: sort || "relevance",
+              page_offset: offset,
+              page_limit: limit,
+            });
+
+        if (error) return { error: error.message };
+
+        const buildings = (data || []).map((row: Record<string, unknown>) => {
+          const { total_count, ...building } = row;
+          return building;
+        });
+        const total = (data?.[0] as Record<string, unknown>)?.total_count ?? 0;
+        return { buildings, total };
+      }
+    );
+
+    if ("error" in result) {
+      return NextResponse.json({ error: result.error }, { status: 500 });
     }
 
-    const buildings = (data || []).map((row: Record<string, unknown>) => {
-      const { total_count, ...building } = row;
-      return building;
-    });
-    const total = data?.[0]?.total_count ?? 0;
-
-    return NextResponse.json({ buildings, total, page }, {
+    return NextResponse.json({ ...result, page }, {
       headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" },
     });
   }
