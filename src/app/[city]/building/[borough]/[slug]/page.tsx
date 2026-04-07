@@ -252,20 +252,33 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
       : Promise.resolve([] as { month: string; beds: number; median_rent: number }[]),
   ]);
 
-  // Top violation class / complaint type for header preview cards
-  const VIOLATION_CLASS_LABELS: Record<string, string> = {
-    A: "Non-hazardous", B: "Hazardous", C: "Immediately hazardous", I: "Info",
+  // Top violation category / complaint type for header preview cards
+  const categorizeViolation = (desc: string): string => {
+    const d = desc.toUpperCase();
+    if (/MICE|ROACH|INFESTATION|PEST|BED\s?BUG/.test(d)) return "Pest Infestation";
+    if (/PAINT|PLASTER/.test(d)) return "Paint/Plaster";
+    if (/LEAK|WATER\s+(LEAK|SUPPLY)/.test(d)) return "Water Leak";
+    if (/WINDOW|GUARD/.test(d)) return "Window/Guard";
+    if (/SMOKE|CARBON|DETECTOR/.test(d)) return "Smoke/CO Detector";
+    if (/DOOR|LOCK/.test(d)) return "Door/Lock";
+    if (/FLOOR|TILE/.test(d)) return "Flooring";
+    if (/HEAT|HOT WATER|BOILER/.test(d)) return "Heat/Hot Water";
+    if (/LEAD/.test(d)) return "Lead Paint";
+    if (/ELECTRIC|OUTLET|WIRING/.test(d)) return "Electrical";
+    if (/ROOF|CEILING/.test(d)) return "Roof/Ceiling";
+    if (/MOLD|MILDEW/.test(d)) return "Mold/Mildew";
+    if (/ELEVATOR/.test(d)) return "Elevator";
+    if (/FIRE\s?ESCAPE|STAIR/.test(d)) return "Fire Escape/Stairs";
+    return "Other";
   };
   const [recentViolations, recentComplaints] = await Promise.all([
-    safe(supabase.from("hpd_violations").select("class").eq("building_id", buildingId).not("class", "is", null).order("inspection_date", { ascending: false }).limit(100), [] as { class: string }[]),
+    safe(supabase.from("hpd_violations").select("nov_description").eq("building_id", buildingId).not("nov_description", "is", null).order("inspection_date", { ascending: false }).limit(100), [] as { nov_description: string }[]),
     safe(supabase.from("complaints_311").select("complaint_type").eq("building_id", buildingId).not("complaint_type", "is", null).order("created_date", { ascending: false }).limit(100), [] as { complaint_type: string }[]),
   ]);
   const topViolationType = (() => {
     const c: Record<string, number> = {};
-    for (const v of recentViolations) c[v.class] = (c[v.class] || 0) + 1;
-    const top = Object.entries(c).sort((a, b) => b[1] - a[1])[0];
-    if (!top) return undefined;
-    return `Class ${top[0]} (${VIOLATION_CLASS_LABELS[top[0]] || top[0]})`;
+    for (const v of recentViolations) { const cat = categorizeViolation(v.nov_description); if (cat !== "Other") c[cat] = (c[cat] || 0) + 1; }
+    return Object.entries(c).sort((a, b) => b[1] - a[1])[0]?.[0];
   })();
   const topComplaintType = (() => {
     const c: Record<string, number> = {};
