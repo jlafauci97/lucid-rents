@@ -3191,339 +3191,391 @@ function categorizeChicagoCrime(primaryType: string | null | undefined): string 
   return "quality_of_life";
 }
 
-async function syncChicagoViolations(supabase: SupabaseClient): Promise<SyncResult> {
-  const lastSync = await getLastSyncDate(supabase, "chicago_violations");
-  const logId = await createSyncLog(supabase, "chicago_violations");
-  const syncStartMs = Date.now();
-
+async function syncChicagoViolations(supabase: SupabaseClient, startDate: string, syncStartMs: number): Promise<SyncResult> {
   let totalAdded = 0;
   const totalLinked = 0;
   const errors: string[] = [];
   const affectedBuildingIds = new Set<string>();
+  let timeBudgetExceeded = false;
+  let lastRecordDate = startDate;
 
-  try {
-    let offset = 0;
-    let hasMore = true;
-    let pagesFetched = 0;
+  let offset = 0;
+  let hasMore = true;
+  let pagesFetched = 0;
 
-    while (hasMore) {
-      const url = buildChicagoSodaUrl("22u3-xenr", `violation_last_modified_date > '${lastSync}'`, PAGE_SIZE, offset, "violation_last_modified_date ASC");
+  while (hasMore) {
+    const url = buildChicagoSodaUrl("22u3-xenr", `violation_last_modified_date > '${startDate}'`, PAGE_SIZE, offset, "violation_last_modified_date ASC");
 
-      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
-      if (!res.ok) {
-        const errText = await res.text();
-        errors.push(`Chicago Violations API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
-        break;
-      }
-
-      const records = await res.json();
-      if (!records || records.length === 0) { hasMore = false; break; }
-
-      const rows = records
-        .filter((r: Record<string, unknown>) => r.id)
-        .map((r: Record<string, unknown>) => {
-          const parsed = parseChicagoAddress(r.address as string | undefined);
-          return {
-            isn_dob_bis_vio: `CHI-${r.id}`,
-            issue_date: r.violation_date ? String(r.violation_date).slice(0, 10) : null,
-            violation_type: r.violation_code ? String(r.violation_code) : null,
-            description: r.violation_description ? String(r.violation_description) : null,
-            borough: "Chicago",
-            house_number: parsed.house_number,
-            street_name: parsed.street_name,
-            metro: "chicago",
-            imported_at: new Date().toISOString(),
-          };
-        });
-
-      if (rows.length > 0) {
-        totalAdded += await batchUpsert(supabase, "dob_violations", rows, "isn_dob_bis_vio", errors, "Chicago Violations", true);
-      }
-
-      pagesFetched++;
-      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES || isTimeBudgetExceeded(syncStartMs)) { hasMore = false; } else { offset += PAGE_SIZE; }
+    const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+    if (!res.ok) {
+      const errText = await res.text();
+      errors.push(`Chicago Violations API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
+      break;
     }
 
-    errors.push(`Chicago Violations: linking deferred to dedicated link cron (${totalAdded} rows synced)`);
-    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
-  } catch (err) {
-    errors.push(`Chicago Violations fatal error: ${String(err)}`);
-    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
-  }
+    const records = await res.json();
+    if (!records || records.length === 0) { hasMore = false; break; }
 
-  return { totalAdded, totalLinked, errors, affectedBuildingIds };
-}
-
-async function syncChicago311(supabase: SupabaseClient): Promise<SyncResult> {
-  const lastSync = await getLastSyncDate(supabase, "chicago_311");
-  const logId = await createSyncLog(supabase, "chicago_311");
-  const syncStartMs = Date.now();
-
-  let totalAdded = 0;
-  const totalLinked = 0;
-  const errors: string[] = [];
-  const affectedBuildingIds = new Set<string>();
-
-  try {
-    let offset = 0;
-    let hasMore = true;
-    let pagesFetched = 0;
-    const CHI311_PAGE = 2000;
-    const CHI311_MAX_PAGES = 8;
-
-    while (hasMore) {
-      const url = buildChicagoSodaUrl("v6vf-nfxy", `created_date > '${lastSync}'`, CHI311_PAGE, offset, "created_date ASC");
-
-      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
-      if (!res.ok) {
-        const errText = await res.text();
-        errors.push(`Chicago 311 API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
-        break;
-      }
-
-      const records = await res.json();
-      if (!records || records.length === 0) { hasMore = false; break; }
-
-      const rows = records
-        .filter((r: Record<string, unknown>) => r.sr_number)
-        .map((r: Record<string, unknown>) => ({
-          unique_key: `CHI311-${r.sr_number}`,
-          complaint_type: r.sr_type ? String(r.sr_type) : null,
-          status: r.status ? String(r.status) : null,
-          created_date: r.created_date ? String(r.created_date).slice(0, 10) : null,
-          closed_date: r.closed_date ? String(r.closed_date).slice(0, 10) : null,
-          incident_address: r.street_address ? String(r.street_address) : null,
+    const rows = records
+      .filter((r: Record<string, unknown>) => r.id)
+      .map((r: Record<string, unknown>) => {
+        const parsed = parseChicagoAddress(r.address as string | undefined);
+        return {
+          isn_dob_bis_vio: `CHI-${r.id}`,
+          issue_date: r.violation_date ? String(r.violation_date).slice(0, 10) : null,
+          violation_type: r.violation_code ? String(r.violation_code) : null,
+          description: r.violation_description ? String(r.violation_description) : null,
           borough: "Chicago",
-          latitude: r.latitude ? parseFloat(String(r.latitude)) : null,
-          longitude: r.longitude ? parseFloat(String(r.longitude)) : null,
+          house_number: parsed.house_number,
+          street_name: parsed.street_name,
           metro: "chicago",
           imported_at: new Date().toISOString(),
-        }));
+        };
+      });
 
-      if (rows.length > 0) {
-        totalAdded += await batchUpsert(supabase, "complaints_311", rows, "unique_key", errors, "Chicago 311", true);
-      }
-
-      pagesFetched++;
-      if (records.length < CHI311_PAGE || pagesFetched >= CHI311_MAX_PAGES || isTimeBudgetExceeded(syncStartMs)) { hasMore = false; } else { offset += CHI311_PAGE; }
+    if (rows.length > 0) {
+      totalAdded += await batchUpsert(supabase, "dob_violations", rows, "isn_dob_bis_vio", errors, "Chicago Violations", true);
     }
 
-    errors.push(`Chicago 311: linking deferred to dedicated link cron (${totalAdded} rows synced)`);
-    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
-  } catch (err) {
-    errors.push(`Chicago 311 fatal error: ${String(err)}`);
-    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
+    if (records.length > 0 && records[records.length - 1].violation_last_modified_date) {
+      lastRecordDate = String(records[records.length - 1].violation_last_modified_date).slice(0, 10);
+    }
+    pagesFetched++;
+    if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
+      hasMore = false;
+    } else if (isTimeBudgetExceeded(syncStartMs)) {
+      timeBudgetExceeded = true;
+      hasMore = false;
+    } else {
+      offset += PAGE_SIZE;
+    }
+    await saveCursor(supabase, "chicago_violations", { cursorValue: lastRecordDate, cursorOffset: offset });
   }
 
-  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+  errors.push(`Chicago Violations: linking deferred to dedicated link cron (${totalAdded} rows synced)`);
+
+  return {
+    totalAdded,
+    totalLinked,
+    errors,
+    affectedBuildingIds,
+    timeBudgetExceeded,
+    newCursor: timeBudgetExceeded ? { cursorValue: lastRecordDate, cursorOffset: offset } : undefined,
+  };
 }
 
-async function syncChicagoCrimes(supabase: SupabaseClient): Promise<SyncResult> {
-  const lastSync = await getLastSyncDate(supabase, "chicago_crimes");
-  const logId = await createSyncLog(supabase, "chicago_crimes");
-  const syncStartMs = Date.now();
-
+async function syncChicago311(supabase: SupabaseClient, startDate: string, syncStartMs: number): Promise<SyncResult> {
   let totalAdded = 0;
   const totalLinked = 0;
   const errors: string[] = [];
   const affectedBuildingIds = new Set<string>();
+  let timeBudgetExceeded = false;
+  let lastRecordDate = startDate;
 
-  try {
-    let offset = 0;
-    let hasMore = true;
-    let pagesFetched = 0;
+  let offset = 0;
+  let hasMore = true;
+  let pagesFetched = 0;
+  const CHI311_PAGE = 2000;
+  const CHI311_MAX_PAGES = 8;
 
-    while (hasMore) {
-      const url = buildChicagoSodaUrl("ijzp-q8t2", `date > '${lastSync}'`, PAGE_SIZE, offset, "date ASC");
+  while (hasMore) {
+    const url = buildChicagoSodaUrl("v6vf-nfxy", `created_date > '${startDate}'`, CHI311_PAGE, offset, "created_date ASC");
 
-      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
-      if (!res.ok) {
-        const errText = await res.text();
-        errors.push(`Chicago Crimes API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
-        break;
-      }
-
-      const records = await res.json();
-      if (!records || records.length === 0) { hasMore = false; break; }
-
-      const rows = records
-        .filter((r: Record<string, unknown>) => r.case_number)
-        .map((r: Record<string, unknown>) => {
-          const primaryType = r.primary_type ? String(r.primary_type) : null;
-          const description = r.description ? String(r.description) : null;
-          const offenseDesc = [primaryType, description].filter(Boolean).join(" - ");
-
-          return {
-            cmplnt_num: `CPD-${r.case_number}`,
-            cmplnt_date: r.date ? String(r.date).slice(0, 10) : null,
-            borough: "Chicago",
-            precinct: r.district ? String(r.district) : null,
-            offense_description: offenseDesc || null,
-            crime_category: categorizeChicagoCrime(primaryType),
-            latitude: r.latitude ? parseFloat(String(r.latitude)) : null,
-            longitude: r.longitude ? parseFloat(String(r.longitude)) : null,
-            incident_address: r.block ? String(r.block) : null,
-            metro: "chicago",
-            imported_at: new Date().toISOString(),
-          };
-        })
-        .filter((r: { latitude: number | null; longitude: number | null }) =>
-          !(r.latitude === 0 && r.longitude === 0)
-        );
-
-      if (rows.length > 0) {
-        totalAdded += await batchUpsert(supabase, "nypd_complaints", rows, "cmplnt_num", errors, "Chicago Crimes");
-      }
-
-      pagesFetched++;
-      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES || isTimeBudgetExceeded(syncStartMs)) { hasMore = false; } else { offset += PAGE_SIZE; }
+    const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+    if (!res.ok) {
+      const errText = await res.text();
+      errors.push(`Chicago 311 API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
+      break;
     }
 
+    const records = await res.json();
+    if (!records || records.length === 0) { hasMore = false; break; }
+
+    const rows = records
+      .filter((r: Record<string, unknown>) => r.sr_number)
+      .map((r: Record<string, unknown>) => ({
+        unique_key: `CHI311-${r.sr_number}`,
+        complaint_type: r.sr_type ? String(r.sr_type) : null,
+        status: r.status ? String(r.status) : null,
+        created_date: r.created_date ? String(r.created_date).slice(0, 10) : null,
+        closed_date: r.closed_date ? String(r.closed_date).slice(0, 10) : null,
+        incident_address: r.street_address ? String(r.street_address) : null,
+        borough: "Chicago",
+        latitude: r.latitude ? parseFloat(String(r.latitude)) : null,
+        longitude: r.longitude ? parseFloat(String(r.longitude)) : null,
+        metro: "chicago",
+        imported_at: new Date().toISOString(),
+      }));
+
+    if (rows.length > 0) {
+      totalAdded += await batchUpsert(supabase, "complaints_311", rows, "unique_key", errors, "Chicago 311", true);
+    }
+
+    if (records.length > 0 && records[records.length - 1].created_date) {
+      lastRecordDate = String(records[records.length - 1].created_date).slice(0, 10);
+    }
+    pagesFetched++;
+    if (records.length < CHI311_PAGE || pagesFetched >= CHI311_MAX_PAGES) {
+      hasMore = false;
+    } else if (isTimeBudgetExceeded(syncStartMs)) {
+      timeBudgetExceeded = true;
+      hasMore = false;
+    } else {
+      offset += CHI311_PAGE;
+    }
+    await saveCursor(supabase, "chicago_311", { cursorValue: lastRecordDate, cursorOffset: offset });
+  }
+
+  errors.push(`Chicago 311: linking deferred to dedicated link cron (${totalAdded} rows synced)`);
+
+  return {
+    totalAdded,
+    totalLinked,
+    errors,
+    affectedBuildingIds,
+    timeBudgetExceeded,
+    newCursor: timeBudgetExceeded ? { cursorValue: lastRecordDate, cursorOffset: offset } : undefined,
+  };
+}
+
+async function syncChicagoCrimes(supabase: SupabaseClient, startDate: string, syncStartMs: number): Promise<SyncResult> {
+  let totalAdded = 0;
+  const totalLinked = 0;
+  const errors: string[] = [];
+  const affectedBuildingIds = new Set<string>();
+  let timeBudgetExceeded = false;
+  let lastRecordDate = startDate;
+
+  let offset = 0;
+  let hasMore = true;
+  let pagesFetched = 0;
+
+  while (hasMore) {
+    const url = buildChicagoSodaUrl("ijzp-q8t2", `date > '${startDate}'`, PAGE_SIZE, offset, "date ASC");
+
+    const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+    if (!res.ok) {
+      const errText = await res.text();
+      errors.push(`Chicago Crimes API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
+      break;
+    }
+
+    const records = await res.json();
+    if (!records || records.length === 0) { hasMore = false; break; }
+
+    const rows = records
+      .filter((r: Record<string, unknown>) => r.case_number)
+      .map((r: Record<string, unknown>) => {
+        const primaryType = r.primary_type ? String(r.primary_type) : null;
+        const description = r.description ? String(r.description) : null;
+        const offenseDesc = [primaryType, description].filter(Boolean).join(" - ");
+
+        return {
+          cmplnt_num: `CPD-${r.case_number}`,
+          cmplnt_date: r.date ? String(r.date).slice(0, 10) : null,
+          borough: "Chicago",
+          precinct: r.district ? String(r.district) : null,
+          offense_description: offenseDesc || null,
+          crime_category: categorizeChicagoCrime(primaryType),
+          latitude: r.latitude ? parseFloat(String(r.latitude)) : null,
+          longitude: r.longitude ? parseFloat(String(r.longitude)) : null,
+          incident_address: r.block ? String(r.block) : null,
+          metro: "chicago",
+          imported_at: new Date().toISOString(),
+        };
+      })
+      .filter((r: { latitude: number | null; longitude: number | null }) =>
+        !(r.latitude === 0 && r.longitude === 0)
+      );
+
+    if (rows.length > 0) {
+      totalAdded += await batchUpsert(supabase, "nypd_complaints", rows, "cmplnt_num", errors, "Chicago Crimes");
+    }
+
+    if (records.length > 0 && records[records.length - 1].date) {
+      lastRecordDate = String(records[records.length - 1].date).slice(0, 10);
+    }
+    pagesFetched++;
+    if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
+      hasMore = false;
+    } else if (isTimeBudgetExceeded(syncStartMs)) {
+      timeBudgetExceeded = true;
+      hasMore = false;
+    } else {
+      offset += PAGE_SIZE;
+    }
+    await saveCursor(supabase, "chicago_crimes", { cursorValue: lastRecordDate, cursorOffset: offset });
+  }
+
+  if (!timeBudgetExceeded) {
     try {
       const { error: zipErr } = await supabase.rpc("backfill_crime_zip_codes", { target_metro: "chicago" });
       if (zipErr) errors.push(`Chicago Crimes zip backfill error: ${zipErr.message}`);
     } catch (zipBackfillErr) {
       errors.push(`Chicago Crimes zip backfill fatal: ${String(zipBackfillErr)}`);
     }
-  } catch (err) {
-    errors.push(`Chicago Crimes sync fatal: ${String(err)}`);
   }
 
-  await finalizeSyncLog(supabase, logId, errors.length > 0 ? "failed" : "completed", totalAdded, totalLinked, errors);
-  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+  return {
+    totalAdded,
+    totalLinked,
+    errors,
+    affectedBuildingIds,
+    timeBudgetExceeded,
+    newCursor: timeBudgetExceeded ? { cursorValue: lastRecordDate, cursorOffset: offset } : undefined,
+  };
 }
 
-async function syncChicagoPermits(supabase: SupabaseClient): Promise<SyncResult> {
-  const lastSync = await getLastSyncDate(supabase, "chicago_permits");
-  const logId = await createSyncLog(supabase, "chicago_permits");
-  const syncStartMs = Date.now();
-
+async function syncChicagoPermits(supabase: SupabaseClient, startDate: string, syncStartMs: number): Promise<SyncResult> {
   let totalAdded = 0;
   const totalLinked = 0;
   const errors: string[] = [];
   const affectedBuildingIds = new Set<string>();
+  let timeBudgetExceeded = false;
+  let lastRecordDate = startDate;
 
-  try {
-    let offset = 0;
-    let hasMore = true;
-    let pagesFetched = 0;
+  let offset = 0;
+  let hasMore = true;
+  let pagesFetched = 0;
 
-    while (hasMore) {
-      const url = buildChicagoSodaUrl("ydr8-5enu", `issue_date > '${lastSync}'`, PAGE_SIZE, offset, "issue_date ASC");
+  while (hasMore) {
+    const url = buildChicagoSodaUrl("ydr8-5enu", `issue_date > '${startDate}'`, PAGE_SIZE, offset, "issue_date ASC");
 
-      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
-      if (!res.ok) {
-        const errText = await res.text();
-        errors.push(`Chicago Permits API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
-        break;
-      }
-
-      const records = await res.json();
-      if (!records || records.length === 0) { hasMore = false; break; }
-
-      const rows = records
-        .filter((r: Record<string, unknown>) => r.id)
-        .map((r: Record<string, unknown>) => {
-          const streetParts = [r.street_direction, r.street_name].filter(Boolean).map(String).join(" ").trim();
-          return {
-            work_permit: r.id ? `CHI-PERMIT-${r.id}` : null,
-            work_type: r.permit_type ? String(r.permit_type) : null,
-            permit_status: r.permit_status ? String(r.permit_status) : null,
-            issued_date: r.issue_date ? String(r.issue_date).slice(0, 10) : null,
-            borough: "Chicago",
-            house_no: r.street_number ? String(r.street_number) : null,
-            street_name: streetParts || null,
-            job_description: r.work_description ? String(r.work_description) : null,
-            estimated_job_costs: r.reported_cost ? parseFloat(String(r.reported_cost)) : null,
-            latitude: r.latitude ? parseFloat(String(r.latitude)) : null,
-            longitude: r.longitude ? parseFloat(String(r.longitude)) : null,
-            metro: "chicago",
-            imported_at: new Date().toISOString(),
-          };
-        });
-
-      if (rows.length > 0) {
-        totalAdded += await batchUpsert(supabase, "dob_permits", rows, "work_permit", errors, "Chicago Permits");
-      }
-
-      pagesFetched++;
-      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES || isTimeBudgetExceeded(syncStartMs)) { hasMore = false; } else { offset += PAGE_SIZE; }
+    const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+    if (!res.ok) {
+      const errText = await res.text();
+      errors.push(`Chicago Permits API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
+      break;
     }
 
-    errors.push(`Chicago Permits: linking deferred to dedicated link cron (${totalAdded} rows synced)`);
-    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
-  } catch (err) {
-    errors.push(`Chicago Permits fatal error: ${String(err)}`);
-    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
-  }
+    const records = await res.json();
+    if (!records || records.length === 0) { hasMore = false; break; }
 
-  return { totalAdded, totalLinked, errors, affectedBuildingIds };
-}
-
-async function syncChicagoRLTO(supabase: SupabaseClient): Promise<SyncResult> {
-  const lastSync = await getLastSyncDate(supabase, "chicago_rlto");
-  const logId = await createSyncLog(supabase, "chicago_rlto");
-
-  let totalAdded = 0;
-  const totalLinked = 0;
-  const errors: string[] = [];
-  const affectedBuildingIds = new Set<string>();
-
-  try {
-    let offset = 0;
-    let hasMore = true;
-    let pagesFetched = 0;
-
-    while (hasMore) {
-      const url = buildChicagoSodaUrl("awqx-tuwv", `violation_date > '${lastSync}'`, PAGE_SIZE, offset, "violation_date ASC");
-
-      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
-      if (!res.ok) {
-        const errText = await res.text();
-        errors.push(`Chicago RLTO API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
-        break;
-      }
-
-      const records = await res.json();
-      if (!records || records.length === 0) { hasMore = false; break; }
-
-      const rows = records
-        .filter((r: Record<string, unknown>) => r.docket_number)
-        .map((r: Record<string, unknown>) => ({
-          case_number: String(r.docket_number),
-          violation_type: r.violation_code ? String(r.violation_code) : null,
-          violation_description: r.violation_description ? String(r.violation_description) : null,
-          violation_date: r.violation_date ? String(r.violation_date).slice(0, 10) : null,
-          status: r.case_disposition ? String(r.case_disposition) : null,
-          respondent: r.respondents ? String(r.respondents) : null,
-          address: r.address ? String(r.address) : null,
+    const rows = records
+      .filter((r: Record<string, unknown>) => r.id)
+      .map((r: Record<string, unknown>) => {
+        const streetParts = [r.street_direction, r.street_name].filter(Boolean).map(String).join(" ").trim();
+        return {
+          work_permit: r.id ? `CHI-PERMIT-${r.id}` : null,
+          work_type: r.permit_type ? String(r.permit_type) : null,
+          permit_status: r.permit_status ? String(r.permit_status) : null,
+          issued_date: r.issue_date ? String(r.issue_date).slice(0, 10) : null,
+          borough: "Chicago",
+          house_no: r.street_number ? String(r.street_number) : null,
+          street_name: streetParts || null,
+          job_description: r.work_description ? String(r.work_description) : null,
+          estimated_job_costs: r.reported_cost ? parseFloat(String(r.reported_cost)) : null,
           latitude: r.latitude ? parseFloat(String(r.latitude)) : null,
           longitude: r.longitude ? parseFloat(String(r.longitude)) : null,
           metro: "chicago",
           imported_at: new Date().toISOString(),
-        }));
+        };
+      });
 
-      if (rows.length > 0) {
-        totalAdded += await batchUpsert(supabase, "chicago_rlto_violations", rows, "case_number", errors, "Chicago RLTO", true);
-      }
-
-      pagesFetched++;
-      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) { hasMore = false; } else { offset += PAGE_SIZE; }
+    if (rows.length > 0) {
+      totalAdded += await batchUpsert(supabase, "dob_permits", rows, "work_permit", errors, "Chicago Permits");
     }
 
-    errors.push(`Chicago RLTO: linking deferred to dedicated link cron (${totalAdded} rows synced)`);
-    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
-  } catch (err) {
-    errors.push(`Chicago RLTO fatal error: ${String(err)}`);
-    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
+    if (records.length > 0 && records[records.length - 1].issue_date) {
+      lastRecordDate = String(records[records.length - 1].issue_date).slice(0, 10);
+    }
+    pagesFetched++;
+    if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
+      hasMore = false;
+    } else if (isTimeBudgetExceeded(syncStartMs)) {
+      timeBudgetExceeded = true;
+      hasMore = false;
+    } else {
+      offset += PAGE_SIZE;
+    }
+    await saveCursor(supabase, "chicago_permits", { cursorValue: lastRecordDate, cursorOffset: offset });
   }
 
-  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+  errors.push(`Chicago Permits: linking deferred to dedicated link cron (${totalAdded} rows synced)`);
+
+  return {
+    totalAdded,
+    totalLinked,
+    errors,
+    affectedBuildingIds,
+    timeBudgetExceeded,
+    newCursor: timeBudgetExceeded ? { cursorValue: lastRecordDate, cursorOffset: offset } : undefined,
+  };
 }
 
-async function syncChicagoLead(supabase: SupabaseClient): Promise<SyncResult> {
-  const logId = await createSyncLog(supabase, "chicago_lead");
-  await finalizeSyncLog(supabase, logId, "completed", 0, 0, ["Chicago lead sync disabled: no individual inspection dataset available on data.cityofchicago.org"]);
+async function syncChicagoRLTO(supabase: SupabaseClient, startDate: string, syncStartMs: number): Promise<SyncResult> {
+  let totalAdded = 0;
+  const totalLinked = 0;
+  const errors: string[] = [];
+  const affectedBuildingIds = new Set<string>();
+  let timeBudgetExceeded = false;
+  let lastRecordDate = startDate;
+
+  let offset = 0;
+  let hasMore = true;
+  let pagesFetched = 0;
+
+  while (hasMore) {
+    const url = buildChicagoSodaUrl("awqx-tuwv", `violation_date > '${startDate}'`, PAGE_SIZE, offset, "violation_date ASC");
+
+    const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+    if (!res.ok) {
+      const errText = await res.text();
+      errors.push(`Chicago RLTO API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
+      break;
+    }
+
+    const records = await res.json();
+    if (!records || records.length === 0) { hasMore = false; break; }
+
+    const rows = records
+      .filter((r: Record<string, unknown>) => r.docket_number)
+      .map((r: Record<string, unknown>) => ({
+        case_number: String(r.docket_number),
+        violation_type: r.violation_code ? String(r.violation_code) : null,
+        violation_description: r.violation_description ? String(r.violation_description) : null,
+        violation_date: r.violation_date ? String(r.violation_date).slice(0, 10) : null,
+        status: r.case_disposition ? String(r.case_disposition) : null,
+        respondent: r.respondents ? String(r.respondents) : null,
+        address: r.address ? String(r.address) : null,
+        latitude: r.latitude ? parseFloat(String(r.latitude)) : null,
+        longitude: r.longitude ? parseFloat(String(r.longitude)) : null,
+        metro: "chicago",
+        imported_at: new Date().toISOString(),
+      }));
+
+    if (rows.length > 0) {
+      totalAdded += await batchUpsert(supabase, "chicago_rlto_violations", rows, "case_number", errors, "Chicago RLTO", true);
+    }
+
+    if (records.length > 0 && records[records.length - 1].violation_date) {
+      lastRecordDate = String(records[records.length - 1].violation_date).slice(0, 10);
+    }
+    pagesFetched++;
+    if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
+      hasMore = false;
+    } else if (isTimeBudgetExceeded(syncStartMs)) {
+      timeBudgetExceeded = true;
+      hasMore = false;
+    } else {
+      offset += PAGE_SIZE;
+    }
+    await saveCursor(supabase, "chicago_rlto", { cursorValue: lastRecordDate, cursorOffset: offset });
+  }
+
+  errors.push(`Chicago RLTO: linking deferred to dedicated link cron (${totalAdded} rows synced)`);
+
+  return {
+    totalAdded,
+    totalLinked,
+    errors,
+    affectedBuildingIds,
+    timeBudgetExceeded,
+    newCursor: timeBudgetExceeded ? { cursorValue: lastRecordDate, cursorOffset: offset } : undefined,
+  };
+}
+
+async function syncChicagoLead(_supabase: SupabaseClient, _startDate: string, _syncStartMs: number): Promise<SyncResult> {
   return { totalAdded: 0, totalLinked: 0, errors: ["Chicago lead sync disabled: no individual inspection dataset available"], affectedBuildingIds: new Set() };
 }
 
@@ -4296,13 +4348,13 @@ const SOURCES: Record<string, (supabase: SupabaseClient, sinceOverride?: string,
   "la-buyouts": (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "la-buyouts", "lahd_tenant_buyouts", (startDate, syncStartMs) => syncLAHDTenantBuyouts(supabase, startDate, syncStartMs), cd, sinceOverride),
   "la-ccris": (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "la-ccris", "lahd_ccris", (startDate, syncStartMs) => syncLAHDCCRIS(supabase, startDate, syncStartMs), cd, sinceOverride),
   "la-violation-summary": (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "la-violation-summary", "lahd_violation_summary", (startDate, syncStartMs) => syncLAHDViolationSummary(supabase, startDate, syncStartMs), cd, sinceOverride),
-  // Chicago sources
-  "chicago-violations": syncChicagoViolations,
-  "chicago-311": syncChicago311,
-  "chicago-crimes": syncChicagoCrimes,
-  "chicago-permits": syncChicagoPermits,
-  "chicago-rlto": syncChicagoRLTO,
-  "chicago-lead": syncChicagoLead,
+  // Chicago sources (wrapped in runWithCursor for resumable sync)
+  "chicago-violations": (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "chicago-violations", "chicago_violations", (startDate, syncStartMs) => syncChicagoViolations(supabase, startDate, syncStartMs), cd, sinceOverride),
+  "chicago-311": (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "chicago-311", "chicago_311", (startDate, syncStartMs) => syncChicago311(supabase, startDate, syncStartMs), cd, sinceOverride),
+  "chicago-crimes": (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "chicago-crimes", "chicago_crimes", (startDate, syncStartMs) => syncChicagoCrimes(supabase, startDate, syncStartMs), cd, sinceOverride),
+  "chicago-permits": (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "chicago-permits", "chicago_permits", (startDate, syncStartMs) => syncChicagoPermits(supabase, startDate, syncStartMs), cd, sinceOverride),
+  "chicago-rlto": (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "chicago-rlto", "chicago_rlto", (startDate, syncStartMs) => syncChicagoRLTO(supabase, startDate, syncStartMs), cd, sinceOverride),
+  "chicago-lead": (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "chicago-lead", "chicago_lead", (startDate, syncStartMs) => syncChicagoLead(supabase, startDate, syncStartMs), cd, sinceOverride),
   // Miami sources
   "miami-violations": syncMiamiViolations,
   "miami-311": syncMiami311,
