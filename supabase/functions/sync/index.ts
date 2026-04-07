@@ -2356,63 +2356,73 @@ async function linkLAByAddress(
 // LA Sync Functions
 // ---------------------------------------------------------------------------
 
-async function syncLAHDViolations(supabase: SupabaseClient): Promise<SyncResult> {
-  const lastSync = await getLastSyncDate(supabase, "lahd_violations");
-  const logId = await createSyncLog(supabase, "lahd_violations");
+async function syncLAHDViolations(supabase: SupabaseClient, startDate: string, syncStartMs: number): Promise<SyncResult> {
   const syncStartTime = new Date().toISOString();
-  const syncStartMs = Date.now();
 
   let totalAdded = 0;
   let totalLinked = 0;
   const errors: string[] = [];
   const affectedBuildingIds = new Set<string>();
+  let timeBudgetExceeded = false;
+  let lastRecordDate = startDate;
 
-  try {
-    let offset = 0;
-    let hasMore = true;
-    let pagesFetched = 0;
+  let offset = 0;
+  let hasMore = true;
+  let pagesFetched = 0;
 
-    while (hasMore) {
-      const url = buildLASodaUrl(
-        "u82d-eh7z",
-        `adddttm > '${lastSync}'`,
-        PAGE_SIZE,
-        offset,
-        "adddttm ASC"
-      );
+  while (hasMore) {
+    const url = buildLASodaUrl(
+      "u82d-eh7z",
+      `adddttm > '${startDate}'`,
+      PAGE_SIZE,
+      offset,
+      "adddttm ASC"
+    );
 
-      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
-      if (!res.ok) {
-        errors.push(`LAHD API error (offset ${offset}): ${res.status}`);
-        break;
-      }
-
-      const records = await res.json();
-      if (!records || records.length === 0) { hasMore = false; break; }
-
-      const rows = records
-        .filter((r: Record<string, unknown>) => r.apno)
-        .map((r: Record<string, unknown>) => ({
-          violation_id: `LA-${r.apno}`,
-          class: r.aptype ? String(r.aptype).slice(0, 1).toUpperCase() : null,
-          inspection_date: r.adddttm ? String(r.adddttm).slice(0, 10) : null,
-          nov_description: r.aptype ? String(r.aptype) : null,
-          status: r.stat ? String(r.stat) : null,
-          borough: r.apc ? String(r.apc) : "Los Angeles",
-          house_number: r.stno ? String(r.stno) : null,
-          street_name: [r.predir, r.stname, r.suffix].filter(Boolean).map(String).join(" ").trim() || null,
-          metro: "los-angeles",
-          imported_at: new Date().toISOString(),
-        }));
-
-      if (rows.length > 0) {
-        totalAdded += await batchUpsert(supabase, "hpd_violations", rows, "violation_id", errors, "LAHD");
-      }
-
-      pagesFetched++;
-      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES || isTimeBudgetExceeded(syncStartMs)) { hasMore = false; } else { offset += PAGE_SIZE; }
+    const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+    if (!res.ok) {
+      errors.push(`LAHD API error (offset ${offset}): ${res.status}`);
+      break;
     }
 
+    const records = await res.json();
+    if (!records || records.length === 0) { hasMore = false; break; }
+
+    const rows = records
+      .filter((r: Record<string, unknown>) => r.apno)
+      .map((r: Record<string, unknown>) => ({
+        violation_id: `LA-${r.apno}`,
+        class: r.aptype ? String(r.aptype).slice(0, 1).toUpperCase() : null,
+        inspection_date: r.adddttm ? String(r.adddttm).slice(0, 10) : null,
+        nov_description: r.aptype ? String(r.aptype) : null,
+        status: r.stat ? String(r.stat) : null,
+        borough: r.apc ? String(r.apc) : "Los Angeles",
+        house_number: r.stno ? String(r.stno) : null,
+        street_name: [r.predir, r.stname, r.suffix].filter(Boolean).map(String).join(" ").trim() || null,
+        metro: "los-angeles",
+        imported_at: new Date().toISOString(),
+      }));
+
+    if (rows.length > 0) {
+      totalAdded += await batchUpsert(supabase, "hpd_violations", rows, "violation_id", errors, "LAHD");
+    }
+
+    if (records.length > 0 && records[records.length - 1].adddttm) {
+      lastRecordDate = String(records[records.length - 1].adddttm).slice(0, 10);
+    }
+    pagesFetched++;
+    if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
+      hasMore = false;
+    } else if (isTimeBudgetExceeded(syncStartMs)) {
+      timeBudgetExceeded = true;
+      hasMore = false;
+    } else {
+      offset += PAGE_SIZE;
+    }
+    await saveCursor(supabase, "lahd_violations", { cursorValue: lastRecordDate, cursorOffset: offset });
+  }
+
+  if (!timeBudgetExceeded) {
     try {
       const linkResult = await linkByAddress(supabase, "hpd_violations", "id", ["house_number", "street_name"], syncStartTime, errors, "LAHD", 500, "los-angeles");
       totalLinked = linkResult.linked;
@@ -2420,78 +2430,90 @@ async function syncLAHDViolations(supabase: SupabaseClient): Promise<SyncResult>
     } catch (linkErr) {
       errors.push(`LAHD address linking error: ${String(linkErr)}`);
     }
-
-    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
-  } catch (err) {
-    errors.push(`LAHD fatal error: ${String(err)}`);
-    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
   }
 
-  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+  return {
+    totalAdded,
+    totalLinked,
+    errors,
+    affectedBuildingIds,
+    timeBudgetExceeded,
+    newCursor: timeBudgetExceeded ? { cursorValue: lastRecordDate, cursorOffset: offset } : undefined,
+  };
 }
 
-async function syncLA311Complaints(supabase: SupabaseClient): Promise<SyncResult> {
-  const lastSync = await getLastSyncDate(supabase, "la_311_complaints");
-  const logId = await createSyncLog(supabase, "la_311_complaints");
+async function syncLA311Complaints(supabase: SupabaseClient, startDate: string, syncStartMs: number): Promise<SyncResult> {
   const syncStartTime = new Date().toISOString();
-  const syncStartMs = Date.now();
 
   let totalAdded = 0;
   let totalLinked = 0;
   const errors: string[] = [];
   const affectedBuildingIds = new Set<string>();
+  let timeBudgetExceeded = false;
+  let lastRecordDate = startDate;
 
-  try {
-    let offset = 0;
-    let hasMore = true;
-    let pagesFetched = 0;
+  let offset = 0;
+  let hasMore = true;
+  let pagesFetched = 0;
 
-    while (hasMore) {
-      const url = buildLASodaUrl(
-        "2cy6-i7zn",
-        `createddate > '${lastSync}'`,
-        PAGE_SIZE,
-        offset,
-        "createddate ASC"
-      );
+  while (hasMore) {
+    const url = buildLASodaUrl(
+      "2cy6-i7zn",
+      `createddate > '${startDate}'`,
+      PAGE_SIZE,
+      offset,
+      "createddate ASC"
+    );
 
-      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
-      if (!res.ok) {
-        errors.push(`LA 311 API error (offset ${offset}): ${res.status}`);
-        break;
-      }
-
-      const records = await res.json();
-      if (!records || records.length === 0) { hasMore = false; break; }
-
-      const rows = records
-        .filter((r: Record<string, unknown>) => r.casenumber)
-        .map((r: Record<string, unknown>) => ({
-          unique_key: `LA311-${r.casenumber}`,
-          complaint_type: r.type ? String(r.type) : null,
-          descriptor: r.origin ? String(r.origin) : null,
-          agency: "MyLA311",
-          status: r.status ? String(r.status) : null,
-          created_date: r.createddate ? String(r.createddate) : null,
-          closed_date: r.closeddate ? String(r.closeddate) : null,
-          resolution_description: r.resolution_code__c ? String(r.resolution_code__c) : null,
-          borough: r.locator_sr_area_planning ? String(r.locator_sr_area_planning) : "Los Angeles",
-          incident_address: r.locator_gis_returned_address ? String(r.locator_gis_returned_address) : null,
-          zip_code: r.zipcode__c ? String(r.zipcode__c).slice(0, 5) : null,
-          latitude: r.geolocation__latitude__s ? parseFloat(String(r.geolocation__latitude__s)) : null,
-          longitude: r.geolocation__longitude__s ? parseFloat(String(r.geolocation__longitude__s)) : null,
-          metro: "los-angeles",
-          imported_at: new Date().toISOString(),
-        }));
-
-      if (rows.length > 0) {
-        totalAdded += await batchUpsert(supabase, "complaints_311", rows, "unique_key", errors, "LA311");
-      }
-
-      pagesFetched++;
-      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES || isTimeBudgetExceeded(syncStartMs)) { hasMore = false; } else { offset += PAGE_SIZE; }
+    const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+    if (!res.ok) {
+      errors.push(`LA 311 API error (offset ${offset}): ${res.status}`);
+      break;
     }
 
+    const records = await res.json();
+    if (!records || records.length === 0) { hasMore = false; break; }
+
+    const rows = records
+      .filter((r: Record<string, unknown>) => r.casenumber)
+      .map((r: Record<string, unknown>) => ({
+        unique_key: `LA311-${r.casenumber}`,
+        complaint_type: r.type ? String(r.type) : null,
+        descriptor: r.origin ? String(r.origin) : null,
+        agency: "MyLA311",
+        status: r.status ? String(r.status) : null,
+        created_date: r.createddate ? String(r.createddate) : null,
+        closed_date: r.closeddate ? String(r.closeddate) : null,
+        resolution_description: r.resolution_code__c ? String(r.resolution_code__c) : null,
+        borough: r.locator_sr_area_planning ? String(r.locator_sr_area_planning) : "Los Angeles",
+        incident_address: r.locator_gis_returned_address ? String(r.locator_gis_returned_address) : null,
+        zip_code: r.zipcode__c ? String(r.zipcode__c).slice(0, 5) : null,
+        latitude: r.geolocation__latitude__s ? parseFloat(String(r.geolocation__latitude__s)) : null,
+        longitude: r.geolocation__longitude__s ? parseFloat(String(r.geolocation__longitude__s)) : null,
+        metro: "los-angeles",
+        imported_at: new Date().toISOString(),
+      }));
+
+    if (rows.length > 0) {
+      totalAdded += await batchUpsert(supabase, "complaints_311", rows, "unique_key", errors, "LA311");
+    }
+
+    if (records.length > 0 && records[records.length - 1].createddate) {
+      lastRecordDate = String(records[records.length - 1].createddate).slice(0, 10);
+    }
+    pagesFetched++;
+    if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
+      hasMore = false;
+    } else if (isTimeBudgetExceeded(syncStartMs)) {
+      timeBudgetExceeded = true;
+      hasMore = false;
+    } else {
+      offset += PAGE_SIZE;
+    }
+    await saveCursor(supabase, "la_311_complaints", { cursorValue: lastRecordDate, cursorOffset: offset });
+  }
+
+  if (!timeBudgetExceeded) {
     try {
       const linkResult = await linkByAddress(supabase, "complaints_311", "unique_key", "incident_address", syncStartTime, errors, "LA311", 500, "los-angeles");
       totalLinked = linkResult.linked;
@@ -2499,74 +2521,86 @@ async function syncLA311Complaints(supabase: SupabaseClient): Promise<SyncResult
     } catch (linkErr) {
       errors.push(`LA311 address linking error: ${String(linkErr)}`);
     }
-
-    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
-  } catch (err) {
-    errors.push(`LA 311 fatal error: ${String(err)}`);
-    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
   }
 
-  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+  return {
+    totalAdded,
+    totalLinked,
+    errors,
+    affectedBuildingIds,
+    timeBudgetExceeded,
+    newCursor: timeBudgetExceeded ? { cursorValue: lastRecordDate, cursorOffset: offset } : undefined,
+  };
 }
 
-async function syncLADBSViolations(supabase: SupabaseClient): Promise<SyncResult> {
-  const lastSync = await getLastSyncDate(supabase, "ladbs_violations");
-  const logId = await createSyncLog(supabase, "ladbs_violations");
+async function syncLADBSViolations(supabase: SupabaseClient, startDate: string, syncStartMs: number): Promise<SyncResult> {
   const syncStartTime = new Date().toISOString();
-  const syncStartMs = Date.now();
 
   let totalAdded = 0;
   let totalLinked = 0;
   const errors: string[] = [];
   const affectedBuildingIds = new Set<string>();
+  let timeBudgetExceeded = false;
+  let lastRecordDate = startDate;
 
-  try {
-    let offset = 0;
-    let hasMore = true;
-    let pagesFetched = 0;
+  let offset = 0;
+  let hasMore = true;
+  let pagesFetched = 0;
 
-    while (hasMore) {
-      const url = buildLASodaUrl(
-        "u82d-eh7z",
-        `adddttm > '${lastSync}' AND aptype LIKE '%VIOL%'`,
-        PAGE_SIZE,
-        offset,
-        "adddttm ASC"
-      );
+  while (hasMore) {
+    const url = buildLASodaUrl(
+      "u82d-eh7z",
+      `adddttm > '${startDate}' AND aptype LIKE '%VIOL%'`,
+      PAGE_SIZE,
+      offset,
+      "adddttm ASC"
+    );
 
-      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
-      if (!res.ok) {
-        errors.push(`LADBS API error (offset ${offset}): ${res.status}`);
-        break;
-      }
-
-      const records = await res.json();
-      if (!records || records.length === 0) { hasMore = false; break; }
-
-      const rows = records
-        .filter((r: Record<string, unknown>) => r.apno)
-        .map((r: Record<string, unknown>) => ({
-          violation_number: `LADBS-${r.apno}`,
-          violation_type: r.aptype ? String(r.aptype) : null,
-          description: r.aptype ? String(r.aptype) : "LADBS violation",
-          issue_date: r.adddttm ? String(r.adddttm).slice(0, 10) : null,
-          status: r.stat ? String(r.stat) : null,
-          borough: r.apc ? String(r.apc) : "Los Angeles",
-          house_number: r.stno ? String(r.stno) : null,
-          street_name: [r.predir, r.stname, r.suffix].filter(Boolean).map(String).join(" ").trim() || null,
-          zip_code: r.zip ? String(r.zip).replace(/-.*/, "").slice(0, 5) : null,
-          metro: "los-angeles",
-          imported_at: new Date().toISOString(),
-        }));
-
-      if (rows.length > 0) {
-        totalAdded += await batchUpsert(supabase, "dob_violations", rows, "violation_number", errors, "LADBS");
-      }
-
-      pagesFetched++;
-      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES || isTimeBudgetExceeded(syncStartMs)) { hasMore = false; } else { offset += PAGE_SIZE; }
+    const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+    if (!res.ok) {
+      errors.push(`LADBS API error (offset ${offset}): ${res.status}`);
+      break;
     }
 
+    const records = await res.json();
+    if (!records || records.length === 0) { hasMore = false; break; }
+
+    const rows = records
+      .filter((r: Record<string, unknown>) => r.apno)
+      .map((r: Record<string, unknown>) => ({
+        violation_number: `LADBS-${r.apno}`,
+        violation_type: r.aptype ? String(r.aptype) : null,
+        description: r.aptype ? String(r.aptype) : "LADBS violation",
+        issue_date: r.adddttm ? String(r.adddttm).slice(0, 10) : null,
+        status: r.stat ? String(r.stat) : null,
+        borough: r.apc ? String(r.apc) : "Los Angeles",
+        house_number: r.stno ? String(r.stno) : null,
+        street_name: [r.predir, r.stname, r.suffix].filter(Boolean).map(String).join(" ").trim() || null,
+        zip_code: r.zip ? String(r.zip).replace(/-.*/, "").slice(0, 5) : null,
+        metro: "los-angeles",
+        imported_at: new Date().toISOString(),
+      }));
+
+    if (rows.length > 0) {
+      totalAdded += await batchUpsert(supabase, "dob_violations", rows, "violation_number", errors, "LADBS");
+    }
+
+    if (records.length > 0 && records[records.length - 1].adddttm) {
+      lastRecordDate = String(records[records.length - 1].adddttm).slice(0, 10);
+    }
+    pagesFetched++;
+    if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
+      hasMore = false;
+    } else if (isTimeBudgetExceeded(syncStartMs)) {
+      timeBudgetExceeded = true;
+      hasMore = false;
+    } else {
+      offset += PAGE_SIZE;
+    }
+    await saveCursor(supabase, "ladbs_violations", { cursorValue: lastRecordDate, cursorOffset: offset });
+  }
+
+  if (!timeBudgetExceeded) {
     try {
       const linkResult = await linkByAddress(supabase, "dob_violations", "id", ["house_number", "street_name"], syncStartTime, errors, "LADBS", 500, "los-angeles");
       totalLinked = linkResult.linked;
@@ -2574,150 +2608,175 @@ async function syncLADBSViolations(supabase: SupabaseClient): Promise<SyncResult
     } catch (linkErr) {
       errors.push(`LADBS address linking error: ${String(linkErr)}`);
     }
-
-    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
-  } catch (err) {
-    errors.push(`LADBS fatal error: ${String(err)}`);
-    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
   }
 
-  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+  return {
+    totalAdded,
+    totalLinked,
+    errors,
+    affectedBuildingIds,
+    timeBudgetExceeded,
+    newCursor: timeBudgetExceeded ? { cursorValue: lastRecordDate, cursorOffset: offset } : undefined,
+  };
 }
 
-async function syncLAPDCrimeData(supabase: SupabaseClient): Promise<SyncResult> {
-  const lastSync = await getLastSyncDate(supabase, "lapd_crime");
-  const logId = await createSyncLog(supabase, "lapd_crime");
-  const syncStartMs = Date.now();
-
+async function syncLAPDCrimeData(supabase: SupabaseClient, startDate: string, syncStartMs: number): Promise<SyncResult> {
   let totalAdded = 0;
   const totalLinked = 0;
   const errors: string[] = [];
   const affectedBuildingIds = new Set<string>();
+  let timeBudgetExceeded = false;
+  let lastRecordDate = startDate;
 
-  try {
-    let offset = 0;
-    let hasMore = true;
-    let pagesFetched = 0;
+  let offset = 0;
+  let hasMore = true;
+  let pagesFetched = 0;
 
-    while (hasMore) {
-      const url = buildLASodaUrl("2nrs-mtv8", `date_occ > '${lastSync}'`, PAGE_SIZE, offset, "date_occ ASC");
+  while (hasMore) {
+    const url = buildLASodaUrl("2nrs-mtv8", `date_occ > '${startDate}'`, PAGE_SIZE, offset, "date_occ ASC");
 
-      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
-      if (!res.ok) {
-        const errText = await res.text();
-        errors.push(`LAPD API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
-        break;
-      }
-
-      const records = await res.json();
-      if (!records || records.length === 0) { hasMore = false; break; }
-
-      const rows = records
-        .filter((r: { dr_no?: string }) => r.dr_no)
-        .map((r: Record<string, string | undefined>) => {
-          const part = r.part_1_2 ? parseInt(String(r.part_1_2), 10) : null;
-          let lawCategory: string | null = null;
-          if (part === 1) lawCategory = "FELONY";
-          else if (part === 2) lawCategory = "MISDEMEANOR";
-
-          return {
-            cmplnt_num: `LAPD-${r.dr_no}`,
-            cmplnt_date: r.date_occ ? String(r.date_occ).slice(0, 10) : null,
-            borough: r.area_name ? String(r.area_name) : null,
-            precinct: null,
-            offense_description: r.crm_cd_desc ? String(r.crm_cd_desc) : null,
-            law_category: lawCategory,
-            crime_category: categorizeCrime(r.crm_cd_desc ? String(r.crm_cd_desc) : null),
-            pd_description: r.premis_desc ? String(r.premis_desc) : null,
-            latitude: r.lat ? parseFloat(String(r.lat)) : null,
-            longitude: r.lon ? parseFloat(String(r.lon)) : null,
-            zip_code: null,
-            metro: "los-angeles",
-            imported_at: new Date().toISOString(),
-          };
-        })
-        .filter((r: { latitude: number | null; longitude: number | null }) =>
-          !(r.latitude === 0 && r.longitude === 0)
-        );
-
-      if (rows.length > 0) {
-        totalAdded += await batchUpsert(supabase, "nypd_complaints", rows, "cmplnt_num", errors, "LAPD");
-      }
-
-      pagesFetched++;
-      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES || isTimeBudgetExceeded(syncStartMs)) { hasMore = false; } else { offset += PAGE_SIZE; }
+    const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+    if (!res.ok) {
+      const errText = await res.text();
+      errors.push(`LAPD API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
+      break;
     }
 
+    const records = await res.json();
+    if (!records || records.length === 0) { hasMore = false; break; }
+
+    const rows = records
+      .filter((r: { dr_no?: string }) => r.dr_no)
+      .map((r: Record<string, string | undefined>) => {
+        const part = r.part_1_2 ? parseInt(String(r.part_1_2), 10) : null;
+        let lawCategory: string | null = null;
+        if (part === 1) lawCategory = "FELONY";
+        else if (part === 2) lawCategory = "MISDEMEANOR";
+
+        return {
+          cmplnt_num: `LAPD-${r.dr_no}`,
+          cmplnt_date: r.date_occ ? String(r.date_occ).slice(0, 10) : null,
+          borough: r.area_name ? String(r.area_name) : null,
+          precinct: null,
+          offense_description: r.crm_cd_desc ? String(r.crm_cd_desc) : null,
+          law_category: lawCategory,
+          crime_category: categorizeCrime(r.crm_cd_desc ? String(r.crm_cd_desc) : null),
+          pd_description: r.premis_desc ? String(r.premis_desc) : null,
+          latitude: r.lat ? parseFloat(String(r.lat)) : null,
+          longitude: r.lon ? parseFloat(String(r.lon)) : null,
+          zip_code: null,
+          metro: "los-angeles",
+          imported_at: new Date().toISOString(),
+        };
+      })
+      .filter((r: { latitude: number | null; longitude: number | null }) =>
+        !(r.latitude === 0 && r.longitude === 0)
+      );
+
+    if (rows.length > 0) {
+      totalAdded += await batchUpsert(supabase, "nypd_complaints", rows, "cmplnt_num", errors, "LAPD");
+    }
+
+    if (records.length > 0 && records[records.length - 1].date_occ) {
+      lastRecordDate = String(records[records.length - 1].date_occ).slice(0, 10);
+    }
+    pagesFetched++;
+    if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
+      hasMore = false;
+    } else if (isTimeBudgetExceeded(syncStartMs)) {
+      timeBudgetExceeded = true;
+      hasMore = false;
+    } else {
+      offset += PAGE_SIZE;
+    }
+    await saveCursor(supabase, "lapd_crime", { cursorValue: lastRecordDate, cursorOffset: offset });
+  }
+
+  if (!timeBudgetExceeded) {
     try {
       const { error: zipErr } = await supabase.rpc("backfill_crime_zip_codes", { target_metro: "los-angeles" });
       if (zipErr) errors.push(`LAPD zip backfill error: ${zipErr.message}`);
     } catch (zipBackfillErr) {
       errors.push(`LAPD zip backfill fatal: ${String(zipBackfillErr)}`);
     }
-  } catch (err) {
-    errors.push(`LAPD crime sync fatal: ${String(err)}`);
   }
 
-  await finalizeSyncLog(supabase, logId, errors.length > 0 ? "failed" : "completed", totalAdded, totalLinked, errors);
-  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+  return {
+    totalAdded,
+    totalLinked,
+    errors,
+    affectedBuildingIds,
+    timeBudgetExceeded,
+    newCursor: timeBudgetExceeded ? { cursorValue: lastRecordDate, cursorOffset: offset } : undefined,
+  };
 }
 
-async function syncLAPermits(supabase: SupabaseClient): Promise<SyncResult> {
-  const lastSync = await getLastSyncDate(supabase, "la_permits");
-  const logId = await createSyncLog(supabase, "la_permits");
+async function syncLAPermits(supabase: SupabaseClient, startDate: string, syncStartMs: number): Promise<SyncResult> {
   const syncStartTime = new Date().toISOString();
-  const syncStartMs = Date.now();
 
   let totalAdded = 0;
   let totalLinked = 0;
   const errors: string[] = [];
   const affectedBuildingIds = new Set<string>();
+  let timeBudgetExceeded = false;
+  let lastRecordDate = startDate;
 
-  try {
-    let offset = 0;
-    let hasMore = true;
-    let pagesFetched = 0;
+  let offset = 0;
+  let hasMore = true;
+  let pagesFetched = 0;
 
-    while (hasMore) {
-      const url = buildLASodaUrl("pi9x-tg5x", `issue_date > '${lastSync}'`, PAGE_SIZE, offset, "issue_date ASC");
+  while (hasMore) {
+    const url = buildLASodaUrl("pi9x-tg5x", `issue_date > '${startDate}'`, PAGE_SIZE, offset, "issue_date ASC");
 
-      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
-      if (!res.ok) { errors.push(`LA Permits API error (offset ${offset}): ${res.status}`); break; }
+    const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+    if (!res.ok) { errors.push(`LA Permits API error (offset ${offset}): ${res.status}`); break; }
 
-      const records = await res.json();
-      if (!records || records.length === 0) { hasMore = false; break; }
+    const records = await res.json();
+    if (!records || records.length === 0) { hasMore = false; break; }
 
-      const rows = records
-        .filter((r: Record<string, unknown>) => r.permit_nbr)
-        .map((r: Record<string, unknown>) => {
-          const addr = r.primary_address ? String(r.primary_address) : "";
-          return {
-            work_permit: `LADBS-${r.permit_nbr}`,
-            work_type: r.permit_type ? String(r.permit_type) : null,
-            permit_status: r.status_desc ? String(r.status_desc) : null,
-            filing_reason: r.permit_sub_type ? String(r.permit_sub_type) : null,
-            issued_date: r.issue_date ? String(r.issue_date).slice(0, 10) : null,
-            job_description: r.work_desc ? String(r.work_desc).substring(0, 500) : null,
-            estimated_job_costs: r.valuation ? parseFloat(String(r.valuation)) : null,
-            borough: r.cpa ? String(r.cpa) : (r.apc ? String(r.apc) : "Los Angeles"),
-            house_no: addr.match(/^(\d[\w-]*)\s/)?.[1] || null,
-            street_name: addr.replace(/^\d[\w-]*\s+/, "").trim() || null,
-            zip_code: r.zip_code ? String(r.zip_code).slice(0, 5) : null,
-            latitude: r.lat ? parseFloat(String(r.lat)) : null,
-            longitude: r.lon ? parseFloat(String(r.lon)) : null,
-            metro: "los-angeles",
-            imported_at: new Date().toISOString(),
-          };
-        });
+    const rows = records
+      .filter((r: Record<string, unknown>) => r.permit_nbr)
+      .map((r: Record<string, unknown>) => {
+        const addr = r.primary_address ? String(r.primary_address) : "";
+        return {
+          work_permit: `LADBS-${r.permit_nbr}`,
+          work_type: r.permit_type ? String(r.permit_type) : null,
+          permit_status: r.status_desc ? String(r.status_desc) : null,
+          filing_reason: r.permit_sub_type ? String(r.permit_sub_type) : null,
+          issued_date: r.issue_date ? String(r.issue_date).slice(0, 10) : null,
+          job_description: r.work_desc ? String(r.work_desc).substring(0, 500) : null,
+          estimated_job_costs: r.valuation ? parseFloat(String(r.valuation)) : null,
+          borough: r.cpa ? String(r.cpa) : (r.apc ? String(r.apc) : "Los Angeles"),
+          house_no: addr.match(/^(\d[\w-]*)\s/)?.[1] || null,
+          street_name: addr.replace(/^\d[\w-]*\s+/, "").trim() || null,
+          zip_code: r.zip_code ? String(r.zip_code).slice(0, 5) : null,
+          latitude: r.lat ? parseFloat(String(r.lat)) : null,
+          longitude: r.lon ? parseFloat(String(r.lon)) : null,
+          metro: "los-angeles",
+          imported_at: new Date().toISOString(),
+        };
+      });
 
-      if (rows.length > 0) {
-        totalAdded += await batchUpsert(supabase, "dob_permits", rows, "work_permit", errors, "LA Permits");
-      }
-
-      pagesFetched++;
-      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES || isTimeBudgetExceeded(syncStartMs)) { hasMore = false; } else { offset += PAGE_SIZE; }
+    if (rows.length > 0) {
+      totalAdded += await batchUpsert(supabase, "dob_permits", rows, "work_permit", errors, "LA Permits");
     }
 
+    if (records.length > 0 && records[records.length - 1].issue_date) {
+      lastRecordDate = String(records[records.length - 1].issue_date).slice(0, 10);
+    }
+    pagesFetched++;
+    if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
+      hasMore = false;
+    } else if (isTimeBudgetExceeded(syncStartMs)) {
+      timeBudgetExceeded = true;
+      hasMore = false;
+    } else {
+      offset += PAGE_SIZE;
+    }
+    await saveCursor(supabase, "la_permits", { cursorValue: lastRecordDate, cursorOffset: offset });
+  }
+
+  if (!timeBudgetExceeded) {
     try {
       const linkResult = await linkByAddress(supabase, "dob_permits", "id", ["house_no", "street_name"], syncStartTime, errors, "LA Permits", 500, "los-angeles");
       totalLinked = linkResult.linked;
@@ -2725,123 +2784,140 @@ async function syncLAPermits(supabase: SupabaseClient): Promise<SyncResult> {
     } catch (linkErr) {
       errors.push(`LA Permits address linking error: ${String(linkErr)}`);
     }
-
-    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
-  } catch (err) {
-    errors.push(`LA Permits fatal error: ${String(err)}`);
-    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
   }
 
-  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+  return {
+    totalAdded,
+    totalLinked,
+    errors,
+    affectedBuildingIds,
+    timeBudgetExceeded,
+    newCursor: timeBudgetExceeded ? { cursorValue: lastRecordDate, cursorOffset: offset } : undefined,
+  };
 }
 
-async function syncLASoftStory(supabase: SupabaseClient): Promise<SyncResult> {
-  const logId = await createSyncLog(supabase, "la_soft_story");
+async function syncLASoftStory(supabase: SupabaseClient, _startDate: string, syncStartMs: number): Promise<SyncResult> {
   let totalAdded = 0;
   const errors: string[] = [];
   const affectedBuildingIds = new Set<string>();
+  let timeBudgetExceeded = false;
 
-  try {
-    let offset = 0;
+  let offset = 0;
 
-    while (true) {
-      const url = buildLASodaUrl("nc44-6znn", "1=1", PAGE_SIZE, offset, "pcis_permit ASC");
+  while (true) {
+    const url = buildLASodaUrl("nc44-6znn", "1=1", PAGE_SIZE, offset, "pcis_permit ASC");
 
-      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
-      if (!res.ok) { errors.push(`Soft-story API error: ${res.status}`); break; }
-      const records = await res.json();
-      if (!records || records.length === 0) break;
+    const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+    if (!res.ok) { errors.push(`Soft-story API error: ${res.status}`); break; }
+    const records = await res.json();
+    if (!records || records.length === 0) break;
 
-      for (const r of records as Record<string, unknown>[]) {
-        const addr = [r.address_start, r.street_direction, r.street_name, r.street_suffix].filter(Boolean).map(String).join(" ").trim();
-        if (!addr) continue;
-        const zip = r.zip_code ? String(r.zip_code).slice(0, 5) : "";
-        if (!zip) continue;
+    for (const r of records as Record<string, unknown>[]) {
+      const addr = [r.address_start, r.street_direction, r.street_name, r.street_suffix].filter(Boolean).map(String).join(" ").trim();
+      if (!addr) continue;
+      const zip = r.zip_code ? String(r.zip_code).slice(0, 5) : "";
+      if (!zip) continue;
 
-        const slug = `${addr}-los-angeles-ca-${zip}`.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
-        const status = r.latest_status ? String(r.latest_status) : "";
-        const isRetrofitted = status.toUpperCase().includes("COFC") || status.toUpperCase().includes("FINAL");
-        const softStoryStatus = isRetrofitted ? "Retrofitted" : status.toUpperCase().includes("EXPIRED") ? "Expired" : "In Progress";
+      const slug = `${addr}-los-angeles-ca-${zip}`.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+      const status = r.latest_status ? String(r.latest_status) : "";
+      const isRetrofitted = status.toUpperCase().includes("COFC") || status.toUpperCase().includes("FINAL");
+      const softStoryStatus = isRetrofitted ? "Retrofitted" : status.toUpperCase().includes("EXPIRED") ? "Expired" : "In Progress";
 
-        const { count } = await supabase
-          .from("buildings")
-          .update({ is_soft_story: true, soft_story_status: softStoryStatus }, { count: "exact" })
-          .eq("slug", slug)
-          .eq("metro", "los-angeles");
+      const { count } = await supabase
+        .from("buildings")
+        .update({ is_soft_story: true, soft_story_status: softStoryStatus }, { count: "exact" })
+        .eq("slug", slug)
+        .eq("metro", "los-angeles");
 
-        if (count && count > 0) {
-          totalAdded += count;
-        }
+      if (count && count > 0) {
+        totalAdded += count;
       }
-
-      offset += records.length;
-      if (records.length < PAGE_SIZE) break;
     }
 
-    await finalizeSyncLog(supabase, logId, "completed", totalAdded, 0, errors);
-  } catch (err) {
-    errors.push(`Soft-story fatal error: ${String(err)}`);
-    await finalizeSyncLog(supabase, logId, "failed", totalAdded, 0, errors);
+    offset += records.length;
+    if (records.length < PAGE_SIZE) break;
+    if (isTimeBudgetExceeded(syncStartMs)) {
+      timeBudgetExceeded = true;
+      break;
+    }
+    await saveCursor(supabase, "la_soft_story", { cursorValue: String(offset), cursorOffset: offset });
   }
 
-  return { totalAdded, totalLinked: 0, errors, affectedBuildingIds };
+  return {
+    totalAdded,
+    totalLinked: 0,
+    errors,
+    affectedBuildingIds,
+    timeBudgetExceeded,
+    newCursor: timeBudgetExceeded ? { cursorValue: String(offset), cursorOffset: offset } : undefined,
+  };
 }
 
-async function syncLAHDEvictions(supabase: SupabaseClient): Promise<SyncResult> {
-  const lastSync = await getLastSyncDate(supabase, "lahd_evictions");
-  const logId = await createSyncLog(supabase, "lahd_evictions");
+async function syncLAHDEvictions(supabase: SupabaseClient, startDate: string, syncStartMs: number): Promise<SyncResult> {
   const syncStartTime = new Date().toISOString();
-  const syncStartMs = Date.now();
 
   let totalAdded = 0;
   let totalLinked = 0;
   const errors: string[] = [];
   const affectedBuildingIds = new Set<string>();
+  let timeBudgetExceeded = false;
+  let lastRecordDate = startDate;
 
-  try {
-    let offset = 0;
-    let hasMore = true;
-    let pagesFetched = 0;
+  let offset = 0;
+  let hasMore = true;
+  let pagesFetched = 0;
 
-    while (hasMore) {
-      const url = buildLASodaUrl("2u8b-eyuu", `received > '${lastSync}'`, PAGE_SIZE, offset, "received ASC");
+  while (hasMore) {
+    const url = buildLASodaUrl("2u8b-eyuu", `received > '${startDate}'`, PAGE_SIZE, offset, "received ASC");
 
-      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
-      if (!res.ok) { errors.push(`LAHD Evictions API error (offset ${offset}): ${res.status}`); break; }
+    const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+    if (!res.ok) { errors.push(`LAHD Evictions API error (offset ${offset}): ${res.status}`); break; }
 
-      const records = await res.json();
-      if (!records || records.length === 0) { hasMore = false; break; }
+    const records = await res.json();
+    if (!records || records.length === 0) { hasMore = false; break; }
 
-      const rows = records
-        .filter((r: Record<string, unknown>) => r.apn)
-        .map((r: Record<string, unknown>) => {
-          const parseDateLocal = (d: unknown) => {
-            if (!d) return null;
-            const s = String(d);
-            const mdyMatch = s.match(/^(\d{2})-(\d{2})-(\d{4})$/);
-            if (mdyMatch) return `${mdyMatch[3]}-${mdyMatch[1]}-${mdyMatch[2]}`;
-            return s.slice(0, 10);
-          };
-          return {
-            apn: String(r.apn),
-            address: r.officialaddress ? String(r.officialaddress) : null,
-            eviction_category: r.eviction_category ? String(r.eviction_category) : null,
-            notice_date: parseDateLocal(r.notice_date),
-            notice_type: r.notice_type ? String(r.notice_type) : null,
-            received_date: parseDateLocal(r.received),
-            metro: "los-angeles",
-            imported_at: new Date().toISOString(),
-          };
-        });
+    const rows = records
+      .filter((r: Record<string, unknown>) => r.apn)
+      .map((r: Record<string, unknown>) => {
+        const parseDateLocal = (d: unknown) => {
+          if (!d) return null;
+          const s = String(d);
+          const mdyMatch = s.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+          if (mdyMatch) return `${mdyMatch[3]}-${mdyMatch[1]}-${mdyMatch[2]}`;
+          return s.slice(0, 10);
+        };
+        return {
+          apn: String(r.apn),
+          address: r.officialaddress ? String(r.officialaddress) : null,
+          eviction_category: r.eviction_category ? String(r.eviction_category) : null,
+          notice_date: parseDateLocal(r.notice_date),
+          notice_type: r.notice_type ? String(r.notice_type) : null,
+          received_date: parseDateLocal(r.received),
+          metro: "los-angeles",
+          imported_at: new Date().toISOString(),
+        };
+      });
 
-      if (rows.length > 0) {
-        totalAdded += await batchUpsert(supabase, "lahd_evictions", rows, "apn,notice_date,notice_type", errors, "LAHD Evictions", true);
-      }
-
-      pagesFetched++;
-      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES || isTimeBudgetExceeded(syncStartMs)) { hasMore = false; } else { offset += PAGE_SIZE; }
+    if (rows.length > 0) {
+      totalAdded += await batchUpsert(supabase, "lahd_evictions", rows, "apn,notice_date,notice_type", errors, "LAHD Evictions", true);
     }
 
+    if (records.length > 0 && records[records.length - 1].received) {
+      lastRecordDate = String(records[records.length - 1].received).slice(0, 10);
+    }
+    pagesFetched++;
+    if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
+      hasMore = false;
+    } else if (isTimeBudgetExceeded(syncStartMs)) {
+      timeBudgetExceeded = true;
+      hasMore = false;
+    } else {
+      offset += PAGE_SIZE;
+    }
+    await saveCursor(supabase, "lahd_evictions", { cursorValue: lastRecordDate, cursorOffset: offset });
+  }
+
+  if (!timeBudgetExceeded) {
     try {
       const linkResult = await linkByAddress(supabase, "lahd_evictions", "id", "address", syncStartTime, errors, "LAHD Evictions", 500, "los-angeles", true, "address");
       totalLinked = linkResult.linked;
@@ -2849,60 +2925,72 @@ async function syncLAHDEvictions(supabase: SupabaseClient): Promise<SyncResult> 
     } catch (linkErr) {
       errors.push(`LAHD Evictions linking error: ${String(linkErr)}`);
     }
-
-    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
-  } catch (err) {
-    errors.push(`LAHD Evictions fatal error: ${String(err)}`);
-    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
   }
 
-  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+  return {
+    totalAdded,
+    totalLinked,
+    errors,
+    affectedBuildingIds,
+    timeBudgetExceeded,
+    newCursor: timeBudgetExceeded ? { cursorValue: lastRecordDate, cursorOffset: offset } : undefined,
+  };
 }
 
-async function syncLAHDTenantBuyouts(supabase: SupabaseClient): Promise<SyncResult> {
-  const lastSync = await getLastSyncDate(supabase, "lahd_tenant_buyouts");
-  const logId = await createSyncLog(supabase, "lahd_tenant_buyouts");
+async function syncLAHDTenantBuyouts(supabase: SupabaseClient, startDate: string, syncStartMs: number): Promise<SyncResult> {
   const syncStartTime = new Date().toISOString();
-  const syncStartMs = Date.now();
 
   let totalAdded = 0;
   let totalLinked = 0;
   const errors: string[] = [];
   const affectedBuildingIds = new Set<string>();
+  let timeBudgetExceeded = false;
+  let lastRecordDate = startDate;
 
-  try {
-    let offset = 0;
-    let hasMore = true;
-    let pagesFetched = 0;
+  let offset = 0;
+  let hasMore = true;
+  let pagesFetched = 0;
 
-    while (hasMore) {
-      const url = buildLASodaUrl("ci3m-f23k", `disclosure_fileddate > '${lastSync}'`, PAGE_SIZE, offset, "disclosure_fileddate ASC");
+  while (hasMore) {
+    const url = buildLASodaUrl("ci3m-f23k", `disclosure_fileddate > '${startDate}'`, PAGE_SIZE, offset, "disclosure_fileddate ASC");
 
-      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
-      if (!res.ok) { errors.push(`LAHD Buyouts API error (offset ${offset}): ${res.status}`); break; }
+    const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+    if (!res.ok) { errors.push(`LAHD Buyouts API error (offset ${offset}): ${res.status}`); break; }
 
-      const records = await res.json();
-      if (!records || records.length === 0) { hasMore = false; break; }
+    const records = await res.json();
+    if (!records || records.length === 0) { hasMore = false; break; }
 
-      const rows = records
-        .filter((r: Record<string, unknown>) => r.apn)
-        .map((r: Record<string, unknown>) => ({
-          apn: String(r.apn),
-          address: r.tenant_streetaddress ? String(r.tenant_streetaddress) : null,
-          disclosure_date: r.disclosure_fileddate ? String(r.disclosure_fileddate).slice(0, 10) : null,
-          compensation_amount: r.compensation_amount ? parseFloat(String(r.compensation_amount)) : null,
-          metro: "los-angeles",
-          imported_at: new Date().toISOString(),
-        }));
+    const rows = records
+      .filter((r: Record<string, unknown>) => r.apn)
+      .map((r: Record<string, unknown>) => ({
+        apn: String(r.apn),
+        address: r.tenant_streetaddress ? String(r.tenant_streetaddress) : null,
+        disclosure_date: r.disclosure_fileddate ? String(r.disclosure_fileddate).slice(0, 10) : null,
+        compensation_amount: r.compensation_amount ? parseFloat(String(r.compensation_amount)) : null,
+        metro: "los-angeles",
+        imported_at: new Date().toISOString(),
+      }));
 
-      if (rows.length > 0) {
-        totalAdded += await batchUpsert(supabase, "lahd_tenant_buyouts", rows, "apn,disclosure_date", errors, "LAHD Buyouts", true);
-      }
-
-      pagesFetched++;
-      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES || isTimeBudgetExceeded(syncStartMs)) { hasMore = false; } else { offset += PAGE_SIZE; }
+    if (rows.length > 0) {
+      totalAdded += await batchUpsert(supabase, "lahd_tenant_buyouts", rows, "apn,disclosure_date", errors, "LAHD Buyouts", true);
     }
 
+    if (records.length > 0 && records[records.length - 1].disclosure_fileddate) {
+      lastRecordDate = String(records[records.length - 1].disclosure_fileddate).slice(0, 10);
+    }
+    pagesFetched++;
+    if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
+      hasMore = false;
+    } else if (isTimeBudgetExceeded(syncStartMs)) {
+      timeBudgetExceeded = true;
+      hasMore = false;
+    } else {
+      offset += PAGE_SIZE;
+    }
+    await saveCursor(supabase, "lahd_tenant_buyouts", { cursorValue: lastRecordDate, cursorOffset: offset });
+  }
+
+  if (!timeBudgetExceeded) {
     try {
       const linkResult = await linkByAddress(supabase, "lahd_tenant_buyouts", "id", "address", syncStartTime, errors, "LAHD Buyouts", 500, "los-angeles", true, "address");
       totalLinked = linkResult.linked;
@@ -2910,63 +2998,75 @@ async function syncLAHDTenantBuyouts(supabase: SupabaseClient): Promise<SyncResu
     } catch (linkErr) {
       errors.push(`LAHD Buyouts linking error: ${String(linkErr)}`);
     }
-
-    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
-  } catch (err) {
-    errors.push(`LAHD Buyouts fatal error: ${String(err)}`);
-    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
   }
 
-  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+  return {
+    totalAdded,
+    totalLinked,
+    errors,
+    affectedBuildingIds,
+    timeBudgetExceeded,
+    newCursor: timeBudgetExceeded ? { cursorValue: lastRecordDate, cursorOffset: offset } : undefined,
+  };
 }
 
-async function syncLAHDCCRIS(supabase: SupabaseClient): Promise<SyncResult> {
-  const lastSync = await getLastSyncDate(supabase, "lahd_ccris");
-  const logId = await createSyncLog(supabase, "lahd_ccris");
+async function syncLAHDCCRIS(supabase: SupabaseClient, startDate: string, syncStartMs: number): Promise<SyncResult> {
   const syncStartTime = new Date().toISOString();
-  const syncStartMs = Date.now();
 
   let totalAdded = 0;
   let totalLinked = 0;
   const errors: string[] = [];
   const affectedBuildingIds = new Set<string>();
+  let timeBudgetExceeded = false;
+  let lastRecordDate = startDate;
 
-  try {
-    let offset = 0;
-    let hasMore = true;
-    let pagesFetched = 0;
+  let offset = 0;
+  let hasMore = true;
+  let pagesFetched = 0;
 
-    while (hasMore) {
-      const url = buildLASodaUrl("ds2y-sb5t", `start_date > '${lastSync}'`, PAGE_SIZE, offset, "start_date ASC");
+  while (hasMore) {
+    const url = buildLASodaUrl("ds2y-sb5t", `start_date > '${startDate}'`, PAGE_SIZE, offset, "start_date ASC");
 
-      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
-      if (!res.ok) { errors.push(`LAHD CCRIS API error (offset ${offset}): ${res.status}`); break; }
+    const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+    if (!res.ok) { errors.push(`LAHD CCRIS API error (offset ${offset}): ${res.status}`); break; }
 
-      const records = await res.json();
-      if (!records || records.length === 0) { hasMore = false; break; }
+    const records = await res.json();
+    if (!records || records.length === 0) { hasMore = false; break; }
 
-      const rows = records
-        .filter((r: Record<string, unknown>) => r.apn)
-        .map((r: Record<string, unknown>) => ({
-          apn: String(r.apn),
-          address: r.address ? String(r.address) : null,
-          case_type: r.casetype ? String(r.casetype) : null,
-          start_date: r.start_date ? String(r.start_date).slice(0, 10) : null,
-          total_complaints: r.totalcomplaintscount ? parseInt(String(r.totalcomplaintscount), 10) : 0,
-          open_complaints: r.opencomplaintscount ? parseInt(String(r.opencomplaintscount), 10) : 0,
-          scheduled_inspections: r.scheduledinspectionscount ? parseInt(String(r.scheduledinspectionscount), 10) : 0,
-          metro: "los-angeles",
-          imported_at: new Date().toISOString(),
-        }));
+    const rows = records
+      .filter((r: Record<string, unknown>) => r.apn)
+      .map((r: Record<string, unknown>) => ({
+        apn: String(r.apn),
+        address: r.address ? String(r.address) : null,
+        case_type: r.casetype ? String(r.casetype) : null,
+        start_date: r.start_date ? String(r.start_date).slice(0, 10) : null,
+        total_complaints: r.totalcomplaintscount ? parseInt(String(r.totalcomplaintscount), 10) : 0,
+        open_complaints: r.opencomplaintscount ? parseInt(String(r.opencomplaintscount), 10) : 0,
+        scheduled_inspections: r.scheduledinspectionscount ? parseInt(String(r.scheduledinspectionscount), 10) : 0,
+        metro: "los-angeles",
+        imported_at: new Date().toISOString(),
+      }));
 
-      if (rows.length > 0) {
-        totalAdded += await batchUpsert(supabase, "lahd_ccris_cases", rows, "apn,start_date,case_type", errors, "LAHD CCRIS", true);
-      }
-
-      pagesFetched++;
-      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES || isTimeBudgetExceeded(syncStartMs)) { hasMore = false; } else { offset += PAGE_SIZE; }
+    if (rows.length > 0) {
+      totalAdded += await batchUpsert(supabase, "lahd_ccris_cases", rows, "apn,start_date,case_type", errors, "LAHD CCRIS", true);
     }
 
+    if (records.length > 0 && records[records.length - 1].start_date) {
+      lastRecordDate = String(records[records.length - 1].start_date).slice(0, 10);
+    }
+    pagesFetched++;
+    if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
+      hasMore = false;
+    } else if (isTimeBudgetExceeded(syncStartMs)) {
+      timeBudgetExceeded = true;
+      hasMore = false;
+    } else {
+      offset += PAGE_SIZE;
+    }
+    await saveCursor(supabase, "lahd_ccris", { cursorValue: lastRecordDate, cursorOffset: offset });
+  }
+
+  if (!timeBudgetExceeded) {
     try {
       const linkResult = await linkByAddress(supabase, "lahd_ccris_cases", "id", "address", syncStartTime, errors, "LAHD CCRIS", 500, "los-angeles", true, "address");
       totalLinked = linkResult.linked;
@@ -2974,60 +3074,69 @@ async function syncLAHDCCRIS(supabase: SupabaseClient): Promise<SyncResult> {
     } catch (linkErr) {
       errors.push(`LAHD CCRIS linking error: ${String(linkErr)}`);
     }
-
-    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
-  } catch (err) {
-    errors.push(`LAHD CCRIS fatal error: ${String(err)}`);
-    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
   }
 
-  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+  return {
+    totalAdded,
+    totalLinked,
+    errors,
+    affectedBuildingIds,
+    timeBudgetExceeded,
+    newCursor: timeBudgetExceeded ? { cursorValue: lastRecordDate, cursorOffset: offset } : undefined,
+  };
 }
 
-async function syncLAHDViolationSummary(supabase: SupabaseClient): Promise<SyncResult> {
-  const logId = await createSyncLog(supabase, "lahd_violation_summary");
+async function syncLAHDViolationSummary(supabase: SupabaseClient, _startDate: string, syncStartMs: number): Promise<SyncResult> {
   const syncStartTime = new Date().toISOString();
-  const syncStartMs = Date.now();
 
   let totalAdded = 0;
   let totalLinked = 0;
   const errors: string[] = [];
   const affectedBuildingIds = new Set<string>();
+  let timeBudgetExceeded = false;
 
-  try {
-    let offset = 0;
-    let hasMore = true;
-    let pagesFetched = 0;
+  let offset = 0;
+  let hasMore = true;
+  let pagesFetched = 0;
 
-    while (hasMore) {
-      const url = buildLASodaUrl("cr8f-uc4j", "1=1", PAGE_SIZE, offset, ":id");
+  while (hasMore) {
+    const url = buildLASodaUrl("cr8f-uc4j", "1=1", PAGE_SIZE, offset, ":id");
 
-      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
-      if (!res.ok) { errors.push(`LAHD Violation Summary API error (offset ${offset}): ${res.status}`); break; }
+    const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+    if (!res.ok) { errors.push(`LAHD Violation Summary API error (offset ${offset}): ${res.status}`); break; }
 
-      const records = await res.json();
-      if (!records || records.length === 0) { hasMore = false; break; }
+    const records = await res.json();
+    if (!records || records.length === 0) { hasMore = false; break; }
 
-      const rows = records
-        .filter((r: Record<string, unknown>) => r.apn)
-        .map((r: Record<string, unknown>) => ({
-          apn: String(r.apn),
-          address: r.address ? String(r.address) : null,
-          violation_type: r.violationtype ? String(r.violationtype) : null,
-          violations_cited: r.violations_cited ? parseInt(String(r.violations_cited), 10) : 0,
-          violations_cleared: r.violations_cleared ? parseInt(String(r.violations_cleared), 10) : 0,
-          metro: "los-angeles",
-          imported_at: new Date().toISOString(),
-        }));
+    const rows = records
+      .filter((r: Record<string, unknown>) => r.apn)
+      .map((r: Record<string, unknown>) => ({
+        apn: String(r.apn),
+        address: r.address ? String(r.address) : null,
+        violation_type: r.violationtype ? String(r.violationtype) : null,
+        violations_cited: r.violations_cited ? parseInt(String(r.violations_cited), 10) : 0,
+        violations_cleared: r.violations_cleared ? parseInt(String(r.violations_cleared), 10) : 0,
+        metro: "los-angeles",
+        imported_at: new Date().toISOString(),
+      }));
 
-      if (rows.length > 0) {
-        totalAdded += await batchUpsert(supabase, "lahd_violation_summary", rows, "apn,violation_type", errors, "LAHD ViolSummary", true);
-      }
-
-      pagesFetched++;
-      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES || isTimeBudgetExceeded(syncStartMs)) { hasMore = false; } else { offset += PAGE_SIZE; }
+    if (rows.length > 0) {
+      totalAdded += await batchUpsert(supabase, "lahd_violation_summary", rows, "apn,violation_type", errors, "LAHD ViolSummary", true);
     }
 
+    pagesFetched++;
+    if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
+      hasMore = false;
+    } else if (isTimeBudgetExceeded(syncStartMs)) {
+      timeBudgetExceeded = true;
+      hasMore = false;
+    } else {
+      offset += PAGE_SIZE;
+    }
+    await saveCursor(supabase, "lahd_violation_summary", { cursorValue: String(offset), cursorOffset: offset });
+  }
+
+  if (!timeBudgetExceeded) {
     try {
       const apnResult = await linkByApn(supabase, "lahd_violation_summary", "id", "apn", errors, "LAHD ViolSummary", "los-angeles");
       totalLinked += apnResult.linked;
@@ -3043,14 +3152,16 @@ async function syncLAHDViolationSummary(supabase: SupabaseClient): Promise<SyncR
     } catch (linkErr) {
       errors.push(`LAHD ViolSummary address linking error: ${String(linkErr)}`);
     }
-
-    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
-  } catch (err) {
-    errors.push(`LAHD ViolSummary fatal error: ${String(err)}`);
-    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
   }
 
-  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+  return {
+    totalAdded,
+    totalLinked,
+    errors,
+    affectedBuildingIds,
+    timeBudgetExceeded,
+    newCursor: timeBudgetExceeded ? { cursorValue: String(offset), cursorOffset: offset } : undefined,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -4174,17 +4285,17 @@ const SOURCES: Record<string, (supabase: SupabaseClient, sinceOverride?: string,
   evictions: (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "evictions", "evictions", (startDate, syncStartMs) => syncEvictions(supabase, startDate, syncStartMs), cd, sinceOverride),
   sheds: (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "sheds", "sidewalk_sheds", (startDate, syncStartMs) => syncSidewalkSheds(supabase, startDate, syncStartMs), cd, sinceOverride),
   permits: (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "permits", "dob_permits", (startDate, syncStartMs) => syncDobPermits(supabase, startDate, syncStartMs), cd, sinceOverride),
-  // LA sources
-  lahd: syncLAHDViolations,
-  "la-311": syncLA311Complaints,
-  ladbs: syncLADBSViolations,
-  lapd: syncLAPDCrimeData,
-  "la-permits": syncLAPermits,
-  "la-soft-story": syncLASoftStory,
-  "la-evictions": syncLAHDEvictions,
-  "la-buyouts": syncLAHDTenantBuyouts,
-  "la-ccris": syncLAHDCCRIS,
-  "la-violation-summary": syncLAHDViolationSummary,
+  // LA sources (wrapped in runWithCursor for resumable sync)
+  lahd: (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "lahd", "lahd_violations", (startDate, syncStartMs) => syncLAHDViolations(supabase, startDate, syncStartMs), cd, sinceOverride),
+  "la-311": (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "la-311", "la_311_complaints", (startDate, syncStartMs) => syncLA311Complaints(supabase, startDate, syncStartMs), cd, sinceOverride),
+  ladbs: (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "ladbs", "ladbs_violations", (startDate, syncStartMs) => syncLADBSViolations(supabase, startDate, syncStartMs), cd, sinceOverride),
+  lapd: (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "lapd", "lapd_crime", (startDate, syncStartMs) => syncLAPDCrimeData(supabase, startDate, syncStartMs), cd, sinceOverride),
+  "la-permits": (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "la-permits", "la_permits", (startDate, syncStartMs) => syncLAPermits(supabase, startDate, syncStartMs), cd, sinceOverride),
+  "la-soft-story": (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "la-soft-story", "la_soft_story", (startDate, syncStartMs) => syncLASoftStory(supabase, startDate, syncStartMs), cd, sinceOverride),
+  "la-evictions": (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "la-evictions", "lahd_evictions", (startDate, syncStartMs) => syncLAHDEvictions(supabase, startDate, syncStartMs), cd, sinceOverride),
+  "la-buyouts": (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "la-buyouts", "lahd_tenant_buyouts", (startDate, syncStartMs) => syncLAHDTenantBuyouts(supabase, startDate, syncStartMs), cd, sinceOverride),
+  "la-ccris": (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "la-ccris", "lahd_ccris", (startDate, syncStartMs) => syncLAHDCCRIS(supabase, startDate, syncStartMs), cd, sinceOverride),
+  "la-violation-summary": (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "la-violation-summary", "lahd_violation_summary", (startDate, syncStartMs) => syncLAHDViolationSummary(supabase, startDate, syncStartMs), cd, sinceOverride),
   // Chicago sources
   "chicago-violations": syncChicagoViolations,
   "chicago-311": syncChicago311,
