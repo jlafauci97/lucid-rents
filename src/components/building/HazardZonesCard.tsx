@@ -28,15 +28,6 @@ interface HazardData {
   totalChecked: number;
 }
 
-interface EarthquakeRetrofit {
-  id: string;
-  retrofit_type: string | null;
-  compliance_status: string | null;
-  ordinance: string | null;
-  deadline: string | null;
-  completion_date: string | null;
-}
-
 interface HazardZonesCardProps {
   latitude: number;
   longitude: number;
@@ -44,7 +35,8 @@ interface HazardZonesCardProps {
   isSoftStory?: boolean;
   softStoryStatus?: string | null;
   city: string;
-  earthquakeRetrofit?: EarthquakeRetrofit | null;
+  /** LA earthquake retrofit data */
+  earthquakeRetrofit?: { id: string; retrofit_type: string; compliance_status: string; ordinance: string; deadline: string; completion_date: string } | null;
 }
 
 const HAZARD_ICONS: Record<string, LucideIcon> = {
@@ -69,7 +61,6 @@ export function HazardZonesCard({
   isSoftStory,
   softStoryStatus,
   city,
-  earthquakeRetrofit,
 }: HazardZonesCardProps) {
   const [data, setData] = useState<HazardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -181,7 +172,7 @@ export function HazardZonesCard({
                   >
                     <Icon
                       className={`w-4 h-4 flex-shrink-0 ${
-                        info.inZone ? colors.icon : "text-[#A3ACBE]"
+                        info.inZone ? colors.icon : "text-[#cbd5e1]"
                       }`}
                     />
                     <div className="flex-1 min-w-0">
@@ -231,56 +222,6 @@ export function HazardZonesCard({
                 }`}
               >
                 {softStoryStatus === "Retrofitted" ? "Done" : "Pending"}
-              </span>
-            </div>
-          )}
-
-          {/* Earthquake Retrofit Status */}
-          {earthquakeRetrofit && (
-            <div
-              className={`flex items-center gap-2.5 rounded-lg px-3 py-2 border ${
-                earthquakeRetrofit.compliance_status === "compliant"
-                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                  : earthquakeRetrofit.compliance_status === "in-progress"
-                  ? "bg-blue-50 text-blue-700 border-blue-200"
-                  : "bg-amber-50 text-amber-700 border-amber-200"
-              }`}
-            >
-              {earthquakeRetrofit.compliance_status === "compliant" ? (
-                <ShieldCheck className="w-4 h-4 flex-shrink-0 text-emerald-500" />
-              ) : (
-                <ShieldAlert className="w-4 h-4 flex-shrink-0 text-amber-500" />
-              )}
-              <div className="flex-1 min-w-0">
-                <span className="text-xs font-medium">
-                  Earthquake Retrofit
-                  {earthquakeRetrofit.ordinance
-                    ? ` (${earthquakeRetrofit.ordinance.replace(/-/g, " ")})`
-                    : ""}
-                </span>
-                <span className="block text-[10px] opacity-70">
-                  {earthquakeRetrofit.retrofit_type
-                    ? earthquakeRetrofit.retrofit_type.replace(/-/g, " ")
-                    : "Seismic retrofit required"}
-                  {earthquakeRetrofit.deadline &&
-                    earthquakeRetrofit.compliance_status !== "compliant" &&
-                    ` · Due ${new Date(earthquakeRetrofit.deadline).toLocaleDateString("en-US", { month: "short", year: "numeric" })}`}
-                  {earthquakeRetrofit.completion_date &&
-                    ` · Completed ${new Date(earthquakeRetrofit.completion_date).toLocaleDateString("en-US", { month: "short", year: "numeric" })}`}
-                </span>
-              </div>
-              <span
-                className={`text-[10px] font-semibold uppercase tracking-wide flex-shrink-0 ${
-                  earthquakeRetrofit.compliance_status === "compliant"
-                    ? "text-emerald-600"
-                    : ""
-                }`}
-              >
-                {earthquakeRetrofit.compliance_status === "compliant"
-                  ? "Done"
-                  : earthquakeRetrofit.compliance_status === "in-progress"
-                  ? "In Progress"
-                  : "Pending"}
               </span>
             </div>
           )}
