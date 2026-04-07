@@ -4122,105 +4122,194 @@ function categorizeHoustonCrime(nibrDesc: string | null | undefined): string | n
   return "other";
 }
 
-async function syncHoustonViolations(supabase: SupabaseClient): Promise<SyncResult> {
-  const lastSync = await getLastSyncDate(supabase, "houston_violations");
-  const logId = await createSyncLog(supabase, "houston_violations");
-  const syncStartMs = Date.now();
-
+async function syncHoustonViolations(supabase: SupabaseClient, startDate: string, syncStartMs: number): Promise<SyncResult> {
   let totalAdded = 0;
   const totalLinked = 0;
   const errors: string[] = [];
   const affectedBuildingIds = new Set<string>();
+  let timeBudgetExceeded = false;
+  let lastRecordDate = startDate;
 
-  try {
-    let offset = 0;
-    let hasMore = true;
-    let pagesFetched = 0;
+  let offset = 0;
+  let hasMore = true;
+  let pagesFetched = 0;
 
-    while (hasMore) {
-      const url = buildHoustonCkanUrl("1446a3ec-2633-4cf1-b15d-6dae9a07c4ed", "", PAGE_SIZE, offset, "RecordCreateDate desc");
+  while (hasMore) {
+    const url = buildHoustonCkanUrl("1446a3ec-2633-4cf1-b15d-6dae9a07c4ed", "", PAGE_SIZE, offset, "RecordCreateDate desc");
 
-      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
-      if (!res.ok) {
-        const errText = await res.text();
-        errors.push(`Houston Violations API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
-        break;
-      }
-
-      const json = await res.json();
-      const records = json.result?.records || [];
-      if (records.length === 0) { hasMore = false; break; }
-
-      const filteredRecords = lastSync
-        ? records.filter((r: Record<string, unknown>) => {
-            const d = r.RecordCreateDate ? String(r.RecordCreateDate) : null;
-            return d && d >= lastSync;
-          })
-        : records;
-
-      const rows = filteredRecords
-        .filter((r: Record<string, unknown>) => r.ViolationSubId || r.NPPRJID)
-        .map((r: Record<string, unknown>) => {
-          const parsed = parseHoustonAddress(r.Merged_Situs as string | undefined);
-          return {
-            isn_dob_bis_vio: `HOU-${r.ViolationSubId || r.NPPRJID}`,
-            issue_date: r.RecordCreateDate ? String(r.RecordCreateDate).slice(0, 10) : null,
-            description: r.ShortDescription ? String(r.ShortDescription).trim() : null,
-            violation_type: r.Violation_Category ? String(r.Violation_Category) : null,
-            borough: "Houston",
-            house_number: parsed.house_number,
-            street_name: parsed.street_name,
-            metro: "houston",
-            imported_at: new Date().toISOString(),
-          };
-        });
-
-      if (rows.length > 0) {
-        totalAdded += await batchUpsert(supabase, "dob_violations", rows, "isn_dob_bis_vio", errors, "Houston Violations");
-      }
-
-      pagesFetched++;
-      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES || isTimeBudgetExceeded(syncStartMs)) { hasMore = false; } else { offset += PAGE_SIZE; }
+    const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+    if (!res.ok) {
+      const errText = await res.text();
+      errors.push(`Houston Violations API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
+      break;
     }
 
-    errors.push(`Houston Violations: linking deferred to dedicated link cron (${totalAdded} rows synced)`);
-    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
-  } catch (err) {
-    errors.push(`Houston Violations fatal error: ${String(err)}`);
-    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
+    const json = await res.json();
+    const records = json.result?.records || [];
+    if (records.length === 0) { hasMore = false; break; }
+
+    const filteredRecords = startDate
+      ? records.filter((r: Record<string, unknown>) => {
+          const d = r.RecordCreateDate ? String(r.RecordCreateDate) : null;
+          return d && d >= startDate;
+        })
+      : records;
+
+    const rows = filteredRecords
+      .filter((r: Record<string, unknown>) => r.ViolationSubId || r.NPPRJID)
+      .map((r: Record<string, unknown>) => {
+        const parsed = parseHoustonAddress(r.Merged_Situs as string | undefined);
+        return {
+          isn_dob_bis_vio: `HOU-${r.ViolationSubId || r.NPPRJID}`,
+          issue_date: r.RecordCreateDate ? String(r.RecordCreateDate).slice(0, 10) : null,
+          description: r.ShortDescription ? String(r.ShortDescription).trim() : null,
+          violation_type: r.Violation_Category ? String(r.Violation_Category) : null,
+          borough: "Houston",
+          house_number: parsed.house_number,
+          street_name: parsed.street_name,
+          metro: "houston",
+          imported_at: new Date().toISOString(),
+        };
+      });
+
+    if (rows.length > 0) {
+      totalAdded += await batchUpsert(supabase, "dob_violations", rows, "isn_dob_bis_vio", errors, "Houston Violations");
+    }
+
+    if (filteredRecords.length > 0 && filteredRecords[filteredRecords.length - 1].RecordCreateDate) {
+      lastRecordDate = String(filteredRecords[filteredRecords.length - 1].RecordCreateDate).slice(0, 10);
+    }
+    pagesFetched++;
+    if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
+      hasMore = false;
+    } else if (isTimeBudgetExceeded(syncStartMs)) {
+      timeBudgetExceeded = true;
+      hasMore = false;
+    } else {
+      offset += PAGE_SIZE;
+    }
+    await saveCursor(supabase, "houston_violations", { cursorValue: lastRecordDate, cursorOffset: offset });
   }
 
-  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+  errors.push(`Houston Violations: linking deferred to dedicated link cron (${totalAdded} rows synced)`);
+
+  return {
+    totalAdded,
+    totalLinked,
+    errors,
+    affectedBuildingIds,
+    timeBudgetExceeded,
+    newCursor: timeBudgetExceeded ? { cursorValue: lastRecordDate, cursorOffset: offset } : undefined,
+  };
 }
 
-async function syncHouston311(supabase: SupabaseClient): Promise<SyncResult> {
-  const logId = await createSyncLog(supabase, "houston_311");
-  const syncStartMs = Date.now();
-
+async function syncHouston311(supabase: SupabaseClient, startDate: string, syncStartMs: number): Promise<SyncResult> {
   let totalAdded = 0;
   const totalLinked = 0;
   const errors: string[] = [];
   const affectedBuildingIds = new Set<string>();
+  let timeBudgetExceeded = false;
 
-  try {
-    let offset = 0;
+  let offset = parseInt(startDate) || 0;
+  let hasMore = true;
+  let pagesFetched = 0;
+  const MAX_311_PAGE = 2000;
+
+  while (hasMore) {
+    const url = buildHoustonArcGISUrl(
+      "https://mycity2.houstontx.gov/gisweb01/rest/services/311/Houston311_RecentServiceRequests/FeatureServer/4",
+      "1=1",
+      MAX_311_PAGE,
+      offset,
+      "CreatedDate DESC"
+    );
+
+    const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+    if (!res.ok) {
+      const errText = await res.text();
+      errors.push(`Houston 311 API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
+      break;
+    }
+
+    const json = await res.json();
+    const features = json.features || [];
+    if (features.length === 0) { hasMore = false; break; }
+
+    const records = features.map((f: { attributes: Record<string, unknown> }) => f.attributes);
+    const rows = records
+      .filter((r: Record<string, unknown>) => r.CaseNumber365 || r.CaseNumber)
+      .map((r: Record<string, unknown>) => ({
+        unique_key: `HOU311-${r.CaseNumber365 || r.CaseNumber}`,
+        complaint_type: r.Title ? String(r.Title) : null,
+        descriptor: r.CaseType ? String(r.CaseType) : null,
+        status: r.Status ? String(r.Status) : null,
+        created_date: r.CreatedDate ? new Date(Number(r.CreatedDate)).toISOString().slice(0, 10) : null,
+        closed_date: r.ClosedDate ? new Date(Number(r.ClosedDate)).toISOString().slice(0, 10) : null,
+        incident_address: r.IncidentAddress ? String(r.IncidentAddress) : null,
+        borough: "Houston",
+        latitude: r.Latitude ? parseFloat(String(r.Latitude)) : null,
+        longitude: r.Longitude ? parseFloat(String(r.Longitude)) : null,
+        metro: "houston",
+        imported_at: new Date().toISOString(),
+      }));
+
+    if (rows.length > 0) {
+      totalAdded += await batchUpsert(supabase, "complaints_311", rows, "unique_key", errors, "Houston 311", true);
+    }
+
+    pagesFetched++;
+    if (features.length < MAX_311_PAGE || pagesFetched >= MAX_PAGES) {
+      hasMore = false;
+    } else if (isTimeBudgetExceeded(syncStartMs)) {
+      timeBudgetExceeded = true;
+      hasMore = false;
+    } else {
+      offset += MAX_311_PAGE;
+    }
+    await saveCursor(supabase, "houston_311", { cursorValue: String(offset), cursorOffset: offset });
+  }
+
+  errors.push(`Houston 311: linking deferred to dedicated link cron (${totalAdded} rows synced)`);
+
+  return {
+    totalAdded,
+    totalLinked,
+    errors,
+    affectedBuildingIds,
+    timeBudgetExceeded,
+    newCursor: timeBudgetExceeded ? { cursorValue: String(offset), cursorOffset: offset } : undefined,
+  };
+}
+
+async function syncHoustonCrimes(supabase: SupabaseClient, startDate: string, syncStartMs: number): Promise<SyncResult> {
+  let totalAdded = 0;
+  const totalLinked = 0;
+  const errors: string[] = [];
+  const affectedBuildingIds = new Set<string>();
+  let timeBudgetExceeded = false;
+
+  const CRIME_PAGE = 2000;
+  const seenIncidents = new Set<string>();
+
+  let offset = parseInt(startDate) || 0;
+
+  for (const layer of [0, 1, 2, 3]) {
     let hasMore = true;
     let pagesFetched = 0;
-    const MAX_311_PAGE = 2000;
 
     while (hasMore) {
       const url = buildHoustonArcGISUrl(
-        "https://mycity2.houstontx.gov/gisweb01/rest/services/311/Houston311_RecentServiceRequests/FeatureServer/4",
+        `https://mycity2.houstontx.gov/pubgis02/rest/services/HPD/NIBRS_Recent_Crime_Reports/FeatureServer/${layer}`,
         "1=1",
-        MAX_311_PAGE,
+        CRIME_PAGE,
         offset,
-        "CreatedDate DESC"
+        "USER_RMSOccurrenceDate DESC"
       );
 
       const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
       if (!res.ok) {
         const errText = await res.text();
-        errors.push(`Houston 311 API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
+        errors.push(`Houston Crimes layer ${layer} API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
         break;
       }
 
@@ -4230,134 +4319,73 @@ async function syncHouston311(supabase: SupabaseClient): Promise<SyncResult> {
 
       const records = features.map((f: { attributes: Record<string, unknown> }) => f.attributes);
       const rows = records
-        .filter((r: Record<string, unknown>) => r.CaseNumber365 || r.CaseNumber)
-        .map((r: Record<string, unknown>) => ({
-          unique_key: `HOU311-${r.CaseNumber365 || r.CaseNumber}`,
-          complaint_type: r.Title ? String(r.Title) : null,
-          descriptor: r.CaseType ? String(r.CaseType) : null,
-          status: r.Status ? String(r.Status) : null,
-          created_date: r.CreatedDate ? new Date(Number(r.CreatedDate)).toISOString().slice(0, 10) : null,
-          closed_date: r.ClosedDate ? new Date(Number(r.ClosedDate)).toISOString().slice(0, 10) : null,
-          incident_address: r.IncidentAddress ? String(r.IncidentAddress) : null,
-          borough: "Houston",
-          latitude: r.Latitude ? parseFloat(String(r.Latitude)) : null,
-          longitude: r.Longitude ? parseFloat(String(r.Longitude)) : null,
-          metro: "houston",
-          imported_at: new Date().toISOString(),
-        }));
+        .filter((r: Record<string, unknown>) => r.USER_Incident)
+        .map((r: Record<string, unknown>) => {
+          const nibrDesc = r.USER_NIBRSDescription ? String(r.USER_NIBRSDescription) : null;
+          const blockRange = r.USER_BlockRange ? String(r.USER_BlockRange) : "";
+          const streetName = r.USER_StreetName ? String(r.USER_StreetName) : "";
+          const streetType = r.USER_StreetType ? String(r.USER_StreetType) : "";
+          const suffix = r.USER_Suffix ? String(r.USER_Suffix) : "";
+          const fullAddress = [blockRange, streetName, streetType, suffix].filter(Boolean).join(" ").trim();
 
-      if (rows.length > 0) {
-        totalAdded += await batchUpsert(supabase, "complaints_311", rows, "unique_key", errors, "Houston 311", true);
+          return {
+            cmplnt_num: `HPD-${r.USER_Incident}`,
+            cmplnt_date: r.USER_RMSOccurrenceDate ? new Date(Number(r.USER_RMSOccurrenceDate)).toISOString().slice(0, 10) : null,
+            borough: "Houston",
+            precinct: r.USER_District ? String(r.USER_District) : null,
+            offense_description: nibrDesc,
+            crime_category: categorizeHoustonCrime(nibrDesc),
+            latitude: null,
+            longitude: null,
+            zip_code: r.USER_ZIPCode ? String(r.USER_ZIPCode) : null,
+            metro: "houston",
+            imported_at: new Date().toISOString(),
+            incident_address: fullAddress || null,
+          };
+        });
+
+      const dedupedRows = rows.filter((r: { cmplnt_num: string }) => {
+        if (seenIncidents.has(r.cmplnt_num)) return false;
+        seenIncidents.add(r.cmplnt_num);
+        return true;
+      });
+
+      if (dedupedRows.length > 0) {
+        totalAdded += await batchUpsert(supabase, "nypd_complaints", dedupedRows, "cmplnt_num", errors, `Houston Crimes L${layer}`);
       }
 
       pagesFetched++;
-      if (features.length < MAX_311_PAGE || pagesFetched >= MAX_PAGES || isTimeBudgetExceeded(syncStartMs)) { hasMore = false; } else { offset += MAX_311_PAGE; }
+      if (features.length < CRIME_PAGE || pagesFetched >= MAX_PAGES) {
+        hasMore = false;
+      } else if (isTimeBudgetExceeded(syncStartMs)) {
+        timeBudgetExceeded = true;
+        hasMore = false;
+      } else {
+        offset += CRIME_PAGE;
+      }
+      await saveCursor(supabase, "houston_crimes", { cursorValue: String(offset), cursorOffset: offset });
     }
 
-    errors.push(`Houston 311: linking deferred to dedicated link cron (${totalAdded} rows synced)`);
-    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
-  } catch (err) {
-    errors.push(`Houston 311 fatal error: ${String(err)}`);
-    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
+    if (timeBudgetExceeded) break;
   }
 
-  return { totalAdded, totalLinked, errors, affectedBuildingIds };
-}
-
-async function syncHoustonCrimes(supabase: SupabaseClient): Promise<SyncResult> {
-  const logId = await createSyncLog(supabase, "houston_crimes");
-  const syncStartMs = Date.now();
-
-  let totalAdded = 0;
-  const totalLinked = 0;
-  const errors: string[] = [];
-  const affectedBuildingIds = new Set<string>();
-
-  try {
-    const CRIME_PAGE = 2000;
-    const seenIncidents = new Set<string>();
-
-    for (const layer of [0, 1, 2, 3]) {
-      let offset = 0;
-      let hasMore = true;
-      let pagesFetched = 0;
-
-      while (hasMore) {
-        const url = buildHoustonArcGISUrl(
-          `https://mycity2.houstontx.gov/pubgis02/rest/services/HPD/NIBRS_Recent_Crime_Reports/FeatureServer/${layer}`,
-          "1=1",
-          CRIME_PAGE,
-          offset,
-          "USER_RMSOccurrenceDate DESC"
-        );
-
-        const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
-        if (!res.ok) {
-          const errText = await res.text();
-          errors.push(`Houston Crimes layer ${layer} API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
-          break;
-        }
-
-        const json = await res.json();
-        const features = json.features || [];
-        if (features.length === 0) { hasMore = false; break; }
-
-        const records = features.map((f: { attributes: Record<string, unknown> }) => f.attributes);
-        const rows = records
-          .filter((r: Record<string, unknown>) => r.USER_Incident)
-          .map((r: Record<string, unknown>) => {
-            const nibrDesc = r.USER_NIBRSDescription ? String(r.USER_NIBRSDescription) : null;
-            const blockRange = r.USER_BlockRange ? String(r.USER_BlockRange) : "";
-            const streetName = r.USER_StreetName ? String(r.USER_StreetName) : "";
-            const streetType = r.USER_StreetType ? String(r.USER_StreetType) : "";
-            const suffix = r.USER_Suffix ? String(r.USER_Suffix) : "";
-            const fullAddress = [blockRange, streetName, streetType, suffix].filter(Boolean).join(" ").trim();
-
-            return {
-              cmplnt_num: `HPD-${r.USER_Incident}`,
-              cmplnt_date: r.USER_RMSOccurrenceDate ? new Date(Number(r.USER_RMSOccurrenceDate)).toISOString().slice(0, 10) : null,
-              borough: "Houston",
-              precinct: r.USER_District ? String(r.USER_District) : null,
-              offense_description: nibrDesc,
-              crime_category: categorizeHoustonCrime(nibrDesc),
-              latitude: null,
-              longitude: null,
-              zip_code: r.USER_ZIPCode ? String(r.USER_ZIPCode) : null,
-              metro: "houston",
-              imported_at: new Date().toISOString(),
-              incident_address: fullAddress || null,
-            };
-          });
-
-        const dedupedRows = rows.filter((r: { cmplnt_num: string }) => {
-          if (seenIncidents.has(r.cmplnt_num)) return false;
-          seenIncidents.add(r.cmplnt_num);
-          return true;
-        });
-
-        if (dedupedRows.length > 0) {
-          totalAdded += await batchUpsert(supabase, "nypd_complaints", dedupedRows, "cmplnt_num", errors, `Houston Crimes L${layer}`);
-        }
-
-        pagesFetched++;
-        if (features.length < CRIME_PAGE || pagesFetched >= MAX_PAGES || isTimeBudgetExceeded(syncStartMs)) { hasMore = false; } else { offset += CRIME_PAGE; }
-      }
-
-      if (isTimeBudgetExceeded(syncStartMs)) break;
-    }
-
+  if (!timeBudgetExceeded) {
     try {
       const { error: zipErr } = await supabase.rpc("backfill_crime_zip_codes", { target_metro: "houston" });
       if (zipErr) errors.push(`Houston Crimes zip backfill error: ${zipErr.message}`);
     } catch (zipBackfillErr) {
       errors.push(`Houston Crimes zip backfill fatal: ${String(zipBackfillErr)}`);
     }
-  } catch (err) {
-    errors.push(`Houston Crimes sync fatal: ${String(err)}`);
   }
 
-  await finalizeSyncLog(supabase, logId, errors.some(e => e.includes("fatal")) ? "failed" : "completed", totalAdded, totalLinked, errors);
-  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+  return {
+    totalAdded,
+    totalLinked,
+    errors,
+    affectedBuildingIds,
+    timeBudgetExceeded,
+    newCursor: timeBudgetExceeded ? { cursorValue: String(offset), cursorOffset: offset } : undefined,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -4399,10 +4427,10 @@ const SOURCES: Record<string, (supabase: SupabaseClient, sinceOverride?: string,
   "miami-permits": (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "miami-permits", "miami_permits", (startDate, syncStartMs) => syncMiamiPermits(supabase, startDate, syncStartMs), cd, sinceOverride),
   "miami-unsafe": (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "miami-unsafe", "miami_unsafe", (startDate, syncStartMs) => syncMiamiUnsafeStructures(supabase, startDate, syncStartMs), cd, sinceOverride),
   "miami-recerts": (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "miami-recerts", "miami_recerts", (startDate, syncStartMs) => syncMiamiRecertifications(supabase, startDate, syncStartMs), cd, sinceOverride),
-  // Houston sources
-  "houston-violations": syncHoustonViolations,
-  "houston-311": syncHouston311,
-  "houston-crimes": syncHoustonCrimes,
+  // Houston sources (wrapped in runWithCursor for resumable sync)
+  "houston-violations": (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "houston-violations", "houston_violations", (startDate, syncStartMs) => syncHoustonViolations(supabase, startDate, syncStartMs), cd, sinceOverride),
+  "houston-311": (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "houston-311", "houston_311", (startDate, syncStartMs) => syncHouston311(supabase, startDate, syncStartMs), cd, sinceOverride),
+  "houston-crimes": (supabase, sinceOverride, cd = 0) => runWithCursor(supabase, "houston-crimes", "houston_crimes", (startDate, syncStartMs) => syncHoustonCrimes(supabase, startDate, syncStartMs), cd, sinceOverride),
 };
 
 // ---------------------------------------------------------------------------
