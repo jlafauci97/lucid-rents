@@ -26,17 +26,20 @@ function getRedis(): Redis | null {
  * @param compute - Async function to compute the value on cache miss
  */
 export async function cached<T>(
-  key: string,
+  key: string | null,
   ttlSeconds: number,
   compute: () => Promise<T>
 ): Promise<T> {
+  // Skip cache entirely when no key or no TTL
+  if (!key || ttlSeconds <= 0) return compute();
+
   const r = getRedis();
   if (!r) return compute();
 
   try {
-    const cached = await r.get<T>(key);
-    if (cached !== null && cached !== undefined) {
-      return cached;
+    const hit = await r.get<T>(key);
+    if (hit !== null && hit !== undefined) {
+      return hit;
     }
   } catch {
     // Redis down — fall through to compute

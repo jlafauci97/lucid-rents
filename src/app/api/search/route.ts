@@ -41,8 +41,8 @@ export async function GET(req: NextRequest) {
     const cacheKey = isAutocomplete ? `search:${cityParam || "all"}:${abbreviated}:${borough || ""}:${zip || ""}` : null;
 
     const result = await cached(
-      cacheKey || `nocache:${Date.now()}`,
-      isAutocomplete ? 300 : 0, // 5 min TTL for autocomplete, skip cache for full results
+      cacheKey,
+      300, // 5 min TTL for autocomplete; null key skips cache for full results
       async () => {
         const { data, error } = isAddressQuery
           ? await supabase.rpc("search_buildings_fast", {
