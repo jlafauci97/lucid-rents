@@ -252,6 +252,23 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
       : Promise.resolve([] as { month: string; beds: number; median_rent: number }[]),
   ]);
 
+  // Top violation/complaint type for header preview cards
+  // Fetch recent 100 of each, count types client-side (fast: indexed by building_id)
+  const [recentViolations, recentComplaints] = await Promise.all([
+    safe(supabase.from("hpd_violations").select("violation_type").eq("building_id", buildingId).not("violation_type", "is", null).order("inspection_date", { ascending: false }).limit(100), [] as { violation_type: string }[]),
+    safe(supabase.from("complaints_311").select("complaint_type").eq("building_id", buildingId).not("complaint_type", "is", null).order("created_date", { ascending: false }).limit(100), [] as { complaint_type: string }[]),
+  ]);
+  const topViolationType = (() => {
+    const c: Record<string, number> = {};
+    for (const v of recentViolations) c[v.violation_type] = (c[v.violation_type] || 0) + 1;
+    return Object.entries(c).sort((a, b) => b[1] - a[1])[0]?.[0];
+  })();
+  const topComplaintType = (() => {
+    const c: Record<string, number> = {};
+    for (const v of recentComplaints) c[v.complaint_type] = (c[v.complaint_type] || 0) + 1;
+    return Object.entries(c).sort((a, b) => b[1] - a[1])[0]?.[0];
+  })();
+
   // For non-NYC cities, violation_count may be 0 because it tracks HPD violations only.
   // Use dob_violation_count as the primary violation metric for Chicago.
   const effectiveViolationCount = (isChicago || isHouston)
@@ -388,7 +405,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
         </div>
       </div>
 
-      <BuildingHeader building={building} city={city} violationCount={effectiveViolationCount} valueGrade={deweyMetrics?.valueGrade} medianRent={deweyMetrics?.medianRent ?? (rents.length > 0 ? Math.round(rents.reduce((sum, r) => sum + (r.median_rent || 0), 0) / rents.filter(r => r.median_rent > 0).length) || undefined : undefined)} pricePerSqft={deweyMetrics?.pricePerSqft} />
+      <BuildingHeader building={building} city={city} violationCount={effectiveViolationCount} valueGrade={deweyMetrics?.valueGrade} medianRent={deweyMetrics?.medianRent ?? (rents.length > 0 ? Math.round(rents.reduce((sum, r) => sum + (r.median_rent || 0), 0) / rents.filter(r => r.median_rent > 0).length) || undefined : undefined)} pricePerSqft={deweyMetrics?.pricePerSqft} topViolationType={topViolationType} topComplaintType={topComplaintType} />
 
       <SectionNav />
 
