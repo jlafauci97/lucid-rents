@@ -9,9 +9,10 @@ import { NextRequest, NextResponse } from "next/server";
 export const runtime = "edge";
 
 function getSupabase() {
+  // Use service role for search to avoid PgBouncer pool contention with anon connections
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 }
 
@@ -51,8 +52,8 @@ export async function GET(req: NextRequest) {
       try {
         const { Redis } = await import("@upstash/redis");
         const redis = new Redis({
-          url: process.env.UPSTASH_REDIS_REST_URL!,
-          token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+          url: process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL!,
+          token: process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN!,
         });
 
         // Try progressively longer prefixes for best match
@@ -82,8 +83,8 @@ export async function GET(req: NextRequest) {
       try {
         const { Redis } = await import("@upstash/redis");
         const redis = new Redis({
-          url: process.env.UPSTASH_REDIS_REST_URL!,
-          token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+          url: process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL!,
+          token: process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN!,
         });
         const hit = await redis.get<{ buildings: unknown[]; total: number }>(cacheKey);
         if (hit) {
