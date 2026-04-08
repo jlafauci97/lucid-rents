@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
         // Try progressively longer prefixes for best match
         const upperQuery = abbreviated.toUpperCase();
         let buildings: unknown[] | null = null;
-        for (let len = Math.min(6, upperQuery.length); len >= 2; len--) {
+        for (let len = Math.min(5, upperQuery.length); len >= 3; len--) {
           const prefix = upperQuery.substring(0, len);
           const hit = await redis.get<unknown[]>(`ac:${cityParam}:${prefix}`);
           if (hit && hit.length > 0) {
