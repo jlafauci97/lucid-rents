@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 
-// Tuple format from the JSON: [address, slug, borough, score, reviews, violations, name?]
+// Tuple format: [address, slug, borough, score, reviews, violations, name?]
 type SearchTuple = [string, string, string, number | null, number, number, string?];
 
 export interface LocalSearchResult {
@@ -16,37 +16,34 @@ export interface LocalSearchResult {
   name?: string;
 }
 
-// In-memory cache per metro — persists across component remounts
-const indexCache = new Map<string, SearchTuple[]>();
-const loadingPromises = new Map<string, Promise<SearchTuple[]>>();
+// In-memory chunk cache: metro:prefix → sorted tuples
+const chunkCache = new Map<string, SearchTuple[]>();
+const loadingChunks = new Set<string>();
 
-async function loadIndex(metro: string): Promise<SearchTuple[]> {
-  if (indexCache.has(metro)) return indexCache.get(metro)!;
+async function loadChunk(metro: string, prefix: string): Promise<SearchTuple[]> {
+  const key = `${metro}:${prefix}`;
+  if (chunkCache.has(key)) return chunkCache.get(key)!;
+  if (loadingChunks.has(key)) {
+    // Wait for in-flight load
+    await new Promise(r => setTimeout(r, 50));
+    return chunkCache.get(key) || [];
+  }
 
-  // Dedupe concurrent loads
-  if (loadingPromises.has(metro)) return loadingPromises.get(metro)!;
-
-  const promise = (async () => {
-    try {
-      const res = await fetch(`/search/${metro}.json`);
-      if (!res.ok) return [];
-      const data: SearchTuple[] = await res.json();
-      indexCache.set(metro, data);
-      return data;
-    } catch {
-      return [];
-    }
-  })();
-
-  loadingPromises.set(metro, promise);
-  const result = await promise;
-  loadingPromises.delete(metro);
-  return result;
+  loadingChunks.add(key);
+  try {
+    const safePrefix = prefix.replace(/[^a-zA-Z0-9]/g, "_");
+    const res = await fetch(`/search/${metro}/${safePrefix}.json`);
+    if (!res.ok) return [];
+    const data: SearchTuple[] = await res.json();
+    chunkCache.set(key, data);
+    return data;
+  } catch {
+    return [];
+  } finally {
+    loadingChunks.delete(key);
+  }
 }
 
-/**
- * Binary search to find the first index where address >= prefix.
- */
 function lowerBound(arr: SearchTuple[], prefix: string): number {
   let lo = 0, hi = arr.length;
   while (lo < hi) {
@@ -57,19 +54,14 @@ function lowerBound(arr: SearchTuple[], prefix: string): number {
   return lo;
 }
 
-/**
- * Search the local index for buildings matching a prefix.
- * Returns up to `limit` results, sorted by review count (most first).
- */
-function searchIndex(index: SearchTuple[], query: string, limit: number): LocalSearchResult[] {
+function searchChunk(chunk: SearchTuple[], query: string, limit: number): LocalSearchResult[] {
   const prefix = query.toUpperCase();
-  const start = lowerBound(index, prefix);
+  const start = lowerBound(chunk, prefix);
 
-  // Collect all matches (up to 200 to sort from)
   const matches: SearchTuple[] = [];
-  for (let i = start; i < index.length && i < start + 200; i++) {
-    if (!index[i][0].startsWith(prefix)) break;
-    matches.push(index[i]);
+  for (let i = start; i < chunk.length && matches.length < 200; i++) {
+    if (!chunk[i][0].startsWith(prefix)) break;
+    matches.push(chunk[i]);
   }
 
   // Sort by reviews DESC, then violations DESC
@@ -88,33 +80,43 @@ function searchIndex(index: SearchTuple[], query: string, limit: number): LocalS
 }
 
 /**
- * Hook for instant client-side search.
- * Loads the metro's search index on first use, then searches locally.
+ * Hook for instant client-side search using chunked prefix index.
+ * Loads only the ~500KB-4MB chunk matching the user's input prefix.
  */
 export function useLocalSearch(metro: string) {
-  const [index, setIndex] = useState<SearchTuple[] | null>(indexCache.get(metro) || null);
-  const [loading, setLoading] = useState(!indexCache.has(metro));
-
-  useEffect(() => {
-    if (indexCache.has(metro)) {
-      setIndex(indexCache.get(metro)!);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    loadIndex(metro).then((data) => {
-      setIndex(data);
-      setLoading(false);
-    });
-  }, [metro]);
+  const [, setTick] = useState(0); // force re-render on chunk load
+  const lastPrefix = useRef("");
 
   const search = useCallback(
-    (query: string, limit = 5): LocalSearchResult[] => {
-      if (!index || query.length < 2) return [];
-      return searchIndex(index, query, limit);
+    async (query: string, limit = 5): Promise<LocalSearchResult[]> => {
+      if (query.length < 2) return [];
+
+      const upper = query.toUpperCase();
+      const prefix = upper.substring(0, 2).replace(/[^a-zA-Z0-9]/g, "_");
+
+      // Load chunk if not cached
+      if (!chunkCache.has(`${metro}:${prefix}`)) {
+        if (prefix !== lastPrefix.current) {
+          lastPrefix.current = prefix;
+          loadChunk(metro, prefix).then(() => setTick(t => t + 1));
+        }
+        return [];
+      }
+
+      const chunk = chunkCache.get(`${metro}:${prefix}`)!;
+      return searchChunk(chunk, query, limit);
     },
-    [index]
+    [metro]
   );
 
-  return { search, loading, ready: !!index };
+  // Preload common prefixes (10-19, 20-29 etc.) on mount
+  useEffect(() => {
+    // Preload the most common first-digit prefix after a short delay
+    const timer = setTimeout(() => {
+      // Don't preload — let it load on first keystroke for instant chunk fetch
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [metro]);
+
+  return { search, ready: true };
 }

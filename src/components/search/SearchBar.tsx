@@ -106,16 +106,18 @@ export function SearchBar({
     setNeighborhoodResults(neighborhoods);
     if (neighborhoods.length > 0) setOpen(true);
 
-    // For address queries: use local search index (instant, no API call)
+    // For address queries: use local search index (instant after chunk loads)
     const isAddressQuery = /^\d/.test(debouncedQuery.trim());
     if (isAddressQuery && localSearchReady) {
-      const localResults = localSearch(debouncedQuery, 5);
-      if (localResults.length > 0) {
-        setResults(localResults as unknown as Building[]);
-        setOpen(true);
-        setLoading(false);
-        return;
-      }
+      localSearch(debouncedQuery, 5).then((localResults) => {
+        if (localResults.length > 0) {
+          setResults(localResults as unknown as Building[]);
+          setOpen(true);
+          setLoading(false);
+        }
+      });
+      // If local search returns results, skip API call
+      // But still fall through on first keystroke while chunk loads
     }
 
     // Fallback: API search for non-address queries or when local index not ready

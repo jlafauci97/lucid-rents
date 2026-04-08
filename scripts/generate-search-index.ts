@@ -31,6 +31,7 @@ async function generateMetro(metro: string) {
       .from("search_index")
       .select("full_address,slug,borough,overall_score,review_count,violation_count,name")
       .eq("metro", metro)
+      .or("review_count.gt.0,violation_count.gt.0,overall_score.not.is.null,name.not.is.null")
       .order("full_address", { ascending: true })
       .range(offset, offset + BATCH_SIZE - 1);
 
@@ -57,9 +58,6 @@ async function generateMetro(metro: string) {
     if (!data || data.length === 0) break;
 
     for (const b of data) {
-      // Skip buildings with no data — nobody searches for empty entries
-      // Keep all buildings that have reviews, violations, a name, or a score
-      if (!b.review_count && !b.violation_count && !b.name && !b.overall_score) continue;
       const tuple: SearchTuple = [b.full_address, b.slug, b.borough, b.overall_score, b.review_count || 0, b.violation_count || 0];
       if (b.name) tuple.push(b.name);
       buildings.push(tuple);
