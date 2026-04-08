@@ -8,8 +8,6 @@ import { ActivityFeed } from "@/components/ActivityFeed";
 import { LiveStats } from "@/components/home/LiveStats";
 import { NearbyBuildings } from "@/components/home/NearbyBuildings";
 import { ViolationTickerServer } from "@/components/home/ViolationTickerServer";
-import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalUrl, cityPath } from "@/lib/seo";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
@@ -22,6 +20,8 @@ import {
   HardHat,
   Calculator,
 } from "lucide-react";
+
+export const revalidate = 3600; // 1h ISR
 
 export async function generateMetadata({
   params,
@@ -65,7 +65,6 @@ export default async function CityHomePage({
   const meta = CITY_META[city];
 
   return (
-    <AdSidebar>
       <div>
         <JsonLd
           data={{
@@ -165,9 +164,6 @@ export default async function CityHomePage({
           </div>
         </section>
 
-        {/* Ad */}
-        <AdBlock adSlot="HOME_MID_2" adFormat="horizontal" />
-
         {/* Explore */}
         <section className="py-12 bg-white border-t border-[#e2e8f0]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -246,6 +242,5 @@ export default async function CityHomePage({
           </div>
         </section>
       </div>
-    </AdSidebar>
   );
 }

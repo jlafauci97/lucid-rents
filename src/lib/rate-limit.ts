@@ -7,14 +7,11 @@ import { Redis } from "@upstash/redis";
  * allowing the app to run without Redis in dev/staging.
  */
 function createRatelimit() {
-  if (
-    !process.env.UPSTASH_REDIS_REST_URL ||
-    !process.env.UPSTASH_REDIS_REST_TOKEN
-  ) {
-    return null;
-  }
+  const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !token) return null;
   return new Ratelimit({
-    redis: Redis.fromEnv(),
+    redis: new Redis({ url, token }),
     // 30 requests per 10 seconds per IP
     limiter: Ratelimit.slidingWindow(30, "10 s"),
     analytics: true,

@@ -5,8 +5,6 @@ import { SearchBar } from "@/components/search/SearchBar";
 import { canonicalUrl, buildingUrl, cityPath, cityBreadcrumbs } from "@/lib/seo";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { FAQSection } from "@/components/seo/FAQSection";
-import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
 
 /* ---------------------------------------------------------------------------
@@ -268,7 +266,6 @@ export default async function RentStabilizationPage({
   }
 
   return (
-    <AdSidebar>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* JSON-LD */}
         <script
@@ -527,8 +524,6 @@ export default async function RentStabilizationPage({
           ))}
         </section>
 
-        <AdBlock adSlot="RENT_STAB_BOTTOM" adFormat="horizontal" />
-
         {/* FAQ */}
         <FAQSection
           items={[
@@ -562,6 +557,5 @@ export default async function RentStabilizationPage({
           title={`Frequently Asked Questions About ${isLA ? "LA RSO" : isChicago ? "Chicago Rent Protections" : "NYC Rent Stabilization"}`}
         />
       </div>
-    </AdSidebar>
   );
 }

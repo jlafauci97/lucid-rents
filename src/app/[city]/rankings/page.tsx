@@ -2,8 +2,6 @@ import { createClient } from "@/lib/supabase/server";
 import { AlertTriangle, Building2, MapPin, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { buildingUrl, canonicalUrl } from "@/lib/seo";
-import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
 import { getRegions, getRegionLabel } from "@/lib/constants";
 import { CITY_META, type City } from "@/lib/cities";
 import type { Metadata } from "next";
@@ -84,7 +82,6 @@ export default async function RankingsPage({ params: routeParams, searchParams }
   }
 
   return (
-    <AdSidebar>
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="mb-8">
@@ -273,8 +270,6 @@ export default async function RankingsPage({ params: routeParams, searchParams }
         </div>
       )}
 
-      <AdBlock adSlot="RANKINGS_BOTTOM" adFormat="horizontal" />
     </div>
-    </AdSidebar>
   );
 }

@@ -3,7 +3,6 @@ import { ViolationTrend } from "@/components/building/ViolationTrend";
 import { CommonIssues } from "@/components/building/CommonIssues";
 import { ViolationsByUnit } from "@/components/building/ViolationsByUnit";
 import { IssuesTabs } from "@/components/building/IssuesTabs";
-import { AdBlock } from "@/components/ui/AdBlock";
 import type { City } from "@/lib/cities";
 import type { HpdViolation, Complaint311, HpdLitigation, DobViolation, BedBugReport, Eviction, DobPermit, LahdViolationSummary } from "@/types";
 
@@ -130,8 +129,6 @@ export async function DeferredIssuesSection({ buildingId, city, buildingHref }: 
           buildingId={buildingId}
         />
       </div>
-
-      <AdBlock adSlot="BUILDING_MID_2" adFormat="horizontal" />
 
       {/* Violations & Complaints Tabs */}
       <div id="violations" className="scroll-mt-28">

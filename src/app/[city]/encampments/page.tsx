@@ -3,8 +3,6 @@ import { Tent, ExternalLink, AlertCircle } from "lucide-react";
 import { canonicalUrl, cityPath } from "@/lib/seo";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
 import { notFound } from "next/navigation";
-import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
 import { EncampmentMapSection } from "@/components/encampments/EncampmentMapSection";
 
 export async function generateMetadata({
@@ -98,7 +96,6 @@ export default async function EncampmentsPage({
   const stats = await getEncampmentStats(city);
 
   return (
-    <AdSidebar>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-6">
@@ -203,8 +200,6 @@ export default async function EncampmentsPage({
           </div>
         </div>
 
-        <AdBlock adSlot="ENCAMPMENTS_BOTTOM" adFormat="horizontal" />
       </div>
-    </AdSidebar>
   );
 }

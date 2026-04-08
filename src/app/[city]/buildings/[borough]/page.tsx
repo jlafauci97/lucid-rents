@@ -6,8 +6,6 @@ import { BuildingCard } from "@/components/search/BuildingCard";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { SLUG_TO_BOROUGH, canonicalUrl, buildingUrl, cityPath } from "@/lib/seo";
-import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
 import { BoroughExploreLinks } from "@/components/seo/BoroughExploreLinks";
 import { FAQSection } from "@/components/seo/FAQSection";
 import { generateBoroughFAQ } from "@/lib/faq/area-faq";
@@ -164,7 +162,6 @@ export default async function BoroughPage({ params, searchParams }: BoroughPageP
   };
 
   return (
-    <AdSidebar>
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {prevUrl && <link rel="prev" href={prevUrl} />}
       {nextUrl && <link rel="next" href={nextUrl} />}
@@ -214,8 +211,6 @@ export default async function BoroughPage({ params, searchParams }: BoroughPageP
         ))}
       </div>
 
-      <AdBlock adSlot="BOROUGH_BOTTOM" adFormat="horizontal" />
-
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex justify-center gap-2 mt-8">
@@ -259,6 +254,5 @@ export default async function BoroughPage({ params, searchParams }: BoroughPageP
         title={`Frequently Asked Questions About ${borough}`}
       />
     </div>
-    </AdSidebar>
   );
 }

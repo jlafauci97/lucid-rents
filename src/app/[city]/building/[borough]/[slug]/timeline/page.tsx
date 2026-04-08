@@ -6,7 +6,6 @@ import { createClient } from "@/lib/supabase/server";
 import { regionFromSlug, buildingUrl, canonicalUrl, cityBreadcrumbs, cityPath } from "@/lib/seo";
 import { CITY_META, VALID_CITIES, type City } from "@/lib/cities";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
-import { AdSidebar } from "@/components/ui/AdSidebar";
 import { TimelineView } from "@/components/building/TimelineView";
 import { normalizeTimelineEvents } from "@/lib/timeline";
 import { cache } from "react";
@@ -128,7 +127,6 @@ export default async function TimelinePage({
   ];
 
   return (
-    <AdSidebar>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Breadcrumbs items={breadcrumbs} />
 
@@ -166,6 +164,5 @@ export default async function TimelinePage({
           </div>
         )}
       </div>
-    </AdSidebar>
   );
 }

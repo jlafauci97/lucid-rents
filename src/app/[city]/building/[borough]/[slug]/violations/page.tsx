@@ -7,7 +7,6 @@ import { regionFromSlug, buildingUrl, canonicalUrl, cityBreadcrumbs, cityPath } 
 import { CITY_META, VALID_CITIES, type City } from "@/lib/cities";
 import { VIOLATION_AGENCIES } from "@/lib/constants";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
-import { AdSidebar } from "@/components/ui/AdSidebar";
 import { ViolationTimeline } from "@/components/building/ViolationTimeline";
 import { ViolationSummaryTable } from "@/components/building/ViolationSummaryTable";
 import { ComplaintTimeline } from "@/components/building/ComplaintTimeline";
@@ -196,7 +195,6 @@ export default async function ViolationsPage({
   const baseUrl = `${buildingHref}/violations?type=${type}`;
 
   return (
-    <AdSidebar>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Breadcrumbs items={breadcrumbs} />
 
@@ -329,6 +327,5 @@ export default async function ViolationsPage({
           </div>
         )}
       </div>
-    </AdSidebar>
   );
 }

@@ -235,6 +235,11 @@
     {
       "path": "/api/cron/health-check",
       "schedule": "0 22 * * *"
+    },
+
+    {
+      "path": "/api/cron/refresh-crime-cache",
+      "schedule": "0 5 2 * *"
     }
   ]
 }

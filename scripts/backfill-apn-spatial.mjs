@@ -60,9 +60,16 @@ function sleep(ms) {
 
 // ── ArcGIS spatial query ─────────────────────────────────────────────────
 async function queryParcelByCoords(lat, lng) {
+  // Use envelope query (tiny bbox) instead of point — LA County ArcGIS
+  // doesn't reliably handle point-in-polygon with inSR=4326
+  const d = 0.00015; // ~15m buffer
+  const envelope = JSON.stringify({
+    xmin: lng - d, ymin: lat - d,
+    xmax: lng + d, ymax: lat + d,
+  });
   const params = new URLSearchParams({
-    geometry: `${lng},${lat}`,
-    geometryType: "esriGeometryPoint",
+    geometry: envelope,
+    geometryType: "esriGeometryEnvelope",
     spatialRel: "esriSpatialRelIntersects",
     outFields: "APN,SitusAddress,SitusZIP,UseType,YearBuilt1,Units1",
     returnGeometry: "false",

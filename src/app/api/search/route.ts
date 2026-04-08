@@ -1,27 +1,19 @@
+import { createClient } from "@supabase/supabase-js";
 import { isValidCity } from "@/lib/cities";
 import { normalizeAddressQuery } from "@/lib/address-normalization";
-import { createClient } from "@/lib/supabase/server";
 import { searchSchema } from "@/lib/validators";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { cached } from "@/lib/kv-cache";
 import { NextRequest, NextResponse } from "next/server";
 
-function applySortOrder(
-  query: ReturnType<ReturnType<Awaited<ReturnType<typeof createClient>>["from"]>["select"]>,
-  sort: string
-) {
-  switch (sort) {
-    case "score-desc":
-      return query.order("overall_score", { ascending: false, nullsFirst: false });
-    case "score-asc":
-      return query.order("overall_score", { ascending: true, nullsFirst: false });
-    case "violations-desc":
-      return query.order("violation_count", { ascending: false });
-    case "reviews-desc":
-      return query.order("review_count", { ascending: false });
-    case "relevance":
-    default:
-      return query.order("review_count", { ascending: false });
-  }
+export const runtime = "edge";
+
+function getSupabase() {
+  // Use service role for search to avoid PgBouncer pool contention with anon connections
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 }
 
 export async function GET(req: NextRequest) {
@@ -46,68 +38,135 @@ export async function GET(req: NextRequest) {
   }
   const offset = (page - 1) * limit;
 
-  const supabase = await createClient();
+  const supabase = getSupabase();
 
-  // Use ranked search function for text queries to get proper relevance ordering
   if (q) {
     const { abbreviated } = normalizeAddressQuery(q);
-    // Address queries (start with digit) use fast btree index path;
-    // name/owner queries fall back to GIN full-text search
     const isAddressQuery = /^\d/.test(abbreviated.trim());
+    const isAutocomplete = limit <= 5;
+    const cacheKey = isAutocomplete ? `search:${cityParam || "all"}:${abbreviated}:${borough || ""}:${zip || ""}` : null;
 
-    const { data, error } = isAddressQuery
-      ? await supabase.rpc("search_buildings_fast", {
-          search_query: abbreviated,
-          city_filter: cityParam || null,
-          borough_filter: borough || null,
-          zip_filter: zip || null,
-          sort_by: sort || "relevance",
-          page_offset: offset,
-          page_limit: limit,
-        })
-      : await supabase.rpc("search_buildings_ranked", {
-          search_query: abbreviated,
-          city_filter: cityParam || null,
-          borough_filter: borough || null,
-          zip_filter: zip || null,
-          sort_by: sort || "relevance",
-          page_offset: offset,
-          page_limit: limit,
+    // Autocomplete: Redis-only path — zero Supabase involvement
+    // Pre-populated by scripts/populate-search-redis.ts
+    if (isAutocomplete && isAddressQuery && cityParam) {
+      try {
+        const { Redis } = await import("@upstash/redis");
+        const redis = new Redis({
+          url: process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL!,
+          token: process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN!,
         });
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+        // Try progressively longer prefixes for best match
+        const upperQuery = abbreviated.toUpperCase();
+        let buildings: unknown[] | null = null;
+        for (let len = Math.min(5, upperQuery.length); len >= 3; len--) {
+          const prefix = upperQuery.substring(0, len);
+          const hit = await redis.get<unknown[]>(`ac:${cityParam}:${prefix}`);
+          if (hit && hit.length > 0) {
+            buildings = hit;
+            break;
+          }
+        }
+
+        if (buildings) {
+          return NextResponse.json({ buildings, total: buildings.length, page }, {
+            headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" },
+          });
+        }
+      } catch {
+        // Redis down — fall through to Supabase
+      }
     }
 
-    const buildings = (data || []).map((row: Record<string, unknown>) => {
-      const { total_count, ...building } = row;
-      return building;
-    });
-    const total = data?.[0]?.total_count ?? 0;
+    // Also check general result cache
+    if (cacheKey) {
+      try {
+        const { Redis } = await import("@upstash/redis");
+        const redis = new Redis({
+          url: process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL!,
+          token: process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN!,
+        });
+        const hit = await redis.get<{ buildings: unknown[]; total: number }>(cacheKey);
+        if (hit) {
+          return NextResponse.json({ ...hit, page }, {
+            headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" },
+          });
+        }
+      } catch {
+        // Fall through
+      }
+    }
 
-    return NextResponse.json({ buildings, total, page }, {
+    // Full search results page or non-address queries: use RPC
+    const result = await cached(
+      cacheKey,
+      300,
+      async () => {
+        const { data, error } = isAddressQuery
+          ? await supabase.rpc("search_buildings_fast", {
+              search_query: abbreviated,
+              city_filter: cityParam || null,
+              borough_filter: borough || null,
+              zip_filter: zip || null,
+              sort_by: sort || "relevance",
+              page_offset: offset,
+              page_limit: limit,
+            })
+          : await supabase.rpc("search_buildings_ranked", {
+              search_query: abbreviated,
+              city_filter: cityParam || null,
+              borough_filter: borough || null,
+              zip_filter: zip || null,
+              sort_by: sort || "relevance",
+              page_offset: offset,
+              page_limit: limit,
+            });
+
+        if (error) return { error: error.message };
+
+        const buildings = (data || []).map((row: Record<string, unknown>) => {
+          const { total_count, ...building } = row;
+          return building;
+        });
+        const total = (data?.[0] as Record<string, unknown>)?.total_count ?? 0;
+        return { buildings, total };
+      }
+    );
+
+    if ("error" in result) {
+      return NextResponse.json({ error: result.error }, {
+        status: 500,
+        headers: { "Cache-Control": "no-store" },
+      });
+    }
+
+    return NextResponse.json({ ...result, page }, {
       headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" },
     });
   }
 
-  // Non-text queries: browse by filters only — select only fields used by BuildingCard
-  const BROWSE_COLUMNS = "id,metro,borough,slug,full_address,name,zip_code,year_built,total_units,review_count,violation_count,complaint_count,overall_score,is_rent_stabilized,latitude,longitude";
+  // Non-text queries: browse by filters only
   let query = supabase
     .from("buildings")
-    .select(BROWSE_COLUMNS, { count: "exact" })
+    .select("id,metro,borough,slug,full_address,name,zip_code,year_built,total_units,review_count,violation_count,complaint_count,overall_score,is_rent_stabilized,latitude,longitude", { count: "exact" })
     .range(offset, offset + limit - 1);
 
-  if (cityParam) {
-    query = query.eq("metro", cityParam);
-  }
-  if (borough) {
-    query = query.eq("borough", borough);
-  }
-  if (zip) {
-    query = query.eq("zip_code", zip);
-  }
+  if (cityParam) query = query.eq("metro", cityParam);
+  if (borough) query = query.eq("borough", borough);
+  if (zip) query = query.eq("zip_code", zip);
 
-  query = applySortOrder(query, sort);
+  switch (sort) {
+    case "score-desc":
+      query = query.order("overall_score", { ascending: false, nullsFirst: false }); break;
+    case "score-asc":
+      query = query.order("overall_score", { ascending: true, nullsFirst: false }); break;
+    case "violations-desc":
+      query = query.order("violation_count", { ascending: false }); break;
+    case "reviews-desc":
+      query = query.order("review_count", { ascending: false }); break;
+    default:
+      query = query.order("review_count", { ascending: false }); break;
+  }
 
   const { data, count, error } = await query;
 

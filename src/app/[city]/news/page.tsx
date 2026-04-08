@@ -8,8 +8,6 @@ import { type City, CITY_META } from "@/lib/cities";
 import { NEWS_CATEGORIES, type NewsCategory } from "@/lib/news-sources";
 import { NewsList } from "@/components/news/NewsList";
 import { CategoryIcon } from "@/components/news/CategoryIcon";
-import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
 import type { NewsArticle } from "@/types";
 
 export const revalidate = 1800; // 30 minutes
@@ -71,7 +69,6 @@ export default async function NewsPage({
   ][];
 
   return (
-    <AdSidebar>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* JSON-LD */}
         <script
@@ -168,10 +165,8 @@ export default async function NewsPage({
                 ))}
               </div>
             </div>
-            <AdBlock adSlot="NEWS_SIDEBAR" adFormat="rectangle" />
           </aside>
         </div>
       </div>
-    </AdSidebar>
   );
 }

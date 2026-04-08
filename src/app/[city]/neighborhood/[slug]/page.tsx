@@ -11,8 +11,6 @@ import { CITY_META } from "@/lib/cities";
 import type { City } from "@/lib/cities";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
 import { NeighborhoodRankCard } from "@/components/neighborhood/NeighborhoodRankCard";
 import { FAQSection } from "@/components/seo/FAQSection";
 import { generateNeighborhoodFAQ } from "@/lib/faq/area-faq";
@@ -178,7 +176,6 @@ export default async function NeighborhoodPage({
   ];
 
   return (
-    <AdSidebar>
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <JsonLd data={{
         "@context": "https://schema.org",
@@ -350,8 +347,6 @@ export default async function NeighborhoodPage({
         )}
       </div>
 
-      <AdBlock adSlot="NEIGHBORHOOD_BOTTOM" adFormat="horizontal" />
-
       {/* Vibe Check */}
       {(() => {
         const vibe = getNeighborhoodVibe(city, zipCode);
@@ -372,6 +367,5 @@ export default async function NeighborhoodPage({
         title={`Frequently Asked Questions About ${neighborhoodName || zipCode}`}
       />
     </div>
-    </AdSidebar>
   );
 }

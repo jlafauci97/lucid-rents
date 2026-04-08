@@ -4,8 +4,6 @@ import { FileText } from "lucide-react";
 import { canonicalUrl, cityPath } from "@/lib/seo";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
 import { notFound } from "next/navigation";
-import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
 import { ProposalFilters } from "@/components/proposals/ProposalFilters";
 import { ProposalList } from "@/components/proposals/ProposalList";
 import { ProposalMap } from "@/components/proposals/ProposalMap";
@@ -85,7 +83,6 @@ export default async function ProposalsPage({
   const currentView = searchParams.view || "list";
 
   return (
-    <AdSidebar>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-2">
@@ -126,8 +123,6 @@ export default async function ProposalsPage({
           </Suspense>
         )}
 
-        <AdBlock adSlot="PROPOSALS_BOTTOM" adFormat="horizontal" />
       </div>
-    </AdSidebar>
   );
 }

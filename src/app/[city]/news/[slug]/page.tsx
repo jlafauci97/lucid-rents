@@ -7,8 +7,6 @@ import { canonicalUrl, breadcrumbJsonLd, newsCollectionJsonLd, cityPath } from "
 import { NEWS_CATEGORIES, type NewsCategory } from "@/lib/news-sources";
 import { NewsList } from "@/components/news/NewsList";
 import { CategoryIcon } from "@/components/news/CategoryIcon";
-import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
 import { NewsCard } from "@/components/news/NewsCard";
 import type { NewsArticle } from "@/types";
 
@@ -131,7 +129,6 @@ async function CategoryView({
   ][];
 
   return (
-    <AdSidebar>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <script
           type="application/ld+json"
@@ -231,7 +228,6 @@ async function CategoryView({
           </aside>
         </div>
       </div>
-    </AdSidebar>
   );
 }
 
@@ -268,7 +264,6 @@ async function ArticleView({ slug, city }: { slug: string; city: import("@/lib/c
     .limit(4);
 
   return (
-    <AdSidebar>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <script
           type="application/ld+json"
@@ -386,8 +381,6 @@ async function ArticleView({ slug, city }: { slug: string; city: import("@/lib/c
           </a>
         </div>
 
-        <AdBlock adSlot="NEWS_ARTICLE_BOTTOM" adFormat="horizontal" />
-
         {related && related.length > 0 && (
           <div className="mt-8 pt-8 border-t border-[#e2e8f0]">
             <h2 className="text-lg font-bold text-[#0F1D2E] mb-4">Related Articles</h2>
@@ -399,6 +392,5 @@ async function ArticleView({ slug, city }: { slug: string; city: import("@/lib/c
           </div>
         )}
       </div>
-    </AdSidebar>
   );
 }

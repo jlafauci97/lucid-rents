@@ -5,8 +5,6 @@ import { canonicalUrl, cityPath, cityBreadcrumbs } from "@/lib/seo";
 import { getLandmarksByCity } from "@/lib/landmarks";
 import { MapPin } from "lucide-react";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
-import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
 import {
   SUBWAY_LINES,
   LA_METRO_LINES,
@@ -186,7 +184,6 @@ export default async function TransitHubPage({ params }: { params: Promise<{ cit
   const accentColor = isChicago ? "#00A1DE" : isLA ? "#E3242B" : "#0039A6";
 
   return (
-    <AdSidebar>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* JSON-LD */}
         <script
@@ -455,8 +452,6 @@ export default async function TransitHubPage({ params }: { params: Promise<{ cit
           );
         })()}
 
-        <AdBlock adSlot="TRANSIT_HUB_BOTTOM" adFormat="horizontal" />
       </div>
-    </AdSidebar>
   );
 }

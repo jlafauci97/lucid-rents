@@ -10,6 +10,8 @@ import { ViolationTickerServer } from "@/components/home/ViolationTickerServer";
 import { LiveStats } from "@/components/home/LiveStats";
 import { ActivityFeed } from "@/components/ActivityFeed";
 
+export const revalidate = 3600; // 1h ISR
+
 export const metadata: Metadata = {
   title: "Lucid Rents — Apartment Building Intelligence",
   description:

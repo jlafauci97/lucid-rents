@@ -9,8 +9,6 @@ import type { City } from "@/lib/cities";
 import { canonicalUrl, cityPath } from "@/lib/seo";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
 import { NeighborhoodRentChart } from "@/components/neighborhood/NeighborhoodRentChart";
 import type { NeighborhoodRentRow } from "@/components/neighborhood/NeighborhoodRentChart";
 
@@ -355,7 +353,6 @@ export default async function NeighborhoodRentsPage({
   ];
 
   return (
-    <AdSidebar>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <JsonLd
           data={{
@@ -559,8 +556,6 @@ export default async function NeighborhoodRentsPage({
           </div>
         )}
 
-        <AdBlock adSlot="NEIGHBORHOOD_RENTS_MID" adFormat="horizontal" />
-
         {/* ── Amenity Premiums ─────────────────────────────────────── */}
         {aggregatedAmenities.length > 0 && (
           <div className="mb-8">
@@ -668,9 +663,7 @@ export default async function NeighborhoodRentsPage({
           </Link>
         </div>
 
-        <AdBlock adSlot="NEIGHBORHOOD_RENTS_BOTTOM" adFormat="horizontal" />
       </div>
-    </AdSidebar>
   );
 }
 

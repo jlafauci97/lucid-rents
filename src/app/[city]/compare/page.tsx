@@ -3,8 +3,6 @@ import { createClient } from "@/lib/supabase/server";
 import { CompareSearch } from "@/components/compare/CompareSearch";
 import { CompareGrid } from "@/components/compare/CompareGrid";
 import { Card, CardContent } from "@/components/ui/Card";
-import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
 import { ArrowLeftRight } from "lucide-react";
 import { canonicalUrl, cityPath, cityBreadcrumbs } from "@/lib/seo";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
@@ -88,8 +86,6 @@ async function CompareContent({ params: paramsPromise, searchParams }: ComparePa
         </CardContent>
       </Card>
 
-      <AdBlock adSlot="COMPARE_MID" adFormat="horizontal" />
-
       {/* Comparison grid */}
       {buildings.length >= 2 ? (
         <Card>
@@ -134,7 +130,6 @@ async function CompareContent({ params: paramsPromise, searchParams }: ComparePa
 
 export default async function ComparePage(props: ComparePageProps) {
   return (
-    <AdSidebar>
     <Suspense
       fallback={
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -148,6 +143,5 @@ export default async function ComparePage(props: ComparePageProps) {
     >
       <CompareContent {...props} />
     </Suspense>
-    </AdSidebar>
   );
 }

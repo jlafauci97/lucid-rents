@@ -4,8 +4,6 @@ import { LetterGrade } from "@/components/ui/LetterGrade";
 import Link from "next/link";
 import { landlordUrl, canonicalUrl, cityPath } from "@/lib/seo";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
-import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
 import type { Metadata } from "next";
 
 export async function generateMetadata({ params, searchParams }: { params: Promise<{ city: string }>; searchParams: Promise<{ search?: string; sort?: string; page?: string }> }): Promise<Metadata> {
@@ -104,7 +102,6 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
   }
 
   return (
-    <AdSidebar>
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {paginationPrevUrl && <link rel="prev" href={paginationPrevUrl} />}
       {paginationNextUrl && <link rel="next" href={paginationNextUrl} />}
@@ -381,8 +378,6 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
         </div>
       )}
 
-      <AdBlock adSlot="LANDLORDS_BOTTOM" adFormat="horizontal" />
-
       {/* Cross-links */}
       <section className="mt-10">
         <h2 className="text-lg font-bold text-[#0F1D2E] mb-4">Related</h2>
@@ -411,6 +406,5 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
         </div>
       </section>
     </div>
-    </AdSidebar>
   );
 }

@@ -175,7 +175,7 @@ export default async function CrimePage({
         </div>
         <p className="text-[#64748b] text-sm sm:text-base">
           {meta.crimeSource} data &bull; {rankedZips.length} zip codes &bull;
-          Updated hourly
+          Updated monthly
         </p>
       </div>
 

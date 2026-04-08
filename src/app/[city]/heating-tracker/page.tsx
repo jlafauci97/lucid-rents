@@ -12,8 +12,6 @@ import {
 } from "lucide-react";
 import { canonicalUrl, cityPath } from "@/lib/seo";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
-import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
 
 export async function generateMetadata({
   params,
@@ -156,7 +154,6 @@ export default async function HeatingTrackerPage({
     .slice(0, 5);
 
   return (
-    <AdSidebar>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* JSON-LD */}
         <script
@@ -491,8 +488,6 @@ export default async function HeatingTrackerPage({
           </div>
         </div>
 
-        <AdBlock adSlot="HEATING_TRACKER_BOTTOM" adFormat="horizontal" />
       </div>
-    </AdSidebar>
   );
 }

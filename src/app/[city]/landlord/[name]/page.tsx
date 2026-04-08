@@ -23,8 +23,6 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { landlordSlug, landlordUrl, landlordJsonLd, breadcrumbJsonLd, canonicalUrl, buildingUrl, cityPath } from "@/lib/seo";
 import { deriveScore } from "@/lib/constants";
-import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
 import type { Metadata } from "next";
 
 export const revalidate = 3600; // ISR: revalidate hourly
@@ -172,7 +170,6 @@ export default async function LandlordDetailPage({
   ];
 
   return (
-    <AdSidebar>
     <div>
       <JsonLd data={landlordJsonLd(displayName, totalBuildings)} />
       <JsonLd data={breadcrumbJsonLd([
@@ -305,8 +302,6 @@ export default async function LandlordDetailPage({
         {/* Tenant Resources */}
         <LandlordActionLinks compareIds={buildings.slice(0, 3).map((b) => b.id)} />
 
-        <AdBlock adSlot="LANDLORD_BOTTOM" adFormat="horizontal" />
-
         {/* Buildings section */}
         <div className="mb-5 flex items-end justify-between">
           <div>
@@ -436,6 +431,5 @@ export default async function LandlordDetailPage({
         </div>
       </div>
     </div>
-    </AdSidebar>
   );
 }

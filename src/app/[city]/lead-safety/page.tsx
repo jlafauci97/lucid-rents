@@ -12,9 +12,6 @@ import {
 } from "lucide-react";
 import { canonicalUrl, cityPath, buildingUrl } from "@/lib/seo";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
-import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
-
 export async function generateMetadata({
   params,
 }: {
@@ -146,7 +143,6 @@ export default async function LeadSafetyPage({
     ?.inspection_date;
 
   return (
-    <AdSidebar>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* JSON-LD */}
         <script
@@ -472,8 +468,6 @@ export default async function LeadSafetyPage({
           </div>
         </div>
 
-        <AdBlock adSlot="LEAD_SAFETY_BOTTOM" adFormat="horizontal" />
       </div>
-    </AdSidebar>
   );
 }

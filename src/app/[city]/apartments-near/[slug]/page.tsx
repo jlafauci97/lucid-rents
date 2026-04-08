@@ -6,8 +6,6 @@ import type { Metadata } from "next";
 import { canonicalUrl, cityPath, cityBreadcrumbs, buildingUrl } from "@/lib/seo";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
-import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
 import {
   getLineBySlug,
   getMetroLineBySlug,
@@ -216,7 +214,6 @@ export default async function ApartmentsNearPage({
     const rsLabel = city === "los-angeles" ? "RSO" : "Rent Stabilized";
 
     return (
-      <AdSidebar>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "CollectionPage", name: `Apartments Near the ${lineInfo.displayName}`, description: `${totalCount} buildings near ${lineInfo.displayName} ${stopWord} in ${meta.fullName}`, url: canonicalUrl(transitLineUrl(slug, city)), publisher: { "@type": "Organization", name: "Lucid Rents", url: "https://lucidrents.com" } }) }} />
 
@@ -254,9 +251,7 @@ export default async function ApartmentsNearPage({
 
           <TransitBuildingList buildings={buildingsWithDistance} lineSlug={slug} lineType={lineInfo.type === "rail" ? "subway" : lineInfo.type} lineColor={lineInfo.color} lineTextColor={lineInfo.textColor} routeName={lineInfo.routeName} city={city} rsLabel={rsLabel} />
 
-          <AdBlock adSlot="TRANSIT_BOTTOM" adFormat="horizontal" />
         </div>
-      </AdSidebar>
     );
   }
 
@@ -288,7 +283,6 @@ export default async function ApartmentsNearPage({
   const totalCount = buildingsWithDistance.length;
 
   return (
-    <AdSidebar>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "CollectionPage", name: `Apartments Near ${landmarkData!.name} in ${meta.fullName}`, description: `${totalCount} apartments within ${MAX_LANDMARK_DISTANCE_MI} miles of ${landmarkData!.name}`, url: canonicalUrl(cityPath(`/apartments-near/${slug}`, city)), publisher: { "@type": "Organization", name: "Lucid Rents", url: "https://lucidrents.com" } }) }} />
 
@@ -368,8 +362,6 @@ export default async function ApartmentsNearPage({
           </div>
         )}
 
-        <AdBlock adSlot="TRANSIT_BOTTOM" adFormat="horizontal" />
-
         <div className="mt-8">
           <h2 className="text-lg font-bold text-[#0F1D2E] mb-4">Other Landmarks in {meta.fullName}</h2>
           <div className="flex flex-wrap gap-2">
@@ -381,6 +373,5 @@ export default async function ApartmentsNearPage({
           </div>
         </div>
       </div>
-    </AdSidebar>
   );
 }

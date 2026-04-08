@@ -3,8 +3,6 @@ import { createClient } from "@/lib/supabase/server";
 import { FeedView } from "@/components/feed/FeedView";
 import { Shield, MessageSquare, Building2, Scale, HardHat, TrendingUp, ChevronRight } from "lucide-react";
 import { buildingUrl, canonicalUrl, cityPath } from "@/lib/seo";
-import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
 import type { Metadata } from "next";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
 
@@ -136,7 +134,6 @@ function FeedSourceLabel() {
 export default async function FeedPage({ params }: { params: Promise<{ city: string }> }) {
   const { city: cityParam } = await params;
   return (
-    <AdSidebar>
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
         {/* Main feed */}
@@ -147,12 +144,10 @@ export default async function FeedPage({ params }: { params: Promise<{ city: str
         {/* Sidebar — sticky */}
         <aside className="hidden lg:block space-y-6 sticky top-20 self-start">
           <FeedStats city={cityParam as import("@/lib/cities").City} />
-          <AdBlock adSlot="FEED_SIDEBAR" adFormat="rectangle" />
           <TrendingBuildings city={cityParam as import("@/lib/cities").City} />
           <FeedSourceLabel />
         </aside>
       </div>
     </div>
-    </AdSidebar>
   );
 }

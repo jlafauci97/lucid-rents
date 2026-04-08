@@ -3,8 +3,6 @@ import { Construction } from "lucide-react";
 import { canonicalUrl, cityPath, cityBreadcrumbs } from "@/lib/seo";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
-import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
 import { ScaffoldingMap } from "@/components/scaffolding/ScaffoldingMap";
 import { ScaffoldingTable } from "@/components/scaffolding/ScaffoldingTable";
 import dynamic from "next/dynamic";
@@ -82,7 +80,6 @@ export default async function ScaffoldingPage() {
   };
 
   return (
-    <AdSidebar>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* JSON-LD */}
         <script
@@ -228,8 +225,6 @@ export default async function ScaffoldingPage() {
           </p>
         </section>
 
-        <AdBlock adSlot="SCAFFOLDING_BOTTOM" adFormat="horizontal" />
       </div>
-    </AdSidebar>
   );
 }
