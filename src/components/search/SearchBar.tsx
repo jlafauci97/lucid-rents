@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Search, MapPin, Loader2, Clock } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useRecentBuildings } from "@/hooks/useRecentBuildings";
+import { useLocalSearch } from "@/hooks/useLocalSearch";
 import { LetterGrade } from "@/components/ui/LetterGrade";
 import { deriveScore } from "@/lib/constants";
 import { buildingUrl, cityPath, neighborhoodUrl } from "@/lib/seo";
@@ -42,6 +43,7 @@ export function SearchBar({
   const inputRef = useRef<HTMLInputElement>(null);
   const debouncedQuery = useDebounce(query, 150);
   const { recent } = useRecentBuildings();
+  const { search: localSearch, ready: localSearchReady } = useLocalSearch(city);
 
   // Build flat list of all items for keyboard navigation
   const flatItems: FlatItem[] = [];
@@ -104,7 +106,19 @@ export function SearchBar({
     setNeighborhoodResults(neighborhoods);
     if (neighborhoods.length > 0) setOpen(true);
 
-    // API building search — abort previous request on new keystroke
+    // For address queries: use local search index (instant, no API call)
+    const isAddressQuery = /^\d/.test(debouncedQuery.trim());
+    if (isAddressQuery && localSearchReady) {
+      const localResults = localSearch(debouncedQuery, 5);
+      if (localResults.length > 0) {
+        setResults(localResults as unknown as Building[]);
+        setOpen(true);
+        setLoading(false);
+        return;
+      }
+    }
+
+    // Fallback: API search for non-address queries or when local index not ready
     const controller = new AbortController();
     setLoading(true);
     const url =
@@ -124,7 +138,7 @@ export function SearchBar({
       .finally(() => setLoading(false));
 
     return () => controller.abort();
-  }, [debouncedQuery, city, recent.length]);
+  }, [debouncedQuery, city, recent.length, localSearch, localSearchReady]);
 
   // Reset highlight when items change
   useEffect(() => {
