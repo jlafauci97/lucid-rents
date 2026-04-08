@@ -47,10 +47,14 @@ export async function cached<T>(
 
   const value = await compute();
 
-  try {
-    await r.set(key, JSON.stringify(value), { ex: ttlSeconds });
-  } catch {
-    // Best-effort cache write
+  // Don't cache error results
+  const isError = value && typeof value === "object" && "error" in value;
+  if (!isError) {
+    try {
+      await r.set(key, JSON.stringify(value), { ex: ttlSeconds });
+    } catch {
+      // Best-effort cache write
+    }
   }
 
   return value;

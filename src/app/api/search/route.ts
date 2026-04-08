@@ -76,7 +76,10 @@ export async function GET(req: NextRequest) {
     );
 
     if ("error" in result) {
-      return NextResponse.json({ error: result.error }, { status: 500 });
+      return NextResponse.json({ error: result.error }, {
+        status: 500,
+        headers: { "Cache-Control": "no-store" },
+      });
     }
 
     return NextResponse.json({ ...result, page }, {
