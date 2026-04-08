@@ -45,10 +45,42 @@ export async function GET(req: NextRequest) {
     const isAutocomplete = limit <= 5;
     const cacheKey = isAutocomplete ? `search:${cityParam || "all"}:${abbreviated}:${borough || ""}:${zip || ""}` : null;
 
-    // Fast path: check Redis cache first (edge-native, <50ms)
-    if (cacheKey) {
-      const { Redis } = await import("@upstash/redis");
+    // Autocomplete: Redis-only path — zero Supabase involvement
+    // Pre-populated by scripts/populate-search-redis.ts
+    if (isAutocomplete && isAddressQuery && cityParam) {
       try {
+        const { Redis } = await import("@upstash/redis");
+        const redis = new Redis({
+          url: process.env.UPSTASH_REDIS_REST_URL!,
+          token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+        });
+
+        // Try progressively longer prefixes for best match
+        const upperQuery = abbreviated.toUpperCase();
+        let buildings: unknown[] | null = null;
+        for (let len = Math.min(6, upperQuery.length); len >= 2; len--) {
+          const prefix = upperQuery.substring(0, len);
+          const hit = await redis.get<unknown[]>(`ac:${cityParam}:${prefix}`);
+          if (hit && hit.length > 0) {
+            buildings = hit;
+            break;
+          }
+        }
+
+        if (buildings) {
+          return NextResponse.json({ buildings, total: buildings.length, page }, {
+            headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" },
+          });
+        }
+      } catch {
+        // Redis down — fall through to Supabase
+      }
+    }
+
+    // Also check general result cache
+    if (cacheKey) {
+      try {
+        const { Redis } = await import("@upstash/redis");
         const redis = new Redis({
           url: process.env.UPSTASH_REDIS_REST_URL!,
           token: process.env.UPSTASH_REDIS_REST_TOKEN!,
@@ -60,44 +92,8 @@ export async function GET(req: NextRequest) {
           });
         }
       } catch {
-        // Cache miss or Redis down — fall through
+        // Fall through
       }
-    }
-
-    // For autocomplete address queries: use lightweight search_index table (0.1ms)
-    // instead of the heavy buildings table (5GB, slow under load)
-    if (isAutocomplete && isAddressQuery) {
-      const upperQuery = abbreviated.toUpperCase();
-      let searchQuery = supabase
-        .from("search_index")
-        .select("id,full_address,borough,slug,name,zip_code,overall_score,review_count,violation_count,complaint_count,metro")
-        .like("full_address", `${upperQuery}%`)
-        .order("review_count", { ascending: false })
-        .limit(limit);
-
-      if (cityParam) searchQuery = searchQuery.eq("metro", cityParam);
-      if (borough) searchQuery = searchQuery.eq("borough", borough);
-
-      const { data, error } = await searchQuery;
-
-      if (!error && data) {
-        const result = { buildings: data, total: data.length };
-        // Cache for 5 min
-        if (cacheKey) {
-          try {
-            const { Redis } = await import("@upstash/redis");
-            const redis = new Redis({
-              url: process.env.UPSTASH_REDIS_REST_URL!,
-              token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-            });
-            await redis.set(cacheKey, JSON.stringify(result), { ex: 300 });
-          } catch { /* best effort */ }
-        }
-        return NextResponse.json({ ...result, page }, {
-          headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" },
-        });
-      }
-      // Fall through to RPC on error
     }
 
     // Full search results page or non-address queries: use RPC
