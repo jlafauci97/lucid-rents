@@ -16,7 +16,8 @@ const GRADE_SCORES: Record<SafetyGrade, number> = {
 interface CrimeRankingTableProps {
   rows: ZipCrimeRanked[];
   trendData: Record<string, number[]>;
-  cityPath: (path: string) => string;
+  /** Pre-computed city path prefix, e.g. "/nyc" or "/CA/Los-Angeles" */
+  cityPathPrefix: string;
   regionLabel: string;
   areas: string[];
 }
@@ -26,10 +27,11 @@ type SortKey = "rank" | "total" | "violent" | "property" | "yoy_total_pct";
 export function CrimeRankingTable({
   rows,
   trendData,
-  cityPath: buildPath,
+  cityPathPrefix,
   regionLabel,
   areas,
 }: CrimeRankingTableProps) {
+  const buildPath = (path: string) => `${cityPathPrefix}${path}`;
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<SortKey>("rank");
   const [sortAsc, setSortAsc] = useState(true);

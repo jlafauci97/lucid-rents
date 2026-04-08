@@ -326,7 +326,7 @@ export default async function CrimePage({
         <CrimeRankingTable
           rows={rankedZips}
           trendData={trendsByZip}
-          cityPath={(path) => cityPath(path, city)}
+          cityPathPrefix={cityPath("", city)}
           regionLabel={meta.regionLabel}
           areas={[...meta.crimeAreas]}
         />
