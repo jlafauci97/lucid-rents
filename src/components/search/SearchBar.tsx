@@ -40,7 +40,7 @@ export function SearchBar({
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const debouncedQuery = useDebounce(query, 300);
+  const debouncedQuery = useDebounce(query, 150);
   const { recent } = useRecentBuildings();
 
   // Build flat list of all items for keyboard navigation
@@ -104,21 +104,26 @@ export function SearchBar({
     setNeighborhoodResults(neighborhoods);
     if (neighborhoods.length > 0) setOpen(true);
 
-    // API building search
+    // API building search — abort previous request on new keystroke
+    const controller = new AbortController();
     setLoading(true);
     const url =
       neighborhoods.length > 0
         ? `/api/search?zip=${neighborhoods[0].zipCode}&city=${city}&limit=5`
         : `/api/search?q=${encodeURIComponent(debouncedQuery)}&city=${city}&limit=5`;
 
-    fetch(url)
+    fetch(url, { signal: controller.signal })
       .then((res) => res.json())
       .then((data) => {
         setResults(data.buildings || []);
         setOpen(true);
       })
-      .catch(() => setResults([]))
+      .catch((err) => {
+        if (err.name !== "AbortError") setResults([]);
+      })
       .finally(() => setLoading(false));
+
+    return () => controller.abort();
   }, [debouncedQuery, city, recent.length]);
 
   // Reset highlight when items change
