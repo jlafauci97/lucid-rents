@@ -1,26 +1,46 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Siren, ArrowUpDown, MapPin } from "lucide-react";
-import { canonicalUrl, cityPath, neighborhoodUrl, cityBreadcrumbs } from "@/lib/seo";
+import { Siren, ShieldCheck, ShieldAlert, BarChart3 } from "lucide-react";
+import {
+  canonicalUrl,
+  cityPath,
+  cityBreadcrumbs,
+  breadcrumbJsonLd,
+} from "@/lib/seo";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
-import { getNeighborhoodName } from "@/lib/nyc-neighborhoods";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { LetterGrade } from "@/components/ui/LetterGrade";
+import { TrendBadge } from "@/components/ui/TrendBadge";
+import { FAQSection } from "@/components/seo/FAQSection";
+import { CrimeRankingTable } from "@/components/crime/CrimeRankingTable";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
-import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
-import { CrimeMapSection } from "@/components/crime/CrimeMapSection";
+import { getNeighborhoodNameByCity } from "@/lib/neighborhoods";
+import { rankZips, type CityStats, type SafetyGrade } from "@/lib/crime-stats";
 import { createClient } from "@/lib/supabase/server";
 
-export async function generateMetadata({ params }: { params: Promise<{ city: string }> }): Promise<Metadata> {
+const GRADE_SCORES: Record<SafetyGrade, number> = {
+  A: 4.5,
+  B: 3.5,
+  C: 2.5,
+  D: 1.5,
+  F: 0.5,
+};
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ city: string }>;
+}): Promise<Metadata> {
   const { city } = await params;
   if (!isValidCity(city)) return {};
   const meta = CITY_META[city];
   return {
-    title: `Crime by Zip Code | ${meta.fullName} | Lucid Rents`,
-    description: `How safe is your neighborhood? See ${meta.fullName} crime rates by zip code — violent, property, and quality-of-life breakdowns with interactive maps.`,
+    title: `Crime Data & Safety Grades by Zip Code | ${meta.fullName} | Lucid Rents`,
+    description: `Is ${meta.fullName} safe? See safety grades, crime rankings, and trends for every zip code. ${meta.crimeSource} data updated hourly with violent, property, and quality-of-life breakdowns.`,
     alternates: { canonical: canonicalUrl(cityPath("/crime", city)) },
     openGraph: {
-      title: `${meta.fullName} Crime Data by Zip Code`,
-      description: `How safe is your neighborhood? ${meta.fullName} crime rates by zip code with interactive maps and breakdowns.`,
+      title: `Crime Data & Safety Grades | ${meta.fullName}`,
+      description: `Is ${meta.fullName} safe? Safety grades and crime rankings for every zip code, powered by ${meta.crimeSource} data.`,
       url: canonicalUrl(cityPath("/crime", city)),
       siteName: "Lucid Rents",
       type: "website",
@@ -31,280 +51,290 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
 
 export const revalidate = 3600;
 
-async function getCrimeByZip(city: string) {
-  // Use 2-year lookback to ensure we capture all available data
-  // (LAPD data may lag behind current date due to NIBRS transition)
-  const sinceDate = new Date();
-  sinceDate.setFullYear(sinceDate.getFullYear() - 2);
-  const sinceDateStr = sinceDate.toISOString().split("T")[0];
-
-  try {
-    const supabase = await createClient();
-    const { data, error } = await supabase.rpc("crime_by_zip", {
-      since_date: sinceDateStr,
-      metro: city,
-    });
-    if (error) {
-      console.error("crime_by_zip RPC error:", error);
-      return [];
-    }
-    return data || [];
-  } catch (err) {
-    console.error("crime_by_zip fetch error:", err);
-    return [];
-  }
+interface YoyRow {
+  zip_code: string;
+  current_year_total: number;
+  prior_year_total: number;
+  current_violent: number;
+  prior_violent: number;
+  current_property: number;
+  prior_property: number;
 }
 
-interface ZipCrimeRow {
+interface TrendRow {
   zip_code: string;
-  borough: string;
+  month: string;
   total: number;
-  violent: number;
-  property: number;
-  quality_of_life: number;
 }
 
 export default async function CrimePage({
   params: routeParams,
-  searchParams,
 }: {
   params: Promise<{ city: string }>;
-  searchParams: Promise<{ borough?: string; sort?: string; order?: string }>;
 }) {
   const { city: cityParam } = await routeParams;
-  const params = await searchParams;
-  const borough = params.borough || "";
-  const sortBy = params.sort || "total";
-  const order = params.order || "desc";
+  if (!isValidCity(cityParam)) return null;
+  const city = cityParam as City;
+  const meta = CITY_META[city];
 
-  const data = await getCrimeByZip(cityParam);
+  const supabase = await createClient();
+  const sinceDate = new Date();
+  sinceDate.setFullYear(sinceDate.getFullYear() - 2);
+  const sinceDateStr = sinceDate.toISOString().split("T")[0];
 
-  let rows: ZipCrimeRow[] = (data || []).map((r: ZipCrimeRow) => ({
-    zip_code: r.zip_code,
-    borough: r.borough || "Unknown",
-    total: Number(r.total),
-    violent: Number(r.violent),
-    property: Number(r.property),
-    quality_of_life: Number(r.quality_of_life),
-  }));
+  const [zipRes, cityStatsRes, yoyRes, trendsRes] = await Promise.all([
+    supabase.rpc("crime_by_zip", { since_date: sinceDateStr, metro: city }),
+    supabase.rpc("crime_city_stats", { since_date: sinceDateStr, metro: city }),
+    supabase.rpc("crime_zip_yoy", { metro: city }),
+    supabase.rpc("crime_all_zip_trends", { metro: city, num_months: 12 }),
+  ]);
 
-  // Filter by borough
-  if (borough) {
-    rows = rows.filter(
-      (r) => r.borough.toLowerCase() === borough.toLowerCase()
-    );
+  const zipData = zipRes.data || [];
+  const cityStats: CityStats | null = cityStatsRes.data?.[0] ?? null;
+
+  // Build YoY map
+  const yoyMap = new Map<string, YoyRow>();
+  for (const row of (yoyRes.data || []) as YoyRow[]) {
+    yoyMap.set(row.zip_code, row);
   }
 
-  // Sort
-  const sortKey = sortBy as keyof ZipCrimeRow;
-  rows.sort((a, b) => {
-    const aVal = a[sortKey] ?? 0;
-    const bVal = b[sortKey] ?? 0;
-    if (typeof aVal === "number" && typeof bVal === "number") {
-      return order === "asc" ? aVal - bVal : bVal - aVal;
-    }
-    return order === "asc"
-      ? String(aVal).localeCompare(String(bVal))
-      : String(bVal).localeCompare(String(aVal));
+  // Build trends by zip
+  const trendsByZip: Record<string, number[]> = {};
+  for (const row of (trendsRes.data || []) as TrendRow[]) {
+    if (!trendsByZip[row.zip_code]) trendsByZip[row.zip_code] = [];
+    trendsByZip[row.zip_code].push(Number(row.total));
+  }
+
+  // Rank all zips
+  const rankedZips = rankZips(zipData, yoyMap, (zip) =>
+    getNeighborhoodNameByCity(zip, city)
+  );
+
+  // Grade distribution
+  const gradeCounts: Record<SafetyGrade, number> = { A: 0, B: 0, C: 0, D: 0, F: 0 };
+  for (const z of rankedZips) gradeCounts[z.grade]++;
+
+  // Top 5 safest / most dangerous
+  const safest = rankedZips.slice(0, 5);
+  const mostDangerous = [...rankedZips].reverse().slice(0, 5);
+
+  // Stats
+  const totalCrimes = cityStats?.total_crimes ?? rankedZips.reduce((s, r) => s + r.total, 0);
+  const totalViolent = cityStats?.total_violent ?? rankedZips.reduce((s, r) => s + r.violent, 0);
+  const violentPct = totalCrimes > 0 ? ((totalViolent / totalCrimes) * 100).toFixed(1) : "0";
+  const zipCount = cityStats?.zip_count ?? rankedZips.length;
+
+  // Breadcrumbs
+  const bcItems = cityBreadcrumbs(city, {
+    label: "Crime Data",
+    href: cityPath("/crime", city),
   });
 
-  const meta = CITY_META[cityParam as City];
-  const areas = meta.crimeAreas;
-
-  function sortUrl(col: string) {
-    const newOrder = sortBy === col && order === "desc" ? "asc" : "desc";
-    const base = `${cityPath("/crime", cityParam as City)}?sort=${col}&order=${newOrder}`;
-    return borough ? `${base}&borough=${encodeURIComponent(borough)}` : base;
-  }
+  // FAQ
+  const faqItems = [
+    {
+      question: `How are safety grades calculated for ${meta.fullName}?`,
+      answer: `Safety grades are based on percentile ranking of total crime incidents across all zip codes. Zip codes in the lowest 20% of crime receive an A grade, 20-40% get a B, and so on. This provides a relative comparison across ${meta.fullName} neighborhoods.`,
+    },
+    {
+      question: "How often is crime data updated?",
+      answer: `Crime data is sourced from ${meta.crimeSource} and refreshed hourly. Year-over-year trends compare the most recent 12-month period to the same period one year prior.`,
+    },
+    {
+      question: "What does the year-over-year trend show?",
+      answer:
+        "The YoY trend compares total reported crimes in the current year to the same period in the prior year. A negative percentage means crime is declining in that zip code.",
+    },
+    {
+      question: `Which ${meta.fullName} zip codes are the safest?`,
+      answer: `The safest zip codes are ranked by lowest total crime count and receive an A safety grade. Check the ranking table above for the current top-ranked neighborhoods.`,
+    },
+    {
+      question: "What crime categories are tracked?",
+      answer:
+        "Crimes are categorized into three groups: violent crimes (assault, robbery, murder), property crimes (burglary, theft, auto theft), and quality-of-life offenses (noise, graffiti, public disturbance).",
+    },
+  ];
 
   return (
-    <AdSidebar>
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <Breadcrumbs items={cityBreadcrumbs(cityParam as City, { label: "Crime Data", href: cityPath("/crime", cityParam as City) })} />
+      {/* Structured data */}
+      <JsonLd data={breadcrumbJsonLd(bcItems)} />
+
+      {/* Breadcrumbs */}
+      <Breadcrumbs items={bcItems} />
+
       {/* Header */}
-      <div className="mb-6">
+      <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
           <div className="p-2 bg-[#FEE2E2] rounded-lg">
             <Siren className="w-6 h-6 text-[#DC2626]" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-[#0F1D2E]">
-            Crime by Zip Code
+            Crime Data &amp; Safety Grades
           </h1>
         </div>
         <p className="text-[#64748b] text-sm sm:text-base">
-          {meta.crimeSource} crime data aggregated by zip code. Click a
-          zip code for detailed breakdowns and trends.
+          {meta.crimeSource} data &bull; {rankedZips.length} zip codes &bull;
+          Updated hourly
         </p>
       </div>
 
-      {/* Borough filter */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        <Link
-          href={cityPath("/crime", cityParam as City)}
-          className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-            !borough
-              ? "bg-[#0F1D2E] text-white"
-              : "bg-[#f1f5f9] text-[#64748b] hover:bg-[#e2e8f0]"
-          }`}
-        >
-          All {meta.regionLabel}s
-        </Link>
-        {areas.map((area) => (
-          <Link
-            key={area}
-            href={`${cityPath("/crime", cityParam as City)}?borough=${encodeURIComponent(area)}${sortBy !== "total" ? `&sort=${sortBy}&order=${order}` : ""}`}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-              borough.toLowerCase() === area.toLowerCase()
-                ? "bg-[#0F1D2E] text-white"
-                : "bg-[#f1f5f9] text-[#64748b] hover:bg-[#e2e8f0]"
-            }`}
-          >
-            {area}
-          </Link>
-        ))}
-      </div>
+      {/* City-wide hero stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="bg-white border border-[#e2e8f0] rounded-xl p-5">
+          <div className="flex items-center gap-2 mb-1">
+            <BarChart3 className="w-4 h-4 text-[#64748b]" />
+            <p className="text-xs text-[#64748b] font-medium uppercase tracking-wide">
+              Total Incidents
+            </p>
+          </div>
+          <p className="text-2xl font-bold text-[#0F1D2E]">
+            {totalCrimes.toLocaleString()}
+          </p>
+          <p className="text-xs text-[#94a3b8] mt-1">Last 2 years</p>
+        </div>
 
-      {/* Interactive Map */}
-      <div className="mb-6">
-        <CrimeMapSection borough={borough} city={cityParam} />
-      </div>
+        <div className="bg-white border border-[#e2e8f0] rounded-xl p-5">
+          <div className="flex items-center gap-2 mb-1">
+            <ShieldAlert className="w-4 h-4 text-[#EF4444]" />
+            <p className="text-xs text-[#EF4444] font-medium uppercase tracking-wide">
+              Violent Crime Rate
+            </p>
+          </div>
+          <p className="text-2xl font-bold text-[#0F1D2E]">{violentPct}%</p>
+          <p className="text-xs text-[#94a3b8] mt-1">Of total incidents</p>
+        </div>
 
-      {/* Summary stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
-          <p className="text-xs text-[#64748b] font-medium uppercase tracking-wide">
-            Zip Codes
-          </p>
-          <p className="text-2xl font-bold text-[#0F1D2E] mt-1">
-            {rows.length}
-          </p>
+        <div className="bg-white border border-[#e2e8f0] rounded-xl p-5">
+          <div className="flex items-center gap-2 mb-1">
+            <Siren className="w-4 h-4 text-[#64748b]" />
+            <p className="text-xs text-[#64748b] font-medium uppercase tracking-wide">
+              Zip Codes Tracked
+            </p>
+          </div>
+          <p className="text-2xl font-bold text-[#0F1D2E]">{zipCount}</p>
+          <p className="text-xs text-[#94a3b8] mt-1">Across {meta.fullName}</p>
         </div>
-        <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
-          <p className="text-xs text-[#64748b] font-medium uppercase tracking-wide">
-            Total Incidents
-          </p>
-          <p className="text-2xl font-bold text-[#0F1D2E] mt-1">
-            {rows.reduce((s, r) => s + r.total, 0).toLocaleString()}
-          </p>
-        </div>
-        <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
-          <p className="text-xs text-[#EF4444] font-medium uppercase tracking-wide">
-            Violent
-          </p>
-          <p className="text-2xl font-bold text-[#0F1D2E] mt-1">
-            {rows.reduce((s, r) => s + r.violent, 0).toLocaleString()}
-          </p>
-        </div>
-        <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
-          <p className="text-xs text-[#F59E0B] font-medium uppercase tracking-wide">
-            Property
-          </p>
-          <p className="text-2xl font-bold text-[#0F1D2E] mt-1">
-            {rows.reduce((s, r) => s + r.property, 0).toLocaleString()}
-          </p>
+
+        <div className="bg-white border border-[#e2e8f0] rounded-xl p-5">
+          <div className="flex items-center gap-2 mb-1">
+            <ShieldCheck className="w-4 h-4 text-[#64748b]" />
+            <p className="text-xs text-[#64748b] font-medium uppercase tracking-wide">
+              Grade Distribution
+            </p>
+          </div>
+          <div className="flex items-center gap-1.5 mt-1">
+            {(["A", "B", "C", "D", "F"] as SafetyGrade[]).map((g) => (
+              <div key={g} className="text-center">
+                <LetterGrade score={GRADE_SCORES[g]} size="sm" />
+                <p className="text-[10px] text-[#64748b] mt-0.5 font-medium">
+                  {gradeCounts[g]}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Table */}
-      {rows.length === 0 ? (
+      {/* Safest Neighborhoods */}
+      {safest.length > 0 && (
+        <section className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <ShieldCheck className="w-5 h-5 text-[#16a34a]" />
+            <h2 className="text-lg font-bold text-[#0F1D2E]">
+              Safest Neighborhoods
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            {safest.map((z) => (
+              <Link
+                key={z.zip_code}
+                href={cityPath(`/crime/${z.zip_code}`, city)}
+                className="block bg-[#f0fdf4] border border-[#bbf7d0] rounded-xl p-4 hover:shadow-md transition-shadow"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <LetterGrade score={GRADE_SCORES[z.grade]} size="sm" />
+                  <span className="text-xs font-mono text-[#64748b]">
+                    #{z.rank}
+                  </span>
+                </div>
+                <p className="text-sm font-semibold text-[#0F1D2E] truncate">
+                  {z.neighborhood || z.zip_code}
+                </p>
+                <p className="text-xs text-[#64748b]">{z.zip_code}</p>
+                <div className="flex items-center justify-between mt-2">
+                  <span className="text-xs text-[#64748b]">
+                    {z.total.toLocaleString()} incidents
+                  </span>
+                  {z.yoy_total_pct !== null && (
+                    <TrendBadge value={z.yoy_total_pct} suffix="% YoY" />
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Highest Crime Areas */}
+      {mostDangerous.length > 0 && (
+        <section className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <ShieldAlert className="w-5 h-5 text-[#DC2626]" />
+            <h2 className="text-lg font-bold text-[#0F1D2E]">
+              Highest Crime Areas
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            {mostDangerous.map((z) => (
+              <Link
+                key={z.zip_code}
+                href={cityPath(`/crime/${z.zip_code}`, city)}
+                className="block bg-[#fef2f2] border border-[#fecaca] rounded-xl p-4 hover:shadow-md transition-shadow"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <LetterGrade score={GRADE_SCORES[z.grade]} size="sm" />
+                  <span className="text-xs font-mono text-[#64748b]">
+                    #{z.rank}
+                  </span>
+                </div>
+                <p className="text-sm font-semibold text-[#0F1D2E] truncate">
+                  {z.neighborhood || z.zip_code}
+                </p>
+                <p className="text-xs text-[#64748b]">{z.zip_code}</p>
+                <div className="flex items-center justify-between mt-2">
+                  <span className="text-xs text-[#64748b]">
+                    {z.total.toLocaleString()} incidents
+                  </span>
+                  {z.yoy_total_pct !== null && (
+                    <TrendBadge value={z.yoy_total_pct} suffix="% YoY" />
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Main ranking table */}
+      {rankedZips.length === 0 ? (
         <div className="text-center py-16 bg-white border border-[#e2e8f0] rounded-xl">
           <Siren className="w-12 h-12 text-[#cbd5e1] mx-auto mb-3" />
           <p className="text-[#64748b]">No crime data available yet.</p>
         </div>
       ) : (
-        <div className="bg-white border border-[#e2e8f0] rounded-xl overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide">
-                    <Link href={sortUrl("zip_code")} className="inline-flex items-center gap-1 hover:text-[#0F1D2E]">
-                      Zip Code <ArrowUpDown className="w-3 h-3" />
-                    </Link>
-                  </th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide hidden sm:table-cell">
-                    <Link href={sortUrl("borough")} className="inline-flex items-center gap-1 hover:text-[#0F1D2E]">
-                      {meta.regionLabel} <ArrowUpDown className="w-3 h-3" />
-                    </Link>
-                  </th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide">
-                    <Link href={sortUrl("total")} className="inline-flex items-center gap-1 hover:text-[#0F1D2E] ml-auto">
-                      Total <ArrowUpDown className="w-3 h-3" />
-                    </Link>
-                  </th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-[#EF4444] uppercase tracking-wide hidden md:table-cell">
-                    <Link href={sortUrl("violent")} className="inline-flex items-center gap-1 hover:text-[#0F1D2E] ml-auto">
-                      Violent <ArrowUpDown className="w-3 h-3" />
-                    </Link>
-                  </th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-[#F59E0B] uppercase tracking-wide hidden md:table-cell">
-                    <Link href={sortUrl("property")} className="inline-flex items-center gap-1 hover:text-[#0F1D2E] ml-auto">
-                      Property <ArrowUpDown className="w-3 h-3" />
-                    </Link>
-                  </th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-[#3B82F6] uppercase tracking-wide hidden lg:table-cell">
-                    <Link href={sortUrl("quality_of_life")} className="inline-flex items-center gap-1 hover:text-[#0F1D2E] ml-auto">
-                      QoL <ArrowUpDown className="w-3 h-3" />
-                    </Link>
-                  </th>
-                  <th className="px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide hidden lg:table-cell">
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#e2e8f0]">
-                {rows.map((row) => (
-                  <tr
-                    key={row.zip_code}
-                    className="hover:bg-[#f8fafc] transition-colors"
-                  >
-                    <td className="px-4 py-3">
-                      <Link
-                        href={cityPath(`/crime/${row.zip_code}`, cityParam as City)}
-                        className="text-sm font-semibold text-[#2563EB] hover:text-[#1d4ed8] hover:underline"
-                      >
-                        {row.zip_code}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-[#334155] hidden sm:table-cell">
-                      {row.borough}
-                    </td>
-                    <td className="px-4 py-3 text-sm font-semibold text-[#0F1D2E] text-right">
-                      {row.total.toLocaleString()}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-[#EF4444] text-right hidden md:table-cell">
-                      {row.violent.toLocaleString()}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-[#F59E0B] text-right hidden md:table-cell">
-                      {row.property.toLocaleString()}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-[#3B82F6] text-right hidden lg:table-cell">
-                      {row.quality_of_life.toLocaleString()}
-                    </td>
-                    <td className="px-4 py-3 hidden lg:table-cell">
-                      {(() => {
-                        const name = getNeighborhoodName(row.zip_code);
-                        return name ? (
-                          <Link
-                            href={neighborhoodUrl(row.zip_code)}
-                            className="inline-flex items-center gap-1 text-xs text-[#3B82F6] hover:text-[#1d4ed8] font-medium"
-                            title="Neighborhood Report Card"
-                          >
-                            <MapPin className="w-3 h-3" />
-                            {name}
-                          </Link>
-                        ) : null;
-                      })()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <CrimeRankingTable
+          rows={rankedZips}
+          trendData={trendsByZip}
+          cityPath={(path) => cityPath(path, city)}
+          regionLabel={meta.regionLabel}
+          areas={[...meta.crimeAreas]}
+        />
       )}
 
-      <AdBlock adSlot="CRIME_BOTTOM" adFormat="horizontal" />
+      {/* FAQ */}
+      <FAQSection items={faqItems} />
     </div>
-    </AdSidebar>
   );
 }
