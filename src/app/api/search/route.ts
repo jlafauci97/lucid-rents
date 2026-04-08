@@ -39,16 +39,13 @@ export async function GET(req: NextRequest) {
 
   const supabase = getSupabase();
 
-  // Use ranked search function for text queries to get proper relevance ordering
   if (q) {
     const { abbreviated } = normalizeAddressQuery(q);
     const isAddressQuery = /^\d/.test(abbreviated.trim());
-
-    // For autocomplete (limit<=5): check Redis FIRST before touching Supabase
     const isAutocomplete = limit <= 5;
     const cacheKey = isAutocomplete ? `search:${cityParam || "all"}:${abbreviated}:${borough || ""}:${zip || ""}` : null;
 
-    // Fast path: return cached result without hitting Supabase at all
+    // Fast path: check Redis cache first (edge-native, <50ms)
     if (cacheKey) {
       const { Redis } = await import("@upstash/redis");
       try {
@@ -63,13 +60,50 @@ export async function GET(req: NextRequest) {
           });
         }
       } catch {
-        // Redis miss or down — fall through to Supabase
+        // Cache miss or Redis down — fall through
       }
     }
 
+    // For autocomplete address queries: use lightweight search_index table (0.1ms)
+    // instead of the heavy buildings table (5GB, slow under load)
+    if (isAutocomplete && isAddressQuery) {
+      const upperQuery = abbreviated.toUpperCase();
+      let searchQuery = supabase
+        .from("search_index")
+        .select("id,full_address,borough,slug,name,zip_code,overall_score,review_count,violation_count,complaint_count,metro")
+        .like("full_address", `${upperQuery}%`)
+        .order("review_count", { ascending: false })
+        .limit(limit);
+
+      if (cityParam) searchQuery = searchQuery.eq("metro", cityParam);
+      if (borough) searchQuery = searchQuery.eq("borough", borough);
+
+      const { data, error } = await searchQuery;
+
+      if (!error && data) {
+        const result = { buildings: data, total: data.length };
+        // Cache for 5 min
+        if (cacheKey) {
+          try {
+            const { Redis } = await import("@upstash/redis");
+            const redis = new Redis({
+              url: process.env.UPSTASH_REDIS_REST_URL!,
+              token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+            });
+            await redis.set(cacheKey, JSON.stringify(result), { ex: 300 });
+          } catch { /* best effort */ }
+        }
+        return NextResponse.json({ ...result, page }, {
+          headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" },
+        });
+      }
+      // Fall through to RPC on error
+    }
+
+    // Full search results page or non-address queries: use RPC
     const result = await cached(
       cacheKey,
-      300, // 5 min TTL for autocomplete; null key skips cache for full results
+      300,
       async () => {
         const { data, error } = isAddressQuery
           ? await supabase.rpc("search_buildings_fast", {
@@ -114,23 +148,16 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  // Non-text queries: browse by filters only — select only fields used by BuildingCard
+  // Non-text queries: browse by filters only
   let query = supabase
     .from("buildings")
     .select("id,metro,borough,slug,full_address,name,zip_code,year_built,total_units,review_count,violation_count,complaint_count,overall_score,is_rent_stabilized,latitude,longitude", { count: "exact" })
     .range(offset, offset + limit - 1);
 
-  if (cityParam) {
-    query = query.eq("metro", cityParam);
-  }
-  if (borough) {
-    query = query.eq("borough", borough);
-  }
-  if (zip) {
-    query = query.eq("zip_code", zip);
-  }
+  if (cityParam) query = query.eq("metro", cityParam);
+  if (borough) query = query.eq("borough", borough);
+  if (zip) query = query.eq("zip_code", zip);
 
-  // Inline sort to avoid type mismatch with partial column select
   switch (sort) {
     case "score-desc":
       query = query.order("overall_score", { ascending: false, nullsFirst: false }); break;
