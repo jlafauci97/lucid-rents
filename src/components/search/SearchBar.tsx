@@ -109,37 +109,50 @@ export function SearchBar({
     // For address queries: use local search index (instant after chunk loads)
     const isAddressQuery = /^\d/.test(debouncedQuery.trim());
     if (isAddressQuery && localSearchReady) {
+      let handled = false;
       localSearch(debouncedQuery, 5).then((localResults) => {
         if (localResults.length > 0) {
+          handled = true;
           setResults(localResults as unknown as Building[]);
           setOpen(true);
           setLoading(false);
         }
       });
-      // If local search returns results, skip API call
-      // But still fall through on first keystroke while chunk loads
+      // Give local search 50ms to respond before falling through to API
+      // This prevents the API call from overwriting local results
+      const timer = setTimeout(() => {
+        if (handled) return;
+        // Local search didn't return results — fall through to API
+        fetchFromApi();
+      }, 50);
+      return () => clearTimeout(timer);
     }
 
-    // Fallback: API search for non-address queries or when local index not ready
-    const controller = new AbortController();
-    setLoading(true);
-    const url =
-      neighborhoods.length > 0
-        ? `/api/search?zip=${neighborhoods[0].zipCode}&city=${city}&limit=5`
-        : `/api/search?q=${encodeURIComponent(debouncedQuery)}&city=${city}&limit=5`;
+    // Non-address queries: always use API
+    const controller = fetchFromApi();
+    return () => controller?.abort();
 
-    fetch(url, { signal: controller.signal })
-      .then((res) => res.json())
-      .then((data) => {
-        setResults(data.buildings || []);
-        setOpen(true);
-      })
-      .catch((err) => {
-        if (err.name !== "AbortError") setResults([]);
-      })
-      .finally(() => setLoading(false));
+    function fetchFromApi() {
+      const controller = new AbortController();
+      setLoading(true);
+      const url =
+        neighborhoods.length > 0
+          ? `/api/search?zip=${neighborhoods[0].zipCode}&city=${city}&limit=5`
+          : `/api/search?q=${encodeURIComponent(debouncedQuery)}&city=${city}&limit=5`;
 
-    return () => controller.abort();
+      fetch(url, { signal: controller.signal })
+        .then((res) => res.json())
+        .then((data) => {
+          setResults(data.buildings || []);
+          setOpen(true);
+        })
+        .catch((err) => {
+          if (err.name !== "AbortError") setResults([]);
+        })
+        .finally(() => setLoading(false));
+
+      return controller;
+    }
   }, [debouncedQuery, city, recent.length, localSearch, localSearchReady]);
 
   // Reset highlight when items change
