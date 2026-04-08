@@ -82,12 +82,20 @@ export default async function CrimePage({
   sinceDate.setFullYear(sinceDate.getFullYear() - 2);
   const sinceDateStr = sinceDate.toISOString().split("T")[0];
 
-  const [zipRes, cityStatsRes, yoyRes, trendsRes] = await Promise.all([
+  // Core data (from cache table — fast)
+  const [zipRes, cityStatsRes, yoyRes] = await Promise.all([
     supabase.rpc("crime_by_zip", { since_date: sinceDateStr, metro: city }),
     supabase.rpc("crime_city_stats", { since_date: sinceDateStr, metro: city }),
     supabase.rpc("crime_zip_yoy", { metro: city }),
-    supabase.rpc("crime_all_zip_trends", { metro: city, num_months: 12 }),
   ]);
+
+  // Sparkline data (scans raw table — may timeout, so handle gracefully)
+  let trendsRes: { data: TrendRow[] | null } = { data: null };
+  try {
+    trendsRes = await supabase.rpc("crime_all_zip_trends", { metro: city, num_months: 12 });
+  } catch {
+    console.warn("crime_all_zip_trends timed out — sparklines will be empty");
+  }
 
   const zipData = zipRes.data || [];
   const cityStats: CityStats | null = cityStatsRes.data?.[0] ?? null;
@@ -98,7 +106,7 @@ export default async function CrimePage({
     yoyMap.set(row.zip_code, row);
   }
 
-  // Build trends by zip
+  // Build trends by zip (may be empty if RPC timed out)
   const trendsByZip: Record<string, number[]> = {};
   for (const row of (trendsRes.data || []) as TrendRow[]) {
     if (!trendsByZip[row.zip_code]) trendsByZip[row.zip_code] = [];
