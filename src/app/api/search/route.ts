@@ -1,11 +1,19 @@
+import { createClient } from "@supabase/supabase-js";
 import { isValidCity } from "@/lib/cities";
 import { normalizeAddressQuery } from "@/lib/address-normalization";
-import { createClient } from "@/lib/supabase/server";
 import { searchSchema } from "@/lib/validators";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { cached } from "@/lib/kv-cache";
 import { NextRequest, NextResponse } from "next/server";
 
+export const runtime = "edge";
+
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+}
 
 export async function GET(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0] ?? "anonymous";
@@ -29,7 +37,7 @@ export async function GET(req: NextRequest) {
   }
   const offset = (page - 1) * limit;
 
-  const supabase = await createClient();
+  const supabase = getSupabase();
 
   // Use ranked search function for text queries to get proper relevance ordering
   if (q) {
