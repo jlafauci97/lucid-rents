@@ -89,13 +89,8 @@ export default async function CrimePage({
     supabase.rpc("crime_zip_yoy", { metro: city }),
   ]);
 
-  // Sparkline data (scans raw table — may timeout, so handle gracefully)
-  let trendsRes: { data: TrendRow[] | null } = { data: null };
-  try {
-    trendsRes = await supabase.rpc("crime_all_zip_trends", { metro: city, num_months: 12 });
-  } catch {
-    console.warn("crime_all_zip_trends timed out — sparklines will be empty");
-  }
+  // Sparkline data disabled — crime_all_zip_trends scans raw table and
+  // exceeds Vercel function timeout. TODO: add monthly trends to cache table.
 
   const zipData = zipRes.data || [];
   const cityStats: CityStats | null = cityStatsRes.data?.[0] ?? null;
@@ -106,12 +101,8 @@ export default async function CrimePage({
     yoyMap.set(row.zip_code, row);
   }
 
-  // Build trends by zip (may be empty if RPC timed out)
+  // Sparklines disabled for now (empty object = no sparklines shown)
   const trendsByZip: Record<string, number[]> = {};
-  for (const row of (trendsRes.data || []) as TrendRow[]) {
-    if (!trendsByZip[row.zip_code]) trendsByZip[row.zip_code] = [];
-    trendsByZip[row.zip_code].push(Number(row.total));
-  }
 
   // Rank all zips
   const rankedZips = rankZips(zipData, yoyMap, (zip) =>
