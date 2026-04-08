@@ -159,7 +159,7 @@ export default async function CrimePage({
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Structured data */}
-      <JsonLd data={breadcrumbJsonLd(bcItems)} />
+      <JsonLd data={breadcrumbJsonLd(bcItems.map(b => ({ name: b.label, url: b.href })))} />
 
       {/* Breadcrumbs */}
       <Breadcrumbs items={bcItems} />
