@@ -44,9 +44,28 @@ export async function GET(req: NextRequest) {
     const { abbreviated } = normalizeAddressQuery(q);
     const isAddressQuery = /^\d/.test(abbreviated.trim());
 
-    // Cache autocomplete queries (limit=5) in Redis for 5 minutes
+    // For autocomplete (limit<=5): check Redis FIRST before touching Supabase
     const isAutocomplete = limit <= 5;
     const cacheKey = isAutocomplete ? `search:${cityParam || "all"}:${abbreviated}:${borough || ""}:${zip || ""}` : null;
+
+    // Fast path: return cached result without hitting Supabase at all
+    if (cacheKey) {
+      const { Redis } = await import("@upstash/redis");
+      try {
+        const redis = new Redis({
+          url: process.env.UPSTASH_REDIS_REST_URL!,
+          token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+        });
+        const hit = await redis.get<{ buildings: unknown[]; total: number }>(cacheKey);
+        if (hit) {
+          return NextResponse.json({ ...hit, page }, {
+            headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" },
+          });
+        }
+      } catch {
+        // Redis miss or down — fall through to Supabase
+      }
+    }
 
     const result = await cached(
       cacheKey,
