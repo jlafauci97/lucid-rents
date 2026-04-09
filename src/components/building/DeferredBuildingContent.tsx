@@ -8,7 +8,8 @@ import { RentRangeCard } from "@/components/building/RentRangeCard";
 import { IssuesTabs } from "@/components/building/IssuesTabs";
 import { SaveButton } from "@/components/building/SaveButton";
 import { ShareButton } from "@/components/building/ShareButton";
-import { canonicalUrl, buildingUrl } from "@/lib/seo";
+import { canonicalUrl, buildingUrl, reviewsJsonLd } from "@/lib/seo";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { Clock } from "lucide-react";
 import { BuildingLocationMap } from "@/components/building/BuildingLocationMap";
 import { ViolationTrend } from "@/components/building/ViolationTrend";
@@ -123,8 +124,12 @@ export async function DeferredBuildingContent({ building, buildingId, city, rent
     ? { text: bestCriticalReview.body!.slice(0, 150), author: bestCriticalReview.profile?.display_name || "Anonymous", date: dateFmt(bestCriticalReview.created_at) }
     : null;
 
+  const reviewLd = reviewsJsonLd(reviews, building.full_address);
+
   return (
     <>
+      {reviewLd && <JsonLd data={reviewLd} />}
+
       {/* Verdict Banner */}
       <VerdictBanner
         recommendPct={recommendPct}

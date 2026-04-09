@@ -143,6 +143,41 @@ export function buildingJsonLd(
   return schema;
 }
 
+/** Individual Review JSON-LD items for a building */
+export function reviewsJsonLd(
+  reviews: {
+    overall_rating: number;
+    body: string | null;
+    created_at: string;
+    profile?: { display_name: string | null } | null;
+  }[],
+  buildingAddress: string
+) {
+  const withBody = reviews.filter((r) => r.body && r.body.trim().length > 0);
+  if (withBody.length === 0) return null;
+
+  return withBody.map((r) => ({
+    "@context": "https://schema.org",
+    "@type": "Review",
+    itemReviewed: {
+      "@type": "LocalBusiness",
+      name: buildingAddress,
+    },
+    author: {
+      "@type": "Person",
+      name: r.profile?.display_name || "Anonymous Tenant",
+    },
+    datePublished: r.created_at.split("T")[0],
+    reviewRating: {
+      "@type": "Rating",
+      ratingValue: r.overall_rating,
+      bestRating: 5,
+      worstRating: 1,
+    },
+    reviewBody: r.body!.slice(0, 500),
+  }));
+}
+
 export function landlordJsonLd(
   name: string,
   buildingCount: number,
