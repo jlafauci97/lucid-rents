@@ -101,7 +101,7 @@ export function PermitTimeline({ permits, agencyLabel = "DOB", viewAllHref, limi
           className="block text-center py-3 px-4 rounded-lg border text-sm font-medium transition-colors hover:bg-gray-50"
           style={{ color: T.accent, borderColor: T.border }}
         >
-          View All {totalCount ?? permits.length} Permits
+          View All {totalCount || permits.length} Permits
         </a>
       )}
     </div>
