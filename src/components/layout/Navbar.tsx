@@ -15,9 +15,9 @@ async function AuthSection() {
 
   return (
     <>
-      <div className="hidden md:flex items-center gap-4">
+      <div className="hidden lg:flex items-center gap-3">
         {user ? (
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <Link
               href="/profile"
               className="flex items-center gap-2 text-sm font-semibold text-white hover:text-white/80 transition-colors"
@@ -60,7 +60,7 @@ async function AuthSection() {
 function AuthFallback() {
   return (
     <>
-      <div className="hidden md:flex items-center gap-3">
+      <div className="hidden lg:flex items-center gap-3">
         <Link
           href="/login"
           className="text-sm font-semibold text-white hover:text-white/80 transition-colors"
@@ -82,9 +82,9 @@ function AuthFallback() {
 export function Navbar() {
   return (
     <nav className="bg-[#0F1D2E] text-white sticky top-0 z-50 border-b border-white/90">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <div className="flex items-center gap-8">
+          <div className="flex items-center gap-4">
             <Link href="/" className="flex-shrink-0 flex items-center absolute left-1/2 -translate-x-1/2 md:static md:translate-x-0">
               <Image
                 src="/lucid-rents-logo.png"

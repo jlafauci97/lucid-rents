@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Search, BarChart3, Users, Siren, Radio, Newspaper, PenSquare } from "lucide-react";
+import { Search, BarChart3, Users, Siren, Radio, PenSquare } from "lucide-react";
 import { cityPath } from "@/lib/seo";
 import { useCityFromPath } from "@/lib/city-context";
 import { NavDropdown } from "./NavDropdown";
@@ -10,7 +10,7 @@ export function NavLinks() {
   const city = useCityFromPath();
 
   return (
-    <div className="hidden lg:flex items-center gap-4">
+    <div className="hidden lg:flex items-center gap-3">
       <Link
         href={cityPath("/search", city)}
         className="flex items-center gap-1.5 text-sm font-semibold text-white hover:text-white/80 transition-colors whitespace-nowrap"
@@ -45,13 +45,6 @@ export function NavLinks() {
       >
         <Radio className="w-3.5 h-3.5" />
         Feed
-      </Link>
-      <Link
-        href={cityPath("/news", city)}
-        className="flex items-center gap-1.5 text-sm font-semibold text-white hover:text-white/80 transition-colors whitespace-nowrap"
-      >
-        <Newspaper className="w-3.5 h-3.5" />
-        News
       </Link>
       <NavDropdown city={city} />
       <Link
