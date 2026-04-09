@@ -237,8 +237,6 @@ export default async function NeighborhoodPage({
         { label: neighborhoodName || zipCode, href: neighborhoodUrl(zipCode) },
       ]} />
 
-      <NeighborhoodSectionNav />
-
       {/* Header */}
       <div className="flex items-start gap-5 mb-8">
         <LetterGrade score={overallScore} size="lg" showScore />
@@ -305,6 +303,11 @@ export default async function NeighborhoodPage({
           <p className="text-2xl font-bold text-[#0F1D2E]">{Number(stats.total_reviews).toLocaleString()}</p>
         </div>
       </div>
+
+    </div>
+    {/* Full-bleed section nav — breaks out of max-w container */}
+    <NeighborhoodSectionNav />
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
       {/* Percentile Rankings */}
       <div id="rankings" className="scroll-mt-28">
