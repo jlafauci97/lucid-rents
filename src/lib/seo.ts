@@ -1,5 +1,6 @@
 import { type City, DEFAULT_CITY, CITY_META } from "./cities";
 import { neighborhoodPageSlugByCity } from "./neighborhoods";
+import { normalizeScore } from "./constants";
 
 const BASE_URL = "https://lucidrents.com";
 
@@ -68,6 +69,10 @@ export function neighborhoodUrl(
   return `/${CITY_META[city].urlPrefix}/neighborhood/${neighborhoodPageSlugByCity(zipCode, city)}`;
 }
 
+export function neighborhoodsUrl(city: City = DEFAULT_CITY): string {
+  return `/${CITY_META[city].urlPrefix}/neighborhoods`;
+}
+
 export function canonicalUrl(path: string): string {
   return `${BASE_URL}${path}`;
 }
@@ -133,7 +138,7 @@ export function buildingJsonLd(
   if (building.review_count > 0 && building.overall_score != null) {
     schema.aggregateRating = {
       "@type": "AggregateRating",
-      ratingValue: building.overall_score,
+      ratingValue: normalizeScore(building.overall_score),
       bestRating: 5,
       worstRating: 1,
       reviewCount: building.review_count,

@@ -76,6 +76,11 @@ export function Footer({ city = "nyc" as City }: { city?: City }) {
                 </Link>
               </li>
               <li>
+                <Link href={cityPath("/neighborhoods", city)} className="hover:text-white transition-colors">
+                  Neighborhoods
+                </Link>
+              </li>
+              <li>
                 <Link href={cityPath("/news", city)} className="hover:text-white transition-colors">
                   {cityName} Housing News
                 </Link>

@@ -178,11 +178,22 @@ export function getScoreLabel(score: number): string {
 
 export type LetterGrade = "A" | "B" | "C" | "D" | "F";
 
+/**
+ * Normalize a score to 0-5 scale.
+ * DB stores overall_score as 0-10 (via bulk-scores.mjs formula);
+ * this converts to the 0-5 scale used for letter grades and
+ * Google aggregateRating schema (bestRating: 5).
+ */
+export function normalizeScore(score: number): number {
+  return score / 2;
+}
+
 export function getLetterGrade(score: number): LetterGrade {
-  if (score >= 4) return "A";
-  if (score >= 3) return "B";
-  if (score >= 2) return "C";
-  if (score >= 1) return "D";
+  const s = normalizeScore(score);
+  if (s >= 4) return "A";
+  if (s >= 3) return "B";
+  if (s >= 2) return "C";
+  if (s >= 1) return "D";
   return "F";
 }
 
@@ -199,13 +210,14 @@ export function getGradeColor(grade: LetterGrade): string {
 }
 
 /**
- * Derive a 0-5 building score from violation + complaint counts.
+ * Derive a 0-10 building score from violation + complaint counts.
+ * Matches the formula in scripts/bulk-scores.mjs that populates the DB.
  * Uses log scale so scores spread naturally across the full A-F range.
  */
 export function deriveScore(violations: number, complaints: number): number {
   const total = violations + complaints;
-  if (total === 0) return 5;
-  const score = Math.max(0, 5 - Math.log10(total + 1) * 1.5);
+  if (total === 0) return 10;
+  const score = Math.max(0, 10 - Math.log10(total + 1) * 3);
   return Math.round(score * 10) / 10;
 }
 
