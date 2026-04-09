@@ -352,7 +352,7 @@ export default async function LandlordDetailPage({
         </div>
 
         {/* Tenant Resources */}
-        <LandlordActionLinks compareIds={buildings.slice(0, 3).map((b) => b.id)} />
+        <LandlordActionLinks compareIds={buildings.slice(0, 3).map((b) => b.id)} city={city} />
 
         {/* Buildings section */}
         <div className="mb-5 flex items-end justify-between">
