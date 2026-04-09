@@ -338,6 +338,13 @@ export default async function LandlordsPage({ params: routeParams }: LandlordsPa
         <h2 className="text-lg font-bold text-[#0F1D2E] mb-4">Related</h2>
         <div className="flex flex-wrap gap-3">
           <Link
+            href={cityPath("/landlords/worst", city)}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-red-50 text-[#ef4444] border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
+          >
+            <ShieldAlert className="w-4 h-4" />
+            Worst Landlords
+          </Link>
+          <Link
             href={cityPath("/worst-rated-buildings", city)}
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-red-50 text-[#ef4444] border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
           >
