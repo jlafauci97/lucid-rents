@@ -24,6 +24,7 @@ import { RelatedNeighborhoods } from "@/components/neighborhood/RelatedNeighborh
 import { FAQSection } from "@/components/seo/FAQSection";
 import { generateNeighborhoodFAQ } from "@/lib/faq/area-faq";
 import { VibeCheck } from "@/components/neighborhood/VibeCheck";
+import { NeighborhoodSectionNav } from "@/components/neighborhood/NeighborhoodSectionNav";
 import { getNeighborhoodVibe } from "@/lib/neighborhood-vibes";
 
 export const revalidate = 3600;
@@ -236,6 +237,8 @@ export default async function NeighborhoodPage({
         { label: neighborhoodName || zipCode, href: neighborhoodUrl(zipCode) },
       ]} />
 
+      <NeighborhoodSectionNav />
+
       {/* Header */}
       <div className="flex items-start gap-5 mb-8">
         <LetterGrade score={overallScore} size="lg" showScore />
@@ -252,7 +255,7 @@ export default async function NeighborhoodPage({
       </div>
 
       {/* Sub-Grades */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+      <div id="grades" className="scroll-mt-28 grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
         {subGrades.map((g) => {
           const grade = getLetterGrade(g.score);
           const color = getGradeColor(grade);
@@ -272,7 +275,7 @@ export default async function NeighborhoodPage({
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+      <div id="stats" className="scroll-mt-28 grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
         <div className="bg-white rounded-xl border border-[#e2e8f0] p-4">
           <div className="flex items-center gap-2 mb-1">
             <Building2 className="w-4 h-4 text-[#3B82F6]" />
@@ -304,11 +307,13 @@ export default async function NeighborhoodPage({
       </div>
 
       {/* Percentile Rankings */}
-      <NeighborhoodRankCard zipCode={zipCode} stats={stats} crimeData={crime} />
+      <div id="rankings" className="scroll-mt-28">
+        <NeighborhoodRankCard zipCode={zipCode} stats={stats} crimeData={crime} />
+      </div>
 
       {/* Crime Summary */}
       {crime && crime.total > 0 && (
-        <div className="bg-white rounded-xl border border-[#e2e8f0] p-6 mb-8">
+        <div id="crime" className="scroll-mt-28 bg-white rounded-xl border border-[#e2e8f0] p-6 mb-8">
           <div className="flex items-center gap-2 mb-4">
             <Siren className="w-5 h-5 text-[#DC2626]" />
             <h2 className="text-lg font-bold text-[#0F1D2E]">Crime Summary (12 Months)</h2>
@@ -341,6 +346,7 @@ export default async function NeighborhoodPage({
       )}
 
       {/* Neighborhood Pulse */}
+      <div id="pulse" className="scroll-mt-28">
       <NeighborhoodPulse
         zipCode={zipCode}
         crimeTotal={crime?.total ?? null}
@@ -349,10 +355,11 @@ export default async function NeighborhoodPage({
         reviewCount={Number(stats.total_reviews)}
         buildingCount={buildingCount}
       />
+      </div>
 
       {/* Rent Trends */}
       {rents.length > 0 && (
-        <div className="mb-8">
+        <div id="rent-trends" className="scroll-mt-28 mb-8">
           <NeighborhoodRentChart rents={rents} />
         </div>
       )}
@@ -380,7 +387,7 @@ export default async function NeighborhoodPage({
           }
         }
         return (
-          <div className="mb-8">
+          <div id="best-apartments" className="scroll-mt-28 mb-8">
             <BestApartments
               tiers={tiers}
               areaName={neighborhoodName || zipCode}
@@ -389,7 +396,7 @@ export default async function NeighborhoodPage({
         );
       })()}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div id="flagged-buildings" className="scroll-mt-28 grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Top Buildings */}
         {buildings.length > 0 && (
           <div>
@@ -431,14 +438,18 @@ export default async function NeighborhoodPage({
       </div>
 
       {/* Walkability & Transit */}
-      <Suspense fallback={<div className="h-48 bg-white rounded-xl border border-[#e2e8f0] animate-pulse mb-8 mt-8" />}>
-        <WalkabilitySection zipCode={zipCode} city={city} />
-      </Suspense>
+      <div id="walkability" className="scroll-mt-28">
+        <Suspense fallback={<div className="h-48 bg-white rounded-xl border border-[#e2e8f0] animate-pulse mb-8 mt-8" />}>
+          <WalkabilitySection zipCode={zipCode} city={city} />
+        </Suspense>
+      </div>
 
       {/* Demographics */}
-      <Suspense fallback={null}>
-        <DemographicSnapshot zipCode={zipCode} />
-      </Suspense>
+      <div id="demographics" className="scroll-mt-28">
+        <Suspense fallback={null}>
+          <DemographicSnapshot zipCode={zipCode} />
+        </Suspense>
+      </div>
 
       <AdBlock adSlot="NEIGHBORHOOD_BOTTOM" adFormat="horizontal" />
 
@@ -446,12 +457,14 @@ export default async function NeighborhoodPage({
       {(() => {
         const vibe = getNeighborhoodVibe(city, zipCode);
         return vibe ? (
-          <VibeCheck vibe={vibe} neighborhoodName={neighborhoodName || zipCode} />
+          <div id="vibe-check" className="scroll-mt-28">
+            <VibeCheck vibe={vibe} neighborhoodName={neighborhoodName || zipCode} />
+          </div>
         ) : null;
       })()}
 
       {/* Compare */}
-      <div className="mb-8">
+      <div id="compare" className="scroll-mt-28 mb-8">
         <CompareButton
           neighborhoodName={neighborhoodName || zipCode}
           zipCode={zipCode}
@@ -459,6 +472,7 @@ export default async function NeighborhoodPage({
         />
       </div>
 
+      <div id="faq" className="scroll-mt-28">
       <FAQSection
         items={generateNeighborhoodFAQ({
           displayName: neighborhoodName ? `${neighborhoodName} (${zipCode})` : zipCode,
@@ -470,8 +484,10 @@ export default async function NeighborhoodPage({
         })}
         title={`Frequently Asked Questions About ${neighborhoodName || zipCode}`}
       />
+      </div>
 
       {/* Related Neighborhoods */}
+      <div id="related" className="scroll-mt-28">
       <Suspense fallback={<div className="h-32 bg-white rounded-xl border border-[#e2e8f0] animate-pulse mt-8" />}>
         <RelatedNeighborhoods
           currentZip={zipCode}
@@ -480,6 +496,7 @@ export default async function NeighborhoodPage({
           city={city}
         />
       </Suspense>
+      </div>
     </div>
     </AdSidebar>
   );
