@@ -155,6 +155,32 @@ export function generateBoroughFAQ({
   return items;
 }
 
+// --- Safest Neighborhoods Page FAQ ---
+
+export function generateSafestFAQ(params: {
+  cityName: string;
+  topSafest: { name: string; grade: string; total: number }[];
+}): FAQItem[] {
+  return [
+    {
+      question: `What are the safest neighborhoods in ${params.cityName}?`,
+      answer: `Based on crime data analysis, the safest neighborhoods in ${params.cityName} are: ${params.topSafest.slice(0, 5).map((z) => `${z.name} (Grade ${z.grade})`).join(", ")}. Safety grades are calculated by comparing crime rates across all zip codes.`,
+    },
+    {
+      question: `How are safety grades calculated?`,
+      answer: `Safety grades (A through F) are assigned based on each zip code's crime rate relative to all other zip codes in ${params.cityName}. Grade A means the zip is in the safest 20% of the city, while Grade F means it's in the highest-crime 20%. Grades are updated monthly with fresh crime data.`,
+    },
+    {
+      question: `Is ${params.cityName} safe to live in?`,
+      answer: `Safety varies significantly by neighborhood in ${params.cityName}. Some areas are rated A (Very Safe) while others are rated F (High Crime). Use our safety grades and crime breakdowns to evaluate specific neighborhoods before moving.`,
+    },
+    {
+      question: `How often is crime data updated?`,
+      answer: `Crime data is synced monthly from official police department sources. Data freshness depends on each department's reporting timeline.`,
+    },
+  ];
+}
+
 // --- Crime Detail Page FAQ ---
 
 export function generateCrimeFAQ({

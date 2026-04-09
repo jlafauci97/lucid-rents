@@ -260,44 +260,53 @@ export async function GET(request: NextRequest) {
       })
     ),
 
-    // 2. Data table checks — all in parallel
-    Promise.all(
-      filteredTables.map(async (t): Promise<DataCheck & { city: City | "all" }> => {
-        try {
-          const { count } = await supabase
-            .from(t.name)
-            .select("*", { count: "exact", head: true });
+    // 2. Data table checks — use estimated counts (pg_class.reltuples) to avoid
+    //    full table scans on multi-million row tables that saturate IO.
+    (async () => {
+      // Fetch all estimated counts in a single RPC call
+      const tableNames = filteredTables.map((t) => t.name);
+      const { data: estimates } = await supabase.rpc("estimated_row_counts", { table_names: tableNames });
+      const countMap = new Map<string, number>();
+      if (Array.isArray(estimates)) {
+        for (const row of estimates) countMap.set(row.table_name, Number(row.row_count));
+      }
 
-          let latestRecord: string | null = null;
-          let status: "healthy" | "warning" | "error" = "healthy";
-          let details = `${(count ?? 0).toLocaleString()} rows`;
+      return Promise.all(
+        filteredTables.map(async (t): Promise<DataCheck & { city: City | "all" }> => {
+          try {
+            const count = countMap.get(t.name) ?? 0;
 
-          if (t.dateCol && !t.countOnly) {
-            const { data: latest } = await supabase
-              .from(t.name)
-              .select(t.dateCol)
-              .order(t.dateCol, { ascending: false })
-              .limit(1)
-              .single();
+            let latestRecord: string | null = null;
+            let status: "healthy" | "warning" | "error" = "healthy";
+            let details = `~${count.toLocaleString()} rows`;
 
-            if (latest) {
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              latestRecord = (latest as any)[t.dateCol];
-              const hoursSince = (Date.now() - new Date(latestRecord!).getTime()) / (1000 * 60 * 60);
-              if (hoursSince > t.warnHours * 2) status = "error";
-              else if (hoursSince > t.warnHours) status = "warning";
-              details += ` | latest: ${new Date(latestRecord!).toISOString().split("T")[0]}`;
+            if (t.dateCol && !t.countOnly) {
+              const { data: latest } = await supabase
+                .from(t.name)
+                .select(t.dateCol)
+                .order(t.dateCol, { ascending: false })
+                .limit(1)
+                .single();
+
+              if (latest) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                latestRecord = (latest as any)[t.dateCol];
+                const hoursSince = (Date.now() - new Date(latestRecord!).getTime()) / (1000 * 60 * 60);
+                if (hoursSince > t.warnHours * 2) status = "error";
+                else if (hoursSince > t.warnHours) status = "warning";
+                details += ` | latest: ${new Date(latestRecord!).toISOString().split("T")[0]}`;
+              }
             }
+
+            if (count === 0) status = "error";
+
+            return { name: t.name, label: t.label, status, row_count: count, latest_record: latestRecord, details, category: t.category, city: t.city };
+          } catch {
+            return { name: t.name, label: t.label, status: "error", row_count: 0, latest_record: null, details: "Query failed", category: t.category, city: t.city };
           }
-
-          if ((count ?? 0) === 0) status = "error";
-
-          return { name: t.name, label: t.label, status, row_count: count ?? 0, latest_record: latestRecord, details, category: t.category, city: t.city };
-        } catch {
-          return { name: t.name, label: t.label, status: "error", row_count: 0, latest_record: null, details: "Query failed", category: t.category, city: t.city };
-        }
-      })
-    ),
+        })
+      );
+    })(),
 
     // 3. RPC checks — all in parallel
     Promise.all(

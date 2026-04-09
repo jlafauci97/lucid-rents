@@ -48,57 +48,29 @@ interface LinkingEntry {
 export async function GET() {
   const supabase = getSupabaseAdmin();
 
-  // Build all query promises: one per table × metro combination
-  const queries: Promise<LinkingEntry | null>[] = [];
+  // Single RPC call replaces 120+ exact-count queries (12 tables × 5 metros × 2 counts each)
+  const tableNames = TABLE_DEFS.map((d) => d.table);
+  const labelMap = new Map(TABLE_DEFS.map((d) => [d.table, d.label]));
+  const { data: rows, error } = await supabase.rpc("linking_stats", {
+    table_names: tableNames,
+    metros: [...METROS],
+  });
 
-  for (const def of TABLE_DEFS) {
-    for (const metro of METROS) {
-      queries.push(
-        (async (): Promise<LinkingEntry | null> => {
-          try {
-            // Count total records for this table/metro
-            const { count: total } = await supabase
-              .from(def.table)
-              .select("*", { count: "exact", head: true })
-              .eq("metro", metro);
-
-            if (!total || total === 0) return null;
-
-            // Count linked records (building_id IS NOT NULL)
-            const { count: linked } = await supabase
-              .from(def.table)
-              .select("*", { count: "exact", head: true })
-              .eq("metro", metro)
-              .not("building_id", "is", null);
-
-            const linkedCount = linked ?? 0;
-            const unlinked = total - linkedCount;
-            const link_pct = Math.round((linkedCount / total) * 1000) / 10;
-
-            return {
-              table: def.table,
-              label: def.label,
-              metro,
-              total,
-              linked: linkedCount,
-              unlinked,
-              link_pct,
-            };
-          } catch {
-            // Table might not exist — skip silently
-            return null;
-          }
-        })()
-      );
-    }
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const results = await Promise.all(queries);
-
-  // Filter out nulls (skipped combos)
-  const linking: LinkingEntry[] = results.filter(
-    (r): r is LinkingEntry => r !== null
-  );
+  const linking: LinkingEntry[] = ((rows as { table_name: string; metro: string; total: number; linked: number }[]) || [])
+    .filter((r) => r.total > 0)
+    .map((r) => ({
+      table: r.table_name,
+      label: labelMap.get(r.table_name) || r.table_name,
+      metro: r.metro,
+      total: r.total,
+      linked: r.linked,
+      unlinked: r.total - r.linked,
+      link_pct: Math.round((r.linked / r.total) * 1000) / 10,
+    }));
 
   // Critical: link_pct < 50 AND total > 100
   const critical = linking.filter((r) => r.link_pct < 50 && r.total > 100);

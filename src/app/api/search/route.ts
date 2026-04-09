@@ -148,7 +148,7 @@ export async function GET(req: NextRequest) {
   // Non-text queries: browse by filters only
   let query = supabase
     .from("buildings")
-    .select("id,metro,borough,slug,full_address,name,zip_code,year_built,total_units,review_count,violation_count,complaint_count,overall_score,is_rent_stabilized,latitude,longitude", { count: "exact" })
+    .select("id,metro,borough,slug,full_address,name,zip_code,year_built,total_units,review_count,violation_count,complaint_count,overall_score,is_rent_stabilized,latitude,longitude", { count: "estimated" })
     .range(offset, offset + limit - 1);
 
   if (cityParam) query = query.eq("metro", cityParam);
