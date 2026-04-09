@@ -955,7 +955,8 @@ def upsert_rents(building_id, rent_rows):
             history_rows, on_conflict="building_id,source,unit_number,bedrooms,rent,observed_at"
         ).execute())
     except Exception as e:
-        print(f"  Rent history insert error: {e}")
+        print(f"  ❌ Rent history insert FAILED: {e}")
+        return -1
 
     return len(rows)
 

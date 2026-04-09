@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { LetterGrade } from "@/components/ui/LetterGrade";
 import { buildingUrl } from "@/lib/seo";
 import { deriveScore } from "@/lib/constants";
+import { cached } from "@/lib/kv-cache";
 import type { Building } from "@/types";
 import type { City } from "@/lib/cities";
 
@@ -12,18 +13,21 @@ interface TrendingBuildingsProps {
 }
 
 export async function TrendingBuildings({ city }: TrendingBuildingsProps) {
-  const supabase = await createClient();
   const metro = city === "nyc" ? "nyc" : city;
 
-  const { data: buildings } = await supabase
-    .from("buildings")
-    .select(
-      "id, full_address, borough, zip_code, slug, overall_score, violation_count, complaint_count"
-    )
-    .eq("metro", metro)
-    .gt("violation_count", 0)
-    .order("violation_count", { ascending: false })
-    .limit(5);
+  const buildings = await cached(`trending:${metro}`, 3600, async () => {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("buildings")
+      .select(
+        "id, full_address, borough, zip_code, slug, overall_score, violation_count, complaint_count"
+      )
+      .eq("metro", metro)
+      .gt("violation_count", 0)
+      .order("violation_count", { ascending: false })
+      .limit(5);
+    return data || [];
+  });
 
   if (!buildings || buildings.length === 0) return null;
 

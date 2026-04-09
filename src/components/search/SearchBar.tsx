@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Search, MapPin, Loader2, Clock } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useRecentBuildings } from "@/hooks/useRecentBuildings";
+import { useLocalSearch } from "@/hooks/useLocalSearch";
 import { LetterGrade } from "@/components/ui/LetterGrade";
 import { deriveScore } from "@/lib/constants";
 import { buildingUrl, cityPath, neighborhoodUrl } from "@/lib/seo";
@@ -40,8 +41,9 @@ export function SearchBar({
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const debouncedQuery = useDebounce(query, 300);
+  const debouncedQuery = useDebounce(query, 150);
   const { recent } = useRecentBuildings();
+  const { search: localSearch, ready: localSearchReady } = useLocalSearch(city);
 
   // Build flat list of all items for keyboard navigation
   const flatItems: FlatItem[] = [];
@@ -104,22 +106,54 @@ export function SearchBar({
     setNeighborhoodResults(neighborhoods);
     if (neighborhoods.length > 0) setOpen(true);
 
-    // API building search
-    setLoading(true);
-    const url =
-      neighborhoods.length > 0
-        ? `/api/search?zip=${neighborhoods[0].zipCode}&city=${city}&limit=5`
-        : `/api/search?q=${encodeURIComponent(debouncedQuery)}&city=${city}&limit=5`;
+    // For address queries: use local search index (instant after chunk loads)
+    const isAddressQuery = /^\d/.test(debouncedQuery.trim());
+    if (isAddressQuery && localSearchReady) {
+      let handled = false;
+      localSearch(debouncedQuery, 5).then((localResults) => {
+        if (localResults.length > 0) {
+          handled = true;
+          setResults(localResults as unknown as Building[]);
+          setOpen(true);
+          setLoading(false);
+        }
+      });
+      // Give local search 50ms to respond before falling through to API
+      // This prevents the API call from overwriting local results
+      const timer = setTimeout(() => {
+        if (handled) return;
+        // Local search didn't return results — fall through to API
+        fetchFromApi();
+      }, 50);
+      return () => clearTimeout(timer);
+    }
 
-    fetch(url)
-      .then((res) => res.json())
-      .then((data) => {
-        setResults(data.buildings || []);
-        setOpen(true);
-      })
-      .catch(() => setResults([]))
-      .finally(() => setLoading(false));
-  }, [debouncedQuery, city, recent.length]);
+    // Non-address queries: always use API
+    const controller = fetchFromApi();
+    return () => controller?.abort();
+
+    function fetchFromApi() {
+      const controller = new AbortController();
+      setLoading(true);
+      const url =
+        neighborhoods.length > 0
+          ? `/api/search?zip=${neighborhoods[0].zipCode}&city=${city}&limit=5`
+          : `/api/search?q=${encodeURIComponent(debouncedQuery)}&city=${city}&limit=5`;
+
+      fetch(url, { signal: controller.signal })
+        .then((res) => res.json())
+        .then((data) => {
+          setResults(data.buildings || []);
+          setOpen(true);
+        })
+        .catch((err) => {
+          if (err.name !== "AbortError") setResults([]);
+        })
+        .finally(() => setLoading(false));
+
+      return controller;
+    }
+  }, [debouncedQuery, city, recent.length, localSearch, localSearchReady]);
 
   // Reset highlight when items change
   useEffect(() => {

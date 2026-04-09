@@ -29,6 +29,8 @@ interface BuildingHeaderProps {
   valueGrade?: string | null;
   medianRent?: number;
   pricePerSqft?: number;
+  topViolationType?: string;
+  topComplaintType?: string;
 }
 
 /* ─── Double Ring Knockout Badge ─── */
@@ -141,6 +143,8 @@ export function BuildingHeader({
   valueGrade,
   medianRent,
   pricePerSqft,
+  topViolationType,
+  topComplaintType,
 }: BuildingHeaderProps) {
   const vCount = violationCount ?? building.violation_count ?? 0;
   const score =
@@ -299,7 +303,7 @@ export function BuildingHeader({
             icon={AlertTriangle}
             label="Violations"
             value={vCount > 0 ? vCount.toLocaleString() : "0"}
-            sub={vCount === 0 ? "No open violations" : undefined}
+            sub={vCount === 0 ? "No open violations" : topViolationType ? `Top: ${topViolationType}` : undefined}
             color={T.danger}
           />
           <VitalCard
@@ -310,6 +314,7 @@ export function BuildingHeader({
                 ? building.complaint_count.toLocaleString()
                 : "0"
             }
+            sub={building.complaint_count === 0 ? "No complaints" : topComplaintType ? `Top: ${topComplaintType}` : undefined}
             color={T.gold}
           />
           <VitalCard

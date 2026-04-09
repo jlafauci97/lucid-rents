@@ -35,6 +35,8 @@ interface HazardZonesCardProps {
   isSoftStory?: boolean;
   softStoryStatus?: string | null;
   city: string;
+  /** LA earthquake retrofit data */
+  earthquakeRetrofit?: { id: string; retrofit_type: string; compliance_status: string; ordinance: string; deadline: string; completion_date: string } | null;
 }
 
 const HAZARD_ICONS: Record<string, LucideIcon> = {

@@ -21,6 +21,7 @@ import { NearbyBuildings } from "@/components/building/NearbyBuildings";
 import { SameLandlordBuildings } from "@/components/building/SameLandlordBuildings";
 import { RentStabilizationCard } from "@/components/building/RentStabilizationCard";
 import { RentComparison } from "@/components/building/RentComparison";
+import { DeferredRentComparison } from "@/components/building/DeferredRentComparison";
 import { EnergyScoreCard } from "@/components/building/EnergyScoreCard";
 import { SeismicSafetyCard } from "@/components/building/SeismicSafetyCard";
 import { HazardZonesCard } from "@/components/building/HazardZonesCard";
@@ -31,7 +32,6 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { SLUG_TO_BOROUGH, regionFromSlug, buildingUrl, canonicalUrl, buildingJsonLd, breadcrumbJsonLd, landlordUrl, cityPath } from "@/lib/seo";
 import { CITY_META, VALID_CITIES, type City } from "@/lib/cities";
-import { AdSidebar } from "@/components/ui/AdSidebar";
 import { TrackBuildingView } from "@/components/building/TrackBuildingView";
 import { T } from "@/lib/design-tokens";
 import { cache } from "react";
@@ -239,13 +239,11 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
   const isMiami = city === "miami";
 
   // Critical data only — just what's needed for above-the-fold content
-  const [rents, energyData, neighborhoodRents, deweyLatestRaw, deweyNeighborhoodLatestRaw] = await Promise.all([
+  // NOTE: neighborhood median rents moved to DeferredRentComparison (Suspense boundary)
+  // so it doesn't block the entire page render
+  const [rents, energyData, deweyLatestRaw, deweyNeighborhoodLatestRaw] = await Promise.all([
     safe(supabase.from("building_rents").select("bedrooms, min_rent, max_rent, median_rent, listing_count, source").eq("building_id", buildingId), []),
     safe(supabase.from("energy_benchmarks").select("*").eq("building_id", buildingId).order("report_year", { ascending: false }).limit(1), [] as EnergyBenchmark[]),
-    // Neighborhood median rents via RPC — computes median server-side, returns ~5 rows instead of 1500+
-    building.zip_code
-      ? safe(supabase.rpc("get_neighborhood_median_rents", { p_zip: building.zip_code, p_exclude_building: buildingId }), [] as { bedrooms: number; median_rent: number }[])
-      : Promise.resolve([] as { bedrooms: number; median_rent: number }[]),
     // Dewey: latest month building rents for above-the-fold badges
     safe(supabase.from("dewey_building_rents").select("month, beds, median_rent, avg_price_per_sqft, listing_count").eq("building_id", buildingId).order("month", { ascending: false }).limit(10), [] as { month: string; beds: number; median_rent: number; avg_price_per_sqft: number; listing_count: number }[]),
     // Dewey: latest month neighborhood rents for comparison
@@ -253,6 +251,40 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
       ? safe(supabase.from("dewey_neighborhood_rents").select("month, beds, median_rent").eq("zip", building.zip_code).order("month", { ascending: false }).limit(10), [] as { month: string; beds: number; median_rent: number }[])
       : Promise.resolve([] as { month: string; beds: number; median_rent: number }[]),
   ]);
+
+  // Top violation category / complaint type for header preview cards
+  const categorizeViolation = (desc: string): string => {
+    const d = desc.toUpperCase();
+    if (/MICE|ROACH|INFESTATION|PEST|BED\s?BUG/.test(d)) return "Pest Infestation";
+    if (/PAINT|PLASTER/.test(d)) return "Paint/Plaster";
+    if (/LEAK|WATER\s+(LEAK|SUPPLY)/.test(d)) return "Water Leak";
+    if (/WINDOW|GUARD/.test(d)) return "Window/Guard";
+    if (/SMOKE|CARBON|DETECTOR/.test(d)) return "Smoke/CO Detector";
+    if (/DOOR|LOCK/.test(d)) return "Door/Lock";
+    if (/FLOOR|TILE/.test(d)) return "Flooring";
+    if (/HEAT|HOT WATER|BOILER/.test(d)) return "Heat/Hot Water";
+    if (/LEAD/.test(d)) return "Lead Paint";
+    if (/ELECTRIC|OUTLET|WIRING/.test(d)) return "Electrical";
+    if (/ROOF|CEILING/.test(d)) return "Roof/Ceiling";
+    if (/MOLD|MILDEW/.test(d)) return "Mold/Mildew";
+    if (/ELEVATOR/.test(d)) return "Elevator";
+    if (/FIRE\s?ESCAPE|STAIR/.test(d)) return "Fire Escape/Stairs";
+    return "Other";
+  };
+  const [recentViolations, recentComplaints] = await Promise.all([
+    safe(supabase.from("hpd_violations").select("nov_description").eq("building_id", buildingId).not("nov_description", "is", null).order("inspection_date", { ascending: false }).limit(100), [] as { nov_description: string }[]),
+    safe(supabase.from("complaints_311").select("complaint_type").eq("building_id", buildingId).not("complaint_type", "is", null).order("created_date", { ascending: false }).limit(100), [] as { complaint_type: string }[]),
+  ]);
+  const topViolationType = (() => {
+    const c: Record<string, number> = {};
+    for (const v of recentViolations) { const cat = categorizeViolation(v.nov_description); if (cat !== "Other") c[cat] = (c[cat] || 0) + 1; }
+    return Object.entries(c).sort((a, b) => b[1] - a[1])[0]?.[0];
+  })();
+  const topComplaintType = (() => {
+    const c: Record<string, number> = {};
+    for (const v of recentComplaints) c[v.complaint_type] = (c[v.complaint_type] || 0) + 1;
+    return Object.entries(c).sort((a, b) => b[1] - a[1])[0]?.[0];
+  })();
 
   // For non-NYC cities, violation_count may be 0 because it tracks HPD violations only.
   // Use dob_violation_count as the primary violation metric for Chicago.
@@ -359,7 +391,6 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
   const shortAddress = building.full_address.split(",")[0]?.trim() || building.full_address;
 
   return (
-    <AdSidebar>
     <div>
       <TrackBuildingView
         building={{
@@ -391,7 +422,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
         </div>
       </div>
 
-      <BuildingHeader building={building} city={city} violationCount={effectiveViolationCount} valueGrade={deweyMetrics?.valueGrade} medianRent={deweyMetrics?.medianRent} pricePerSqft={deweyMetrics?.pricePerSqft} />
+      <BuildingHeader building={building} city={city} violationCount={effectiveViolationCount} valueGrade={deweyMetrics?.valueGrade} medianRent={deweyMetrics?.medianRent ?? (rents.length > 0 ? Math.round(rents.reduce((sum, r) => sum + (r.median_rent || 0), 0) / rents.filter(r => r.median_rent > 0).length) || undefined : undefined)} pricePerSqft={deweyMetrics?.pricePerSqft} topViolationType={topViolationType} topComplaintType={topComplaintType} />
 
       <SectionNav />
 
@@ -513,15 +544,17 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
             </div>
 
 
-            {/* Rent Comparison */}
+            {/* Rent Comparison — streams independently so it doesn't block page render */}
             {building.zip_code && (
               <div id="rent-comparison">
-                <RentComparison
-                  buildingRents={rents}
-                  neighborhoodRents={neighborhoodRents}
-                  zipCode={building.zip_code}
-                  borough={building.borough}
-                />
+                <Suspense fallback={<div className="bg-white rounded-xl border border-[#E2E8F0] p-6 animate-pulse h-48" />}>
+                  <DeferredRentComparison
+                    buildingRents={rents}
+                    buildingId={buildingId}
+                    zipCode={building.zip_code}
+                    borough={building.borough}
+                  />
+                </Suspense>
               </div>
             )}
             {/* Energy Score */}
@@ -669,11 +702,10 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
             buildingId={buildingId}
             city={city}
             rents={rents}
-            neighborhoodRents={neighborhoodRents}
+            neighborhoodRents={[]}
           />
         </Suspense>
       </div>
     </div>
-    </AdSidebar>
   );
 }
