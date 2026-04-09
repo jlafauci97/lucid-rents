@@ -30,6 +30,12 @@ const tools: ToolItem[] = [
     description: "Side-by-side building comparison",
   },
   {
+    path: "/neighborhood/compare",
+    icon: ArrowLeftRight,
+    label: "Compare Neighborhoods",
+    description: "Side-by-side neighborhood comparison",
+  },
+  {
     path: "/rent-data",
     icon: BarChart3,
     label: "Rent Data",
