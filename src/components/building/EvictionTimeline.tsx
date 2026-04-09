@@ -78,7 +78,7 @@ export function EvictionTimeline({ evictions, viewAllHref, limit = 10, totalCoun
           className="block text-center py-3 px-4 rounded-lg border text-sm font-medium transition-colors hover:bg-gray-50"
           style={{ color: T.accent, borderColor: T.border }}
         >
-          View All {totalCount ?? evictions.length} Evictions
+          View All {totalCount || evictions.length} Evictions
         </a>
       )}
     </div>
