@@ -72,7 +72,7 @@ export function DobViolationTimeline({ violations, agencyLabel = "DOB", viewAllH
           className="block text-center py-3 px-4 rounded-lg border text-sm font-medium transition-colors hover:bg-gray-50"
           style={{ color: T.accent, borderColor: T.border }}
         >
-          View All {totalCount ?? violations.length} Violations
+          View All {totalCount || violations.length} Violations
         </a>
       )}
     </div>

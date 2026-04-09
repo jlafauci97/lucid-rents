@@ -57,7 +57,7 @@ export function ViolationSummaryTable({ violations, agencyLabel = "LAHD", viewAl
           className="block text-center py-3 px-4 rounded-lg border text-sm font-medium transition-colors hover:bg-gray-50 mt-3"
           style={{ color: T.accent, borderColor: T.border }}
         >
-          View All {totalCount ?? sorted.length} Violation Types
+          View All {totalCount || sorted.length} Violation Types
         </a>
       )}
     </div>

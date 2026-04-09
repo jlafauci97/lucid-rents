@@ -96,7 +96,7 @@ export function ComplaintTimeline({ complaints, viewAllHref, limit = 10, totalCo
           className="block text-center py-3 px-4 rounded-lg border text-sm font-medium transition-colors hover:bg-gray-50"
           style={{ color: T.accent, borderColor: T.border }}
         >
-          View All {totalCount ?? complaints.length} Complaints
+          View All {totalCount || complaints.length} Complaints
         </a>
       )}
     </div>
