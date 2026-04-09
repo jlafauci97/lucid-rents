@@ -3,7 +3,6 @@ import { ViolationTrend } from "@/components/building/ViolationTrend";
 import { CommonIssues } from "@/components/building/CommonIssues";
 import { ViolationsByUnit } from "@/components/building/ViolationsByUnit";
 import { IssuesTabs } from "@/components/building/IssuesTabs";
-import { AdBlock } from "@/components/ui/AdBlock";
 import type { City } from "@/lib/cities";
 import type { HpdViolation, Complaint311, HpdLitigation, DobViolation, BedBugReport, Eviction, DobPermit, LahdViolationSummary } from "@/types";
 
@@ -46,32 +45,20 @@ export async function DeferredIssuesSection({ buildingId, city, buildingHref }: 
   // Use the first 20 for tabs display, full 200 for ViolationsByUnit and CommonIssues
   const tabViolations = violations.slice(0, 20);
 
-  // Fetch real total counts (cheap head-only queries, no data transferred)
-  const safeCount = async (query: PromiseLike<{ count: number | null; error: unknown }>): Promise<number> => {
-    try {
-      const { count, error } = await query;
-      if (error) return 0;
-      return count ?? 0;
-    } catch { return 0; }
-  };
-  const [violationsCount, complaintsCount, litigationsCount, dobCount, bedbugsCount, evictionsCount, permitsCount, lahdCount] = await Promise.all([
-    safeCount(supabase.from("hpd_violations").select("*", { count: "exact", head: true }).eq("building_id", buildingId)),
-    safeCount(supabase.from("complaints_311").select("*", { count: "exact", head: true }).eq("building_id", buildingId)),
-    isNYC ? safeCount(supabase.from("hpd_litigations").select("*", { count: "exact", head: true }).eq("building_id", buildingId)) : 0,
-    (isNYC || isChicago) ? safeCount(supabase.from("dob_violations").select("*", { count: "exact", head: true }).eq("building_id", buildingId)) : 0,
-    isNYC ? safeCount(supabase.from("bedbug_reports").select("*", { count: "exact", head: true }).eq("building_id", buildingId)) : 0,
-    isNYC ? safeCount(supabase.from("evictions").select("*", { count: "exact", head: true }).eq("building_id", buildingId)) : 0,
-    safeCount(supabase.from("dob_permits").select("*", { count: "exact", head: true }).eq("building_id", buildingId)),
-    isLA ? safeCount(supabase.from("lahd_violation_summary").select("*", { count: "exact", head: true }).eq("building_id", buildingId)) : 0,
-  ]);
+  // Use pre-computed counts from the buildings table (1 query instead of 8 exact-count scans)
+  const { data: buildingCounts } = await supabase
+    .from("buildings")
+    .select("violation_count, complaint_count, litigation_count, dob_violation_count, bedbug_report_count, eviction_count, permit_count")
+    .eq("id", buildingId)
+    .single();
   const totalCounts = {
-    violations: isLA ? lahdCount : violationsCount,
-    complaints: complaintsCount,
-    litigations: litigationsCount,
-    dob: dobCount,
-    bedbugs: bedbugsCount,
-    evictions: evictionsCount,
-    permits: permitsCount,
+    violations: isLA ? lahdViolationSummary.length : (buildingCounts?.violation_count ?? violations.length),
+    complaints: buildingCounts?.complaint_count ?? complaints.length,
+    litigations: buildingCounts?.litigation_count ?? litigations.length,
+    dob: buildingCounts?.dob_violation_count ?? dobViolations.length,
+    bedbugs: buildingCounts?.bedbug_report_count ?? bedbugs.length,
+    evictions: buildingCounts?.eviction_count ?? evictions.length,
+    permits: buildingCounts?.permit_count ?? permits.length,
   };
 
   // Common Issues aggregation — group violations by category
@@ -130,8 +117,6 @@ export async function DeferredIssuesSection({ buildingId, city, buildingHref }: 
           buildingId={buildingId}
         />
       </div>
-
-      <AdBlock adSlot="BUILDING_MID_2" adFormat="horizontal" />
 
       {/* Violations & Complaints Tabs */}
       <div id="violations" className="scroll-mt-28">
