@@ -13,6 +13,9 @@ import {
   HardHat,
 } from "lucide-react";
 import { LetterGrade } from "@/components/ui/LetterGrade";
+import { landlordGrade, landlordVerdict } from "@/lib/landlord-stats";
+import { LandlordVerdict } from "@/components/landlord/LandlordVerdict";
+import { LandlordStatsGrid } from "@/components/landlord/LandlordStatsGrid";
 import dynamic from "next/dynamic";
 
 const LandlordViolationTrend = dynamic(() => import("@/components/landlord/LandlordViolationTrend").then(m => m.LandlordViolationTrend), {
@@ -109,9 +112,13 @@ export default async function LandlordDetailPage({
   const city = (cityParam || "nyc") as import("@/lib/cities").City;
   const supabase = await createClient();
 
-  const [buildings, cityAvgRpc] = await Promise.all([
+  const [buildings, cityAvgRpc, allLandlordStatsRes] = await Promise.all([
     findBuildings(supabase, name),
     supabase.rpc("city_avg_score", { p_metro: city }),
+    supabase
+      .from("landlord_stats")
+      .select("avg_score, total_violations, total_complaints, total_litigations, total_dob_violations")
+      .eq("metro", city),
   ]);
   if (!buildings || buildings.length === 0) notFound();
 
@@ -156,6 +163,30 @@ export default async function LandlordDetailPage({
 
   // Use the owner_name from first building for display (preserves original casing)
   const displayName = buildings[0].owner_name || decodeURIComponent(name);
+
+  // Grade + Verdict
+  const allStats = allLandlordStatsRes.data || [];
+  const allScores = allStats.map(r => r.avg_score).sort((a: number, b: number) => a - b);
+  const scoreIndex = allScores.findIndex((s: number) => s >= avgScore);
+  const percentile = allScores.length > 1
+    ? Math.round((scoreIndex / (allScores.length - 1)) * 100)
+    : 50;
+  const grade = landlordGrade(percentile);
+  const verdict = landlordVerdict(grade, displayName, avgScore, cityAvgScore, totalViolations, totalBuildings, totalLitigations);
+
+  // City averages for stats grid
+  const cityAvgViolations = allStats.length > 0
+    ? Math.round(allStats.reduce((s: number, r: any) => s + r.total_violations, 0) / allStats.length)
+    : 0;
+  const cityAvgComplaints = allStats.length > 0
+    ? Math.round(allStats.reduce((s: number, r: any) => s + r.total_complaints, 0) / allStats.length)
+    : 0;
+  const cityAvgLitigations = allStats.length > 0
+    ? Math.round(allStats.reduce((s: number, r: any) => s + r.total_litigations, 0) / allStats.length)
+    : 0;
+  const cityAvgDob = allStats.length > 0
+    ? Math.round(allStats.reduce((s: number, r: any) => s + r.total_dob_violations, 0) / allStats.length)
+    : 0;
 
   const diff = avgScore - cityAvgScore;
   const isAboveAverage = diff > 0;
@@ -255,6 +286,27 @@ export default async function LandlordDetailPage({
             );
           })}
         </div>
+      </div>
+
+      {/* Verdict */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+        <LandlordVerdict
+          grade={grade}
+          verdict={verdict}
+          avgScore={avgScore}
+          cityAvgScore={cityAvgScore}
+        />
+        <LandlordStatsGrid
+          totalViolations={totalViolations}
+          totalComplaints={totalComplaints}
+          totalLitigations={totalLitigations}
+          totalDobViolations={totalDobViolations}
+          buildingCount={totalBuildings}
+          cityAvgViolations={cityAvgViolations}
+          cityAvgComplaints={cityAvgComplaints}
+          cityAvgLitigations={cityAvgLitigations}
+          cityAvgDob={cityAvgDob}
+        />
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
