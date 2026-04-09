@@ -29,6 +29,7 @@ const SECTIONS = [
   { id: "violations", label: "Issues", icon: AlertTriangle },
   { id: "location", label: "Map", icon: MapPin },
   { id: "building-details", label: "Details", icon: Building2 },
+  { id: "walkability", label: "Walkability", icon: MapPin },
   { id: "transit", label: "Transit", icon: Train },
   { id: "schools", label: "Schools", icon: GraduationCap },
   { id: "recreation", label: "Parks", icon: TreePine },

@@ -14,6 +14,7 @@ import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { SectionNav } from "@/components/building/SectionNav";
 import { NearbyCrimeSummary } from "@/components/crime/NearbyCrimeSummary";
 import { NearbyTransit } from "@/components/transit/NearbyTransit";
+import { WalkabilityScore } from "@/components/building/WalkabilityScore";
 import { NearbySchools } from "@/components/schools/NearbySchools";
 import { NearbyRecreation } from "@/components/building/NearbyRecreation";
 import { NearbyEncampments } from "@/components/building/NearbyEncampments";
@@ -615,6 +616,17 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
                 taxProtests={houstonTaxProtests}
                 affordableHousing={houstonAffordable}
               />
+            )}
+
+            {/* Walkability & Transit Score */}
+            {building.latitude && building.longitude && (
+              <div id="walkability" className="scroll-mt-28">
+              <WalkabilityScore
+                latitude={building.latitude}
+                longitude={building.longitude}
+                city={city}
+              />
+              </div>
             )}
 
             {/* Nearby Transit */}

@@ -1,10 +1,10 @@
 import { Metadata } from "next";
 import Link from "next/link";
-import { cache } from "react";
-import { MapPin, Building2, AlertTriangle, MessageSquare, Users, Siren } from "lucide-react";
+import { Suspense, cache } from "react";
+import { MapPin, Building2, AlertTriangle, MessageSquare, Users, Siren, DollarSign } from "lucide-react";
 import { LetterGrade } from "@/components/ui/LetterGrade";
 import { getLetterGrade, getGradeColor } from "@/lib/constants";
-import { buildingUrl, landlordUrl, canonicalUrl, cityPath, neighborhoodUrl, breadcrumbJsonLd } from "@/lib/seo";
+import { buildingUrl, landlordUrl, canonicalUrl, cityPath, neighborhoodUrl, neighborhoodsUrl, breadcrumbJsonLd } from "@/lib/seo";
 import { parseNeighborhoodSlug } from "@/lib/nyc-neighborhoods";
 import { getNeighborhoodNameByCity } from "@/lib/neighborhoods";
 import { CITY_META } from "@/lib/cities";
@@ -14,6 +14,13 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { NeighborhoodRankCard } from "@/components/neighborhood/NeighborhoodRankCard";
+import { NeighborhoodRentChart, type NeighborhoodRentRow } from "@/components/neighborhood/NeighborhoodRentChart";
+import { BestApartments } from "@/components/neighborhood/BestApartments";
+import { NeighborhoodPulse } from "@/components/neighborhood/NeighborhoodPulse";
+import { CompareButton } from "@/components/neighborhood/CompareButton";
+import { WalkabilitySection } from "@/components/neighborhood/WalkabilitySection";
+import { DemographicSnapshot } from "@/components/neighborhood/DemographicSnapshot";
+import { RelatedNeighborhoods } from "@/components/neighborhood/RelatedNeighborhoods";
 import { FAQSection } from "@/components/seo/FAQSection";
 import { generateNeighborhoodFAQ } from "@/lib/faq/area-faq";
 import { VibeCheck } from "@/components/neighborhood/VibeCheck";
@@ -112,6 +119,28 @@ async function getTopBuildings(zipCode: string) {
   return res.json();
 }
 
+const getNeighborhoodRents = cache(async function getNeighborhoodRents(
+  zip: string
+): Promise<NeighborhoodRentRow[]> {
+  const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/dewey_neighborhood_rents?zip=eq.${zip}&select=month,beds,median_rent,p25_rent,p75_rent,listing_count&order=month.asc`;
+  const res = await fetch(url, {
+    headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! },
+    next: { revalidate: 3600 },
+  });
+  if (!res.ok) return [];
+  return res.json();
+});
+
+async function getBestApartments(zipCode: string, city: City) {
+  const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/buildings?zip_code=eq.${zipCode}&metro=eq.${city}&select=id,full_address,borough,slug,overall_score,median_rent&not.median_rent=is.null&order=overall_score.desc.nullslast&limit=20`;
+  const res = await fetch(url, {
+    headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! },
+    next: { revalidate: 3600 },
+  });
+  if (!res.ok) return [];
+  return res.json();
+}
+
 function getSubGrade(value: number, thresholds: [number, number, number, number]): number {
   if (value <= thresholds[0]) return 9;
   if (value <= thresholds[1]) return 7;
@@ -130,10 +159,12 @@ export default async function NeighborhoodPage({
   const zipCode = parseNeighborhoodSlug(slug);
   const neighborhoodName = getNeighborhoodNameByCity(zipCode, city);
 
-  const [stats, crime, buildings] = await Promise.all([
+  const [stats, crime, buildings, rents, bestBuildings] = await Promise.all([
     getNeighborhoodStats(zipCode),
     getCrimeData(zipCode),
     getTopBuildings(zipCode),
+    getNeighborhoodRents(zipCode),
+    getBestApartments(zipCode, city),
   ]);
 
   if (!stats || stats.building_count === 0) {
@@ -196,12 +227,12 @@ export default async function NeighborhoodPage({
       }} />
       <JsonLd data={breadcrumbJsonLd([
         { name: "Home", url: "/" },
-        { name: "Neighborhoods", url: cityPath("/crime", city) },
+        { name: "Neighborhoods", url: neighborhoodsUrl(city) },
         { name: neighborhoodName || zipCode, url: neighborhoodUrl(zipCode) },
       ])} />
       <Breadcrumbs items={[
         { label: "Home", href: "/" },
-        { label: "Neighborhoods", href: cityPath("/crime", city) },
+        { label: "Neighborhoods", href: cityPath("/neighborhoods", city) },
         { label: neighborhoodName || zipCode, href: neighborhoodUrl(zipCode) },
       ]} />
 
@@ -309,6 +340,55 @@ export default async function NeighborhoodPage({
         </div>
       )}
 
+      {/* Neighborhood Pulse */}
+      <NeighborhoodPulse
+        zipCode={zipCode}
+        crimeTotal={crime?.total ?? null}
+        violationCount={totalViolations}
+        complaintCount={totalComplaints}
+        reviewCount={Number(stats.total_reviews)}
+        buildingCount={buildingCount}
+      />
+
+      {/* Rent Trends */}
+      {rents.length > 0 && (
+        <div className="mb-8">
+          <NeighborhoodRentChart rents={rents} />
+        </div>
+      )}
+
+      {/* Best Apartments by Price Tier */}
+      {(() => {
+        const tiers = [
+          { label: "$2,000", max: 2000, buildings: [] as typeof bestBuildings },
+          { label: "$3,000", max: 3000, buildings: [] as typeof bestBuildings },
+          { label: "$4,000", max: 4000, buildings: [] as typeof bestBuildings },
+          { label: "$5,000", max: 5000, buildings: [] as typeof bestBuildings },
+        ];
+        for (const b of bestBuildings) {
+          const rent = Number(b.median_rent);
+          for (const tier of tiers) {
+            if (rent <= tier.max) {
+              if (tier.buildings.length < 5) {
+                tier.buildings.push({
+                  ...b,
+                  buildingUrl: buildingUrl(b, city),
+                });
+              }
+              break;
+            }
+          }
+        }
+        return (
+          <div className="mb-8">
+            <BestApartments
+              tiers={tiers}
+              areaName={neighborhoodName || zipCode}
+            />
+          </div>
+        );
+      })()}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Top Buildings */}
         {buildings.length > 0 && (
@@ -350,6 +430,16 @@ export default async function NeighborhoodPage({
         )}
       </div>
 
+      {/* Walkability & Transit */}
+      <Suspense fallback={<div className="h-48 bg-white rounded-xl border border-[#e2e8f0] animate-pulse mb-8 mt-8" />}>
+        <WalkabilitySection zipCode={zipCode} city={city} />
+      </Suspense>
+
+      {/* Demographics */}
+      <Suspense fallback={null}>
+        <DemographicSnapshot zipCode={zipCode} />
+      </Suspense>
+
       <AdBlock adSlot="NEIGHBORHOOD_BOTTOM" adFormat="horizontal" />
 
       {/* Vibe Check */}
@@ -359,6 +449,15 @@ export default async function NeighborhoodPage({
           <VibeCheck vibe={vibe} neighborhoodName={neighborhoodName || zipCode} />
         ) : null;
       })()}
+
+      {/* Compare */}
+      <div className="mb-8">
+        <CompareButton
+          neighborhoodName={neighborhoodName || zipCode}
+          zipCode={zipCode}
+          compareUrl={cityPath("/neighborhoods/compare", city)}
+        />
+      </div>
 
       <FAQSection
         items={generateNeighborhoodFAQ({
@@ -371,6 +470,16 @@ export default async function NeighborhoodPage({
         })}
         title={`Frequently Asked Questions About ${neighborhoodName || zipCode}`}
       />
+
+      {/* Related Neighborhoods */}
+      <Suspense fallback={<div className="h-32 bg-white rounded-xl border border-[#e2e8f0] animate-pulse mt-8" />}>
+        <RelatedNeighborhoods
+          currentZip={zipCode}
+          currentRegion={borough}
+          currentScore={avgScore}
+          city={city}
+        />
+      </Suspense>
     </div>
     </AdSidebar>
   );

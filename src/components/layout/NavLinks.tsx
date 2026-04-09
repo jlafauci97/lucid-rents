@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Search, BarChart3, Users, Siren, Radio, Newspaper, PenSquare } from "lucide-react";
+import { Search, BarChart3, Users, Siren, Radio, Newspaper, PenSquare, MapPin } from "lucide-react";
 import { cityPath } from "@/lib/seo";
 import { useCityFromPath } from "@/lib/city-context";
 import { NavDropdown } from "./NavDropdown";
@@ -31,6 +31,13 @@ export function NavLinks() {
       >
         <Users className="w-3.5 h-3.5" />
         Landlords
+      </Link>
+      <Link
+        href={cityPath("/neighborhoods", city)}
+        className="flex items-center gap-1.5 text-sm font-semibold text-white hover:text-white/80 transition-colors whitespace-nowrap"
+      >
+        <MapPin className="w-3.5 h-3.5" />
+        Neighborhoods
       </Link>
       <Link
         href={cityPath("/crime", city)}
