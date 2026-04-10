@@ -1,4 +1,4 @@
-import { getLetterGrade } from "@/lib/constants";
+import { getLetterGrade, normalizeScore } from "@/lib/constants";
 import type { FAQItem } from "./types";
 import type {
   Building,
@@ -270,7 +270,7 @@ export function generateBuildingFAQ({
         : "";
       items.push({
         question: `Is the landlord of ${addr} a good landlord?`,
-        answer: `${addr}, owned by ${building.owner_name}, has an overall grade of ${grade} (${building.overall_score.toFixed(1)}/10) on Lucid Rents.${violationNote}${reviewNote} Check tenant reviews for firsthand experiences.`,
+        answer: `${addr}, owned by ${building.owner_name}, has an overall grade of ${grade} (${normalizeScore(building.overall_score).toFixed(1)}/5) on Lucid Rents.${violationNote}${reviewNote} Check tenant reviews for firsthand experiences.`,
       });
     }
   }
@@ -282,7 +282,7 @@ export function generateBuildingFAQ({
     const grade = getLetterGrade(building.overall_score);
     items.push({
       question: `What is the building rating for ${addr}?`,
-      answer: `${addr} has an overall grade of ${grade} with a score of ${building.overall_score.toFixed(1)} out of 10 on Lucid Rents. This score is based on violations, complaints, and tenant reviews.`,
+      answer: `${addr} has an overall grade of ${grade} with a score of ${normalizeScore(building.overall_score).toFixed(1)} out of 5 on Lucid Rents. This score is based on violations, complaints, and tenant reviews.`,
     });
   }
 
@@ -513,7 +513,7 @@ export function generateBuildingFAQ({
     const consNote = topCons.length > 0 ? ` Common concerns: ${topCons.join(", ")}.` : "";
     items.push({
       question: `What do tenants say about living at ${addr}?`,
-      answer: `${addr} has ${reviews.length} tenant review${reviews.length !== 1 ? "s" : ""} with an average rating of ${avgRating.toFixed(1)} out of 10. ${recommendCount} out of ${reviews.length} reviewers would recommend this building.${prosNote}${consNote}`,
+      answer: `${addr} has ${reviews.length} tenant review${reviews.length !== 1 ? "s" : ""} with an average rating of ${avgRating.toFixed(1)} out of 5. ${recommendCount} out of ${reviews.length} reviewers would recommend this building.${prosNote}${consNote}`,
     });
   }
 

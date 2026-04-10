@@ -35,7 +35,7 @@ export function CrimeMapSection({ borough, city }: CrimeMapSectionProps) {
   const [layer, setLayer] = useState<LayerToggle>("crime");
   const [showFilters, setShowFilters] = useState(false);
   const [minScore, setMinScore] = useState(0);
-  const [maxScore, setMaxScore] = useState(10);
+  const [maxScore, setMaxScore] = useState(5);
 
   useEffect(() => {
     setMounted(true);
@@ -98,7 +98,7 @@ export function CrimeMapSection({ borough, city }: CrimeMapSectionProps) {
             >
               <Filter className="w-3.5 h-3.5" />
               Score Filter
-              {(minScore > 0 || maxScore < 10) && (
+              {(minScore > 0 || maxScore < 5) && (
                 <span className="ml-auto text-[#3B82F6]">
                   {minScore}-{maxScore}
                 </span>
@@ -111,26 +111,26 @@ export function CrimeMapSection({ borough, city }: CrimeMapSectionProps) {
                   <input
                     type="range"
                     min={0}
-                    max={10}
-                    step={1}
+                    max={5}
+                    step={0.5}
                     value={minScore}
                     onChange={(e) => setMinScore(Number(e.target.value))}
                     className="flex-1"
                   />
-                  <span className="w-4 text-right">{minScore}</span>
+                  <span className="w-6 text-right">{minScore.toFixed(1)}</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-[#64748b]">
                   <span>Max:</span>
                   <input
                     type="range"
                     min={0}
-                    max={10}
-                    step={1}
+                    max={5}
+                    step={0.5}
                     value={maxScore}
                     onChange={(e) => setMaxScore(Number(e.target.value))}
                     className="flex-1"
                   />
-                  <span className="w-4 text-right">{maxScore}</span>
+                  <span className="w-6 text-right">{maxScore.toFixed(1)}</span>
                 </div>
               </div>
             )}

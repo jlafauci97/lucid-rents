@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { buildingUrl } from "@/lib/seo";
 import { T, gradeColor } from "@/lib/design-tokens";
+import { normalizeScore } from "@/lib/constants";
 import { MapPin, AlertTriangle, Building2 } from "lucide-react";
 
 interface NearbyBuildingsProps {
@@ -13,7 +14,16 @@ interface NearbyBuildingsProps {
 
 function letterGrade(score: number | null): { letter: string; color: string; bg: string } {
   if (score == null) return { letter: "?", color: T.blue, bg: `${T.blue}14` };
-  const letter = score >= 9 ? "A+" : score >= 8 ? "A" : score >= 7 ? "B+" : score >= 6 ? "B" : score >= 5 ? "C+" : score >= 4 ? "C" : score >= 3 ? "D" : "F";
+  const s = normalizeScore(score);
+  // 0–5 scale: A+ >= 4.5, A >= 4, B+ >= 3.5, B >= 3, C+ >= 2.5, C >= 2, D >= 1, else F
+  const letter =
+    s >= 4.5 ? "A+" :
+    s >= 4 ? "A" :
+    s >= 3.5 ? "B+" :
+    s >= 3 ? "B" :
+    s >= 2.5 ? "C+" :
+    s >= 2 ? "C" :
+    s >= 1 ? "D" : "F";
   const c = gradeColor(letter);
   return { letter, color: c, bg: `${c}14` };
 }
@@ -104,13 +114,13 @@ export async function NearbyBuildings({ buildingId, zipCode, borough, city }: Ne
                     <div
                       className="h-full rounded-full"
                       style={{
-                        width: `${(Number(b.overall_score) / 10) * 100}%`,
+                        width: `${(normalizeScore(b.overall_score) / 5) * 100}%`,
                         backgroundColor: grade.color,
                       }}
                     />
                   </div>
                   <span className="text-xs font-semibold" style={{ color: T.text1 }}>
-                    {b.overall_score}/10
+                    {normalizeScore(b.overall_score).toFixed(1)}/5
                   </span>
                 </div>
               )}

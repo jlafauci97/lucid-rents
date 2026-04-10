@@ -14,7 +14,7 @@ import {
   Share2,
   Bell,
 } from "lucide-react";
-import { getLetterGrade, deriveScore } from "@/lib/constants";
+import { getLetterGrade, deriveScore, normalizeScore } from "@/lib/constants";
 import { CITY_META, type City } from "@/lib/cities";
 import { landlordUrl } from "@/lib/seo";
 import { T, gradeColor } from "@/lib/design-tokens";
@@ -143,9 +143,11 @@ export function BuildingHeader({
   pricePerSqft,
 }: BuildingHeaderProps) {
   const vCount = violationCount ?? building.violation_count ?? 0;
-  const score =
+  const rawScore =
     building.overall_score ??
     deriveScore(vCount, building.complaint_count || 0);
+  // Normalize legacy 0–10 scores to the 0–5 display scale.
+  const score = normalizeScore(rawScore);
   const grade = getLetterGrade(score);
 
   const meta = [

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { deriveScore } from "@/lib/constants";
+import { deriveScore, normalizeScore } from "@/lib/constants";
 import { isValidCity } from "@/lib/cities";
 import { checkRateLimit } from "@/lib/rate-limit";
 
@@ -15,8 +15,9 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Invalid city" }, { status: 400 });
     }
     const borough = searchParams.get("borough") || "";
+    // Score filter uses the normalized 0–5 scale
     const minScore = parseFloat(searchParams.get("minScore") || "0");
-    const maxScore = parseFloat(searchParams.get("maxScore") || "10");
+    const maxScore = parseFloat(searchParams.get("maxScore") || "5");
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -69,10 +70,13 @@ export async function GET(request: Request) {
         const centroid = centroidMap.get(b.zip_code);
         if (!centroid) return null;
 
-        // Use overall_score if available, otherwise derive from violations/complaints
-        const score = b.overall_score != null
-          ? b.overall_score
-          : deriveScore(b.violation_count || 0, b.complaint_count || 0);
+        // Use overall_score if available, otherwise derive from violations/complaints.
+        // Normalize to 0–5 so legacy rows still on the 0–10 scale filter correctly.
+        const score = normalizeScore(
+          b.overall_score != null
+            ? b.overall_score
+            : deriveScore(b.violation_count || 0, b.complaint_count || 0)
+        );
 
         if (score < minScore || score > maxScore) return null;
 

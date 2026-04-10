@@ -164,25 +164,43 @@ export const SCORE_COLORS = {
   poor: { min: 0, color: "#ef4444", label: "Poor" },
 } as const;
 
+/**
+ * Normalize a building score to the 0–5 display scale.
+ *
+ * `buildings.overall_score` was migrated from a 0–10 to a 0–5 scale, but
+ * legacy rows still contain 0–10 values. Any score > 5 is treated as legacy
+ * and halved so display sites don't show things like "10.0/5".
+ *
+ * Always call this at the display boundary — never trust the raw DB value.
+ */
+export function normalizeScore(score: number | null | undefined): number {
+  if (score == null || Number.isNaN(score)) return 0;
+  const scaled = score > 5 ? score / 2 : score;
+  return Math.max(0, Math.min(5, Math.round(scaled * 10) / 10));
+}
+
 export function getScoreColor(score: number): string {
-  if (score >= 3.5) return SCORE_COLORS.good.color;
-  if (score >= 2) return SCORE_COLORS.average.color;
+  const s = normalizeScore(score);
+  if (s >= 3.5) return SCORE_COLORS.good.color;
+  if (s >= 2) return SCORE_COLORS.average.color;
   return SCORE_COLORS.poor.color;
 }
 
 export function getScoreLabel(score: number): string {
-  if (score >= 3.5) return SCORE_COLORS.good.label;
-  if (score >= 2) return SCORE_COLORS.average.label;
+  const s = normalizeScore(score);
+  if (s >= 3.5) return SCORE_COLORS.good.label;
+  if (s >= 2) return SCORE_COLORS.average.label;
   return SCORE_COLORS.poor.label;
 }
 
 export type LetterGrade = "A" | "B" | "C" | "D" | "F";
 
 export function getLetterGrade(score: number): LetterGrade {
-  if (score >= 4) return "A";
-  if (score >= 3) return "B";
-  if (score >= 2) return "C";
-  if (score >= 1) return "D";
+  const s = normalizeScore(score);
+  if (s >= 4) return "A";
+  if (s >= 3) return "B";
+  if (s >= 2) return "C";
+  if (s >= 1) return "D";
   return "F";
 }
 

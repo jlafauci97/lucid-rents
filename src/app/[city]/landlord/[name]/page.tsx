@@ -22,7 +22,7 @@ import { LandlordActionLinks } from "@/components/landlord/LandlordActionLinks";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { landlordSlug, landlordUrl, landlordJsonLd, breadcrumbJsonLd, canonicalUrl, buildingUrl, cityPath } from "@/lib/seo";
-import { deriveScore } from "@/lib/constants";
+import { deriveScore, normalizeScore } from "@/lib/constants";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import type { Metadata } from "next";
@@ -117,7 +117,9 @@ export default async function LandlordDetailPage({
   ]);
   if (!buildings || buildings.length === 0) notFound();
 
-  const cityAvgScore = typeof cityAvgRpc.data === "number" ? cityAvgRpc.data : 5;
+  const cityAvgScore = normalizeScore(
+    typeof cityAvgRpc.data === "number" ? cityAvgRpc.data : 5
+  );
 
   // If found via old URL format, redirect to slug URL
   if (buildings[0].owner_name) {
@@ -147,7 +149,9 @@ export default async function LandlordDetailPage({
   );
   const avgScore = (() => {
     const scores = buildings.map((b) =>
-      b.overall_score ?? deriveScore(b.violation_count || 0, b.complaint_count || 0)
+      normalizeScore(
+        b.overall_score ?? deriveScore(b.violation_count || 0, b.complaint_count || 0)
+      )
     );
     return scores.reduce((a, b) => a + b, 0) / scores.length;
   })();
@@ -218,7 +222,7 @@ export default async function LandlordDetailPage({
                     ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
                     : "bg-red-500/20 text-red-300 border border-red-500/30"
                 }`}>
-                  {avgScore.toFixed(1)}/10 avg
+                  {avgScore.toFixed(1)}/5 avg
                   <span className="opacity-70">vs {cityAvgScore.toFixed(1)} city avg</span>
                 </span>
                 {totalUnits > 0 && (

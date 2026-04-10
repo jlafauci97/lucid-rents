@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { normalizeScore } from "@/lib/constants";
 
 export interface ChecklistItem {
   id: string;
@@ -65,16 +66,20 @@ export async function GET(req: NextRequest) {
 
   const items: ChecklistItem[] = [];
 
-  // 1. Overall building score
-  const score = building.overall_score;
-  if (score === null) {
+  // 1. Overall building score (normalized to 0–5)
+  const rawScore = building.overall_score;
+  if (rawScore === null || rawScore === undefined) {
     items.push({ id: "score", label: "Building Score", status: "info", detail: "No score yet — not enough data to rate this building." });
-  } else if (score >= 7) {
-    items.push({ id: "score", label: "Building Score", status: "pass", detail: `Score: ${score}/10 — above average.` });
-  } else if (score >= 5) {
-    items.push({ id: "score", label: "Building Score", status: "warn", detail: `Score: ${score}/10 — below average. Review violations and complaints carefully.` });
   } else {
-    items.push({ id: "score", label: "Building Score", status: "fail", detail: `Score: ${score}/10 — significant issues on record. Proceed with caution.` });
+    const score = normalizeScore(rawScore);
+    const scoreStr = score.toFixed(1);
+    if (score >= 3.5) {
+      items.push({ id: "score", label: "Building Score", status: "pass", detail: `Score: ${scoreStr}/5 — above average.` });
+    } else if (score >= 2.5) {
+      items.push({ id: "score", label: "Building Score", status: "warn", detail: `Score: ${scoreStr}/5 — below average. Review violations and complaints carefully.` });
+    } else {
+      items.push({ id: "score", label: "Building Score", status: "fail", detail: `Score: ${scoreStr}/5 — significant issues on record. Proceed with caution.` });
+    }
   }
 
   // 2. Open violations

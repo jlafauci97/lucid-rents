@@ -1,5 +1,6 @@
 import { type City, DEFAULT_CITY, CITY_META } from "./cities";
 import { neighborhoodPageSlugByCity } from "./neighborhoods";
+import { normalizeScore } from "./constants";
 
 const BASE_URL = "https://lucidrents.com";
 
@@ -133,7 +134,7 @@ export function buildingJsonLd(
   if (building.review_count > 0 && building.overall_score != null) {
     schema.aggregateRating = {
       "@type": "AggregateRating",
-      ratingValue: building.overall_score,
+      ratingValue: normalizeScore(building.overall_score),
       bestRating: 5,
       worstRating: 1,
       reviewCount: building.review_count,

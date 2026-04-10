@@ -32,6 +32,7 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { SLUG_TO_BOROUGH, regionFromSlug, buildingUrl, canonicalUrl, buildingJsonLd, breadcrumbJsonLd, landlordUrl, cityPath } from "@/lib/seo";
 import { CITY_META, VALID_CITIES, type City } from "@/lib/cities";
+import { normalizeScore } from "@/lib/constants";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { TrackBuildingView } from "@/components/building/TrackBuildingView";
 import { T } from "@/lib/design-tokens";
@@ -139,7 +140,7 @@ export async function generateMetadata({
 
   const title =
     building.review_count > 0 && building.overall_score != null
-      ? `${building.full_address} — Rated ${building.overall_score}/5 by Tenants`
+      ? `${building.full_address} — Rated ${normalizeScore(building.overall_score).toFixed(1)}/5 by Tenants`
       : `${building.full_address} — Violations, Reviews & Building Score`;
   const isChicagoMeta = cityParam === "chicago" || cityParam === "miami" || cityParam === "houston";
   const metaViolationCount = isChicagoMeta
@@ -354,6 +355,26 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
     } catch (e) { return null; }
   })();
 
+  // Fallback median rent: when Dewey has no data for this building (common for
+  // small / out-of-market buildings), compute a weighted median from
+  // `building_rents` so the vital signs card doesn't render "--".
+  const fallbackMedianRent = (() => {
+    if (deweyMetrics?.medianRent) return undefined;
+    const rows = (rents as { median_rent: number | null; listing_count: number | null }[]) || [];
+    let total = 0;
+    let weight = 0;
+    for (const r of rows) {
+      if (r?.median_rent && r.median_rent > 0) {
+        const w = r.listing_count && r.listing_count > 0 ? r.listing_count : 1;
+        total += r.median_rent * w;
+        weight += w;
+      }
+    }
+    return weight > 0 ? Math.round(total / weight) : undefined;
+  })();
+
+  const headerMedianRent = deweyMetrics?.medianRent ?? fallbackMedianRent;
+
   // Extract short address for breadcrumb
   const shortAddress = building.full_address.split(",")[0]?.trim() || building.full_address;
 
@@ -390,7 +411,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
         </div>
       </div>
 
-      <BuildingHeader building={building} city={city} violationCount={effectiveViolationCount} valueGrade={deweyMetrics?.valueGrade} medianRent={deweyMetrics?.medianRent} pricePerSqft={deweyMetrics?.pricePerSqft} />
+      <BuildingHeader building={building} city={city} violationCount={effectiveViolationCount} valueGrade={deweyMetrics?.valueGrade} medianRent={headerMedianRent} pricePerSqft={deweyMetrics?.pricePerSqft} />
 
       <SectionNav />
 

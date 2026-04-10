@@ -1,4 +1,4 @@
-import { getScoreColor, getScoreLabel } from "@/lib/constants";
+import { getScoreColor, getScoreLabel, normalizeScore } from "@/lib/constants";
 
 interface ScoreGaugeProps {
   score: number | null;
@@ -21,8 +21,9 @@ export function ScoreGauge({ score, size = "md", showLabel = false }: ScoreGauge
     );
   }
 
-  const color = getScoreColor(score);
-  const label = getScoreLabel(score);
+  const normalized = normalizeScore(score);
+  const color = getScoreColor(normalized);
+  const label = getScoreLabel(normalized);
 
   return (
     <div className="flex flex-col items-center gap-1">
@@ -30,7 +31,7 @@ export function ScoreGauge({ score, size = "md", showLabel = false }: ScoreGauge
         className={`${sizeClasses[size]} rounded-full flex items-center justify-center font-bold text-white`}
         style={{ backgroundColor: color }}
       >
-        {score.toFixed(1)}
+        {normalized.toFixed(1)}
       </div>
       {showLabel && (
         <span className="text-xs font-medium" style={{ color }}>

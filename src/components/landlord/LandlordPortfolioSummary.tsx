@@ -1,6 +1,6 @@
 import { Building2, AlertTriangle, TrendingUp, TrendingDown } from "lucide-react";
 import { LetterGrade } from "@/components/ui/LetterGrade";
-import { deriveScore } from "@/lib/constants";
+import { deriveScore, normalizeScore } from "@/lib/constants";
 
 interface Building {
   id: string;
@@ -35,12 +35,15 @@ export function LandlordPortfolioSummary({
     buildings.reduce(
       (sum, b) =>
         sum +
-        (b.overall_score ??
-          deriveScore(b.violation_count || 0, b.complaint_count || 0)),
+        normalizeScore(
+          b.overall_score ??
+            deriveScore(b.violation_count || 0, b.complaint_count || 0)
+        ),
       0
     ) / totalBuildings;
 
-  const diff = avgScore - cityAvgScore;
+  const normalizedCityAvg = normalizeScore(cityAvgScore);
+  const diff = avgScore - normalizedCityAvg;
   const isAboveAverage = diff > 0;
   const diffFormatted = Math.abs(diff).toFixed(1);
 
@@ -99,11 +102,11 @@ export function LandlordPortfolioSummary({
           <span
             className={`font-bold ${isAboveAverage ? "text-emerald-700" : "text-red-700"}`}
           >
-            {avgScore.toFixed(1)}/10
+            {avgScore.toFixed(1)}/5
           </span>
           <span className="text-[#64748b]">, compared to the city average of </span>
           <span className="font-bold text-[#0F1D2E]">
-            {cityAvgScore.toFixed(1)}/10
+            {normalizedCityAvg.toFixed(1)}/5
           </span>
           <span className="text-[#64748b]"> (</span>
           <span

@@ -5,19 +5,27 @@ export const alt = "Building Report - Lucid Rents";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
+// Normalize legacy 0–10 scores to the 0–5 display scale.
+function normalizeScore(score: number) {
+  const scaled = score > 5 ? score / 2 : score;
+  return Math.max(0, Math.min(5, scaled));
+}
+
 function getLetterGrade(score: number) {
-  if (score >= 8) return "A";
-  if (score >= 6) return "B";
-  if (score >= 4) return "C";
-  if (score >= 2) return "D";
+  const s = normalizeScore(score);
+  if (s >= 4) return "A";
+  if (s >= 3) return "B";
+  if (s >= 2) return "C";
+  if (s >= 1) return "D";
   return "F";
 }
 
 function getGradeColor(score: number) {
-  if (score >= 8) return "#10b981";
-  if (score >= 6) return "#22c55e";
-  if (score >= 4) return "#f97316";
-  if (score >= 2) return "#ef4444";
+  const s = normalizeScore(score);
+  if (s >= 4) return "#10b981";
+  if (s >= 3) return "#22c55e";
+  if (s >= 2) return "#f97316";
+  if (s >= 1) return "#ef4444";
   return "#dc2626";
 }
 
@@ -229,7 +237,7 @@ export default async function Image({
                     display: "flex",
                   }}
                 >
-                  {score.toFixed(1)}
+                  {normalizeScore(score).toFixed(1)}/5
                 </div>
               )}
             </div>

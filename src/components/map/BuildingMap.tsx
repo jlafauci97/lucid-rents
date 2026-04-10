@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { CircleMarker, Popup } from "react-leaflet";
-import { getLetterGrade, getGradeColor } from "@/lib/constants";
+import { getLetterGrade, getGradeColor, normalizeScore } from "@/lib/constants";
 import { buildingUrl } from "@/lib/seo";
 import { useCity } from "@/lib/city-context";
 
@@ -76,7 +76,7 @@ export function BuildingMap({ borough, minScore, maxScore, visible }: BuildingMa
                 >
                   {grade}
                 </span>
-                <span className="text-[#64748b] text-xs">{p.score.toFixed(1)}/10</span>
+                <span className="text-[#64748b] text-xs">{normalizeScore(p.score).toFixed(1)}/5</span>
               </div>
               <p className="text-xs text-[#64748b]">
                 {p.violations} violations · {p.reviews} reviews
