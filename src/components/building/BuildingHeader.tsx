@@ -12,6 +12,9 @@ interface BuildingHeaderProps {
   valueGrade?: string | null;
   medianRent?: number;
   pricePerSqft?: number;
+  // Passed by the section-streaming refactor; not yet wired into the header UI
+  topViolationType?: string;
+  topComplaintType?: string;
 }
 
 export function BuildingHeader({ building, city = "nyc", violationCount, valueGrade, medianRent, pricePerSqft }: BuildingHeaderProps) {

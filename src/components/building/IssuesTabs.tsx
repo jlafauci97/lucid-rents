@@ -16,6 +16,22 @@ import { VIOLATION_AGENCIES } from "@/lib/constants";
 
 type TabKey = "violations" | "complaints" | "litigations" | "dob" | "bedbugs" | "evictions" | "permits";
 
+/**
+ * Stored totals from the buildings row (buildings.violation_count etc.).
+ * When provided, these drive the tab count labels and are used to detect
+ * when a timeline is showing an empty state despite the building having
+ * records on file (typically after dedup orphans FKs).
+ */
+export interface IssuesTotalCounts {
+  violations?: number;
+  complaints?: number;
+  litigations?: number;
+  dob?: number;
+  bedbugs?: number;
+  evictions?: number;
+  permits?: number;
+}
+
 interface IssuesTabsProps {
   violations: HpdViolation[];
   complaints: Complaint311[];
@@ -26,6 +42,9 @@ interface IssuesTabsProps {
   permits: DobPermit[];
   lahdViolationSummary?: LahdViolationSummary[];
   city?: City;
+  totalCounts?: IssuesTotalCounts;
+  /** Base building URL; used for "view all" deep links into /violations, /complaints, etc. */
+  buildingHref?: string;
 }
 
 // Tabs available per city
@@ -52,18 +71,25 @@ function getTabs(city: City) {
   return enabledKeys.map(k => allTabs[k]);
 }
 
-export function IssuesTabs({ violations, complaints, litigations, dobViolations, bedbugs, evictions, permits, lahdViolationSummary = [], city = DEFAULT_CITY }: IssuesTabsProps) {
+export function IssuesTabs({ violations, complaints, litigations, dobViolations, bedbugs, evictions, permits, lahdViolationSummary = [], city = DEFAULT_CITY, totalCounts }: IssuesTabsProps) {
   const enabledTabs = CITY_TABS[city] || CITY_TABS.nyc;
   const [activeTab, setActiveTab] = useState<TabKey>(enabledTabs[0]);
 
+  // Prefer stored totals from the buildings row (accurate even when we only
+  // fetched the first N rows for the timeline). Fall back to loaded length.
+  const pick = (stored: number | undefined, loaded: number) =>
+    typeof stored === "number" && stored >= loaded ? stored : loaded;
+
   const counts: Record<TabKey, number> = {
-    violations: city === "los-angeles" ? lahdViolationSummary.length : violations.length,
-    complaints: complaints.length,
-    litigations: litigations.length,
-    dob: dobViolations.length,
-    bedbugs: bedbugs.length,
-    evictions: evictions.length,
-    permits: permits.length,
+    violations: city === "los-angeles"
+      ? lahdViolationSummary.length
+      : pick(totalCounts?.violations, violations.length),
+    complaints: pick(totalCounts?.complaints, complaints.length),
+    litigations: pick(totalCounts?.litigations, litigations.length),
+    dob: pick(totalCounts?.dob, dobViolations.length),
+    bedbugs: pick(totalCounts?.bedbugs, bedbugs.length),
+    evictions: pick(totalCounts?.evictions, evictions.length),
+    permits: pick(totalCounts?.permits, permits.length),
   };
 
   return (
@@ -98,14 +124,14 @@ export function IssuesTabs({ violations, complaints, litigations, dobViolations,
             {activeTab === "violations" && (
               city === "los-angeles"
                 ? <ViolationSummaryTable violations={lahdViolationSummary} agencyLabel={agencies.housing} />
-                : <ViolationTimeline violations={violations} agencyLabel={agencies.housing} />
+                : <ViolationTimeline violations={violations} agencyLabel={agencies.housing} total={totalCounts?.violations} />
             )}
-            {activeTab === "complaints" && <ComplaintTimeline complaints={complaints} />}
-            {activeTab === "litigations" && <LitigationTimeline litigations={litigations} agencyLabel={agencies.housing} />}
-            {activeTab === "dob" && <DobViolationTimeline violations={dobViolations} agencyLabel={agencies.building} />}
-            {activeTab === "bedbugs" && <BedBugTimeline reports={bedbugs} />}
-            {activeTab === "evictions" && <EvictionTimeline evictions={evictions} />}
-            {activeTab === "permits" && <PermitTimeline permits={permits} agencyLabel={agencies.building} />}
+            {activeTab === "complaints" && <ComplaintTimeline complaints={complaints} total={totalCounts?.complaints} />}
+            {activeTab === "litigations" && <LitigationTimeline litigations={litigations} agencyLabel={agencies.housing} total={totalCounts?.litigations} />}
+            {activeTab === "dob" && <DobViolationTimeline violations={dobViolations} agencyLabel={agencies.building} total={totalCounts?.dob} />}
+            {activeTab === "bedbugs" && <BedBugTimeline reports={bedbugs} total={totalCounts?.bedbugs} />}
+            {activeTab === "evictions" && <EvictionTimeline evictions={evictions} total={totalCounts?.evictions} />}
+            {activeTab === "permits" && <PermitTimeline permits={permits} agencyLabel={agencies.building} total={totalCounts?.permits} />}
           </>
         );
       })()}
