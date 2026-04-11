@@ -203,6 +203,7 @@ export const CITY_META: Record<City, CityMeta> = {
     stateCode: "FL",
     urlPrefix: "FL/Miami",
     regions: [
+      "Miami-Dade",
       "Brickell",
       "Downtown Miami",
       "Wynwood",

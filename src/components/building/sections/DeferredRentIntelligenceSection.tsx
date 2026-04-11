@@ -23,10 +23,14 @@ interface Props {
 export async function DeferredRentIntelligenceSection({ building, buildingId, city }: Props) {
   const supabase = await createClient();
 
-  const [deweyBuildingRents, deweyNeighborhoodRents, deweyAmenityPremiums, deweySeasonalIndex, amenities] = await Promise.all([
-    safe(supabase.from("dewey_building_rents").select("month, beds, median_rent, min_rent, max_rent, avg_sqft, avg_price_per_sqft, listing_count").eq("building_id", buildingId).order("month", { ascending: true }), []),
+  // Chart only renders data from 2019 onward (COVID-detection baseline) and only
+  // uses these columns. Filter and project at the database to keep the RSC payload small.
+  const RENT_HISTORY_START = "2019-01-01";
+
+  const [deweyBuildingRentsRaw, deweyNeighborhoodRentsRaw, deweyAmenityPremiums, deweySeasonalIndex, amenities] = await Promise.all([
+    safe(supabase.from("dewey_building_rents").select("month, beds, median_rent, min_rent, max_rent, listing_count, avg_sqft, avg_price_per_sqft").eq("building_id", buildingId).gte("month", RENT_HISTORY_START).order("month", { ascending: true }), []),
     building.zip_code
-      ? safe(supabase.from("dewey_neighborhood_rents").select("month, beds, median_rent, p25_rent, p75_rent").eq("zip", building.zip_code).order("month", { ascending: true }), [])
+      ? safe(supabase.from("dewey_neighborhood_rents").select("month, beds, median_rent").eq("zip", building.zip_code).gte("month", RENT_HISTORY_START).order("month", { ascending: true }), [])
       : Promise.resolve([]),
     building.zip_code
       ? safe(supabase.from("dewey_amenity_premiums").select("amenity, premium_dollars, premium_pct, sample_size").eq("city", city).eq("zip", building.zip_code).eq("period", "dwellsy_2024"), [])
@@ -37,6 +41,17 @@ export async function DeferredRentIntelligenceSection({ building, buildingId, ci
     safe(supabase.from("building_amenities").select("amenity, category, source").eq("building_id", buildingId), []),
   ]);
 
+  // Collapse duplicate (month, beds) rows — the dewey tables can have multiple entries
+  // per pair, but the chart's Map.set logic treats them as last-write-wins anyway.
+  // Doing it server-side cuts the prop payload roughly in half on dense ZIPs.
+  const dedupeByMonthBeds = <T extends { month: string; beds: number }>(rows: T[]): T[] => {
+    const seen = new Map<string, T>();
+    for (const r of rows) seen.set(`${r.month.slice(0, 7)}|${r.beds}`, r);
+    return Array.from(seen.values());
+  };
+  const deweyBuildingRents = dedupeByMonthBeds(deweyBuildingRentsRaw as { month: string; beds: number }[]) as typeof deweyBuildingRentsRaw;
+  const deweyNeighborhoodRents = dedupeByMonthBeds(deweyNeighborhoodRentsRaw as { month: string; beds: number }[]) as typeof deweyNeighborhoodRentsRaw;
+
   // Filter dewey amenity premiums to only amenities this building actually has
   const buildingAmenityNames = amenities.map((a: { amenity: string }) => a.amenity.toLowerCase());
   const filteredDeweyPremiums = (deweyAmenityPremiums || []).filter((dp: { amenity: string }) => {
@@ -44,7 +59,15 @@ export async function DeferredRentIntelligenceSection({ building, buildingId, ci
     return buildingAmenityNames.some((name: string) => name.includes(keyword));
   });
 
-  if (!deweyBuildingRents || deweyBuildingRents.length === 0) {
+  // Only fully bail if we have NO rent data at all (building, neighborhood, or seasonal).
+  // Otherwise we render the section with whatever we have — most buildings lack
+  // building-level Dewey listings but have neighborhood-level data.
+  const hasAnyRentData =
+    (deweyBuildingRents && deweyBuildingRents.length > 0) ||
+    (deweyNeighborhoodRents && deweyNeighborhoodRents.length > 0) ||
+    (deweySeasonalIndex && deweySeasonalIndex.length > 0);
+
+  if (!hasAnyRentData) {
     // Still render amenities if present
     return amenities.length > 0 ? (
       <div id="amenities" className="scroll-mt-28">

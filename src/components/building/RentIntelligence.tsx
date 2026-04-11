@@ -22,6 +22,8 @@ interface RentIntelligenceProps {
     min_rent: number;
     max_rent: number;
     listing_count: number;
+    avg_sqft?: number | null;
+    avg_price_per_sqft?: number | null;
   }[];
   neighborhoodRents: {
     month: string;
@@ -260,6 +262,8 @@ function PricePerSqft({
 
   const buildingMedian = latestBuilding.median_rent;
   const neighborhoodMedian = latestNeighborhood?.median_rent ?? 0;
+  const pricePerSqft = latestBuilding.avg_price_per_sqft ?? null;
+  const avgSqft = latestBuilding.avg_sqft ?? null;
 
   const percentile = neighborhoodMedian > 0
     ? Math.round((buildingMedian / neighborhoodMedian) * 50)
@@ -282,6 +286,18 @@ function PricePerSqft({
             <span className="text-sm font-medium text-gray-600">{formatDollars(neighborhoodMedian)}/mo</span>
           </div>
         )}
+        {pricePerSqft !== null && pricePerSqft > 0 && (
+          <div className="flex justify-between items-baseline">
+            <span className="text-xs text-gray-500">Price per sq ft</span>
+            <span className="text-sm font-semibold text-[#0F1D2E]">${pricePerSqft.toFixed(2)}/sqft</span>
+          </div>
+        )}
+        {avgSqft !== null && avgSqft > 0 && (
+          <div className="flex justify-between items-baseline">
+            <span className="text-xs text-gray-500">Avg unit size</span>
+            <span className="text-sm font-medium text-gray-600">{Math.round(avgSqft).toLocaleString()} sqft</span>
+          </div>
+        )}
         {percentile !== null && (
           <div className="mt-2 pt-2 border-t border-gray-50">
             <div className="w-full bg-gray-100 rounded-full h-2">
@@ -295,6 +311,62 @@ function PricePerSqft({
             </p>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Renders neighborhood median rent by bedroom count from the latest month available.
+ * Used when this specific building has no Dewey listing data but the ZIP does — gives
+ * the visitor real comparison numbers instead of hiding the section entirely.
+ */
+function NeighborhoodSnapshot({
+  neighborhoodRents,
+}: {
+  neighborhoodRents: RentIntelligenceProps["neighborhoodRents"];
+}) {
+  if (neighborhoodRents.length === 0) return null;
+
+  const latestMonth = [...neighborhoodRents]
+    .sort((a, b) => b.month.localeCompare(a.month))[0]?.month;
+  if (!latestMonth) return null;
+
+  const latest = neighborhoodRents
+    .filter((r) => r.month === latestMonth && r.median_rent > 0)
+    .sort((a, b) => a.beds - b.beds);
+  if (latest.length === 0) return null;
+
+  const bedLabel = (beds: number): string => {
+    if (beds === 0) return "Studio";
+    if (beds >= 4) return "4BR+";
+    return `${beds}BR`;
+  };
+
+  const monthLabel = new Date(latestMonth + "T00:00:00").toLocaleDateString("en-US", {
+    month: "long",
+    year: "numeric",
+  });
+
+  return (
+    <div className="rounded-xl bg-white border border-gray-100 shadow-sm p-4">
+      <div className="flex items-center gap-2 mb-1">
+        <MapPin className="w-4 h-4 text-blue-500" />
+        <h4 className="text-sm font-semibold text-[#0F1D2E]">Neighborhood Median Rent</h4>
+      </div>
+      <p className="text-xs text-gray-400 mb-3">
+        Latest data: {monthLabel}. This building has not been actively listed recently.
+      </p>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        {latest.map((r) => (
+          <div key={r.beds} className="rounded-lg bg-gray-50 p-2.5">
+            <p className="text-[11px] font-medium text-gray-500">{bedLabel(r.beds)}</p>
+            <p className="text-base font-bold text-[#0F1D2E]">
+              {formatDollars(r.median_rent)}
+              <span className="text-xs font-normal text-gray-400">/mo</span>
+            </p>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -360,10 +432,11 @@ export async function RentIntelligence({
   currentListings,
 }: RentIntelligenceProps) {
   const hasRentData = buildingRents.length > 0;
+  const hasNeighborhoodData = neighborhoodRents.length > 0;
   const hasSeasonalData = seasonalIndex.length > 0;
   const hasListings = currentListings && currentListings.length > 0;
 
-  if (!hasRentData && !hasSeasonalData && !hasListings) {
+  if (!hasRentData && !hasNeighborhoodData && !hasSeasonalData && !hasListings) {
     return null;
   }
 
@@ -384,13 +457,18 @@ export async function RentIntelligence({
         />
       )}
 
-      {/* Rent History Chart */}
+      {/* Rent History Chart — requires building-level data */}
       {hasRentData && (
         <RentHistoryChartClient
           buildingId={buildingId}
           buildingRents={buildingRents}
           neighborhoodRents={neighborhoodRents}
         />
+      )}
+
+      {/* Neighborhood-only fallback when this building has no listing data of its own */}
+      {!hasRentData && hasNeighborhoodData && (
+        <NeighborhoodSnapshot neighborhoodRents={neighborhoodRents} />
       )}
 
       {/* Two-column grid: Price comparison + Seasonal pattern */}

@@ -217,6 +217,9 @@ function BottomSkeleton() {
 export default async function BuildingSlugPage({ params }: BuildingSlugPageProps) {
   const { city: cityParam, borough: boroughSlug, slug } = await params;
   const city = (cityParam || "nyc") as City;
+  // Current internal path used for same-URL redirect detection (avoids loops when
+  // borough slug ↔ display-name round-tripping is lossy, e.g. "Miami-Dade" vs "Miami Dade")
+  const currentPath = `/${city}/building/${boroughSlug}/${slug}`;
   let building = await getBuilding(boroughSlug, slug, city);
 
   if (!building) {
@@ -224,15 +227,28 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
     const match = await findBuildingAnywhere(slug);
     if (match) {
       const correctCity = metroToCity(match.metro);
-      redirect(buildingUrl(match, correctCity));
+      const target = buildingUrl(match, correctCity);
+      // Guard: if the redirect target resolves back to the same internal path
+      // (e.g. borough display-name de-slug roundtrip mismatch), use the building
+      // we just found instead of looping forever.
+      const targetInternal = `/${correctCity}${target.replace(/^\/[A-Z]{2}\/[A-Za-z-]+/, "")}`;
+      if (targetInternal === currentPath) {
+        building = match as Building;
+      } else {
+        redirect(target);
+      }
     }
-    notFound();
+    if (!building) notFound();
   }
 
   // If the building's metro doesn't match the URL city, redirect to the correct city
   const buildingCity = metroToCity(building.metro);
   if (buildingCity !== city) {
-    redirect(buildingUrl(building, buildingCity));
+    const target = buildingUrl(building, buildingCity);
+    const targetInternal = `/${buildingCity}${target.replace(/^\/[A-Z]{2}\/[A-Za-z-]+/, "")}`;
+    if (targetInternal !== currentPath) {
+      redirect(target);
+    }
   }
 
   const supabase = await createClient();
