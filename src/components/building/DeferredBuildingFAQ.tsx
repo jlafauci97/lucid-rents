@@ -46,12 +46,12 @@ export async function DeferredBuildingFAQ({ building, buildingId, city, rents, n
     hasFaqCoords
       ? safe(supabase.from("nearby_schools").select("type, name, latitude, longitude, grades")
           .gte("latitude", building.latitude! - BBOX).lte("latitude", building.latitude! + BBOX)
-          .gte("longitude", building.longitude! - BBOX).lte("longitude", building.longitude! + BBOX), [])
+          .gte("longitude", building.longitude! - BBOX).lte("longitude", building.longitude! + BBOX).limit(50), [])
       : Promise.resolve([]),
     hasFaqCoords
       ? safe(supabase.from("transit_stops").select("type, name, latitude, longitude, routes")
           .gte("latitude", building.latitude! - BBOX).lte("latitude", building.latitude! + BBOX)
-          .gte("longitude", building.longitude! - BBOX).lte("longitude", building.longitude! + BBOX), [])
+          .gte("longitude", building.longitude! - BBOX).lte("longitude", building.longitude! + BBOX).limit(50), [])
       : Promise.resolve([]),
     building.zip_code
       ? safe(supabase.rpc("crime_zip_summary", { target_zip: building.zip_code, since_date: new Date(Date.now() - 2 * 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0], metro: city }), [])
