@@ -21,12 +21,13 @@ export async function GET(
 
     const supabase = await createClient();
 
-    // Get summary stats and recent crimes in parallel
-    const rpcParams: Record<string, string> = {
-      target_zip: zipCode,
-      since_date: sinceDateStr,
-    };
-    if (cityParam) rpcParams.metro = cityParam;
+    // Build base query with filters that hit the composite index
+    // (zip_code, cmplnt_date DESC, crime_category) WHERE zip_code IS NOT NULL
+    let summaryQuery = supabase
+      .from("nypd_complaints")
+      .select("crime_category, law_category")
+      .eq("zip_code", zipCode)
+      .gte("cmplnt_date", sinceDateStr);
 
     let recentQuery = supabase
       .from("nypd_complaints")
@@ -39,30 +40,35 @@ export async function GET(
       .limit(50);
 
     if (cityParam) {
+      summaryQuery = summaryQuery.eq("metro", cityParam);
       recentQuery = recentQuery.eq("metro", cityParam);
     }
 
+    // Fetch summary rows and recent crimes in parallel
+    // Use limit on summary to cap the scan — aggregate client-side
     const [summaryRes, recentRes] = await Promise.all([
-      supabase.rpc("crime_zip_summary", rpcParams),
+      summaryQuery.limit(10000),
       recentQuery,
     ]);
 
     if (summaryRes.error) {
-      console.error("crime_zip_summary RPC error:", summaryRes.error);
+      console.error("Crime summary query error:", summaryRes.error);
       return NextResponse.json(
         { error: "Failed to fetch crime summary" },
         { status: 500 }
       );
     }
 
-    const summary = summaryRes.data?.[0] || {
-      total: 0,
-      violent: 0,
-      property: 0,
-      quality_of_life: 0,
-      felonies: 0,
-      misdemeanors: 0,
-      violations: 0,
+    // Aggregate counts client-side from the capped result set
+    const rows = summaryRes.data || [];
+    const summary = {
+      total: rows.length,
+      violent: rows.filter((r) => r.crime_category === "violent").length,
+      property: rows.filter((r) => r.crime_category === "property").length,
+      quality_of_life: rows.filter((r) => r.crime_category === "quality_of_life").length,
+      felonies: rows.filter((r) => r.law_category === "FELONY").length,
+      misdemeanors: rows.filter((r) => r.law_category === "MISDEMEANOR").length,
+      violations: rows.filter((r) => r.law_category === "VIOLATION").length,
     };
 
     return NextResponse.json({
