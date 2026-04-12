@@ -7,9 +7,9 @@ import {
   searchNeighborhoods as searchNYCNeighborhoods,
   getNeighborhoodName as getNYCNeighborhoodName,
   neighborhoodPageSlug as nycNeighborhoodPageSlug,
-  type NeighborhoodMatch as NYCNeighborhoodMatch,
   NYC_ZIP_NEIGHBORHOODS,
   NYC_ZIP_BOROUGHS,
+  type NeighborhoodMatch as NYCNeighborhoodMatch,
 } from "./nyc-neighborhoods";
 import {
   searchLANeighborhoods,
@@ -104,34 +104,25 @@ export function getNeighborhoodNameByCity(
   return null;
 }
 
-/** Get all neighborhoods for a city as an array of {zipCode, name, region} */
+/** Get all neighborhoods for a city */
 export function getAllNeighborhoodsByCity(city: City): NeighborhoodResult[] {
-  const zipMap = getZipMap(city);
-  const regionMap = getRegionMap(city);
-  if (!zipMap) return [];
-  return Object.entries(zipMap).map(([zipCode, name]) => ({
-    zipCode,
-    name,
-    region: regionMap?.[zipCode] || "",
-  }));
-}
+  const mapToResults = (
+    zips: Record<string, string>,
+    regions: Record<string, string>,
+    defaultRegion: string
+  ): NeighborhoodResult[] =>
+    Object.entries(zips).map(([zipCode, name]) => ({
+      zipCode,
+      name,
+      region: regions[zipCode] || defaultRegion,
+    }));
 
-function getZipMap(city: City): Record<string, string> | null {
-  if (city === "nyc") return NYC_ZIP_NEIGHBORHOODS;
-  if (city === "los-angeles") return LA_ZIP_NEIGHBORHOODS;
-  if (city === "chicago") return CHICAGO_ZIP_NEIGHBORHOODS;
-  if (city === "miami") return MIAMI_ZIP_NEIGHBORHOODS;
-  if (city === "houston") return HOUSTON_ZIP_NEIGHBORHOODS;
-  return null;
-}
-
-function getRegionMap(city: City): Record<string, string> | null {
-  if (city === "nyc") return NYC_ZIP_BOROUGHS;
-  if (city === "los-angeles") return LA_ZIP_REGIONS;
-  if (city === "chicago") return CHICAGO_ZIP_REGIONS;
-  if (city === "miami") return MIAMI_ZIP_REGIONS;
-  if (city === "houston") return HOUSTON_ZIP_REGIONS;
-  return null;
+  if (city === "nyc") return mapToResults(NYC_ZIP_NEIGHBORHOODS, NYC_ZIP_BOROUGHS, "Unknown");
+  if (city === "los-angeles") return mapToResults(LA_ZIP_NEIGHBORHOODS, LA_ZIP_REGIONS, "Los Angeles");
+  if (city === "chicago") return mapToResults(CHICAGO_ZIP_NEIGHBORHOODS, CHICAGO_ZIP_REGIONS, "Chicago");
+  if (city === "miami") return mapToResults(MIAMI_ZIP_NEIGHBORHOODS, MIAMI_ZIP_REGIONS, "Miami-Dade");
+  if (city === "houston") return mapToResults(HOUSTON_ZIP_NEIGHBORHOODS, HOUSTON_ZIP_REGIONS, "Greater Houston");
+  return [];
 }
 
 /** Build the neighborhood page slug for the given city */
@@ -145,4 +136,4 @@ export function neighborhoodPageSlugByCity(
   if (city === "miami") return miamiNeighborhoodPageSlug(zipCode);
   if (city === "houston") return houstonNeighborhoodPageSlug(zipCode);
   return zipCode;
-}
+}

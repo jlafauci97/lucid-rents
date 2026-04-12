@@ -1,6 +1,0 @@
-lucid-rents 2/
-.claude/
-.superpowers/
-scripts/*
-!scripts/generate-sitemaps.mjs
-docs/
