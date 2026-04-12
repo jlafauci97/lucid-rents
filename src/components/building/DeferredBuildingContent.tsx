@@ -186,7 +186,26 @@ export async function DeferredBuildingContent({ building, buildingId, city, rent
 
       {/* Violations & Complaints Tabs */}
       <div id="violations" className="scroll-mt-28">
-        <IssuesTabs violations={violations} complaints={complaints} litigations={litigations} dobViolations={dobViolations} bedbugs={bedbugs} evictions={evictions} permits={permits} lahdViolationSummary={lahdViolationSummary} city={city} />
+        <IssuesTabs
+          violations={violations}
+          complaints={complaints}
+          litigations={litigations}
+          dobViolations={dobViolations}
+          bedbugs={bedbugs}
+          evictions={evictions}
+          permits={permits}
+          lahdViolationSummary={lahdViolationSummary}
+          city={city}
+          totalCounts={{
+            violations: building.violation_count,
+            complaints: building.complaint_count,
+            litigations: building.litigation_count,
+            dob: building.dob_violation_count,
+            bedbugs: building.bedbug_report_count,
+            evictions: building.eviction_count,
+            permits: building.permit_count,
+          }}
+        />
       </div>
 
       {/* Full Timeline Link */}

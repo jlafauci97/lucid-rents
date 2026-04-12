@@ -2,10 +2,12 @@ import { HardHat, CheckCircle } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { formatDate } from "@/lib/utils";
 import type { DobViolation } from "@/types";
+import { IssuesEmptyState } from "./IssuesEmptyState";
 
 interface DobViolationTimelineProps {
   violations: DobViolation[];
   agencyLabel?: string;
+  total?: number;
 }
 
 const categoryColors: Record<string, { bg: string; text: string }> = {
@@ -29,12 +31,14 @@ function getCategoryStyle(category: string | null) {
   return { bg: "bg-orange-50", text: "text-orange-700" };
 }
 
-export function DobViolationTimeline({ violations, agencyLabel = "DOB" }: DobViolationTimelineProps) {
+export function DobViolationTimeline({ violations, agencyLabel = "DOB", total }: DobViolationTimelineProps) {
   if (violations.length === 0) {
     return (
-      <p className="text-sm text-[#64748b] py-4">
-        No {agencyLabel} violations on record.
-      </p>
+      <IssuesEmptyState
+        loaded={0}
+        total={total}
+        emptyLabel={`No ${agencyLabel} violations on record.`}
+      />
     );
   }
 
