@@ -32,7 +32,7 @@ import { MiamiInfoCard } from "@/components/building/MiamiInfoCard";
 import { HoustonInfoCard } from "@/components/building/HoustonInfoCard";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { SLUG_TO_BOROUGH, regionFromSlug, buildingUrl, canonicalUrl, buildingJsonLd, landlordUrl, cityPath } from "@/lib/seo";
+import { SLUG_TO_BOROUGH, regionFromSlug, buildingUrl, canonicalUrl, buildingJsonLd, breadcrumbJsonLd, landlordUrl, cityPath } from "@/lib/seo";
 import { CITY_META, VALID_CITIES, type City } from "@/lib/cities";
 import { TrackBuildingView } from "@/components/building/TrackBuildingView";
 import { T } from "@/lib/design-tokens";
@@ -424,7 +424,12 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
         }}
       />
       <JsonLd data={buildingJsonLd(building)} />
-      {/* BreadcrumbList JSON-LD is emitted by the <Breadcrumbs> component below — no duplicate needed */}
+      <JsonLd data={breadcrumbJsonLd([
+        { name: "Home", url: "/" },
+        { name: "Buildings", url: cityPath("/buildings", city) },
+        { name: building.borough, url: cityPath(`/buildings/${boroughSlug}`, city) },
+        { name: shortAddress, url: buildingUrl(building, city) },
+      ])} />
 
       <div style={{ backgroundColor: T.surface }}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-2">
