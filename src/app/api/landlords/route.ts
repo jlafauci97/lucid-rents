@@ -31,6 +31,9 @@ export async function GET(req: NextRequest) {
     .from("landlord_stats")
     .select("id", { count: "exact", head: true });
 
+  if (cityParam) {
+    countQuery = countQuery.eq("metro", cityParam);
+  }
   if (search) {
     countQuery = countQuery.ilike("name", `%${search}%`);
   }
@@ -48,6 +51,9 @@ export async function GET(req: NextRequest) {
     .order(sortCol, { ascending: false })
     .range(offset, offset + limit - 1);
 
+  if (cityParam) {
+    query = query.eq("metro", cityParam);
+  }
   if (search) {
     query = query.ilike("name", `%${search}%`);
   }

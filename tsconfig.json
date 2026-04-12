@@ -39,6 +39,7 @@
     "node_modules",
     "lucid-rents 2",
     "remotion",
-    "supabase/functions"
+    "supabase/functions",
+    "scripts/sync"
   ]
 }

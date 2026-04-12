@@ -30,7 +30,7 @@ console.log("Scanning buildings...");
 while (true) {
   let query = sb
     .from("buildings")
-    .select("id,owner_name,full_address,violation_count,complaint_count,litigation_count,dob_violation_count,overall_score")
+    .select("id,owner_name,full_address,metro,violation_count,complaint_count,litigation_count,dob_violation_count,overall_score")
     .not("owner_name", "is", null)
     .order("id", { ascending: true })
     .limit(BATCH);
@@ -50,8 +50,10 @@ while (true) {
   for (const b of data) {
     const name = b.owner_name;
     if (!name) continue;
+    const metro = b.metro || "nyc";
+    const key = `${name}\0${metro}`;
 
-    const existing = landlordMap.get(name);
+    const existing = landlordMap.get(key);
     if (existing) {
       existing.building_count++;
       existing.total_violations += b.violation_count || 0;
@@ -67,8 +69,9 @@ while (true) {
         existing.worst_building_violations = b.violation_count || 0;
       }
     } else {
-      landlordMap.set(name, {
+      landlordMap.set(key, {
         name,
+        metro,
         building_count: 1,
         total_violations: b.violation_count || 0,
         total_complaints: b.complaint_count || 0,
@@ -105,6 +108,7 @@ for (const [, l] of landlordMap) {
 
   rows.push({
     name: l.name,
+    metro: l.metro,
     slug,
     building_count: l.building_count,
     total_violations: l.total_violations,
@@ -164,7 +168,7 @@ for (let i = 0; i < rows.length; i += UPSERT_BATCH) {
     console.error(`Insert error at batch ${i}:`, error.message);
     // Try individual inserts for this batch
     for (const row of batch) {
-      const { error: singleErr } = await sb.from("landlord_stats").upsert(row, { onConflict: "name" });
+      const { error: singleErr } = await sb.from("landlord_stats").upsert(row, { onConflict: "name,metro" });
       if (singleErr) console.error(`  Failed: ${row.name}: ${singleErr.message}`);
       else inserted++;
     }
