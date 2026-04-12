@@ -38,6 +38,7 @@
   "exclude": [
     "node_modules",
     "lucid-rents 2",
-    "remotion"
+    "remotion",
+    "supabase/functions"
   ]
 }
