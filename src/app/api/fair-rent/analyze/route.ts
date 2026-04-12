@@ -83,7 +83,13 @@ export async function POST(request: Request) {
         fetchComparables(listing.address, listing.zip_code, listing.beds),
       ]);
 
-    const pricing = calculateFairPrice(listing, compPrices, zori, amenities);
+    const pricing = calculateFairPrice(listing, compPrices, zori, amenities, {
+      violations,
+      complaints,
+      crime,
+      litigations,
+      stabilization,
+    });
 
     const response: AnalyzeResponse = {
       listing,

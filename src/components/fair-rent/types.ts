@@ -16,6 +16,15 @@ export interface ListingData {
   listed_amenities: string[];
 }
 
+export interface QualityFactor {
+  name: string;
+  signal: string;
+  adjustment: number; // e.g. -0.05 = 5% discount
+  dollar_impact: number; // actual dollar amount this factor contributed
+  direction: "premium" | "discount" | "neutral";
+  detail: string;
+}
+
 export interface PricingResult {
   base_price: number;
   comp_count: number;
@@ -31,6 +40,8 @@ export interface PricingResult {
   seasonal_signal: "high" | "low" | "neutral" | "unknown";
   seasonal_label: string;
   negotiation_tip: string;
+  quality_factors: QualityFactor[];
+  quality_adjustment: number; // combined multiplier from all quality factors
   fair_price: number;
   fair_range_low: number;
   fair_range_high: number;

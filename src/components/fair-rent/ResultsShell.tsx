@@ -10,6 +10,7 @@ import { BuildingScorecardGrid } from "./BuildingScorecardGrid";
 import { NeighborhoodSafetyCard } from "./NeighborhoodSafetyCard";
 import { TenantRightsCallout } from "./TenantRightsCallout";
 import { ComparablesCard } from "./ComparablesCard";
+import { QualityBreakdown } from "./QualityBreakdown";
 import { ArrowLeft, Cpu } from "lucide-react";
 
 const fadeUp = {
@@ -77,6 +78,11 @@ export function ResultsShell({ result, onBack }: ResultsShellProps) {
           <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={3}>
             <FairPriceCard listing={result.listing} pricing={result.pricing} />
           </motion.div>
+          {result.pricing.quality_factors.length > 0 && (
+            <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={3.5}>
+              <QualityBreakdown pricing={result.pricing} />
+            </motion.div>
+          )}
           <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={4}>
             <SeasonalSignalCard pricing={result.pricing} listing={result.listing} />
           </motion.div>
