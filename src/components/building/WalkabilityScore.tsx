@@ -21,8 +21,18 @@ function getScoreLabel(score: number): string {
   return "Almost All Driving";
 }
 
+// Transit type → display label used in the "Nearest Transit" row so
+// Houston/Miami/LA users can tell whether "4 min walk" means bus or rail.
+const TYPE_LABEL: Record<string, string> = {
+  subway: "Subway",
+  rail: "Rail",
+  bus: "Bus",
+  citibike: "CitiBike",
+  ferry: "Ferry",
+};
+
 export function WalkabilityScore({ latitude, longitude, city }: { latitude: number; longitude: number; city?: string }) {
-  const [data, setData] = useState<{ transitScore: number; transitLabel: string; nearestTransitWalk: number | null; totalStops: number; hasSubway: boolean; hasRail: boolean; hasBus: boolean; hasBike: boolean } | null>(null);
+  const [data, setData] = useState<{ transitScore: number; transitLabel: string; nearestTransitWalk: number | null; nearestTransitType: string | null; totalStops: number; hasSubway: boolean; hasRail: boolean; hasBus: boolean; hasBike: boolean } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -38,6 +48,18 @@ export function WalkabilityScore({ latitude, longitude, city }: { latitude: numb
         const totalStops = allStops.length;
         const nearestWalk = allStops.length > 0 ? Math.min(...allStops.map((s) => s.walkMin)) : null;
 
+        // Find which transit type contains the nearest stop, so we can label
+        // the "Nearest Transit" row with context (Bus 4 min vs Rail 4 min).
+        let nearestType: string | null = null;
+        if (nearestWalk !== null) {
+          for (const [type, stops] of Object.entries(transit)) {
+            if (stops?.some((s) => s.walkMin === nearestWalk)) {
+              nearestType = type;
+              break;
+            }
+          }
+        }
+
         let score = 0;
         if (nearestWalk !== null) score = Math.max(0, Math.min(100, 100 - (nearestWalk - 1) * 4));
         const types = Object.keys(transit).filter((k) => (transit[k]?.length || 0) > 0);
@@ -45,7 +67,7 @@ export function WalkabilityScore({ latitude, longitude, city }: { latitude: numb
         score = Math.min(100, score + Math.min(totalStops * 2, 10));
         score = Math.round(score);
 
-        setData({ transitScore: score, transitLabel: getScoreLabel(score), nearestTransitWalk: nearestWalk, totalStops, hasSubway: !!(transit.subway?.length), hasRail: !!(transit.rail?.length), hasBus: !!(transit.bus?.length), hasBike: !!(transit.citibike?.length) });
+        setData({ transitScore: score, transitLabel: getScoreLabel(score), nearestTransitWalk: nearestWalk, nearestTransitType: nearestType, totalStops, hasSubway: !!(transit.subway?.length), hasRail: !!(transit.rail?.length), hasBus: !!(transit.bus?.length), hasBike: !!(transit.citibike?.length) });
       } catch { /* silently fail */ } finally { setLoading(false); }
     }
     fetchData();
@@ -66,7 +88,7 @@ export function WalkabilityScore({ latitude, longitude, city }: { latitude: numb
         </div>
         <div className="w-full h-2 bg-[#f1f5f9] rounded-full mb-4 overflow-hidden"><div className="h-full rounded-full transition-all" style={{ width: `${data.transitScore}%`, backgroundColor: color }} /></div>
         <div className="space-y-2 text-sm">
-          {data.nearestTransitWalk !== null && <div className="flex items-center justify-between"><span style={{ color: T.text2 }}>Nearest Transit</span><span className="font-medium" style={{ color: T.text1 }}>{data.nearestTransitWalk} min walk</span></div>}
+          {data.nearestTransitWalk !== null && <div className="flex items-center justify-between"><span style={{ color: T.text2 }}>Nearest Transit</span><span className="font-medium" style={{ color: T.text1 }}>{data.nearestTransitType ? `${TYPE_LABEL[data.nearestTransitType] || data.nearestTransitType} · ` : ""}{data.nearestTransitWalk} min walk</span></div>}
           <div className="flex items-center justify-between"><span style={{ color: T.text2 }}>Nearby Stops</span><span className="font-medium" style={{ color: T.text1 }}>{data.totalStops}</span></div>
           <div className="flex items-center gap-2 pt-1">
             {data.hasSubway && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#2563EB]/10 text-[10px] font-medium text-[#2563EB]"><TrainFront className="w-3 h-3" /> Subway</span>}

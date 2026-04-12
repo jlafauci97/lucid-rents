@@ -3777,7 +3777,23 @@ async function syncMiami311(
 
 /**
  * Sync MDPD Crime Incidents.
- * MDPD crime data not yet available via ArcGIS API — disabled until source is identified.
+ *
+ * Status: DISABLED — no public incident-level Miami crime source exists.
+ *
+ * Investigation history (last checked 2026-04-11):
+ *   - Miami-Dade Police — publishes only jail booking records (not incidents,
+ *     and contains defendant addresses which we will not surface publicly)
+ *   - City of Miami Police — runs a crime viewer webmap backed by
+ *     maps.miamigov.com, but that server is firewalled from the public internet
+ *     (connection times out on port 80)
+ *   - Miami-Dade Open Data Hub — aggregate-only layers, nothing queryable
+ *   - FDLE / FBI NIBRS — annual bulk reports only, not queryable
+ *
+ * The crime page at /miami/crime will render with a "Data source unavailable"
+ * empty state. Revisit periodically — if MDPD or the City of Miami ever
+ * expose an incident-level feed, implement here following the Houston/Chicago
+ * patterns in this file.
+ *
  * Stores in nypd_complaints with metro='miami'
  */
 async function syncMiamiCrimes(
@@ -3787,7 +3803,11 @@ async function syncMiamiCrimes(
   const errors: string[] = [];
   const affectedBuildingIds = new Set<string>();
 
-  errors.push("Miami crimes sync: MDPD crime data not yet available via ArcGIS API");
+  errors.push(
+    "Miami crimes sync: no public incident-level source available. " +
+    "MDPD publishes only jail bookings; City of Miami webmap is firewalled. " +
+    "Last investigated 2026-04-11. See docs/superpowers/plans/2026-04-10-crime-sync-rollout.md"
+  );
   await finalizeSyncLog(supabase, logId, "completed", 0, 0, errors);
   return { totalAdded: 0, totalLinked: 0, errors, affectedBuildingIds };
 }

@@ -164,6 +164,52 @@ export default async function CrimePage({
     },
   ];
 
+  // Empty-state: some cities don't yet have a public incident-level feed
+  // (currently Miami — MDPD publishes only aggregates). Render a clean
+  // explanation rather than a wall of zeros.
+  if (rankedZips.length === 0) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <JsonLd data={breadcrumbJsonLd(bcItems.map(b => ({ name: b.label, url: b.href })))} />
+        <Breadcrumbs items={bcItems} />
+        <div className="mt-6 mb-8">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-[#FEE2E2] rounded-lg">
+              <Siren className="w-6 h-6 text-[#DC2626]" />
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#0F1D2E]">
+              {meta.fullName} Crime Data
+            </h1>
+          </div>
+        </div>
+        <div className="bg-[#FFFBEB] border border-[#FDE68A] rounded-xl p-6">
+          <div className="flex items-start gap-3">
+            <ShieldCheck className="w-5 h-5 text-[#B45309] mt-0.5 flex-shrink-0" />
+            <div>
+              <h2 className="text-lg font-semibold text-[#0F1D2E] mb-2">
+                Incident-level data unavailable
+              </h2>
+              <p className="text-sm text-[#64748b] leading-relaxed mb-3">
+                {meta.crimeSource} does not currently publish an incident-level
+                crime feed that we can query. We&apos;re tracking this and will
+                add crime data for {meta.fullName} as soon as a public source
+                becomes available.
+              </p>
+              <p className="text-sm text-[#64748b] leading-relaxed">
+                In the meantime, browse{" "}
+                <Link href={cityPath("/buildings", city)} className="text-[#2563EB] font-medium hover:underline">
+                  buildings in {meta.fullName}
+                </Link>{" "}
+                to see violations, 311 complaints, and other safety signals
+                that are available.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Structured data */}

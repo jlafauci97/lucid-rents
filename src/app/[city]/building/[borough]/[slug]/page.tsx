@@ -26,6 +26,7 @@ import { DeferredRentComparison } from "@/components/building/DeferredRentCompar
 import { EnergyScoreCard } from "@/components/building/EnergyScoreCard";
 import { SeismicSafetyCard } from "@/components/building/SeismicSafetyCard";
 import { HazardZonesCard } from "@/components/building/HazardZonesCard";
+import { FloodRiskCard } from "@/components/building/FloodRiskCard";
 import { ChicagoInfoCard } from "@/components/building/ChicagoInfoCard";
 import { MiamiInfoCard } from "@/components/building/MiamiInfoCard";
 import { HoustonInfoCard } from "@/components/building/HoustonInfoCard";
@@ -579,6 +580,15 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
                 softStoryStatus={building.soft_story_status}
               />
             ) : null}
+
+            {/* FEMA Flood Risk (Miami + Houston) */}
+            {(isMiami || isHouston) && building.latitude && building.longitude && (
+              <FloodRiskCard
+                latitude={building.latitude}
+                longitude={building.longitude}
+                fullAddress={building.full_address}
+              />
+            )}
 
             {/* Chicago Info */}
             {isChicago && (
