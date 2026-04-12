@@ -17,20 +17,20 @@ export function TenantRightsCallout({ result }: { result: AnalyzeResponse }) {
   if (boxes.length === 0) return null;
 
   const colorMap = {
-    green: { border: "border-l-[#00D4FF]/60", bg: "bg-[#00D4FF]/[0.04]", icon: <Shield size={16} className="text-[#00D4FF] flex-shrink-0" />, title: "text-[#00D4FF]" },
-    yellow: { border: "border-l-amber-500/60", bg: "bg-amber-500/[0.04]", icon: <AlertTriangle size={16} className="text-amber-400 flex-shrink-0" />, title: "text-amber-400" },
-    red: { border: "border-l-red-500/60", bg: "bg-red-500/[0.04]", icon: <AlertCircle size={16} className="text-red-400 flex-shrink-0" />, title: "text-red-400" },
+    green: { border: "border-l-blue-500", bg: "bg-blue-50", icon: <Shield size={16} className="text-blue-600 flex-shrink-0" />, title: "text-blue-700" },
+    yellow: { border: "border-l-amber-500", bg: "bg-amber-50", icon: <AlertTriangle size={16} className="text-amber-500 flex-shrink-0" />, title: "text-amber-700" },
+    red: { border: "border-l-red-500", bg: "bg-red-50", icon: <AlertCircle size={16} className="text-red-500 flex-shrink-0" />, title: "text-red-700" },
   };
 
   return (
     <div className="flex flex-col gap-3 mb-5">
       {boxes.map((box, i) => { const s = colorMap[box.color]; return (
-        <motion.div key={i} className={`${s.bg} border-l-4 ${s.border} rounded-r-xl px-5 py-4 flex gap-3 items-start backdrop-blur-sm`}
+        <motion.div key={i} className={`${s.bg} border-l-4 ${s.border} rounded-r-xl px-5 py-4 flex gap-3 items-start`}
           initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 + 0.2 }}>
           {s.icon}
           <div>
-            <p className={`text-xs font-mono font-semibold ${s.title} mb-0.5`}>{box.title}</p>
-            <p className="text-[11px] font-mono text-white/30 leading-relaxed">{box.body}</p>
+            <p className={`text-xs font-semibold ${s.title} mb-0.5`}>{box.title}</p>
+            <p className="text-[11px] text-gray-500 leading-relaxed">{box.body}</p>
           </div>
         </motion.div>
       ); })}

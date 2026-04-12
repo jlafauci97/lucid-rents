@@ -15,92 +15,42 @@ import { ArrowLeft, Cpu } from "lucide-react";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
-  visible: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: { delay: i * 0.1, duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] },
-  }),
+  visible: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.1, duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] } }),
 } satisfies Variants;
 
-interface ResultsShellProps {
-  result: AnalyzeResponse;
-  onBack: () => void;
-}
-
-export function ResultsShell({ result, onBack }: ResultsShellProps) {
+export function ResultsShell({ result, onBack }: { result: AnalyzeResponse; onBack: () => void }) {
   const redFlagCount = countRedFlags(result);
-
   return (
-    <div className="min-h-screen bg-[#0a0e17] relative">
-      {/* Grid bg */}
-      <div className="absolute inset-0 opacity-[0.02]" style={{
-        backgroundImage: "linear-gradient(rgba(0,212,255,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(0,212,255,0.3) 1px, transparent 1px)",
-        backgroundSize: "40px 40px",
-      }} />
-
-      {/* Sticky nav */}
-      <div className="sticky top-0 z-40 bg-[#0a0e17]/80 backdrop-blur-xl border-b border-white/[0.06] px-6 sm:px-12 py-3.5">
+    <div className="min-h-screen bg-[#f8fafc]">
+      <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-gray-200 px-6 sm:px-12 py-3.5">
         <div className="max-w-[820px] mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Cpu size={16} className="text-[#00D4FF]" />
-            <span className="text-[10px] font-mono font-bold tracking-[3px] uppercase text-[#00D4FF]/60">
-              Fair Rent Engine
-            </span>
+            <Cpu size={16} className="text-blue-600" />
+            <span className="text-xs font-semibold tracking-[2px] uppercase text-blue-600/70">Fair Rent Engine</span>
           </div>
-          <button
-            onClick={onBack}
-            className="flex items-center gap-1.5 text-xs font-mono text-white/30 hover:text-[#00D4FF] transition-colors cursor-pointer"
-          >
+          <button onClick={onBack} className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-blue-600 transition-colors cursor-pointer">
             <ArrowLeft size={12} /> New analysis
           </button>
         </div>
       </div>
-
-      <div className="relative z-10 max-w-[820px] mx-auto px-5 py-10 sm:py-14">
-        <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0}>
-          <ListingHeader listing={result.listing} />
-        </motion.div>
-
-        <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={1}>
-          <TenantRightsCallout result={result} />
-        </motion.div>
-
+      <div className="max-w-[820px] mx-auto px-5 py-10 sm:py-14">
+        <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0}><ListingHeader listing={result.listing} /></motion.div>
+        <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={1}><TenantRightsCallout result={result} /></motion.div>
         <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={2}>
-          <PricingVerdict
-            askingVsFairPct={result.pricing.asking_vs_fair_pct}
-            fairPrice={result.pricing.fair_price}
-            askingPrice={result.listing.asking_price}
-            redFlagCount={redFlagCount}
-          />
+          <PricingVerdict askingVsFairPct={result.pricing.asking_vs_fair_pct} fairPrice={result.pricing.fair_price} askingPrice={result.listing.asking_price} redFlagCount={redFlagCount} />
         </motion.div>
-
         <div className="flex flex-col gap-5 mt-5">
-          <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={3}>
-            <FairPriceCard listing={result.listing} pricing={result.pricing} />
-          </motion.div>
+          <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={3}><FairPriceCard listing={result.listing} pricing={result.pricing} /></motion.div>
           {result.pricing.quality_factors.length > 0 && (
-            <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={3.5}>
-              <QualityBreakdown pricing={result.pricing} />
-            </motion.div>
+            <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={3.5}><QualityBreakdown pricing={result.pricing} /></motion.div>
           )}
-          <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={4}>
-            <SeasonalSignalCard pricing={result.pricing} listing={result.listing} />
-          </motion.div>
+          <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={4}><SeasonalSignalCard pricing={result.pricing} listing={result.listing} /></motion.div>
           <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={5}>
-            <BuildingScorecardGrid
-              violations={result.violations}
-              complaints={result.complaints}
-              stabilization={result.stabilization}
-              litigations={result.litigations}
-            />
+            <BuildingScorecardGrid violations={result.violations} complaints={result.complaints} stabilization={result.stabilization} litigations={result.litigations} />
           </motion.div>
-          <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={6}>
-            <NeighborhoodSafetyCard crime={result.crime} />
-          </motion.div>
+          <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={6}><NeighborhoodSafetyCard crime={result.crime} /></motion.div>
           {result.comparables.length > 0 && (
-            <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={7}>
-              <ComparablesCard comparables={result.comparables} currentZip={result.listing.zip_code} />
-            </motion.div>
+            <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={7}><ComparablesCard comparables={result.comparables} currentZip={result.listing.zip_code} /></motion.div>
           )}
         </div>
       </div>
