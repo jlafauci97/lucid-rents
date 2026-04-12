@@ -9,6 +9,7 @@ import { SeasonalSignalCard } from "./SeasonalSignalCard";
 import { BuildingScorecardGrid } from "./BuildingScorecardGrid";
 import { NeighborhoodSafetyCard } from "./NeighborhoodSafetyCard";
 import { TenantRightsCallout } from "./TenantRightsCallout";
+import { ComparablesCard } from "./ComparablesCard";
 import { ArrowLeft } from "lucide-react";
 
 const fadeUp = {
@@ -84,6 +85,15 @@ export function ResultsShell({ result, onBack }: ResultsShellProps) {
           <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={6}>
             <NeighborhoodSafetyCard crime={result.crime} />
           </motion.div>
+
+          {result.comparables.length > 0 && (
+            <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={7}>
+              <ComparablesCard
+                comparables={result.comparables}
+                currentZip={result.listing.zip_code}
+              />
+            </motion.div>
+          )}
         </div>
       </div>
     </div>

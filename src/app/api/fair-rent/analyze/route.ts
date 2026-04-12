@@ -11,6 +11,7 @@ import {
   fetchCrime,
 } from "@/lib/fair-rent/nyc-open-data";
 import { fetchStabilization } from "@/lib/fair-rent/rent-stabilization";
+import { fetchComparables } from "@/lib/fair-rent/comparables";
 import type { AnalyzeResponse, ListingData } from "@/components/fair-rent/types";
 
 const requestSchema = z.object({
@@ -70,7 +71,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const [compPrices, zori, violations, complaints, stabilization, litigations, crime] =
+    const [compPrices, zori, violations, complaints, stabilization, litigations, crime, comparables] =
       await Promise.all([
         scrapeComps(listing.zip_code, listing.beds, listing.sqft),
         lookupZori(listing.zip_code),
@@ -79,6 +80,7 @@ export async function POST(request: Request) {
         fetchStabilization(listing.address, listing.zip_code),
         fetchLitigations(listing.address, listing.zip_code),
         fetchCrime(listing.zip_code),
+        fetchComparables(listing.address, listing.zip_code),
       ]);
 
     const pricing = calculateFairPrice(listing, compPrices, zori, amenities);
@@ -91,6 +93,7 @@ export async function POST(request: Request) {
       stabilization,
       litigations,
       crime,
+      comparables,
     };
 
     return NextResponse.json(response);

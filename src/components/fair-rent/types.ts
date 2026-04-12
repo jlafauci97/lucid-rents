@@ -84,6 +84,19 @@ export interface CrimeSignal {
   summary: string;
 }
 
+export interface ComparableBuilding {
+  full_address: string;
+  borough: string;
+  slug: string;
+  zip_code: string;
+  total_units: number | null;
+  violation_count: number;
+  complaint_count: number;
+  overall_score: string;
+  is_rent_stabilized: boolean;
+  year_built: number | null;
+}
+
 export interface AnalyzeResponse {
   listing: ListingData;
   pricing: PricingResult;
@@ -92,6 +105,7 @@ export interface AnalyzeResponse {
   stabilization: StabilizationSignal | null;
   litigations: LitigationsSignal | null;
   crime: CrimeSignal | null;
+  comparables: ComparableBuilding[];
 }
 
 export type Screen = "landing" | "loading" | "results" | "error";
