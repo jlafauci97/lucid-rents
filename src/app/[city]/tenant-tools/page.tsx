@@ -74,6 +74,18 @@ const TOOL_CARDS = [
     cta: "Check a Building",
   },
   {
+    href: "/fair-rent-engine",
+    icon: DollarSign,
+    label: "Fair Rent Engine",
+    description:
+      "Paste a StreetEasy listing and get fair market pricing, building quality scores, rent stabilization status, and neighborhood safety — powered by NYC public data.",
+    badge: "NYC Only",
+    badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    cta: "Analyze a Listing",
+    global: true,
+    nycOnly: true,
+  },
+  {
     href: "/rent-affordability-calculator",
     icon: Calculator,
     label: "Rent Affordability Calculator",
@@ -159,7 +171,7 @@ export default async function TenantToolsPage({
         <section className="mb-14">
           <h2 className="text-2xl font-bold text-[#0F1D2E] mb-6">All Tenant Tools</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {TOOL_CARDS.map((tool) => (
+            {TOOL_CARDS.filter((tool) => !("nycOnly" in tool && tool.nycOnly) || city === "nyc").map((tool) => (
               <Link
                 key={tool.href}
                 href={tool.global ? tool.href : cityPath(tool.href, city as City)}
