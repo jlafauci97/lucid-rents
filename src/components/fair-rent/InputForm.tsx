@@ -64,7 +64,7 @@ export function InputForm({ onAnalyze, error }: InputFormProps) {
     debounceRef.current = setTimeout(async () => {
       setSearching(true);
       try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}&city=nyc&limit=6`);
+        const res = await fetch(`/api/fair-rent/search?q=${encodeURIComponent(query)}`);
         const data = await res.json();
         setResults(data.buildings || []);
         setShowDropdown(true);
