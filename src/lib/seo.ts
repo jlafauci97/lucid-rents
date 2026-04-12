@@ -68,6 +68,10 @@ export function neighborhoodUrl(
   return `/${CITY_META[city].urlPrefix}/neighborhood/${neighborhoodPageSlugByCity(zipCode, city)}`;
 }
 
+export function neighborhoodsUrl(city: City = DEFAULT_CITY): string {
+  return `/${CITY_META[city].urlPrefix}/neighborhoods`;
+}
+
 export function canonicalUrl(path: string): string {
   return `${BASE_URL}${path}`;
 }
