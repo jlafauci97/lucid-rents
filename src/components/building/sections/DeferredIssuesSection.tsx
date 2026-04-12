@@ -27,30 +27,24 @@ export async function DeferredIssuesSection({ buildingId, city, buildingHref }: 
   const isChicago = city === "chicago";
   const isNYC = city === "nyc";
 
-  // Single hpd_violations query with all needed fields (deduped — was 2 queries before)
-  const [violations, complaints, litigations, dobViolations, bedbugs, evictions, permits, units, lahdViolationSummary] = await Promise.all([
-    safe(supabase.from("hpd_violations").select("*").eq("building_id", buildingId).order("inspection_date", { ascending: false }).limit(1000), [] as HpdViolation[]),
-    safe(supabase.from("complaints_311").select("*").eq("building_id", buildingId).order("created_date", { ascending: false }).limit(1000), [] as Complaint311[]),
+  // Fetch all issues data + pre-computed counts in a single parallel batch
+  const [violations, complaints, litigations, dobViolations, bedbugs, evictions, permits, units, lahdViolationSummary, buildingCounts] = await Promise.all([
+    safe(supabase.from("hpd_violations").select("*").eq("building_id", buildingId).order("inspection_date", { ascending: false }).limit(200), [] as HpdViolation[]),
+    safe(supabase.from("complaints_311").select("*").eq("building_id", buildingId).order("created_date", { ascending: false }).limit(200), [] as Complaint311[]),
     isNYC ? safe(supabase.from("hpd_litigations").select("*").eq("building_id", buildingId).order("case_open_date", { ascending: false }).limit(20), [] as HpdLitigation[]) : Promise.resolve([] as HpdLitigation[]),
     (isNYC || isChicago) ? safe(supabase.from("dob_violations").select("*").eq("building_id", buildingId).order("issue_date", { ascending: false }).limit(20), [] as DobViolation[]) : Promise.resolve([] as DobViolation[]),
     isNYC ? safe(supabase.from("bedbug_reports").select("*").eq("building_id", buildingId).order("filing_date", { ascending: false }).limit(20), [] as BedBugReport[]) : Promise.resolve([] as BedBugReport[]),
     isNYC ? safe(supabase.from("evictions").select("*").eq("building_id", buildingId).order("executed_date", { ascending: false }).limit(20), [] as Eviction[]) : Promise.resolve([] as Eviction[]),
     safe(supabase.from("dob_permits").select("*").eq("building_id", buildingId).order("issued_date", { ascending: false }).limit(20), [] as DobPermit[]),
-    safe(supabase.from("units").select("*").eq("building_id", buildingId).order("unit_number", { ascending: true }), []),
+    safe(supabase.from("units").select("id, unit_number, building_id").eq("building_id", buildingId).order("unit_number", { ascending: true }).limit(500), []),
     isLA
       ? safe(supabase.from("lahd_violation_summary").select("id, building_id, violation_type, violations_cited, violations_cleared").eq("building_id", buildingId).order("violations_cited", { ascending: false }).limit(50), [] as LahdViolationSummary[])
       : Promise.resolve([] as LahdViolationSummary[]),
+    safe(supabase.from("buildings").select("violation_count, complaint_count, litigation_count, dob_violation_count, bedbug_report_count, eviction_count, permit_count").eq("id", buildingId).single(), null as { violation_count: number; complaint_count: number; litigation_count: number; dob_violation_count: number; bedbug_report_count: number; eviction_count: number; permit_count: number } | null),
   ]);
 
-  // Use the first 20 for tabs display, full 200 for ViolationsByUnit and CommonIssues
+  // Use the first 20 for tabs display, full set for ViolationsByUnit and CommonIssues
   const tabViolations = violations.slice(0, 20);
-
-  // Use pre-computed counts from the buildings table (1 query instead of 8 exact-count scans)
-  const { data: buildingCounts } = await supabase
-    .from("buildings")
-    .select("violation_count, complaint_count, litigation_count, dob_violation_count, bedbug_report_count, eviction_count, permit_count")
-    .eq("id", buildingId)
-    .single();
   const totalCounts = {
     violations: isLA ? lahdViolationSummary.length : (buildingCounts?.violation_count ?? violations.length),
     complaints: buildingCounts?.complaint_count ?? complaints.length,
