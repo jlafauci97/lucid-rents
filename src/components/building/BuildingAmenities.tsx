@@ -131,7 +131,7 @@ export function BuildingAmenities({ amenities }: BuildingAmenitiesProps) {
                     {label}
                   </span>
                 </div>
-                <ul className="space-y-1">
+                <ul className="grid grid-cols-2 gap-x-3 gap-y-1">
                   {items.map((item) => {
                     const AmenityIcon = AMENITY_ICONS[item.toLowerCase()];
                     return (
