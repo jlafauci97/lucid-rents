@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import type { Screen, AnalyzeResponse } from "./types";
+import type { AnalyzeResponse } from "./types";
 import { InputForm } from "./InputForm";
 import { LoadingSequence } from "./LoadingSequence";
 import { ResultsShell } from "./ResultsShell";
@@ -12,7 +12,7 @@ export function FairRentApp() {
   const [error, setError] = useState<string | null>(null);
 
   const analyze = useCallback(
-    async (data: { address: string; asking_price: number; beds: number; sqft: number | null; zip_code: string; amenities: string[] }) => {
+    async (data: { building_id?: string; address: string; asking_price: number; beds: number; sqft: number | null; zip_code: string; amenities: string[] }) => {
       setScreen("loading");
       setError(null);
       try {
@@ -20,8 +20,9 @@ export function FairRentApp() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            url: "https://streeteasy.com/building/manual-entry",
+            url: "https://streeteasy.com/building/search-entry",
             amenities: data.amenities,
+            building_id: data.building_id,
             manual: {
               asking_price: data.asking_price,
               beds: data.beds,
@@ -50,7 +51,7 @@ export function FairRentApp() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#0a0e17]">
+    <div className="min-h-screen">
       {screen === "input" && <InputForm onAnalyze={analyze} error={error} />}
       {screen === "loading" && <LoadingSequence />}
       {screen === "results" && result && <ResultsShell result={result} onBack={reset} />}
