@@ -80,7 +80,7 @@ export async function POST(request: Request) {
         fetchStabilization(listing.address, listing.zip_code),
         fetchLitigations(listing.address, listing.zip_code),
         fetchCrime(listing.zip_code),
-        fetchComparables(listing.address, listing.zip_code),
+        fetchComparables(listing.address, listing.zip_code, listing.beds),
       ]);
 
     const pricing = calculateFairPrice(listing, compPrices, zori, amenities);

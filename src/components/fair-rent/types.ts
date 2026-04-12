@@ -95,6 +95,9 @@ export interface ComparableBuilding {
   overall_score: string;
   is_rent_stabilized: boolean;
   year_built: number | null;
+  crime_count: number | null;
+  median_rent: number | null;
+  amenities: string[];
 }
 
 export interface AnalyzeResponse {

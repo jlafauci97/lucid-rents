@@ -2,112 +2,106 @@
 
 import { motion } from "framer-motion";
 import type { ComparableBuilding } from "./types";
-import { Building2, ShieldCheck, AlertTriangle, ChevronRight, Star } from "lucide-react";
-
-interface ComparablesCardProps {
-  comparables: ComparableBuilding[];
-  currentZip: string;
-}
+import { Building2, ShieldCheck, AlertTriangle, ChevronRight, Star, DollarSign } from "lucide-react";
+import { AMENITY_MULTIPLIERS } from "@/lib/fair-rent/constants";
 
 function scoreColor(score: number): string {
-  if (score >= 8) return "text-emerald-600";
-  if (score >= 6) return "text-blue-600";
-  if (score >= 4) return "text-amber-600";
-  return "text-red-600";
+  if (score >= 8) return "#00D4FF";
+  if (score >= 6) return "#3b82f6";
+  if (score >= 4) return "#fbbf24";
+  return "#ef4444";
 }
 
-function scoreBg(score: number): string {
-  if (score >= 8) return "bg-emerald-50";
-  if (score >= 6) return "bg-blue-50";
-  if (score >= 4) return "bg-amber-50";
-  return "bg-red-50";
+function amenityPremium(amenities: string[]): number {
+  const amenityMap: Record<string, string> = {
+    "Doorman": "doorman", "Elevator": "elevator", "Gym": "gym", "Fitness Center": "gym",
+    "Parking": "parking", "Garage": "parking", "Washer/Dryer": "in_unit_laundry", "In-Unit Laundry": "in_unit_laundry",
+    "Roof Deck": "private_outdoor_space", "Outdoor Space": "private_outdoor_space", "Balcony": "private_outdoor_space", "Terrace": "private_outdoor_space",
+  };
+  const seen = new Set<string>();
+  let total = 0;
+  for (const a of amenities) {
+    const key = amenityMap[a];
+    if (key && !seen.has(key) && AMENITY_MULTIPLIERS[key]) {
+      seen.add(key);
+      total += AMENITY_MULTIPLIERS[key];
+    }
+  }
+  return Math.min(total, 0.20);
 }
 
-export function ComparablesCard({ comparables, currentZip }: ComparablesCardProps) {
+export function ComparablesCard({ comparables, currentZip }: { comparables: ComparableBuilding[]; currentZip: string }) {
   if (comparables.length === 0) return null;
 
   return (
-    <div className="bg-white border border-[#e8e6e1] rounded-2xl overflow-hidden">
-      <div className="bg-[#0F1D2E] px-6 sm:px-8 py-5 flex items-center justify-between">
+    <div className="bg-white/[0.03] border border-white/[0.08] rounded-2xl overflow-hidden backdrop-blur-sm">
+      <div className="px-6 sm:px-8 py-4 border-b border-white/[0.06] flex items-center justify-between">
         <div>
-          <p className="text-[11px] font-semibold tracking-[2px] uppercase text-white/50">
-            Better Options Nearby
-          </p>
-          <p className="text-[13px] text-white/30 mt-0.5">
-            Higher-rated buildings in {currentZip}
-          </p>
+          <p className="text-[10px] font-mono font-bold tracking-[2px] uppercase text-[#00D4FF]/50">Better Options Nearby</p>
+          <p className="text-[10px] font-mono text-white/15 mt-0.5">Higher-rated buildings in {currentZip}</p>
         </div>
-        <Building2 size={18} className="text-white/30" />
+        <Building2 size={16} className="text-white/10" />
       </div>
 
-      <div className="divide-y divide-gray-100">
-        {comparables.map((building, i) => {
-          const score = parseFloat(building.overall_score);
-          const href = `/nyc/building/${encodeURIComponent(building.borough.toLowerCase())}/${building.slug}`;
+      <div className="divide-y divide-white/[0.04]">
+        {comparables.map((b, i) => {
+          const score = parseFloat(b.overall_score);
+          const premium = amenityPremium(b.amenities);
+          const href = `/nyc/building/${encodeURIComponent(b.borough.toLowerCase())}/${b.slug}`;
 
           return (
-            <motion.a
-              key={building.slug}
-              href={href}
-              className="flex items-center gap-4 px-6 sm:px-8 py-4 hover:bg-[#f9f9f7] transition-colors group"
-              initial={{ opacity: 0, x: -12 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.08 + 0.3, duration: 0.35 }}
-            >
-              {/* Rank */}
-              <div className="w-7 h-7 rounded-lg bg-[#f5f4f1] flex items-center justify-center text-[11px] font-bold text-gray-400 flex-shrink-0">
-                {i + 1}
-              </div>
+            <motion.a key={b.slug} href={href}
+              className="flex items-center gap-4 px-6 sm:px-8 py-4 hover:bg-white/[0.03] transition-colors group"
+              initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.08 + 0.3, duration: 0.35 }}>
 
-              {/* Details */}
+              <div className="w-6 h-6 rounded-md bg-white/[0.06] flex items-center justify-center text-[10px] font-mono font-bold text-white/30 flex-shrink-0">{i + 1}</div>
+
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-[#0b0b0b] truncate group-hover:text-[#3B82F6] transition-colors">
-                  {building.full_address.split(",")[0]}
+                <p className="text-xs font-mono font-semibold text-white/70 truncate group-hover:text-[#00D4FF] transition-colors">
+                  {b.full_address.split(",")[0]}
                 </p>
-                <div className="flex items-center gap-3 mt-1 text-[10px] text-gray-400">
-                  {building.total_units != null && <span>{building.total_units} units</span>}
-                  {building.year_built != null && <span>Built {building.year_built}</span>}
-                  <span>{building.violation_count} violations</span>
+                <div className="flex items-center gap-3 mt-1 text-[9px] font-mono text-white/20">
+                  {b.total_units != null && <span>{b.total_units} units</span>}
+                  {b.year_built != null && <span>{b.year_built}</span>}
+                  <span>{b.violation_count} viol.</span>
                 </div>
               </div>
 
-              {/* Badges */}
-              <div className="flex items-center gap-2 flex-shrink-0">
-                {building.is_rent_stabilized && (
-                  <span className="flex items-center gap-1 text-[9px] font-semibold bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full">
-                    <ShieldCheck size={10} />
-                    Stabilized
+              {/* Amenity & rent badges */}
+              <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
+                {b.median_rent != null && (
+                  <span className="flex items-center gap-1 text-[9px] font-mono bg-white/[0.05] text-white/30 px-2 py-0.5 rounded">
+                    <DollarSign size={9} />${b.median_rent.toLocaleString()}
                   </span>
                 )}
-                {building.violation_count === 0 && (
-                  <span className="text-[9px] font-semibold bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full">
-                    No violations
+                {premium > 0 && (
+                  <span className="text-[9px] font-mono bg-[#00D4FF]/10 text-[#00D4FF]/60 px-2 py-0.5 rounded">
+                    +{(premium * 100).toFixed(0)}% amenity
                   </span>
                 )}
-                {building.violation_count > 100 && (
-                  <span className="flex items-center gap-1 text-[9px] font-semibold bg-red-50 text-red-500 px-2 py-0.5 rounded-full">
-                    <AlertTriangle size={10} />
-                    {building.violation_count}
+                {b.is_rent_stabilized && (
+                  <span className="flex items-center gap-1 text-[9px] font-mono bg-[#00D4FF]/10 text-[#00D4FF]/60 px-2 py-0.5 rounded">
+                    <ShieldCheck size={9} />RS
                   </span>
                 )}
               </div>
 
               {/* Score */}
-              <div className={`flex items-center gap-1 px-2.5 py-1 rounded-lg ${scoreBg(score)} flex-shrink-0`}>
-                <Star size={12} className={scoreColor(score)} fill="currentColor" />
-                <span className={`text-sm font-bold ${scoreColor(score)}`}>{score.toFixed(1)}</span>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <Star size={11} style={{ color: scoreColor(score) }} fill="currentColor" />
+                <span className="text-sm font-bold font-mono" style={{ color: scoreColor(score) }}>{score.toFixed(1)}</span>
               </div>
 
-              {/* Arrow */}
-              <ChevronRight size={16} className="text-gray-300 group-hover:text-[#3B82F6] transition-colors flex-shrink-0" />
+              <ChevronRight size={14} className="text-white/10 group-hover:text-[#00D4FF]/60 transition-colors flex-shrink-0" />
             </motion.a>
           );
         })}
       </div>
 
-      <div className="px-6 sm:px-8 py-3 bg-[#f9f9f7] text-center">
-        <p className="text-[10px] text-gray-300">
-          Scores based on violations, complaints, and tenant reviews from Lucid Rents database
+      <div className="px-6 sm:px-8 py-3 border-t border-white/[0.04]">
+        <p className="text-[8px] font-mono text-white/10 text-center">
+          Scores from Lucid Rents · Amenity premiums from Furman Center / NMHC research
         </p>
       </div>
     </div>

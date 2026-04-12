@@ -13,21 +13,21 @@ export function ListingHeader({ listing }: { listing: ListingData }) {
 
   return (
     <div className="mb-8">
-      <div className="flex items-center gap-2 text-gray-400 mb-3">
-        <MapPin size={14} />
-        <span className="text-sm">{listing.zip_code}</span>
+      <div className="flex items-center gap-2 text-white/30 mb-3">
+        <MapPin size={13} className="text-[#00D4FF]/60" />
+        <span className="text-xs font-mono">{listing.zip_code}</span>
       </div>
 
-      <h2 className="text-3xl sm:text-4xl font-bold tracking-tight leading-tight text-[#0b0b0b] mb-4">
+      <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white mb-4">
         {listing.address}
       </h2>
 
-      <div className="flex flex-wrap items-center gap-3 mb-5">
+      <div className="flex flex-wrap items-center gap-2 mb-5">
         {details.map((item) => {
           const Icon = item.icon;
           return (
-            <div key={item.label} className="flex items-center gap-1.5 text-sm text-gray-500 bg-[#f5f4f1] px-3 py-1.5 rounded-full">
-              <Icon size={13} className="text-gray-400" />
+            <div key={item.label} className="flex items-center gap-1.5 text-xs font-mono text-white/40 bg-white/[0.04] border border-white/[0.06] px-3 py-1.5 rounded-lg">
+              <Icon size={12} className="text-[#00D4FF]/50" />
               {item.label}
             </div>
           );
@@ -36,16 +36,16 @@ export function ListingHeader({ listing }: { listing: ListingData }) {
 
       <div className="flex items-baseline gap-3">
         <motion.span
-          className="text-4xl sm:text-5xl font-black text-[#0b0b0b] tracking-tight"
+          className="text-4xl sm:text-5xl font-black font-mono text-white tracking-tight"
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5 }}
         >
           ${listing.asking_price.toLocaleString()}
         </motion.span>
-        <span className="text-lg text-gray-400 font-normal">/mo</span>
+        <span className="text-base font-mono text-white/20">/mo</span>
       </div>
-      <p className="text-[10px] text-gray-300 uppercase tracking-widest mt-1">Listed asking price</p>
+      <p className="text-[9px] font-mono text-[#00D4FF]/30 uppercase tracking-[3px] mt-1">Listed asking price</p>
     </div>
   );
 }

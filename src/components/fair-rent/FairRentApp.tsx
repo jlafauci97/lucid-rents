@@ -2,95 +2,58 @@
 
 import { useState, useCallback } from "react";
 import type { Screen, AnalyzeResponse } from "./types";
-import { LandingHero } from "./LandingHero";
+import { InputForm } from "./InputForm";
 import { LoadingSequence } from "./LoadingSequence";
 import { ResultsShell } from "./ResultsShell";
-import { ManualEntryForm, type ManualEntry } from "./ManualEntryForm";
 
 export function FairRentApp() {
-  const [screen, setScreen] = useState<Screen>("landing");
+  const [screen, setScreen] = useState<"input" | "loading" | "results">("input");
   const [result, setResult] = useState<AnalyzeResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [amenities, setAmenities] = useState<string[]>([]);
-  const [lastUrl, setLastUrl] = useState("");
 
   const analyze = useCallback(
-    async (url: string, selectedAmenities: string[]) => {
+    async (data: { address: string; asking_price: number; beds: number; sqft: number | null; zip_code: string; amenities: string[] }) => {
       setScreen("loading");
       setError(null);
-      setAmenities(selectedAmenities);
-      setLastUrl(url);
-
       try {
         const res = await fetch("/api/fair-rent/analyze", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url, amenities: selectedAmenities }),
+          body: JSON.stringify({
+            url: "https://streeteasy.com/building/manual-entry",
+            amenities: data.amenities,
+            manual: {
+              asking_price: data.asking_price,
+              beds: data.beds,
+              sqft: data.sqft,
+              zip_code: data.zip_code,
+              address: data.address,
+            },
+          }),
         });
-
-        const data = await res.json();
-
-        if (!res.ok) {
-          if (data.error === "scrape_failed") {
-            setError(data.message);
-            setScreen("error");
-            return;
-          }
-          throw new Error(data.message || data.error || "Analysis failed");
-        }
-
-        setResult(data as AnalyzeResponse);
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.message || json.error);
+        setResult(json as AnalyzeResponse);
         setScreen("results");
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Something went wrong");
-        setScreen("error");
+        setError(err instanceof Error ? err.message : "Analysis failed");
+        setScreen("input");
       }
     },
     []
   );
 
   const reset = useCallback(() => {
-    setScreen("landing");
+    setScreen("input");
     setResult(null);
     setError(null);
   }, []);
 
-  const analyzeManual = useCallback(
-    async (manual: ManualEntry) => {
-      setScreen("loading");
-      setError(null);
-      try {
-        const res = await fetch("/api/fair-rent/analyze", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: lastUrl, amenities, manual }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.message || data.error);
-        setResult(data as AnalyzeResponse);
-        setScreen("results");
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Something went wrong");
-        setScreen("error");
-      }
-    },
-    [lastUrl, amenities]
-  );
-
   return (
-    <div className="min-h-screen">
-      {screen === "landing" && <LandingHero onAnalyze={analyze} />}
+    <div className="min-h-screen bg-[#0a0e17]">
+      {screen === "input" && <InputForm onAnalyze={analyze} error={error} />}
       {screen === "loading" && <LoadingSequence />}
-      {screen === "results" && result && (
-        <ResultsShell result={result} onBack={reset} />
-      )}
-      {screen === "error" && (
-        <ManualEntryForm
-          errorMessage={error}
-          onSubmit={(manual) => analyzeManual(manual)}
-          onBack={reset}
-        />
-      )}
+      {screen === "results" && result && <ResultsShell result={result} onBack={reset} />}
     </div>
   );
 }

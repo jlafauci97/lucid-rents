@@ -10,14 +10,14 @@ import { BuildingScorecardGrid } from "./BuildingScorecardGrid";
 import { NeighborhoodSafetyCard } from "./NeighborhoodSafetyCard";
 import { TenantRightsCallout } from "./TenantRightsCallout";
 import { ComparablesCard } from "./ComparablesCard";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Cpu } from "lucide-react";
 
 const fadeUp = {
-  hidden: { opacity: 0, y: 24 },
+  hidden: { opacity: 0, y: 20 },
   visible: (i: number) => ({
     opacity: 1,
     y: 0,
-    transition: { delay: i * 0.12, duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] },
+    transition: { delay: i * 0.1, duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] },
   }),
 } satisfies Variants;
 
@@ -30,23 +30,32 @@ export function ResultsShell({ result, onBack }: ResultsShellProps) {
   const redFlagCount = countRedFlags(result);
 
   return (
-    <div className="min-h-screen bg-[#f5f4f1]">
+    <div className="min-h-screen bg-[#0a0e17] relative">
+      {/* Grid bg */}
+      <div className="absolute inset-0 opacity-[0.02]" style={{
+        backgroundImage: "linear-gradient(rgba(0,212,255,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(0,212,255,0.3) 1px, transparent 1px)",
+        backgroundSize: "40px 40px",
+      }} />
+
       {/* Sticky nav */}
-      <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-black/5 px-6 sm:px-12 py-4">
-        <div className="max-w-[800px] mx-auto flex items-center justify-between">
-          <span className="text-[#0F1D2E] font-bold text-base tracking-tight">
-            Fair Rent Engine
-          </span>
+      <div className="sticky top-0 z-40 bg-[#0a0e17]/80 backdrop-blur-xl border-b border-white/[0.06] px-6 sm:px-12 py-3.5">
+        <div className="max-w-[820px] mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Cpu size={16} className="text-[#00D4FF]" />
+            <span className="text-[10px] font-mono font-bold tracking-[3px] uppercase text-[#00D4FF]/60">
+              Fair Rent Engine
+            </span>
+          </div>
           <button
             onClick={onBack}
-            className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-700 transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 text-xs font-mono text-white/30 hover:text-[#00D4FF] transition-colors cursor-pointer"
           >
             <ArrowLeft size={12} /> New analysis
           </button>
         </div>
       </div>
 
-      <div className="max-w-[800px] mx-auto px-5 py-10 sm:py-14">
+      <div className="relative z-10 max-w-[820px] mx-auto px-5 py-10 sm:py-14">
         <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0}>
           <ListingHeader listing={result.listing} />
         </motion.div>
@@ -64,15 +73,13 @@ export function ResultsShell({ result, onBack }: ResultsShellProps) {
           />
         </motion.div>
 
-        <div className="flex flex-col gap-6 mt-6">
+        <div className="flex flex-col gap-5 mt-5">
           <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={3}>
             <FairPriceCard listing={result.listing} pricing={result.pricing} />
           </motion.div>
-
           <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={4}>
             <SeasonalSignalCard pricing={result.pricing} listing={result.listing} />
           </motion.div>
-
           <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={5}>
             <BuildingScorecardGrid
               violations={result.violations}
@@ -81,17 +88,12 @@ export function ResultsShell({ result, onBack }: ResultsShellProps) {
               litigations={result.litigations}
             />
           </motion.div>
-
           <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={6}>
             <NeighborhoodSafetyCard crime={result.crime} />
           </motion.div>
-
           {result.comparables.length > 0 && (
             <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={7}>
-              <ComparablesCard
-                comparables={result.comparables}
-                currentZip={result.listing.zip_code}
-              />
+              <ComparablesCard comparables={result.comparables} currentZip={result.listing.zip_code} />
             </motion.div>
           )}
         </div>

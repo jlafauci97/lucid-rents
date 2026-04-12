@@ -13,13 +13,10 @@ export function PricingVerdict({ askingVsFairPct, fairPrice, askingPrice, redFla
   const isOverpriced = askingVsFairPct > 5;
   const isUnderpriced = askingVsFairPct < -5;
 
-  // Clamp percentage for gauge display (-40% to +40%)
   const clampedPct = Math.max(-40, Math.min(40, askingVsFairPct));
-  // Map to 0-180 degrees (90 = fair)
   const angle = 90 + (clampedPct / 40) * 90;
 
-  const color = isOverpriced ? "#dc2626" : isUnderpriced ? "#059669" : "#6b7280";
-  const bgGlow = isOverpriced ? "rgba(220,38,38,0.06)" : isUnderpriced ? "rgba(5,150,105,0.06)" : "rgba(107,114,128,0.04)";
+  const color = isOverpriced ? "#ef4444" : isUnderpriced ? "#00D4FF" : "#6b7280";
   const label = isOverpriced
     ? `${redFlagCount > 0 ? `${redFlagCount} red flag${redFlagCount > 1 ? "s" : ""} · ` : ""}${Math.round(askingVsFairPct)}% overpriced`
     : isUnderpriced
@@ -27,74 +24,45 @@ export function PricingVerdict({ askingVsFairPct, fairPrice, askingPrice, redFla
       : "Priced within fair range";
 
   const verdictWord = isOverpriced ? "Overpriced" : isUnderpriced ? "Good Deal" : "Fair";
-
   const fmt = (n: number) => "$" + Math.round(n).toLocaleString();
 
   return (
-    <div className="bg-white border border-[#e8e6e1] rounded-2xl p-6 sm:p-8 overflow-hidden" style={{ background: `linear-gradient(135deg, white 60%, ${bgGlow})` }}>
+    <div className="bg-white/[0.03] border border-white/[0.08] rounded-2xl p-6 sm:p-8 mb-1 backdrop-blur-sm">
       <div className="flex flex-col sm:flex-row items-center gap-6">
         {/* SVG Gauge */}
-        <div className="flex-shrink-0 relative">
+        <div className="flex-shrink-0">
           <svg width="180" height="100" viewBox="0 0 180 100">
-            {/* Background arc */}
-            <path
-              d="M 15 90 A 75 75 0 0 1 165 90"
-              fill="none"
-              stroke="#eee"
-              strokeWidth="10"
-              strokeLinecap="round"
-            />
-            {/* Green zone */}
-            <path
-              d="M 15 90 A 75 75 0 0 1 55 25"
-              fill="none"
-              stroke="#bbf7d0"
-              strokeWidth="10"
-              strokeLinecap="round"
-            />
-            {/* Yellow zone */}
-            <path
-              d="M 55 25 A 75 75 0 0 1 125 25"
-              fill="none"
-              stroke="#fef9c3"
-              strokeWidth="10"
-              strokeLinecap="round"
-            />
-            {/* Red zone */}
-            <path
-              d="M 125 25 A 75 75 0 0 1 165 90"
-              fill="none"
-              stroke="#fecaca"
-              strokeWidth="10"
-              strokeLinecap="round"
-            />
-            {/* Needle */}
+            <path d="M 15 90 A 75 75 0 0 1 165 90" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="8" strokeLinecap="round" />
+            <path d="M 15 90 A 75 75 0 0 1 55 25" fill="none" stroke="#00D4FF" strokeWidth="8" strokeLinecap="round" opacity="0.3" />
+            <path d="M 55 25 A 75 75 0 0 1 125 25" fill="none" stroke="#fbbf24" strokeWidth="8" strokeLinecap="round" opacity="0.3" />
+            <path d="M 125 25 A 75 75 0 0 1 165 90" fill="none" stroke="#ef4444" strokeWidth="8" strokeLinecap="round" opacity="0.3" />
             <motion.line
-              x1="90"
-              y1="90"
-              x2="90"
-              y2="22"
+              x1="90" y1="90" x2="90" y2="24"
               stroke={color}
-              strokeWidth="2.5"
+              strokeWidth="2"
               strokeLinecap="round"
               initial={{ rotate: 0 }}
               animate={{ rotate: angle - 90 }}
               transition={{ type: "spring", stiffness: 60, damping: 15, delay: 0.3 }}
               style={{ transformOrigin: "90px 90px" }}
+              filter="url(#glow)"
             />
-            {/* Center dot */}
-            <circle cx="90" cy="90" r="5" fill={color} />
-            {/* Labels */}
-            <text x="15" y="98" fontSize="8" fill="#aaa" textAnchor="middle">Low</text>
-            <text x="90" y="12" fontSize="8" fill="#aaa" textAnchor="middle">Fair</text>
-            <text x="165" y="98" fontSize="8" fill="#aaa" textAnchor="middle">High</text>
+            <defs>
+              <filter id="glow">
+                <feGaussianBlur stdDeviation="3" result="blur" />
+                <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+              </filter>
+            </defs>
+            <circle cx="90" cy="90" r="4" fill={color} />
+            <text x="15" y="98" fontSize="7" fill="rgba(255,255,255,0.2)" fontFamily="monospace" textAnchor="middle">LOW</text>
+            <text x="90" y="12" fontSize="7" fill="rgba(255,255,255,0.2)" fontFamily="monospace" textAnchor="middle">FAIR</text>
+            <text x="165" y="98" fontSize="7" fill="rgba(255,255,255,0.2)" fontFamily="monospace" textAnchor="middle">HIGH</text>
           </svg>
         </div>
 
-        {/* Text verdict */}
         <div className="text-center sm:text-left flex-1">
           <motion.p
-            className="text-3xl sm:text-4xl font-black tracking-tight"
+            className="text-3xl sm:text-4xl font-black font-mono tracking-tight"
             style={{ color }}
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -102,29 +70,23 @@ export function PricingVerdict({ askingVsFairPct, fairPrice, askingPrice, redFla
           >
             {verdictWord}
           </motion.p>
-          <p className="text-sm text-gray-500 mt-1">{label}</p>
-          <div className="flex items-center gap-4 mt-3">
-            <div>
-              <p className="text-xs text-gray-400 uppercase tracking-wide">Fair</p>
-              <p className="text-lg font-bold text-[#059669]">{fmt(fairPrice)}</p>
-            </div>
-            <div className="w-px h-8 bg-gray-200" />
-            <div>
-              <p className="text-xs text-gray-400 uppercase tracking-wide">Asking</p>
-              <p className="text-lg font-bold" style={{ color }}>{fmt(askingPrice)}</p>
-            </div>
-            <div className="w-px h-8 bg-gray-200" />
-            <div>
-              <p className="text-xs text-gray-400 uppercase tracking-wide">Diff</p>
-              <p className="text-lg font-bold" style={{ color }}>
-                {askingVsFairPct > 0 ? "+" : ""}{Math.round(askingVsFairPct)}%
-              </p>
-            </div>
+          <p className="text-xs font-mono text-white/40 mt-1">{label}</p>
+          <div className="flex items-center gap-4 mt-4">
+            {[
+              { label: "FAIR", value: fmt(fairPrice), color: "#00D4FF" },
+              { label: "ASKING", value: fmt(askingPrice), color },
+              { label: "DIFF", value: `${askingVsFairPct > 0 ? "+" : ""}${Math.round(askingVsFairPct)}%`, color },
+            ].map((s) => (
+              <div key={s.label}>
+                <p className="text-[9px] font-mono uppercase tracking-wider text-white/20">{s.label}</p>
+                <p className="text-base font-bold font-mono" style={{ color: s.color }}>{s.value}</p>
+              </div>
+            ))}
           </div>
         </div>
       </div>
-      <p className="text-[10px] text-gray-300 mt-4 text-center sm:text-left">
-        Based on Zillow ZORI index, comparable listings, amenity adjustments, and seasonal factors
+      <p className="text-[9px] font-mono text-white/15 mt-4 text-center sm:text-left">
+        Based on Zillow ZORI index, amenity adjustments, and seasonal factors
       </p>
     </div>
   );
