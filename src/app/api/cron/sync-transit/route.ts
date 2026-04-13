@@ -150,8 +150,103 @@ function getFerryTerminals(): TransitStop[] {
   }));
 }
 
+// ── CTA L Stops (data.cityofchicago.org) ────────────────────────────
+async function fetchCTALStops(): Promise<TransitStop[]> {
+  const url =
+    "https://data.cityofchicago.org/resource/8pix-ypme.json?$limit=500";
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`CTA L API ${res.status}`);
+  const data = await res.json();
+
+  const lineNames: Record<string, string> = {
+    red: "Red",
+    blue: "Blue",
+    g: "Green",
+    brn: "Brown",
+    p: "Purple",
+    pnk: "Pink",
+    o: "Orange",
+    y: "Yellow",
+  };
+
+  return data
+    .filter((s: Record<string, unknown>) => s.location)
+    .map((s: Record<string, unknown>) => {
+      const loc = s.location as
+        | { latitude?: string; longitude?: string }
+        | undefined;
+      const lat = loc?.latitude ? parseFloat(loc.latitude) : null;
+      const lng = loc?.longitude ? parseFloat(loc.longitude) : null;
+      if (!lat || !lng) return null;
+
+      const routes: string[] = [];
+      for (const [key, name] of Object.entries(lineNames)) {
+        if (s[key] === true || s[key] === "true") routes.push(name);
+      }
+
+      return {
+        type: "rail" as const,
+        stop_id: `CTA-L-${s.stop_id || s.map_id}`,
+        name: s.station_name
+          ? String(s.station_name)
+          : String(s.stop_name || ""),
+        latitude: lat,
+        longitude: lng,
+        routes,
+        ada_accessible:
+          s.ada === true || s.ada === "true"
+            ? true
+            : s.ada === false || s.ada === "false"
+              ? false
+              : null,
+      };
+    })
+    .filter(Boolean) as TransitStop[];
+}
+
+// ── CTA Bus Stops (data.cityofchicago.org) ──────────────────────────
+async function fetchCTABusStops(): Promise<TransitStop[]> {
+  const url =
+    "https://data.cityofchicago.org/resource/hvnx-qtky.json?$limit=50000";
+  const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+  if (!res.ok) {
+    console.warn(
+      `CTA Bus SODA API returned ${res.status}, skipping bus stops`
+    );
+    return [];
+  }
+  const data = await res.json();
+  if (!data || data.length === 0) return [];
+
+  return data
+    .filter((s: Record<string, unknown>) => {
+      const geom = s.the_geom as
+        | { coordinates?: number[] }
+        | undefined;
+      return geom?.coordinates && geom.coordinates.length >= 2;
+    })
+    .map((s: Record<string, unknown>) => {
+      const geom = s.the_geom as { coordinates: number[] };
+      return {
+        type: "bus" as const,
+        stop_id: `CTA-BUS-${s.systemstop || s.public_nam}`,
+        name: s.public_nam
+          ? String(s.public_nam)
+          : `${s.street || ""} & ${s.cross_st || ""}`.trim(),
+        latitude: geom.coordinates[1],
+        longitude: geom.coordinates[0],
+        routes: s.routesstpg
+          ? String(s.routesstpg)
+              .split(",")
+              .map((r: string) => r.trim())
+          : [],
+        ada_accessible: null,
+      };
+    });
+}
+
 // ── Upsert helpers ─────────────────────────────────────────────────
-async function upsertBatch(stops: TransitStop[]) {
+async function upsertBatch(stops: TransitStop[], metro = "nyc") {
   const rows = stops.map((s) => ({
     type: s.type,
     stop_id: s.stop_id,
@@ -160,7 +255,7 @@ async function upsertBatch(stops: TransitStop[]) {
     longitude: s.longitude,
     routes: s.routes,
     ada_accessible: s.ada_accessible,
-    metro: "nyc",
+    metro,
     updated_at: new Date().toISOString(),
   }));
 
@@ -186,10 +281,32 @@ export async function GET() {
     ]);
     const ferry = getFerryTerminals();
 
-    // Upsert each type
+    // Upsert each NYC type
     for (const [type, stops] of Object.entries({ subway, bus, citibike, ferry })) {
-      await upsertBatch(stops);
+      await upsertBatch(stops, "nyc");
       counts[type] = stops.length;
+    }
+
+    // ── Chicago CTA ──
+    try {
+      const [lStops, busStopsCTA] = await Promise.all([
+        fetchCTALStops(),
+        fetchCTABusStops(),
+      ]);
+
+      if (lStops.length > 0) {
+        await upsertBatch(lStops, "chicago");
+      }
+      counts["cta_l"] = lStops.length;
+
+      if (busStopsCTA.length > 0) {
+        await upsertBatch(busStopsCTA, "chicago");
+      }
+      counts["cta_bus"] = busStopsCTA.length;
+    } catch (err) {
+      console.error("CTA sync error:", err);
+      counts["cta_l"] = 0;
+      counts["cta_bus"] = 0;
     }
 
     return NextResponse.json({
