@@ -22,6 +22,7 @@ import { LandlordActionLinks } from "@/components/landlord/LandlordActionLinks";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { landlordSlug, landlordUrl, landlordJsonLd, breadcrumbJsonLd, canonicalUrl, buildingUrl, cityPath } from "@/lib/seo";
+import { CITY_META } from "@/lib/cities";
 import { deriveScore } from "@/lib/constants";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
@@ -117,6 +118,20 @@ export default async function LandlordDetailPage({
   ]);
   if (!buildings || buildings.length === 0) notFound();
 
+  // Check if this landlord is on the Chicago scofflaw list
+  const scofflawRecords = city === "chicago" && buildings && buildings.length > 0
+    ? await (async () => {
+        const ownerName = buildings[0].owner_name;
+        if (!ownerName) return [];
+        const { data } = await supabase
+          .from("chicago_scofflaws")
+          .select("id, respondent_name, address, unpaid_fines, violation_count, last_violation_date")
+          .ilike("respondent_name", ownerName)
+          .limit(20);
+        return data || [];
+      })()
+    : [];
+
   const cityAvgScore = typeof cityAvgRpc.data === "number" ? cityAvgRpc.data : 5;
 
   // If found via old URL format, redirect to slug URL
@@ -210,7 +225,7 @@ export default async function LandlordDetailPage({
               </h1>
               <p className="text-blue-200/80 mt-1.5 text-sm sm:text-base">
                 Property owner with {totalBuildings} building
-                {totalBuildings !== 1 ? "s" : ""} in New York City
+                {totalBuildings !== 1 ? "s" : ""} in {CITY_META[city]?.fullName ?? "New York City"}
               </p>
               <div className="mt-3 flex flex-wrap items-center gap-3">
                 <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
@@ -259,6 +274,34 @@ export default async function LandlordDetailPage({
           })}
         </div>
       </div>
+
+      {/* Scofflaw Warning Banner */}
+      {scofflawRecords.length > 0 && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+          <div className="bg-red-50 border border-red-200 rounded-xl p-5">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-[#DC2626] mt-0.5 flex-shrink-0" />
+              <div>
+                <h3 className="text-sm font-bold text-[#DC2626] mb-1">
+                  Building Code Scofflaw
+                </h3>
+                <p className="text-sm text-[#991B1B] mb-3">
+                  This landlord appears on Chicago&apos;s official Building Code Scofflaw List
+                  with {scofflawRecords.length} propert{scofflawRecords.length !== 1 ? "ies" : "y"}.
+                  Scofflaw landlords have accumulated significant unpaid building code violation fines.
+                </p>
+                <Link
+                  href={`/${city}/problem-landlords`}
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-[#DC2626] hover:text-[#991B1B] transition-colors"
+                >
+                  View Full Scofflaw List
+                  <ExternalLink className="w-3 h-3" />
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
