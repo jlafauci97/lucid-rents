@@ -34,6 +34,13 @@ const LA_SODA_BASE = "https://data.lacity.org/resource";
 const LA_DATASET = "9yda-i4ya";
 
 /* ---------------------------------------------------------------------------
+ * Chicago Energy Benchmarking config
+ * -------------------------------------------------------------------------*/
+
+const CHICAGO_SODA_BASE = "https://data.cityofchicago.org/resource";
+const CHICAGO_ENERGY_DATASET = "xq83-jr8c";
+
+/* ---------------------------------------------------------------------------
  * Shared helpers
  * -------------------------------------------------------------------------*/
 
@@ -139,6 +146,42 @@ function transformLaRecord(r: any) {
 }
 
 /* ---------------------------------------------------------------------------
+ * Chicago transform
+ * -------------------------------------------------------------------------*/
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function transformChicagoRecord(r: any) {
+  if (!r.id) return null;
+  const reportYear = parseInt2(r.data_year);
+  if (!reportYear) return null;
+
+  return {
+    property_id: `CHI-ENERGY-${r.id}`,
+    property_name: r.address || null,
+    property_type: r.primary_property_type || null,
+    report_year: reportYear,
+    bbl: null,
+    apn: null,
+    address: r.address || null,
+    borough: "Chicago",
+    zip_code: r.zip_code || null,
+    energy_star_score: parseInt2(r.energy_star_score),
+    site_eui: parseNum(r.site_eui_kbtu_sq_ft),
+    weather_normalized_eui: parseNum(r.weather_normalized_site_eui_kbtu_sq_ft),
+    total_ghg_emissions: parseNum(r.total_ghg_emissions_metric_tons_co2e),
+    electricity_use: parseNum(r.electricity_use_kbtu),
+    natural_gas_use: parseNum(r.natural_gas_use_kbtu),
+    water_use: null,
+    year_built: parseInt2(r.year_built),
+    number_of_buildings: parseInt2(r.of_buildings),
+    property_gfa: parseNum(r.gross_floor_area_buildings_sq_ft),
+    latitude: parseNum(r.latitude),
+    longitude: parseNum(r.longitude),
+    metro: "chicago",
+  };
+}
+
+/* ---------------------------------------------------------------------------
  * Generic SODA sync function
  * -------------------------------------------------------------------------*/
 
@@ -174,9 +217,11 @@ async function syncSodaDataset(opts: {
       $order: "property_id ASC",
     });
 
-    // LA dataset uses building_id rather than property_id for ordering
+    // LA dataset uses building_id, Chicago uses id for ordering
     if (sourceKey === "energy-la") {
       params.set("$order", "building_id ASC");
+    } else if (sourceKey === "energy-chicago") {
+      params.set("$order", "id ASC");
     }
 
     const res = await fetch(`${sodaBase}/${dataset}.json?${params}`);
@@ -288,6 +333,24 @@ async function backfillLaBoroughs() {
 }
 
 /* ---------------------------------------------------------------------------
+ * Link Chicago energy records to buildings by address
+ * -------------------------------------------------------------------------*/
+
+async function linkChicagoBuildingsByAddress() {
+  await supabase.rpc("exec_sql", {
+    query: `
+      UPDATE energy_benchmarks e
+      SET building_id = b.id
+      FROM buildings b
+      WHERE e.metro = 'chicago'
+        AND e.building_id IS NULL
+        AND b.metro = 'chicago'
+        AND UPPER(e.address) = UPPER(b.full_address)
+    `,
+  });
+}
+
+/* ---------------------------------------------------------------------------
  * GET handler
  * -------------------------------------------------------------------------*/
 
@@ -310,8 +373,16 @@ export async function GET() {
       .order("completed_at", { ascending: false })
       .limit(1);
 
+    const { data: chicagoLog } = await supabase
+      .from("sync_log")
+      .select("completed_at")
+      .eq("source", "energy-chicago")
+      .order("completed_at", { ascending: false })
+      .limit(1);
+
     const nycLastSync = nycLog?.[0]?.completed_at || null;
     const laLastSync = laLog?.[0]?.completed_at || null;
+    const chicagoLastSync = chicagoLog?.[0]?.completed_at || null;
 
     // --- NYC sync ---
     const nycUpserted = await syncSodaDataset({
@@ -337,13 +408,27 @@ export async function GET() {
       lastSync: laLastSync,
     });
 
+    // --- Chicago sync ---
+    const chicagoUpserted = await syncSodaDataset({
+      sodaBase: CHICAGO_SODA_BASE,
+      dataset: CHICAGO_ENERGY_DATASET,
+      filter: "id IS NOT NULL",
+      transform: transformChicagoRecord,
+      sourceKey: "energy-chicago",
+      startTime,
+      lastSync: chicagoLastSync,
+    });
+
     // Link + update
-    const totalUpserted = nycUpserted + laUpserted;
+    const totalUpserted = nycUpserted + laUpserted + chicagoUpserted;
     if (totalUpserted > 0) {
       if (nycUpserted > 0) await linkBuildingsByBbl();
       if (laUpserted > 0) {
         await linkBuildingsByApn();
         await backfillLaBoroughs();
+      }
+      if (chicagoUpserted > 0) {
+        await linkChicagoBuildingsByAddress();
       }
       await updateBuildingScores();
     }
@@ -364,12 +449,20 @@ export async function GET() {
         completed_at: now,
       });
     }
+    if (chicagoUpserted > 0) {
+      await supabase.from("sync_log").insert({
+        source: "energy-chicago",
+        records_synced: chicagoUpserted,
+        completed_at: now,
+      });
+    }
 
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
     return NextResponse.json({
       ok: true,
       nyc_synced: nycUpserted,
       la_synced: laUpserted,
+      chicago_synced: chicagoUpserted,
       elapsed: `${elapsed}s`,
     });
   } catch (err) {
