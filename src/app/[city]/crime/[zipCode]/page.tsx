@@ -7,6 +7,7 @@ import { buildingUrl, canonicalUrl, neighborhoodUrl, cityPath, breadcrumbJsonLd 
 import { getNeighborhoodName } from "@/lib/nyc-neighborhoods";
 import { CITY_META } from "@/lib/cities";
 import type { City } from "@/lib/cities";
+import { normalizeScore } from "@/lib/constants";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
 import dynamic from "next/dynamic";
@@ -358,7 +359,7 @@ export default async function CrimeZipPage({
                             <span>
                               Score:{" "}
                               <span className="font-semibold">
-                                {b.overall_score}
+                                {normalizeScore(b.overall_score).toFixed(1)}/5
                               </span>
                             </span>
                           )}

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { deriveScore } from "@/lib/constants";
+import { deriveScore, normalizeScore } from "@/lib/constants";
 import { isValidCity } from "@/lib/cities";
 import { checkRateLimit } from "@/lib/rate-limit";
 
@@ -16,7 +16,7 @@ export async function GET(request: Request) {
     }
     const borough = searchParams.get("borough") || "";
     const minScore = parseFloat(searchParams.get("minScore") || "0");
-    const maxScore = parseFloat(searchParams.get("maxScore") || "10");
+    const maxScore = parseFloat(searchParams.get("maxScore") || "5");
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -70,9 +70,10 @@ export async function GET(request: Request) {
         if (!centroid) return null;
 
         // Use overall_score if available, otherwise derive from violations/complaints
-        const score = b.overall_score != null
+        const rawScore = b.overall_score != null
           ? b.overall_score
           : deriveScore(b.violation_count || 0, b.complaint_count || 0);
+        const score = normalizeScore(rawScore);
 
         if (score < minScore || score > maxScore) return null;
 

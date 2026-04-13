@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { buildingUrl } from "@/lib/seo";
+import { normalizeScore } from "@/lib/constants";
 import { MapPin, AlertTriangle, Building2 } from "lucide-react";
 
 interface NearbyBuildingsProps {
@@ -12,13 +13,14 @@ interface NearbyBuildingsProps {
 
 function letterGrade(score: number | null): { letter: string; color: string; bg: string } {
   if (score == null) return { letter: "?", color: "#3B82F6", bg: "#eff6ff" };
-  if (score >= 9) return { letter: "A+", color: "#15803d", bg: "#dcfce7" };
-  if (score >= 8) return { letter: "A", color: "#16a34a", bg: "#dcfce7" };
-  if (score >= 7) return { letter: "B+", color: "#65a30d", bg: "#ecfccb" };
-  if (score >= 6) return { letter: "B", color: "#ca8a04", bg: "#fef9c3" };
-  if (score >= 5) return { letter: "C+", color: "#d97706", bg: "#fef3c7" };
-  if (score >= 4) return { letter: "C", color: "#ea580c", bg: "#ffedd5" };
-  if (score >= 3) return { letter: "D", color: "#dc2626", bg: "#fee2e2" };
+  const s = normalizeScore(score);
+  if (s >= 4.5) return { letter: "A+", color: "#15803d", bg: "#dcfce7" };
+  if (s >= 4) return { letter: "A", color: "#16a34a", bg: "#dcfce7" };
+  if (s >= 3.5) return { letter: "B+", color: "#65a30d", bg: "#ecfccb" };
+  if (s >= 3) return { letter: "B", color: "#ca8a04", bg: "#fef9c3" };
+  if (s >= 2.5) return { letter: "C+", color: "#d97706", bg: "#fef3c7" };
+  if (s >= 2) return { letter: "C", color: "#ea580c", bg: "#ffedd5" };
+  if (s >= 1) return { letter: "D", color: "#dc2626", bg: "#fee2e2" };
   return { letter: "F", color: "#991b1b", bg: "#fee2e2" };
 }
 
@@ -107,18 +109,18 @@ export async function NearbyBuildings({ buildingId, zipCode, borough, city }: Ne
                     <div
                       className="h-full rounded-full"
                       style={{
-                        width: `${(Number(b.overall_score) / 10) * 100}%`,
+                        width: `${(normalizeScore(b.overall_score) / 5) * 100}%`,
                         backgroundColor:
-                          Number(b.overall_score) >= 7
+                          normalizeScore(b.overall_score) >= 3.5
                             ? "#22c55e"
-                            : Number(b.overall_score) >= 4
+                            : normalizeScore(b.overall_score) >= 2
                               ? "#f59e0b"
                               : "#ef4444",
                       }}
                     />
                   </div>
                   <span className="text-xs font-semibold text-[#0F1D2E]">
-                    {b.overall_score}/10
+                    {normalizeScore(b.overall_score).toFixed(1)}/5
                   </span>
                 </div>
               )}
