@@ -30,12 +30,14 @@ import { FloodRiskCard } from "@/components/building/FloodRiskCard";
 import { ChicagoInfoCard } from "@/components/building/ChicagoInfoCard";
 import { MiamiInfoCard } from "@/components/building/MiamiInfoCard";
 import { HoustonInfoCard } from "@/components/building/HoustonInfoCard";
+import { LAInfoCard } from "@/components/building/LAInfoCard";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { SLUG_TO_BOROUGH, regionFromSlug, buildingUrl, canonicalUrl, buildingJsonLd, breadcrumbJsonLd, landlordUrl, cityPath } from "@/lib/seo";
 import { CITY_META, VALID_CITIES, type City } from "@/lib/cities";
 import { TrackBuildingView } from "@/components/building/TrackBuildingView";
 import { T } from "@/lib/design-tokens";
+import { ShieldCheck, ShieldX } from "lucide-react";
 import { cache } from "react";
 import type { Building, EnergyBenchmark } from "@/types";
 import type { Metadata } from "next";
@@ -138,14 +140,10 @@ export async function generateMetadata({
     return { title: "Building Not Found" };
   }
 
-  // Prefer the building's name (e.g., "Carnegie Mews") over the address for SEO + UX.
-  // Fall back to the address when no name is set.
-  const buildingLabel = building.name || building.full_address;
-  const titleSuffix = building.name ? ` (${building.full_address})` : "";
   const title =
     building.review_count > 0 && building.overall_score != null
-      ? `${buildingLabel}${titleSuffix} — Rated ${building.overall_score}/5 by Tenants`
-      : `${buildingLabel}${titleSuffix} — Violations, Reviews & Building Score`;
+      ? `${building.full_address} — Rated ${building.overall_score}/5 by Tenants`
+      : `${building.full_address} — Violations, Reviews & Building Score`;
   const isChicagoMeta = cityParam === "chicago" || cityParam === "miami" || cityParam === "houston";
   const metaViolationCount = isChicagoMeta
     ? (building.dob_violation_count || 0)
@@ -157,7 +155,15 @@ export async function generateMetadata({
   if (building.bedbug_report_count > 0) descParts.push(`${building.bedbug_report_count} bedbug reports`);
   if (building.eviction_count > 0) descParts.push(`${building.eviction_count} evictions`);
   const cityName = CITY_META[cityParam as keyof typeof CITY_META]?.name || "NYC";
-  const description = `${buildingLabel} at ${building.full_address} has ${descParts.join(" and ")}. Read tenant reviews, check bedbug history, and see the building score — free.`;
+  // LA-specific SEO additions
+  const laExtras: string[] = [];
+  if (cityParam === "los-angeles") {
+    if (building.is_rent_stabilized) laExtras.push("RSO protected");
+    if (building.fire_hazard_zone) laExtras.push(`${building.fire_hazard_zone} fire zone`);
+    if (building.ellis_act_filing) laExtras.push("Ellis Act history");
+  }
+  const laExtraStr = laExtras.length > 0 ? ` ${laExtras.join(", ")}.` : "";
+  const description = `${building.full_address} has ${descParts.join(" and ")}.${laExtraStr} Read tenant reviews, check bedbug history, and see the building score — free.`;
   const url = canonicalUrl(buildingUrl(building, cityParam as import("@/lib/cities").City));
 
   return {
@@ -217,9 +223,6 @@ function BottomSkeleton() {
 export default async function BuildingSlugPage({ params }: BuildingSlugPageProps) {
   const { city: cityParam, borough: boroughSlug, slug } = await params;
   const city = (cityParam || "nyc") as City;
-  // Current internal path used for same-URL redirect detection (avoids loops when
-  // borough slug ↔ display-name round-tripping is lossy, e.g. "Miami-Dade" vs "Miami Dade")
-  const currentPath = `/${city}/building/${boroughSlug}/${slug}`;
   let building = await getBuilding(boroughSlug, slug, city);
 
   if (!building) {
@@ -227,28 +230,15 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
     const match = await findBuildingAnywhere(slug);
     if (match) {
       const correctCity = metroToCity(match.metro);
-      const target = buildingUrl(match, correctCity);
-      // Guard: if the redirect target resolves back to the same internal path
-      // (e.g. borough display-name de-slug roundtrip mismatch), use the building
-      // we just found instead of looping forever.
-      const targetInternal = `/${correctCity}${target.replace(/^\/[A-Z]{2}\/[A-Za-z-]+/, "")}`;
-      if (targetInternal === currentPath) {
-        building = match as Building;
-      } else {
-        redirect(target);
-      }
+      redirect(buildingUrl(match, correctCity));
     }
-    if (!building) notFound();
+    notFound();
   }
 
   // If the building's metro doesn't match the URL city, redirect to the correct city
   const buildingCity = metroToCity(building.metro);
   if (buildingCity !== city) {
-    const target = buildingUrl(building, buildingCity);
-    const targetInternal = `/${buildingCity}${target.replace(/^\/[A-Z]{2}\/[A-Za-z-]+/, "")}`;
-    if (targetInternal !== currentPath) {
-      redirect(target);
-    }
+    redirect(buildingUrl(building, buildingCity));
   }
 
   const supabase = await createClient();
@@ -319,6 +309,9 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
     chicagoDemolitions,
     chicagoLeadInspections,
     chicagoAffordableUnits,
+    chicagoRodentComplaints,
+    chicagoRltoViolations,
+    chicagoEnergy,
     miamiRecerts,
     miamiUnsafeStructures,
     miamiStormDamage,
@@ -332,6 +325,9 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
     isChicago ? safe(supabase.from("chicago_demolitions").select("id, permit_number, issue_date, status, work_description, contractor").eq("building_id", buildingId).order("issue_date", { ascending: false }).limit(5), []) : Promise.resolve([]),
     isChicago ? safe(supabase.from("chicago_lead_inspections").select("id, inspection_date, result, risk_level, hazard_type").eq("building_id", buildingId).order("inspection_date", { ascending: false }).limit(10), []) : Promise.resolve([]),
     isChicago ? safe(supabase.from("chicago_affordable_units").select("id, project_name, affordable_units, total_units, income_requirement, status").eq("building_id", buildingId).limit(5), []) : Promise.resolve([]),
+    isChicago ? safe(supabase.from("chicago_rodent_complaints").select("id, created_date, status, service_type").eq("building_id", buildingId).order("created_date", { ascending: false }).limit(20), []) : Promise.resolve([]),
+    isChicago ? safe(supabase.from("chicago_rlto_violations").select("id, case_number, violation_date, violation_description, status").eq("building_id", buildingId).order("violation_date", { ascending: false }).limit(10), []) : Promise.resolve([]),
+    isChicago ? safe(supabase.from("energy_benchmarks").select("energy_star_score, report_year, site_eui").eq("building_id", buildingId).order("report_year", { ascending: false }).limit(1), []) : Promise.resolve([]),
     isMiami ? safe(supabase.from("miami_forty_year_recerts").select("id, recertification_status, due_date, completion_date, engineer_name").eq("building_id", buildingId).limit(1), []) : Promise.resolve([]),
     isMiami ? safe(supabase.from("miami_unsafe_structures").select("id, case_number, violation_type, violation_description, case_date, status").eq("building_id", buildingId).order("case_date", { ascending: false }).limit(5), []) : Promise.resolve([]),
     isMiami ? safe(supabase.from("miami_storm_damage").select("id, disaster_name, disaster_date, damage_category, fema_verified_loss, flood_damage, wind_damage").eq("building_id", buildingId).order("disaster_date", { ascending: false }).limit(5), []) : Promise.resolve([]),
@@ -341,6 +337,12 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
     isHouston ? safe(supabase.from("houston_tax_protests").select("id, protest_year, original_value, final_value, reduction_pct, outcome").eq("building_id", buildingId).order("protest_year", { ascending: false }).limit(10), []) : Promise.resolve([]),
     isHouston ? safe(supabase.from("houston_affordable_housing").select("id, project_name, affordable_units, total_units, income_requirement, program_type, status").eq("building_id", buildingId).limit(5), []) : Promise.resolve([]),
     isLA ? safe(supabase.from("la_earthquake_retrofit").select("id, retrofit_type, compliance_status, ordinance, deadline, completion_date").eq("building_id", buildingId).limit(1), []) : Promise.resolve([]),
+  ]);
+
+  // LA-specific: buyouts, SCEP inspections
+  const [laBuyouts, laScep] = await Promise.all([
+    isLA ? safe(supabase.from("lahd_tenant_buyouts").select("id, disclosure_date, compensation_amount").eq("building_id", buildingId).order("disclosure_date", { ascending: false }).limit(10), []) : Promise.resolve([]),
+    isLA ? safe(supabase.from("lahd_scep_inspections").select("id, inspection_date, compliance_status, violations_found").eq("building_id", buildingId).order("inspection_date", { ascending: false }).limit(1), []) : Promise.resolve([]),
   ]);
 
   // Dewey rent intelligence: compute above-the-fold metrics
@@ -438,7 +440,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
               { label: "Home", href: "/" },
               { label: "Buildings", href: cityPath("/buildings", city) },
               { label: building.borough, href: cityPath(`/buildings/${boroughSlug}`, city) },
-              { label: building.name || shortAddress, href: buildingUrl(building, city) },
+              { label: shortAddress, href: buildingUrl(building, city) },
             ]}
           />
         </div>
@@ -478,6 +480,37 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
 
           {/* Sidebar — static props render immediately, client components fetch independently */}
           <div className="space-y-6">
+            {/* RSO Hero — LA's #1 searched topic */}
+            {isLA && building.is_rent_stabilized && (
+              <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border-2 border-emerald-200 rounded-2xl p-4 space-y-2">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-6 h-6 text-emerald-600" />
+                  <span className="text-lg font-bold text-emerald-800">RSO Protected</span>
+                </div>
+                <p className="text-sm text-emerald-700">
+                  This building is covered by LA&apos;s Rent Stabilization Ordinance.
+                  Annual rent increases are capped at <strong>3%</strong> (effective Feb 2026).
+                </p>
+                {building.year_built && (
+                  <p className="text-xs text-emerald-600">Built {building.year_built} — pre-Oct 1978 with 2+ units</p>
+                )}
+                <a href="https://housing.lacity.gov/rental-property-owners/rso-property-search" target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-emerald-700 hover:text-emerald-900">
+                  Verify on LAHD &rarr;
+                </a>
+              </div>
+            )}
+            {isLA && !building.is_rent_stabilized && building.year_built && building.year_built >= 1978 && (
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 space-y-2">
+                <div className="flex items-center gap-2">
+                  <ShieldX className="w-5 h-5 text-amber-600" />
+                  <span className="text-base font-bold text-amber-800">Not RSO Protected</span>
+                </div>
+                <p className="text-xs text-amber-700">
+                  Built {building.year_built} — after Oct 1978 cutoff. Subject to AB 1482 caps (max 10% annual increase).
+                </p>
+              </div>
+            )}
+
             {/* Building Info — hide if every field is empty */}
             {(building.owner_name || building.building_class || building.land_use ||
               building.residential_units != null || (building.commercial_units != null && building.commercial_units > 0) ||
@@ -620,6 +653,11 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
                 demolitions={chicagoDemolitions}
                 leadInspections={chicagoLeadInspections}
                 affordableUnits={chicagoAffordableUnits}
+                rodentComplaints={chicagoRodentComplaints}
+                rltoViolations={chicagoRltoViolations}
+                energyRating={chicagoEnergy?.[0]?.energy_star_score}
+                energyYear={chicagoEnergy?.[0]?.report_year}
+                siteEui={chicagoEnergy?.[0]?.site_eui}
               />
             )}
 
@@ -645,6 +683,26 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
                 industrialProximity={houstonIndustrial}
                 taxProtests={houstonTaxProtests}
                 affordableHousing={houstonAffordable}
+              />
+            )}
+
+            {/* LA Housing Info */}
+            {isLA && (
+              <LAInfoCard
+                ellisActFiling={building.ellis_act_filing ?? false}
+                ellisActDate={building.ellis_act_date}
+                buyoutCount={building.buyout_count ?? 0}
+                buyoutTotalAmount={building.buyout_total_amount}
+                buyouts={laBuyouts}
+                scepLastInspection={laScep[0]?.inspection_date ?? null}
+                scepComplianceStatus={laScep[0]?.compliance_status ?? null}
+                parkingType={building.parking_type}
+                parkingSpaces={building.parking_spaces}
+                carDependencyScore={building.car_dependency_score}
+                calenviroScreenPercentile={building.calenviroscreen_percentile}
+                fireHazardZone={building.fire_hazard_zone}
+                fairPlanRisk={building.fair_plan_risk ?? false}
+                rentRegistryStatus={building.rent_registry_status}
               />
             )}
 
