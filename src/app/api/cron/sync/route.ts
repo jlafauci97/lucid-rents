@@ -3073,6 +3073,161 @@ async function syncLAHDViolationSummary(
 }
 
 // ---------------------------------------------------------------------------
+// LA Energy & Water Benchmarking sync (data.lacity.org/resource/ze2p-ymza)
+// ---------------------------------------------------------------------------
+async function syncLAEnergy(
+  supabase: ReturnType<typeof getSupabaseAdmin>
+): Promise<SyncResult> {
+  const lastSync = await getLastSyncDate(supabase, "la_energy");
+  const logId = await createSyncLog(supabase, "la_energy");
+  const syncStartTime = new Date().toISOString();
+  const syncStartMs = Date.now();
+
+  let totalAdded = 0;
+  let totalLinked = 0;
+  const errors: string[] = [];
+  const affectedBuildingIds = new Set<string>();
+
+  try {
+    let offset = 0;
+    let hasMore = true;
+    let pagesFetched = 0;
+
+    while (hasMore) {
+      const url = buildLASodaUrl(
+        "ze2p-ymza",
+        `year_ending > '${lastSync}'`,
+        PAGE_SIZE,
+        offset,
+        "year_ending ASC"
+      );
+
+      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+      if (!res.ok) { errors.push(`LA Energy API error (offset ${offset}): ${res.status}`); break; }
+
+      const records = await res.json();
+      if (!records || records.length === 0) { hasMore = false; break; }
+
+      const rows = records
+        .filter((r: Record<string, unknown>) => r.property_name || r.energy_star_score || r.site_eui_kbtu_sf_)
+        .map((r: Record<string, unknown>) => ({
+          address: r.property_name ? String(r.property_name) : null,
+          report_year: r.year_ending ? parseInt(String(r.year_ending).slice(0, 4), 10) : null,
+          energy_star_score: r.energy_star_score ? parseFloat(String(r.energy_star_score)) : null,
+          site_eui: r.site_eui_kbtu_sf_ ? parseFloat(String(r.site_eui_kbtu_sf_)) : null,
+          source_eui: r.source_eui_kbtu_sf_ ? parseFloat(String(r.source_eui_kbtu_sf_)) : null,
+          total_ghg: r.total_ghg_emissions_metric_tons_co2e_ ? parseFloat(String(r.total_ghg_emissions_metric_tons_co2e_)) : null,
+          metro: "los-angeles",
+          imported_at: new Date().toISOString(),
+        }));
+
+      if (rows.length > 0) {
+        totalAdded += await batchUpsert(supabase, "energy_benchmarks", rows, "address,report_year,metro", errors, "LA Energy", true);
+      }
+
+      pagesFetched++;
+      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES || isTimeBudgetExceeded(syncStartMs)) { hasMore = false; } else { offset += PAGE_SIZE; }
+    }
+
+    try {
+      const linkResult = await linkByAddress(supabase, "energy_benchmarks", "id", "address", syncStartTime, errors, "LA Energy", 500, "los-angeles", true, "address");
+      totalLinked = linkResult.linked;
+      for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
+    } catch (linkErr) {
+      errors.push(`LA Energy linking error: ${String(linkErr)}`);
+    }
+
+    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
+  } catch (err) {
+    errors.push(`LA Energy fatal error: ${String(err)}`);
+    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
+  }
+
+  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+}
+
+// ---------------------------------------------------------------------------
+// LAHD SCEP (Systematic Code Enforcement Program) sync
+// (data.lacity.org/resource/2uz8-3tj3, filtered for SCEP)
+// ---------------------------------------------------------------------------
+async function syncLAHDSCEP(
+  supabase: ReturnType<typeof getSupabaseAdmin>
+): Promise<SyncResult> {
+  const lastSync = await getLastSyncDate(supabase, "la_scep");
+  const logId = await createSyncLog(supabase, "la_scep");
+  const syncStartTime = new Date().toISOString();
+  const syncStartMs = Date.now();
+
+  let totalAdded = 0;
+  let totalLinked = 0;
+  const errors: string[] = [];
+  const affectedBuildingIds = new Set<string>();
+
+  try {
+    let offset = 0;
+    let hasMore = true;
+    let pagesFetched = 0;
+
+    while (hasMore) {
+      const url = buildLASodaUrl(
+        "2uz8-3tj3",
+        `aptype='SCEP' AND adddttm > '${lastSync}'`,
+        PAGE_SIZE,
+        offset,
+        "adddttm ASC"
+      );
+
+      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+      if (!res.ok) { errors.push(`LAHD SCEP API error (offset ${offset}): ${res.status}`); break; }
+
+      const records = await res.json();
+      if (!records || records.length === 0) { hasMore = false; break; }
+
+      const rows = records
+        .filter((r: Record<string, unknown>) => r.apno)
+        .map((r: Record<string, unknown>) => ({
+          case_number: `LA-SCEP-${r.apno}`,
+          apn: r.apc ? String(r.apc) : null,
+          house_number: r.stno ? String(r.stno) : null,
+          street_name: [r.predir, r.stname, r.suffix].filter(Boolean).map(String).join(" ").trim() || null,
+          zip_code: r.zip ? String(r.zip) : null,
+          inspection_date: r.adddttm ? String(r.adddttm).slice(0, 10) : null,
+          next_inspection_date: r.nxtdt ? String(r.nxtdt).slice(0, 10) : null,
+          cycle_year: r.cyr ? parseInt(String(r.cyr), 10) : null,
+          violations_found: r.violcited ? parseInt(String(r.violcited), 10) : null,
+          violations_cleared: r.violcleared ? parseInt(String(r.violcleared), 10) : null,
+          compliance_status: r.stat ? String(r.stat) : null,
+          inspector: r.inspector ? String(r.inspector) : null,
+          metro: "los-angeles",
+          imported_at: new Date().toISOString(),
+        }));
+
+      if (rows.length > 0) {
+        totalAdded += await batchUpsert(supabase, "lahd_scep_inspections", rows, "case_number", errors, "LAHD SCEP");
+      }
+
+      pagesFetched++;
+      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES || isTimeBudgetExceeded(syncStartMs)) { hasMore = false; } else { offset += PAGE_SIZE; }
+    }
+
+    try {
+      const linkResult = await linkByAddress(supabase, "lahd_scep_inspections", "id", ["house_number", "street_name"], syncStartTime, errors, "LAHD SCEP", 500, "los-angeles");
+      totalLinked = linkResult.linked;
+      for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
+    } catch (linkErr) {
+      errors.push(`LAHD SCEP linking error: ${String(linkErr)}`);
+    }
+
+    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
+  } catch (err) {
+    errors.push(`LAHD SCEP fatal error: ${String(err)}`);
+    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
+  }
+
+  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+}
+
+// ---------------------------------------------------------------------------
 // Chicago Sync Functions — data.cityofchicago.org SODA API
 // ---------------------------------------------------------------------------
 
@@ -3549,6 +3704,86 @@ async function syncChicagoLead(
   return { totalAdded: 0, totalLinked: 0, errors: ["Chicago lead sync disabled: no individual inspection dataset available"], affectedBuildingIds: new Set() };
 }
 
+/**
+ * Sync Chicago Rodent Complaints.
+ * Chicago Open Data endpoint: 97t6-zrhs (Rodent Baiting - legacy dataset)
+ * Stores in chicago_rodent_complaints table
+ */
+async function syncChicagoRodents(
+  supabase: ReturnType<typeof getSupabaseAdmin>
+): Promise<SyncResult> {
+  const lastSync = await getLastSyncDate(supabase, "chicago_rodents");
+  const logId = await createSyncLog(supabase, "chicago_rodents");
+  const syncStartTime = new Date().toISOString();
+  const syncStartMs = Date.now();
+
+  let totalAdded = 0;
+  let totalLinked = 0;
+  const errors: string[] = [];
+  const affectedBuildingIds = new Set<string>();
+
+  try {
+    let offset = 0;
+    let hasMore = true;
+    let pagesFetched = 0;
+
+    while (hasMore) {
+      const url = buildChicagoSodaUrl(
+        "97t6-zrhs",
+        `creation_date > '${lastSync}'`,
+        PAGE_SIZE,
+        offset,
+        "creation_date ASC"
+      );
+
+      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+      if (!res.ok) {
+        const errText = await res.text();
+        errors.push(`Chicago Rodents API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
+        break;
+      }
+
+      const records = await res.json();
+      if (!records || records.length === 0) { hasMore = false; break; }
+
+      const rows = records
+        .filter((r: Record<string, unknown>) => r.service_request_number)
+        .map((r: Record<string, unknown>) => ({
+          sr_number: `CHI-RODENT-${r.service_request_number}`,
+          service_type: r.type_of_service_request ? String(r.type_of_service_request) : null,
+          status: r.status ? String(r.status) : null,
+          created_date: r.creation_date ? String(r.creation_date).slice(0, 10) : null,
+          closed_date: r.completion_date ? String(r.completion_date).slice(0, 10) : null,
+          address: r.street_address ? String(r.street_address) : null,
+          zip_code: r.zip_code ? String(r.zip_code) : null,
+          ward: r.ward ? parseInt(String(r.ward), 10) : null,
+          community_area: r.community_area ? String(r.community_area) : null,
+          latitude: r.latitude ? parseFloat(String(r.latitude)) : null,
+          longitude: r.longitude ? parseFloat(String(r.longitude)) : null,
+          metro: "chicago",
+          imported_at: new Date().toISOString(),
+        }));
+
+      if (rows.length > 0) {
+        totalAdded += await batchUpsert(supabase, "chicago_rodent_complaints", rows, "sr_number", errors, "Chicago Rodents", true);
+      }
+
+      pagesFetched++;
+      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES || isTimeBudgetExceeded(syncStartMs)) { hasMore = false; } else { offset += PAGE_SIZE; }
+    }
+
+    // Defer linking to dedicated link cron
+    errors.push(`Chicago Rodents: linking deferred to dedicated link cron (${totalAdded} rows synced)`);
+
+    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
+  } catch (err) {
+    errors.push(`Chicago Rodents fatal error: ${String(err)}`);
+    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
+  }
+
+  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+}
+
 // ---------------------------------------------------------------------------
 // Miami Sync Functions — opendata.miamidade.gov SODA API
 // ---------------------------------------------------------------------------
@@ -3777,7 +4012,23 @@ async function syncMiami311(
 
 /**
  * Sync MDPD Crime Incidents.
- * MDPD crime data not yet available via ArcGIS API — disabled until source is identified.
+ *
+ * Status: DISABLED — no public incident-level Miami crime source exists.
+ *
+ * Investigation history (last checked 2026-04-11):
+ *   - Miami-Dade Police — publishes only jail booking records (not incidents,
+ *     and contains defendant addresses which we will not surface publicly)
+ *   - City of Miami Police — runs a crime viewer webmap backed by
+ *     maps.miamigov.com, but that server is firewalled from the public internet
+ *     (connection times out on port 80)
+ *   - Miami-Dade Open Data Hub — aggregate-only layers, nothing queryable
+ *   - FDLE / FBI NIBRS — annual bulk reports only, not queryable
+ *
+ * The crime page at /miami/crime will render with a "Data source unavailable"
+ * empty state. Revisit periodically — if MDPD or the City of Miami ever
+ * expose an incident-level feed, implement here following the Houston/Chicago
+ * patterns in this file.
+ *
  * Stores in nypd_complaints with metro='miami'
  */
 async function syncMiamiCrimes(
@@ -3787,7 +4038,11 @@ async function syncMiamiCrimes(
   const errors: string[] = [];
   const affectedBuildingIds = new Set<string>();
 
-  errors.push("Miami crimes sync: MDPD crime data not yet available via ArcGIS API");
+  errors.push(
+    "Miami crimes sync: no public incident-level source available. " +
+    "MDPD publishes only jail bookings; City of Miami webmap is firewalled. " +
+    "Last investigated 2026-04-11. See docs/superpowers/plans/2026-04-10-crime-sync-rollout.md"
+  );
   await finalizeSyncLog(supabase, logId, "completed", 0, 0, errors);
   return { totalAdded: 0, totalLinked: 0, errors, affectedBuildingIds };
 }
@@ -4361,6 +4616,8 @@ const SOURCES: Record<string, (supabase: ReturnType<typeof getSupabaseAdmin>, si
   "la-buyouts": syncLAHDTenantBuyouts,
   "la-ccris": syncLAHDCCRIS,
   "la-violation-summary": syncLAHDViolationSummary,
+  "la-energy": syncLAEnergy,
+  "la-scep": syncLAHDSCEP,
   // Chicago sources
   "chicago-violations": syncChicagoViolations,
   "chicago-311": syncChicago311,
@@ -4368,6 +4625,7 @@ const SOURCES: Record<string, (supabase: ReturnType<typeof getSupabaseAdmin>, si
   "chicago-permits": syncChicagoPermits,
   "chicago-rlto": syncChicagoRLTO,
   "chicago-lead": syncChicagoLead,
+  "chicago-rodents": syncChicagoRodents,
   // Miami sources
   "miami-violations": syncMiamiViolations,
   "miami-311": syncMiami311,
@@ -4413,8 +4671,8 @@ async function runLinkOnly(
     ? (LINK_TABLES[sourceParam] ? { [sourceParam]: LINK_TABLES[sourceParam] } : null)
     : LINK_TABLES;
 
-  const LA_ADDR_SOURCES = ["lahd", "ladbs", "la-311", "la-permits", "la-evictions", "la-buyouts", "la-ccris", "la-violation-summary"];
-  const CHICAGO_ADDR_SOURCES = ["chicago-violations", "chicago-311", "chicago-crimes", "chicago-permits", "chicago-rlto", "chicago-lead"];
+  const LA_ADDR_SOURCES = ["lahd", "ladbs", "la-311", "la-permits", "la-evictions", "la-buyouts", "la-ccris", "la-violation-summary", "la-energy", "la-scep"];
+  const CHICAGO_ADDR_SOURCES = ["chicago-violations", "chicago-311", "chicago-crimes", "chicago-permits", "chicago-rlto", "chicago-lead", "chicago-rodents"];
   const MIAMI_ADDR_SOURCES = ["miami-violations", "miami-311", "miami-permits", "miami-unsafe", "miami-recerts"];
   const HOUSTON_ADDR_SOURCES = ["houston-violations", "houston-311", "houston-crimes"];
   const isChicagoLink = sourceParam === "chicago" || (sourceParam && CHICAGO_ADDR_SOURCES.includes(sourceParam));
@@ -4692,6 +4950,7 @@ async function runLinkOnly(
     { name: "chicago-permits", table: "dob_permits", idColumn: "id", addressColumns: ["house_no", "street_name"], label: "Chicago Permits" },
     { name: "chicago-rlto", table: "chicago_rlto_violations", idColumn: "id", addressColumns: ["address"], label: "Chicago RLTO" },
     { name: "chicago-lead", table: "chicago_lead_inspections", idColumn: "id", addressColumns: ["address"], label: "Chicago Lead" },
+    { name: "chicago-rodents", table: "chicago_rodent_complaints", idColumn: "id", addressColumns: ["address"], label: "Chicago Rodents" },
   ];
 
   const shouldLinkChicago = chicagoAddrTables.some(t => sourceParam === "chicago" || sourceParam === t.name) || !sourceParam;
