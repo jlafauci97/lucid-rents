@@ -3587,6 +3587,37 @@ async function syncChicagoPermits(
         totalAdded += await batchUpsert(supabase, "dob_permits", rows, "work_permit", errors, "Chicago Permits");
       }
 
+      // Extract demolition permits into chicago_demolitions
+      const demoRows = records
+        .filter((r: Record<string, unknown>) => {
+          const pType = String(r.permit_type || "").toUpperCase();
+          const desc = String(r.work_description || "").toUpperCase();
+          return pType.includes("WRECKING") || desc.includes("DEMOLITION") || desc.includes("WRECK");
+        })
+        .map((r: Record<string, unknown>) => {
+          const streetParts = [r.street_direction, r.street_name].filter(Boolean).map(String).join(" ").trim();
+          const addr = r.street_number ? `${r.street_number} ${streetParts}` : streetParts;
+          return {
+            permit_number: r.permit_ ? String(r.permit_) : `CHI-DEMO-${r.id}`,
+            address: addr || null,
+            issue_date: r.issue_date ? String(r.issue_date).slice(0, 10) : null,
+            status: "ISSUED",
+            work_description: r.work_description ? String(r.work_description).slice(0, 500) : null,
+            contractor: r.contact_1_name ? String(r.contact_1_name) : null,
+            ward: null,
+            community_area: null,
+            latitude: r.latitude ? parseFloat(String(r.latitude)) : null,
+            longitude: r.longitude ? parseFloat(String(r.longitude)) : null,
+            metro: "chicago",
+            imported_at: new Date().toISOString(),
+          };
+        });
+
+      if (demoRows.length > 0) {
+        await batchUpsert(supabase, "chicago_demolitions", demoRows, "permit_number", errors, "Chicago Demolitions", true);
+        errors.push(`Chicago Permits: extracted ${demoRows.length} demolition permits`);
+      }
+
       pagesFetched++;
       if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES || isTimeBudgetExceeded(syncStartMs)) { hasMore = false; } else { offset += PAGE_SIZE; }
     }
@@ -5067,6 +5098,7 @@ async function runLinkOnly(
     { name: "chicago-lead", table: "chicago_lead_inspections", idColumn: "id", addressColumns: ["address"], label: "Chicago Lead" },
     { name: "chicago-rodents", table: "chicago_rodent_complaints", idColumn: "id", addressColumns: ["address"], label: "Chicago Rodents" },
     { name: "chicago-scofflaws", table: "chicago_scofflaws", idColumn: "id", addressColumns: ["address"], label: "Chicago Scofflaws" },
+    { name: "chicago-demolitions", table: "chicago_demolitions", idColumn: "id", addressColumns: ["address"], label: "Chicago Demolitions" },
   ];
 
   const shouldLinkChicago = chicagoAddrTables.some(t => sourceParam === "chicago" || sourceParam === t.name) || !sourceParam;
