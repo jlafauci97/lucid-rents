@@ -2,10 +2,12 @@ import { Scale, CheckCircle } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { formatDate } from "@/lib/utils";
 import type { HpdLitigation } from "@/types";
+import { IssuesEmptyState } from "./IssuesEmptyState";
 
 interface LitigationTimelineProps {
   litigations: HpdLitigation[];
   agencyLabel?: string;
+  total?: number;
 }
 
 const statusColors: Record<string, { bg: string; text: string }> = {
@@ -23,12 +25,14 @@ function getStatusStyle(status: string | null) {
   return { bg: "bg-gray-50", text: "text-gray-700" };
 }
 
-export function LitigationTimeline({ litigations, agencyLabel = "HPD" }: LitigationTimelineProps) {
+export function LitigationTimeline({ litigations, agencyLabel = "HPD", total }: LitigationTimelineProps) {
   if (litigations.length === 0) {
     return (
-      <p className="text-sm text-[#64748b] py-4">
-        No {agencyLabel} litigations on record.
-      </p>
+      <IssuesEmptyState
+        loaded={0}
+        total={total}
+        emptyLabel={`No ${agencyLabel} litigations on record.`}
+      />
     );
   }
 

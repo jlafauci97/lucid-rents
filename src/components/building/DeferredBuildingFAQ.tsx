@@ -33,7 +33,9 @@ export async function DeferredBuildingFAQ({ building, buildingId, city, rents, n
   const hasFaqCoords = building.latitude && building.longitude;
 
   // Fetch ALL FAQ data in a single parallel batch — no more sequential waterfall
-  const [violations, complaints, litigations, dobViolations, evictions, permits, energyData, reviews, amenities, faqSchoolsRaw, faqTransitRaw, faqCrimeRaw] = await Promise.all([
+  // NOTE: crime_zip_summary RPC removed — it scans 4.7M rows and times out,
+  // holding the stream open for 60s+. Crime data is shown via NearbyCrimeSummary (client).
+  const [violations, complaints, litigations, dobViolations, evictions, permits, energyData, reviews, amenities, faqSchoolsRaw, faqTransitRaw] = await Promise.all([
     safe(supabase.from("hpd_violations").select("*").eq("building_id", buildingId).order("inspection_date", { ascending: false }).limit(20), [] as HpdViolation[]),
     safe(supabase.from("complaints_311").select("*").eq("building_id", buildingId).order("created_date", { ascending: false }).limit(20), [] as Complaint311[]),
     isNYC ? safe(supabase.from("hpd_litigations").select("*").eq("building_id", buildingId).order("case_open_date", { ascending: false }).limit(20), [] as HpdLitigation[]) : Promise.resolve([] as HpdLitigation[]),
@@ -46,15 +48,12 @@ export async function DeferredBuildingFAQ({ building, buildingId, city, rents, n
     hasFaqCoords
       ? safe(supabase.from("nearby_schools").select("type, name, latitude, longitude, grades")
           .gte("latitude", building.latitude! - BBOX).lte("latitude", building.latitude! + BBOX)
-          .gte("longitude", building.longitude! - BBOX).lte("longitude", building.longitude! + BBOX), [])
+          .gte("longitude", building.longitude! - BBOX).lte("longitude", building.longitude! + BBOX).limit(50), [])
       : Promise.resolve([]),
     hasFaqCoords
       ? safe(supabase.from("transit_stops").select("type, name, latitude, longitude, routes")
           .gte("latitude", building.latitude! - BBOX).lte("latitude", building.latitude! + BBOX)
-          .gte("longitude", building.longitude! - BBOX).lte("longitude", building.longitude! + BBOX), [])
-      : Promise.resolve([]),
-    building.zip_code
-      ? safe(supabase.rpc("crime_zip_summary", { target_zip: building.zip_code, since_date: new Date(Date.now() - 2 * 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0], metro: city }), [])
+          .gte("longitude", building.longitude! - BBOX).lte("longitude", building.longitude! + BBOX).limit(50), [])
       : Promise.resolve([]),
   ]);
 
@@ -92,10 +91,8 @@ export async function DeferredBuildingFAQ({ building, buildingId, city, rents, n
     }
   }
 
-  // Process crime summary
-  const faqCrime = Array.isArray(faqCrimeRaw) && faqCrimeRaw.length > 0
-    ? faqCrimeRaw[0] as { total: number; violent: number; property: number; quality_of_life: number }
-    : null;
+  // Crime summary skipped — RPC too expensive for inline rendering
+  const faqCrime = null;
 
   return (
     <FAQSection

@@ -34,6 +34,8 @@ interface HazardZonesCardProps {
   isSoftStory?: boolean;
   softStoryStatus?: string | null;
   city: string;
+  // Passed by page.tsx; retrofit details not yet surfaced in this card
+  earthquakeRetrofit?: unknown;
 }
 
 const HAZARD_ICONS: Record<string, LucideIcon> = {

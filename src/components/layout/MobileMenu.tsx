@@ -53,6 +53,7 @@ const primaryLinks: NavLink[] = [
 
 const secondaryLinks: NavLink[] = [
   { path: "/compare", icon: ArrowLeftRight, label: "Compare Buildings" },
+  { path: "/neighborhood/compare", icon: ArrowLeftRight, label: "Compare Neighborhoods" },
   { path: "/feed", icon: Radio, label: "Feed" },
   { path: "/news", icon: Newspaper, label: "News" },
   { path: "/rent-data", icon: BarChart3, label: "Rent Data" },

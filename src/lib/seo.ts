@@ -68,6 +68,10 @@ export function neighborhoodUrl(
   return `/${CITY_META[city].urlPrefix}/neighborhood/${neighborhoodPageSlugByCity(zipCode, city)}`;
 }
 
+export function neighborhoodsUrl(city: City = DEFAULT_CITY): string {
+  return `/${CITY_META[city].urlPrefix}/neighborhoods`;
+}
+
 export function canonicalUrl(path: string): string {
   return `${BASE_URL}${path}`;
 }
@@ -95,6 +99,7 @@ export function buildingJsonLd(
     overall_score: number | null;
     review_count: number;
     slug: string;
+    name?: string | null;
     updated_at?: string | null;
   },
   city: City = DEFAULT_CITY
@@ -102,10 +107,13 @@ export function buildingJsonLd(
   const url = canonicalUrl(buildingUrl(building, city));
   const meta = CITY_META[city];
 
+  // Prefer the building's proper name for SEO when available (e.g., "Carnegie Mews");
+  // fall back to the address otherwise.
+  const hasProperName = building.name && !/^\d/.test(building.name.trim()) && building.name.trim().length > 3;
   const schema: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "ApartmentComplex",
-    name: building.full_address,
+    name: hasProperName ? building.name : building.full_address,
     url,
     address: {
       "@type": "PostalAddress",
@@ -116,6 +124,9 @@ export function buildingJsonLd(
       addressCountry: "US",
     },
   };
+  if (hasProperName) {
+    schema.alternateName = building.full_address;
+  }
 
   if (building.year_built) {
     schema.yearBuilt = building.year_built;

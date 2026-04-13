@@ -2,9 +2,11 @@ import { MessageSquare, CheckCircle, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { formatDate } from "@/lib/utils";
 import type { Complaint311 } from "@/types";
+import { IssuesEmptyState } from "./IssuesEmptyState";
 
 interface ComplaintTimelineProps {
   complaints: Complaint311[];
+  total?: number;
 }
 
 const typeColors: Record<string, { bg: string; text: string }> = {
@@ -29,12 +31,14 @@ function getTypeStyle(type: string | null) {
   return { bg: "bg-gray-50", text: "text-gray-700" };
 }
 
-export function ComplaintTimeline({ complaints }: ComplaintTimelineProps) {
+export function ComplaintTimeline({ complaints, total }: ComplaintTimelineProps) {
   if (complaints.length === 0) {
     return (
-      <p className="text-sm text-[#64748b] py-4">
-        No 311 complaints on record.
-      </p>
+      <IssuesEmptyState
+        loaded={0}
+        total={total}
+        emptyLabel="No 311 complaints on record."
+      />
     );
   }
 

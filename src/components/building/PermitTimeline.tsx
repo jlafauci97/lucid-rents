@@ -2,10 +2,12 @@ import { ClipboardList, Clock, DollarSign } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { formatDate } from "@/lib/utils";
 import type { DobPermit } from "@/types";
+import { IssuesEmptyState } from "./IssuesEmptyState";
 
 interface PermitTimelineProps {
   permits: DobPermit[];
   agencyLabel?: string;
+  total?: number;
 }
 
 const statusColors: Record<string, { bg: string; text: string }> = {
@@ -22,12 +24,14 @@ function formatCost(cost: number | null): string | null {
   return `$${cost.toLocaleString()}`;
 }
 
-export function PermitTimeline({ permits, agencyLabel = "DOB" }: PermitTimelineProps) {
+export function PermitTimeline({ permits, agencyLabel = "DOB", total }: PermitTimelineProps) {
   if (permits.length === 0) {
     return (
-      <p className="text-sm text-[#64748b] py-4">
-        No {agencyLabel} permits on record.
-      </p>
+      <IssuesEmptyState
+        loaded={0}
+        total={total}
+        emptyLabel={`No ${agencyLabel} permits on record.`}
+      />
     );
   }
 

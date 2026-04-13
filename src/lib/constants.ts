@@ -209,6 +209,11 @@ export function deriveScore(violations: number, complaints: number): number {
   return Math.round(score * 10) / 10;
 }
 
+/** Normalize a 0-10 score to the 0-5 display scale */
+export function normalizeScore(score: number): number {
+  return score / 2;
+}
+
 export const HOUSING_COMPLAINT_TYPES = [
   "HEAT/HOT WATER",
   "PLUMBING",

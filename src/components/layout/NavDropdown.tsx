@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { ChevronDown, ArrowLeftRight, ShieldCheck, ShieldAlert, Wrench, BarChart3, Construction, ClipboardList, Zap, TrainFront, Scale, Tent, FileText, AlertTriangle, Home, Droplets, Flame, Calculator } from "lucide-react";
+import { ChevronDown, ArrowLeftRight, ShieldCheck, ShieldAlert, Wrench, BarChart3, Construction, ClipboardList, Zap, TrainFront, Scale, Tent, FileText, AlertTriangle, Home, Droplets, Flame, Calculator, DollarSign } from "lucide-react";
 import { type City, DEFAULT_CITY, CITY_META } from "@/lib/cities";
 import { cityPath } from "@/lib/seo";
 
@@ -28,6 +28,12 @@ const tools: ToolItem[] = [
     icon: ArrowLeftRight,
     label: "Compare Buildings",
     description: "Side-by-side building comparison",
+  },
+  {
+    path: "/neighborhood/compare",
+    icon: ArrowLeftRight,
+    label: "Compare Neighborhoods",
+    description: "Side-by-side neighborhood comparison",
   },
   {
     path: "/rent-data",
@@ -104,6 +110,14 @@ const tools: ToolItem[] = [
     icon: ClipboardList,
     label: "Pre-Move-In Checklist",
     description: "Due diligence before you sign a lease",
+  },
+  {
+    path: "/fair-rent-engine",
+    icon: DollarSign,
+    label: "Fair Rent Engine",
+    description: "Fair pricing & red flags for any NYC listing",
+    cities: ["nyc"],
+    global: true,
   },
   {
     path: "/tenant-rights",

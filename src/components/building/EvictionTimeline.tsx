@@ -2,17 +2,21 @@ import { DoorOpen } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { formatDate } from "@/lib/utils";
 import type { Eviction } from "@/types";
+import { IssuesEmptyState } from "./IssuesEmptyState";
 
 interface EvictionTimelineProps {
   evictions: Eviction[];
+  total?: number;
 }
 
-export function EvictionTimeline({ evictions }: EvictionTimelineProps) {
+export function EvictionTimeline({ evictions, total }: EvictionTimelineProps) {
   if (evictions.length === 0) {
     return (
-      <p className="text-sm text-[#64748b] py-4">
-        No eviction records on file.
-      </p>
+      <IssuesEmptyState
+        loaded={0}
+        total={total}
+        emptyLabel="No eviction records on file."
+      />
     );
   }
 

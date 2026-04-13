@@ -2,10 +2,13 @@ import { AlertTriangle, CheckCircle } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { formatDate } from "@/lib/utils";
 import type { HpdViolation } from "@/types";
+import { IssuesEmptyState } from "./IssuesEmptyState";
 
 interface ViolationTimelineProps {
   violations: HpdViolation[];
   agencyLabel?: string;
+  /** Stored total from buildings.violation_count; used to detect orphaned rows */
+  total?: number;
 }
 
 const classColors: Record<string, { bg: string; text: string; label: string }> = {
@@ -15,12 +18,14 @@ const classColors: Record<string, { bg: string; text: string; label: string }> =
   I: { bg: "bg-blue-50", text: "text-blue-700", label: "Info" },
 };
 
-export function ViolationTimeline({ violations, agencyLabel = "HPD" }: ViolationTimelineProps) {
+export function ViolationTimeline({ violations, agencyLabel = "HPD", total }: ViolationTimelineProps) {
   if (violations.length === 0) {
     return (
-      <p className="text-sm text-[#64748b] py-4">
-        No {agencyLabel} violations on record.
-      </p>
+      <IssuesEmptyState
+        loaded={0}
+        total={total}
+        emptyLabel={`No ${agencyLabel} violations on record.`}
+      />
     );
   }
 

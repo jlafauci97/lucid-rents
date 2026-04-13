@@ -5,7 +5,7 @@ import {
   DoorOpen, Snowflake, Briefcase, Users, CookingPot,
   ArrowUpDown, Trees, Waves, Fence, Flame,
   Sun, Home, Crown, Warehouse, Circle,
-  Dog, Bath, Shirt, Lock,
+  Dog, Bath, Shirt, Lock, Check,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -23,18 +23,20 @@ const CATEGORY_CONFIG: {
   key: string;
   label: string;
   icon: LucideIcon;
-  color: string;
+  bg: string;
+  iconColor: string;
+  checkColor: string;
 }[] = [
-  { key: "building", label: "Building", icon: Building2, color: "text-[#2563EB]" },
-  { key: "outdoor", label: "Outdoor", icon: TreePine, color: "text-[#16a34a]" },
-  { key: "fitness", label: "Fitness", icon: Dumbbell, color: "text-[#7C3AED]" },
-  { key: "parking", label: "Parking & Bikes", icon: Car, color: "text-[#64748b]" },
-  { key: "laundry", label: "Laundry", icon: WashingMachine, color: "text-[#0ea5e9]" },
-  { key: "security", label: "Security", icon: Shield, color: "text-[#dc2626]" },
-  { key: "pet", label: "Pet Friendly", icon: PawPrint, color: "text-[#EA580C]" },
-  { key: "storage", label: "Storage", icon: Package, color: "text-[#78716c]" },
-  { key: "luxury", label: "Luxury", icon: Gem, color: "text-[#a855f7]" },
-  { key: "other", label: "Other", icon: Sparkles, color: "text-[#94a3b8]" },
+  { key: "building", label: "Building", icon: Building2, bg: "bg-blue-50", iconColor: "text-blue-600", checkColor: "text-blue-400" },
+  { key: "outdoor", label: "Outdoor", icon: TreePine, bg: "bg-emerald-50", iconColor: "text-emerald-600", checkColor: "text-emerald-400" },
+  { key: "fitness", label: "Fitness", icon: Dumbbell, bg: "bg-violet-50", iconColor: "text-violet-600", checkColor: "text-violet-400" },
+  { key: "parking", label: "Parking & Bikes", icon: Car, bg: "bg-slate-50", iconColor: "text-slate-600", checkColor: "text-slate-400" },
+  { key: "laundry", label: "Laundry", icon: WashingMachine, bg: "bg-sky-50", iconColor: "text-sky-600", checkColor: "text-sky-400" },
+  { key: "security", label: "Security", icon: Shield, bg: "bg-red-50", iconColor: "text-red-600", checkColor: "text-red-400" },
+  { key: "pet", label: "Pet Friendly", icon: PawPrint, bg: "bg-orange-50", iconColor: "text-orange-600", checkColor: "text-orange-400" },
+  { key: "storage", label: "Storage", icon: Package, bg: "bg-stone-50", iconColor: "text-stone-600", checkColor: "text-stone-400" },
+  { key: "luxury", label: "Luxury", icon: Gem, bg: "bg-purple-50", iconColor: "text-purple-600", checkColor: "text-purple-400" },
+  { key: "other", label: "Other", icon: Sparkles, bg: "bg-gray-50", iconColor: "text-gray-500", checkColor: "text-gray-400" },
 ];
 
 const AMENITY_ICONS: Record<string, LucideIcon> = {
@@ -94,44 +96,59 @@ export function BuildingAmenities({ amenities }: BuildingAmenitiesProps) {
     grouped.get(a.category)!.push(a.amenity);
   }
 
+  const activeCategories = CATEGORY_CONFIG.filter(
+    ({ key }) => grouped.has(key) && grouped.get(key)!.length > 0
+  );
+
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center gap-2">
-          <Sparkles className="w-4.5 h-4.5 text-[#a855f7]" />
-          <h3 className="text-base font-bold text-[#0F1D2E]">
-            Building Amenities
-          </h3>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4.5 h-4.5 text-[#a855f7]" />
+            <h3 className="text-base font-bold text-[#0F1D2E]">
+              Building Amenities
+            </h3>
+          </div>
+          <span className="text-xs text-[#94a3b8] font-medium">
+            {deduped.length} amenities
+          </span>
         </div>
       </CardHeader>
       <CardContent>
-        <div className="space-y-3">
-          {CATEGORY_CONFIG.map(({ key, label, icon: Icon, color }) => {
-            const items = grouped.get(key);
-            if (!items || items.length === 0) return null;
+        <div className="grid grid-cols-2 gap-2">
+          {activeCategories.map(({ key, label, icon: Icon, bg, iconColor, checkColor }) => {
+            const items = grouped.get(key)!;
 
             return (
-              <div key={key}>
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <Icon className={`w-3.5 h-3.5 ${color}`} />
-                  <span className="text-xs font-semibold text-[#64748b] uppercase tracking-wide">
+              <div
+                key={key}
+                className={`${bg} rounded-xl p-3 border border-black/[0.03]`}
+              >
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Icon className={`w-3.5 h-3.5 ${iconColor}`} />
+                  <span className={`text-[11px] font-semibold ${iconColor} uppercase tracking-wide`}>
                     {label}
                   </span>
                 </div>
-                <div className="flex flex-wrap gap-1.5">
+                <ul className="grid grid-cols-2 gap-x-3 gap-y-1">
                   {items.map((item) => {
                     const AmenityIcon = AMENITY_ICONS[item.toLowerCase()];
                     return (
-                      <span
+                      <li
                         key={item}
-                        className="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-[#f1f5f9] text-[#334155] rounded-full"
+                        className="flex items-center gap-1.5 text-[12px] text-[#334155] leading-tight"
                       >
-                        {AmenityIcon && <AmenityIcon className="w-3 h-3 text-[#64748b]" />}
+                        {AmenityIcon ? (
+                          <AmenityIcon className={`w-3 h-3 shrink-0 ${checkColor}`} />
+                        ) : (
+                          <Check className={`w-3 h-3 shrink-0 ${checkColor}`} />
+                        )}
                         {item}
-                      </span>
+                      </li>
                     );
                   })}
-                </div>
+                </ul>
               </div>
             );
           })}

@@ -2,17 +2,21 @@ import { Bug } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { formatDate } from "@/lib/utils";
 import type { BedBugReport } from "@/types";
+import { IssuesEmptyState } from "./IssuesEmptyState";
 
 interface BedBugTimelineProps {
   reports: BedBugReport[];
+  total?: number;
 }
 
-export function BedBugTimeline({ reports }: BedBugTimelineProps) {
+export function BedBugTimeline({ reports, total }: BedBugTimelineProps) {
   if (reports.length === 0) {
     return (
-      <p className="text-sm text-[#64748b] py-4">
-        No bedbug reports on record.
-      </p>
+      <IssuesEmptyState
+        loaded={0}
+        total={total}
+        emptyLabel="No bedbug reports on record."
+      />
     );
   }
 
