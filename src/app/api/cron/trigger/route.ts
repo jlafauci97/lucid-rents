@@ -1,39 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
-  const authHeader = req.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+  // Syncs now run locally via launchd on the Mac Mini.
+  // This route is disabled to prevent Vercel crons from interfering.
   const source = req.nextUrl.searchParams.get("source");
   const mode = req.nextUrl.searchParams.get("mode") || "sync";
-
-  const supabaseUrl =
-    process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (!supabaseUrl || !cronSecret) {
-    return NextResponse.json(
-      { error: "Missing Supabase config" },
-      { status: 500 }
-    );
-  }
-
-  const fnName = getFunctionName(source, mode);
-
-  fetch(`${supabaseUrl}/functions/v1/${fnName}`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${cronSecret}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ source, mode }),
-  }).catch((err) => console.error("Edge Function invoke failed:", err));
-
   return NextResponse.json(
-    { triggered: true, function: fnName, source, mode },
-    { status: 202 }
+    { disabled: true, reason: "Syncs moved to local infrastructure", source, mode },
+    { status: 200 }
   );
 }
 

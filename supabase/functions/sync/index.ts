@@ -884,7 +884,7 @@ async function sync311Complaints(supabase: SupabaseClient): Promise<SyncResult> 
       }
 
       if (rows.length > 0) {
-        totalAdded += await batchUpsert(supabase, "complaints_311", rows, "unique_key", errors, "311", true);
+        totalAdded += await batchUpsert(supabase, "complaints_311", rows, "unique_key,metro", errors, "311", true);
       }
 
       pagesFetched++;
@@ -2200,7 +2200,7 @@ async function syncLA311Complaints(supabase: SupabaseClient): Promise<SyncResult
         }));
 
       if (rows.length > 0) {
-        totalAdded += await batchUpsert(supabase, "complaints_311", rows, "unique_key", errors, "LA311");
+        totalAdded += await batchUpsert(supabase, "complaints_311", rows, "unique_key,metro", errors, "LA311");
       }
 
       pagesFetched++;
@@ -2899,7 +2899,7 @@ async function syncChicago311(supabase: SupabaseClient): Promise<SyncResult> {
         }));
 
       if (rows.length > 0) {
-        totalAdded += await batchUpsert(supabase, "complaints_311", rows, "unique_key", errors, "Chicago 311", true);
+        totalAdded += await batchUpsert(supabase, "complaints_311", rows, "unique_key,metro", errors, "Chicago 311", true);
       }
 
       pagesFetched++;
@@ -3292,7 +3292,7 @@ async function syncMiami311(supabase: SupabaseClient): Promise<SyncResult> {
         }));
 
       if (rows.length > 0) {
-        totalAdded += await batchUpsert(supabase, "complaints_311", rows, "unique_key", errors, "Miami 311", true);
+        totalAdded += await batchUpsert(supabase, "complaints_311", rows, "unique_key,metro", errors, "Miami 311", true);
       }
 
       pagesFetched++;
@@ -3673,7 +3673,7 @@ async function syncHouston311(supabase: SupabaseClient): Promise<SyncResult> {
         }));
 
       if (rows.length > 0) {
-        totalAdded += await batchUpsert(supabase, "complaints_311", rows, "unique_key", errors, "Houston 311", true);
+        totalAdded += await batchUpsert(supabase, "complaints_311", rows, "unique_key,metro", errors, "Houston 311", true);
       }
 
       pagesFetched++;
