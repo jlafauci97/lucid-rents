@@ -3785,6 +3785,120 @@ async function syncChicagoRodents(
 }
 
 // ---------------------------------------------------------------------------
+// Chicago Scofflaws — Building Code Scofflaw List (crg5-4zyp)
+// ---------------------------------------------------------------------------
+
+async function syncChicagoScofflaws(
+  supabase: ReturnType<typeof getSupabaseAdmin>
+): Promise<SyncResult> {
+  const logId = await createSyncLog(supabase, "chicago_scofflaws");
+  const syncStartMs = Date.now();
+
+  let totalAdded = 0;
+  let totalLinked = 0;
+  const errors: string[] = [];
+  const affectedBuildingIds = new Set<string>();
+
+  try {
+    // Small dataset (~659 records) — full refresh each run
+    let offset = 0;
+    let hasMore = true;
+    let pagesFetched = 0;
+
+    while (hasMore) {
+      const url = buildChicagoSodaUrl(
+        "crg5-4zyp",
+        "1=1",
+        PAGE_SIZE,
+        offset,
+        ":id"
+      );
+
+      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+      if (!res.ok) {
+        const errText = await res.text();
+        errors.push(`Chicago Scofflaws API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
+        break;
+      }
+
+      const records = await res.json();
+      if (!records || records.length === 0) { hasMore = false; break; }
+
+      const rows = records
+        .filter((r: Record<string, unknown>) => r.defendant_owner || r.respondent)
+        .map((r: Record<string, unknown>) => {
+          const respondent = String(r.defendant_owner || r.respondent || "").trim().slice(0, 255);
+          const rawAddress = r.address ? String(r.address).trim().toUpperCase().replace(/\s+/g, " ") : null;
+          return {
+            respondent_name: respondent,
+            address: rawAddress,
+            total_fines: null,
+            unpaid_fines: null,
+            violation_count: null,
+            last_violation_date: r.building_list_date ? String(r.building_list_date).slice(0, 10) : null,
+            ward: r.ward ? parseInt(String(r.ward), 10) : null,
+            community_area: r.community_area ? String(r.community_area).trim() || null : null,
+            status: "scofflaw",
+            latitude: r.latitude ? parseFloat(String(r.latitude)) : null,
+            longitude: r.longitude ? parseFloat(String(r.longitude)) : null,
+            metro: "chicago",
+          };
+        });
+
+      if (rows.length > 0) {
+        totalAdded += await batchUpsert(supabase, "chicago_scofflaws", rows, "respondent_name,address", errors, "Chicago Scofflaws", true);
+      }
+
+      pagesFetched++;
+      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES || isTimeBudgetExceeded(syncStartMs)) { hasMore = false; } else { offset += PAGE_SIZE; }
+    }
+
+    // Inline linking — dataset is small enough to link immediately
+    const { data: unlinked } = await supabase
+      .from("chicago_scofflaws")
+      .select("id, address")
+      .is("building_id", null)
+      .not("address", "is", null)
+      .limit(5000);
+
+    for (const row of unlinked || []) {
+      const normalized = String(row.address).trim().toUpperCase().replace(/\s+/g, " ");
+      if (!normalized) continue;
+
+      const { data: building } = await supabase
+        .from("buildings")
+        .select("id")
+        .eq("metro", "chicago")
+        .ilike("full_address", `${normalized}%`)
+        .limit(1)
+        .single();
+
+      if (building?.id) {
+        await supabase
+          .from("chicago_scofflaws")
+          .update({ building_id: building.id })
+          .eq("id", row.id);
+
+        await supabase
+          .from("buildings")
+          .update({ is_scofflaw: true })
+          .eq("id", building.id);
+
+        totalLinked++;
+        affectedBuildingIds.add(building.id);
+      }
+    }
+
+    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
+  } catch (err) {
+    errors.push(`Chicago Scofflaws fatal error: ${String(err)}`);
+    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
+  }
+
+  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+}
+
+// ---------------------------------------------------------------------------
 // Miami Sync Functions — opendata.miamidade.gov SODA API
 // ---------------------------------------------------------------------------
 
@@ -4626,6 +4740,7 @@ const SOURCES: Record<string, (supabase: ReturnType<typeof getSupabaseAdmin>, si
   "chicago-rlto": syncChicagoRLTO,
   "chicago-lead": syncChicagoLead,
   "chicago-rodents": syncChicagoRodents,
+  "chicago-scofflaws": syncChicagoScofflaws,
   // Miami sources
   "miami-violations": syncMiamiViolations,
   "miami-311": syncMiami311,
@@ -4672,7 +4787,7 @@ async function runLinkOnly(
     : LINK_TABLES;
 
   const LA_ADDR_SOURCES = ["lahd", "ladbs", "la-311", "la-permits", "la-evictions", "la-buyouts", "la-ccris", "la-violation-summary", "la-energy", "la-scep"];
-  const CHICAGO_ADDR_SOURCES = ["chicago-violations", "chicago-311", "chicago-crimes", "chicago-permits", "chicago-rlto", "chicago-lead", "chicago-rodents"];
+  const CHICAGO_ADDR_SOURCES = ["chicago-violations", "chicago-311", "chicago-crimes", "chicago-permits", "chicago-rlto", "chicago-lead", "chicago-rodents", "chicago-scofflaws"];
   const MIAMI_ADDR_SOURCES = ["miami-violations", "miami-311", "miami-permits", "miami-unsafe", "miami-recerts"];
   const HOUSTON_ADDR_SOURCES = ["houston-violations", "houston-311", "houston-crimes"];
   const isChicagoLink = sourceParam === "chicago" || (sourceParam && CHICAGO_ADDR_SOURCES.includes(sourceParam));
@@ -4951,6 +5066,7 @@ async function runLinkOnly(
     { name: "chicago-rlto", table: "chicago_rlto_violations", idColumn: "id", addressColumns: ["address"], label: "Chicago RLTO" },
     { name: "chicago-lead", table: "chicago_lead_inspections", idColumn: "id", addressColumns: ["address"], label: "Chicago Lead" },
     { name: "chicago-rodents", table: "chicago_rodent_complaints", idColumn: "id", addressColumns: ["address"], label: "Chicago Rodents" },
+    { name: "chicago-scofflaws", table: "chicago_scofflaws", idColumn: "id", addressColumns: ["address"], label: "Chicago Scofflaws" },
   ];
 
   const shouldLinkChicago = chicagoAddrTables.some(t => sourceParam === "chicago" || sourceParam === t.name) || !sourceParam;
