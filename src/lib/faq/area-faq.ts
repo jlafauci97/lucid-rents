@@ -49,7 +49,7 @@ export function generateNeighborhoodFAQ({
   if (crime && crime.total > 0) {
     const safetyGrade = subGrades.find((g) => g.label === "Safety");
     const gradeNote = safetyGrade
-      ? ` The area receives a safety score of ${safetyGrade.score.toFixed(1)} out of 10.`
+      ? ` The area receives a safety score of ${safetyGrade.score.toFixed(1)} out of 5.`
       : "";
     items.push({
       question: `Is ${displayName} a safe place to live?`,
@@ -61,7 +61,7 @@ export function generateNeighborhoodFAQ({
   if (stats.avg_score !== null) {
     const qualityGrade = subGrades.find((g) => g.label === "Building Quality");
     const gradeNote = qualityGrade
-      ? ` with an average building quality score of ${qualityGrade.score.toFixed(1)} out of 10`
+      ? ` with an average building quality score of ${qualityGrade.score.toFixed(1)} out of 5`
       : "";
     items.push({
       question: `What is the average building quality in ${displayName}?`,

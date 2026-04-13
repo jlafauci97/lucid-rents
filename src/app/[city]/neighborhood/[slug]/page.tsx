@@ -3,7 +3,7 @@ import Link from "next/link";
 import { cache } from "react";
 import { MapPin, Building2, AlertTriangle, MessageSquare, Users, Siren } from "lucide-react";
 import { LetterGrade } from "@/components/ui/LetterGrade";
-import { getLetterGrade, getGradeColor } from "@/lib/constants";
+import { getLetterGrade, getGradeColor, normalizeScore } from "@/lib/constants";
 import { buildingUrl, landlordUrl, canonicalUrl, cityPath, neighborhoodUrl, breadcrumbJsonLd } from "@/lib/seo";
 import { parseNeighborhoodSlug } from "@/lib/nyc-neighborhoods";
 import { getNeighborhoodNameByCity } from "@/lib/neighborhoods";
@@ -113,11 +113,11 @@ async function getTopBuildings(zipCode: string) {
 }
 
 function getSubGrade(value: number, thresholds: [number, number, number, number]): number {
-  if (value <= thresholds[0]) return 9;
-  if (value <= thresholds[1]) return 7;
-  if (value <= thresholds[2]) return 5;
-  if (value <= thresholds[3]) return 3;
-  return 1;
+  if (value <= thresholds[0]) return 4.5;
+  if (value <= thresholds[1]) return 3.5;
+  if (value <= thresholds[2]) return 2.5;
+  if (value <= thresholds[3]) return 1.5;
+  return 0.5;
 }
 
 export default async function NeighborhoodPage({
@@ -152,7 +152,7 @@ export default async function NeighborhoodPage({
   }
 
   const buildingCount = Number(stats.building_count);
-  const avgScore = stats.avg_score ? Number(stats.avg_score) : null;
+  const avgScore = stats.avg_score ? normalizeScore(Number(stats.avg_score)) : null;
   const totalViolations = Number(stats.total_violations);
   const totalComplaints = Number(stats.total_complaints);
   const violationsPerBuilding = buildingCount > 0 ? totalViolations / buildingCount : 0;
@@ -160,7 +160,7 @@ export default async function NeighborhoodPage({
 
   const safetyScore = crime
     ? getSubGrade(crime.violent / Math.max(buildingCount, 1), [0.5, 2, 5, 10])
-    : 5;
+    : 2.5;
   const maintenanceScore = getSubGrade(violationsPerBuilding, [1, 3, 8, 20]);
   const responsivenessScore = getSubGrade(complaintsPerBuilding, [0.5, 2, 5, 15]);
 
@@ -171,7 +171,7 @@ export default async function NeighborhoodPage({
   const borough = crime?.borough || "";
 
   const subGrades = [
-    { label: "Building Quality", score: avgScore || 5, description: "Average building score" },
+    { label: "Building Quality", score: avgScore || 2.5, description: "Average building score" },
     { label: "Safety", score: safetyScore, description: "Based on violent crime rate" },
     { label: "Maintenance", score: maintenanceScore, description: "Violations per building" },
     { label: "Responsiveness", score: responsivenessScore, description: "Complaints per building" },

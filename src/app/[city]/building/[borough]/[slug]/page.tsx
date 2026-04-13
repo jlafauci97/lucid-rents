@@ -37,6 +37,7 @@ import { CITY_META, VALID_CITIES, type City } from "@/lib/cities";
 import { TrackBuildingView } from "@/components/building/TrackBuildingView";
 import { T } from "@/lib/design-tokens";
 import { cache } from "react";
+import { normalizeScore } from "@/lib/constants";
 import type { Building, EnergyBenchmark } from "@/types";
 import type { Metadata } from "next";
 
@@ -144,7 +145,7 @@ export async function generateMetadata({
   const titleSuffix = building.name ? ` (${building.full_address})` : "";
   const title =
     building.review_count > 0 && building.overall_score != null
-      ? `${buildingLabel}${titleSuffix} — Rated ${building.overall_score}/5 by Tenants`
+      ? `${buildingLabel}${titleSuffix} — Rated ${normalizeScore(building.overall_score).toFixed(1)}/5 by Tenants`
       : `${buildingLabel}${titleSuffix} — Violations, Reviews & Building Score`;
   const isChicagoMeta = cityParam === "chicago" || cityParam === "miami" || cityParam === "houston";
   const metaViolationCount = isChicagoMeta
@@ -444,7 +445,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
         </div>
       </div>
 
-      <BuildingHeader building={building} city={city} violationCount={effectiveViolationCount} valueGrade={deweyMetrics?.valueGrade} medianRent={deweyMetrics?.medianRent ?? (rents.length > 0 ? Math.round(rents.reduce((sum, r) => sum + (r.median_rent || 0), 0) / rents.filter(r => r.median_rent > 0).length) || undefined : undefined)} pricePerSqft={deweyMetrics?.pricePerSqft} topViolationType={topViolationType} topComplaintType={topComplaintType} />
+      <BuildingHeader building={building} city={city} violationCount={effectiveViolationCount} valueGrade={deweyMetrics?.valueGrade} medianRent={(() => { if (deweyMetrics?.medianRent) return deweyMetrics.medianRent; const rows = (rents as { median_rent: number | null; listing_count: number | null }[]) || []; let total = 0, weight = 0; for (const r of rows) { if (r?.median_rent && r.median_rent > 0) { const w = r.listing_count && r.listing_count > 0 ? r.listing_count : 1; total += r.median_rent * w; weight += w; } } return weight > 0 ? Math.round(total / weight) : undefined; })()} pricePerSqft={deweyMetrics?.pricePerSqft} topViolationType={topViolationType} topComplaintType={topComplaintType} />
 
       <SectionNav />
 
