@@ -22,6 +22,7 @@ import {
   LA_ZIP_NEIGHBORHOODS,
 } from "@/lib/la-neighborhoods";
 import { buildingUrl } from "@/lib/seo";
+import { normalizeScore } from "@/lib/constants";
 import type { City } from "@/lib/cities";
 
 const PAGE_SIZE = 24;
@@ -288,18 +289,18 @@ export function TransitBuildingList({
                     <div
                       className="h-full rounded-full"
                       style={{
-                        width: `${(Number(building.overall_score) / 10) * 100}%`,
+                        width: `${(normalizeScore(building.overall_score) / 5) * 100}%`,
                         backgroundColor:
-                          Number(building.overall_score) >= 7
+                          normalizeScore(building.overall_score) >= 3.5
                             ? "#22c55e"
-                            : Number(building.overall_score) >= 4
+                            : normalizeScore(building.overall_score) >= 2
                               ? "#f59e0b"
                               : "#ef4444",
                       }}
                     />
                   </div>
                   <span className="text-xs font-semibold text-[#0F1D2E]">
-                    {building.overall_score}/10
+                    {normalizeScore(building.overall_score).toFixed(1)}/5
                   </span>
                 </div>
               )}

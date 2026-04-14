@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { canonicalUrl, cityPath, cityBreadcrumbs, buildingUrl } from "@/lib/seo";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
+import { normalizeScore } from "@/lib/constants";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
@@ -353,7 +354,7 @@ export default async function ApartmentsNearPage({
                       </td>
                       <td className="px-4 py-3 text-sm text-[#334155] hidden sm:table-cell">{b.borough}</td>
                       <td className="px-4 py-3 text-sm text-[#64748b] text-right">{b.distance_mi.toFixed(2)} mi</td>
-                      <td className="px-4 py-3 text-sm font-semibold text-right hidden md:table-cell">{b.overall_score !== null ? b.overall_score.toFixed(1) : "—"}</td>
+                      <td className="px-4 py-3 text-sm font-semibold text-right hidden md:table-cell">{b.overall_score !== null ? normalizeScore(b.overall_score).toFixed(1) : "—"}</td>
                       <td className="px-4 py-3 text-sm text-right hidden md:table-cell">{(b.violation_count || 0).toLocaleString()}</td>
                     </tr>
                   ))}

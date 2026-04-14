@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { MapPin, Building2, Calendar, Layers, Users, ShieldCheck, AlertTriangle, MessageSquareWarning, Bug, Gavel, DollarSign, Ruler } from "lucide-react";
-import { getLetterGrade, deriveScore, GRADE_COLORS, type LetterGrade } from "@/lib/constants";
+import { getLetterGrade, deriveScore, normalizeScore, GRADE_COLORS, type LetterGrade } from "@/lib/constants";
 import { CITY_META, type City } from "@/lib/cities";
 import { landlordUrl } from "@/lib/seo";
 import type { Building } from "@/types";
@@ -19,10 +19,11 @@ interface BuildingHeaderProps {
 
 export function BuildingHeader({ building, city = "nyc", violationCount, valueGrade, medianRent, pricePerSqft }: BuildingHeaderProps) {
   const vCount = violationCount ?? building.violation_count ?? 0;
-  const score = building.overall_score ?? deriveScore(
+  const rawScore = building.overall_score ?? deriveScore(
     vCount,
     building.complaint_count || 0
   );
+  const score = normalizeScore(rawScore);
   const grade = getLetterGrade(score);
 
   const meta = [

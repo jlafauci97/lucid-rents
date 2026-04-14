@@ -5,19 +5,25 @@ export const alt = "Building Score - Lucid Rents";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
+function normalizeScore(score: number | null): number {
+  if (score == null) return 0;
+  if (score > 5) return score / 2;
+  return score;
+}
+
 function getLetterGrade(score: number) {
-  if (score >= 8) return "A";
-  if (score >= 6) return "B";
-  if (score >= 4) return "C";
-  if (score >= 2) return "D";
+  if (score >= 4) return "A";
+  if (score >= 3) return "B";
+  if (score >= 2) return "C";
+  if (score >= 1) return "D";
   return "F";
 }
 
 function getGradeColor(score: number) {
-  if (score >= 8) return "#10b981";
-  if (score >= 6) return "#22c55e";
-  if (score >= 4) return "#f97316";
-  if (score >= 2) return "#ef4444";
+  if (score >= 4) return "#10b981";
+  if (score >= 3) return "#22c55e";
+  if (score >= 2) return "#f97316";
+  if (score >= 1) return "#ef4444";
   return "#dc2626";
 }
 
@@ -60,7 +66,8 @@ export default async function Image({
     );
   }
 
-  const score = building.overall_score;
+  const rawScore = building.overall_score;
+  const score = rawScore !== null ? normalizeScore(rawScore) : null;
   const grade = score !== null ? getLetterGrade(score) : "N/A";
   const gradeColor = score !== null ? getGradeColor(score) : "#94a3b8";
 
@@ -110,7 +117,7 @@ export default async function Image({
                 display: "flex",
               }}
             >
-              {score.toFixed(1)} / 10
+              {score.toFixed(1)} / 5
             </div>
           )}
         </div>

@@ -1,4 +1,4 @@
-import { getLetterGrade, getGradeColor } from "@/lib/constants";
+import { getLetterGrade, getGradeColor, normalizeScore } from "@/lib/constants";
 
 interface LetterGradeProps {
   score: number | null;
@@ -21,7 +21,8 @@ export function LetterGrade({ score, size = "md", showScore = false }: LetterGra
     );
   }
 
-  const grade = getLetterGrade(score);
+  const normalized = normalizeScore(score);
+  const grade = getLetterGrade(normalized);
   const color = getGradeColor(grade);
 
   return (
@@ -34,7 +35,7 @@ export function LetterGrade({ score, size = "md", showScore = false }: LetterGra
       </div>
       {showScore && (
         <span className="text-xs font-medium text-[#64748b]">
-          {score.toFixed(1)}/10
+          {normalized.toFixed(1)}/5
         </span>
       )}
     </div>

@@ -325,7 +325,7 @@ export default async function BuildingSlugPage({ params }: BuildingSlugPageProps
     isChicago ? safe(supabase.from("chicago_demolitions").select("id, permit_number, issue_date, status, work_description, contractor").eq("building_id", buildingId).order("issue_date", { ascending: false }).limit(5), []) : Promise.resolve([]),
     isChicago ? safe(supabase.from("chicago_lead_inspections").select("id, inspection_date, result, risk_level, hazard_type").eq("building_id", buildingId).order("inspection_date", { ascending: false }).limit(10), []) : Promise.resolve([]),
     isChicago ? safe(supabase.from("chicago_affordable_units").select("id, project_name, affordable_units, total_units, income_requirement, status").eq("building_id", buildingId).limit(5), []) : Promise.resolve([]),
-    isChicago ? safe(supabase.from("chicago_rodent_complaints").select("id, created_date, status, service_type").eq("building_id", buildingId).order("created_date", { ascending: false }).limit(20), []) : Promise.resolve([]),
+    Promise.resolve([]), // rodent complaints already appear in 311 tab
     isChicago ? safe(supabase.from("chicago_rlto_violations").select("id, case_number, violation_date, violation_description, status").eq("building_id", buildingId).order("violation_date", { ascending: false }).limit(10), []) : Promise.resolve([]),
     isChicago ? safe(supabase.from("energy_benchmarks").select("energy_star_score, report_year, site_eui").eq("building_id", buildingId).order("report_year", { ascending: false }).limit(1), []) : Promise.resolve([]),
     isMiami ? safe(supabase.from("miami_forty_year_recerts").select("id, recertification_status, due_date, completion_date, engineer_name").eq("building_id", buildingId).limit(1), []) : Promise.resolve([]),

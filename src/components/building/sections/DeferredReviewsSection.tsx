@@ -1,6 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import Link from "next/link";
-import { ChevronRight } from "lucide-react";
 import { ReviewSection } from "@/components/review/ReviewSection";
 import { SaveButton } from "@/components/building/SaveButton";
 import { ShareButton } from "@/components/building/ShareButton";
@@ -34,7 +32,7 @@ export async function DeferredReviewsSection({ building, buildingId, city }: Pro
         .eq("building_id", buildingId)
         .eq("status", "published")
         .order("created_at", { ascending: false })
-        .limit(5),
+        .limit(10),
       [],
     ) as Promise<ReviewWithDetails[]>,
     (async (): Promise<{ monitored: boolean; saved: boolean }> => {
@@ -55,30 +53,17 @@ export async function DeferredReviewsSection({ building, buildingId, city }: Pro
   const shortAddress = building.full_address.split(",")[0]?.trim() || building.full_address;
 
   return (
-    <>
-      <ReviewSection
-        reviews={reviews}
-        buildingId={buildingId}
-        isMonitored={authStatus.monitored}
-        cityPath={`/${city}`}
-        headerActions={
-          <>
-            <SaveButton buildingId={buildingId} initialSaved={authStatus.saved} />
-            <ShareButton address={shortAddress} url={canonicalUrl(buildingUrl(building, city))} />
-          </>
-        }
-      />
-      {building.review_count > reviews.length && (
-        <div className="mt-4 text-center">
-          <Link
-            href={`${buildingUrl(building, city)}/reviews`}
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#3B82F6] hover:text-[#1d4ed8] transition-colors"
-          >
-            See all {building.review_count.toLocaleString()} reviews
-            <ChevronRight className="w-4 h-4" />
-          </Link>
-        </div>
-      )}
-    </>
+    <ReviewSection
+      reviews={reviews}
+      buildingId={buildingId}
+      isMonitored={authStatus.monitored}
+      cityPath={`/${city}`}
+      headerActions={
+        <>
+          <SaveButton buildingId={buildingId} initialSaved={authStatus.saved} />
+          <ShareButton address={shortAddress} url={canonicalUrl(buildingUrl(building, city))} />
+        </>
+      }
+    />
   );
 }

@@ -5,19 +5,25 @@ export const alt = "Landlord Profile - Lucid Rents";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
+function normalizeScore(score: number | null): number {
+  if (score == null) return 0;
+  if (score > 5) return score / 2;
+  return score;
+}
+
 function getLetterGrade(score: number) {
-  if (score >= 8) return "A";
-  if (score >= 6) return "B";
-  if (score >= 4) return "C";
-  if (score >= 2) return "D";
+  if (score >= 4) return "A";
+  if (score >= 3) return "B";
+  if (score >= 2) return "C";
+  if (score >= 1) return "D";
   return "F";
 }
 
 function getGradeColor(score: number) {
-  if (score >= 8) return "#10b981";
-  if (score >= 6) return "#22c55e";
-  if (score >= 4) return "#f97316";
-  if (score >= 2) return "#ef4444";
+  if (score >= 4) return "#10b981";
+  if (score >= 3) return "#22c55e";
+  if (score >= 2) return "#f97316";
+  if (score >= 1) return "#ef4444";
   return "#dc2626";
 }
 
@@ -48,7 +54,8 @@ export default async function Image({
   );
   const scores = buildings
     .map((b: { overall_score: number | null }) => b.overall_score)
-    .filter((s: number | null): s is number => s !== null);
+    .filter((s: number | null): s is number => s !== null)
+    .map((s: number) => normalizeScore(s));
   const avgScore = scores.length > 0
     ? scores.reduce((a: number, b: number) => a + b, 0) / scores.length
     : null;
@@ -95,7 +102,7 @@ export default async function Image({
           </div>
           {avgScore !== null && (
             <div style={{ fontSize: 20, color: "#94a3b8", marginTop: 12, display: "flex" }}>
-              Avg {avgScore.toFixed(1)} / 10
+              Avg {avgScore.toFixed(1)} / 5
             </div>
           )}
         </div>

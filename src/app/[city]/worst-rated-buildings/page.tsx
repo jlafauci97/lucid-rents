@@ -4,7 +4,7 @@ import Link from "next/link";
 import { buildingUrl, canonicalUrl, cityPath, landlordUrl } from "@/lib/seo";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
-import { getRegions, getRegionLabel } from "@/lib/constants";
+import { getRegions, getRegionLabel, normalizeScore } from "@/lib/constants";
 import { type City, isValidCity, CITY_META } from "@/lib/cities";
 import type { Metadata } from "next";
 
@@ -278,7 +278,7 @@ export default async function RankingsPage({ params: routeParams, searchParams }
                         <>
                           <td className="px-4 py-3 text-center">
                             <span className="inline-flex items-center gap-1 text-sm font-semibold text-green-600">
-                              {building.overall_score ? `${building.overall_score.toFixed(1)}★` : "—"}
+                              {building.overall_score ? `${normalizeScore(building.overall_score).toFixed(1)}★` : "—"}
                             </span>
                           </td>
                           <td className="px-4 py-3 text-center">
