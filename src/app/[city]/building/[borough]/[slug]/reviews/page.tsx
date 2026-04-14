@@ -12,7 +12,7 @@ import { cache } from "react";
 import type { Building, ReviewWithDetails } from "@/types";
 import type { Metadata } from "next";
 
-export const revalidate = 3600;
+export const revalidate = 0; // dynamic — no ISR cache
 
 interface ReviewsPageProps {
   params: Promise<{ city: string; borough: string; slug: string }>;
