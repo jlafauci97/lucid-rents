@@ -1,0 +1,171 @@
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
+import { createClient } from "@/lib/supabase/server";
+import { ReviewSection } from "@/components/review/ReviewSection";
+import { SaveButton } from "@/components/building/SaveButton";
+import { ShareButton } from "@/components/building/ShareButton";
+import { regionFromSlug, buildingUrl, canonicalUrl } from "@/lib/seo";
+import { CITY_META, VALID_CITIES, type City } from "@/lib/cities";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
+import { cache } from "react";
+import type { Building, ReviewWithDetails } from "@/types";
+import type { Metadata } from "next";
+
+export const revalidate = 3600;
+
+interface ReviewsPageProps {
+  params: Promise<{ city: string; borough: string; slug: string }>;
+}
+
+const getBuilding = cache(async (boroughSlug: string, slug: string, metro?: string) => {
+  const city = (metro || "nyc") as City;
+  const borough = regionFromSlug(boroughSlug, city);
+
+  const supabase = await createClient();
+  let query = supabase
+    .from("buildings")
+    .select("*")
+    .eq("slug", slug)
+    .eq("borough", borough);
+
+  if (metro) {
+    query = query.eq("metro", metro);
+  }
+
+  const { data } = await query.limit(1);
+
+  if (!data || data.length === 0) return null;
+  return data[0] as Building;
+});
+
+function metroToCity(metro: string | null): City {
+  if (metro && VALID_CITIES.includes(metro as City)) return metro as City;
+  return "nyc";
+}
+
+export async function generateMetadata({
+  params,
+}: ReviewsPageProps): Promise<Metadata> {
+  const { city: cityParam, borough, slug } = await params;
+  const building = await getBuilding(borough, slug, cityParam);
+
+  if (!building) {
+    return { title: "Building Not Found" };
+  }
+
+  const city = metroToCity(building.metro);
+  const title = `Tenant Reviews for ${building.full_address} | Lucid Rents`;
+  const description = `Read all ${building.review_count || 0} tenant reviews for ${building.full_address}. Sort by most recent, highest rated, lowest rated, or most helpful.`;
+  const url = canonicalUrl(`${buildingUrl(building, city)}/reviews`);
+
+  return {
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      title,
+      description,
+      url,
+      siteName: "Lucid Rents",
+      type: "article",
+      locale: "en_US",
+    },
+    twitter: {
+      card: "summary",
+      title,
+      description,
+    },
+  };
+}
+
+const safe = <T,>(promise: PromiseLike<{ data: T | null; error: unknown }>, fallback: T): Promise<T> =>
+  Promise.resolve(promise).then(({ data, error }) => {
+    if (error) console.error("Supabase query error:", error);
+    return data ?? fallback;
+  }).catch((err: unknown) => {
+    console.error("Supabase query exception:", err);
+    return fallback;
+  });
+
+export default async function BuildingReviewsPage({ params }: ReviewsPageProps) {
+  const { city: cityParam, borough, slug } = await params;
+  const building = await getBuilding(borough, slug, cityParam);
+
+  if (!building) notFound();
+
+  const city = metroToCity(building.metro);
+  const cityMeta = CITY_META[city];
+  const supabase = await createClient();
+
+  const [reviews, authStatus] = await Promise.all([
+    safe(
+      supabase
+        .from("reviews")
+        .select(`*, profile:profiles(id, display_name, avatar_url), category_ratings:review_category_ratings(*, category:review_categories(slug, name, icon)), unit:units(unit_number)`)
+        .eq("building_id", building.id)
+        .eq("status", "published")
+        .order("created_at", { ascending: false })
+        .limit(500),
+      [],
+    ) as Promise<ReviewWithDetails[]>,
+    (async (): Promise<{ monitored: boolean; saved: boolean }> => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return { monitored: false, saved: false };
+        const [monitorRes, saveRes] = await Promise.all([
+          supabase.from("monitored_buildings").select("id").eq("user_id", user.id).eq("building_id", building.id).single(),
+          supabase.from("saved_buildings").select("id").eq("user_id", user.id).eq("building_id", building.id).single(),
+        ]);
+        return { monitored: !!monitorRes.data, saved: !!saveRes.data };
+      } catch {
+        return { monitored: false, saved: false };
+      }
+    })(),
+  ]);
+
+  const shortAddress = building.full_address.split(",")[0]?.trim() || building.full_address;
+  const bUrl = buildingUrl(building, city);
+
+  const breadcrumbs = [
+    { label: cityMeta?.name || "NYC", href: `/${city}` },
+    { label: shortAddress, href: bUrl },
+    { label: "Reviews", href: `${bUrl}/reviews` },
+  ];
+
+  return (
+    <main className="min-h-screen bg-[#FAFBFD]">
+      <div className="max-w-3xl mx-auto px-4 py-8">
+        <Breadcrumbs items={breadcrumbs} />
+
+        <Link
+          href={bUrl}
+          className="inline-flex items-center gap-1.5 text-sm text-[#64748B] hover:text-[#1E293B] transition-colors mb-6"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to building
+        </Link>
+
+        <h1 className="text-2xl font-bold text-[#1E293B] mb-1">
+          Tenant Reviews for {shortAddress}
+        </h1>
+        <p className="text-sm text-[#64748B] mb-8">
+          {reviews.length} review{reviews.length !== 1 ? "s" : ""}
+        </p>
+
+        <ReviewSection
+          reviews={reviews}
+          buildingId={building.id}
+          isMonitored={authStatus.monitored}
+          cityPath={`/${city}`}
+          headerActions={
+            <>
+              <SaveButton buildingId={building.id} initialSaved={authStatus.saved} />
+              <ShareButton address={shortAddress} url={canonicalUrl(`${bUrl}/reviews`)} />
+            </>
+          }
+        />
+      </div>
+    </main>
+  );
+}
