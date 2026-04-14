@@ -7,6 +7,7 @@ import {
   X,
   Search,
   Users,
+  MapPin,
   Siren,
   Calculator,
   Radio,
@@ -47,6 +48,7 @@ const primaryLinks: NavLink[] = [
   { path: "/search", icon: Search, label: "Search" },
   { path: "/worst-rated-buildings", icon: BarChart3, label: "Building Rankings" },
   { path: "/landlords", icon: Users, label: "Landlords" },
+  { path: "/neighborhoods", icon: MapPin, label: "Neighborhoods" },
   { path: "/crime", icon: Siren, label: "Crime" },
   { path: "/review/new", icon: PenSquare, label: "Submit Review" },
 ];

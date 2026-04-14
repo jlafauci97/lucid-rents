@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { ChevronDown, ArrowLeftRight, ShieldCheck, ShieldAlert, Wrench, BarChart3, Construction, ClipboardList, Zap, TrainFront, Scale, Tent, FileText, AlertTriangle, Home, Droplets, Flame, Calculator, DollarSign } from "lucide-react";
+import { ChevronDown, ArrowLeftRight, ShieldCheck, ShieldAlert, Wrench, BarChart3, Construction, ClipboardList, Zap, TrainFront, Scale, Tent, FileText, AlertTriangle, Home, Droplets, Flame, Calculator, DollarSign, Newspaper } from "lucide-react";
 import { type City, DEFAULT_CITY, CITY_META } from "@/lib/cities";
 import { cityPath } from "@/lib/seo";
 
@@ -17,6 +17,12 @@ interface ToolItem {
 }
 
 const tools: ToolItem[] = [
+  {
+    path: "/news",
+    icon: Newspaper,
+    label: "News",
+    description: "Latest housing news by city",
+  },
   {
     path: "/rent-stabilization",
     icon: ShieldCheck,
