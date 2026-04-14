@@ -1,0 +1,10 @@
+-- LA Data Parity Migration (already applied)
+-- Tables: lahd_scep_inspections, calenviroscreen, la_assessor_parcels
+-- Building columns: fire_hazard_zone, fire_hazard_detail, fair_plan_risk,
+--   calenviroscreen_percentile, calenviroscreen_tract, parking_type, parking_spaces,
+--   car_dependency_score, assessor_sqft, assessor_lot_sqft, assessed_value,
+--   assessed_land_value, ellis_act_filing, ellis_act_date, rent_registry_status,
+--   buyout_count, buyout_total_amount, scep_last_inspection, scep_compliance_status,
+--   encampment_count_nearby
+-- Source constraints: westside_rentals added to all scraper tables
+-- See git history for full DDL
