@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { AlertTriangle, MessageSquare, Scale, HardHat, Bug, DoorOpen, ClipboardList } from "lucide-react";
+import Link from "next/link";
+import { AlertTriangle, MessageSquare, Scale, HardHat, Bug, DoorOpen, ClipboardList, ChevronRight } from "lucide-react";
 import { ViolationTimeline } from "./ViolationTimeline";
 import { ViolationSummaryTable } from "./ViolationSummaryTable";
 import { ComplaintTimeline } from "./ComplaintTimeline";
@@ -71,7 +72,7 @@ function getTabs(city: City) {
   return enabledKeys.map(k => allTabs[k]);
 }
 
-export function IssuesTabs({ violations, complaints, litigations, dobViolations, bedbugs, evictions, permits, lahdViolationSummary = [], city = DEFAULT_CITY, totalCounts }: IssuesTabsProps) {
+export function IssuesTabs({ violations, complaints, litigations, dobViolations, bedbugs, evictions, permits, lahdViolationSummary = [], city = DEFAULT_CITY, totalCounts, buildingHref }: IssuesTabsProps) {
   const enabledTabs = CITY_TABS[city] || CITY_TABS.nyc;
   const [activeTab, setActiveTab] = useState<TabKey>(enabledTabs[0]);
 
@@ -119,19 +120,63 @@ export function IssuesTabs({ violations, complaints, litigations, dobViolations,
       {/* Tab content */}
       {(() => {
         const agencies = VIOLATION_AGENCIES[city] || VIOLATION_AGENCIES.nyc;
+        const limit = buildingHref ? 5 : undefined;
+        const seeAll = (count: number, label: string) =>
+          buildingHref && count > 5 ? (
+            <div className="mt-3 text-center">
+              <Link href={`${buildingHref}/violations`} className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#3B82F6] hover:text-[#1d4ed8] transition-colors">
+                See all {count.toLocaleString()} {label}
+                <ChevronRight className="w-4 h-4" />
+              </Link>
+            </div>
+          ) : null;
         return (
           <>
             {activeTab === "violations" && (
-              city === "los-angeles"
-                ? <ViolationSummaryTable violations={lahdViolationSummary} agencyLabel={agencies.housing} />
-                : <ViolationTimeline violations={violations} agencyLabel={agencies.housing} total={totalCounts?.violations} />
+              <>
+                {city === "los-angeles"
+                  ? <ViolationSummaryTable violations={limit ? lahdViolationSummary.slice(0, limit) : lahdViolationSummary} agencyLabel={agencies.housing} />
+                  : <ViolationTimeline violations={limit ? violations.slice(0, limit) : violations} agencyLabel={agencies.housing} total={totalCounts?.violations} />
+                }
+                {seeAll(counts.violations, "violations")}
+              </>
             )}
-            {activeTab === "complaints" && <ComplaintTimeline complaints={complaints} total={totalCounts?.complaints} />}
-            {activeTab === "litigations" && <LitigationTimeline litigations={litigations} agencyLabel={agencies.housing} total={totalCounts?.litigations} />}
-            {activeTab === "dob" && <DobViolationTimeline violations={dobViolations} agencyLabel={agencies.building} total={totalCounts?.dob} />}
-            {activeTab === "bedbugs" && <BedBugTimeline reports={bedbugs} total={totalCounts?.bedbugs} />}
-            {activeTab === "evictions" && <EvictionTimeline evictions={evictions} total={totalCounts?.evictions} />}
-            {activeTab === "permits" && <PermitTimeline permits={permits} agencyLabel={agencies.building} total={totalCounts?.permits} />}
+            {activeTab === "complaints" && (
+              <>
+                <ComplaintTimeline complaints={limit ? complaints.slice(0, limit) : complaints} total={totalCounts?.complaints} />
+                {seeAll(counts.complaints, "complaints")}
+              </>
+            )}
+            {activeTab === "litigations" && (
+              <>
+                <LitigationTimeline litigations={limit ? litigations.slice(0, limit) : litigations} agencyLabel={agencies.housing} total={totalCounts?.litigations} />
+                {seeAll(counts.litigations, "litigations")}
+              </>
+            )}
+            {activeTab === "dob" && (
+              <>
+                <DobViolationTimeline violations={limit ? dobViolations.slice(0, limit) : dobViolations} agencyLabel={agencies.building} total={totalCounts?.dob} />
+                {seeAll(counts.dob, "violations")}
+              </>
+            )}
+            {activeTab === "bedbugs" && (
+              <>
+                <BedBugTimeline reports={limit ? bedbugs.slice(0, limit) : bedbugs} total={totalCounts?.bedbugs} />
+                {seeAll(counts.bedbugs, "bedbug reports")}
+              </>
+            )}
+            {activeTab === "evictions" && (
+              <>
+                <EvictionTimeline evictions={limit ? evictions.slice(0, limit) : evictions} total={totalCounts?.evictions} />
+                {seeAll(counts.evictions, "evictions")}
+              </>
+            )}
+            {activeTab === "permits" && (
+              <>
+                <PermitTimeline permits={limit ? permits.slice(0, limit) : permits} agencyLabel={agencies.building} total={totalCounts?.permits} />
+                {seeAll(counts.permits, "permits")}
+              </>
+            )}
           </>
         );
       })()}
