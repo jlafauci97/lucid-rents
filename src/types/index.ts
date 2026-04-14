@@ -66,6 +66,27 @@ export interface Building {
   unsafe_structure_count: number;
   sea_level_risk_zone: string | null;
   sea_level_risk_feet: number | null;
+  // LA-specific
+  fire_hazard_zone: string | null;
+  ellis_act_filing: boolean;
+  ellis_act_date: string | null;
+  buyout_count: number;
+  buyout_total_amount: number | null;
+  parking_type: string | null;
+  parking_spaces: number | null;
+  car_dependency_score: number | null;
+  calenviroscreen_percentile: number | null;
+  fair_plan_risk: boolean;
+  rent_registry_status: string | null;
+  // Houston-specific
+  hcad_land_use: string | null;
+  super_neighborhood: string | null;
+  is_dangerous_building: boolean;
+  dangerous_building_count: number;
+  flood_claims_count: number;
+  in_floodplain: boolean;
+  // Chicago
+  rodent_complaint_count: number;
   created_at: string;
   updated_at: string;
 }
