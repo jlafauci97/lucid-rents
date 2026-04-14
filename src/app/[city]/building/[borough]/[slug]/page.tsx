@@ -143,8 +143,8 @@ export async function generateMetadata({
 
   const title =
     building.review_count > 0 && building.overall_score != null
-      ? `${building.full_address} — Rated ${normalizeScore(building.overall_score).toFixed(1)}/5 by Tenants`
-      : `${building.full_address} — Violations, Reviews & Building Score`;
+      ? `${buildingLabel}${titleSuffix} — Rated ${normalizeScore(building.overall_score).toFixed(1)}/5 by Tenants`
+      : `${buildingLabel}${titleSuffix} — Violations, Reviews & Building Score`;
   const isChicagoMeta = cityParam === "chicago" || cityParam === "miami" || cityParam === "houston";
   const metaViolationCount = isChicagoMeta
     ? (building.dob_violation_count || 0)
