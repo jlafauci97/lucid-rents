@@ -1,0 +1,17 @@
+branch=$(git symbolic-ref --short HEAD 2>/dev/null)
+
+if [ "$branch" = "main" ]; then
+  echo ""
+  echo "❌ Direct commits to main are blocked."
+  echo ""
+  echo "   Create a feature branch first:"
+  echo "     git checkout -b fix/your-thing origin/main"
+  echo ""
+  echo "   Then commit, push, and open a PR:"
+  echo "     git push -u origin fix/your-thing"
+  echo "     gh pr create --fill"
+  echo ""
+  echo "   (Emergency bypass: git commit --no-verify)"
+  echo ""
+  exit 1
+fi
