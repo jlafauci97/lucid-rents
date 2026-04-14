@@ -52,12 +52,23 @@ export async function DeferredRentIntelligenceSection({ building, buildingId, ci
   const deweyBuildingRents = dedupeByMonthBeds(deweyBuildingRentsRaw as { month: string; beds: number }[]) as typeof deweyBuildingRentsRaw;
   const deweyNeighborhoodRents = dedupeByMonthBeds(deweyNeighborhoodRentsRaw as { month: string; beds: number }[]) as typeof deweyNeighborhoodRentsRaw;
 
-  // Filter dewey amenity premiums to only amenities this building actually has
+  // Filter dewey amenity premiums to only amenities this building actually has,
+  // then deduplicate by amenity name — keep the entry with the largest sample size
+  // (most statistically reliable). The dewey table has multiple rows per amenity
+  // per zip (one per bedroom count), which causes duplicate display otherwise.
   const buildingAmenityNames = amenities.map((a: { amenity: string }) => a.amenity.toLowerCase());
-  const filteredDeweyPremiums = (deweyAmenityPremiums || []).filter((dp: { amenity: string }) => {
+  const matchedPremiums = (deweyAmenityPremiums || []).filter((dp: { amenity: string }) => {
     const keyword = dp.amenity.replace(/_/g, " ");
     return buildingAmenityNames.some((name: string) => name.includes(keyword));
   });
+  const bestByAmenity = new Map<string, { amenity: string; premium_dollars: number; premium_pct: number; sample_size: number }>();
+  for (const dp of matchedPremiums as { amenity: string; premium_dollars: number; premium_pct: number; sample_size: number }[]) {
+    const existing = bestByAmenity.get(dp.amenity);
+    if (!existing || (dp.sample_size || 0) > (existing.sample_size || 0)) {
+      bestByAmenity.set(dp.amenity, dp);
+    }
+  }
+  const filteredDeweyPremiums = Array.from(bestByAmenity.values());
 
   // Only fully bail if we have NO rent data at all (building, neighborhood, or seasonal).
   // Otherwise we render the section with whatever we have — most buildings lack

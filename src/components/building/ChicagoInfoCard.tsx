@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
-import { ShieldCheck, AlertTriangle, MapPin, Building2, Hammer, FlaskConical, Home, Bug, Zap, Gavel } from "lucide-react";
+import { ShieldCheck, AlertTriangle, MapPin, Building2, Hammer, FlaskConical, Zap, Gavel } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 
 interface ChicagoInfoCardProps {
@@ -12,7 +12,7 @@ interface ChicagoInfoCardProps {
   demolitions?: { id: string; permit_number: string; issue_date: string; status: string; work_description: string; contractor: string }[];
   leadInspections?: { id: string; inspection_date: string; result: string; risk_level: string; hazard_type: string }[];
   affordableUnits?: unknown[];
-  rodentComplaints?: { id: string; created_date: string; status: string; service_type: string }[];
+  rodentComplaints?: unknown[];
   rltoViolations?: { id: string; case_number: string; violation_date: string; violation_description: string; status: string }[];
   energyRating?: number | null;
   energyYear?: number | null;
@@ -26,13 +26,15 @@ export function ChicagoInfoCard({
   communityArea,
   demolitions = [],
   leadInspections = [],
-  rodentComplaints = [],
   rltoViolations = [],
   energyRating,
   energyYear,
   siteEui,
 }: ChicagoInfoCardProps) {
-  const hasData = isRltoProtected || isScofflaw || ward || communityArea || demolitions.length > 0 || leadInspections.length > 0 || rodentComplaints.length > 0 || rltoViolations.length > 0 || energyRating;
+  const hasData =
+    isRltoProtected || isScofflaw || ward || communityArea ||
+    demolitions.length > 0 || leadInspections.length > 0 ||
+    rltoViolations.length > 0 || energyRating != null;
   if (!hasData) return null;
 
   return (
@@ -66,12 +68,18 @@ export function ChicagoInfoCard({
               </Badge>
             )}
           </div>
-          {energyRating && (
+
+          {energyRating != null && (
             <div className="flex items-center gap-2 text-sm text-[#5E6687]">
               <Zap className="w-4 h-4" />
-              <span>Energy Star Score: <strong>{energyRating}</strong>/100{energyYear ? ` (${energyYear})` : ""}{siteEui ? ` · Site EUI: ${siteEui}` : ""}</span>
+              <span>
+                Energy Star Score: <strong>{energyRating}</strong>/100
+                {energyYear && <span className="text-xs ml-1">({energyYear})</span>}
+                {siteEui != null && <span className="text-xs ml-1">· Site EUI: {siteEui.toFixed(1)}</span>}
+              </span>
             </div>
           )}
+
           {rltoViolations.length > 0 && (
             <div className="text-sm text-[#5E6687]">
               <div className="flex items-center gap-1 font-medium mb-1">
@@ -80,14 +88,7 @@ export function ChicagoInfoCard({
               </div>
             </div>
           )}
-          {rodentComplaints.length > 0 && (
-            <div className="text-sm text-[#5E6687]">
-              <div className="flex items-center gap-1 font-medium mb-1">
-                <Bug className="w-4 h-4" />
-                {rodentComplaints.length} Rodent Complaint{rodentComplaints.length !== 1 ? "s" : ""}
-              </div>
-            </div>
-          )}
+
           {demolitions.length > 0 && (
             <div className="text-sm text-[#5E6687]">
               <div className="flex items-center gap-1 font-medium mb-1">
