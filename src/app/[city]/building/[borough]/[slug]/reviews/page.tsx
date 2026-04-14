@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { ReviewSection } from "@/components/review/ReviewSection";
 import { SaveButton } from "@/components/building/SaveButton";
@@ -14,8 +14,11 @@ import type { Metadata } from "next";
 
 export const revalidate = 0; // dynamic — no ISR cache
 
+const PAGE_SIZE = 10;
+
 interface ReviewsPageProps {
   params: Promise<{ city: string; borough: string; slug: string }>;
+  searchParams: Promise<{ page?: string }>;
 }
 
 const getBuilding = cache(async (boroughSlug: string, slug: string, metro?: string) => {
@@ -88,8 +91,12 @@ const safe = <T,>(promise: PromiseLike<{ data: T | null; error: unknown }>, fall
     return fallback;
   });
 
-export default async function BuildingReviewsPage({ params }: ReviewsPageProps) {
+export default async function BuildingReviewsPage({ params, searchParams }: ReviewsPageProps) {
   const { city: cityParam, borough, slug } = await params;
+  const { page: pageParam } = await searchParams;
+  const currentPage = Math.max(1, parseInt(pageParam || "1", 10));
+  const offset = (currentPage - 1) * PAGE_SIZE;
+
   const building = await getBuilding(borough, slug, cityParam);
 
   if (!building) notFound();
@@ -97,6 +104,9 @@ export default async function BuildingReviewsPage({ params }: ReviewsPageProps) 
   const city = metroToCity(building.metro);
   const cityMeta = CITY_META[city];
   const supabase = await createClient();
+
+  const totalReviews = building.review_count || 0;
+  const totalPages = Math.ceil(totalReviews / PAGE_SIZE);
 
   const [reviews, authStatus] = await Promise.all([
     safe(
@@ -106,7 +116,7 @@ export default async function BuildingReviewsPage({ params }: ReviewsPageProps) 
         .eq("building_id", building.id)
         .eq("status", "published")
         .order("created_at", { ascending: false })
-        .limit(500),
+        .range(offset, offset + PAGE_SIZE - 1),
       [],
     ) as Promise<ReviewWithDetails[]>,
     (async (): Promise<{ monitored: boolean; saved: boolean }> => {
@@ -126,11 +136,12 @@ export default async function BuildingReviewsPage({ params }: ReviewsPageProps) 
 
   const shortAddress = building.full_address.split(",")[0]?.trim() || building.full_address;
   const bUrl = buildingUrl(building, city);
+  const reviewsBase = `${bUrl}/reviews`;
 
   const breadcrumbs = [
     { label: cityMeta?.name || "NYC", href: `/${city}` },
     { label: shortAddress, href: bUrl },
-    { label: "Reviews", href: `${bUrl}/reviews` },
+    { label: "Reviews", href: reviewsBase },
   ];
 
   return (
@@ -150,7 +161,8 @@ export default async function BuildingReviewsPage({ params }: ReviewsPageProps) 
           Tenant Reviews for {shortAddress}
         </h1>
         <p className="text-sm text-[#64748B] mb-8">
-          {reviews.length} review{reviews.length !== 1 ? "s" : ""}
+          Showing {offset + 1}&ndash;{Math.min(offset + PAGE_SIZE, totalReviews)} of {totalReviews.toLocaleString()} review{totalReviews !== 1 ? "s" : ""}
+          {currentPage > 1 && ` \u00b7 Page ${currentPage}`}
         </p>
 
         <ReviewSection
@@ -161,10 +173,45 @@ export default async function BuildingReviewsPage({ params }: ReviewsPageProps) 
           headerActions={
             <>
               <SaveButton buildingId={building.id} initialSaved={authStatus.saved} />
-              <ShareButton address={shortAddress} url={canonicalUrl(`${bUrl}/reviews`)} />
+              <ShareButton address={shortAddress} url={canonicalUrl(reviewsBase)} />
             </>
           }
         />
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between mt-8 pt-6 border-t border-[#e2e8f0]">
+            <span className="text-xs text-[#64748b]">
+              Page {currentPage} of {totalPages}
+            </span>
+            <div className="flex items-center gap-2">
+              {currentPage > 1 ? (
+                <Link
+                  href={`${reviewsBase}?page=${currentPage - 1}`}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e2e8f0] text-[#334155] hover:bg-[#f8fafc] transition-colors"
+                >
+                  <ChevronLeft className="w-3 h-3" /> Previous
+                </Link>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e2e8f0] text-[#334155] opacity-40 cursor-not-allowed">
+                  <ChevronLeft className="w-3 h-3" /> Previous
+                </span>
+              )}
+              {currentPage < totalPages ? (
+                <Link
+                  href={`${reviewsBase}?page=${currentPage + 1}`}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e2e8f0] text-[#334155] hover:bg-[#f8fafc] transition-colors"
+                >
+                  Next <ChevronRight className="w-3 h-3" />
+                </Link>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e2e8f0] text-[#334155] opacity-40 cursor-not-allowed">
+                  Next <ChevronRight className="w-3 h-3" />
+                </span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </main>
   );
