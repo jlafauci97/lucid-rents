@@ -28,6 +28,7 @@ import { NavV2 } from "@/components/building/v2/NavV2";
 import { Crumbs } from "@/components/building/v2/Crumbs";
 import { HeroV2 } from "@/components/building/v2/HeroV2";
 import { RecordStrip } from "@/components/building/v2/RecordStrip";
+import { WayfinderRail } from "@/components/building/v2/WayfinderRail";
 
 export const revalidate = 86400;
 
@@ -77,6 +78,10 @@ export default async function BuildingV2Page({ params }: Props) {
   const data = await loadBuildingV2Data(building);
   const addressFirstLine = building.full_address.split(",")[0] ?? building.full_address;
 
+  // Grade for wayfinder header — derived from overall_score.
+  const score = building.overall_score ?? 0;
+  const grade = score >= 90 ? "A+" : score >= 85 ? "A" : score >= 80 ? "A-" : score >= 75 ? "B+" : score >= 70 ? "B" : score >= 65 ? "B-" : score >= 60 ? "C+" : score >= 55 ? "C" : score >= 50 ? "C-" : score >= 45 ? "D" : score > 0 ? "F" : "—";
+
   return (
     <>
       {/* Skip to main content (a11y) */}
@@ -109,16 +114,21 @@ export default async function BuildingV2Page({ params }: Props) {
         {/* ── <section class="record"> ── */}
         <RecordStrip building={building} reviews={data.reviews} />
 
-        {/* Placeholder for remaining pieces */}
-        <div id="main-content" style={{ padding: "48px 0", color: "var(--ink-mute)", fontFamily: "var(--mono)", fontSize: "var(--f-14)" }}>
-          <p style={{ marginBottom: 12 }}>
-            V2 preview — rebuilding section-by-section from mockup.
-          </p>
-          <p style={{ marginBottom: 4 }}>✅ NavV2 (lines 2940–2961)</p>
-          <p style={{ marginBottom: 4 }}>✅ Crumbs (lines 2966–2972)</p>
-          <p style={{ marginBottom: 4 }}>✅ HeroV2 (lines 2975–3083)</p>
-          <p style={{ marginBottom: 4 }}>✅ RecordStrip (lines 3086–3117)</p>
-          <p style={{ marginBottom: 4, opacity: 0.5 }}>⏳ Wayfinder, 9 sections, right rail</p>
+        {/* ── <div class="body">: wayfinder + main column + right rail ── */}
+        <div className="body">
+          <WayfinderRail grade={grade} buildingName={addressFirstLine} />
+
+          <div className="main" id="main-content">
+            <div style={{ padding: "24px 0", color: "var(--ink-mute)", fontFamily: "var(--mono)", fontSize: "var(--f-14)" }}>
+              <p style={{ marginBottom: 12 }}>V2 preview — rebuilding section-by-section from mockup.</p>
+              <p style={{ marginBottom: 4 }}>✅ NavV2 (lines 2940–2961)</p>
+              <p style={{ marginBottom: 4 }}>✅ Crumbs (lines 2966–2972)</p>
+              <p style={{ marginBottom: 4 }}>✅ HeroV2 (lines 2975–3083)</p>
+              <p style={{ marginBottom: 4 }}>✅ RecordStrip (lines 3086–3117)</p>
+              <p style={{ marginBottom: 4 }}>✅ WayfinderRail (lines 3123–3176)</p>
+              <p style={{ marginBottom: 4, opacity: 0.5 }}>⏳ 9 sections + right rail</p>
+            </div>
+          </div>
         </div>
       </main>
     </>
