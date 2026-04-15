@@ -95,26 +95,8 @@ export default async function BuildingV2Page({ params }: Props) {
 
   return (
     <>
-      {/* Skip to main content (a11y) */}
-      <a
-        href="#main-content"
-        style={{
-          position: "absolute",
-          left: "-9999px",
-          top: 8,
-          zIndex: 200,
-          padding: "8px 16px",
-          background: "var(--v2-brand)",
-          color: "#fff",
-          fontFamily: "var(--v2-sans)",
-          fontSize: 14,
-          fontWeight: 600,
-          borderRadius: "var(--v2-radius-sm)",
-          textDecoration: "none",
-        }}
-        onFocus={(e) => (e.currentTarget.style.left = "8px")}
-        onBlur={(e) => (e.currentTarget.style.left = "-9999px")}
-      >
+      {/* Skip to main content (a11y) — CSS-only, no client handlers */}
+      <a href="#main-content" className="v2-skip-link">
         Skip to main content
       </a>
 

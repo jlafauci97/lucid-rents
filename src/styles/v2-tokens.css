@@ -145,3 +145,23 @@
 .v2 button[style*="border-radius: var(--v2-radius-chip)"]:focus-visible {
   border-radius: var(--v2-radius-chip);
 }
+
+/* Skip-to-content link — visually hidden until focused, no JS required */
+.v2-skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 8px;
+  z-index: 200;
+  padding: 8px 16px;
+  background: var(--v2-brand);
+  color: #fff;
+  font-family: var(--v2-sans);
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: var(--v2-radius-sm);
+  text-decoration: none;
+}
+.v2-skip-link:focus,
+.v2-skip-link:focus-visible {
+  left: 8px;
+}
