@@ -30,6 +30,7 @@ import { HeroV2 } from "@/components/building/v2/HeroV2";
 import { RecordStrip } from "@/components/building/v2/RecordStrip";
 import { WayfinderRail } from "@/components/building/v2/WayfinderRail";
 import { S01_RentalIntelligence } from "@/components/building/v2/sections/S01_RentalIntelligence";
+import { S02_Issues } from "@/components/building/v2/sections/S02_Issues";
 
 export const revalidate = 86400;
 
@@ -78,6 +79,7 @@ export default async function BuildingV2Page({ params }: Props) {
 
   const data = await loadBuildingV2Data(building);
   const addressFirstLine = building.full_address.split(",")[0] ?? building.full_address;
+  const cityPrefix = CITY_META[typedCity]?.urlPrefix ?? "nyc";
 
   // Grade for wayfinder header — derived from overall_score.
   const score = building.overall_score ?? 0;
@@ -124,6 +126,14 @@ export default async function BuildingV2Page({ params }: Props) {
               rents={data.rents}
               neighborhoodName={building.borough}
               isRentStabilized={building.is_rent_stabilized}
+            />
+            <S02_Issues
+              issues={data.issues}
+              hpdCount={building.violation_count ?? 0}
+              dobCount={building.dob_violation_count ?? 0}
+              complaintsCount={building.complaint_count ?? 0}
+              evictionsCount={building.eviction_count ?? 0}
+              seeAllUrl={`/${cityPrefix}/building/${borough}/${slug}/violations`}
             />
           </div>
         </div>
