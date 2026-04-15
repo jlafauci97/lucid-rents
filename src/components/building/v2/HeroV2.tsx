@@ -8,6 +8,7 @@
 import Link from "next/link";
 import type { Building } from "@/types";
 import type { BuildingV2Data } from "@/app/[city]/building/[borough]/[slug]/v2/_data";
+import { scoreToGrade } from "@/app/[city]/building/[borough]/[slug]/v2/_data";
 import type { City } from "@/lib/cities";
 
 interface Props {
@@ -44,13 +45,6 @@ function addressParts(full: string): { street: string; rest: string } {
   return { street: full.slice(0, i).trim(), rest: full.slice(i + 1).trim() };
 }
 
-function scoreToGrade(score: number | null): string {
-  if (score == null) return "—";
-  if (score >= 90) return "A+"; if (score >= 85) return "A"; if (score >= 80) return "A-";
-  if (score >= 75) return "B+"; if (score >= 70) return "B"; if (score >= 65) return "B-";
-  if (score >= 60) return "C+"; if (score >= 55) return "C"; if (score >= 50) return "C-";
-  if (score >= 45) return "D"; return "F";
-}
 
 export function HeroV2({ building, rents, reviews, landlord }: Props) {
   const { street, rest } = addressParts(building.full_address);

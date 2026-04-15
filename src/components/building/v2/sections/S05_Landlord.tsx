@@ -14,6 +14,7 @@ import type { BuildingV2Data } from "@/app/[city]/building/[borough]/[slug]/v2/_
 import type { Building } from "@/types";
 import type { City } from "@/lib/cities";
 import { landlordUrl, buildingUrl } from "@/lib/seo";
+import { normalizeScore } from "@/lib/constants";
 
 interface Props {
   building: Building;
@@ -21,16 +22,22 @@ interface Props {
   city: City;
 }
 
+// Maps an overall_score (stored 0-5, sometimes 0-100) to {letter, CSS class,
+// 0-10 formatted string} for the landlord shield + building-list badges.
 function scoreToGrade10(score: number | null): { letter: string; cls: string; score10: string } {
   if (score == null) return { letter: "—", cls: "ll-g-c", score10: "—" };
-  const s = score;
-  const score10 = (s / 10).toFixed(1);
-  if (s >= 85) return { letter: "A", cls: "ll-g-a", score10 };
-  if (s >= 75) return { letter: "B+", cls: "ll-g-b", score10 };
-  if (s >= 65) return { letter: "B", cls: "ll-g-b", score10 };
-  if (s >= 55) return { letter: "C+", cls: "ll-g-c", score10 };
-  if (s >= 45) return { letter: "C", cls: "ll-g-c", score10 };
-  return { letter: "D", cls: "ll-g-c", score10 };
+  const s = normalizeScore(score); // → 0-5
+  const score10 = (s * 2).toFixed(1); // display as X.X / 10
+  if (s >= 4.5) return { letter: "A", cls: "ll-g-a", score10 };
+  if (s >= 4.0) return { letter: "A-", cls: "ll-g-a", score10 };
+  if (s >= 3.65) return { letter: "B+", cls: "ll-g-b", score10 };
+  if (s >= 3.3) return { letter: "B", cls: "ll-g-b", score10 };
+  if (s >= 3.0) return { letter: "B-", cls: "ll-g-b", score10 };
+  if (s >= 2.65) return { letter: "C+", cls: "ll-g-c", score10 };
+  if (s >= 2.3) return { letter: "C", cls: "ll-g-c", score10 };
+  if (s >= 2.0) return { letter: "C-", cls: "ll-g-c", score10 };
+  if (s >= 1.0) return { letter: "D", cls: "ll-g-c", score10 };
+  return { letter: "F", cls: "ll-g-c", score10 };
 }
 
 export function S05_Landlord({ building, landlord, city }: Props) {
@@ -97,7 +104,7 @@ export function S05_Landlord({ building, landlord, city }: Props) {
 
         <div className="landlord-stats">
           <div className="s"><div className="n blue">{landlord.portfolioSize.toLocaleString()}</div><div className="l">buildings</div></div>
-          <div className="s"><div className="n">{landlord.portfolioAvgScore != null ? landlord.portfolioAvgScore.toFixed(0) : "—"}</div><div className="l">avg score</div></div>
+          <div className="s"><div className="n">{landlord.portfolioAvgScore != null ? normalizeScore(landlord.portfolioAvgScore).toFixed(1) : "—"}</div><div className="l">avg score / 5</div></div>
           <div className="s"><div className="n good">{portfolio.letter}</div><div className="l">portfolio grade</div></div>
           <div className="s"><div className="n">{landlord.otherBuildings.length}</div><div className="l">nearby owned</div></div>
         </div>

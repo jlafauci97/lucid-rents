@@ -20,6 +20,7 @@ import { neighborhoodUrl, neighborhoodsUrl } from "@/lib/seo";
 import { getNeighborhoodNameByCity } from "@/lib/neighborhoods";
 import { getNeighborhoodVibe } from "@/lib/neighborhood-vibes";
 import type { BuildingV2Data } from "@/app/[city]/building/[borough]/[slug]/v2/_data";
+import { BigMap } from "@/components/building/v2/BigMap";
 
 interface Props {
   building: Building;
@@ -91,10 +92,19 @@ export function S06_Location({ building, city, nearby, neighborhoodStats }: Prop
       </div>
 
       <div className="location-grid">
-        <div className="big-map" role="img" aria-label={`Map of ${street}, ${borough}`}>
-          <span className="pin"></span>
-          <div className="mlabel">{street} · {borough}{coords(building) ? ` · ${coords(building)}` : ""}</div>
-        </div>
+        {building.latitude != null && building.longitude != null ? (
+          <BigMap
+            latitude={building.latitude}
+            longitude={building.longitude}
+            address={building.full_address}
+            labelLine={`${street} · ${borough}${coords(building) ? ` · ${coords(building)}` : ""}`}
+          />
+        ) : (
+          <div className="big-map" role="img" aria-label="Map unavailable">
+            <span className="pin"></span>
+            <div className="mlabel">{street} · {borough} · coordinates missing</div>
+          </div>
+        )}
 
         <div className="walk-panel">
           <div className="walk-scores">

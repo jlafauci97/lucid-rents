@@ -1,22 +1,27 @@
 import { createClient } from "@/lib/supabase/server";
 import type { Building, EnergyBenchmark } from "@/types";
 import { normalizeTimelineEvents, type TimelineEvent } from "@/lib/timeline";
+import { normalizeScore } from "@/lib/constants";
 
 // ──────────────────────────────────────────────────────────────
-// scoreToGrade — maps 0-100 overall score → letter grade
+// scoreToGrade — maps a score to a letter grade.
+// Overall scores are stored on a 0–5 scale (star rating), with some legacy
+// 0–100 values still floating around. `normalizeScore` handles both.
+// Fine-grained grade letters (+/-) match the mockup's verdict card.
 // ──────────────────────────────────────────────────────────────
 export function scoreToGrade(score: number | null): string {
   if (score === null || score === undefined) return "—";
-  if (score >= 90) return "A+";
-  if (score >= 85) return "A";
-  if (score >= 80) return "A-";
-  if (score >= 75) return "B+";
-  if (score >= 70) return "B";
-  if (score >= 65) return "B-";
-  if (score >= 60) return "C+";
-  if (score >= 55) return "C";
-  if (score >= 50) return "C-";
-  if (score >= 45) return "D";
+  const s = normalizeScore(score); // → 0-5
+  if (s >= 4.75) return "A+";
+  if (s >= 4.35) return "A";
+  if (s >= 4.0)  return "A-";
+  if (s >= 3.65) return "B+";
+  if (s >= 3.3)  return "B";
+  if (s >= 3.0)  return "B-";
+  if (s >= 2.65) return "C+";
+  if (s >= 2.3)  return "C";
+  if (s >= 2.0)  return "C-";
+  if (s >= 1.0)  return "D";
   return "F";
 }
 
