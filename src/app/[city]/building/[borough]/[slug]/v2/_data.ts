@@ -98,6 +98,12 @@ export interface BuildingV2Data {
     safetyScore: number;
     precinct: string | null;
   };
+  neighborhoodStats: {
+    // Aggregated over buildings in the same zip.
+    buildingsTracked: number;
+    avgLucidIQ: number | null;   // 0–5 scale
+    median1BR: number | null;    // latest monthly neighborhood median for 1BR
+  };
   amenities: Array<{ amenity: string; category: string | null }>;
   landlord: {
     name: string | null;
@@ -121,6 +127,28 @@ export interface BuildingV2Data {
     total_units: number | null;
   }>;
   timeline: TimelineEvent[];
+}
+
+// ──────────────────────────────────────────────────────────────
+// Shared categorizers (mirror production page conventions)
+// ──────────────────────────────────────────────────────────────
+function categorizeHpdViolation(desc: string): string {
+  const d = (desc ?? "").toUpperCase();
+  if (/MICE|ROACH|INFESTATION|PEST|BED\s?BUG/.test(d)) return "Pest Infestation";
+  if (/PAINT|PLASTER/.test(d)) return "Paint/Plaster";
+  if (/LEAK|WATER\s+(LEAK|SUPPLY)/.test(d)) return "Water Leak";
+  if (/WINDOW|GUARD/.test(d)) return "Window/Guard";
+  if (/SMOKE|CARBON|DETECTOR/.test(d)) return "Smoke/CO Detector";
+  if (/DOOR|LOCK/.test(d)) return "Door/Lock";
+  if (/FLOOR|TILE/.test(d)) return "Flooring";
+  if (/HEAT|HOT WATER|BOILER/.test(d)) return "Heat/Hot Water";
+  if (/LEAD/.test(d)) return "Lead Paint";
+  if (/ELECTRIC|OUTLET|WIRING/.test(d)) return "Electrical";
+  if (/ROOF|CEILING/.test(d)) return "Roof/Ceiling";
+  if (/MOLD|MILDEW/.test(d)) return "Mold/Mildew";
+  if (/ELEVATOR/.test(d)) return "Elevator";
+  if (/FIRE\s?ESCAPE|STAIR/.test(d)) return "Fire Escape/Stairs";
+  return "Other";
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -177,6 +205,7 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
     nearbyTransit,
     nearbySchools,
     crimeAgg,
+    neighborhoodStats,
   ] = await Promise.all([
     // Energy benchmark (latest year)
     safe(async () => {
@@ -227,17 +256,23 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
       }));
     }, [] as BuildingV2Data["rents"]["neighborhood"]),
 
-    // Top HPD violation categories (by class: A/B/C/I)
+    // Top HPD violation categories — categorize by nov_description (Paint/Plaster,
+    // Water Leak, Door/Lock, etc.), NOT by class letter. Matches production page.
     safe(async () => {
       const { data } = await supabase
         .from("hpd_violations")
-        .select("class")
-        .eq("building_id", buildingId);
+        .select("nov_description")
+        .eq("building_id", buildingId)
+        .not("nov_description", "is", null)
+        .order("inspection_date", { ascending: false })
+        .limit(200);
       if (!data) return [];
       const counts = new Map<string, number>();
       for (const row of data) {
-        const key = (row as { class: string | null }).class ?? "Other";
-        counts.set(key, (counts.get(key) ?? 0) + 1);
+        const desc = (row as { nov_description: string | null }).nov_description ?? "";
+        const cat = categorizeHpdViolation(desc);
+        if (cat === "Other") continue;
+        counts.set(cat, (counts.get(cat) ?? 0) + 1);
       }
       return Array.from(counts.entries())
         .map(([category, count]) => ({ category, count }))
@@ -585,6 +620,34 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
       const precinct = [...precinctCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
       return { total12mo, violent, property, qualityOfLife: qol, safetyScore, precinct };
     }, { total12mo: 0, violent: 0, property: 0, qualityOfLife: 0, safetyScore: 50, precinct: null } as BuildingV2Data["crime"]),
+
+    // Neighborhood stats — buildings tracked + avg score + median 1BR for this zip.
+    safe(async () => {
+      if (!zipCode) return { buildingsTracked: 0, avgLucidIQ: null, median1BR: null };
+      // Buildings in this zip
+      const { data: nbhBuildings } = await supabase
+        .from("buildings")
+        .select("id, overall_score")
+        .eq("zip_code", zipCode);
+      const rows = (nbhBuildings ?? []) as Array<{ id: string; overall_score: number | null }>;
+      const buildingsTracked = rows.length;
+      const scores = rows.map((b) => b.overall_score).filter((n): n is number => typeof n === "number");
+      const avgLucidIQ = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
+
+      // Latest 1BR neighborhood median — try dewey_neighborhood_rents first.
+      let median1BR: number | null = null;
+      const { data: deweyRents } = await supabase
+        .from("dewey_neighborhood_rents")
+        .select("month, beds, median_rent")
+        .eq("zip", zipCode)
+        .eq("beds", 1)
+        .order("month", { ascending: false })
+        .limit(1);
+      const latest = (deweyRents?.[0] as { median_rent?: number | null } | undefined)?.median_rent;
+      if (typeof latest === "number") median1BR = latest;
+
+      return { buildingsTracked, avgLucidIQ, median1BR };
+    }, { buildingsTracked: 0, avgLucidIQ: null, median1BR: null } as BuildingV2Data["neighborhoodStats"]),
   ]);
 
   return {
@@ -624,5 +687,6 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
       schoolsPrivate: nearbySchools.priv,
     },
     crime: crimeAgg,
+    neighborhoodStats,
   };
 }

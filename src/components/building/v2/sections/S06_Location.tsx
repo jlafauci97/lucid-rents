@@ -23,6 +23,7 @@ interface Props {
   building: Building;
   city: City;
   nearby: BuildingV2Data["nearby"];
+  neighborhoodStats: BuildingV2Data["neighborhoodStats"];
 }
 
 // Derive walk/transit/bike scores from real nearby-stop data.
@@ -55,7 +56,7 @@ function coords(b: Building): string {
   return "";
 }
 
-export function S06_Location({ building, city, nearby }: Props) {
+export function S06_Location({ building, city, nearby, neighborhoodStats }: Props) {
   const { walk: w, transit: t, bike: bk } = deriveScores(nearby);
   const cityName = ((CITY_META as Record<string, { name?: string; fullName?: string }>)[city])?.name ?? city;
   const borough = building.borough;
@@ -144,9 +145,18 @@ export function S06_Location({ building, city, nearby }: Props) {
             Learn more about {neighborhoodName}{cityName ? ` in ${cityName}` : ""} — buildings tracked, typical rents, and resident sentiment.
           </p>
           <div className="nb-meta">
-            <span className="nb-stat"><b>—</b><small>buildings tracked</small></span>
-            <span className="nb-stat"><b>—</b><small>avg LucidIQ</small></span>
-            <span className="nb-stat"><b>—</b><small>median 1BR</small></span>
+            <span className="nb-stat">
+              <b>{neighborhoodStats.buildingsTracked > 0 ? neighborhoodStats.buildingsTracked.toLocaleString() : "—"}</b>
+              <small>buildings tracked</small>
+            </span>
+            <span className="nb-stat">
+              <b>{neighborhoodStats.avgLucidIQ != null ? neighborhoodStats.avgLucidIQ.toFixed(1) : "—"}</b>
+              <small>avg LucidIQ</small>
+            </span>
+            <span className="nb-stat">
+              <b>{neighborhoodStats.median1BR != null ? "$" + Math.round(neighborhoodStats.median1BR).toLocaleString() : "—"}</b>
+              <small>median 1BR</small>
+            </span>
           </div>
           <span className="nb-cta">
             Explore {neighborhoodName}
