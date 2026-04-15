@@ -9,6 +9,9 @@ import { NavV2 } from "@/components/building/v2/NavV2";
 import { WayfinderRail } from "@/components/building/v2/WayfinderRail";
 import { HeroV2 } from "@/components/building/v2/HeroV2";
 import { RecordStrip } from "@/components/building/v2/RecordStrip";
+import { S01_RentalIntelligence } from "@/components/building/v2/sections/S01_RentalIntelligence";
+import { S02_Issues } from "@/components/building/v2/sections/S02_Issues";
+import { S03_TenantReviews } from "@/components/building/v2/sections/S03_TenantReviews";
 
 export const revalidate = 86400;
 
@@ -107,10 +110,24 @@ export default async function BuildingV2Page({ params }: Props) {
             complaintsCount={complaintsCount}
           />
 
-          {/* Section grid (Phase 2 content goes here) */}
-          <div id="rent" />
-          <div id="issues" />
-          <div id="reviews" />
+          {/* Phase 2A — main content sections */}
+          <S01_RentalIntelligence
+            rents={data.rents}
+            neighborhoodName={building.borough ?? "your neighborhood"}
+            zipCode={building.zip_code ?? null}
+          />
+
+          <S02_Issues
+            issues={data.issues}
+            buildingName={building.full_address}
+          />
+
+          <S03_TenantReviews
+            reviews={data.reviews}
+            reviewsUrl={`/${cityPrefix}/building/${regionSlug(building.borough)}/${building.slug}/reviews`}
+          />
+
+          {/* Phase 2B+ placeholders */}
           <div id="amenities" />
           <div id="landlord" />
           <div id="location" />
