@@ -18,6 +18,8 @@ export default function V2Layout({ children }: { children: React.ReactNode }) {
         body:has(.v2) > footer { display: none !important; }
         body:has(.v2) > .cookie-consent,
         body:has(.v2) > [class*="cookie"] { display: none !important; }
+        /* CookieConsent renders a position:fixed div at body level */
+        body:has(.v2) > div[class*="fixed"][class*="bottom-0"] { display: none !important; }
 
         /* Root layout wraps children in a <main> with min-height calc —
            neutralize it so our v2 chrome sits directly under the body. */
