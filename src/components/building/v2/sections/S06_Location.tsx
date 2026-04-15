@@ -157,19 +157,12 @@ export function S06_Location({ building, city }: Props) {
   const hasCoords =
     building.latitude !== null && building.longitude !== null;
 
-  // Walk/transit/bike scores — not on the Building type yet; show — if absent
-  const walkScore = (building as Record<string, unknown>).walk_score as
-    | number
-    | null
-    | undefined;
-  const transitScore = (building as Record<string, unknown>).transit_score as
-    | number
-    | null
-    | undefined;
-  const bikeScore = (building as Record<string, unknown>).bike_score as
-    | number
-    | null
-    | undefined;
+  // Walk/transit/bike scores — not yet in the Building type; cast safely
+  const b = building as unknown as Record<string, unknown>;
+  const walkScore = typeof b.walk_score === "number" ? b.walk_score : null;
+  const transitScore =
+    typeof b.transit_score === "number" ? b.transit_score : null;
+  const bikeScore = typeof b.bike_score === "number" ? b.bike_score : null;
 
   return (
     <section

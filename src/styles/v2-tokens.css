@@ -37,3 +37,111 @@
   --v2-mono: var(--font-geist-mono, "Geist Mono"), ui-monospace, monospace;
   --v2-serif: var(--font-young-serif, "Young Serif"), "Iowan Old Style", "Palatino", serif;
 }
+
+/* ─────────────────────────────────────────────────────────
+   Task 4.4 — Responsive breakpoints
+   ───────────────────────────────────────────────────────── */
+
+/* Page-level grid — also defined inline in page.tsx but centralised here */
+.v2-page-grid {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 32px 24px;
+  display: grid;
+  grid-template-columns: 220px 1fr 320px;
+  gap: 24px;
+  align-items: start;
+}
+
+/* < 1200px: right rail collapses below main content */
+@media (max-width: 1199px) {
+  .v2-page-grid {
+    grid-template-columns: 220px 1fr;
+  }
+  .v2-rail {
+    grid-column: 1 / -1;
+    margin-top: 32px;
+    /* Switch rail from vertical stack to horizontal scroll */
+    display: flex !important;
+    gap: 16px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+  .v2-rail > * {
+    flex: 0 0 300px;
+    min-width: 0;
+  }
+}
+
+/* < 900px: wayfinder hides, single-column */
+@media (max-width: 899px) {
+  .v2-page-grid {
+    grid-template-columns: 1fr;
+  }
+  .v2-wayfinder-rail {
+    display: none !important;
+  }
+  .v2-rail {
+    flex-wrap: wrap;
+  }
+  .v2-rail > * {
+    flex: 0 0 calc(50% - 8px);
+  }
+  /* Hero: collapse 2-col to 1-col */
+  .v2-hero {
+    grid-template-columns: 1fr !important;
+  }
+  /* RecordStrip: allow horizontal scroll on small screens */
+  .v2-record-strip {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+  }
+  .v2-record-strip-cell {
+    min-width: 90px;
+    flex-shrink: 0;
+  }
+}
+
+/* < 600px: single-column everything, condensed padding */
+@media (max-width: 599px) {
+  .v2-page-grid {
+    padding: 16px 16px;
+    gap: 16px;
+  }
+  .v2-rail > * {
+    flex: 0 0 85vw;
+  }
+  /* Nav links: hide all except Rankings + Landlords */
+  .v2-nav-link-hide-mobile {
+    display: none !important;
+  }
+  /* Search: full-width */
+  .v2-nav-search {
+    max-width: 100% !important;
+    flex: 1 !important;
+  }
+  /* Section padding reduction */
+  .v2-section {
+    padding-top: 48px !important;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────
+   Task 4.5 — Accessibility: focus states
+   ───────────────────────────────────────────────────────── */
+
+/* Visible focus rings on all interactive elements within .v2 */
+.v2 a:focus-visible,
+.v2 button:focus-visible,
+.v2 details summary:focus-visible,
+.v2 [role="tab"]:focus-visible {
+  outline: 2px solid var(--v2-brand);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Override for pill-shaped elements */
+.v2 a[style*="border-radius: var(--v2-radius-chip)"]:focus-visible,
+.v2 button[style*="border-radius: var(--v2-radius-chip)"]:focus-visible {
+  border-radius: var(--v2-radius-chip);
+}

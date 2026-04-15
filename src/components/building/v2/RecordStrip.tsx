@@ -28,6 +28,7 @@ interface StatCellProps {
 function StatCell({ value, label, last }: StatCellProps) {
   return (
     <div
+      className="v2-record-strip-cell"
       style={{
         flex: 1,
         display: "flex",
@@ -81,6 +82,7 @@ export function RecordStrip({ building, reviews, hpdCount, evictionCount, compla
 
   return (
     <div
+      className="v2-record-strip"
       style={{
         display: "flex",
         alignItems: "stretch",

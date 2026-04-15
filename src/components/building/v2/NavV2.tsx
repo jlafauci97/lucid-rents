@@ -60,6 +60,7 @@ export function NavV2({ city }: Props) {
 
   return (
     <nav
+      aria-label="Site navigation"
       style={{
         background: "var(--v2-navy)",
         color: "#fff",
@@ -129,29 +130,33 @@ export function NavV2({ city }: Props) {
             flexShrink: 0,
           }}
         >
-          {NAV_LINKS.map((link) => (
-            <Link
-              key={link.label}
-              href={link.href(cityPrefix)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 5,
-                padding: "6px 10px",
-                borderRadius: "var(--v2-radius-sm)",
-                color: "rgba(255,255,255,0.75)",
-                fontFamily: "var(--v2-sans)",
-                fontSize: 13,
-                fontWeight: 500,
-                textDecoration: "none",
-                whiteSpace: "nowrap",
-                transition: "color 0.15s, background 0.15s",
-              }}
-            >
-              {link.icon}
-              {link.label}
-            </Link>
-          ))}
+          {NAV_LINKS.map((link) => {
+            const hideMobile = !["Rankings", "Landlords"].includes(link.label);
+            return (
+              <Link
+                key={link.label}
+                href={link.href(cityPrefix)}
+                className={hideMobile ? "v2-nav-link-hide-mobile" : undefined}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 5,
+                  padding: "6px 10px",
+                  borderRadius: "var(--v2-radius-sm)",
+                  color: "rgba(255,255,255,0.75)",
+                  fontFamily: "var(--v2-sans)",
+                  fontSize: 13,
+                  fontWeight: 500,
+                  textDecoration: "none",
+                  whiteSpace: "nowrap",
+                  transition: "color 0.15s, background 0.15s",
+                }}
+              >
+                {link.icon}
+                {link.label}
+              </Link>
+            );
+          })}
         </div>
 
         {/* Login */}
