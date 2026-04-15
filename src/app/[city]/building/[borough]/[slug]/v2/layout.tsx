@@ -26,7 +26,12 @@ export default function V2Layout({ children }: { children: React.ReactNode }) {
         body:has(.v2) > main { min-height: 0 !important; padding: 0 !important; margin: 0 !important; }
         body:has(.v2) > main > .v2 { display: block; }
       `}</style>
-      <div className="v2">{children}</div>
+      {/*
+        zoom: 0.8 applied inline because Tailwind/PostCSS strips `zoom`
+        from stylesheet rules during processing. Inline style bypasses that.
+        Matches the mockup's body { zoom: 0.8 }.
+      */}
+      <div className="v2" style={{ zoom: 0.8 }}>{children}</div>
     </>
   );
 }
