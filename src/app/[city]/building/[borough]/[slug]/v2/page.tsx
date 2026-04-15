@@ -4,8 +4,11 @@ import { regionFromSlug } from "@/lib/seo";
 import { VALID_CITIES, type City } from "@/lib/cities";
 import { cache } from "react";
 import type { Building } from "@/types";
-import { loadBuildingV2Data } from "./_data";
+import { loadBuildingV2Data, scoreToGrade } from "./_data";
 import { NavV2 } from "@/components/building/v2/NavV2";
+import { WayfinderRail } from "@/components/building/v2/WayfinderRail";
+import { CITY_META } from "@/lib/cities";
+import { buildingUrl } from "@/lib/seo";
 
 export const revalidate = 86400;
 
@@ -35,20 +38,43 @@ export default async function BuildingV2Page({ params }: Props) {
 
   const data = await loadBuildingV2Data(building);
 
+  const typedCity = city as City;
+  const cityPrefix = CITY_META[typedCity].urlPrefix;
+  const grade = scoreToGrade(building.overall_score);
+  const reviewsUrl = `/${cityPrefix}/building/${building.borough.toLowerCase().replace(/\s+/g, "-")}/${building.slug}/review`;
+
   return (
     <>
-      <NavV2 city={city as City} />
-      <main style={{ padding: "40px 24px", maxWidth: 1200, margin: "0 auto" }}>
-        <p style={{ fontFamily: "var(--v2-mono)", color: "var(--v2-ink-mute)", fontSize: 12 }}>
-          V2 PREVIEW · {building.metro}
-        </p>
-        <h1 style={{ fontFamily: "var(--v2-serif)", fontSize: 48, margin: "12px 0" }}>
-          {building.full_address}
-        </h1>
-        <p style={{ color: "var(--v2-ink-soft)", marginBottom: 24 }}>
-          Data bag loaded. Phase 1+ wires sections.
-        </p>
-      </main>
+      <NavV2 city={typedCity} />
+      <div
+        style={{
+          maxWidth: 1440,
+          margin: "0 auto",
+          padding: "32px 24px",
+          display: "grid",
+          gridTemplateColumns: "220px 1fr",
+          gap: 24,
+          alignItems: "start",
+        }}
+      >
+        <WayfinderRail
+          grade={grade}
+          rating={data.reviews.avgRating}
+          buildingName={building.full_address}
+          reviewsUrl={reviewsUrl}
+        />
+        <main>
+          <p style={{ fontFamily: "var(--v2-mono)", color: "var(--v2-ink-mute)", fontSize: 12 }}>
+            V2 PREVIEW · {building.metro}
+          </p>
+          <h1 style={{ fontFamily: "var(--v2-serif)", fontSize: 48, margin: "12px 0" }}>
+            {building.full_address}
+          </h1>
+          <p style={{ color: "var(--v2-ink-soft)", marginBottom: 24 }}>
+            Hero + RecordStrip render below (Task 1.3).
+          </p>
+        </main>
+      </div>
     </>
   );
 }
