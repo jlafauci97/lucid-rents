@@ -148,7 +148,7 @@ export default async function BuildingV2Page({ params }: Props) {
             <S04_Amenities amenities={data.amenities} />
             <S05_Landlord building={building} landlord={data.landlord} city={typedCity} />
             <S06_Location building={building} city={typedCity} nearby={data.nearby} neighborhoodStats={data.neighborhoodStats} />
-            <S07_History timeline={data.timeline} building={building} />
+            <S07_History building={building} landlord={data.landlord} />
             <S08_SimilarNearby similar={data.similar} city={typedCity} />
             <S09_FAQ building={building} data={data} />
           </div>

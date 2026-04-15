@@ -17,6 +17,8 @@ import type { Building } from "@/types";
 import type { City } from "@/lib/cities";
 import { CITY_META } from "@/lib/cities";
 import { neighborhoodUrl, neighborhoodsUrl } from "@/lib/seo";
+import { getNeighborhoodNameByCity } from "@/lib/neighborhoods";
+import { getNeighborhoodVibe } from "@/lib/neighborhood-vibes";
 import type { BuildingV2Data } from "@/app/[city]/building/[borough]/[slug]/v2/_data";
 
 interface Props {
@@ -62,10 +64,14 @@ export function S06_Location({ building, city, nearby, neighborhoodStats }: Prop
   const borough = building.borough;
   const street = building.full_address.split(",")[0] ?? building.full_address;
 
-  // Neighborhood anchor — use borough as fallback since Building type doesn't
-  // expose a separate neighborhood field in a unified way.
-  const neighborhoodName = borough;
+  // Resolve the *real* neighborhood name + description by zip (Hell's Kitchen,
+  // Chelsea, Park Slope, etc.) rather than falling back to the borough label.
+  const realNbhName = building.zip_code ? getNeighborhoodNameByCity(building.zip_code, city) : null;
+  const neighborhoodName = realNbhName || borough;
   const neighborhoodHref = building.zip_code ? neighborhoodUrl(building.zip_code, city) : "#";
+  const vibe = building.zip_code ? getNeighborhoodVibe(city, building.zip_code) : null;
+  const nbhDescription = vibe?.description
+    ?? `Learn more about ${neighborhoodName}${cityName ? ` in ${cityName}` : ""} — buildings tracked, typical rents, and resident sentiment.`;
 
   const ring = (val: number) => (
     <svg className="ring" viewBox="0 0 36 36">
@@ -141,9 +147,7 @@ export function S06_Location({ building, city, nearby, neighborhoodStats }: Prop
             The neighborhood
           </div>
           <h3 className="nb-name">{neighborhoodName}</h3>
-          <p className="nb-desc">
-            Learn more about {neighborhoodName}{cityName ? ` in ${cityName}` : ""} — buildings tracked, typical rents, and resident sentiment.
-          </p>
+          <p className="nb-desc">{nbhDescription}</p>
           <div className="nb-meta">
             <span className="nb-stat">
               <b>{neighborhoodStats.buildingsTracked > 0 ? neighborhoodStats.buildingsTracked.toLocaleString() : "—"}</b>
