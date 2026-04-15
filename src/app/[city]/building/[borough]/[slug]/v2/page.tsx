@@ -24,7 +24,6 @@ import { VALID_CITIES, CITY_META, type City } from "@/lib/cities";
 import { cache } from "react";
 import type { Building } from "@/types";
 import { loadBuildingV2Data } from "./_data";
-import { NavV2 } from "@/components/building/v2/NavV2";
 import { Crumbs } from "@/components/building/v2/Crumbs";
 import { HeroV2 } from "@/components/building/v2/HeroV2";
 import { RecordStrip } from "@/components/building/v2/RecordStrip";
@@ -98,8 +97,7 @@ export default async function BuildingV2Page({ params }: Props) {
       {/* Skip to main content (a11y) */}
       <a href="#main-content" className="v2-skip-link">Skip to main content</a>
 
-      {/* ────── <nav class="nav"> ────── */}
-      <NavV2 city={typedCity} />
+      {/* Site-wide nav is rendered by the root layout (Navbar). */}
 
       {/* ────── <main class="container"> ────── */}
       <main className="container">

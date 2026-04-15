@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "../styles/v2-tokens.css";
+@import "../styles/site-nav.css";
 
 html {
   overflow-x: hidden;
