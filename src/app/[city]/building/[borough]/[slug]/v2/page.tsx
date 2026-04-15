@@ -29,6 +29,7 @@ import { Crumbs } from "@/components/building/v2/Crumbs";
 import { HeroV2 } from "@/components/building/v2/HeroV2";
 import { RecordStrip } from "@/components/building/v2/RecordStrip";
 import { WayfinderRail } from "@/components/building/v2/WayfinderRail";
+import { S01_RentalIntelligence } from "@/components/building/v2/sections/S01_RentalIntelligence";
 
 export const revalidate = 86400;
 
@@ -119,15 +120,11 @@ export default async function BuildingV2Page({ params }: Props) {
           <WayfinderRail grade={grade} buildingName={addressFirstLine} />
 
           <div className="main" id="main-content">
-            <div style={{ padding: "24px 0", color: "var(--ink-mute)", fontFamily: "var(--mono)", fontSize: "var(--f-14)" }}>
-              <p style={{ marginBottom: 12 }}>V2 preview — rebuilding section-by-section from mockup.</p>
-              <p style={{ marginBottom: 4 }}>✅ NavV2 (lines 2940–2961)</p>
-              <p style={{ marginBottom: 4 }}>✅ Crumbs (lines 2966–2972)</p>
-              <p style={{ marginBottom: 4 }}>✅ HeroV2 (lines 2975–3083)</p>
-              <p style={{ marginBottom: 4 }}>✅ RecordStrip (lines 3086–3117)</p>
-              <p style={{ marginBottom: 4 }}>✅ WayfinderRail (lines 3123–3176)</p>
-              <p style={{ marginBottom: 4, opacity: 0.5 }}>⏳ 9 sections + right rail</p>
-            </div>
+            <S01_RentalIntelligence
+              rents={data.rents}
+              neighborhoodName={building.borough}
+              isRentStabilized={building.is_rent_stabilized}
+            />
           </div>
         </div>
       </main>
