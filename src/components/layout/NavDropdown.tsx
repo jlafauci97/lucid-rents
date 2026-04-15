@@ -207,7 +207,10 @@ export function NavDropdown({ city = DEFAULT_CITY }: { city?: City }) {
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 mt-2 w-[520px] bg-[#1A2B3D] border border-white/10 rounded-lg shadow-xl overflow-hidden z-50">
+        <div
+          className="absolute top-full right-0 mt-2 w-[520px] max-w-[calc(100vw-2rem)] bg-[#1A2B3D] border border-white/10 rounded-lg shadow-xl overflow-hidden z-50"
+          style={{ maxHeight: "calc(100vh - 80px)", overflowY: "auto" }}
+        >
           <div className="grid grid-cols-2">
             {tools
               .filter((tool) => !tool.cities || tool.cities.includes(city))
