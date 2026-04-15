@@ -5,6 +5,7 @@ import { VALID_CITIES, type City } from "@/lib/cities";
 import { cache } from "react";
 import type { Building } from "@/types";
 import { loadBuildingV2Data } from "./_data";
+import { NavV2 } from "@/components/building/v2/NavV2";
 
 export const revalidate = 86400;
 
@@ -35,41 +36,19 @@ export default async function BuildingV2Page({ params }: Props) {
   const data = await loadBuildingV2Data(building);
 
   return (
-    <main style={{ padding: "40px 24px", maxWidth: 1200, margin: "0 auto" }}>
-      <p style={{ fontFamily: "var(--v2-mono)", color: "var(--v2-ink-mute)", fontSize: 12 }}>
-        V2 PREVIEW · {building.metro}
-      </p>
-      <h1 style={{ fontFamily: "var(--v2-serif)", fontSize: 48, margin: "12px 0" }}>
-        {building.full_address}
-      </h1>
-      <p style={{ color: "var(--v2-ink-soft)", marginBottom: 24 }}>
-        Data bag loaded. Phase 1+ wires sections.
-      </p>
-      <pre style={{
-        fontFamily: "var(--v2-mono)",
-        fontSize: 12,
-        background: "var(--v2-paper-2)",
-        padding: 16,
-        borderRadius: 8,
-        overflow: "auto",
-        color: "var(--v2-ink-soft)",
-      }}>
-{`rents.current:          ${data.rents.current.length}
-rents.historic:         ${data.rents.historic.length}
-rents.neighborhood:     ${data.rents.neighborhood.length}
-issues.hpdTop:          ${data.issues.hpdTop.length}
-issues.complaintsTop:   ${data.issues.complaintsTop.length}
-issues.recentViolations: ${data.issues.recentViolations.length}
-issues.trends:          ${data.issues.trends.length}
-reviews.total:          ${data.reviews.total}
-reviews.pullQuotes:     ${data.reviews.pullQuotes.length}
-amenities:              ${data.amenities.length}
-landlord.name:          ${data.landlord.name ?? "(none)"}
-landlord.otherBuildings: ${data.landlord.otherBuildings.length}
-landlord.portfolioSize: ${data.landlord.portfolioSize}
-similar:                ${data.similar.length}
-energy:                 ${data.energy ? "present" : "(none)"}`}
-      </pre>
-    </main>
+    <>
+      <NavV2 city={city as City} />
+      <main style={{ padding: "40px 24px", maxWidth: 1200, margin: "0 auto" }}>
+        <p style={{ fontFamily: "var(--v2-mono)", color: "var(--v2-ink-mute)", fontSize: 12 }}>
+          V2 PREVIEW · {building.metro}
+        </p>
+        <h1 style={{ fontFamily: "var(--v2-serif)", fontSize: 48, margin: "12px 0" }}>
+          {building.full_address}
+        </h1>
+        <p style={{ color: "var(--v2-ink-soft)", marginBottom: 24 }}>
+          Data bag loaded. Phase 1+ wires sections.
+        </p>
+      </main>
+    </>
   );
 }
