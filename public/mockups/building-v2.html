@@ -1,0 +1,1379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Manhattan Plaza · 484 W 43rd St — LucidRents (mockup v2)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+/* ---------- Tokens ---------- */
+:root {
+  /* Brand — LucidRents palette */
+  --ink:        #0F1D2E;
+  --ink-soft:   #1e293b;
+  --ink-mute:   #64748b;
+  --navy:       #3B82F6;   /* accent blue used where v1 used its navy */
+  --navy-hi:    #2563EB;
+  --primary:    #0F1D2E;   /* deep brand navy for backgrounds/dark surfaces if needed */
+  --sky:        #dbeafe;
+  --sky-deep:   #60a5fa;
+  --paper:      #f8fafc;
+  --paper-2:    #f1f5f9;
+  --surface:    #ffffff;
+  --border:     #e2e8f0;
+  --border-hi:  #cbd5e1;
+  --good:       #10b981;
+  --warn:       #f97316;
+  --bad:        #ef4444;
+  --sun:        #bfdbfe;   /* re-purposed: soft blue highlight (no yellow) */
+
+  /* Type scale (app-ui, fixed rem, 1.25 ratio) */
+  --f-12: 0.75rem;
+  --f-14: 0.875rem;
+  --f-16: 1rem;
+  --f-18: 1.125rem;
+  --f-22: 1.375rem;
+  --f-28: 1.75rem;
+  --f-36: 2.25rem;
+  --f-48: 3rem;
+  --f-72: 4.5rem;
+  --f-120: 7.5rem;
+
+  /* Space (4pt scale) */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+  --s-8: 64px;
+  --s-9: 96px;
+
+  --radius: 14px;
+  --radius-sm: 8px;
+  --radius-chip: 999px;
+
+  --sans: "Geist", system-ui, -apple-system, sans-serif;
+  --mono: "Geist Mono", ui-monospace, monospace;
+  --serif: "Young Serif", "Iowan Old Style", "Palatino", serif;
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: var(--f-16);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body { background: var(--paper); }
+
+a { color: inherit; text-decoration: none; }
+a:hover { color: var(--navy-hi); }
+
+::selection { background: var(--sky); color: var(--ink); }
+
+/* ---------- Top nav ---------- */
+.nav {
+  position: sticky; top: 0; z-index: 40;
+  backdrop-filter: saturate(1.2) blur(8px);
+  background: color-mix(in oklch, var(--paper) 88%, transparent);
+  border-bottom: 1px solid var(--border);
+}
+.nav-inner {
+  max-width: 1440px; margin: 0 auto;
+  display: flex; align-items: center; gap: var(--s-6);
+  padding: var(--s-3) var(--s-5);
+}
+.brand {
+  font-family: var(--serif);
+  font-size: var(--f-22);
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  display: flex; align-items: baseline; gap: 6px;
+}
+.brand .dot { width: 10px; height: 10px; border-radius: 3px; background: var(--navy); display: inline-block; transform: translateY(-1px); }
+.nav-search {
+  flex: 1; max-width: 520px;
+  display: flex; align-items: center; gap: var(--s-2);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-chip);
+  padding: 8px 14px;
+  color: var(--ink-soft);
+  font-size: var(--f-14);
+}
+.nav-search svg { flex: 0 0 16px; opacity: 0.7; }
+.nav-links { display: flex; gap: var(--s-5); font-size: var(--f-14); color: var(--ink-soft); margin-left: auto; }
+.nav-links a { padding: 6px 0; }
+.nav-login { font-size: var(--f-14); padding: 8px 14px; border: 1px solid var(--navy); color: var(--navy); border-radius: var(--radius-chip); }
+.nav-login:hover { background: var(--navy); color: var(--paper); }
+
+/* Mockup banner */
+.mockup-banner {
+  background: var(--navy); color: var(--paper);
+  font-family: var(--mono); font-size: var(--f-12);
+  text-align: center; padding: 6px var(--s-4);
+  letter-spacing: 0.06em; text-transform: uppercase;
+}
+.mockup-banner span { opacity: 0.75; margin-left: var(--s-3); text-transform: none; letter-spacing: 0.02em; }
+
+/* ---------- Layout ---------- */
+.container {
+  max-width: 1440px; margin: 0 auto;
+  padding: 0 var(--s-5);
+}
+.crumbs {
+  font-family: var(--mono); font-size: var(--f-12);
+  color: var(--ink-mute);
+  padding: var(--s-5) 0 var(--s-3);
+  display: flex; gap: 8px; flex-wrap: wrap;
+  letter-spacing: 0.02em;
+}
+.crumbs a:hover { color: var(--navy); }
+.crumbs .sep { opacity: 0.5; }
+.crumbs .now { color: var(--ink); }
+
+/* ---------- Hero ---------- */
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: var(--s-7);
+  padding: var(--s-5) 0 var(--s-6);
+  align-items: end;
+}
+.hero-left h1 {
+  font-family: var(--serif);
+  font-size: clamp(2.6rem, 5.2vw, 4.6rem);
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  margin: 0 0 var(--s-3);
+  color: var(--ink);
+}
+.hero-left .subaddr {
+  font-family: var(--mono); font-size: var(--f-14); color: var(--ink-mute);
+  display: flex; gap: var(--s-3); flex-wrap: wrap; letter-spacing: 0.02em;
+  margin-bottom: var(--s-5);
+}
+.hero-left .subaddr .pin {
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.quick-chips { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px;
+  background: var(--paper-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-chip);
+  font-size: var(--f-14);
+  color: var(--ink-soft);
+}
+.chip strong { color: var(--ink); font-weight: 600; }
+.chip.sky { background: color-mix(in oklch, var(--sky) 40%, var(--paper)); border-color: color-mix(in oklch, var(--sky-deep) 25%, var(--border)); color: var(--navy); }
+.chip.ink { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+/* Verdict card */
+.verdict {
+  position: relative;
+  padding: var(--s-6) var(--s-5) var(--s-5);
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 1px 0 #f8fafc, 0 24px 48px -32px color-mix(in oklch, var(--navy) 40%, transparent);
+}
+.verdict-eyebrow {
+  font-family: var(--mono); font-size: var(--f-12);
+  text-transform: uppercase; letter-spacing: 0.12em;
+  color: var(--ink-mute);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.verdict-eyebrow .src { color: var(--navy); }
+.grade-row {
+  display: flex; align-items: flex-start; gap: var(--s-5);
+  margin-top: var(--s-3);
+}
+.grade {
+  font-family: var(--serif);
+  font-size: var(--f-120);
+  line-height: 0.86;
+  letter-spacing: -0.04em;
+  color: var(--navy);
+  position: relative;
+}
+.grade::after {
+  content: '';
+  position: absolute; left: -4%; right: -8%; bottom: 8%;
+  height: 14px;
+  background: var(--sun);
+  opacity: 0.55;
+  z-index: -1;
+  transform: rotate(-1.2deg) skewX(-6deg);
+  border-radius: 3px;
+}
+.grade-meta { padding-top: 16px; }
+.grade-meta .score { font-family: var(--mono); font-size: var(--f-14); color: var(--ink-mute); letter-spacing: 0.04em; }
+.grade-meta .tl {
+  font-family: var(--serif);
+  font-size: var(--f-22);
+  line-height: 1.3;
+  color: var(--ink);
+  margin-top: 6px;
+  max-width: 28ch;
+}
+.verdict-axes {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: var(--s-3);
+  margin-top: var(--s-5); padding-top: var(--s-4);
+  border-top: 1px solid var(--border);
+}
+.axis { display: flex; flex-direction: column; gap: 6px; }
+.axis .label { font-size: var(--f-12); color: var(--ink-mute); font-family: var(--mono); letter-spacing: 0.04em; text-transform: uppercase; }
+.axis .dotline { display: flex; align-items: center; gap: 6px; }
+.axis .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border-hi); }
+.axis .dot.on { background: var(--good); }
+.axis .dot.warn { background: var(--warn); }
+.axis .dot.bad { background: var(--bad); }
+.axis .val { font-size: var(--f-14); color: var(--ink); font-weight: 500; }
+
+/* The Record ribbon */
+.record {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0;
+  margin: var(--s-5) 0 var(--s-7);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--paper);
+  overflow: hidden;
+}
+.record .r-cell {
+  padding: var(--s-4) var(--s-5);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 4px;
+}
+.record .r-cell:last-child { border-right: none; }
+.record .r-k { font-family: var(--mono); font-size: var(--f-12); color: var(--ink-mute); text-transform: uppercase; letter-spacing: 0.06em; }
+.record .r-v { font-family: var(--serif); font-size: var(--f-28); color: var(--ink); letter-spacing: -0.01em; }
+.record .r-cell.ok .r-v { color: var(--navy); }
+.record .r-cell.warn .r-v { color: var(--warn); }
+.record .r-cell.bad .r-v { color: var(--bad); }
+.record .r-cell .r-sub { font-size: var(--f-12); color: var(--ink-mute); }
+
+/* ---------- Body grid: wayfinder + main + facts ---------- */
+.body {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr) 300px;
+  gap: var(--s-7);
+  align-items: start;
+  padding-bottom: var(--s-9);
+}
+
+/* Wayfinder */
+.wayfinder {
+  position: sticky; top: 84px;
+  font-size: var(--f-14);
+  color: var(--ink-mute);
+  display: flex; flex-direction: column; gap: var(--s-4);
+}
+.wayfinder .mini-grade {
+  display: flex; align-items: center; gap: var(--s-3);
+  padding: var(--s-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--paper);
+}
+.wayfinder .mini-grade .g {
+  font-family: var(--serif); font-size: var(--f-36);
+  color: var(--navy); line-height: 1;
+}
+.wayfinder .mini-grade .t {
+  font-family: var(--mono); font-size: var(--f-12);
+  color: var(--ink-mute); text-transform: uppercase; letter-spacing: 0.06em;
+}
+.wayfinder .mini-grade .t b { display: block; font-family: var(--serif); font-size: var(--f-16); letter-spacing: -0.01em; color: var(--ink); text-transform: none; margin-top: 2px; }
+.waylist { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 2px; }
+.waylist li a {
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  color: var(--ink-mute);
+  font-family: var(--mono); font-size: var(--f-12);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.waylist li a:hover { background: var(--surface); color: var(--ink); }
+.waylist li.active a { color: var(--navy); background: color-mix(in oklch, var(--sky) 35%, var(--paper)); }
+.waylist .num { width: 22px; font-family: var(--mono); color: var(--ink-mute); }
+
+.wayfinder .tools {
+  display: flex; flex-direction: column; gap: 6px;
+  padding-top: var(--s-3); border-top: 1px solid var(--border);
+}
+.tool { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: var(--f-13); color: var(--ink-mute); }
+.tool:hover { color: var(--navy); }
+
+/* Facts rail */
+.facts {
+  position: sticky; top: 84px;
+  padding: var(--s-5);
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: flex; flex-direction: column; gap: var(--s-4);
+}
+.facts h4 {
+  margin: 0; font-family: var(--mono); font-size: var(--f-12);
+  text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-mute);
+}
+.fact-row {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--border);
+  font-size: var(--f-14);
+}
+.fact-row:last-child { border-bottom: none; }
+.fact-row .k { color: var(--ink-mute); }
+.fact-row .v { color: var(--ink); font-weight: 500; }
+.fact-row .v.mono { font-family: var(--mono); font-size: var(--f-13); }
+
+.facts .download {
+  margin-top: var(--s-3);
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 12px;
+  background: var(--ink); color: var(--paper);
+  border-radius: var(--radius-sm);
+  font-family: var(--mono); font-size: var(--f-12);
+  text-transform: uppercase; letter-spacing: 0.08em;
+}
+.facts .download:hover { background: var(--navy); color: var(--paper); }
+
+/* ---------- Main narrative sections ---------- */
+.main { min-width: 0; } /* allow shrinking for charts */
+.section { padding: var(--s-5) 0 var(--s-7); border-top: 1px solid var(--border); }
+.section:first-child { border-top: none; padding-top: 0; }
+.section-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  gap: var(--s-4); margin-bottom: var(--s-5);
+}
+.section-head .num {
+  font-family: var(--mono); font-size: var(--f-12);
+  color: var(--navy); letter-spacing: 0.12em;
+}
+.section-head h2 {
+  font-family: var(--serif);
+  font-size: var(--f-48); margin: 6px 0 0; letter-spacing: -0.02em;
+  color: var(--ink); line-height: 1.05;
+  max-width: 22ch;
+}
+.section-head .meta {
+  font-family: var(--mono); font-size: var(--f-12);
+  color: var(--ink-mute); text-align: right;
+}
+
+.prose {
+  max-width: 68ch;
+  font-size: var(--f-18); line-height: 1.65;
+  color: var(--ink-soft);
+}
+.prose p + p { margin-top: 1em; }
+.prose b, .prose strong { color: var(--ink); font-weight: 600; }
+
+/* Receipt chip (inline source citation) */
+.receipt {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-family: var(--mono); font-size: 11px;
+  padding: 2px 6px;
+  background: color-mix(in oklch, var(--sky) 30%, var(--paper));
+  color: var(--navy);
+  border-radius: 4px;
+  letter-spacing: 0.02em;
+  vertical-align: baseline;
+  white-space: nowrap;
+}
+.receipt:hover { background: color-mix(in oklch, var(--sky) 55%, var(--paper)); }
+.receipt .arr { opacity: 0.7; }
+
+/* Callout "What this means for you" */
+.means {
+  margin-top: var(--s-5);
+  padding: var(--s-5);
+  background: color-mix(in oklch, var(--sky) 25%, var(--paper));
+  border-radius: var(--radius);
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: var(--s-5);
+  align-items: start;
+}
+.means .tag {
+  font-family: var(--mono); font-size: var(--f-12);
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--navy);
+  display: flex; align-items: center; gap: 6px;
+}
+.means .body {
+  font-family: var(--serif);
+  font-size: var(--f-22);
+  line-height: 1.4;
+  color: var(--ink);
+  letter-spacing: -0.005em;
+}
+
+/* ---------- Rent section ---------- */
+.rent-chart-wrap {
+  margin-top: var(--s-5);
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--s-5);
+}
+.rent-chart-head {
+  display: flex; justify-content: space-between; align-items: baseline; margin-bottom: var(--s-4);
+}
+.rent-chart-head h3 { margin: 0; font-family: var(--serif); font-size: var(--f-22); letter-spacing: -0.01em; font-weight: 400; }
+.rent-chart-head .legend {
+  font-family: var(--mono); font-size: var(--f-12); color: var(--ink-mute);
+  display: flex; gap: var(--s-4);
+}
+.rent-chart-head .legend .sw {
+  display: inline-block; width: 10px; height: 3px; margin-right: 6px; vertical-align: middle; border-radius: 2px;
+}
+.rent-chart svg { width: 100%; height: auto; display: block; }
+.rent-annotations { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-3); margin-top: var(--s-4); padding-top: var(--s-4); border-top: 1px dashed var(--border); }
+.rent-annotations .ann { font-size: var(--f-13); color: var(--ink-soft); padding-left: 10px; border-left: 1px solid var(--border-hi); }
+.rent-annotations .ann .y { font-family: var(--mono); font-size: var(--f-12); color: var(--navy); letter-spacing: 0.04em; }
+
+/* Amenities waterfall */
+.amenity-waterfall {
+  display: grid; grid-template-columns: 1fr; gap: 10px;
+  margin-top: var(--s-5);
+}
+.amenity-row { display: grid; grid-template-columns: 180px 1fr 110px; align-items: center; gap: var(--s-4); }
+.amenity-row .name { font-size: var(--f-14); color: var(--ink); }
+.amenity-row .bar { position: relative; height: 10px; background: var(--surface); border-radius: 5px; overflow: hidden; }
+.amenity-row .bar span { position: absolute; top: 0; bottom: 0; background: var(--navy); border-radius: 5px; }
+.amenity-row .val { font-family: var(--mono); font-size: var(--f-13); color: var(--ink-soft); text-align: right; }
+
+/* ---------- Violations horizon chart ---------- */
+.horizon {
+  margin-top: var(--s-5);
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--s-5);
+}
+.horizon h3 { margin: 0 0 var(--s-4); font-family: var(--serif); font-size: var(--f-22); font-weight: 400; letter-spacing: -0.01em; }
+.horizon-row { display: grid; grid-template-columns: 160px 1fr 64px; gap: var(--s-4); align-items: center; padding: 8px 0; border-bottom: 1px dashed var(--border); }
+.horizon-row:last-child { border-bottom: none; }
+.horizon-row .cat { font-size: var(--f-14); color: var(--ink); display: flex; align-items: center; gap: 8px; }
+.horizon-row .cat .sev { width: 8px; height: 8px; border-radius: 2px; }
+.horizon-row .cat .sev.c { background: var(--bad); }
+.horizon-row .cat .sev.b { background: var(--warn); }
+.horizon-row .cat .sev.a { background: var(--sky-deep); }
+.horizon-row .bars { display: flex; gap: 2px; }
+.horizon-row .bars i {
+  width: 100%; height: 26px; background: var(--border); border-radius: 2px; opacity: 0.4; display: block;
+  transition: transform 0.15s ease;
+}
+.horizon-row .bars i:hover { transform: translateY(-1px); }
+.horizon-row .bars i[data-v="0"] { background: var(--border); opacity: 0.3; }
+.horizon-row .bars i[data-v="1"] { background: var(--sky-deep); opacity: 0.45; }
+.horizon-row .bars i[data-v="2"] { background: var(--sky-deep); opacity: 0.75; }
+.horizon-row .bars i[data-v="3"] { background: var(--warn); opacity: 0.9; }
+.horizon-row .bars i[data-v="4"] { background: var(--bad); opacity: 1; }
+.horizon-row .count { font-family: var(--mono); font-size: var(--f-13); color: var(--ink); text-align: right; }
+.horizon-axis {
+  display: flex; justify-content: space-between;
+  font-family: var(--mono); font-size: var(--f-12); color: var(--ink-mute);
+  margin-top: var(--s-3); padding-top: var(--s-3); border-top: 1px solid var(--border);
+}
+
+/* Top complaints list */
+.complaints { margin-top: var(--s-5); display: grid; grid-template-columns: 1fr; gap: var(--s-4); }
+.complaint {
+  display: grid; grid-template-columns: 40px 1fr 90px; gap: var(--s-4); align-items: start;
+  padding: var(--s-4); border: 1px solid var(--border); border-radius: var(--radius); background: var(--paper);
+}
+.complaint .rank { font-family: var(--serif); font-size: var(--f-36); color: var(--navy); line-height: 1; }
+.complaint .body h4 { margin: 0 0 4px; font-size: var(--f-16); }
+.complaint .body p { margin: 0; font-size: var(--f-14); color: var(--ink-mute); }
+.complaint .count { text-align: right; }
+.complaint .count .n { font-family: var(--serif); font-size: var(--f-28); color: var(--ink); }
+.complaint .count .l { font-family: var(--mono); font-size: var(--f-12); color: var(--ink-mute); text-transform: uppercase; letter-spacing: 0.06em; }
+
+/* ---------- Reviews pull quotes ---------- */
+.reviews-top {
+  display: grid; grid-template-columns: 220px 1fr; gap: var(--s-5);
+  margin-top: var(--s-4); padding: var(--s-5);
+  background: var(--paper); border: 1px solid var(--border); border-radius: var(--radius);
+}
+.reviews-dist .overall {
+  font-family: var(--serif); font-size: var(--f-72); color: var(--navy); line-height: 1;
+}
+.reviews-dist .overall .out { font-size: var(--f-22); color: var(--ink-mute); }
+.reviews-dist .stars { display: flex; gap: 2px; margin-top: var(--s-2); color: var(--sun); }
+.reviews-dist .count { font-family: var(--mono); font-size: var(--f-13); color: var(--ink-mute); margin-top: var(--s-2); }
+.reviews-bars { display: grid; grid-template-columns: 1fr; gap: 6px; }
+.reviews-bars .rb { display: grid; grid-template-columns: 20px 1fr 40px; gap: 10px; align-items: center; font-family: var(--mono); font-size: var(--f-12); color: var(--ink-mute); }
+.reviews-bars .rb .bar { height: 8px; background: var(--surface); border-radius: 4px; overflow: hidden; }
+.reviews-bars .rb .bar span { display: block; height: 100%; background: var(--navy); }
+
+.pull-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-4); margin-top: var(--s-5); }
+.pull {
+  padding: var(--s-5);
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: flex; flex-direction: column; gap: var(--s-4);
+  position: relative;
+}
+.pull::before {
+  content: '“';
+  position: absolute; top: -12px; left: 14px;
+  font-family: var(--serif); font-size: 96px; color: var(--sky-deep);
+  opacity: 0.35; line-height: 1;
+}
+.pull .quote {
+  font-family: var(--serif);
+  font-size: var(--f-22);
+  line-height: 1.35; letter-spacing: -0.005em;
+  color: var(--ink);
+}
+.pull .who {
+  display: flex; align-items: center; gap: 10px;
+  margin-top: auto; font-size: var(--f-13); color: var(--ink-mute);
+  padding-top: var(--s-3); border-top: 1px solid var(--border);
+}
+.pull .who .av {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--navy); color: var(--paper);
+  display: grid; place-items: center;
+  font-family: var(--mono); font-size: var(--f-12);
+}
+.pull .who .t { display: flex; flex-direction: column; gap: 0; }
+.pull .who .t b { color: var(--ink); font-size: var(--f-13); font-weight: 500; }
+.pull .who .t span { font-size: 11px; font-family: var(--mono); color: var(--ink-mute); }
+.pull .tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.pull .tag { font-size: 11px; padding: 2px 8px; background: var(--surface); border-radius: var(--radius-chip); color: var(--ink-soft); font-family: var(--mono); letter-spacing: 0.02em; }
+
+/* ---------- Landlord ---------- */
+.landlord-card {
+  margin-top: var(--s-4);
+  display: grid; grid-template-columns: 1.1fr 1fr; gap: var(--s-5);
+  padding: var(--s-5);
+  background: var(--paper); border: 1px solid var(--border); border-radius: var(--radius);
+}
+.landlord-name { font-family: var(--serif); font-size: var(--f-36); letter-spacing: -0.01em; margin: 0 0 var(--s-2); }
+.landlord-meta { font-size: var(--f-14); color: var(--ink-mute); display: flex; gap: var(--s-4); flex-wrap: wrap; }
+.landlord-meta b { color: var(--ink); font-weight: 500; }
+.landlord-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-4); margin-top: var(--s-5); }
+.landlord-stats .s { padding: var(--s-3); border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.landlord-stats .s .n { font-family: var(--serif); font-size: var(--f-28); color: var(--navy); }
+.landlord-stats .s .l { font-family: var(--mono); font-size: var(--f-12); color: var(--ink-mute); text-transform: uppercase; letter-spacing: 0.06em; }
+
+.portfolio-map {
+  background: color-mix(in oklch, var(--sky) 15%, var(--paper));
+  border-radius: var(--radius);
+  position: relative;
+  min-height: 260px;
+  overflow: hidden;
+}
+.portfolio-map svg { width: 100%; height: 100%; display: block; }
+
+/* ---------- Location ---------- */
+.location-grid {
+  display: grid; grid-template-columns: 1.4fr 1fr;
+  gap: var(--s-5); margin-top: var(--s-4);
+}
+.big-map {
+  min-height: 340px;
+  border-radius: var(--radius);
+  background:
+    repeating-linear-gradient(45deg, #f1f5f9 0 2px, transparent 2px 14px),
+    color-mix(in oklch, var(--sky) 20%, var(--paper));
+  position: relative; border: 1px solid var(--border);
+  display: grid; place-items: center;
+  overflow: hidden;
+}
+.big-map .pin {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -100%);
+  width: 28px; height: 38px;
+  background:
+    radial-gradient(circle at 50% 35%, var(--paper) 0 4px, transparent 4px),
+    var(--navy);
+  clip-path: path('M14 0 C21.732 0 28 6.268 28 14 C28 24 14 38 14 38 C14 38 0 24 0 14 C0 6.268 6.268 0 14 0 Z');
+}
+.big-map .mlabel {
+  position: absolute; bottom: var(--s-4); left: var(--s-4);
+  background: var(--paper); border: 1px solid var(--border);
+  padding: 8px 12px; border-radius: var(--radius-sm);
+  font-family: var(--mono); font-size: var(--f-12); color: var(--ink);
+  letter-spacing: 0.02em;
+}
+
+.walk-panel {
+  padding: var(--s-5);
+  background: var(--paper); border: 1px solid var(--border); border-radius: var(--radius);
+  display: flex; flex-direction: column; gap: var(--s-4);
+}
+.walk-scores { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-3); }
+.walk-score { text-align: center; display: flex; flex-direction: column; gap: 4px; }
+.walk-score .ring { width: 72px; height: 72px; margin: 0 auto; }
+.walk-score .n { font-family: var(--serif); font-size: var(--f-22); color: var(--ink); }
+.walk-score .l { font-family: var(--mono); font-size: var(--f-12); color: var(--ink-mute); text-transform: uppercase; letter-spacing: 0.06em; }
+.nearby { display: flex; flex-direction: column; gap: 8px; margin-top: var(--s-3); padding-top: var(--s-3); border-top: 1px dashed var(--border); }
+.nearby .row { display: flex; justify-content: space-between; font-size: var(--f-14); }
+.nearby .row .d { font-family: var(--mono); color: var(--ink-mute); }
+
+/* ---------- Timeline ---------- */
+.timeline {
+  margin-top: var(--s-4);
+  padding: var(--s-5) var(--s-5) var(--s-7);
+  background: var(--paper); border: 1px solid var(--border); border-radius: var(--radius);
+  position: relative;
+}
+.tl-years { display: flex; justify-content: space-between; font-family: var(--mono); font-size: var(--f-12); color: var(--ink-mute); margin-bottom: var(--s-5); }
+.tl-track { position: relative; height: 4px; background: var(--border); border-radius: 2px; margin: 0 10px; }
+.tl-track::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 62%; background: var(--navy); border-radius: 2px; }
+.tl-events {
+  position: relative; margin-top: var(--s-5); display: grid;
+  grid-template-columns: repeat(6, 1fr); gap: var(--s-3);
+}
+.tl-event {
+  padding: var(--s-3); border-left: 1px solid var(--border);
+}
+.tl-event .y { font-family: var(--mono); font-size: var(--f-12); color: var(--navy); letter-spacing: 0.04em; }
+.tl-event .t { font-family: var(--serif); font-size: var(--f-16); color: var(--ink); margin-top: 2px; line-height: 1.25; }
+.tl-event .d { font-size: var(--f-12); color: var(--ink-mute); margin-top: 4px; }
+
+/* ---------- Floating action bar ---------- */
+.action-bar {
+  position: fixed; bottom: var(--s-5); left: 50%; transform: translateX(-50%);
+  background: var(--ink); color: var(--paper);
+  border-radius: var(--radius-chip); padding: 8px 12px;
+  display: flex; align-items: center; gap: 6px;
+  box-shadow: 0 20px 40px -20px color-mix(in oklch, var(--ink) 60%, transparent);
+  z-index: 30;
+}
+.action-bar button {
+  background: transparent; color: var(--paper);
+  border: none; padding: 8px 14px;
+  font-family: var(--sans); font-size: var(--f-14);
+  border-radius: var(--radius-chip);
+  display: inline-flex; align-items: center; gap: 6px;
+  cursor: pointer;
+}
+.action-bar button:hover { background: rgba(248, 250, 252, 0.1); }
+.action-bar button.primary { background: var(--sky-deep); color: var(--ink); }
+.action-bar button.primary:hover { background: var(--sky); }
+.action-bar .sep { width: 1px; height: 20px; background: color-mix(in oklch, var(--paper) 20%, transparent); }
+
+/* ---------- Footer ---------- */
+.footer {
+  border-top: 1px solid var(--border);
+  padding: var(--s-7) var(--s-5) var(--s-5);
+  background: var(--paper);
+  color: var(--ink-mute);
+  font-size: var(--f-14);
+  margin-top: var(--s-8);
+}
+.footer-inner { max-width: 1440px; margin: 0 auto; display: flex; justify-content: space-between; flex-wrap: wrap; gap: var(--s-5); }
+.footer a:hover { color: var(--navy); }
+
+/* ---------- Responsive reflow ---------- */
+@media (max-width: 1200px) {
+  .body { grid-template-columns: 200px minmax(0, 1fr); }
+  .facts { display: none; }
+}
+@media (max-width: 900px) {
+  .hero { grid-template-columns: 1fr; gap: var(--s-5); }
+  .body { grid-template-columns: 1fr; }
+  .wayfinder { position: static; }
+  .waylist { flex-direction: row; overflow-x: auto; padding-bottom: 8px; }
+  .waylist li a { white-space: nowrap; }
+  .record { grid-template-columns: repeat(3, 1fr); }
+  .record .r-cell { border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .section-head h2 { font-size: var(--f-36); }
+  .landlord-card { grid-template-columns: 1fr; }
+  .location-grid { grid-template-columns: 1fr; }
+  .pull-row { grid-template-columns: 1fr; }
+  .reviews-top { grid-template-columns: 1fr; }
+  .tl-events { grid-template-columns: repeat(2, 1fr); }
+  .action-bar { left: var(--s-3); right: var(--s-3); transform: none; justify-content: center; }
+  .grade { font-size: var(--f-72); }
+}
+@media (max-width: 600px) {
+  .record { grid-template-columns: repeat(2, 1fr); }
+  .nav-links { display: none; }
+  .rent-annotations { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- Mockup banner -->
+<div class="mockup-banner">
+  Design mockup
+  <span>— illustrative data, not live. Building: Manhattan Plaza, 484 W 43rd St.</span>
+</div>
+
+<!-- Nav -->
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="/" class="brand"><span class="dot"></span>lucidrents</a>
+    <div class="nav-search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <span>Search an address, building, or landlord…</span>
+    </div>
+    <div class="nav-links">
+      <a>Buildings</a>
+      <a>Landlords</a>
+      <a>Neighborhoods</a>
+      <a>Tenant tools</a>
+      <a>Guides</a>
+    </div>
+    <a class="nav-login">Log in</a>
+  </div>
+</nav>
+
+<main class="container">
+
+  <!-- Breadcrumbs -->
+  <nav class="crumbs">
+    <a>home</a><span class="sep">/</span>
+    <a>nyc</a><span class="sep">/</span>
+    <a>manhattan</a><span class="sep">/</span>
+    <a>hells-kitchen</a><span class="sep">/</span>
+    <span class="now">484 w 43rd st</span>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-left">
+      <h1>Manhattan Plaza</h1>
+      <div class="subaddr">
+        <span class="pin">◇ 484 West 43rd Street</span>
+        <span class="pin">◇ Hell's Kitchen, Manhattan 10036</span>
+        <span class="pin">◇ BBL 1-01033-0001</span>
+      </div>
+      <div class="quick-chips">
+        <span class="chip"><strong>1977</strong> built</span>
+        <span class="chip"><strong>1,689</strong> units</span>
+        <span class="chip"><strong>46</strong> floors</span>
+        <span class="chip sky">rent-stabilized <strong>100%</strong></span>
+        <span class="chip sky">HUD Section 8</span>
+        <span class="chip">elevator</span>
+        <span class="chip">doorman</span>
+        <span class="chip">laundry</span>
+        <span class="chip">pet-friendly</span>
+      </div>
+    </div>
+
+    <!-- Verdict card -->
+    <aside class="verdict">
+      <div class="verdict-eyebrow">
+        <span>The verdict</span>
+        <span class="src">updated today</span>
+      </div>
+      <div class="grade-row">
+        <div class="grade">B+</div>
+        <div class="grade-meta">
+          <div class="score">7.8 / 10 · Top 18% in Manhattan</div>
+          <div class="tl">A well-kept rent-stabilized landmark with strong tenant retention, despite a few slow-closing violations.</div>
+        </div>
+      </div>
+      <div class="verdict-axes">
+        <div class="axis">
+          <span class="label">Rent fairness</span>
+          <span class="dotline"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i></span>
+          <span class="val">Excellent</span>
+        </div>
+        <div class="axis">
+          <span class="label">Livability</span>
+          <span class="dotline"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot"></i></span>
+          <span class="val">Good</span>
+        </div>
+        <div class="axis">
+          <span class="label">Landlord</span>
+          <span class="dotline"><i class="dot on"></i><i class="dot on"></i><i class="dot warn"></i><i class="dot"></i></span>
+          <span class="val">Mixed</span>
+        </div>
+        <div class="axis">
+          <span class="label">Protections</span>
+          <span class="dotline"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i></span>
+          <span class="val">Very strong</span>
+        </div>
+      </div>
+    </aside>
+  </section>
+
+  <!-- The Record ribbon -->
+  <section class="record" aria-label="The record">
+    <div class="r-cell warn">
+      <span class="r-k">Open violations</span>
+      <span class="r-v">12</span>
+      <span class="r-sub">5 class B · 7 class A</span>
+    </div>
+    <div class="r-cell ok">
+      <span class="r-k">Resolved 24mo</span>
+      <span class="r-v">47</span>
+      <span class="r-sub">avg 38 days to fix</span>
+    </div>
+    <div class="r-cell">
+      <span class="r-k">Tenant reviews</span>
+      <span class="r-v">184</span>
+      <span class="r-sub">3.8 ★ avg · ↑ trending</span>
+    </div>
+    <div class="r-cell ok">
+      <span class="r-k">Rent-stab units</span>
+      <span class="r-v">1,689</span>
+      <span class="r-sub">100% coverage</span>
+    </div>
+    <div class="r-cell">
+      <span class="r-k">Owner tenure</span>
+      <span class="r-v">21 y</span>
+      <span class="r-sub">since 2004</span>
+    </div>
+    <div class="r-cell">
+      <span class="r-k">311 complaints 12mo</span>
+      <span class="r-v">31</span>
+      <span class="r-sub">heat, pests, water</span>
+    </div>
+  </section>
+
+  <!-- Body grid -->
+  <div class="body">
+
+    <!-- Wayfinder -->
+    <aside class="wayfinder">
+      <div class="mini-grade">
+        <div class="g">B+</div>
+        <div class="t">
+          Verdict
+          <b>Manhattan Plaza</b>
+        </div>
+      </div>
+      <ol class="waylist">
+        <li class="active"><a href="#verdict"><span class="num">01</span>Verdict</a></li>
+        <li><a href="#rent"><span class="num">02</span>Rent &amp; value</a></li>
+        <li><a href="#issues"><span class="num">03</span>What's wrong</a></li>
+        <li><a href="#reviews"><span class="num">04</span>What tenants say</a></li>
+        <li><a href="#landlord"><span class="num">05</span>The landlord</a></li>
+        <li><a href="#location"><span class="num">06</span>Location</a></li>
+        <li><a href="#history"><span class="num">07</span>History</a></li>
+      </ol>
+      <div class="tools">
+        <a class="tool">☆ Save</a>
+        <a class="tool">↗ Share</a>
+        <a class="tool">✎ Write a review</a>
+        <a class="tool">⚑ Report issue</a>
+      </div>
+    </aside>
+
+    <!-- Main narrative -->
+    <div class="main">
+
+      <!-- Section 01 — Verdict -->
+      <section class="section" id="verdict">
+        <div class="section-head">
+          <div>
+            <div class="num">01 / 07</div>
+            <h2>The verdict, in plain English.</h2>
+          </div>
+          <div class="meta">updated 14 Apr 2026<br/>sources: HPD · DOB · DOF · RGB</div>
+        </div>
+        <div class="prose">
+          <p><b>Manhattan Plaza is one of the most storied rent-stabilized buildings in the city</b>, and the numbers mostly back up its reputation. A 1977 HUD-financed complex originally built for middle-income tenants, it's now 100% rent-stabilized with Section 8 subsidies layered on — meaning tenants here enjoy some of the strongest protections available in New York.</p>
+          <p>The building has <b>12 open violations</b> <a class="receipt">HPD-VI-OPEN <span class="arr">↗</span></a>, which is fewer than the Manhattan median for buildings of this size. Response times are reasonable: violations tend to close in about <b>38 days</b>, compared to 72 days borough-wide <a class="receipt">HPD-CLOSE-2024 <span class="arr">↗</span></a>.</p>
+          <p>The weakest axis is the landlord relationship: tenants report slow responses on heat and elevator issues, and two harassment complaints were filed in the last 24 months. Both were resolved without a finding — worth knowing, but not damning.</p>
+        </div>
+        <div class="means">
+          <div class="tag">▲ What this means</div>
+          <div class="body">If you can get in, you stay. Turnover is low, protections are strong, and the rent ceiling is predictable. Expect slower-than-ideal maintenance response — bring patience, keep receipts.</div>
+        </div>
+      </section>
+
+      <!-- Section 02 — Rent & value -->
+      <section class="section" id="rent">
+        <div class="section-head">
+          <div>
+            <div class="num">02 / 07</div>
+            <h2>Rent &amp; what you actually get.</h2>
+          </div>
+          <div class="meta">rgb · dhcr · dewey 2024<br/>neighborhood: hell's kitchen</div>
+        </div>
+        <div class="prose">
+          <p>Listed one-bedrooms at Manhattan Plaza cleared a median of <b>$2,280/mo</b> in 2024 — roughly <b>42% below</b> market rate for Hell's Kitchen. This is the rent-stabilized effect: base rents have grown ~1.9% a year on average since 2015, well under the 2.4% neighborhood inflation rate.</p>
+        </div>
+
+        <div class="rent-chart-wrap">
+          <div class="rent-chart-head">
+            <h3>Median 1-bedroom rent, 2015 – 2024</h3>
+            <div class="legend">
+              <span><span class="sw" style="background:var(--navy)"></span>Manhattan Plaza</span>
+              <span><span class="sw" style="background:var(--sky-deep)"></span>Hell's Kitchen market</span>
+            </div>
+          </div>
+          <div class="rent-chart">
+            <svg viewBox="0 0 720 220" preserveAspectRatio="none" role="img" aria-label="Rent over time">
+              <!-- Grid -->
+              <g stroke="#e2e8f0" stroke-width="1">
+                <line x1="40" y1="40" x2="720" y2="40" />
+                <line x1="40" y1="90" x2="720" y2="90" />
+                <line x1="40" y1="140" x2="720" y2="140" />
+                <line x1="40" y1="190" x2="720" y2="190" />
+              </g>
+              <g fill="#64748b" font-family="Geist Mono" font-size="10">
+                <text x="0" y="43">$4k</text>
+                <text x="0" y="93">$3.2k</text>
+                <text x="0" y="143">$2.4k</text>
+                <text x="0" y="193">$1.6k</text>
+              </g>
+              <!-- Market (light blue) -->
+              <path d="M 50 120 L 120 115 L 190 105 L 260 95 L 330 88 L 400 78 L 470 68 L 540 56 L 610 48 L 680 42"
+                    stroke="#60a5fa" stroke-width="2.5" fill="none" />
+              <!-- Manhattan Plaza (navy) -->
+              <path d="M 50 170 L 120 166 L 190 160 L 260 156 L 330 150 L 400 146 L 470 142 L 540 138 L 610 134 L 680 130"
+                    stroke="#3B82F6" stroke-width="3" fill="none" />
+              <!-- Area under navy -->
+              <path d="M 50 170 L 120 166 L 190 160 L 260 156 L 330 150 L 400 146 L 470 142 L 540 138 L 610 134 L 680 130 L 680 200 L 50 200 Z"
+                    fill="#3B82F6" opacity="0.06" />
+              <!-- Annotation pins -->
+              <g>
+                <line x1="330" y1="150" x2="330" y2="30" stroke="#0F1D2E" stroke-width="1" stroke-dasharray="3,3" />
+                <circle cx="330" cy="150" r="4" fill="#3B82F6" />
+                <text x="336" y="28" fill="#0F1D2E" font-family="Young Serif" font-size="12">Tishman → Related, 2019</text>
+
+                <line x1="540" y1="138" x2="540" y2="30" stroke="#0F1D2E" stroke-width="1" stroke-dasharray="3,3" />
+                <circle cx="540" cy="138" r="4" fill="#3B82F6" />
+                <text x="546" y="28" fill="#0F1D2E" font-family="Young Serif" font-size="12">J-51 tax abatement expires, 2022</text>
+              </g>
+              <!-- X axis -->
+              <g fill="#64748b" font-family="Geist Mono" font-size="10">
+                <text x="50" y="215">'15</text>
+                <text x="190" y="215">'17</text>
+                <text x="330" y="215">'19</text>
+                <text x="470" y="215">'21</text>
+                <text x="610" y="215">'23</text>
+              </g>
+            </svg>
+          </div>
+          <div class="rent-annotations">
+            <div class="ann"><div class="y">+1.9% / yr</div>Manhattan Plaza base-rent growth since 2015, under the RGB-allowed ceiling.</div>
+            <div class="ann"><div class="y">42% below market</div>2024 median 1BR lease vs. Hell's Kitchen market comparable.</div>
+            <div class="ann"><div class="y">3.25%</div>Max allowable increase for 1-year stabilized leases, RGB Order #56.</div>
+          </div>
+        </div>
+
+        <h3 style="font-family:var(--serif); font-weight:400; font-size:var(--f-28); letter-spacing:-0.01em; margin:var(--s-6) 0 var(--s-3);">What you pay for the amenities.</h3>
+        <div class="prose" style="max-width:60ch; font-size:var(--f-16);">
+          <p>The premiums below are the <em>rent difference</em> — in dollars per month — that listings with each amenity commanded over otherwise-identical apartments in Hell's Kitchen, per 2024 market data. Manhattan Plaza includes all the items marked ◆ in its base rent.</p>
+        </div>
+
+        <div class="amenity-waterfall">
+          <div class="amenity-row"><div class="name">◆ 24-hr doorman</div><div class="bar"><span style="width:78%"></span></div><div class="val">+$340 / mo</div></div>
+          <div class="amenity-row"><div class="name">◆ On-site laundry</div><div class="bar"><span style="width:42%"></span></div><div class="val">+$185 / mo</div></div>
+          <div class="amenity-row"><div class="name">◆ Elevator</div><div class="bar"><span style="width:60%"></span></div><div class="val">+$260 / mo</div></div>
+          <div class="amenity-row"><div class="name">◆ Roof deck</div><div class="bar"><span style="width:36%"></span></div><div class="val">+$160 / mo</div></div>
+          <div class="amenity-row"><div class="name">◆ Fitness center</div><div class="bar"><span style="width:48%"></span></div><div class="val">+$210 / mo</div></div>
+          <div class="amenity-row"><div class="name">◆ Swimming pool</div><div class="bar"><span style="width:62%"></span></div><div class="val">+$275 / mo</div></div>
+          <div class="amenity-row"><div class="name">◆ Garage parking</div><div class="bar"><span style="width:55%"></span></div><div class="val">+$240 / mo</div></div>
+        </div>
+
+        <div class="means">
+          <div class="tag">▲ What this means</div>
+          <div class="body">At the current base rent you are effectively getting <b>$1,670/mo</b> in amenity value bundled in. That's before considering the rent-stabilization protection itself.</div>
+        </div>
+      </section>
+
+      <!-- Section 03 — What's wrong -->
+      <section class="section" id="issues">
+        <div class="section-head">
+          <div>
+            <div class="num">03 / 07</div>
+            <h2>What's wrong, month by month.</h2>
+          </div>
+          <div class="meta">hpd · dob · 311<br/>last 24 months</div>
+        </div>
+        <div class="prose">
+          <p>Each row below shows one category of building issue over the last 24 months. Darker cells mean more filings that month. Clustering patterns can tell you as much as the raw counts — a winter spike in heat complaints that never recurs means one bad boiler season; a flat line of pests means something chronic.</p>
+        </div>
+
+        <div class="horizon">
+          <h3>Violation &amp; complaint density, Apr 2024 – Mar 2026</h3>
+          <div class="horizon-row">
+            <div class="cat"><span class="sev c"></span>Heat / hot water</div>
+            <div class="bars" id="h-heat"></div>
+            <div class="count">18</div>
+          </div>
+          <div class="horizon-row">
+            <div class="cat"><span class="sev b"></span>Pests (rodents / roaches)</div>
+            <div class="bars" id="h-pests"></div>
+            <div class="count">14</div>
+          </div>
+          <div class="horizon-row">
+            <div class="cat"><span class="sev b"></span>Water leak / plumbing</div>
+            <div class="bars" id="h-water"></div>
+            <div class="count">11</div>
+          </div>
+          <div class="horizon-row">
+            <div class="cat"><span class="sev a"></span>Elevator</div>
+            <div class="bars" id="h-elev"></div>
+            <div class="count">7</div>
+          </div>
+          <div class="horizon-row">
+            <div class="cat"><span class="sev a"></span>Lighting / electrical</div>
+            <div class="bars" id="h-elec"></div>
+            <div class="count">4</div>
+          </div>
+          <div class="horizon-row">
+            <div class="cat"><span class="sev c"></span>Harassment filings</div>
+            <div class="bars" id="h-hara"></div>
+            <div class="count">2</div>
+          </div>
+          <div class="horizon-axis">
+            <span>apr '24</span>
+            <span>oct '24</span>
+            <span>apr '25</span>
+            <span>oct '25</span>
+            <span>mar '26</span>
+          </div>
+        </div>
+
+        <div class="complaints">
+          <div class="complaint">
+            <div class="rank">1</div>
+            <div class="body">
+              <h4>Intermittent hot water on floors 22 – 34</h4>
+              <p>Concentrated in winter 2024. HPD Class C violation issued; closed within 14 days after boiler recirc repair. No recurrence in 2025.</p>
+            </div>
+            <div class="count"><span class="n">18</span><span class="l">filings</span></div>
+          </div>
+          <div class="complaint">
+            <div class="rank">2</div>
+            <div class="body">
+              <h4>Mice — common areas, 12th floor</h4>
+              <p>Chronic through 2024-25. Owner retained new pest contractor Q4 2025. Filing volume dropped 60% YoY.</p>
+            </div>
+            <div class="count"><span class="n">14</span><span class="l">filings</span></div>
+          </div>
+          <div class="complaint">
+            <div class="rank">3</div>
+            <div class="body">
+              <h4>Leak from overhead plumbing</h4>
+              <p>Seven units affected, mostly A-line. DOB permit filed Sep 2025 for riser replacement; work in progress.</p>
+            </div>
+            <div class="count"><span class="n">11</span><span class="l">filings</span></div>
+          </div>
+        </div>
+
+        <div class="means">
+          <div class="tag">▲ What this means</div>
+          <div class="body">Nothing here is a dealbreaker, but pest &amp; plumbing are the ongoing stories. Ask your unit's floor: any mice? any recent leaks? Base your lease on the answers, not the averages.</div>
+        </div>
+      </section>
+
+      <!-- Section 04 — Reviews -->
+      <section class="section" id="reviews">
+        <div class="section-head">
+          <div>
+            <div class="num">04 / 07</div>
+            <h2>What tenants actually say.</h2>
+          </div>
+          <div class="meta">184 reviews · 92 verified tenants<br/>rolling 24-month window</div>
+        </div>
+
+        <div class="reviews-top">
+          <div class="reviews-dist">
+            <div class="overall">3.8<span class="out"> /5</span></div>
+            <div class="stars">★ ★ ★ ★ <span style="opacity:0.35">★</span></div>
+            <div class="count">184 reviews · sentiment trending ↑</div>
+          </div>
+          <div class="reviews-bars">
+            <div class="rb"><span>5★</span><div class="bar"><span style="width:48%"></span></div><span>48%</span></div>
+            <div class="rb"><span>4★</span><div class="bar"><span style="width:23%"></span></div><span>23%</span></div>
+            <div class="rb"><span>3★</span><div class="bar"><span style="width:14%"></span></div><span>14%</span></div>
+            <div class="rb"><span>2★</span><div class="bar"><span style="width:9%"></span></div><span>9%</span></div>
+            <div class="rb"><span>1★</span><div class="bar"><span style="width:6%"></span></div><span>6%</span></div>
+          </div>
+        </div>
+
+        <div class="pull-row">
+          <article class="pull">
+            <p class="quote">It's like a small town stacked 46 floors into the middle of Times Square. My neighbors are actors and I've been here nineteen years.</p>
+            <div class="tags">
+              <span class="tag">community</span>
+              <span class="tag">long-term</span>
+            </div>
+            <div class="who">
+              <span class="av">M</span>
+              <div class="t"><b>Marisol D.</b><span>tenant since 2006 · verified</span></div>
+            </div>
+          </article>
+          <article class="pull">
+            <p class="quote">Maintenance is slow but real. They fix things — just don't expect same-day. The tradeoff is a rent I could never replace in this neighborhood.</p>
+            <div class="tags">
+              <span class="tag">maintenance</span>
+              <span class="tag">value</span>
+            </div>
+            <div class="who">
+              <span class="av">J</span>
+              <div class="t"><b>Julian R.</b><span>tenant since 2019 · verified</span></div>
+            </div>
+          </article>
+          <article class="pull">
+            <p class="quote">Had two mouse issues on the 12th floor last year. Reported both times. Both times fixed within a week. Building is old, not neglected.</p>
+            <div class="tags">
+              <span class="tag">pests</span>
+              <span class="tag">response time</span>
+            </div>
+            <div class="who">
+              <span class="av">K</span>
+              <div class="t"><b>Kaya S.</b><span>tenant since 2022 · verified</span></div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <!-- Section 05 — Landlord -->
+      <section class="section" id="landlord">
+        <div class="section-head">
+          <div>
+            <div class="num">05 / 07</div>
+            <h2>The landlord.</h2>
+          </div>
+          <div class="meta">hpd registration · acris<br/>as of Apr 2026</div>
+        </div>
+
+        <div class="landlord-card">
+          <div>
+            <h3 class="landlord-name">The Related Companies, L.P.</h3>
+            <div class="landlord-meta">
+              <span><b>Owner of record since 2019</b></span>
+              <span>HQ: 30 Hudson Yards, NYC</span>
+              <span><a class="receipt">HPD-REG-304829 <span class="arr">↗</span></a></span>
+            </div>
+            <div class="landlord-stats">
+              <div class="s"><div class="n">14</div><div class="l">NYC buildings</div></div>
+              <div class="s"><div class="n">3,402</div><div class="l">units managed</div></div>
+              <div class="s"><div class="n">B</div><div class="l">portfolio grade</div></div>
+            </div>
+            <p class="prose" style="font-size:var(--f-16); max-width:none; margin-top:var(--s-4);">Related's NYC portfolio is mostly large-scale rent-stabilized complexes. Grade is held back by slow elevator-repair response in the MidManhattan cluster; rent-law compliance is strong.</p>
+          </div>
+
+          <div class="portfolio-map" aria-label="Related Companies portfolio map">
+            <svg viewBox="0 0 400 260" preserveAspectRatio="xMidYMid slice">
+              <!-- Abstract NYC boroughs -->
+              <path d="M 120 30 Q 140 20 160 30 L 180 100 L 170 180 L 140 220 L 110 200 L 100 120 Z" fill="#dbeafe" stroke="#cbd5e1" stroke-width="1"/>
+              <path d="M 180 100 Q 230 90 280 110 L 290 180 L 240 220 L 190 200 Z" fill="#e0e7ff" stroke="#cbd5e1" stroke-width="1"/>
+              <path d="M 30 130 Q 60 110 95 130 L 100 200 L 50 230 L 20 200 Z" fill="#dbeafe" stroke="#cbd5e1" stroke-width="1"/>
+              <path d="M 290 180 Q 340 170 370 190 L 380 230 L 320 250 L 280 230 Z" fill="#e0e7ff" stroke="#cbd5e1" stroke-width="1"/>
+              <!-- This building -->
+              <circle cx="135" cy="120" r="10" fill="#f97316" opacity="0.4"/>
+              <circle cx="135" cy="120" r="5" fill="#3B82F6"/>
+              <!-- Other dots -->
+              <circle cx="145" cy="80" r="4" fill="#3B82F6" opacity="0.7"/>
+              <circle cx="155" cy="100" r="4" fill="#3B82F6" opacity="0.7"/>
+              <circle cx="128" cy="150" r="4" fill="#3B82F6" opacity="0.7"/>
+              <circle cx="150" cy="160" r="4" fill="#3B82F6" opacity="0.7"/>
+              <circle cx="210" cy="140" r="4" fill="#3B82F6" opacity="0.7"/>
+              <circle cx="230" cy="170" r="4" fill="#3B82F6" opacity="0.7"/>
+              <circle cx="250" cy="150" r="4" fill="#3B82F6" opacity="0.7"/>
+              <circle cx="270" cy="180" r="4" fill="#3B82F6" opacity="0.7"/>
+              <circle cx="70" cy="170" r="4" fill="#3B82F6" opacity="0.7"/>
+              <circle cx="50" cy="190" r="4" fill="#3B82F6" opacity="0.7"/>
+              <circle cx="320" cy="210" r="4" fill="#3B82F6" opacity="0.7"/>
+              <circle cx="340" cy="220" r="4" fill="#3B82F6" opacity="0.7"/>
+              <circle cx="160" cy="180" r="4" fill="#3B82F6" opacity="0.7"/>
+              <!-- Label -->
+              <text x="150" y="116" font-family="Geist Mono" font-size="10" fill="#0F1D2E">this building ↓</text>
+            </svg>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 06 — Location -->
+      <section class="section" id="location">
+        <div class="section-head">
+          <div>
+            <div class="num">06 / 07</div>
+            <h2>Location &amp; daily life.</h2>
+          </div>
+          <div class="meta">walk score · mta · nyc open data<br/>radius: 0.5 mi</div>
+        </div>
+
+        <div class="location-grid">
+          <div class="big-map" role="img" aria-label="Map of 484 W 43rd St, Manhattan">
+            <span class="pin"></span>
+            <div class="mlabel">484 W 43rd St · Hell's Kitchen · 40.759° N, -73.995° W</div>
+          </div>
+
+          <div class="walk-panel">
+            <div class="walk-scores">
+              <div class="walk-score">
+                <svg class="ring" viewBox="0 0 36 36"><circle cx="18" cy="18" r="15.9" fill="none" stroke="#e2e8f0" stroke-width="3"/><circle cx="18" cy="18" r="15.9" fill="none" stroke="#3B82F6" stroke-width="3" stroke-dasharray="98 100" stroke-dashoffset="25" transform="rotate(-90 18 18)"/></svg>
+                <div class="n">98</div>
+                <div class="l">Walk</div>
+              </div>
+              <div class="walk-score">
+                <svg class="ring" viewBox="0 0 36 36"><circle cx="18" cy="18" r="15.9" fill="none" stroke="#e2e8f0" stroke-width="3"/><circle cx="18" cy="18" r="15.9" fill="none" stroke="#3B82F6" stroke-width="3" stroke-dasharray="100 100" stroke-dashoffset="25" transform="rotate(-90 18 18)"/></svg>
+                <div class="n">100</div>
+                <div class="l">Transit</div>
+              </div>
+              <div class="walk-score">
+                <svg class="ring" viewBox="0 0 36 36"><circle cx="18" cy="18" r="15.9" fill="none" stroke="#e2e8f0" stroke-width="3"/><circle cx="18" cy="18" r="15.9" fill="none" stroke="#3B82F6" stroke-width="3" stroke-dasharray="86 100" stroke-dashoffset="25" transform="rotate(-90 18 18)"/></svg>
+                <div class="n">86</div>
+                <div class="l">Bike</div>
+              </div>
+            </div>
+            <div class="nearby">
+              <div class="row"><span>A·C·E at 42nd St – Port Authority</span><span class="d">3 min walk</span></div>
+              <div class="row"><span>N·Q·R·W·1·2·3·7 at Times Square</span><span class="d">7 min walk</span></div>
+              <div class="row"><span>Whole Foods Market</span><span class="d">4 min walk</span></div>
+              <div class="row"><span>DeWitt Clinton Park</span><span class="d">3 min walk</span></div>
+              <div class="row"><span>Westside Laundromat</span><span class="d">2 min walk</span></div>
+              <div class="row"><span>Hudson River Greenway</span><span class="d">5 min walk</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 07 — History -->
+      <section class="section" id="history">
+        <div class="section-head">
+          <div>
+            <div class="num">07 / 07</div>
+            <h2>History of the building.</h2>
+          </div>
+          <div class="meta">acris · nyc dob · press archive<br/>1975 – now</div>
+        </div>
+
+        <div class="timeline">
+          <div class="tl-years"><span>1975</span><span>1985</span><span>1995</span><span>2005</span><span>2015</span><span>2025</span></div>
+          <div class="tl-track"></div>
+          <div class="tl-events">
+            <div class="tl-event">
+              <div class="y">1975</div>
+              <div class="t">Ground broken</div>
+              <div class="d">HUD-financed; originally conceived as market-rate luxury.</div>
+            </div>
+            <div class="tl-event">
+              <div class="y">1977</div>
+              <div class="t">Opens as artist housing</div>
+              <div class="d">70% reserved for performing artists; "miracle on 42nd Street."</div>
+            </div>
+            <div class="tl-event">
+              <div class="y">2004</div>
+              <div class="t">Tishman Speyer acquires</div>
+              <div class="d">$400M sale; rent-stabilized status preserved.</div>
+            </div>
+            <div class="tl-event">
+              <div class="y">2019</div>
+              <div class="t">Sold to Related</div>
+              <div class="d">$610M; new regulatory agreement extends affordability through 2041.</div>
+            </div>
+            <div class="tl-event">
+              <div class="y">2022</div>
+              <div class="t">J-51 abatement ends</div>
+              <div class="d">Tax benefit expires; rent-stab locked in by separate agreement.</div>
+            </div>
+            <div class="tl-event">
+              <div class="y">2025</div>
+              <div class="t">Riser replacement begins</div>
+              <div class="d">DOB permit #M01493992; A-line plumbing. Expected completion Q3 2026.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- Facts rail -->
+    <aside class="facts" aria-label="Building facts">
+      <h4>At a glance</h4>
+      <div class="fact-row"><span class="k">Year built</span><span class="v">1977</span></div>
+      <div class="fact-row"><span class="k">Floors</span><span class="v">46</span></div>
+      <div class="fact-row"><span class="k">Total units</span><span class="v">1,689</span></div>
+      <div class="fact-row"><span class="k">Rent-stab units</span><span class="v">1,689 (100%)</span></div>
+      <div class="fact-row"><span class="k">HUD Section 8</span><span class="v">Yes, building-wide</span></div>
+      <div class="fact-row"><span class="k">Class</span><span class="v">R8 residential</span></div>
+      <div class="fact-row"><span class="k">BBL</span><span class="v mono">1-01033-0001</span></div>
+      <div class="fact-row"><span class="k">BIN</span><span class="v mono">1085230</span></div>
+      <div class="fact-row"><span class="k">HPD reg.</span><span class="v mono">304829</span></div>
+
+      <h4 style="margin-top:var(--s-3);">Last 30 days</h4>
+      <div class="fact-row"><span class="k">New violations</span><span class="v">2</span></div>
+      <div class="fact-row"><span class="k">New 311 calls</span><span class="v">3</span></div>
+      <div class="fact-row"><span class="k">New reviews</span><span class="v">4</span></div>
+      <div class="fact-row"><span class="k">New listings</span><span class="v">7</span></div>
+
+      <a class="download">↓ Download full dossier</a>
+    </aside>
+
+  </div>
+
+</main>
+
+<!-- Floating action bar -->
+<div class="action-bar" role="toolbar" aria-label="Building actions">
+  <button>☆ Save</button>
+  <span class="sep"></span>
+  <button>↗ Share</button>
+  <span class="sep"></span>
+  <button>✎ Write a review</button>
+  <span class="sep"></span>
+  <button class="primary">⊞ Compare buildings</button>
+</div>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <div>© 2026 LucidRents · Data from NYC HPD, DOB, DOF, ACRIS, RGB, DHCR, MTA, NYC Open Data.</div>
+    <div style="display:flex; gap:var(--s-5);">
+      <a>About</a><a>For journalists</a><a>API</a><a>Sources</a><a>Contact</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Generate horizon chart cells
+  // 24 months, values 0-4 representing filing density
+  const data = {
+    'h-heat':  [1,2,3,4,4,3,1,0,0,0,1,1, 2,3,4,3,2,1,0,0,0,0,1,1],
+    'h-pests': [2,2,2,1,1,2,3,3,2,2,1,1, 2,2,2,1,1,1,1,1,1,1,0,0],
+    'h-water': [0,1,1,1,2,2,1,1,0,1,1,2, 1,2,3,3,2,1,1,0,0,1,1,0],
+    'h-elev':  [0,0,1,1,0,0,1,1,0,1,0,0, 1,1,0,0,1,0,0,1,0,0,0,0],
+    'h-elec':  [0,0,0,1,0,0,0,1,0,0,0,0, 1,0,0,0,0,1,0,0,0,0,0,0],
+    'h-hara':  [0,0,0,0,1,0,0,0,0,0,0,0, 0,0,0,0,0,0,1,0,0,0,0,0]
+  };
+  Object.entries(data).forEach(([id, arr]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = arr.map((v,i)=>`<i data-v="${v}" title="${v} filing${v===1?'':'s'}"></i>`).join('');
+  });
+
+  // Scrollspy for wayfinder
+  const sections = document.querySelectorAll('.section');
+  const links = document.querySelectorAll('.waylist li');
+  const onScroll = () => {
+    let active = 0;
+    sections.forEach((s, i) => {
+      const r = s.getBoundingClientRect();
+      if (r.top < 200) active = i;
+    });
+    links.forEach((l, i) => l.classList.toggle('active', i === active));
+  };
+  window.addEventListener('scroll', onScroll, { passive: true });
+</script>
+</body>
+</html>

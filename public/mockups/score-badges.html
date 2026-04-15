@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Lucid Score — premium hexagon explorations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --ink: #0F1D2E;
+  --ink-2: #1e293b;
+  --ink-3: #334155;
+  --ink-mute: #64748b;
+  --ink-faint: #94a3b8;
+  --navy: #3B82F6;
+  --navy-hi: #2563EB;
+  --navy-dark: #0F1D2E;
+  --navy-deep: #091325;
+  --sky: #dbeafe;
+  --sky-deep: #60a5fa;
+  --sky-bg: #eff6ff;
+  --paper: #f8fafc;
+  --paper-2: #f1f5f9;
+  --surface: #ffffff;
+  --border: #e2e8f0;
+  --border-hi: #cbd5e1;
+  --sans: "Geist", system-ui, -apple-system, sans-serif;
+  --mono: "Geist Mono", ui-monospace, monospace;
+  --serif: "Young Serif", "Iowan Old Style", "Palatino", serif;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--paper); color: var(--ink);
+  font-family: var(--sans); -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; text-decoration: none; }
+
+.page { max-width: 1200px; margin: 0 auto; padding: 48px 24px 120px; }
+.page-head { padding-bottom: 28px; margin-bottom: 48px; border-bottom: 1px solid var(--border); }
+.page-head h1 { font-family: var(--serif); font-size: 44px; margin: 0 0 8px; letter-spacing: -0.025em; line-height: 1.05; }
+.page-head p { color: var(--ink-mute); font-size: 15px; max-width: 64ch; margin: 0; line-height: 1.6; }
+.page-head code { font-family: var(--mono); font-size: 13px; background: var(--surface); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border); }
+.head-links { display: flex; gap: 14px; font-size: 13px; font-family: var(--mono); margin-top: 12px; }
+.head-links a { color: var(--navy); text-decoration: underline; text-underline-offset: 2px; }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+}
+.cell {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 48px 28px 28px;
+  display: flex; flex-direction: column; align-items: center; gap: 28px;
+  min-height: 360px;
+  position: relative;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.cell:hover { box-shadow: 0 20px 40px -24px rgba(15,29,46,0.18); transform: translateY(-2px); }
+.cell .idx {
+  position: absolute; top: 16px; left: 18px;
+  font-family: var(--mono); font-size: 10px; font-weight: 700;
+  color: var(--ink-faint); letter-spacing: 0.16em;
+}
+.cell .codename {
+  position: absolute; top: 16px; right: 18px;
+  font-family: var(--mono); font-size: 10px; font-weight: 700;
+  color: var(--ink-3); letter-spacing: 0.16em;
+}
+.cell .tag { margin-top: auto; text-align: center; padding-top: 18px; border-top: 1px dashed var(--border); width: 100%; }
+.cell .tag .name { font-size: 14px; font-weight: 600; color: var(--ink); }
+.cell .tag .desc { font-size: 12px; color: var(--ink-mute); margin-top: 3px; font-family: var(--mono); letter-spacing: 0.02em; line-height: 1.5; }
+
+/* Dark cells for contrast variants */
+.cell.dark {
+  background: var(--navy-deep);
+  border-color: var(--ink-2);
+}
+.cell.dark .tag { border-top-color: rgba(255,255,255,0.08); }
+.cell.dark .tag .name { color: white; }
+.cell.dark .tag .desc { color: rgba(255,255,255,0.5); }
+.cell.dark .idx, .cell.dark .codename { color: rgba(255,255,255,0.35); }
+
+/* Common hex sizing */
+.hex { position: relative; display: grid; place-items: center; cursor: pointer; }
+
+/* ============================================================
+   01 · OBSIDIAN
+   Dark navy hex, hairline white stroke, etched serif grade,
+   serial-number microtype at bottom. Premium black-card feel.
+============================================================ */
+.hex-01 { width: 148px; height: 166px; filter: drop-shadow(0 20px 28px rgba(15,29,46,0.28)); }
+.hex-01 svg { width: 100%; height: 100%; }
+.hex-01 .g { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; }
+.hex-01 .letter {
+  font-family: var(--serif);
+  font-size: 62px; line-height: 0.9; letter-spacing: -0.04em;
+  color: white; margin-top: -6px;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.1), 0 2px 20px rgba(96,165,250,0.3);
+}
+.hex-01 .wordmark {
+  font-family: var(--mono); font-size: 8px; font-weight: 700;
+  letter-spacing: 0.32em; color: rgba(255,255,255,0.5);
+  margin-top: 8px; text-transform: uppercase;
+}
+.hex-01 .serial {
+  position: absolute; bottom: 18px; left: 0; right: 0;
+  font-family: var(--mono); font-size: 7.5px; font-weight: 500;
+  letter-spacing: 0.28em; text-align: center;
+  color: rgba(96,165,250,0.65);
+}
+
+/* ============================================================
+   02 · QUARTZ
+   Light, crisp hex, hairline navy stroke, big serif grade,
+   curved microtype around the top inside rim (watch-dial).
+============================================================ */
+.hex-02 { width: 160px; height: 176px; }
+.hex-02 svg { width: 100%; height: 100%; }
+.hex-02 .g { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.hex-02 .letter {
+  font-family: var(--serif); font-size: 52px; line-height: 0.9;
+  letter-spacing: -0.03em; color: var(--navy-dark);
+  margin-top: 6px;
+}
+.hex-02 .subscore {
+  font-family: var(--mono); font-size: 10px; font-weight: 700;
+  letter-spacing: 0.14em; color: var(--navy); margin-top: 4px;
+}
+.hex-02 .arc-text {
+  position: absolute; inset: 0; pointer-events: none;
+}
+.hex-02 .arc-text text {
+  font-family: var(--mono); font-size: 7px; font-weight: 600;
+  letter-spacing: 0.28em; fill: var(--ink-mute);
+}
+
+/* ============================================================
+   03 · SIGNAL
+   Bisected hex — top navy with grade, bottom white with score
+   and brandmark. Clean horizontal line. Crypto-token precision.
+============================================================ */
+.hex-03 { width: 144px; height: 160px; filter: drop-shadow(0 12px 24px rgba(15,29,46,0.18)); }
+.hex-03 svg { width: 100%; height: 100%; }
+.hex-03 .g {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+}
+.hex-03 .top, .hex-03 .bot {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+}
+.hex-03 .top { color: white; padding-top: 10px; }
+.hex-03 .top .letter { font-family: var(--sans); font-size: 40px; font-weight: 800; letter-spacing: -0.03em; line-height: 1; }
+.hex-03 .bot { color: var(--navy-dark); padding-bottom: 12px; flex-direction: column; gap: 0; }
+.hex-03 .bot .score { font-family: var(--mono); font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
+.hex-03 .bot .brand { font-family: var(--mono); font-size: 7.5px; font-weight: 700; letter-spacing: 0.28em; color: var(--ink-mute); margin-top: 2px; }
+
+/* ============================================================
+   04 · CORE
+   Concentric hexagons — hairline outer, mid ring with tick
+   marks, solid inner holding grade. Architectural / scientific.
+============================================================ */
+.hex-04 { width: 170px; height: 186px; }
+.hex-04 svg { width: 100%; height: 100%; }
+.hex-04 .g { position: absolute; inset: 0; display: grid; place-items: center; }
+.hex-04 .inner {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  color: white; padding-top: 2px;
+}
+.hex-04 .inner .letter {
+  font-family: var(--sans); font-size: 34px; font-weight: 900;
+  letter-spacing: -0.03em; line-height: 1;
+}
+.hex-04 .inner .score {
+  font-family: var(--mono); font-size: 9px; font-weight: 700;
+  letter-spacing: 0.18em; opacity: 0.8; margin-top: 2px;
+}
+
+/* ============================================================
+   05 · COMPASS
+   Hex with decile tick marks around the perimeter (like a
+   compass rose), plus a filled arc segment indicating the
+   score position. Reads as measured, intelligent.
+============================================================ */
+.hex-05 { width: 170px; height: 188px; }
+.hex-05 svg { width: 100%; height: 100%; }
+.hex-05 .g { position: absolute; inset: 0; display: grid; place-items: center; }
+.hex-05 .inner {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  color: var(--navy-dark);
+}
+.hex-05 .inner .letter {
+  font-family: var(--serif); font-size: 44px; font-weight: 400;
+  letter-spacing: -0.03em; line-height: 1;
+}
+.hex-05 .inner .score {
+  font-family: var(--mono); font-size: 10px; font-weight: 700;
+  letter-spacing: 0.14em; color: var(--ink-mute); margin-top: 4px;
+}
+
+/* ============================================================
+   06 · LEDGER
+   Wider hex with a horizontal "data readout" band near the
+   bottom — grade left, score right, vertical divider. Like
+   a DSLR viewfinder or aircraft HUD. Cool and readable.
+============================================================ */
+.hex-06 { width: 190px; height: 152px; filter: drop-shadow(0 14px 26px rgba(15,29,46,0.2)); }
+.hex-06 svg { width: 100%; height: 100%; }
+.hex-06 .g {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  color: white; gap: 10px;
+}
+.hex-06 .brand {
+  font-family: var(--mono); font-size: 8.5px; font-weight: 700;
+  letter-spacing: 0.32em; color: rgba(255,255,255,0.6); text-transform: uppercase;
+  padding-top: 10px;
+}
+.hex-06 .readout {
+  display: flex; align-items: center; gap: 16px;
+  padding: 0 4px;
+}
+.hex-06 .readout .letter {
+  font-family: var(--sans); font-size: 40px; font-weight: 900;
+  letter-spacing: -0.03em; line-height: 1;
+}
+.hex-06 .readout .divider {
+  width: 1px; height: 34px; background: rgba(96,165,250,0.5);
+}
+.hex-06 .readout .score-block {
+  display: flex; flex-direction: column; line-height: 1.1;
+}
+.hex-06 .readout .score-block .val {
+  font-family: var(--mono); font-size: 18px; font-weight: 700;
+  color: white; letter-spacing: -0.02em;
+}
+.hex-06 .readout .score-block .lbl {
+  font-family: var(--mono); font-size: 7.5px; font-weight: 600;
+  letter-spacing: 0.24em; color: rgba(96,165,250,0.7); text-transform: uppercase;
+}
+.hex-06 .percentile {
+  position: absolute; bottom: 14px; left: 0; right: 0; text-align: center;
+  font-family: var(--mono); font-size: 7.5px; font-weight: 600;
+  letter-spacing: 0.28em; color: rgba(255,255,255,0.45);
+}
+
+/* ============================================================
+   07 · APERTURE — bonus: faceted hexagon with depth shading
+   Six triangular facets meeting in the center, subtle shading
+   gives volumetric feel. Premium product-design vibe.
+============================================================ */
+.hex-07 { width: 160px; height: 176px; filter: drop-shadow(0 16px 28px rgba(59,130,246,0.25)); }
+.hex-07 svg { width: 100%; height: 100%; }
+.hex-07 .g { position: absolute; inset: 0; display: grid; place-items: center; }
+.hex-07 .inner {
+  width: 62px; height: 70px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: var(--navy-deep);
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  color: white;
+}
+.hex-07 .inner .letter {
+  font-family: var(--sans); font-size: 26px; font-weight: 800;
+  letter-spacing: -0.03em; line-height: 1;
+}
+.hex-07 .inner .score {
+  font-family: var(--mono); font-size: 8px; font-weight: 700;
+  letter-spacing: 0.16em; color: rgba(96,165,250,0.8); margin-top: 2px;
+}
+
+/* ============================================================
+   08 · PROOF
+   Hex with a proof-mark style — pill-shaped "VERIFIED" chip
+   at the bottom edge outside the hex. Feels like an assay
+   mark / hallmark / certification stamp. Trustworthy.
+============================================================ */
+.hex-08 { width: 160px; height: 202px; position: relative; }
+.hex-08 .shape { width: 100%; height: 176px; position: relative; }
+.hex-08 svg { width: 100%; height: 100%; }
+.hex-08 .g { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; gap: 4px; padding-bottom: 4px; }
+.hex-08 .g .letter { font-family: var(--sans); font-size: 48px; font-weight: 900; letter-spacing: -0.03em; line-height: 1; }
+.hex-08 .g .score { font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.1em; color: rgba(96,165,250,0.9); }
+.hex-08 .chip {
+  position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%);
+  background: white; color: var(--navy-dark);
+  border: 1px solid var(--border);
+  font-family: var(--mono); font-size: 9px; font-weight: 700;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  padding: 5px 12px; border-radius: 999px;
+  display: inline-flex; align-items: center; gap: 6px;
+  box-shadow: 0 6px 16px -8px rgba(15,29,46,0.25);
+}
+.hex-08 .chip svg.check { width: 11px; height: 11px; color: #10b981; }
+
+/* ============================================================
+   In-context strip — show winners at real placement size
+============================================================ */
+.context {
+  margin-top: 80px; padding-top: 32px; border-top: 1px solid var(--border);
+}
+.context h2 { font-family: var(--serif); font-size: 26px; margin: 0 0 8px; letter-spacing: -0.015em; font-weight: 400; }
+.context p { color: var(--ink-mute); margin: 0 0 24px; font-size: 14px; }
+.ctx-row {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 16px;
+}
+.ctx {
+  padding: 24px 26px; background: white; border: 1px solid var(--border); border-radius: 14px;
+  display: flex; align-items: center; gap: 22px;
+}
+.ctx .ctx-copy {
+  flex: 1; min-width: 0;
+}
+.ctx .eyebrow { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.16em; color: var(--ink-mute); text-transform: uppercase; }
+.ctx .line { font-family: var(--serif); font-size: 18px; line-height: 1.4; color: var(--ink); margin-top: 6px; letter-spacing: -0.005em; }
+.ctx .ctx-name { font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--ink-3); letter-spacing: 0.12em; text-transform: uppercase; margin-top: 12px; }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <header class="page-head">
+    <h1>Lucid Score — hexagon explorations</h1>
+    <p>The epIQ hex is the right shape. These 8 variants push the treatment toward sleek, aesthetic, and intelligent — hairline strokes, watch-dial microtype, precision typography, and restrained depth. All use the LucidRents palette.</p>
+    <div class="head-links">
+      <a href="/mockups/building-v1.html">← back to building-v1</a>
+      <a href="/mockups/hero-variants.html">→ hero-variants</a>
+    </div>
+  </header>
+
+  <div class="grid">
+
+    <!-- 01 OBSIDIAN -->
+    <div class="cell dark">
+      <span class="idx">01</span><span class="codename">OBSIDIAN</span>
+      <div class="hex hex-01">
+        <svg viewBox="0 0 148 166" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="ob-fill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#1e293b"/>
+              <stop offset="100%" stop-color="#050a14"/>
+            </linearGradient>
+            <radialGradient id="ob-glow" cx="50%" cy="42%" r="55%">
+              <stop offset="0%" stop-color="#3B82F6" stop-opacity="0.22"/>
+              <stop offset="70%" stop-color="#3B82F6" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <polygon points="74,4 142,42 142,124 74,162 6,124 6,42" fill="url(#ob-fill)" stroke="rgba(255,255,255,0.14)" stroke-width="1"/>
+          <polygon points="74,4 142,42 142,124 74,162 6,124 6,42" fill="url(#ob-glow)"/>
+          <polygon points="74,12 134,46 134,120 74,154 14,120 14,46" fill="none" stroke="rgba(96,165,250,0.18)" stroke-width="0.75"/>
+        </svg>
+        <div class="g">
+          <div class="wordmark">LUCID · SCORE</div>
+          <div class="letter">B+</div>
+          <div class="serial">LS · 07.84 · 2026.04</div>
+        </div>
+      </div>
+      <div class="tag">
+        <div class="name">Obsidian</div>
+        <div class="desc">dark · etched · serialized<br/>black-card premium</div>
+      </div>
+    </div>
+
+    <!-- 02 QUARTZ -->
+    <div class="cell">
+      <span class="idx">02</span><span class="codename">QUARTZ</span>
+      <div class="hex hex-02">
+        <svg viewBox="0 0 160 176" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="80,4 154,45 154,131 80,172 6,131 6,45" fill="white" stroke="#0F1D2E" stroke-width="1.2"/>
+          <polygon points="80,14 146,50 146,126 80,162 14,126 14,50" fill="none" stroke="#3B82F6" stroke-width="0.5" stroke-dasharray="1.5 3"/>
+          <!-- Tick marks on perimeter (10 ticks) -->
+          <g stroke="#0F1D2E" stroke-width="1" stroke-linecap="round" opacity="0.65">
+            <line x1="80" y1="4" x2="80" y2="11"/>
+            <line x1="117" y1="23" x2="114" y2="29"/>
+            <line x1="154" y1="45" x2="147" y2="49"/>
+            <line x1="154" y1="88" x2="147" y2="88"/>
+            <line x1="154" y1="131" x2="147" y2="127"/>
+            <line x1="117" y1="152" x2="114" y2="146"/>
+            <line x1="80" y1="172" x2="80" y2="165"/>
+            <line x1="43" y1="152" x2="46" y2="146"/>
+            <line x1="6" y1="131" x2="13" y2="127"/>
+            <line x1="6" y1="88" x2="13" y2="88"/>
+            <line x1="6" y1="45" x2="13" y2="49"/>
+            <line x1="43" y1="23" x2="46" y2="29"/>
+          </g>
+        </svg>
+        <!-- Curved microtype along the top inner rim -->
+        <svg class="arc-text" viewBox="0 0 160 176" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <path id="q-top" d="M 20 46 A 68 68 0 0 1 140 46"/>
+            <path id="q-bot" d="M 20 130 A 68 68 0 0 0 140 130"/>
+          </defs>
+          <text><textPath href="#q-top" startOffset="50%" text-anchor="middle">LUCID · SCORE · MANHATTAN</textPath></text>
+          <text><textPath href="#q-bot" startOffset="50%" text-anchor="middle">VERIFIED · TOP 18 PERCENT</textPath></text>
+        </svg>
+        <div class="g">
+          <div class="letter">B+</div>
+          <div class="subscore">7.84 / 10</div>
+        </div>
+      </div>
+      <div class="tag">
+        <div class="name">Quartz</div>
+        <div class="desc">hairline · watch-dial microtype<br/>precise, calm, light</div>
+      </div>
+    </div>
+
+    <!-- 03 SIGNAL -->
+    <div class="cell">
+      <span class="idx">03</span><span class="codename">SIGNAL</span>
+      <div class="hex hex-03">
+        <svg viewBox="0 0 144 160" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <clipPath id="sig-clip">
+              <polygon points="72,2 138,40 138,120 72,158 6,120 6,40"/>
+            </clipPath>
+          </defs>
+          <g clip-path="url(#sig-clip)">
+            <rect x="0" y="0" width="144" height="80" fill="#0F1D2E"/>
+            <rect x="0" y="80" width="144" height="80" fill="white"/>
+            <line x1="0" y1="80" x2="144" y2="80" stroke="#3B82F6" stroke-width="1.5"/>
+          </g>
+          <polygon points="72,2 138,40 138,120 72,158 6,120 6,40" fill="none" stroke="#0F1D2E" stroke-width="1"/>
+        </svg>
+        <div class="g">
+          <div class="top"><div class="letter">B+</div></div>
+          <div class="bot">
+            <div class="score">7.84</div>
+            <div class="brand">LUCID SCORE</div>
+          </div>
+        </div>
+      </div>
+      <div class="tag">
+        <div class="name">Signal</div>
+        <div class="desc">bisected · crisp horizon line<br/>token / ticker feel</div>
+      </div>
+    </div>
+
+    <!-- 04 CORE -->
+    <div class="cell">
+      <span class="idx">04</span><span class="codename">CORE</span>
+      <div class="hex hex-04">
+        <svg viewBox="0 0 170 186" xmlns="http://www.w3.org/2000/svg">
+          <!-- Outer hex hairline -->
+          <polygon points="85,4 162,47 162,139 85,182 8,139 8,47" fill="none" stroke="#0F1D2E" stroke-width="1"/>
+          <!-- Middle hex with tick marks around it -->
+          <polygon points="85,22 146,55 146,131 85,164 24,131 24,55" fill="none" stroke="#64748b" stroke-width="0.75" stroke-dasharray="3 2"/>
+          <!-- Inner filled hex -->
+          <polygon points="85,44 128,67 128,119 85,142 42,119 42,67" fill="#0F1D2E"/>
+          <polygon points="85,48 124,70 124,117 85,139 46,117 46,70" fill="none" stroke="rgba(96,165,250,0.28)" stroke-width="0.75"/>
+          <!-- Corner indicator dots -->
+          <circle cx="85" cy="4" r="2" fill="#3B82F6"/>
+          <circle cx="162" cy="47" r="1.5" fill="#64748b"/>
+          <circle cx="162" cy="139" r="1.5" fill="#64748b"/>
+          <circle cx="85" cy="182" r="1.5" fill="#64748b"/>
+          <circle cx="8" cy="139" r="1.5" fill="#64748b"/>
+          <circle cx="8" cy="47" r="1.5" fill="#64748b"/>
+        </svg>
+        <div class="g">
+          <div class="inner">
+            <div class="letter">B+</div>
+            <div class="score">7.84</div>
+          </div>
+        </div>
+      </div>
+      <div class="tag">
+        <div class="name">Core</div>
+        <div class="desc">concentric · layered depth<br/>architectural / scientific</div>
+      </div>
+    </div>
+
+    <!-- 05 COMPASS -->
+    <div class="cell">
+      <span class="idx">05</span><span class="codename">COMPASS</span>
+      <div class="hex hex-05">
+        <svg viewBox="0 0 170 188" xmlns="http://www.w3.org/2000/svg">
+          <!-- Outer hex -->
+          <polygon points="85,4 162,47 162,141 85,184 8,141 8,47" fill="white" stroke="#0F1D2E" stroke-width="1"/>
+          <!-- Decile arc filled at 78% from left base going clockwise -->
+          <!-- First: light track -->
+          <polyline points="85,4 162,47 162,141 85,184 8,141 8,47 85,4" fill="none" stroke="#e2e8f0" stroke-width="3" stroke-linejoin="round" transform="translate(0,0)"/>
+          <!-- Filled portion (~78% of perimeter): starting top, clockwise -->
+          <polyline points="85,4 162,47 162,141 85,184 8,141 8,93" fill="none" stroke="#3B82F6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+          <!-- Decile tick marks (12 around hex) -->
+          <g stroke="#0F1D2E" stroke-width="1" stroke-linecap="round">
+            <line x1="85" y1="4" x2="85" y2="12"/>
+            <line x1="123" y1="26" x2="119" y2="32"/>
+            <line x1="162" y1="47" x2="154" y2="52"/>
+            <line x1="162" y1="94" x2="154" y2="94"/>
+            <line x1="162" y1="141" x2="154" y2="136"/>
+            <line x1="123" y1="162" x2="119" y2="156"/>
+            <line x1="85" y1="184" x2="85" y2="176"/>
+            <line x1="47" y1="162" x2="51" y2="156"/>
+            <line x1="8" y1="141" x2="16" y2="136"/>
+            <line x1="8" y1="94" x2="16" y2="94"/>
+            <line x1="8" y1="47" x2="16" y2="52"/>
+            <line x1="47" y1="26" x2="51" y2="32"/>
+          </g>
+          <!-- Decile numbers (every third) -->
+          <g font-family="Geist Mono" font-size="6" fill="#94a3b8" font-weight="700">
+            <text x="79" y="-2" text-anchor="middle" transform="translate(0,176)">5</text>
+            <text x="168" y="48" text-anchor="start">8</text>
+            <text x="168" y="142" text-anchor="start">7</text>
+            <text x="0" y="142" text-anchor="end">9</text>
+            <text x="0" y="48" text-anchor="end">6</text>
+          </g>
+          <!-- Small "78" marker on arc end -->
+          <circle cx="8" cy="93" r="3" fill="#3B82F6"/>
+        </svg>
+        <div class="g">
+          <div class="inner">
+            <div class="letter">B+</div>
+            <div class="score">7.84 · TOP 18%</div>
+          </div>
+        </div>
+      </div>
+      <div class="tag">
+        <div class="name">Compass</div>
+        <div class="desc">decile ticks · filled arc<br/>measured · intelligent</div>
+      </div>
+    </div>
+
+    <!-- 06 LEDGER -->
+    <div class="cell dark">
+      <span class="idx">06</span><span class="codename">LEDGER</span>
+      <div class="hex hex-06">
+        <svg viewBox="0 0 190 152" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="ld-fill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#1e293b"/>
+              <stop offset="100%" stop-color="#050a14"/>
+            </linearGradient>
+          </defs>
+          <!-- Elongated hex -->
+          <polygon points="30,4 160,4 186,76 160,148 30,148 4,76" fill="url(#ld-fill)" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+          <polygon points="36,10 154,10 178,76 154,142 36,142 12,76" fill="none" stroke="rgba(96,165,250,0.16)" stroke-width="0.75"/>
+          <!-- Small corner chip marks -->
+          <circle cx="20" cy="40" r="1.5" fill="#3B82F6" opacity="0.8"/>
+          <circle cx="170" cy="40" r="1.5" fill="#3B82F6" opacity="0.8"/>
+          <circle cx="20" cy="112" r="1.5" fill="#3B82F6" opacity="0.8"/>
+          <circle cx="170" cy="112" r="1.5" fill="#3B82F6" opacity="0.8"/>
+        </svg>
+        <div class="g">
+          <div class="brand">LUCID SCORE</div>
+          <div class="readout">
+            <div class="letter">B+</div>
+            <div class="divider"></div>
+            <div class="score-block">
+              <span class="val">7.84</span>
+              <span class="lbl">of 10.00</span>
+            </div>
+          </div>
+          <div class="percentile">PERCENTILE · 82 · MANHATTAN</div>
+        </div>
+      </div>
+      <div class="tag">
+        <div class="name">Ledger</div>
+        <div class="desc">wide hex · HUD readout<br/>data-dense · technical</div>
+      </div>
+    </div>
+
+    <!-- 07 APERTURE -->
+    <div class="cell">
+      <span class="idx">07</span><span class="codename">APERTURE</span>
+      <div class="hex hex-07">
+        <svg viewBox="0 0 160 176" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="ap-grad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#60a5fa"/>
+              <stop offset="100%" stop-color="#2563EB"/>
+            </linearGradient>
+          </defs>
+          <!-- Outer hex as 6 triangular facets -->
+          <polygon points="80,4 80,88 152,46" fill="#2563EB"/>
+          <polygon points="152,46 80,88 152,130" fill="#1d4ed8"/>
+          <polygon points="152,130 80,88 80,172" fill="#3B82F6"/>
+          <polygon points="80,172 80,88 8,130" fill="#60a5fa"/>
+          <polygon points="8,130 80,88 8,46" fill="#3B82F6"/>
+          <polygon points="8,46 80,88 80,4" fill="#60a5fa"/>
+          <!-- subtle outer stroke -->
+          <polygon points="80,4 152,46 152,130 80,172 8,130 8,46" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+        </svg>
+        <div class="g">
+          <div class="inner">
+            <div class="letter">B+</div>
+            <div class="score">7.84</div>
+          </div>
+        </div>
+      </div>
+      <div class="tag">
+        <div class="name">Aperture</div>
+        <div class="desc">faceted · volumetric depth<br/>premium product feel</div>
+      </div>
+    </div>
+
+    <!-- 08 PROOF -->
+    <div class="cell">
+      <span class="idx">08</span><span class="codename">PROOF</span>
+      <div class="hex hex-08">
+        <div class="shape">
+          <svg viewBox="0 0 160 176" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="pf-fill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#0F1D2E"/>
+                <stop offset="100%" stop-color="#050a14"/>
+              </linearGradient>
+            </defs>
+            <polygon points="80,4 154,45 154,131 80,172 6,131 6,45" fill="url(#pf-fill)"/>
+            <polygon points="80,14 146,50 146,126 80,162 14,126 14,50" fill="none" stroke="rgba(96,165,250,0.25)" stroke-width="0.75"/>
+          </svg>
+          <div class="g">
+            <div class="letter">B+</div>
+            <div class="score">7.84</div>
+          </div>
+        </div>
+        <div class="chip">
+          <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+          Verified · Lucid
+        </div>
+      </div>
+      <div class="tag">
+        <div class="name">Proof</div>
+        <div class="desc">hex + assay-mark chip<br/>hallmark · certification</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- In-context placement previews -->
+  <section class="context">
+    <h2>In context</h2>
+    <p>How the badge sits next to the verdict copy at real hero size.</p>
+    <div class="ctx-row">
+      <div class="ctx">
+        <div class="hex hex-01" style="width: 96px; height: 108px; flex: 0 0 96px;">
+          <svg viewBox="0 0 148 166" xmlns="http://www.w3.org/2000/svg">
+            <polygon points="74,4 142,42 142,124 74,162 6,124 6,42" fill="#0F1D2E"/>
+            <polygon points="74,12 134,46 134,120 74,154 14,120 14,46" fill="none" stroke="rgba(96,165,250,0.25)" stroke-width="0.75"/>
+          </svg>
+          <div class="g"><div class="letter" style="font-size:44px;">B+</div><div class="serial" style="bottom: 10px;">LS · 07.84</div></div>
+        </div>
+        <div class="ctx-copy">
+          <div class="eyebrow">The verdict · updated today</div>
+          <div class="line">A well-kept rent-stabilized landmark with strong tenant retention, despite a few slow-closing violations.</div>
+          <div class="ctx-name">01 · Obsidian</div>
+        </div>
+      </div>
+
+      <div class="ctx">
+        <div class="hex hex-02" style="width: 110px; height: 122px; flex: 0 0 110px;">
+          <svg viewBox="0 0 160 176" xmlns="http://www.w3.org/2000/svg">
+            <polygon points="80,4 154,45 154,131 80,172 6,131 6,45" fill="white" stroke="#0F1D2E" stroke-width="1.2"/>
+            <polygon points="80,14 146,50 146,126 80,162 14,126 14,50" fill="none" stroke="#3B82F6" stroke-width="0.5" stroke-dasharray="1.5 3"/>
+          </svg>
+          <div class="g"><div class="letter" style="font-size:40px;">B+</div><div class="subscore">7.84</div></div>
+        </div>
+        <div class="ctx-copy">
+          <div class="eyebrow">The verdict · updated today</div>
+          <div class="line">A well-kept rent-stabilized landmark with strong tenant retention, despite a few slow-closing violations.</div>
+          <div class="ctx-name">02 · Quartz</div>
+        </div>
+      </div>
+
+      <div class="ctx">
+        <div class="hex hex-05" style="width: 120px; height: 132px; flex: 0 0 120px;">
+          <svg viewBox="0 0 170 188" xmlns="http://www.w3.org/2000/svg">
+            <polygon points="85,4 162,47 162,141 85,184 8,141 8,47" fill="white" stroke="#0F1D2E" stroke-width="1"/>
+            <polyline points="85,4 162,47 162,141 85,184 8,141 8,93" fill="none" stroke="#3B82F6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+            <g stroke="#0F1D2E" stroke-width="1" stroke-linecap="round">
+              <line x1="85" y1="4" x2="85" y2="11"/>
+              <line x1="162" y1="47" x2="155" y2="52"/>
+              <line x1="162" y1="141" x2="155" y2="136"/>
+              <line x1="85" y1="184" x2="85" y2="177"/>
+              <line x1="8" y1="141" x2="15" y2="136"/>
+              <line x1="8" y1="47" x2="15" y2="52"/>
+            </g>
+            <circle cx="8" cy="93" r="3" fill="#3B82F6"/>
+          </svg>
+          <div class="g"><div class="inner"><div class="letter" style="font-size:34px;">B+</div><div class="score" style="font-size:9px;">7.84 · TOP 18%</div></div></div>
+        </div>
+        <div class="ctx-copy">
+          <div class="eyebrow">The verdict · updated today</div>
+          <div class="line">A well-kept rent-stabilized landmark with strong tenant retention, despite a few slow-closing violations.</div>
+          <div class="ctx-name">05 · Compass</div>
+        </div>
+      </div>
+
+      <div class="ctx">
+        <div class="hex hex-06" style="width: 150px; height: 120px; flex: 0 0 150px;">
+          <svg viewBox="0 0 190 152" xmlns="http://www.w3.org/2000/svg">
+            <polygon points="30,4 160,4 186,76 160,148 30,148 4,76" fill="#0F1D2E" stroke="rgba(255,255,255,0.12)"/>
+            <polygon points="36,10 154,10 178,76 154,142 36,142 12,76" fill="none" stroke="rgba(96,165,250,0.2)" stroke-width="0.75"/>
+          </svg>
+          <div class="g">
+            <div class="brand" style="font-size:7px;">LUCID SCORE</div>
+            <div class="readout">
+              <div class="letter" style="font-size:30px;">B+</div>
+              <div class="divider" style="height: 26px;"></div>
+              <div class="score-block">
+                <span class="val" style="font-size:14px;">7.84</span>
+                <span class="lbl" style="font-size:6.5px;">of 10.00</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="ctx-copy">
+          <div class="eyebrow">The verdict · updated today</div>
+          <div class="line">A well-kept rent-stabilized landmark with strong tenant retention, despite a few slow-closing violations.</div>
+          <div class="ctx-name">06 · Ledger</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+</body>
+</html>

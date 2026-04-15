@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LucidRents — Shield with overflow wordmark · 10 variations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --ink:#0F1D2E; --ink-mute:#64748b; --ink-faint:#94a3b8;
+  --navy:#3B82F6; --navy-hi:#2563EB; --navy-dark:#0F1D2E;
+  --sky:#dbeafe; --sky-deep:#60a5fa;
+  --paper:#f8fafc; --surface:#fff; --border:#e2e8f0;
+  --sans:"Geist", system-ui, sans-serif;
+  --mono:"Geist Mono", ui-monospace, monospace;
+  --serif:"Young Serif", serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+.page{max-width:1280px;margin:0 auto;padding:48px 24px 120px}
+.page-head{padding-bottom:28px;margin-bottom:40px;border-bottom:1px solid var(--border)}
+.page-head h1{font-family:var(--serif);font-size:40px;margin:0 0 6px;letter-spacing:-0.02em}
+.page-head p{color:var(--ink-mute);font-size:15px;max-width:64ch;margin:0;line-height:1.6}
+.links{display:flex;gap:14px;font-size:13px;font-family:var(--mono);margin-top:12px;flex-wrap:wrap}
+.links a{color:var(--navy);text-decoration:underline;text-underline-offset:2px}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:18px}
+.cell{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;position:relative;transition:transform .2s, box-shadow .2s}
+.cell:hover{transform:translateY(-2px);box-shadow:0 18px 36px -22px rgba(15,29,46,0.2)}
+.cell .idx{position:absolute;top:10px;left:14px;font-family:var(--mono);font-size:10px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.14em;z-index:2}
+.cell .code{position:absolute;top:10px;right:14px;font-family:var(--mono);font-size:10px;font-weight:700;color:rgba(255,255,255,0.75);letter-spacing:0.14em;z-index:2}
+.stage-dark{background:var(--ink);display:flex;align-items:center;justify-content:center;gap:36px;padding:44px 16px;min-height:220px;color:#fff;overflow:hidden}
+.stage-dark .big{width:200px;height:auto;overflow:visible}
+.stage-dark .mid{width:100px;height:auto;overflow:visible}
+
+.stage-light{background:#fff;display:flex;align-items:center;justify-content:center;gap:36px;padding:44px 16px;min-height:220px;border-top:1px solid var(--border);overflow:hidden}
+.stage-light .big{width:200px;height:auto;overflow:visible}
+.stage-light .mid{width:100px;height:auto;overflow:visible}
+
+.tag{padding:14px 18px 16px;border-top:1px dashed var(--border);text-align:center}
+.tag .name{font-size:13px;font-weight:600;color:var(--ink);letter-spacing:-0.005em}
+.tag .desc{font-size:11px;color:var(--ink-mute);margin-top:2px;font-family:var(--mono);letter-spacing:0.02em;line-height:1.5}
+
+svg{display:block;overflow:visible}
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="page-head">
+    <h1>Shield + overflow wordmark — 10 variations</h1>
+    <p>Shield 01 (NYC Classic) with <strong>Lucid Rents</strong> breaking out beyond the shield edges. Each variant plays with how far the text extends, font treatment, and weight. Overflow makes the mark feel less enclosed and more editorial — like a stamp or bookplate.</p>
+    <div class="links">
+      <a href="/mockups/logo-shield-wordmark.html">← 10 inside variations</a>
+      <a href="/mockups/logo-shield-skyline.html">10 skyline styles</a>
+    </div>
+  </header>
+
+  <div class="grid">
+
+    <!-- ============================================================
+         V01 · SUBTLE OVERFLOW — text peeks slightly past shield
+         ============================================================ -->
+    <div class="cell">
+      <span class="idx">01</span><span class="code">SUBTLE</span>
+      <div class="stage-dark">
+        <svg class="big" viewBox="-20 0 160 138" fill="none">
+          <defs><clipPath id="o1c"><path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z"/></clipPath></defs>
+          <path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z" fill="#3B82F6"/>
+          <g clip-path="url(#o1c)">
+            <g fill="#fff"><rect x="16" y="84" width="14" height="50"/><rect x="32" y="72" width="14" height="62"/><rect x="48" y="56" width="18" height="78"/><rect x="68" y="64" width="14" height="70"/><rect x="84" y="78" width="14" height="56"/></g>
+            <g fill="#3B82F6"><rect x="52" y="62" width="2" height="3"/><rect x="58" y="62" width="2" height="3"/><rect x="62" y="62" width="2" height="3"/><rect x="52" y="70" width="2" height="3"/><rect x="58" y="70" width="2" height="3"/><rect x="62" y="70" width="2" height="3"/></g>
+          </g>
+          <text x="60" y="36" font-family="Geist, sans-serif" font-size="11" font-weight="800" fill="#fff" text-anchor="middle" letter-spacing="0.14em">LUCID RENTS</text>
+          <line x1="20" y1="44" x2="100" y2="44" stroke="#fff" stroke-opacity="0.35" stroke-width="0.7"/>
+        </svg>
+        <svg class="mid" viewBox="-20 0 160 138" fill="none">
+          <defs><clipPath id="o1cs"><path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z"/></clipPath></defs>
+          <path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z" fill="#3B82F6"/>
+          <g clip-path="url(#o1cs)"><g fill="#fff"><rect x="16" y="84" width="14" height="50"/><rect x="32" y="72" width="14" height="62"/><rect x="48" y="56" width="18" height="78"/><rect x="68" y="64" width="14" height="70"/><rect x="84" y="78" width="14" height="56"/></g></g>
+          <text x="60" y="36" font-family="Geist, sans-serif" font-size="11" font-weight="800" fill="#fff" text-anchor="middle" letter-spacing="0.14em">LUCID RENTS</text>
+        </svg>
+      </div>
+      <div class="stage-light">
+        <svg class="big" viewBox="-20 0 160 138" fill="none">
+          <defs><clipPath id="o1cl"><path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z"/></clipPath></defs>
+          <path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z" fill="#0F1D2E"/>
+          <g clip-path="url(#o1cl)"><g fill="#fff"><rect x="16" y="84" width="14" height="50"/><rect x="32" y="72" width="14" height="62"/><rect x="48" y="56" width="18" height="78"/><rect x="68" y="64" width="14" height="70"/><rect x="84" y="78" width="14" height="56"/></g></g>
+          <text x="60" y="36" font-family="Geist, sans-serif" font-size="11" font-weight="800" fill="#0F1D2E" text-anchor="middle" letter-spacing="0.14em">LUCID RENTS</text>
+          <line x1="20" y1="44" x2="100" y2="44" stroke="#0F1D2E" stroke-opacity="0.35" stroke-width="0.7"/>
+        </svg>
+      </div>
+      <div class="tag"><div class="name">Subtle overflow</div><div class="desc">slight · peeks ~5px past each edge</div></div>
+    </div>
+
+    <!-- ============================================================
+         V02 · WIDE BREAK — much larger text running wide past shield
+         ============================================================ -->
+    <div class="cell">
+      <span class="idx">02</span><span class="code">WIDE BREAK</span>
+      <div class="stage-dark">
+        <svg class="big" viewBox="-40 0 200 138" fill="none">
+          <defs><clipPath id="o2c"><path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z"/></clipPath></defs>
+          <path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z" fill="#3B82F6"/>
+          <g clip-path="url(#o2c)">
+            <g fill="#fff"><rect x="16" y="84" width="14" height="50"/><rect x="32" y="72" width="14" height="62"/><rect x="48" y="56" width="18" height="78"/><rect x="68" y="64" width="14" height="70"/><rect x="84" y="78" width="14" height="56"/></g>
+            <g fill="#3B82F6"><rect x="52" y="62" width="2" height="3"/><rect x="58" y="62" width="2" height="3"/><rect x="62" y="62" width="2" height="3"/><rect x="52" y="70" width="2" height="3"/><rect x="58" y="70" width="2" height="3"/><rect x="62" y="70" width="2" height="3"/></g>
+          </g>
+          <text x="60" y="36" font-family="Geist, sans-serif" font-size="16" font-weight="800" fill="#fff" text-anchor="middle" letter-spacing="0.12em">LUCID RENTS</text>
+          <line x1="-20" y1="46" x2="140" y2="46" stroke="#fff" stroke-opacity="0.35" stroke-width="0.7"/>
+        </svg>
+        <svg class="mid" viewBox="-40 0 200 138" fill="none">
+          <defs><clipPath id="o2cs"><path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z"/></clipPath></defs>
+          <path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z" fill="#3B82F6"/>
+          <g clip-path="url(#o2cs)"><g fill="#fff"><rect x="16" y="84" width="14" height="50"/><rect x="32" y="72" width="14" height="62"/><rect x="48" y="56" width="18" height="78"/><rect x="68" y="64" width="14" height="70"/><rect x="84" y="78" width="14" height="56"/></g></g>
+          <text x="60" y="36" font-family="Geist, sans-serif" font-size="16" font-weight="800" fill="#fff" text-anchor="middle" letter-spacing="0.12em">LUCID RENTS</text>
+        </svg>
+      </div>
+      <div class="stage-light">
+        <svg class="big" viewBox="-40 0 200 138" fill="none">
+          <defs><clipPath id="o2cl"><path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z"/></clipPath></defs>
+          <path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z" fill="#0F1D2E"/>
+          <g clip-path="url(#o2cl)"><g fill="#fff"><rect x="16" y="84" width="14" height="50"/><rect x="32" y="72" width="14" height="62"/><rect x="48" y="56" width="18" height="78"/><rect x="68" y="64" width="14" height="70"/><rect x="84" y="78" width="14" height="56"/></g></g>
+          <text x="60" y="36" font-family="Geist, sans-serif" font-size="16" font-weight="800" fill="#0F1D2E" text-anchor="middle" letter-spacing="0.12em">LUCID RENTS</text>
+          <line x1="-20" y1="46" x2="140" y2="46" stroke="#0F1D2E" stroke-opacity="0.35" stroke-width="0.7"/>
+        </svg>
+      </div>
+      <div class="tag"><div class="name">Wide break</div><div class="desc">bold · wordmark dominates above skyline</div></div>
+    </div>
+
+    <!-- ============================================================
+         V03 · SPLIT SIDES — LUCID left · RENTS right, shield center
+         ============================================================ -->
+    <div class="cell">
+      <span class="idx">03</span><span class="code">SPLIT SIDES</span>
+      <div class="stage-dark">
+        <svg class="big" viewBox="-60 0 240 138" fill="none">
+          <defs><clipPath id="o3c"><path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z"/></clipPath></defs>
+          <path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z" fill="#3B82F6"/>
+          <g clip-path="url(#o3c)">
+            <g fill="#fff"><rect x="16" y="80" width="14" height="54"/><rect x="32" y="66" width="14" height="68"/><rect x="48" y="46" width="18" height="88"/><rect x="68" y="56" width="14" height="78"/><rect x="84" y="74" width="14" height="60"/></g>
+            <g fill="#3B82F6"><rect x="52" y="52" width="2" height="3"/><rect x="58" y="52" width="2" height="3"/><rect x="62" y="52" width="2" height="3"/><rect x="52" y="60" width="2" height="3"/><rect x="58" y="60" width="2" height="3"/><rect x="62" y="60" width="2" height="3"/><rect x="52" y="68" width="2" height="3"/><rect x="58" y="68" width="2" height="3"/><rect x="62" y="68" width="2" height="3"/></g>
+          </g>
+          <text x="-4" y="76" font-family="Geist, sans-serif" font-size="18" font-weight="800" fill="#fff" text-anchor="end" letter-spacing="-0.02em">Lucid</text>
+          <text x="124" y="76" font-family="Geist, sans-serif" font-size="18" font-weight="800" fill="#fff" text-anchor="start" letter-spacing="-0.02em">Rents</text>
+        </svg>
+        <svg class="mid" viewBox="-60 0 240 138" fill="none">
+          <defs><clipPath id="o3cs"><path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z"/></clipPath></defs>
+          <path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z" fill="#3B82F6"/>
+          <g clip-path="url(#o3cs)"><g fill="#fff"><rect x="16" y="80" width="14" height="54"/><rect x="32" y="66" width="14" height="68"/><rect x="48" y="46" width="18" height="88"/><rect x="68" y="56" width="14" height="78"/><rect x="84" y="74" width="14" height="60"/></g></g>
+          <text x="-4" y="76" font-family="Geist, sans-serif" font-size="18" font-weight="800" fill="#fff" text-anchor="end" letter-spacing="-0.02em">Lucid</text>
+          <text x="124" y="76" font-family="Geist, sans-serif" font-size="18" font-weight="800" fill="#fff" text-anchor="start" letter-spacing="-0.02em">Rents</text>
+        </svg>
+      </div>
+      <div class="stage-light">
+        <svg class="big" viewBox="-60 0 240 138" fill="none">
+          <defs><clipPath id="o3cl"><path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z"/></clipPath></defs>
+          <path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z" fill="#0F1D2E"/>
+          <g clip-path="url(#o3cl)"><g fill="#fff"><rect x="16" y="80" width="14" height="54"/><rect x="32" y="66" width="14" height="68"/><rect x="48" y="46" width="18" height="88"/><rect x="68" y="56" width="14" height="78"/><rect x="84" y="74" width="14" height="60"/></g></g>
+          <text x="-4" y="76" font-family="Geist, sans-serif" font-size="18" font-weight="800" fill="#0F1D2E" text-anchor="end" letter-spacing="-0.02em">Lucid</text>
+          <text x="124" y="76" font-family="Geist, sans-serif" font-size="18" font-weight="800" fill="#0F1D2E" text-anchor="start" letter-spacing="-0.02em">Rents</text>
+        </svg>
+      </div>
+      <div class="tag"><div class="name">Split sides</div><div class="desc">Lucid left · shield center · Rents right</div></div>
+    </div>
+
+    <!-- ============================================================
+         V04 · BELOW BASE — wordmark anchored at the shield's bottom point
+         ============================================================ -->
+    <div class="cell">
+      <span class="idx">04</span><span class="code">BELOW BASE</span>
+      <div class="stage-dark">
+        <svg class="big" viewBox="-30 0 180 180" fill="none">
+          <defs><clipPath id="o4c"><path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z"/></clipPath></defs>
+          <path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z" fill="#3B82F6"/>
+          <g clip-path="url(#o4c)">
+            <g fill="#fff"><rect x="16" y="80" width="14" height="54"/><rect x="32" y="66" width="14" height="68"/><rect x="48" y="46" width="18" height="88"/><rect x="68" y="56" width="14" height="78"/><rect x="84" y="74" width="14" height="60"/></g>
+            <g fill="#3B82F6"><rect x="52" y="52" width="2" height="3"/><rect x="58" y="52" width="2" height="3"/><rect x="62" y="52" width="2" height="3"/><rect x="52" y="60" width="2" height="3"/><rect x="58" y="60" width="2" height="3"/><rect x="62" y="60" width="2" height="3"/></g>
+          </g>
+          <text x="60" y="160" font-family="Geist, sans-serif" font-size="20" font-weight="800" fill="#fff" text-anchor="middle" letter-spacing="-0.02em">Lucid Rents</text>
+        </svg>
+        <svg class="mid" viewBox="-30 0 180 180" fill="none">
+          <defs><clipPath id="o4cs"><path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z"/></clipPath></defs>
+          <path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z" fill="#3B82F6"/>
+          <g clip-path="url(#o4cs)"><g fill="#fff"><rect x="16" y="80" width="14" height="54"/><rect x="32" y="66" width="14" height="68"/><rect x="48" y="46" width="18" height="88"/><rect x="68" y="56" width="14" height="78"/><rect x="84" y="74" width="14" height="60"/></g></g>
+          <text x="60" y="160" font-family="Geist, sans-serif" font-size="20" font-weight="800" fill="#fff" text-anchor="middle" letter-spacing="-0.02em">Lucid Rents</text>
+        </svg>
+      </div>
+      <div class="stage-light">
+        <svg class="big" viewBox="-30 0 180 180" fill="none">
+          <defs><clipPath id="o4cl"><path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z"/></clipPath></defs>
+          <path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z" fill="#0F1D2E"/>
+          <g clip-path="url(#o4cl)"><g fill="#fff"><rect x="16" y="80" width="14" height="54"/><rect x="32" y="66" width="14" height="68"/><rect x="48" y="46" width="18" height="88"/><rect x="68" y="56" width="14" height="78"/><rect x="84" y="74" width="14" height="60"/></g></g>
+          <text x="60" y="160" font-family="Geist, sans-serif" font-size="20" font-weight="800" fill="#0F1D2E" text-anchor="middle" letter-spacing="-0.02em">Lucid Rents</text>
+        </svg>
+      </div>
+      <div class="tag"><div class="name">Below base</div><div class="desc">wordmark below shield point · stacked lockup</div></div>
+    </div>
+
+    <!-- ============================================================
+         V05 · CROSSING THROUGH — bold bar of type cuts across shield
+         ============================================================ -->
+    <div class="cell">
+      <span class="idx">05</span><span class="code">CROSSING THROUGH</span>
+      <div class="stage-dark">
+        <svg class="big" viewBox="-40 0 200 138" fill="none">
+          <defs>
+            <clipPath id="o5c"><path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z"/></clipPath>
+            <mask id="o5m">
+              <rect x="-40" y="0" width="240" height="138" fill="#fff"/>
+              <rect x="-40" y="60" width="240" height="22" fill="#000"/>
+            </mask>
+          </defs>
+          <g mask="url(#o5m)">
+            <path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z" fill="#3B82F6"/>
+            <g clip-path="url(#o5c)">
+              <g fill="#fff"><rect x="16" y="84" width="14" height="50"/><rect x="32" y="72" width="14" height="62"/><rect x="48" y="56" width="18" height="78"/><rect x="68" y="64" width="14" height="70"/><rect x="84" y="78" width="14" height="56"/></g>
+            </g>
+          </g>
+          <text x="60" y="76" font-family="Geist, sans-serif" font-size="16" font-weight="900" fill="#fff" text-anchor="middle" letter-spacing="0.02em">LUCID RENTS</text>
+        </svg>
+        <svg class="mid" viewBox="-40 0 200 138" fill="none">
+          <defs>
+            <clipPath id="o5cs"><path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z"/></clipPath>
+            <mask id="o5ms">
+              <rect x="-40" y="0" width="240" height="138" fill="#fff"/>
+              <rect x="-40" y="60" width="240" height="22" fill="#000"/>
+            </mask>
+          </defs>
+          <g mask="url(#o5ms)">
+            <path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z" fill="#3B82F6"/>
+            <g clip-path="url(#o5cs)">
+              <g fill="#fff"><rect x="16" y="84" width="14" height="50"/><rect x="32" y="72" width="14" height="62"/><rect x="48" y="56" width="18" height="78"/><rect x="68" y="64" width="14" height="70"/><rect x="84" y="78" width="14" height="56"/></g>
+            </g>
+          </g>
+          <text x="60" y="76" font-family="Geist, sans-serif" font-size="16" font-weight="900" fill="#fff" text-anchor="middle" letter-spacing="0.02em">LUCID RENTS</text>
+        </svg>
+      </div>
+      <div class="stage-light">
+        <svg class="big" viewBox="-40 0 200 138" fill="none">
+          <defs>
+            <clipPath id="o5cl"><path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z"/></clipPath>
+            <mask id="o5ml">
+              <rect x="-40" y="0" width="240" height="138" fill="#fff"/>
+              <rect x="-40" y="60" width="240" height="22" fill="#000"/>
+            </mask>
+          </defs>
+          <g mask="url(#o5ml)">
+            <path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z" fill="#0F1D2E"/>
+            <g clip-path="url(#o5cl)">
+              <g fill="#fff"><rect x="16" y="84" width="14" height="50"/><rect x="32" y="72" width="14" height="62"/><rect x="48" y="56" width="18" height="78"/><rect x="68" y="64" width="14" height="70"/><rect x="84" y="78" width="14" height="56"/></g>
+            </g>
+          </g>
+          <text x="60" y="76" font-family="Geist, sans-serif" font-size="16" font-weight="900" fill="#0F1D2E" text-anchor="middle" letter-spacing="0.02em">LUCID RENTS</text>
+        </svg>
+      </div>
+      <div class="tag"><div class="name">Crossing through</div><div class="desc">type slices shield · masked gap</div></div>
+    </div>
+
+    <!-- ============================================================
+         V06 · SERIF DISPLAY — big Young Serif extending past
+         ============================================================ -->
+    <div class="cell">
+      <span class="idx">06</span><span class="code">SERIF DISPLAY</span>
+      <div class="stage-dark">
+        <svg class="big" viewBox="-50 0 220 138" fill="none">
+          <defs><clipPath id="o6c"><path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z"/></clipPath></defs>
+          <path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z" fill="#3B82F6"/>
+          <g clip-path="url(#o6c)">
+            <g fill="#fff"><rect x="16" y="84" width="14" height="50"/><rect x="32" y="72" width="14" height="62"/><rect x="48" y="56" width="18" height="78"/><rect x="68" y="64" width="14" height="70"/><rect x="84" y="78" width="14" height="56"/></g>
+            <g fill="#3B82F6"><rect x="52" y="62" width="2" height="3"/><rect x="58" y="62" width="2" height="3"/><rect x="62" y="62" width="2" height="3"/><rect x="52" y="70" width="2" height="3"/><rect x="58" y="70" width="2" height="3"/><rect x="62" y="70" width="2" height="3"/></g>
+          </g>
+          <text x="60" y="38" font-family="Young Serif, serif" font-size="22" fill="#fff" text-anchor="middle" letter-spacing="-0.015em">Lucid Rents</text>
+        </svg>
+        <svg class="mid" viewBox="-50 0 220 138" fill="none">
+          <defs><clipPath id="o6cs"><path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z"/></clipPath></defs>
+          <path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z" fill="#3B82F6"/>
+          <g clip-path="url(#o6cs)"><g fill="#fff"><rect x="16" y="84" width="14" height="50"/><rect x="32" y="72" width="14" height="62"/><rect x="48" y="56" width="18" height="78"/><rect x="68" y="64" width="14" height="70"/><rect x="84" y="78" width="14" height="56"/></g></g>
+          <text x="60" y="38" font-family="Young Serif, serif" font-size="22" fill="#fff" text-anchor="middle" letter-spacing="-0.015em">Lucid Rents</text>
+        </svg>
+      </div>
+      <div class="stage-light">
+        <svg class="big" viewBox="-50 0 220 138" fill="none">
+          <defs><clipPath id="o6cl"><path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z"/></clipPath></defs>
+          <path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z" fill="#0F1D2E"/>
+          <g clip-path="url(#o6cl)"><g fill="#fff"><rect x="16" y="84" width="14" height="50"/><rect x="32" y="72" width="14" height="62"/><rect x="48" y="56" width="18" height="78"/><rect x="68" y="64" width="14" height="70"/><rect x="84" y="78" width="14" height="56"/></g></g>
+          <text x="60" y="38" font-family="Young Serif, serif" font-size="22" fill="#0F1D2E" text-anchor="middle" letter-spacing="-0.015em">Lucid Rents</text>
+        </svg>
+      </div>
+      <div class="tag"><div class="name">Serif display</div><div class="desc">Young Serif · editorial · breaks past edges</div></div>
+    </div>
+
+    <!-- ============================================================
+         V07 · THIN CONDENSED — light weight running very wide
+         ============================================================ -->
+    <div class="cell">
+      <span class="idx">07</span><span class="code">THIN WIDE</span>
+      <div class="stage-dark">
+        <svg class="big" viewBox="-50 0 220 138" fill="none">
+          <defs><clipPath id="o7c"><path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z"/></clipPath></defs>
+          <path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z" fill="#3B82F6"/>
+          <g clip-path="url(#o7c)">
+            <g fill="#fff"><rect x="16" y="84" width="14" height="50"/><rect x="32" y="72" width="14" height="62"/><rect x="48" y="56" width="18" height="78"/><rect x="68" y="64" width="14" height="70"/><rect x="84" y="78" width="14" height="56"/></g>
+            <g fill="#3B82F6"><rect x="52" y="62" width="2" height="3"/><rect x="58" y="62" width="2" height="3"/><rect x="62" y="62" width="2" height="3"/><rect x="52" y="70" width="2" height="3"/><rect x="58" y="70" width="2" height="3"/><rect x="62" y="70" width="2" height="3"/></g>
+          </g>
+          <text x="60" y="38" font-family="Geist, sans-serif" font-size="14" font-weight="300" fill="#fff" text-anchor="middle" letter-spacing="0.32em">LUCID RENTS</text>
+        </svg>
+        <svg class="mid" viewBox="-50 0 220 138" fill="none">
+          <defs><clipPath id="o7cs"><path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z"/></clipPath></defs>
+          <path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z" fill="#3B82F6"/>
+          <g clip-path="url(#o7cs)"><g fill="#fff"><rect x="16" y="84" width="14" height="50"/><rect x="32" y="72" width="14" height="62"/><rect x="48" y="56" width="18" height="78"/><rect x="68" y="64" width="14" height="70"/><rect x="84" y="78" width="14" height="56"/></g></g>
+          <text x="60" y="38" font-family="Geist, sans-serif" font-size="14" font-weight="300" fill="#fff" text-anchor="middle" letter-spacing="0.32em">LUCID RENTS</text>
+        </svg>
+      </div>
+      <div class="stage-light">
+        <svg class="big" viewBox="-50 0 220 138" fill="none">
+          <defs><clipPath id="o7cl"><path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z"/></clipPath></defs>
+          <path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z" fill="#0F1D2E"/>
+          <g clip-path="url(#o7cl)"><g fill="#fff"><rect x="16" y="84" width="14" height="50"/><rect x="32" y="72" width="14" height="62"/><rect x="48" y="56" width="18" height="78"/><rect x="68" y="64" width="14" height="70"/><rect x="84" y="78" width="14" height="56"/></g></g>
+          <text x="60" y="38" font-family="Geist, sans-serif" font-size="14" font-weight="300" fill="#0F1D2E" text-anchor="middle" letter-spacing="0.32em">LUCID RENTS</text>
+        </svg>
+      </div>
+      <div class="tag"><div class="name">Thin wide</div><div class="desc">light · wide tracking · airy editorial feel</div></div>
+    </div>
+
+    <!-- ============================================================
+         V08 · TOP & BOTTOM OVERFLOW — word split, both extend past
+         ============================================================ -->
+    <div class="cell">
+      <span class="idx">08</span><span class="code">TOP & BOTTOM</span>
+      <div class="stage-dark">
+        <svg class="big" viewBox="-40 0 200 138" fill="none">
+          <defs><clipPath id="o8c"><path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z"/></clipPath></defs>
+          <path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z" fill="#3B82F6"/>
+          <g clip-path="url(#o8c)">
+            <g fill="#fff"><rect x="16" y="74" width="14" height="60"/><rect x="32" y="62" width="14" height="72"/><rect x="48" y="46" width="18" height="88"/><rect x="68" y="54" width="14" height="80"/><rect x="84" y="68" width="14" height="66"/></g>
+            <g fill="#3B82F6"><rect x="52" y="52" width="2" height="3"/><rect x="58" y="52" width="2" height="3"/><rect x="62" y="52" width="2" height="3"/><rect x="52" y="60" width="2" height="3"/><rect x="58" y="60" width="2" height="3"/><rect x="62" y="60" width="2" height="3"/></g>
+          </g>
+          <text x="60" y="34" font-family="Geist, sans-serif" font-size="16" font-weight="800" fill="#fff" text-anchor="middle" letter-spacing="0.1em">LUCID</text>
+          <text x="60" y="126" font-family="Geist, sans-serif" font-size="16" font-weight="800" fill="#fff" text-anchor="middle" letter-spacing="0.1em">RENTS</text>
+        </svg>
+        <svg class="mid" viewBox="-40 0 200 138" fill="none">
+          <defs><clipPath id="o8cs"><path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z"/></clipPath></defs>
+          <path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z" fill="#3B82F6"/>
+          <g clip-path="url(#o8cs)"><g fill="#fff"><rect x="16" y="74" width="14" height="60"/><rect x="32" y="62" width="14" height="72"/><rect x="48" y="46" width="18" height="88"/><rect x="68" y="54" width="14" height="80"/><rect x="84" y="68" width="14" height="66"/></g></g>
+          <text x="60" y="34" font-family="Geist, sans-serif" font-size="16" font-weight="800" fill="#fff" text-anchor="middle" letter-spacing="0.1em">LUCID</text>
+          <text x="60" y="126" font-family="Geist, sans-serif" font-size="16" font-weight="800" fill="#fff" text-anchor="middle" letter-spacing="0.1em">RENTS</text>
+        </svg>
+      </div>
+      <div class="stage-light">
+        <svg class="big" viewBox="-40 0 200 138" fill="none">
+          <defs><clipPath id="o8cl"><path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z"/></clipPath></defs>
+          <path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z" fill="#0F1D2E"/>
+          <g clip-path="url(#o8cl)"><g fill="#fff"><rect x="16" y="74" width="14" height="60"/><rect x="32" y="62" width="14" height="72"/><rect x="48" y="46" width="18" height="88"/><rect x="68" y="54" width="14" height="80"/><rect x="84" y="68" width="14" height="66"/></g></g>
+          <text x="60" y="34" font-family="Geist, sans-serif" font-size="16" font-weight="800" fill="#0F1D2E" text-anchor="middle" letter-spacing="0.1em">LUCID</text>
+          <text x="60" y="126" font-family="Geist, sans-serif" font-size="16" font-weight="800" fill="#0F1D2E" text-anchor="middle" letter-spacing="0.1em">RENTS</text>
+        </svg>
+      </div>
+      <div class="tag"><div class="name">Top &amp; bottom</div><div class="desc">LUCID above · RENTS below · both overflow</div></div>
+    </div>
+
+    <!-- ============================================================
+         V09 · OVERLAP HALO — text layered on top of shield edge
+         ============================================================ -->
+    <div class="cell">
+      <span class="idx">09</span><span class="code">OVERLAP HALO</span>
+      <div class="stage-dark">
+        <svg class="big" viewBox="-50 0 220 138" fill="none">
+          <defs><clipPath id="o9c"><path d="M60 10L16 24V58C16 92 60 124 60 124C60 124 104 92 104 58V24L60 10Z"/></clipPath></defs>
+          <path d="M60 10L16 24V58C16 92 60 124 60 124C60 124 104 92 104 58V24L60 10Z" fill="#3B82F6"/>
+          <g clip-path="url(#o9c)">
+            <g fill="#fff"><rect x="22" y="82" width="12" height="42"/><rect x="36" y="72" width="12" height="52"/><rect x="50" y="58" width="16" height="66"/><rect x="68" y="66" width="12" height="58"/><rect x="82" y="78" width="12" height="46"/></g>
+            <g fill="#3B82F6"><rect x="53" y="64" width="2" height="3"/><rect x="58" y="64" width="2" height="3"/><rect x="62" y="64" width="2" height="3"/><rect x="53" y="72" width="2" height="3"/><rect x="58" y="72" width="2" height="3"/><rect x="62" y="72" width="2" height="3"/></g>
+          </g>
+          <!-- wordmark band overlaps shield -->
+          <rect x="-40" y="66" width="200" height="18" fill="#0F1D2E"/>
+          <text x="60" y="79" font-family="Geist, sans-serif" font-size="13" font-weight="800" fill="#fff" text-anchor="middle" letter-spacing="0.1em">LUCID RENTS</text>
+        </svg>
+        <svg class="mid" viewBox="-50 0 220 138" fill="none">
+          <defs><clipPath id="o9cs"><path d="M60 10L16 24V58C16 92 60 124 60 124C60 124 104 92 104 58V24L60 10Z"/></clipPath></defs>
+          <path d="M60 10L16 24V58C16 92 60 124 60 124C60 124 104 92 104 58V24L60 10Z" fill="#3B82F6"/>
+          <g clip-path="url(#o9cs)"><g fill="#fff"><rect x="22" y="82" width="12" height="42"/><rect x="36" y="72" width="12" height="52"/><rect x="50" y="58" width="16" height="66"/><rect x="68" y="66" width="12" height="58"/><rect x="82" y="78" width="12" height="46"/></g></g>
+          <rect x="-40" y="66" width="200" height="18" fill="#0F1D2E"/>
+          <text x="60" y="79" font-family="Geist, sans-serif" font-size="13" font-weight="800" fill="#fff" text-anchor="middle" letter-spacing="0.1em">LUCID RENTS</text>
+        </svg>
+      </div>
+      <div class="stage-light">
+        <svg class="big" viewBox="-50 0 220 138" fill="none">
+          <defs><clipPath id="o9cl"><path d="M60 10L16 24V58C16 92 60 124 60 124C60 124 104 92 104 58V24L60 10Z"/></clipPath></defs>
+          <path d="M60 10L16 24V58C16 92 60 124 60 124C60 124 104 92 104 58V24L60 10Z" fill="#3B82F6"/>
+          <g clip-path="url(#o9cl)"><g fill="#fff"><rect x="22" y="82" width="12" height="42"/><rect x="36" y="72" width="12" height="52"/><rect x="50" y="58" width="16" height="66"/><rect x="68" y="66" width="12" height="58"/><rect x="82" y="78" width="12" height="46"/></g></g>
+          <rect x="-40" y="66" width="200" height="18" fill="#0F1D2E"/>
+          <text x="60" y="79" font-family="Geist, sans-serif" font-size="13" font-weight="800" fill="#fff" text-anchor="middle" letter-spacing="0.1em">LUCID RENTS</text>
+        </svg>
+      </div>
+      <div class="tag"><div class="name">Overlap halo</div><div class="desc">navy band crosses shield · extends past edges</div></div>
+    </div>
+
+    <!-- ============================================================
+         V10 · MONO CAPS — Geist Mono overflow style
+         ============================================================ -->
+    <div class="cell">
+      <span class="idx">10</span><span class="code">MONO CAPS</span>
+      <div class="stage-dark">
+        <svg class="big" viewBox="-40 0 200 138" fill="none">
+          <defs><clipPath id="o10c"><path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z"/></clipPath></defs>
+          <path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z" fill="#3B82F6"/>
+          <g clip-path="url(#o10c)">
+            <g fill="#fff"><rect x="16" y="84" width="14" height="50"/><rect x="32" y="72" width="14" height="62"/><rect x="48" y="56" width="18" height="78"/><rect x="68" y="64" width="14" height="70"/><rect x="84" y="78" width="14" height="56"/></g>
+            <g fill="#3B82F6"><rect x="52" y="62" width="2" height="3"/><rect x="58" y="62" width="2" height="3"/><rect x="62" y="62" width="2" height="3"/><rect x="52" y="70" width="2" height="3"/><rect x="58" y="70" width="2" height="3"/><rect x="62" y="70" width="2" height="3"/></g>
+          </g>
+          <text x="60" y="38" font-family="Geist Mono, monospace" font-size="13" font-weight="700" fill="#fff" text-anchor="middle" letter-spacing="0.05em">LUCID·RENTS</text>
+          <circle cx="-6" cy="34" r="1.5" fill="#fff" opacity="0.5"/>
+          <circle cx="126" cy="34" r="1.5" fill="#fff" opacity="0.5"/>
+        </svg>
+        <svg class="mid" viewBox="-40 0 200 138" fill="none">
+          <defs><clipPath id="o10cs"><path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z"/></clipPath></defs>
+          <path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z" fill="#3B82F6"/>
+          <g clip-path="url(#o10cs)"><g fill="#fff"><rect x="16" y="84" width="14" height="50"/><rect x="32" y="72" width="14" height="62"/><rect x="48" y="56" width="18" height="78"/><rect x="68" y="64" width="14" height="70"/><rect x="84" y="78" width="14" height="56"/></g></g>
+          <text x="60" y="38" font-family="Geist Mono, monospace" font-size="13" font-weight="700" fill="#fff" text-anchor="middle" letter-spacing="0.05em">LUCID·RENTS</text>
+        </svg>
+      </div>
+      <div class="stage-light">
+        <svg class="big" viewBox="-40 0 200 138" fill="none">
+          <defs><clipPath id="o10cl"><path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z"/></clipPath></defs>
+          <path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z" fill="#0F1D2E"/>
+          <g clip-path="url(#o10cl)"><g fill="#fff"><rect x="16" y="84" width="14" height="50"/><rect x="32" y="72" width="14" height="62"/><rect x="48" y="56" width="18" height="78"/><rect x="68" y="64" width="14" height="70"/><rect x="84" y="78" width="14" height="56"/></g></g>
+          <text x="60" y="38" font-family="Geist Mono, monospace" font-size="13" font-weight="700" fill="#0F1D2E" text-anchor="middle" letter-spacing="0.05em">LUCID·RENTS</text>
+          <circle cx="-6" cy="34" r="1.5" fill="#0F1D2E" opacity="0.5"/>
+          <circle cx="126" cy="34" r="1.5" fill="#0F1D2E" opacity="0.5"/>
+        </svg>
+      </div>
+      <div class="tag"><div class="name">Mono caps</div><div class="desc">Geist Mono · interpunct · technical feel</div></div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

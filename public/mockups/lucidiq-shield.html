@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LucidIQ shield — heraldic award variations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600;700&family=Playfair+Display:ital,wght@1,500;1,600&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --ink: #0F1D2E;
+  --ink-mute: #64748b;
+  --ink-faint: #94a3b8;
+  --navy: #3B82F6;
+  --navy-hi: #2563EB;
+  --navy-dark: #0F1D2E;
+  --navy-deep: #091325;
+  --sky: #dbeafe;
+  --sky-deep: #60a5fa;
+  --paper: #f8fafc;
+  --surface: #ffffff;
+  --border: #e2e8f0;
+  --silver: #cbd5e1;
+  --silver-2: #94a3b8;
+  --good: #10b981;
+  --sun: #fbbf24;
+  --sans: "Geist", system-ui, sans-serif;
+  --mono: "Geist Mono", ui-monospace, monospace;
+  --serif: "Young Serif", serif;
+  --italic: "Playfair Display", serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+a { color: inherit; text-decoration: none; }
+
+.page { max-width: 1280px; margin: 0 auto; padding: 48px 24px 120px; }
+.page-head { padding-bottom: 28px; margin-bottom: 40px; border-bottom: 1px solid var(--border); }
+.page-head h1 { font-family: var(--serif); font-size: 40px; margin: 0 0 6px; letter-spacing: -0.02em; }
+.page-head p { color: var(--ink-mute); font-size: 15px; max-width: 64ch; margin: 0; line-height: 1.6; }
+.head-links { display: flex; gap: 14px; font-size: 13px; font-family: var(--mono); margin-top: 12px; flex-wrap: wrap; }
+.head-links a { color: var(--navy); text-decoration: underline; text-underline-offset: 2px; }
+
+.grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
+}
+.cell {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  padding: 36px 18px 18px;
+  display: flex; flex-direction: column; align-items: center; gap: 20px;
+  min-height: 360px; position: relative;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.cell:hover { transform: translateY(-2px); box-shadow: 0 18px 36px -22px rgba(15,29,46,0.2); }
+.cell.dark { background: var(--navy-deep); border-color: #1e293b; }
+.cell.dark .tag { border-top-color: rgba(255,255,255,0.08); }
+.cell.dark .tag .name { color: white; }
+.cell.dark .tag .desc { color: rgba(255,255,255,0.5); }
+.cell .idx { position: absolute; top: 14px; left: 14px; font-family: var(--mono); font-size: 10px; font-weight: 700; color: var(--ink-faint); letter-spacing: 0.14em; }
+.cell .code { position: absolute; top: 14px; right: 14px; font-family: var(--mono); font-size: 10px; font-weight: 700; color: var(--ink); letter-spacing: 0.14em; }
+.cell.dark .idx, .cell.dark .code { color: rgba(255,255,255,0.45); }
+.cell .tag { margin-top: auto; text-align: center; padding-top: 14px; border-top: 1px dashed var(--border); width: 100%; }
+.cell .tag .name { font-size: 13px; font-weight: 600; color: var(--ink); }
+.cell .tag .desc { font-size: 11px; color: var(--ink-mute); margin-top: 2px; font-family: var(--mono); letter-spacing: 0.02em; line-height: 1.5; }
+
+/* Shared shield container */
+.shield {
+  width: 180px; height: 210px;
+  position: relative; display: grid; place-items: center;
+  cursor: pointer;
+  filter: drop-shadow(0 14px 28px rgba(15,29,46,0.25));
+}
+.shield svg { width: 100%; height: 100%; display: block; }
+.shield .content {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 20px 18px 24px;
+  color: white; text-align: center;
+}
+
+/* Content typography building blocks */
+.year-row {
+  display: inline-flex; align-items: center; gap: 10px;
+  font-family: var(--mono); font-size: 11px; font-weight: 700;
+  letter-spacing: 0.26em; color: var(--silver);
+}
+.year-row .spark { color: var(--sky-deep); font-size: 10px; }
+.top-word {
+  font-family: var(--italic); font-style: italic; font-weight: 600;
+  font-size: 32px; line-height: 1;
+  color: white; letter-spacing: -0.01em;
+  margin-top: 8px;
+}
+.main-word {
+  font-family: var(--sans); font-size: 15px; font-weight: 800;
+  letter-spacing: 0.04em; text-transform: uppercase;
+  color: white; line-height: 1.15;
+  margin-top: 8px;
+  max-width: 16ch;
+}
+.main-word.tight { letter-spacing: 0.02em; }
+.mark-L {
+  font-family: var(--serif); font-size: 26px; color: var(--silver);
+  margin-top: 10px; line-height: 1;
+}
+.mark-L.gold { color: var(--sun); }
+.mark-L.small { font-size: 20px; }
+
+/* Alt content: for shields where content color flips */
+.shield.light-content .year-row { color: var(--ink-mute); }
+.shield.light-content .year-row .spark { color: var(--navy); }
+.shield.light-content .top-word,
+.shield.light-content .main-word { color: var(--navy-dark); }
+.shield.light-content .mark-L { color: var(--navy); }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <header class="page-head">
+    <h1>LucidIQ shield — heraldic award variations</h1>
+    <p>Ten takes on the classic award-shield format (à la Mercer / J.D. Power), using the LucidRents palette. Navy and silver in place of teal and white. Each shield communicates a different award framing — Top Rated, Verified, Tenant Reviewed, etc.</p>
+    <div class="head-links">
+      <a href="/mockups/lucidiq-ribbon.html">← LucidIQ ribbons</a>
+      <a href="/mockups/score-badges-aperture-proof.html">20 aperture + proof</a>
+      <a href="/mockups/score-badges.html">8 hexagons</a>
+      <a href="/mockups/building-v1.html">building-v1</a>
+    </div>
+  </header>
+
+  <div class="grid">
+
+    <!-- ======================================================
+         01 · LAUREATE — Mercer-style classic heraldic shield
+    ====================================================== -->
+    <div class="cell">
+      <span class="idx">01</span><span class="code">LAUREATE</span>
+      <div class="shield">
+        <svg viewBox="0 0 180 210" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="l1-fill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#1e293b"/>
+              <stop offset="100%" stop-color="#050a14"/>
+            </linearGradient>
+            <linearGradient id="l1-border" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#f1f5f9"/>
+              <stop offset="50%" stop-color="#94a3b8"/>
+              <stop offset="100%" stop-color="#cbd5e1"/>
+            </linearGradient>
+          </defs>
+          <!-- Outer silver beveled border -->
+          <path d="M 14 14 L 166 14 L 166 110 Q 166 170 90 200 Q 14 170 14 110 Z"
+                fill="url(#l1-border)"/>
+          <!-- Inner navy fill -->
+          <path d="M 22 22 L 158 22 L 158 108 Q 158 163 90 190 Q 22 163 22 108 Z"
+                fill="url(#l1-fill)"/>
+          <!-- Hairline inner stroke -->
+          <path d="M 28 28 L 152 28 L 152 106 Q 152 158 90 182 Q 28 158 28 106 Z"
+                fill="none" stroke="rgba(203,213,225,0.3)" stroke-width="0.75"/>
+        </svg>
+        <div class="content">
+          <span class="year-row"><span class="spark">✦</span>2026<span class="spark">✦</span></span>
+          <div class="top-word">Top</div>
+          <div class="main-word">Rent-Stabilized</div>
+          <div class="mark-L">L</div>
+        </div>
+      </div>
+      <div class="tag"><div class="name">Laureate</div><div class="desc">classic heraldic · silver bevel<br/>Mercer / J.D. Power feel</div></div>
+    </div>
+
+    <!-- ======================================================
+         02 · REGAL — rounded top, pointed bottom
+    ====================================================== -->
+    <div class="cell">
+      <span class="idx">02</span><span class="code">REGAL</span>
+      <div class="shield">
+        <svg viewBox="0 0 180 210" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="l2-fill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#1e3a8a"/>
+              <stop offset="100%" stop-color="#050a14"/>
+            </linearGradient>
+          </defs>
+          <path d="M 22 30 Q 22 10 90 10 Q 158 10 158 30 L 158 100 Q 158 160 90 200 Q 22 160 22 100 Z"
+                fill="url(#l2-fill)" stroke="#cbd5e1" stroke-width="3"/>
+          <path d="M 32 36 Q 32 20 90 20 Q 148 20 148 36 L 148 100 Q 148 154 90 188 Q 32 154 32 100 Z"
+                fill="none" stroke="rgba(96,165,250,0.35)" stroke-width="0.75"/>
+        </svg>
+        <div class="content">
+          <span class="year-row"><span class="spark">✦</span>2026<span class="spark">✦</span></span>
+          <div class="top-word">Top</div>
+          <div class="main-word">Tenant Rated</div>
+          <div class="mark-L gold">L</div>
+        </div>
+      </div>
+      <div class="tag"><div class="name">Regal</div><div class="desc">rounded crown · pointed tip<br/>royal · vertical emphasis</div></div>
+    </div>
+
+    <!-- ======================================================
+         03 · WARDEN — flat top, wider silhouette
+    ====================================================== -->
+    <div class="cell">
+      <span class="idx">03</span><span class="code">WARDEN</span>
+      <div class="shield">
+        <svg viewBox="0 0 180 210" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="l3-fill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#0F1D2E"/>
+              <stop offset="100%" stop-color="#050a14"/>
+            </linearGradient>
+          </defs>
+          <path d="M 10 16 L 170 16 L 170 120 Q 170 180 90 204 Q 10 180 10 120 Z"
+                fill="url(#l3-fill)" stroke="#cbd5e1" stroke-width="2.5"/>
+          <path d="M 18 24 L 162 24 L 162 118 Q 162 172 90 194 Q 18 172 18 118 Z"
+                fill="none" stroke="rgba(96,165,250,0.28)" stroke-width="0.75"/>
+          <!-- Inner header divider line -->
+          <line x1="34" y1="60" x2="146" y2="60" stroke="rgba(203,213,225,0.3)" stroke-width="0.5"/>
+          <line x1="34" y1="168" x2="146" y2="168" stroke="rgba(203,213,225,0.3)" stroke-width="0.5"/>
+        </svg>
+        <div class="content" style="padding: 18px 22px 20px;">
+          <span class="year-row"><span class="spark">✦</span>LUCIDIQ 2026<span class="spark">✦</span></span>
+          <div class="top-word" style="margin-top:14px;">Verified</div>
+          <div class="main-word" style="margin-top:6px;">B+ · 3.9★ · Top 18%</div>
+          <div class="mark-L small" style="margin-top:12px;">L</div>
+        </div>
+      </div>
+      <div class="tag"><div class="name">Warden</div><div class="desc">flat-top · wide · divider rules<br/>document / certificate feel</div></div>
+    </div>
+
+    <!-- ======================================================
+         04 · CHARTER — shield with ribbon banner across middle
+    ====================================================== -->
+    <div class="cell">
+      <span class="idx">04</span><span class="code">CHARTER</span>
+      <div class="shield">
+        <svg viewBox="0 0 180 210" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="l4-fill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#1e293b"/>
+              <stop offset="100%" stop-color="#050a14"/>
+            </linearGradient>
+          </defs>
+          <path d="M 14 14 L 166 14 L 166 110 Q 166 170 90 200 Q 14 170 14 110 Z"
+                fill="url(#l4-fill)" stroke="#cbd5e1" stroke-width="2.5"/>
+          <path d="M 24 24 L 156 24 L 156 108 Q 156 162 90 188 Q 24 162 24 108 Z"
+                fill="none" stroke="rgba(96,165,250,0.25)" stroke-width="0.75"/>
+          <!-- Ribbon across -->
+          <path d="M 0 108 L 180 108 L 172 128 L 8 128 Z" fill="#3B82F6"/>
+          <path d="M 0 108 L 8 100 L 0 100 Z" fill="#1e40af"/>
+          <path d="M 180 108 L 172 100 L 180 100 Z" fill="#1e40af"/>
+        </svg>
+        <div class="content" style="padding: 12px 20px 22px;">
+          <span class="year-row"><span class="spark">✦</span>2026<span class="spark">✦</span></span>
+          <div class="top-word" style="margin-top:6px;">Top 18%</div>
+          <div style="position: absolute; left: 0; right: 0; top: 108px; height: 20px; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 10px; font-weight: 800; letter-spacing: 0.24em; color: white;">LUCIDIQ VERIFIED</div>
+          <div class="main-word" style="margin-top:48px;">Manhattan</div>
+          <div class="mark-L small" style="margin-top:10px;">L</div>
+        </div>
+      </div>
+      <div class="tag"><div class="name">Charter</div><div class="desc">shield + navy ribbon banner<br/>hybrid of heraldic + ticker</div></div>
+    </div>
+
+    <!-- ======================================================
+         05 · CREST — ornamented with decorative flourishes
+    ====================================================== -->
+    <div class="cell">
+      <span class="idx">05</span><span class="code">CREST</span>
+      <div class="shield">
+        <svg viewBox="0 0 180 210" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="l5-fill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#1e293b"/>
+              <stop offset="100%" stop-color="#050a14"/>
+            </linearGradient>
+          </defs>
+          <path d="M 18 20 L 162 20 L 162 108 Q 162 166 90 198 Q 18 166 18 108 Z"
+                fill="url(#l5-fill)" stroke="#94a3b8" stroke-width="1.5"/>
+          <path d="M 14 16 L 166 16 L 166 110 Q 166 170 90 202 Q 14 170 14 110 Z"
+                fill="none" stroke="#cbd5e1" stroke-width="1"/>
+          <path d="M 28 30 L 152 30 L 152 104 Q 152 156 90 184 Q 28 156 28 104 Z"
+                fill="none" stroke="rgba(96,165,250,0.28)" stroke-width="0.5" stroke-dasharray="1.5 2"/>
+          <!-- Corner flourishes -->
+          <g fill="#cbd5e1">
+            <circle cx="26" cy="28" r="2"/>
+            <circle cx="154" cy="28" r="2"/>
+          </g>
+          <!-- Top sparkles -->
+          <g fill="#60a5fa">
+            <path d="M 60 44 l 1 3 l 3 0 l -2.5 2 l 1 3 l -2.5 -2 l -2.5 2 l 1 -3 l -2.5 -2 l 3 0 Z"/>
+            <path d="M 120 44 l 1 3 l 3 0 l -2.5 2 l 1 3 l -2.5 -2 l -2.5 2 l 1 -3 l -2.5 -2 l 3 0 Z"/>
+          </g>
+        </svg>
+        <div class="content">
+          <span class="year-row"><span class="spark">✦</span>2026<span class="spark">✦</span></span>
+          <div class="top-word">Best</div>
+          <div class="main-word">Tenant Reviews</div>
+          <div class="mark-L gold">L</div>
+        </div>
+      </div>
+      <div class="tag"><div class="name">Crest</div><div class="desc">ornamented · corner flourishes<br/>double-border · detailed</div></div>
+    </div>
+
+    <!-- ======================================================
+         06 · SIGNET — narrow, seal-like
+    ====================================================== -->
+    <div class="cell">
+      <span class="idx">06</span><span class="code">SIGNET</span>
+      <div class="shield">
+        <svg viewBox="0 0 180 210" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="l6-fill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#0F1D2E"/>
+              <stop offset="100%" stop-color="#050a14"/>
+            </linearGradient>
+          </defs>
+          <!-- Narrower escutcheon -->
+          <path d="M 42 16 L 138 16 L 138 110 Q 138 170 90 200 Q 42 170 42 110 Z"
+                fill="url(#l6-fill)" stroke="#cbd5e1" stroke-width="2"/>
+          <path d="M 50 24 L 130 24 L 130 108 Q 130 162 90 188 Q 50 162 50 108 Z"
+                fill="none" stroke="rgba(96,165,250,0.25)" stroke-width="0.75"/>
+        </svg>
+        <div class="content" style="padding: 20px 38px 22px;">
+          <span class="year-row" style="font-size:9px;"><span class="spark">✦</span>2026<span class="spark">✦</span></span>
+          <div class="top-word" style="font-size:26px;">Top</div>
+          <div class="main-word" style="font-size:12px;">Rent Protected</div>
+          <div class="mark-L small">L</div>
+        </div>
+      </div>
+      <div class="tag"><div class="name">Signet</div><div class="desc">narrow escutcheon · seal-like</div></div>
+    </div>
+
+    <!-- ======================================================
+         07 · BATTLEMENT — castellated top edge
+    ====================================================== -->
+    <div class="cell">
+      <span class="idx">07</span><span class="code">BATTLEMENT</span>
+      <div class="shield">
+        <svg viewBox="0 0 180 210" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="l7-fill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#1e293b"/>
+              <stop offset="100%" stop-color="#050a14"/>
+            </linearGradient>
+          </defs>
+          <!-- Castellated top: alternating crenels -->
+          <path d="M 14 14 L 14 26 L 32 26 L 32 14 L 54 14 L 54 26 L 72 26 L 72 14 L 108 14 L 108 26 L 126 26 L 126 14 L 148 14 L 148 26 L 166 26 L 166 110 Q 166 170 90 200 Q 14 170 14 110 Z"
+                fill="url(#l7-fill)" stroke="#cbd5e1" stroke-width="2"/>
+          <path d="M 22 34 L 158 34 L 158 108 Q 158 162 90 188 Q 22 162 22 108 Z"
+                fill="none" stroke="rgba(96,165,250,0.3)" stroke-width="0.75"/>
+        </svg>
+        <div class="content" style="padding: 40px 18px 22px;">
+          <span class="year-row">2026</span>
+          <div class="top-word" style="margin-top:6px;">Fortified</div>
+          <div class="main-word">Stabilized Since 1977</div>
+          <div class="mark-L small" style="margin-top:8px;">L</div>
+        </div>
+      </div>
+      <div class="tag"><div class="name">Battlement</div><div class="desc">castellated top · fortress theme<br/>tenant protection vibe</div></div>
+    </div>
+
+    <!-- ======================================================
+         08 · GRAND — wide shield with grade front and center
+    ====================================================== -->
+    <div class="cell">
+      <span class="idx">08</span><span class="code">GRAND</span>
+      <div class="shield" style="width: 200px;">
+        <svg viewBox="0 0 180 210" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="l8-fill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#1e3a8a"/>
+              <stop offset="100%" stop-color="#050a14"/>
+            </linearGradient>
+          </defs>
+          <path d="M 14 14 L 166 14 L 166 110 Q 166 170 90 200 Q 14 170 14 110 Z"
+                fill="url(#l8-fill)" stroke="#cbd5e1" stroke-width="2.5"/>
+          <path d="M 22 22 L 158 22 L 158 108 Q 158 163 90 190 Q 22 163 22 108 Z"
+                fill="none" stroke="rgba(96,165,250,0.3)" stroke-width="0.75"/>
+          <!-- Subtle glow behind grade -->
+          <ellipse cx="90" cy="100" rx="44" ry="30" fill="rgba(96,165,250,0.15)"/>
+        </svg>
+        <div class="content" style="padding: 18px 18px 22px;">
+          <span class="year-row" style="font-size:10px;"><span class="spark">✦</span>LUCIDIQ 2026<span class="spark">✦</span></span>
+          <div style="font-family: var(--sans); font-size: 52px; font-weight: 900; letter-spacing: -0.04em; color: white; line-height: 1; margin-top: 10px;">B+</div>
+          <div class="main-word tight" style="font-size: 11px; margin-top: 6px;">3.9★ · Top 18%</div>
+          <div class="mark-L small" style="margin-top:8px;">L</div>
+        </div>
+      </div>
+      <div class="tag"><div class="name">Grand</div><div class="desc">grade-forward · big B+<br/>score drives the shield</div></div>
+    </div>
+
+    <!-- ======================================================
+         09 · DIVIDER — horizontal split between top / bottom fields
+    ====================================================== -->
+    <div class="cell">
+      <span class="idx">09</span><span class="code">DIVIDER</span>
+      <div class="shield">
+        <svg viewBox="0 0 180 210" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="l9-top" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#3B82F6"/>
+              <stop offset="100%" stop-color="#1e40af"/>
+            </linearGradient>
+            <linearGradient id="l9-bot" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#0F1D2E"/>
+              <stop offset="100%" stop-color="#050a14"/>
+            </linearGradient>
+            <clipPath id="l9-clip">
+              <path d="M 14 14 L 166 14 L 166 110 Q 166 170 90 200 Q 14 170 14 110 Z"/>
+            </clipPath>
+          </defs>
+          <g clip-path="url(#l9-clip)">
+            <rect x="0" y="0" width="180" height="80" fill="url(#l9-top)"/>
+            <rect x="0" y="80" width="180" height="130" fill="url(#l9-bot)"/>
+            <line x1="0" y1="80" x2="180" y2="80" stroke="#cbd5e1" stroke-width="1.5"/>
+          </g>
+          <path d="M 14 14 L 166 14 L 166 110 Q 166 170 90 200 Q 14 170 14 110 Z"
+                fill="none" stroke="#cbd5e1" stroke-width="2.5"/>
+        </svg>
+        <div class="content" style="padding: 14px 18px 22px;">
+          <span class="year-row" style="color: rgba(255,255,255,0.85);"><span class="spark" style="color:white;">✦</span>2026<span class="spark" style="color:white;">✦</span></span>
+          <div class="top-word" style="margin-top:10px;">Top</div>
+          <div class="main-word" style="margin-top:14px;">Rent Stabilized</div>
+          <div class="mark-L small" style="margin-top:8px;">L</div>
+        </div>
+      </div>
+      <div class="tag"><div class="name">Divider</div><div class="desc">two-tone split · blue over navy<br/>token / crypto badge feel</div></div>
+    </div>
+
+    <!-- ======================================================
+         10 · MODERN — minimalist, hairline, no ornament
+    ====================================================== -->
+    <div class="cell">
+      <span class="idx">10</span><span class="code">MODERN</span>
+      <div class="shield">
+        <svg viewBox="0 0 180 210" xmlns="http://www.w3.org/2000/svg">
+          <path d="M 20 22 L 160 22 L 160 112 Q 160 168 90 196 Q 20 168 20 112 Z"
+                fill="white" stroke="#0F1D2E" stroke-width="1.2"/>
+          <path d="M 30 32 L 150 32 L 150 110 Q 150 162 90 186 Q 30 162 30 110 Z"
+                fill="none" stroke="#3B82F6" stroke-width="0.5" stroke-dasharray="2 3"/>
+        </svg>
+        <div class="content light-content">
+          <span class="year-row"><span class="spark">✦</span>2026<span class="spark">✦</span></span>
+          <div class="top-word" style="color: var(--navy-dark);">Top</div>
+          <div class="main-word">Rent Stabilized</div>
+          <div class="mark-L">L</div>
+        </div>
+      </div>
+      <div class="tag"><div class="name">Modern</div><div class="desc">light · hairline · minimal<br/>dashed inner rule</div></div>
+    </div>
+
+  </div>
+
+</div>
+
+</body>
+</html>

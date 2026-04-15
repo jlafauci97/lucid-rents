@@ -7,6 +7,7 @@ import { cache } from "react";
 import type { Building } from "@/types";
 import { loadBuildingV2Data, scoreToGrade } from "./_data";
 import { NavV2 } from "@/components/building/v2/NavV2";
+import { Crumbs } from "@/components/building/v2/Crumbs";
 import { WayfinderRail } from "@/components/building/v2/WayfinderRail";
 import { HeroV2 } from "@/components/building/v2/HeroV2";
 import { RecordStrip } from "@/components/building/v2/RecordStrip";
@@ -100,12 +101,22 @@ export default async function BuildingV2Page({ params }: Props) {
         Skip to main content
       </a>
 
-      {/* NavV2 */}
+      {/* NavV2 — exact mockup port */}
       <NavV2 city={typedCity} />
 
-      {/* Page-level grid: wayfinder | main content | right rail.
-          Breakpoints are managed in src/styles/v2-tokens.css (.v2-page-grid) */}
+      {/* Crumbs — exact mockup port, inside the mockup's `.container` wrapper */}
+      <main className="container">
+        <Crumbs
+          city={typedCity}
+          boroughSlug={borough}
+          boroughName={building.borough}
+          neighborhoodSlug={null}
+          neighborhoodName={null}
+          addressLabel={building.full_address.split(",")[0] ?? building.full_address}
+        />
+      </main>
 
+      {/* Legacy grid (will be replaced section-by-section with exact mockup layout) */}
       <div className="v2-page-grid">
         {/* Wayfinder rail (sticky left) */}
         <WayfinderRail

@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Units Historic + Rent Range — separate design options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --ink:#0F1D2E; --ink-soft:#1e293b; --ink-mute:#64748b; --ink-faint:#94a3b8;
+  --navy:#3B82F6; --navy-hi:#2563EB; --navy-dark:#0F1D2E;
+  --sky:#dbeafe; --sky-deep:#60a5fa; --sky-bg:#eff6ff;
+  --paper:#f8fafc; --paper-2:#f1f5f9; --surface:#fff;
+  --border:#e2e8f0; --border-hi:#cbd5e1;
+  --good:#10b981; --good-soft:rgba(16,185,129,0.12);
+  --warn:#f97316; --bad:#ef4444; --sun:#fbbf24;
+  --sans:"Geist", system-ui, sans-serif;
+  --mono:"Geist Mono", ui-monospace, monospace;
+  --serif:"Young Serif", serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+
+.page{max-width:1200px;margin:0 auto;padding:48px 24px 120px}
+.page-head{padding-bottom:28px;margin-bottom:40px;border-bottom:1px solid var(--border)}
+.page-head h1{font-family:var(--serif);font-size:40px;margin:0 0 6px;letter-spacing:-0.02em}
+.page-head p{color:var(--ink-mute);font-size:15px;max-width:64ch;margin:0;line-height:1.6}
+.head-links{display:flex;gap:14px;font-size:13px;font-family:var(--mono);margin-top:12px;flex-wrap:wrap}
+.head-links a{color:var(--navy);text-decoration:underline;text-underline-offset:2px}
+
+.family-head{
+  margin:60px 0 24px;padding:22px 0 8px;
+  border-top:2px solid var(--ink);
+  display:flex;align-items:baseline;gap:18px
+}
+.family-head:first-of-type{margin-top:0}
+.family-head h2{font-family:var(--serif);font-size:30px;margin:0;letter-spacing:-0.02em}
+.family-head .count{font-family:var(--mono);font-size:11px;color:var(--ink-mute);font-weight:700;letter-spacing:0.16em}
+.family-head .desc{color:var(--ink-mute);font-size:14px;margin-left:auto;max-width:44ch;text-align:right}
+
+.variant{margin-bottom:40px}
+.variant-label{display:flex;align-items:baseline;gap:14px;padding-bottom:12px;margin-bottom:16px;border-bottom:1px dashed var(--border)}
+.variant-label .num{font-family:var(--mono);font-size:10px;color:var(--navy);font-weight:700;letter-spacing:0.14em;padding:3px 8px;border:1px solid var(--navy);border-radius:999px}
+.variant-label h3{font-family:var(--serif);font-size:22px;margin:0;letter-spacing:-0.015em;font-weight:400}
+.variant-label .sub{color:var(--ink-mute);font-size:12px;margin-left:auto;font-family:var(--mono);letter-spacing:0.02em}
+
+/* ===== shared card shell ===== */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:22px 24px}
+.card-head{display:flex;gap:12px;align-items:center;margin-bottom:18px}
+.card-head .icon{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;flex-shrink:0}
+.card-head .icon svg{width:15px;height:15px}
+.card-head .icon.good{background:var(--good-soft);color:var(--good)}
+.card-head .icon.sky{background:rgba(96,165,250,0.14);color:var(--sky-deep)}
+.card-head .icon.navy{background:rgba(59,130,246,0.1);color:var(--navy-hi)}
+.card-head h4{margin:0;font-size:17px;font-weight:700;color:var(--ink);letter-spacing:-0.015em;display:inline-flex;gap:10px;align-items:center}
+.card-head .pill{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--ink-mute);padding:3px 8px;border:1px solid var(--border);border-radius:999px;background:var(--paper-2);letter-spacing:0.04em}
+.card-foot{padding-top:12px;margin-top:12px;border-top:1px dashed var(--border);font-family:var(--mono);font-size:11px;color:var(--ink-mute);letter-spacing:0.02em}
+
+/* ============================================================
+   UNITS HISTORIC · shared helpers
+============================================================ */
+.bed-meta{font-family:var(--sans);font-weight:700;font-size:14px;color:var(--ink);letter-spacing:-0.005em}
+.bed-meta small{display:block;font-family:var(--mono);font-size:10px;color:var(--ink-faint);letter-spacing:0.04em;font-weight:500;margin-top:2px}
+.price-v{font-family:var(--sans);font-weight:800;color:var(--good);letter-spacing:-0.02em}
+.price-v small{font-size:0.6em;color:var(--ink-mute);font-weight:500;margin-left:2px}
+
+/* ===== U1 · TILES GRID (refined) ===== */
+.u1-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:10px}
+.u1-tile{
+  background:var(--paper-2);border:1px solid var(--border);border-radius:10px;
+  padding:14px 12px;display:flex;flex-direction:column;gap:3px;
+  cursor:pointer;transition:border-color 0.15s,transform 0.15s;
+  position:relative;overflow:hidden;
+}
+.u1-tile:hover{border-color:var(--good);transform:translateY(-2px);box-shadow:0 12px 24px -16px rgba(16,185,129,0.25)}
+.u1-tile::before{content:'';position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--good);opacity:0;transition:opacity 0.15s}
+.u1-tile:hover::before{opacity:1}
+.u1-tile .k{font-family:var(--mono);font-size:10px;color:var(--ink-mute);letter-spacing:0.06em;text-transform:uppercase;font-weight:700}
+.u1-tile .v{font-family:var(--sans);font-size:18px;color:var(--good);font-weight:800;letter-spacing:-0.025em;margin-top:2px}
+.u1-tile .c{font-family:var(--mono);font-size:9px;color:var(--ink-faint);margin-top:2px}
+@media(max-width:900px){.u1-grid{grid-template-columns:repeat(3,1fr)}}
+
+/* ===== U2 · BAR CHART ===== */
+.u2-list{display:flex;flex-direction:column;gap:10px}
+.u2-row{display:grid;grid-template-columns:90px 1fr 100px;align-items:center;gap:14px}
+.u2-bar{position:relative;height:24px;background:var(--paper-2);border-radius:6px;overflow:hidden}
+.u2-bar .fill{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,rgba(16,185,129,0.55),var(--good));border-radius:6px}
+
+/* ===== U3 · STEPPED LADDER (price stairs) ===== */
+.u3-stairs{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;align-items:end;height:240px;padding-bottom:48px;position:relative;border-bottom:1px solid var(--border)}
+.u3-step{position:relative;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:0}
+.u3-step .bar{
+  width:100%;background:linear-gradient(180deg,var(--sky-deep),var(--good));
+  border-radius:6px 6px 0 0;
+  position:relative;
+}
+.u3-step .v{position:absolute;top:-28px;left:50%;transform:translateX(-50%);font-family:var(--sans);font-size:12px;font-weight:800;color:var(--ink);letter-spacing:-0.01em;white-space:nowrap}
+.u3-step .k{position:absolute;bottom:-34px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:11px;font-weight:700;color:var(--ink-soft);letter-spacing:0.04em;text-transform:uppercase;white-space:nowrap}
+
+/* ===== U4 · CARD ROWS WITH ICON ===== */
+.u4-list{display:flex;flex-direction:column;gap:8px}
+.u4-row{display:grid;grid-template-columns:40px 1fr auto;gap:14px;align-items:center;padding:14px;background:var(--paper-2);border:1px solid var(--border);border-radius:10px}
+.u4-row:hover{border-color:var(--good)}
+.u4-row .glyph{width:32px;height:32px;border-radius:8px;background:white;border:1px solid var(--border);display:grid;place-items:center;color:var(--navy-hi)}
+.u4-row .glyph svg{width:16px;height:16px}
+
+/* ===== U5 · TABLE WITH SPARKBAR ===== */
+.u5-table{width:100%;border-collapse:collapse}
+.u5-table thead th{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--ink-mute);letter-spacing:0.12em;text-transform:uppercase;text-align:left;padding:8px 12px;border-bottom:2px solid var(--ink)}
+.u5-table thead th.num{text-align:right}
+.u5-table tbody td{padding:14px 12px;border-bottom:1px dashed var(--border);font-family:var(--sans);font-size:14px;vertical-align:middle}
+.u5-table tbody tr:last-child td{border-bottom:none}
+.u5-table tbody td.num{text-align:right}
+.u5-sparkbar{position:relative;height:8px;background:var(--paper-2);border-radius:4px;width:140px;margin-left:auto}
+.u5-sparkbar .fill{position:absolute;left:0;top:0;bottom:0;background:var(--good);border-radius:4px}
+
+/* ============================================================
+   NEIGHBORHOOD RENT RANGE · shared
+============================================================ */
+.rg-meta b{font-family:var(--sans);font-weight:700;font-size:14px;color:var(--ink)}
+.rg-meta small{font-family:var(--mono);font-size:10px;color:var(--ink-faint);letter-spacing:0.04em;font-weight:500;margin-left:6px}
+
+/* ===== N1 · RANGE BARS (min → max) ===== */
+.n1-list{display:flex;flex-direction:column;gap:14px}
+.n1-row{display:grid;grid-template-columns:90px 1fr 130px;gap:14px;align-items:center}
+.n1-track{position:relative;height:28px;display:flex;align-items:center}
+.n1-track::before{content:'';position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);height:2px;background:var(--border);border-radius:1px}
+.n1-range{position:absolute;height:10px;border-radius:5px;background:linear-gradient(90deg,rgba(96,165,250,0.3),var(--sky-deep));top:50%;transform:translateY(-50%)}
+.n1-cap{position:absolute;top:50%;transform:translate(-50%,-50%);width:2px;height:14px;background:var(--navy)}
+.n1-minlbl,.n1-maxlbl{position:absolute;top:-22px;font-family:var(--mono);font-size:10px;font-weight:700;color:var(--ink);letter-spacing:0.02em}
+.n1-minlbl{transform:translateX(-50%)}.n1-maxlbl{transform:translateX(-50%)}
+.n1-val{font-family:var(--sans);font-size:13px;color:var(--ink-soft);text-align:right}
+.n1-val b{color:var(--navy-hi);font-weight:700}
+.n1-val small{display:block;font-family:var(--mono);font-size:10px;color:var(--ink-faint);font-weight:500;margin-top:2px}
+
+/* ===== N2 · STACKED DENSITY WITH MEDIAN ===== */
+.n2-list{display:flex;flex-direction:column;gap:12px}
+.n2-row{display:grid;grid-template-columns:90px 1fr 120px;gap:14px;align-items:center}
+.n2-track{position:relative;height:16px;background:var(--paper-2);border-radius:8px;overflow:hidden}
+.n2-track .range{position:absolute;top:0;bottom:0;background:linear-gradient(90deg,rgba(96,165,250,0.25),rgba(96,165,250,0.55));border-radius:8px}
+.n2-track .median{position:absolute;top:-4px;bottom:-4px;width:3px;background:var(--navy);border-radius:1px}
+.n2-track .median::after{content:'';position:absolute;top:-3px;left:-3px;width:9px;height:9px;background:var(--navy);border-radius:50%;border:2px solid white}
+
+/* ===== N3 · SPLIT MIN/MAX ===== */
+.n3-list{display:flex;flex-direction:column;gap:10px}
+.n3-row{display:grid;grid-template-columns:100px 1fr;gap:14px;align-items:center;padding:10px 14px;background:var(--paper-2);border:1px solid var(--border);border-radius:10px}
+.n3-range{display:flex;align-items:center;gap:14px;justify-content:flex-end}
+.n3-range .low,.n3-range .hi{font-family:var(--sans);font-weight:800;letter-spacing:-0.015em}
+.n3-range .low{color:var(--sky-deep);font-size:16px}
+.n3-range .hi{color:var(--navy-hi);font-size:16px}
+.n3-range .arrow{color:var(--ink-faint);font-family:var(--mono);font-size:14px;font-weight:400}
+
+/* ===== N4 · BOX-PLOT (whisker) ===== */
+.n4-list{display:flex;flex-direction:column;gap:14px}
+.n4-row{display:grid;grid-template-columns:90px 1fr 110px;gap:14px;align-items:center}
+.n4-wh{position:relative;height:34px}
+.n4-wh::before{content:'';position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);height:1px;background:var(--border-hi)}
+.n4-wh .box{position:absolute;top:50%;transform:translateY(-50%);height:18px;background:color-mix(in oklch,var(--sky) 60%, var(--paper));border:1.5px solid var(--sky-deep);border-radius:3px}
+.n4-wh .whisker{position:absolute;top:50%;transform:translate(-50%,-50%);width:1.5px;height:14px;background:var(--navy-dark)}
+.n4-wh .median{position:absolute;top:50%;transform:translate(-50%,-50%);width:2.5px;height:22px;background:var(--navy-dark)}
+
+/* ===== N5 · DENSITY TABLE ===== */
+.n5-table{width:100%;border-collapse:collapse}
+.n5-table thead th{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--ink-mute);letter-spacing:0.12em;text-transform:uppercase;text-align:left;padding:8px 12px;border-bottom:2px solid var(--ink)}
+.n5-table thead th.num{text-align:right}
+.n5-table tbody td{padding:14px 12px;border-bottom:1px dashed var(--border);font-family:var(--sans);font-size:14px;vertical-align:middle}
+.n5-table tbody tr:last-child td{border-bottom:none}
+.n5-table tbody td.num{text-align:right}
+.n5-countbar{height:6px;background:var(--paper-2);border-radius:3px;position:relative;overflow:hidden;width:160px;margin-left:auto}
+.n5-countbar .fill{position:absolute;left:0;top:0;bottom:0;background:var(--sky-deep);border-radius:3px}
+.n5-table .low{color:var(--sky-deep);font-weight:700}
+.n5-table .hi{color:var(--navy-hi);font-weight:700}
+</style>
+</head>
+<body>
+
+<div class="page">
+  <header class="page-head">
+    <h1>Rental sections — 5 + 5 design options</h1>
+    <p>Keeping <b>Units Historic Rent</b> and <b>Neighborhood Rent Range</b> as separate sections. Five aesthetic takes on each.</p>
+    <div class="head-links">
+      <a href="/mockups/ri-variants.html">← earlier 6 combined variants</a>
+      <a href="/mockups/building-v1.html">building-v1</a>
+    </div>
+  </header>
+
+  <!-- ========== UNITS HISTORIC RENT ========== -->
+  <div class="family-head">
+    <h2>Units historic rent</h2>
+    <span class="count">5 VARIANTS · THIS BUILDING</span>
+    <span class="desc">7 listings at Manhattan Plaza from 2024–2026</span>
+  </div>
+
+  <!-- U1 TILES -->
+  <section class="variant">
+    <div class="variant-label"><span class="num">U1</span><h3>Price tiles grid</h3><span class="sub">scannable · clean · green price</span></div>
+    <div class="card">
+      <div class="card-head"><span class="icon good"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span><h4>Units historic rent <span class="pill">7 listings</span></h4></div>
+      <div class="u1-grid">
+        <div class="u1-tile"><span class="k">Studio</span><span class="v">$3,995</span><span class="c">1 listing</span></div>
+        <div class="u1-tile"><span class="k">1 Bed</span><span class="v">$5,000</span><span class="c">1 listing</span></div>
+        <div class="u1-tile"><span class="k">2 Bed</span><span class="v">$6,500</span><span class="c">1 listing</span></div>
+        <div class="u1-tile"><span class="k">3 Bed</span><span class="v">$7,635</span><span class="c">1 listing</span></div>
+        <div class="u1-tile"><span class="k">4 Bed</span><span class="v">$9,200</span><span class="c">1 listing</span></div>
+        <div class="u1-tile"><span class="k">5 Bed</span><span class="v">$15,650</span><span class="c">1 listing</span></div>
+        <div class="u1-tile"><span class="k">6 Bed</span><span class="v">$29,750</span><span class="c">1 listing</span></div>
+      </div>
+      <div class="card-foot">Recorded listings at this building.</div>
+    </div>
+  </section>
+
+  <!-- U2 BAR CHART -->
+  <section class="variant">
+    <div class="variant-label"><span class="num">U2</span><h3>Horizontal bar chart</h3><span class="sub">bars grow with price · shows the curve</span></div>
+    <div class="card">
+      <div class="card-head"><span class="icon good"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span><h4>Rent by unit size</h4></div>
+      <div class="u2-list">
+        <div class="u2-row"><div class="bed-meta">Studio<small>1 listing</small></div><div class="u2-bar"><div class="fill" style="width:13%"></div></div><div class="price-v" style="font-size:15px;text-align:right">$3,995<small>/mo</small></div></div>
+        <div class="u2-row"><div class="bed-meta">1 Bed<small>1 listing</small></div><div class="u2-bar"><div class="fill" style="width:17%"></div></div><div class="price-v" style="font-size:15px;text-align:right">$5,000<small>/mo</small></div></div>
+        <div class="u2-row"><div class="bed-meta">2 Bed<small>1 listing</small></div><div class="u2-bar"><div class="fill" style="width:22%"></div></div><div class="price-v" style="font-size:15px;text-align:right">$6,500<small>/mo</small></div></div>
+        <div class="u2-row"><div class="bed-meta">3 Bed<small>1 listing</small></div><div class="u2-bar"><div class="fill" style="width:26%"></div></div><div class="price-v" style="font-size:15px;text-align:right">$7,635<small>/mo</small></div></div>
+        <div class="u2-row"><div class="bed-meta">4 Bed<small>1 listing</small></div><div class="u2-bar"><div class="fill" style="width:31%"></div></div><div class="price-v" style="font-size:15px;text-align:right">$9,200<small>/mo</small></div></div>
+        <div class="u2-row"><div class="bed-meta">5 Bed<small>1 listing</small></div><div class="u2-bar"><div class="fill" style="width:53%"></div></div><div class="price-v" style="font-size:15px;text-align:right">$15,650<small>/mo</small></div></div>
+        <div class="u2-row"><div class="bed-meta">6 Bed<small>1 listing</small></div><div class="u2-bar"><div class="fill" style="width:100%"></div></div><div class="price-v" style="font-size:15px;text-align:right">$29,750<small>/mo</small></div></div>
+      </div>
+      <div class="card-foot">Bar length relative to $29,750 (6-Bed maximum).</div>
+    </div>
+  </section>
+
+  <!-- U3 STEP LADDER -->
+  <section class="variant">
+    <div class="variant-label"><span class="num">U3</span><h3>Stepped ladder</h3><span class="sub">column chart · stairs from studio to 6BR</span></div>
+    <div class="card">
+      <div class="card-head"><span class="icon sky"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 20 8 20 8 16 12 16 12 12 16 12 16 8 20 8 20 4"/></svg></span><h4>Price ladder by bed size</h4></div>
+      <div class="u3-stairs">
+        <div class="u3-step"><span class="v">$3,995</span><div class="bar" style="height:13%"></div><span class="k">Studio</span></div>
+        <div class="u3-step"><span class="v">$5,000</span><div class="bar" style="height:17%"></div><span class="k">1 Bed</span></div>
+        <div class="u3-step"><span class="v">$6,500</span><div class="bar" style="height:22%"></div><span class="k">2 Bed</span></div>
+        <div class="u3-step"><span class="v">$7,635</span><div class="bar" style="height:26%"></div><span class="k">3 Bed</span></div>
+        <div class="u3-step"><span class="v">$9,200</span><div class="bar" style="height:31%"></div><span class="k">4 Bed</span></div>
+        <div class="u3-step"><span class="v">$15,650</span><div class="bar" style="height:53%"></div><span class="k">5 Bed</span></div>
+        <div class="u3-step"><span class="v">$29,750</span><div class="bar" style="height:100%"></div><span class="k">6 Bed</span></div>
+      </div>
+      <div class="card-foot" style="margin-top:28px">Bars scaled to the largest unit's rent at this building.</div>
+    </div>
+  </section>
+
+  <!-- U4 ICON ROWS -->
+  <section class="variant">
+    <div class="variant-label"><span class="num">U4</span><h3>Icon rows</h3><span class="sub">per-bed pictogram · premium card rows</span></div>
+    <div class="card">
+      <div class="card-head"><span class="icon navy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="9" width="18" height="12" rx="2"/><path d="M7 9V5a3 3 0 0 1 3-3h4a3 3 0 0 1 3 3v4"/></svg></span><h4>Units at this building</h4></div>
+      <div class="u4-list">
+        <div class="u4-row"><span class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="1"/></svg></span><div class="bed-meta">Studio<small>1 listing</small></div><div class="price-v" style="font-size:16px">$3,995<small>/mo</small></div></div>
+        <div class="u4-row"><span class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="10" height="12" rx="1"/><rect x="14" y="6" width="7" height="12" rx="1"/></svg></span><div class="bed-meta">1 Bed<small>1 listing</small></div><div class="price-v" style="font-size:16px">$5,000<small>/mo</small></div></div>
+        <div class="u4-row"><span class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="6" height="12" rx="1"/><rect x="10" y="6" width="6" height="12" rx="1"/><rect x="17" y="6" width="4" height="12" rx="1"/></svg></span><div class="bed-meta">2 Bed<small>1 listing</small></div><div class="price-v" style="font-size:16px">$6,500<small>/mo</small></div></div>
+        <div class="u4-row"><span class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="5" height="12" rx="1"/><rect x="9" y="6" width="5" height="12" rx="1"/><rect x="15" y="6" width="6" height="12" rx="1"/></svg></span><div class="bed-meta">3 Bed<small>1 listing</small></div><div class="price-v" style="font-size:16px">$7,635<small>/mo</small></div></div>
+        <div class="u4-row"><span class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="7" rx="1"/><rect x="3" y="13" width="18" height="7" rx="1"/></svg></span><div class="bed-meta">4 Bed<small>1 listing</small></div><div class="price-v" style="font-size:16px">$9,200<small>/mo</small></div></div>
+        <div class="u4-row"><span class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="7" rx="1"/><rect x="3" y="13" width="9" height="7" rx="1"/><rect x="13" y="13" width="8" height="7" rx="1"/></svg></span><div class="bed-meta">5 Bed<small>1 listing</small></div><div class="price-v" style="font-size:16px">$15,650<small>/mo</small></div></div>
+        <div class="u4-row"><span class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="12" y="13" width="9" height="8" rx="1"/></svg></span><div class="bed-meta">6 Bed<small>1 listing</small></div><div class="price-v" style="font-size:16px">$29,750<small>/mo</small></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- U5 TABLE -->
+  <section class="variant">
+    <div class="variant-label"><span class="num">U5</span><h3>Table with sparkbar</h3><span class="sub">info-dense · relative bar inline</span></div>
+    <div class="card">
+      <div class="card-head"><span class="icon good"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></span><h4>Unit rents — 7 listings</h4></div>
+      <table class="u5-table">
+        <thead><tr><th>Bed</th><th>Listings</th><th class="num">Rent</th><th class="num">Relative to max</th></tr></thead>
+        <tbody>
+          <tr><td><b>Studio</b></td><td style="color:var(--ink-mute)">1</td><td class="num price-v" style="font-size:14px">$3,995<small>/mo</small></td><td class="num"><div class="u5-sparkbar"><div class="fill" style="width:13%"></div></div></td></tr>
+          <tr><td><b>1 Bed</b></td><td style="color:var(--ink-mute)">1</td><td class="num price-v" style="font-size:14px">$5,000<small>/mo</small></td><td class="num"><div class="u5-sparkbar"><div class="fill" style="width:17%"></div></div></td></tr>
+          <tr><td><b>2 Bed</b></td><td style="color:var(--ink-mute)">1</td><td class="num price-v" style="font-size:14px">$6,500<small>/mo</small></td><td class="num"><div class="u5-sparkbar"><div class="fill" style="width:22%"></div></div></td></tr>
+          <tr><td><b>3 Bed</b></td><td style="color:var(--ink-mute)">1</td><td class="num price-v" style="font-size:14px">$7,635<small>/mo</small></td><td class="num"><div class="u5-sparkbar"><div class="fill" style="width:26%"></div></div></td></tr>
+          <tr><td><b>4 Bed</b></td><td style="color:var(--ink-mute)">1</td><td class="num price-v" style="font-size:14px">$9,200<small>/mo</small></td><td class="num"><div class="u5-sparkbar"><div class="fill" style="width:31%"></div></div></td></tr>
+          <tr><td><b>5 Bed</b></td><td style="color:var(--ink-mute)">1</td><td class="num price-v" style="font-size:14px">$15,650<small>/mo</small></td><td class="num"><div class="u5-sparkbar"><div class="fill" style="width:53%"></div></div></td></tr>
+          <tr><td><b>6 Bed</b></td><td style="color:var(--ink-mute)">1</td><td class="num price-v" style="font-size:14px">$29,750<small>/mo</small></td><td class="num"><div class="u5-sparkbar"><div class="fill" style="width:100%"></div></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+
+  <!-- ========== NEIGHBORHOOD RENT RANGE ========== -->
+  <div class="family-head">
+    <h2>Neighborhood rent range</h2>
+    <span class="count">5 VARIANTS · HELL'S KITCHEN</span>
+    <span class="desc">7,038 recent listings across bed types</span>
+  </div>
+
+  <!-- N1 RANGE BARS -->
+  <section class="variant">
+    <div class="variant-label"><span class="num">N1</span><h3>Range bars · min to max</h3><span class="sub">capped whisker · numeric end-labels</span></div>
+    <div class="card">
+      <div class="card-head"><span class="icon sky"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="4" y2="18"/><line x1="20" y1="6" x2="20" y2="18"/></svg></span><h4>Rent range by bed type <span class="pill">Hell's Kitchen</span></h4></div>
+      <div class="n1-list">
+        <div class="n1-row"><div class="rg-meta"><b>Studio</b><br/><small>1,317 listings</small></div><div class="n1-track"><div class="n1-range" style="left:3%;right:10%;"></div><div class="n1-cap" style="left:3%"></div><div class="n1-cap" style="left:90%"></div><span class="n1-minlbl" style="left:3%">$1.7K</span><span class="n1-maxlbl" style="left:90%">$50K</span></div><div class="n1-val"><b>$1,700 – $50,000</b><small>median ≈ $4,300</small></div></div>
+        <div class="n1-row"><div class="rg-meta"><b>1 Bed</b><br/><small>2,697 listings</small></div><div class="n1-track"><div class="n1-range" style="left:2%;right:19%;"></div><div class="n1-cap" style="left:2%"></div><div class="n1-cap" style="left:81%"></div><span class="n1-minlbl" style="left:2%">$1.2K</span><span class="n1-maxlbl" style="left:81%">$45K</span></div><div class="n1-val"><b>$1,200 – $45,000</b><small>median ≈ $5,750</small></div></div>
+        <div class="n1-row"><div class="rg-meta"><b>2 Bed</b><br/><small>1,891 listings</small></div><div class="n1-track"><div class="n1-range" style="left:4%;right:10%;"></div><div class="n1-cap" style="left:4%"></div><div class="n1-cap" style="left:90%"></div><span class="n1-minlbl" style="left:4%">$2.2K</span><span class="n1-maxlbl" style="left:90%">$49.5K</span></div><div class="n1-val"><b>$2,200 – $49,500</b><small>median ≈ $6,501</small></div></div>
+        <div class="n1-row"><div class="rg-meta"><b>3 Bed</b><br/><small>832 listings</small></div><div class="n1-track"><div class="n1-range" style="left:2%;right:10%;"></div><div class="n1-cap" style="left:2%"></div><div class="n1-cap" style="left:90%"></div><span class="n1-minlbl" style="left:2%">$1.25K</span><span class="n1-maxlbl" style="left:90%">$50K</span></div><div class="n1-val"><b>$1,250 – $50,000</b><small>median ≈ $6,923</small></div></div>
+        <div class="n1-row"><div class="rg-meta"><b>4+ Bed</b><br/><small>254 listings</small></div><div class="n1-track"><div class="n1-range" style="left:2%;right:10%;"></div><div class="n1-cap" style="left:2%"></div><div class="n1-cap" style="left:90%"></div><span class="n1-minlbl" style="left:2%">$1.2K</span><span class="n1-maxlbl" style="left:90%">$50K</span></div><div class="n1-val"><b>$1,200 – $50,000</b><small>median ≈ $12,400</small></div></div>
+      </div>
+      <div class="card-foot">Based on recent listings in Hell's Kitchen · ranges are 5th / 95th percentile.</div>
+    </div>
+  </section>
+
+  <!-- N2 DENSITY + MEDIAN -->
+  <section class="variant">
+    <div class="variant-label"><span class="num">N2</span><h3>Density bar + median pin</h3><span class="sub">range as gradient · navy pin = median</span></div>
+    <div class="card">
+      <div class="card-head"><span class="icon sky"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2v20M2 12h20"/></svg></span><h4>Neighborhood range with median</h4></div>
+      <div class="n2-list">
+        <div class="n2-row"><div class="rg-meta"><b>Studio</b><br/><small>1,317 listings</small></div><div class="n2-track"><div class="range" style="left:3%;right:10%;"></div><div class="median" style="left:10%"></div></div><div class="n1-val"><b>$4,300</b><small>$1.7K → $50K</small></div></div>
+        <div class="n2-row"><div class="rg-meta"><b>1 Bed</b><br/><small>2,697 listings</small></div><div class="n2-track"><div class="range" style="left:2%;right:19%;"></div><div class="median" style="left:13%"></div></div><div class="n1-val"><b>$5,750</b><small>$1.2K → $45K</small></div></div>
+        <div class="n2-row"><div class="rg-meta"><b>2 Bed</b><br/><small>1,891 listings</small></div><div class="n2-track"><div class="range" style="left:4%;right:10%;"></div><div class="median" style="left:14%"></div></div><div class="n1-val"><b>$6,501</b><small>$2.2K → $49.5K</small></div></div>
+        <div class="n2-row"><div class="rg-meta"><b>3 Bed</b><br/><small>832 listings</small></div><div class="n2-track"><div class="range" style="left:2%;right:10%;"></div><div class="median" style="left:15%"></div></div><div class="n1-val"><b>$6,923</b><small>$1.25K → $50K</small></div></div>
+        <div class="n2-row"><div class="rg-meta"><b>4+ Bed</b><br/><small>254 listings</small></div><div class="n2-track"><div class="range" style="left:2%;right:10%;"></div><div class="median" style="left:26%"></div></div><div class="n1-val"><b>$12,400</b><small>$1.2K → $50K</small></div></div>
+      </div>
+      <div class="card-foot">Navy pin marks the neighborhood median · blue gradient shows the full range.</div>
+    </div>
+  </section>
+
+  <!-- N3 SPLIT MIN/MAX -->
+  <section class="variant">
+    <div class="variant-label"><span class="num">N3</span><h3>Low ↔ High split</h3><span class="sub">two-ended typography · clear at a glance</span></div>
+    <div class="card">
+      <div class="card-head"><span class="icon sky"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/><polyline points="12 19 5 12 12 5"/></svg></span><h4>Rent range by bed type</h4></div>
+      <div class="n3-list">
+        <div class="n3-row"><div class="rg-meta"><b>Studio</b><br/><small>1,317 listings</small></div><div class="n3-range"><span class="low">$1,700</span><span class="arrow">→</span><span class="hi">$50,000</span></div></div>
+        <div class="n3-row"><div class="rg-meta"><b>1 Bed</b><br/><small>2,697 listings</small></div><div class="n3-range"><span class="low">$1,200</span><span class="arrow">→</span><span class="hi">$45,000</span></div></div>
+        <div class="n3-row"><div class="rg-meta"><b>2 Bed</b><br/><small>1,891 listings</small></div><div class="n3-range"><span class="low">$2,200</span><span class="arrow">→</span><span class="hi">$49,500</span></div></div>
+        <div class="n3-row"><div class="rg-meta"><b>3 Bed</b><br/><small>832 listings</small></div><div class="n3-range"><span class="low">$1,250</span><span class="arrow">→</span><span class="hi">$50,000</span></div></div>
+        <div class="n3-row"><div class="rg-meta"><b>4+ Bed</b><br/><small>254 listings</small></div><div class="n3-range"><span class="low">$1,200</span><span class="arrow">→</span><span class="hi">$50,000</span></div></div>
+        <div class="n3-row"><div class="rg-meta"><b>5 Bed</b><br/><small>37 listings</small></div><div class="n3-range"><span class="low">$1,230</span><span class="arrow">→</span><span class="hi">$50,000</span></div></div>
+        <div class="n3-row"><div class="rg-meta"><b>6 Bed</b><br/><small>10 listings</small></div><div class="n3-range"><span class="low">$7,995</span><span class="arrow">→</span><span class="hi">$45,000</span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- N4 WHISKER BOX -->
+  <section class="variant">
+    <div class="variant-label"><span class="num">N4</span><h3>Whisker box</h3><span class="sub">box-plot · IQR + median · data-viz classic</span></div>
+    <div class="card">
+      <div class="card-head"><span class="icon sky"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="8" width="8" height="8" rx="1"/><line x1="4" y1="12" x2="8" y2="12"/><line x1="16" y1="12" x2="20" y2="12"/><line x1="4" y1="10" x2="4" y2="14"/><line x1="20" y1="10" x2="20" y2="14"/></svg></span><h4>Rent distribution by bed</h4></div>
+      <div class="n4-list">
+        <div class="n4-row"><div class="rg-meta"><b>Studio</b><br/><small>1,317 listings</small></div><div class="n4-wh"><div class="whisker" style="left:3%"></div><div class="whisker" style="left:90%"></div><div class="box" style="left:6%;right:20%"></div><div class="median" style="left:10%"></div></div><div class="n1-val"><b>Median $4.3K</b><small>5th–95th: $2.2K–$18K</small></div></div>
+        <div class="n4-row"><div class="rg-meta"><b>1 Bed</b><br/><small>2,697 listings</small></div><div class="n4-wh"><div class="whisker" style="left:2%"></div><div class="whisker" style="left:81%"></div><div class="box" style="left:8%;right:32%"></div><div class="median" style="left:13%"></div></div><div class="n1-val"><b>Median $5.75K</b><small>5th–95th: $3.3K–$22K</small></div></div>
+        <div class="n4-row"><div class="rg-meta"><b>2 Bed</b><br/><small>1,891 listings</small></div><div class="n4-wh"><div class="whisker" style="left:4%"></div><div class="whisker" style="left:90%"></div><div class="box" style="left:9%;right:28%"></div><div class="median" style="left:14%"></div></div><div class="n1-val"><b>Median $6.5K</b><small>5th–95th: $4.4K–$26K</small></div></div>
+        <div class="n4-row"><div class="rg-meta"><b>3 Bed</b><br/><small>832 listings</small></div><div class="n4-wh"><div class="whisker" style="left:2%"></div><div class="whisker" style="left:90%"></div><div class="box" style="left:10%;right:24%"></div><div class="median" style="left:16%"></div></div><div class="n1-val"><b>Median $6.9K</b><small>5th–95th: $4K–$32K</small></div></div>
+        <div class="n4-row"><div class="rg-meta"><b>4+ Bed</b><br/><small>254 listings</small></div><div class="n4-wh"><div class="whisker" style="left:2%"></div><div class="whisker" style="left:90%"></div><div class="box" style="left:16%;right:18%"></div><div class="median" style="left:26%"></div></div><div class="n1-val"><b>Median $12.4K</b><small>5th–95th: $6K–$42K</small></div></div>
+      </div>
+      <div class="card-foot">Box spans 25th–75th percentile · tick = median · whiskers = 5th / 95th.</div>
+    </div>
+  </section>
+
+  <!-- N5 DENSITY TABLE -->
+  <section class="variant">
+    <div class="variant-label"><span class="num">N5</span><h3>Density table</h3><span class="sub">inline listing-count bar · dense but scannable</span></div>
+    <div class="card">
+      <div class="card-head"><span class="icon sky"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg></span><h4>Rent range table</h4></div>
+      <table class="n5-table">
+        <thead><tr><th>Bed</th><th class="num">Low</th><th class="num">High</th><th class="num">Listings</th><th class="num">Density</th></tr></thead>
+        <tbody>
+          <tr><td><b>Studio</b></td><td class="num low">$1,700</td><td class="num hi">$50,000</td><td class="num" style="color:var(--ink-mute)">1,317</td><td class="num"><div class="n5-countbar"><div class="fill" style="width:48%"></div></div></td></tr>
+          <tr><td><b>1 Bed</b></td><td class="num low">$1,200</td><td class="num hi">$45,000</td><td class="num" style="color:var(--ink-mute)">2,697</td><td class="num"><div class="n5-countbar"><div class="fill" style="width:100%"></div></div></td></tr>
+          <tr><td><b>2 Bed</b></td><td class="num low">$2,200</td><td class="num hi">$49,500</td><td class="num" style="color:var(--ink-mute)">1,891</td><td class="num"><div class="n5-countbar"><div class="fill" style="width:70%"></div></div></td></tr>
+          <tr><td><b>3 Bed</b></td><td class="num low">$1,250</td><td class="num hi">$50,000</td><td class="num" style="color:var(--ink-mute)">832</td><td class="num"><div class="n5-countbar"><div class="fill" style="width:30%"></div></div></td></tr>
+          <tr><td><b>4+ Bed</b></td><td class="num low">$1,200</td><td class="num hi">$50,000</td><td class="num" style="color:var(--ink-mute)">254</td><td class="num"><div class="n5-countbar"><div class="fill" style="width:10%"></div></div></td></tr>
+          <tr><td><b>5 Bed</b></td><td class="num low">$1,230</td><td class="num hi">$50,000</td><td class="num" style="color:var(--ink-mute)">37</td><td class="num"><div class="n5-countbar"><div class="fill" style="width:2%"></div></div></td></tr>
+          <tr><td><b>6 Bed</b></td><td class="num low">$7,995</td><td class="num hi">$45,000</td><td class="num" style="color:var(--ink-mute)">10</td><td class="num"><div class="n5-countbar"><div class="fill" style="width:1%"></div></div></td></tr>
+        </tbody>
+      </table>
+      <div class="card-foot">Density bar is relative to the most-listed bed type (1 Bed = 2,697).</div>
+    </div>
+  </section>
+
+</div>
+</body>
+</html>

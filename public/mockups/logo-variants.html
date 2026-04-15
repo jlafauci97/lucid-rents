@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LucidRents — 10 logo concepts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --ink:#0F1D2E; --ink-2:#1e293b; --ink-mute:#64748b; --ink-faint:#94a3b8;
+  --navy:#3B82F6; --navy-hi:#2563EB; --navy-dark:#0F1D2E; --navy-deep:#091325;
+  --sky:#dbeafe; --sky-deep:#60a5fa; --sky-bg:#eff6ff;
+  --paper:#f8fafc; --surface:#fff; --border:#e2e8f0;
+  --sans:"Geist", system-ui, sans-serif;
+  --mono:"Geist Mono", ui-monospace, monospace;
+  --serif:"Young Serif", serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+.page{max-width:1280px;margin:0 auto;padding:48px 24px 120px}
+.page-head{padding-bottom:28px;margin-bottom:40px;border-bottom:1px solid var(--border)}
+.page-head h1{font-family:var(--serif);font-size:40px;margin:0 0 6px;letter-spacing:-0.02em}
+.page-head p{color:var(--ink-mute);font-size:15px;max-width:64ch;margin:0;line-height:1.6}
+.page-head .links{display:flex;gap:14px;font-size:13px;font-family:var(--mono);margin-top:12px;flex-wrap:wrap}
+.page-head a{color:var(--navy);text-decoration:underline;text-underline-offset:2px}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:18px}
+.cell{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:14px;
+  overflow:hidden;
+  position:relative;
+  display:flex; flex-direction:column;
+  transition:transform .2s, box-shadow .2s;
+}
+.cell:hover{transform:translateY(-2px);box-shadow:0 18px 36px -22px rgba(15,29,46,0.2)}
+.cell .idx{position:absolute;top:10px;left:14px;font-family:var(--mono);font-size:10px;font-weight:700;color:var(--ink-faint);letter-spacing:0.14em;z-index:2}
+.cell .code{position:absolute;top:10px;right:14px;font-family:var(--mono);font-size:10px;font-weight:700;color:var(--ink);letter-spacing:0.14em;z-index:2}
+
+/* two stages: dark then light, so you see contrast both ways */
+.stage-dark { background:var(--ink); display:grid; place-items:center; padding:40px 20px; min-height:160px; color:#fff; }
+.stage-light{ background:#fff;    display:grid; place-items:center; padding:40px 20px; min-height:160px; color:var(--ink); border-top:1px solid var(--border); }
+
+.tag{padding:14px 18px 16px;border-top:1px dashed var(--border);text-align:center}
+.tag .name{font-size:13px;font-weight:600;color:var(--ink);letter-spacing:-0.005em}
+.tag .desc{font-size:11px;color:var(--ink-mute);margin-top:2px;font-family:var(--mono);letter-spacing:0.02em;line-height:1.5}
+
+/* ============================================================
+   SHARED LOGO HELPERS
+============================================================ */
+.logo{display:inline-flex;align-items:center;gap:10px;line-height:1}
+.logo svg{display:block}
+.wm{font-family:var(--sans);font-weight:700;font-size:22px;letter-spacing:-0.025em;line-height:1}
+.wm .q{color:var(--sky-deep);}
+.wm.lite .q{color:#60a5fa}
+
+/* Common palette for glyphs */
+.blue{color:var(--navy)}
+.sky{color:var(--sky-deep)}
+.dark{color:var(--ink)}
+
+/* ============================================================
+   01 · HEX — the LucidIQ hex re-used as the logomark
+============================================================ */
+.lg-01 .hex{width:36px;height:40px;position:relative;flex-shrink:0}
+.lg-01 .hex svg{width:100%;height:100%}
+.lg-01 .hex .m{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--sans);font-weight:900;font-size:14px;letter-spacing:-0.05em;color:#fff}
+
+/* ============================================================
+   02 · PIN — the "L" is formed by a pin
+============================================================ */
+.lg-02 .mark{width:30px;height:38px;flex-shrink:0}
+
+/* ============================================================
+   03 · MONOGRAM — custom L·R ligature
+============================================================ */
+.lg-03 .mark{width:38px;height:38px;flex-shrink:0;border-radius:10px;display:grid;place-items:center;background:var(--navy)}
+
+/* ============================================================
+   04 · KEYHOLE — unlock metaphor
+============================================================ */
+.lg-04 .mark{width:32px;height:38px;flex-shrink:0}
+
+/* ============================================================
+   05 · GRID — 2x3 window grid
+============================================================ */
+.lg-05 .mark{width:36px;height:38px;flex-shrink:0;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:3px}
+.lg-05 .mark i{display:block;background:var(--navy);border-radius:2px}
+.lg-05 .mark i.off{background:var(--sky-deep);opacity:0.6}
+
+/* ============================================================
+   06 · PRISM — overlapping translucent shapes (literal "lucid")
+============================================================ */
+.lg-06 .mark{width:40px;height:38px;position:relative;flex-shrink:0}
+.lg-06 .mark span{position:absolute;width:20px;height:30px;border-radius:4px;opacity:0.75;mix-blend-mode:multiply}
+.lg-06 .mark span.a{left:0;top:4px;background:var(--sky-deep)}
+.lg-06 .mark span.b{left:10px;top:0;background:var(--navy)}
+.lg-06 .mark span.c{left:20px;top:4px;background:var(--ink)}
+
+.stage-dark .lg-06 .mark span{mix-blend-mode:screen;opacity:0.8}
+
+/* ============================================================
+   07 · WINDOW — single building window with depth
+============================================================ */
+.lg-07 .mark{width:32px;height:38px;flex-shrink:0;position:relative;border:2px solid var(--ink);border-radius:3px}
+.lg-07 .mark::before,.lg-07 .mark::after{content:'';position:absolute;background:var(--ink)}
+.lg-07 .mark::before{left:50%;top:0;bottom:0;width:2px;transform:translateX(-50%)}
+.lg-07 .mark::after{top:50%;left:0;right:0;height:2px;transform:translateY(-50%)}
+.stage-dark .lg-07 .mark{border-color:#fff}
+.stage-dark .lg-07 .mark::before,.stage-dark .lg-07 .mark::after{background:#fff}
+
+/* ============================================================
+   08 · DOT MATRIX — grid of dots forms an L
+============================================================ */
+.lg-08 .mark{width:44px;height:44px;flex-shrink:0;display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(5,1fr);gap:2px}
+.lg-08 .mark i{width:4px;height:4px;border-radius:50%;background:rgba(96,165,250,0.3)}
+.lg-08 .mark i.on{background:var(--navy)}
+.stage-dark .lg-08 .mark i{background:rgba(96,165,250,0.25)}
+.stage-dark .lg-08 .mark i.on{background:#60a5fa}
+
+/* ============================================================
+   09 · SIGIL — refined circular seal (what they have now but better)
+============================================================ */
+.lg-09 .mark{width:38px;height:38px;flex-shrink:0;border:1.5px solid currentColor;border-radius:50%;display:grid;place-items:center;position:relative}
+.lg-09 .mark svg{width:22px;height:22px}
+
+/* ============================================================
+   10 · APERTURE — eye/lens (transparency)
+============================================================ */
+.lg-10 .mark{width:36px;height:36px;flex-shrink:0}
+
+/* Wordmark variant — smaller secondary
+============================================================ */
+.subm{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--ink-mute);margin-top:2px;display:block}
+.stage-dark .subm{color:rgba(255,255,255,0.55)}
+
+/* Wordmark — primary type treatment differs per variant */
+.wm-serif{font-family:var(--serif);font-weight:400;font-size:24px;letter-spacing:-0.01em}
+.wm-caps{font-family:var(--sans);font-weight:800;font-size:16px;letter-spacing:0.28em;text-transform:uppercase}
+.wm-lig{font-family:var(--sans);font-weight:700;font-size:22px;letter-spacing:-0.03em}
+.wm-lig em{font-style:normal;color:var(--sky-deep)}
+.stage-dark .wm-lig em{color:#60a5fa}
+
+</style>
+</head>
+<body>
+
+<div class="page">
+  <header class="page-head">
+    <h1>LucidRents — 10 logo concepts</h1>
+    <p>Each mark shown on navy and white backgrounds. Palette is strictly navy <code>#0F1D2E</code>, brand blue <code>#3B82F6</code>, sky <code>#60a5fa</code>, and slate neutrals — no yellow, no mint, no gradients-on-dark.</p>
+    <div class="links">
+      <a href="/mockups/building-v1.html">← back to building-v1</a>
+    </div>
+  </header>
+
+  <div class="grid">
+
+    <!-- 01 · HEX MARK -->
+    <div class="cell">
+      <span class="idx">01</span><span class="code">HEX</span>
+      <div class="stage-dark">
+        <div class="logo lg-01">
+          <span class="hex">
+            <svg viewBox="0 0 36 40" xmlns="http://www.w3.org/2000/svg">
+              <polygon points="18,2 34,11 34,29 18,38 2,29 2,11" fill="#3B82F6"/>
+            </svg>
+            <span class="m">LR</span>
+          </span>
+          <span class="wm">lucidrents</span>
+        </div>
+      </div>
+      <div class="stage-light">
+        <div class="logo lg-01">
+          <span class="hex">
+            <svg viewBox="0 0 36 40" xmlns="http://www.w3.org/2000/svg">
+              <polygon points="18,2 34,11 34,29 18,38 2,29 2,11" fill="#0F1D2E"/>
+            </svg>
+            <span class="m">LR</span>
+          </span>
+          <span class="wm lite" style="color:var(--ink)">lucidrents</span>
+        </div>
+      </div>
+      <div class="tag"><div class="name">Hex monogram</div><div class="desc">matches the LucidIQ score shape · consistent system</div></div>
+    </div>
+
+    <!-- 02 · PIN "L" -->
+    <div class="cell">
+      <span class="idx">02</span><span class="code">DROP</span>
+      <div class="stage-dark">
+        <div class="logo lg-02">
+          <svg class="mark" viewBox="0 0 30 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M15 36C15 36 27 22 27 13C27 6.37 21.63 1 15 1C8.37 1 3 6.37 3 13C3 22 15 36 15 36Z" fill="#60a5fa" stroke="#fff" stroke-width="1.5"/>
+            <path d="M11 9V18H20" stroke="#0F1D2E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="wm">lucidrents</span>
+        </div>
+      </div>
+      <div class="stage-light">
+        <div class="logo lg-02">
+          <svg class="mark" viewBox="0 0 30 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M15 36C15 36 27 22 27 13C27 6.37 21.63 1 15 1C8.37 1 3 6.37 3 13C3 22 15 36 15 36Z" fill="#3B82F6"/>
+            <path d="M11 9V18H20" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="wm" style="color:var(--ink)">lucidrents</span>
+        </div>
+      </div>
+      <div class="tag"><div class="name">Pin drop</div><div class="desc">location pin doubles as an L · direct to real estate</div></div>
+    </div>
+
+    <!-- 03 · LIGATURE MONOGRAM -->
+    <div class="cell">
+      <span class="idx">03</span><span class="code">MONOGRAM</span>
+      <div class="stage-dark">
+        <div class="logo lg-03">
+          <div class="mark">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M5 4V20H13" stroke="#fff" stroke-width="3.2" stroke-linecap="square"/>
+              <path d="M13 4H18L13 12L18 20" stroke="#60a5fa" stroke-width="3.2" stroke-linecap="square"/>
+            </svg>
+          </div>
+          <span class="wm-lig" style="color:#fff">lucid<em>rents</em></span>
+        </div>
+      </div>
+      <div class="stage-light">
+        <div class="logo lg-03">
+          <div class="mark">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M5 4V20H13" stroke="#fff" stroke-width="3.2" stroke-linecap="square"/>
+              <path d="M13 4H18L13 12L18 20" stroke="#60a5fa" stroke-width="3.2" stroke-linecap="square"/>
+            </svg>
+          </div>
+          <span class="wm-lig" style="color:var(--ink)">lucid<em>rents</em></span>
+        </div>
+      </div>
+      <div class="tag"><div class="name">LR ligature</div><div class="desc">L reverses into R · compact square mark</div></div>
+    </div>
+
+    <!-- 04 · KEYHOLE -->
+    <div class="cell">
+      <span class="idx">04</span><span class="code">KEYHOLE</span>
+      <div class="stage-dark">
+        <div class="logo lg-04">
+          <svg class="mark" viewBox="0 0 32 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16 2L28 7V19C28 28 22 34 16 36C10 34 4 28 4 19V7L16 2Z" fill="#3B82F6" stroke="#fff" stroke-width="1.2"/>
+            <circle cx="16" cy="16" r="4" fill="#fff"/>
+            <rect x="14.5" y="16" width="3" height="8" fill="#fff"/>
+          </svg>
+          <span class="wm">lucidrents</span>
+        </div>
+      </div>
+      <div class="stage-light">
+        <div class="logo lg-04">
+          <svg class="mark" viewBox="0 0 32 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16 2L28 7V19C28 28 22 34 16 36C10 34 4 28 4 19V7L16 2Z" fill="#0F1D2E"/>
+            <circle cx="16" cy="16" r="4" fill="#60a5fa"/>
+            <rect x="14.5" y="16" width="3" height="8" fill="#60a5fa"/>
+          </svg>
+          <span class="wm" style="color:var(--ink)">lucidrents</span>
+        </div>
+      </div>
+      <div class="tag"><div class="name">Keyhole shield</div><div class="desc">protection + access · tenant trust angle</div></div>
+    </div>
+
+    <!-- 05 · GRID -->
+    <div class="cell">
+      <span class="idx">05</span><span class="code">GRID</span>
+      <div class="stage-dark">
+        <div class="logo lg-05">
+          <div class="mark">
+            <i style="background:#60a5fa"></i><i style="background:#60a5fa"></i><i></i>
+            <i style="background:#60a5fa"></i><i></i><i></i>
+            <i style="background:#60a5fa"></i><i style="background:#60a5fa"></i><i style="background:#60a5fa"></i>
+          </div>
+          <span class="wm">lucidrents</span>
+        </div>
+      </div>
+      <div class="stage-light">
+        <div class="logo lg-05">
+          <div class="mark">
+            <i></i><i></i><i style="background:#dbeafe"></i>
+            <i></i><i style="background:#dbeafe"></i><i style="background:#dbeafe"></i>
+            <i></i><i></i><i></i>
+          </div>
+          <span class="wm" style="color:var(--ink)">lucidrents</span>
+        </div>
+      </div>
+      <div class="tag"><div class="name">Window grid</div><div class="desc">3×3 grid forms an L · abstract façade</div></div>
+    </div>
+
+    <!-- 06 · PRISM -->
+    <div class="cell">
+      <span class="idx">06</span><span class="code">PRISM</span>
+      <div class="stage-dark">
+        <div class="logo lg-06">
+          <div class="mark">
+            <span class="a"></span><span class="b"></span><span class="c"></span>
+          </div>
+          <span class="wm">lucidrents</span>
+        </div>
+      </div>
+      <div class="stage-light">
+        <div class="logo lg-06">
+          <div class="mark">
+            <span class="a"></span><span class="b"></span><span class="c"></span>
+          </div>
+          <span class="wm" style="color:var(--ink)">lucidrents</span>
+        </div>
+      </div>
+      <div class="tag"><div class="name">Prism stack</div><div class="desc">three translucent panels · literal "lucid"</div></div>
+    </div>
+
+    <!-- 07 · WINDOW PANE -->
+    <div class="cell">
+      <span class="idx">07</span><span class="code">WINDOW</span>
+      <div class="stage-dark">
+        <div class="logo lg-07">
+          <span class="mark"></span>
+          <span class="wm">lucidrents</span>
+        </div>
+      </div>
+      <div class="stage-light">
+        <div class="logo lg-07">
+          <span class="mark"></span>
+          <span class="wm" style="color:var(--ink)">lucidrents</span>
+        </div>
+      </div>
+      <div class="tag"><div class="name">Window pane</div><div class="desc">single 4-pane window · quiet architectural</div></div>
+    </div>
+
+    <!-- 08 · DOT MATRIX -->
+    <div class="cell">
+      <span class="idx">08</span><span class="code">MATRIX</span>
+      <div class="stage-dark">
+        <div class="logo lg-08">
+          <div class="mark">
+            <i class="on"></i><i></i><i></i><i></i><i></i>
+            <i class="on"></i><i></i><i></i><i></i><i></i>
+            <i class="on"></i><i></i><i></i><i></i><i></i>
+            <i class="on"></i><i></i><i></i><i></i><i></i>
+            <i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i>
+          </div>
+          <span class="wm">lucidrents</span>
+        </div>
+      </div>
+      <div class="stage-light">
+        <div class="logo lg-08">
+          <div class="mark">
+            <i class="on"></i><i></i><i></i><i></i><i></i>
+            <i class="on"></i><i></i><i></i><i></i><i></i>
+            <i class="on"></i><i></i><i></i><i></i><i></i>
+            <i class="on"></i><i></i><i></i><i></i><i></i>
+            <i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i>
+          </div>
+          <span class="wm" style="color:var(--ink)">lucidrents</span>
+        </div>
+      </div>
+      <div class="tag"><div class="name">Dot matrix L</div><div class="desc">data-driven identity · 5×5 grid spells L</div></div>
+    </div>
+
+    <!-- 09 · REFINED SIGIL -->
+    <div class="cell">
+      <span class="idx">09</span><span class="code">SIGIL</span>
+      <div class="stage-dark">
+        <div class="logo lg-09">
+          <span class="mark" style="color:#60a5fa">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M4 20V6L12 4L20 6V20" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/>
+              <path d="M9 11H11M13 11H15M9 15H11M13 15H15" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <div style="display:flex;flex-direction:column">
+            <span class="wm-caps" style="color:#fff">LUCIDRENTS</span>
+            <span class="subm">New York · Building index</span>
+          </div>
+        </div>
+      </div>
+      <div class="stage-light">
+        <div class="logo lg-09">
+          <span class="mark" style="color:var(--ink)">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M4 20V6L12 4L20 6V20" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+              <path d="M9 11H11M13 11H15M9 15H11M13 15H15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <div style="display:flex;flex-direction:column">
+            <span class="wm-caps" style="color:var(--ink)">LUCIDRENTS</span>
+            <span class="subm">New York · Building index</span>
+          </div>
+        </div>
+      </div>
+      <div class="tag"><div class="name">Refined sigil</div><div class="desc">tight circle + minimal facade · replaces current mark</div></div>
+    </div>
+
+    <!-- 10 · APERTURE -->
+    <div class="cell">
+      <span class="idx">10</span><span class="code">APERTURE</span>
+      <div class="stage-dark">
+        <div class="logo lg-10">
+          <svg class="mark" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="18" cy="18" r="16" stroke="#fff" stroke-width="1.5"/>
+            <path d="M18 2 L24 18 L18 34" stroke="#60a5fa" stroke-width="1.5"/>
+            <path d="M18 2 L12 18 L18 34" stroke="#60a5fa" stroke-width="1.5"/>
+            <path d="M2 18 L18 12 L34 18" stroke="#60a5fa" stroke-width="1.5"/>
+            <path d="M2 18 L18 24 L34 18" stroke="#60a5fa" stroke-width="1.5"/>
+            <circle cx="18" cy="18" r="4" fill="#3B82F6"/>
+          </svg>
+          <span class="wm">lucidrents</span>
+        </div>
+      </div>
+      <div class="stage-light">
+        <div class="logo lg-10">
+          <svg class="mark" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="18" cy="18" r="16" stroke="#0F1D2E" stroke-width="1.5"/>
+            <path d="M18 2 L24 18 L18 34" stroke="#60a5fa" stroke-width="1.5"/>
+            <path d="M18 2 L12 18 L18 34" stroke="#60a5fa" stroke-width="1.5"/>
+            <path d="M2 18 L18 12 L34 18" stroke="#60a5fa" stroke-width="1.5"/>
+            <path d="M2 18 L18 24 L34 18" stroke="#60a5fa" stroke-width="1.5"/>
+            <circle cx="18" cy="18" r="4" fill="#3B82F6"/>
+          </svg>
+          <span class="wm" style="color:var(--ink)">lucidrents</span>
+        </div>
+      </div>
+      <div class="tag"><div class="name">Aperture</div><div class="desc">lens/eye mark · transparency as metaphor</div></div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>
