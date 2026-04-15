@@ -12,6 +12,9 @@ import { RecordStrip } from "@/components/building/v2/RecordStrip";
 import { S01_RentalIntelligence } from "@/components/building/v2/sections/S01_RentalIntelligence";
 import { S02_Issues } from "@/components/building/v2/sections/S02_Issues";
 import { S03_TenantReviews } from "@/components/building/v2/sections/S03_TenantReviews";
+import { S04_Amenities } from "@/components/building/v2/sections/S04_Amenities";
+import { S05_Landlord } from "@/components/building/v2/sections/S05_Landlord";
+import { S06_Location } from "@/components/building/v2/sections/S06_Location";
 
 export const revalidate = 86400;
 
@@ -127,10 +130,19 @@ export default async function BuildingV2Page({ params }: Props) {
             reviewsUrl={`/${cityPrefix}/building/${regionSlug(building.borough)}/${building.slug}/reviews`}
           />
 
-          {/* Phase 2B+ placeholders */}
-          <div id="amenities" />
-          <div id="landlord" />
-          <div id="location" />
+          {/* Phase 2B — amenities, landlord, location */}
+          <S04_Amenities amenities={data.amenities} />
+
+          <S05_Landlord
+            landlord={data.landlord}
+            city={typedCity}
+            currentBuildingSlug={slug}
+            currentBuildingBorough={building.borough}
+          />
+
+          <S06_Location building={building} city={typedCity} />
+
+          {/* Phase 3+ placeholders */}
           <div id="history" />
           <div id="similar" />
           <div id="faq" />
