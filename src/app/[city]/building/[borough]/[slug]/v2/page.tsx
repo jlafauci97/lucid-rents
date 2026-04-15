@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
-import { regionFromSlug, regionSlug } from "@/lib/seo";
+import { regionFromSlug, regionSlug, buildingUrl, canonicalUrl } from "@/lib/seo";
 import { VALID_CITIES, CITY_META, type City } from "@/lib/cities";
 import { cache } from "react";
 import type { Building } from "@/types";
@@ -34,6 +35,27 @@ export const revalidate = 86400;
 
 interface Props {
   params: Promise<{ city: string; borough: string; slug: string }>;
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { city, borough, slug } = await params;
+  const building = await getBuilding(borough, slug, city);
+  if (!building) {
+    return {
+      title: "Building · v2 preview",
+      robots: { index: false, follow: false },
+    };
+  }
+  const productionPath = buildingUrl(
+    { borough: building.borough, slug: building.slug },
+    city as City
+  );
+  return {
+    title: `${building.full_address} · v2 preview`,
+    description: `Preview of redesigned building page for ${building.full_address}.`,
+    robots: { index: false, follow: false },
+    alternates: { canonical: canonicalUrl(productionPath) },
+  };
 }
 
 const getBuilding = cache(async (boroughSlug: string, slug: string, metro: string) => {
@@ -73,34 +95,34 @@ export default async function BuildingV2Page({ params }: Props) {
 
   return (
     <>
+      {/* Skip to main content (a11y) */}
+      <a
+        href="#main-content"
+        style={{
+          position: "absolute",
+          left: "-9999px",
+          top: 8,
+          zIndex: 200,
+          padding: "8px 16px",
+          background: "var(--v2-brand)",
+          color: "#fff",
+          fontFamily: "var(--v2-sans)",
+          fontSize: 14,
+          fontWeight: 600,
+          borderRadius: "var(--v2-radius-sm)",
+          textDecoration: "none",
+        }}
+        onFocus={(e) => (e.currentTarget.style.left = "8px")}
+        onBlur={(e) => (e.currentTarget.style.left = "-9999px")}
+      >
+        Skip to main content
+      </a>
+
       {/* NavV2 */}
       <NavV2 city={typedCity} />
 
-      {/* Page-level grid: wayfinder | main content | right rail */}
-      <style>{`
-        .v2-page-grid {
-          max-width: 1440px;
-          margin: 0 auto;
-          padding: 32px 24px;
-          display: grid;
-          grid-template-columns: 220px 1fr 320px;
-          gap: 24px;
-          align-items: start;
-        }
-        @media (max-width: 1199px) {
-          .v2-page-grid {
-            grid-template-columns: 220px 1fr;
-          }
-          .v2-rail {
-            display: none !important;
-          }
-        }
-        @media (max-width: 899px) {
-          .v2-page-grid {
-            grid-template-columns: 1fr;
-          }
-        }
-      `}</style>
+      {/* Page-level grid: wayfinder | main content | right rail.
+          Breakpoints are managed in src/styles/v2-tokens.css (.v2-page-grid) */}
 
       <div className="v2-page-grid">
         {/* Wayfinder rail (sticky left) */}
@@ -112,7 +134,7 @@ export default async function BuildingV2Page({ params }: Props) {
         />
 
         {/* Main content column */}
-        <main style={{ minWidth: 0 }}>
+        <main id="main-content" style={{ minWidth: 0 }}>
           {/* HeroV2 */}
           <HeroV2
             building={building}
