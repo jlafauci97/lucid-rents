@@ -15,6 +15,9 @@ import { S03_TenantReviews } from "@/components/building/v2/sections/S03_TenantR
 import { S04_Amenities } from "@/components/building/v2/sections/S04_Amenities";
 import { S05_Landlord } from "@/components/building/v2/sections/S05_Landlord";
 import { S06_Location } from "@/components/building/v2/sections/S06_Location";
+import { S07_History } from "@/components/building/v2/sections/S07_History";
+import { S08_SimilarNearby } from "@/components/building/v2/sections/S08_SimilarNearby";
+import { S09_FAQ } from "@/components/building/v2/sections/S09_FAQ";
 
 export const revalidate = 86400;
 
@@ -142,10 +145,22 @@ export default async function BuildingV2Page({ params }: Props) {
 
           <S06_Location building={building} city={typedCity} />
 
-          {/* Phase 3+ placeholders */}
-          <div id="history" />
-          <div id="similar" />
-          <div id="faq" />
+          {/* Phase 2C — history, similar, FAQ */}
+          <S07_History
+            timeline={data.timeline}
+            building={building}
+            city={typedCity}
+          />
+
+          <S08_SimilarNearby
+            similar={data.similar}
+            city={typedCity}
+          />
+
+          <S09_FAQ
+            building={building}
+            data={data}
+          />
         </main>
       </div>
     </>
