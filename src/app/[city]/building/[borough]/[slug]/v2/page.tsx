@@ -29,6 +29,7 @@ import { Crumbs } from "@/components/building/v2/Crumbs";
 import { HeroV2 } from "@/components/building/v2/HeroV2";
 import { RecordStrip } from "@/components/building/v2/RecordStrip";
 import { WayfinderRail } from "@/components/building/v2/WayfinderRail";
+import { SideRail } from "@/components/building/v2/SideRail";
 import { S01_RentalIntelligence } from "@/components/building/v2/sections/S01_RentalIntelligence";
 import { S02_Issues } from "@/components/building/v2/sections/S02_Issues";
 import { S03_TenantReviews } from "@/components/building/v2/sections/S03_TenantReviews";
@@ -153,6 +154,9 @@ export default async function BuildingV2Page({ params }: Props) {
             <S08_SimilarNearby similar={data.similar} city={typedCity} />
             <S09_FAQ building={building} data={data} />
           </div>
+
+          {/* ── <aside class="sr">: right rail ── */}
+          <SideRail building={building} data={data} city={typedCity} cityPrefix={cityPrefix} />
         </div>
       </main>
     </>
