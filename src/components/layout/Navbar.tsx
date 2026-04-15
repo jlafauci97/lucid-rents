@@ -128,7 +128,7 @@ export async function Navbar() {
       <div className="nav-inner">
         <Link href="/" className="brand">
           <BrandShield />
-          lucidrents
+          LucidRents
         </Link>
         <NavCityPicker currentCity={city} />
         <NavSearch city={city} />
