@@ -1,0 +1,39 @@
+/* Additive design tokens used only by the v2 building page.
+   Scoped to .v2 so nothing else in the app is affected. */
+.v2 {
+  /* Inks */
+  --v2-ink: #0F1D2E;
+  --v2-ink-soft: #334155;
+  --v2-ink-mute: #64748b;
+  --v2-ink-faint: #94a3b8;
+
+  /* Brand */
+  --v2-navy: #0F1D2E;
+  --v2-brand: #3B82F6;
+  --v2-brand-hi: #2563EB;
+  --v2-sky-deep: #60a5fa;
+  --v2-sky: #dbeafe;
+
+  /* Surfaces */
+  --v2-paper: #f8fafc;
+  --v2-paper-2: #f1f5f9;
+  --v2-surface: #ffffff;
+  --v2-border: #e2e8f0;
+  --v2-border-hi: #cbd5e1;
+
+  /* Semantic */
+  --v2-good: #10b981;
+  --v2-warn: #f59e0b;
+  --v2-bad: #ef4444;
+  --v2-sun: #facc15;
+
+  /* Radii */
+  --v2-radius: 14px;
+  --v2-radius-sm: 8px;
+  --v2-radius-chip: 999px;
+
+  /* Fonts — fall back gracefully if a font variable isn't set */
+  --v2-sans: var(--font-geist-sans, "Geist"), system-ui, -apple-system, sans-serif;
+  --v2-mono: var(--font-geist-mono, "Geist Mono"), ui-monospace, monospace;
+  --v2-serif: var(--font-young-serif, "Young Serif"), "Iowan Old Style", "Palatino", serif;
+}
