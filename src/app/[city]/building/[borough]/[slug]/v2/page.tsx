@@ -1,14 +1,14 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { regionFromSlug } from "@/lib/seo";
-import { VALID_CITIES, type City } from "@/lib/cities";
+import { regionFromSlug, regionSlug } from "@/lib/seo";
+import { VALID_CITIES, CITY_META, type City } from "@/lib/cities";
 import { cache } from "react";
 import type { Building } from "@/types";
 import { loadBuildingV2Data, scoreToGrade } from "./_data";
 import { NavV2 } from "@/components/building/v2/NavV2";
 import { WayfinderRail } from "@/components/building/v2/WayfinderRail";
-import { CITY_META } from "@/lib/cities";
-import { buildingUrl } from "@/lib/seo";
+import { HeroV2 } from "@/components/building/v2/HeroV2";
+import { RecordStrip } from "@/components/building/v2/RecordStrip";
 
 export const revalidate = 86400;
 
@@ -41,38 +41,82 @@ export default async function BuildingV2Page({ params }: Props) {
   const typedCity = city as City;
   const cityPrefix = CITY_META[typedCity].urlPrefix;
   const grade = scoreToGrade(building.overall_score);
-  const reviewsUrl = `/${cityPrefix}/building/${building.borough.toLowerCase().replace(/\s+/g, "-")}/${building.slug}/review`;
+  const reviewsUrl = `/${cityPrefix}/building/${regionSlug(building.borough)}/${building.slug}/review`;
+
+  // Compute HPD, eviction, complaints counts from data bag
+  const hpdCount = data.issues.trends.reduce((sum, t) => sum + (t.hpd ?? 0), 0)
+    + data.issues.hpdTop.reduce((sum, t) => sum + (t.count ?? 0), 0);
+  // Use building.violation_count which is the full HPD tally if trends is sparse
+  const hpdDisplayCount = building.violation_count ?? hpdCount;
+  const evictionCount = building.eviction_count ?? data.issues.trends.reduce((sum, t) => sum + (t.evictions ?? 0), 0);
+  const complaintsCount = building.complaint_count ?? data.issues.trends.reduce((sum, t) => sum + (t.complaints ?? 0), 0);
 
   return (
     <>
+      {/* NavV2 */}
       <NavV2 city={typedCity} />
-      <div
-        style={{
-          maxWidth: 1440,
-          margin: "0 auto",
-          padding: "32px 24px",
-          display: "grid",
-          gridTemplateColumns: "220px 1fr",
-          gap: 24,
-          alignItems: "start",
-        }}
-      >
+
+      {/* Page-level grid: wayfinder | main content */}
+      <style>{`
+        .v2-page-grid {
+          max-width: 1440px;
+          margin: 0 auto;
+          padding: 32px 24px;
+          display: grid;
+          grid-template-columns: 220px 1fr;
+          gap: 24px;
+          align-items: start;
+        }
+        @media (max-width: 899px) {
+          .v2-page-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
+
+      <div className="v2-page-grid">
+        {/* Wayfinder rail (sticky left) */}
         <WayfinderRail
           grade={grade}
           rating={data.reviews.avgRating}
           buildingName={building.full_address}
           reviewsUrl={reviewsUrl}
         />
-        <main>
-          <p style={{ fontFamily: "var(--v2-mono)", color: "var(--v2-ink-mute)", fontSize: 12 }}>
-            V2 PREVIEW · {building.metro}
-          </p>
-          <h1 style={{ fontFamily: "var(--v2-serif)", fontSize: 48, margin: "12px 0" }}>
-            {building.full_address}
-          </h1>
-          <p style={{ color: "var(--v2-ink-soft)", marginBottom: 24 }}>
-            Hero + RecordStrip render below (Task 1.3).
-          </p>
+
+        {/* Main content column */}
+        <main style={{ minWidth: 0 }}>
+          {/* HeroV2 */}
+          <HeroV2
+            building={building}
+            rents={data.rents}
+            reviews={data.reviews}
+            landlord={data.landlord}
+            city={typedCity}
+            cityPrefix={cityPrefix}
+            borough={building.borough}
+            slug={building.slug}
+            grade={grade}
+          />
+
+          {/* RecordStrip */}
+          <RecordStrip
+            building={building}
+            reviews={data.reviews}
+            hpdCount={hpdDisplayCount}
+            evictionCount={evictionCount}
+            complaintsCount={complaintsCount}
+          />
+
+          {/* Section grid (Phase 2 content goes here) */}
+          <div id="rent" />
+          <div id="issues" />
+          <div id="reviews" />
+          <div id="amenities" />
+          <div id="landlord" />
+          <div id="location" />
+          <div id="history" />
+          <div id="similar" />
+          <div id="faq" />
         </main>
       </div>
     </>
