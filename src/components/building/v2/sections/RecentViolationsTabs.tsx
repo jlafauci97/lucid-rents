@@ -126,7 +126,21 @@ export function RecentViolationsTabs({ rows }: { rows: Row[] }) {
               key={t}
               role="tab"
               aria-selected={active}
+              aria-controls={`tab-panel-${t}`}
+              id={`tab-${t}`}
               onClick={() => setTab(t)}
+              onKeyDown={(e) => {
+                if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+                  const tabs: Tab[] = ["HPD", "DOB", "311"];
+                  const idx = tabs.indexOf(t);
+                  const next = e.key === "ArrowRight"
+                    ? tabs[(idx + 1) % tabs.length]
+                    : tabs[(idx - 1 + tabs.length) % tabs.length];
+                  setTab(next);
+                  const nextBtn = document.getElementById(`tab-${next}`);
+                  nextBtn?.focus();
+                }
+              }}
               style={{
                 padding: "10px 16px",
                 border: "none",
@@ -163,6 +177,9 @@ export function RecentViolationsTabs({ rows }: { rows: Row[] }) {
       {/* Violation rows */}
       {filtered.length === 0 ? (
         <div
+          role="tabpanel"
+          id={`tab-panel-${tab}`}
+          aria-labelledby={`tab-${tab}`}
           style={{
             padding: "24px",
             fontFamily: "var(--v2-sans)",
@@ -179,6 +196,9 @@ export function RecentViolationsTabs({ rows }: { rows: Row[] }) {
         </div>
       ) : (
         <ul
+          role="tabpanel"
+          id={`tab-panel-${tab}`}
+          aria-labelledby={`tab-${tab}`}
           style={{
             listStyle: "none",
             margin: 0,

@@ -373,14 +373,14 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
         body: String((r as { body: string | null }).body ?? ""),
         rating: Number((r as { overall_rating: number | null }).overall_rating ?? 0),
         created_at: String((r as { created_at: string | null }).created_at ?? ""),
-        display_name:
-          (r as { profile?: { display_name: string | null } | Array<{ display_name: string | null }> }).profile
-            ? Array.isArray(
-                (r as { profile: { display_name: string | null } | Array<{ display_name: string | null }> }).profile
-              )
-              ? ((r as { profile: Array<{ display_name: string | null }> }).profile[0]?.display_name ?? null)
-              : ((r as { profile: { display_name: string | null } }).profile.display_name ?? null)
-            : null,
+        display_name: (() => {
+          const raw = (r as unknown as { profile?: unknown }).profile;
+          if (!raw) return null;
+          if (Array.isArray(raw)) {
+            return (raw as Array<{ display_name: string | null }>)[0]?.display_name ?? null;
+          }
+          return (raw as { display_name: string | null }).display_name ?? null;
+        })(),
       }));
     }, [] as BuildingV2Data["reviews"]["pullQuotes"]),
 

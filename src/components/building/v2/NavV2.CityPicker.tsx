@@ -43,6 +43,7 @@ export function NavV2CityPicker({ currentCity }: Props) {
           cursor: "pointer",
           whiteSpace: "nowrap",
         }}
+        aria-label={`Switch city, currently ${current.name}`}
         aria-haspopup="listbox"
         aria-expanded={open}
       >

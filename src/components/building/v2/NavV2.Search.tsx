@@ -21,7 +21,7 @@ export function NavV2Search({ city }: Props) {
   }
 
   return (
-    <form onSubmit={handleSubmit} style={{ flex: 1, maxWidth: 400 }}>
+    <form onSubmit={handleSubmit} className="v2-nav-search" style={{ flex: 1, maxWidth: 400 }} role="search" aria-label="Search buildings and landlords">
       <div
         style={{
           display: "flex",
@@ -35,7 +35,7 @@ export function NavV2Search({ city }: Props) {
         }}
       >
         {/* Search icon */}
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.55)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.55)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }} aria-hidden="true">
           <circle cx="11" cy="11" r="8"/>
           <line x1="21" y1="21" x2="16.65" y2="16.65"/>
         </svg>
@@ -44,6 +44,7 @@ export function NavV2Search({ city }: Props) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search an address, building, or landlord…"
+          aria-label="Search an address, building, or landlord"
           style={{
             flex: 1,
             background: "transparent",

@@ -7,7 +7,7 @@ import type { City } from "@/lib/cities";
 
 function MiniBuilding() {
   return (
-    <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: 44, height: 44, flexShrink: 0 }}>
+    <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{ width: 44, height: 44, flexShrink: 0 }}>
       <rect x="9" y="11" width="42" height="44" fill="#dbeafe" stroke="#93c5fd" strokeWidth="1.5" />
       <path d="M9 11 L30 3 L51 11" fill="#bfdbfe" stroke="#93c5fd" strokeWidth="1.5" strokeLinejoin="round" />
       <rect x="15" y="16" width="7" height="7" fill="#3b82f6" rx="1" />

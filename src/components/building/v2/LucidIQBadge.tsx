@@ -55,7 +55,7 @@ export function LucidIQBadge({ grade, rating, size = 160 }: Props) {
   const hexWidth = size;
   const hexHeight = size * 1.15;
   const color = GRADE_COLORS[grade] ?? "var(--v2-brand)";
-  const gradId = "liq-hex-grad";
+  const gradId = `liq-hex-grad-${size}`;
 
   // Build a hexagon polygon for SVG
   // Flat-top hexagon: 6 points
@@ -69,6 +69,8 @@ export function LucidIQBadge({ grade, rating, size = 160 }: Props) {
 
   return (
     <div
+      role="img"
+      aria-label={`LucidIQ score badge: grade ${grade}, rating ${rating.toFixed(1)} out of 5`}
       style={{
         display: "flex",
         flexDirection: "column",
@@ -82,6 +84,7 @@ export function LucidIQBadge({ grade, rating, size = 160 }: Props) {
           width={hexWidth}
           height={hexHeight}
           viewBox={`0 0 ${hexWidth} ${hexHeight}`}
+          aria-hidden="true"
           style={{ display: "block" }}
         >
           <defs>
