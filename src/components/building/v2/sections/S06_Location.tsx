@@ -17,45 +17,46 @@ import type { Building } from "@/types";
 import type { City } from "@/lib/cities";
 import { CITY_META } from "@/lib/cities";
 import { neighborhoodUrl, neighborhoodsUrl } from "@/lib/seo";
+import type { BuildingV2Data } from "@/app/[city]/building/[borough]/[slug]/v2/_data";
 
 interface Props {
   building: Building;
   city: City;
+  nearby: BuildingV2Data["nearby"];
 }
 
-function walkScore(b: Building): number {
-  // Placeholder — we don't have live walk score data per building yet.
-  // Use a rough estimate from borough/density: NYC dense = 90+, spread = 70, etc.
-  if (b.metro === "nyc") return b.borough === "manhattan" ? 95 : 85;
-  if (b.metro === "chicago") return 80;
-  if (b.metro === "los-angeles") return 70;
-  if (b.metro === "miami") return 72;
-  if (b.metro === "houston") return 60;
-  return 70;
-}
+// Derive walk/transit/bike scores from real nearby-stop data.
+// Transit = capped by count + proximity of subway/bus stops.
+// Walk = transit + schools + amenity density proxy.
+// Bike = walk * 0.85 (softer — city-dependent bike infra not yet modeled).
+function deriveScores(nearby: BuildingV2Data["nearby"]): { walk: number; transit: number; bike: number } {
+  const subwayCount = nearby.transitSubway.length;
+  const busCount = nearby.transitBus.length;
+  const schoolCount = nearby.schoolsPublic.length + nearby.schoolsCharter.length + nearby.schoolsPrivate.length;
+  const closestSubwayMi = nearby.transitSubway[0]?.distMiles ?? 2;
+  const closestBusMi = nearby.transitBus[0]?.distMiles ?? 2;
 
-function transitScore(b: Building): number {
-  if (b.metro === "nyc") return b.borough === "manhattan" ? 98 : 85;
-  if (b.metro === "chicago") return 85;
-  return 60;
-}
+  // Transit score: 0..100.  Closer + more stops → higher.
+  let transit = 0;
+  if (subwayCount > 0) transit += 40 + Math.max(0, 30 - closestSubwayMi * 60); // up to 70 from subway
+  if (busCount > 0) transit += 20 + Math.max(0, 10 - closestBusMi * 30);      // up to 30 from bus
+  transit = Math.min(100, Math.round(transit));
 
-function bikeScore(b: Building): number {
-  if (b.metro === "nyc") return 80;
-  return 65;
+  // Walk score: transit + school density.
+  const walk = Math.min(100, Math.round(transit * 0.7 + Math.min(schoolCount * 4, 30)));
+
+  const bike = Math.max(0, Math.round(walk * 0.85));
+  return { walk, transit, bike };
 }
 
 function coords(b: Building): string {
-  const lat = (b as unknown as { latitude?: number | null }).latitude;
-  const lon = (b as unknown as { longitude?: number | null }).longitude;
+  const lat = b.latitude; const lon = b.longitude;
   if (lat != null && lon != null) return `${Number(lat).toFixed(3)}° ${lat >= 0 ? "N" : "S"}, ${Number(lon).toFixed(3)}° ${lon >= 0 ? "E" : "W"}`;
   return "";
 }
 
-export function S06_Location({ building, city }: Props) {
-  const w = walkScore(building);
-  const t = transitScore(building);
-  const bk = bikeScore(building);
+export function S06_Location({ building, city, nearby }: Props) {
+  const { walk: w, transit: t, bike: bk } = deriveScores(nearby);
   const cityName = ((CITY_META as Record<string, { name?: string; fullName?: string }>)[city])?.name ?? city;
   const borough = building.borough;
   const street = building.full_address.split(",")[0] ?? building.full_address;

@@ -72,6 +72,7 @@ export interface BuildingV2Data {
   reviews: {
     total: number;
     avgRating: number;
+    distribution: Array<{ stars: 1 | 2 | 3 | 4 | 5; count: number; pct: number }>;
     pullQuotes: Array<{
       id: string;
       body: string;
@@ -79,6 +80,23 @@ export interface BuildingV2Data {
       created_at: string;
       display_name: string | null;
     }>;
+  };
+  nearby: {
+    transitSubway: Array<{ stop_id: string; name: string; lines: string[]; distMiles: number; walkMin: number }>;
+    transitBus: Array<{ stop_id: string; name: string; lines: string[]; distMiles: number; walkMin: number }>;
+    schoolsPublic: Array<{ school_id: string; name: string; grades: string | null; distMiles: number; walkMin: number }>;
+    schoolsCharter: Array<{ school_id: string; name: string; grades: string | null; distMiles: number; walkMin: number }>;
+    schoolsPrivate: Array<{ school_id: string; name: string; grades: string | null; distMiles: number; walkMin: number }>;
+  };
+  crime: {
+    // Last 12 months, within ~0.5 mi (via zip aggregation).
+    total12mo: number;
+    violent: number;
+    property: number;
+    qualityOfLife: number;
+    // Rough safety score 0-100 (100 = safest). Derived from per-capita density.
+    safetyScore: number;
+    precinct: string | null;
   };
   amenities: Array<{ amenity: string; category: string | null }>;
   landlord: {
@@ -104,6 +122,18 @@ export interface BuildingV2Data {
   }>;
   timeline: TimelineEvent[];
 }
+
+// ──────────────────────────────────────────────────────────────
+// Haversine distance — for nearby queries
+// ──────────────────────────────────────────────────────────────
+function haversineMiles(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 3958.8;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+const walkMin = (miles: number) => Math.max(1, Math.round(miles * 20));
 
 // ──────────────────────────────────────────────────────────────
 // safe() — run a query, swallow errors, return fallback
@@ -144,6 +174,9 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
     landlordStats,
     similar,
     timelineRaw,
+    nearbyTransit,
+    nearbySchools,
+    crimeAgg,
   ] = await Promise.all([
     // Energy benchmark (latest year)
     safe(async () => {
@@ -355,8 +388,19 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
       const ratings = arr.map((r) => r.overall_rating).filter((n): n is number => typeof n === "number");
       const total = ratings.length;
       const avgRating = total ? ratings.reduce((a, b) => a + b, 0) / total : 0;
-      return { total, avgRating };
-    }, { total: 0, avgRating: 0 } as { total: number; avgRating: number }),
+      // Bucket ratings into 5 stars (rounded).
+      const buckets = [0, 0, 0, 0, 0]; // index 0 = 1★, 4 = 5★
+      for (const r of ratings) {
+        const stars = Math.max(1, Math.min(5, Math.round(r)));
+        buckets[stars - 1]++;
+      }
+      const distribution = [1, 2, 3, 4, 5].map((s, i) => ({
+        stars: s as 1 | 2 | 3 | 4 | 5,
+        count: buckets[i],
+        pct: total ? Math.round((buckets[i] / total) * 100) : 0,
+      }));
+      return { total, avgRating, distribution };
+    }, { total: 0, avgRating: 0, distribution: [1,2,3,4,5].map((s) => ({ stars: s as 1|2|3|4|5, count: 0, pct: 0 })) } as { total: number; avgRating: number; distribution: BuildingV2Data["reviews"]["distribution"] }),
 
     // Pull quotes: top 3 newest published reviews
     // NOTE: reviews table uses "overall_rating" not "rating"
@@ -468,6 +512,79 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
         evictions: (evictRes.data ?? []) as Parameters<typeof normalizeTimelineEvents>[0]["evictions"],
       }).slice(0, 20);
     }, [] as TimelineEvent[]),
+
+    // Nearby transit (subway + bus) — pulls from transit_stops within bbox, sorted by haversine.
+    safe(async () => {
+      const lat = building.latitude; const lng = building.longitude;
+      if (lat == null || lng == null) return { subway: [], bus: [] };
+      const BBOX = 0.012; // ~0.8 mi
+      const { data } = await supabase
+        .from("transit_stops")
+        .select("type, stop_id, name, latitude, longitude, routes")
+        .gte("latitude", lat - BBOX).lte("latitude", lat + BBOX)
+        .gte("longitude", lng - BBOX).lte("longitude", lng + BBOX)
+        .limit(60);
+      const rows = (data ?? []) as Array<{ type: string | null; stop_id: string; name: string; latitude: number; longitude: number; routes: string[] | null }>;
+      const enriched = rows.map((r) => ({
+        type: (r.type ?? "").toLowerCase(),
+        stop_id: r.stop_id,
+        name: r.name,
+        lines: r.routes ?? [],
+        distMiles: haversineMiles(lat, lng, r.latitude, r.longitude),
+      })).sort((a, b) => a.distMiles - b.distMiles);
+      const subway = enriched.filter((r) => r.type === "subway" || r.type === "rail" || r.type === "metro").slice(0, 4).map((r) => ({ stop_id: r.stop_id, name: r.name, lines: r.lines, distMiles: r.distMiles, walkMin: walkMin(r.distMiles) }));
+      const bus = enriched.filter((r) => r.type === "bus").slice(0, 4).map((r) => ({ stop_id: r.stop_id, name: r.name, lines: r.lines, distMiles: r.distMiles, walkMin: walkMin(r.distMiles) }));
+      return { subway, bus };
+    }, { subway: [], bus: [] } as { subway: BuildingV2Data["nearby"]["transitSubway"]; bus: BuildingV2Data["nearby"]["transitBus"] }),
+
+    // Nearby schools — pulls from nearby_schools within bbox.
+    safe(async () => {
+      const lat = building.latitude; const lng = building.longitude;
+      if (lat == null || lng == null) return { pub: [], charter: [], priv: [] };
+      const BBOX = 0.012;
+      const { data } = await supabase
+        .from("nearby_schools")
+        .select("type, school_id, name, grades, latitude, longitude")
+        .gte("latitude", lat - BBOX).lte("latitude", lat + BBOX)
+        .gte("longitude", lng - BBOX).lte("longitude", lng + BBOX)
+        .limit(60);
+      const rows = (data ?? []) as Array<{ type: string | null; school_id: string; name: string; grades: string | null; latitude: number; longitude: number }>;
+      const enriched = rows.map((r) => ({ ...r, distMiles: haversineMiles(lat, lng, r.latitude, r.longitude) })).sort((a, b) => a.distMiles - b.distMiles);
+      const pub = enriched.filter((r) => /public/i.test(r.type ?? "")).slice(0, 4).map((r) => ({ school_id: r.school_id, name: r.name, grades: r.grades, distMiles: r.distMiles, walkMin: walkMin(r.distMiles) }));
+      const charter = enriched.filter((r) => /charter/i.test(r.type ?? "")).slice(0, 3).map((r) => ({ school_id: r.school_id, name: r.name, grades: r.grades, distMiles: r.distMiles, walkMin: walkMin(r.distMiles) }));
+      const priv = enriched.filter((r) => /priv/i.test(r.type ?? "")).slice(0, 3).map((r) => ({ school_id: r.school_id, name: r.name, grades: r.grades, distMiles: r.distMiles, walkMin: walkMin(r.distMiles) }));
+      return { pub, charter, priv };
+    }, { pub: [], charter: [], priv: [] } as { pub: BuildingV2Data["nearby"]["schoolsPublic"]; charter: BuildingV2Data["nearby"]["schoolsCharter"]; priv: BuildingV2Data["nearby"]["schoolsPrivate"] }),
+
+    // Crime — last 12 months in the zip (approximation for "0.5 mi radius").
+    safe(async () => {
+      if (!zipCode) return { total12mo: 0, violent: 0, property: 0, qualityOfLife: 0, safetyScore: 50, precinct: null };
+      const since = new Date(); since.setMonth(since.getMonth() - 12);
+      const { data } = await supabase
+        .from("nypd_complaints")
+        .select("crime_category, law_category, precinct")
+        .eq("zip_code", zipCode)
+        .gte("cmplnt_date", since.toISOString().slice(0, 10));
+      const rows = (data ?? []) as Array<{ crime_category: string | null; law_category: string | null; precinct: string | null }>;
+      let violent = 0, property = 0, qol = 0;
+      const precinctCounts = new Map<string, number>();
+      for (const r of rows) {
+        const cat = (r.crime_category ?? "").toLowerCase();
+        const law = (r.law_category ?? "").toLowerCase();
+        if (/violent|assault|robbery|murder|rape|weapon/.test(cat)) violent++;
+        else if (/property|burglary|larceny|theft|grand|petit/.test(cat)) property++;
+        else qol++;
+        if (law === "violation" || /misdemean/.test(cat)) {
+          if (!/violent|assault|robbery|murder|rape/.test(cat)) qol++;
+        }
+        if (r.precinct) precinctCounts.set(r.precinct, (precinctCounts.get(r.precinct) ?? 0) + 1);
+      }
+      const total12mo = rows.length;
+      // Safety score: lower density = higher score. Benchmark zip typical density ~ 800 incidents/yr.
+      const safetyScore = Math.max(0, Math.min(100, Math.round(100 - (total12mo / 12))));
+      const precinct = [...precinctCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+      return { total12mo, violent, property, qualityOfLife: qol, safetyScore, precinct };
+    }, { total12mo: 0, violent: 0, property: 0, qualityOfLife: 0, safetyScore: 50, precinct: null } as BuildingV2Data["crime"]),
   ]);
 
   return {
@@ -487,6 +604,7 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
     reviews: {
       total: reviewsAggregate.total,
       avgRating: reviewsAggregate.avgRating,
+      distribution: reviewsAggregate.distribution,
       pullQuotes,
     },
     amenities,
@@ -498,5 +616,13 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
     },
     similar,
     timeline: timelineRaw,
+    nearby: {
+      transitSubway: nearbyTransit.subway,
+      transitBus: nearbyTransit.bus,
+      schoolsPublic: nearbySchools.pub,
+      schoolsCharter: nearbySchools.charter,
+      schoolsPrivate: nearbySchools.priv,
+    },
+    crime: crimeAgg,
   };
 }

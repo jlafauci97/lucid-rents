@@ -33,20 +33,10 @@ export function S03_TenantReviews({ reviews, seeAllUrl }: Props) {
   const rating = reviews.avgRating || 0;
   const filledStars = Math.round(rating);
 
-  // We don't currently have a per-star distribution in the data bag — render
-  // placeholder bars that sum to 100% and match the mockup's bar structure.
-  // When we start loading the distribution, swap these percentages for real.
-  const dist = [0, 0, 0, 0, 0];
-  if (reviews.total > 0) {
-    // Naive synth: weight by avgRating so the tallest bar lines up visually.
-    const weights = [0.05, 0.1, 0.15, 0.25, 0.45]; // from 1★→5★
-    // Shift weights so peak aligns with rating bucket.
-    const shift = Math.max(0, Math.min(4, Math.round(rating) - 5));
-    for (let i = 0; i < 5; i++) {
-      const srcIdx = Math.max(0, Math.min(4, i + shift));
-      dist[i] = Math.round(weights[srcIdx] * 100);
-    }
-  }
+  // Real 5-star distribution from the data bag (computed in _data.ts).
+  // reviews.distribution is ordered [1★, 2★, 3★, 4★, 5★]; UI renders top-down
+  // (5★ first) so the array usage below is reverse-indexed.
+  const dist: number[] = reviews.distribution?.map((b) => b.pct) ?? [0, 0, 0, 0, 0];
 
   return (
     <section className="section" id="reviews">
