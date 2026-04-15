@@ -19,7 +19,7 @@ import { CITY_META } from "@/lib/cities";
 import { neighborhoodUrl, neighborhoodsUrl } from "@/lib/seo";
 import { getNeighborhoodNameByCity } from "@/lib/neighborhoods";
 import { getNeighborhoodVibe } from "@/lib/neighborhood-vibes";
-import type { BuildingV2Data } from "@/app/[city]/building/[borough]/[slug]/v2/_data";
+import type { BuildingV2Data } from "@/app/[city]/building/[borough]/[slug]/_data";
 import { BigMap } from "@/components/building/v2/BigMap";
 
 interface Props {

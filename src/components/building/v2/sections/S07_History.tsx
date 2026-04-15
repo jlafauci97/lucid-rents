@@ -6,7 +6,7 @@
  * evictions live in the Violations section (S02) — they don't belong here.
  */
 
-import type { BuildingV2Data } from "@/app/[city]/building/[borough]/[slug]/v2/_data";
+import type { BuildingV2Data } from "@/app/[city]/building/[borough]/[slug]/_data";
 import type { Building } from "@/types";
 
 interface Props {

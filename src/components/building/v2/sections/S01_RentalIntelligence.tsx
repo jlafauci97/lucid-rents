@@ -17,7 +17,7 @@
  * JSX transforms + data substitutions.
  */
 
-import type { BuildingV2Data } from "@/app/[city]/building/[borough]/[slug]/v2/_data";
+import type { BuildingV2Data } from "@/app/[city]/building/[borough]/[slug]/_data";
 
 interface Props {
   rents: BuildingV2Data["rents"];

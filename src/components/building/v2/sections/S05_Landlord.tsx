@@ -10,7 +10,7 @@
  */
 
 import Link from "next/link";
-import type { BuildingV2Data } from "@/app/[city]/building/[borough]/[slug]/v2/_data";
+import type { BuildingV2Data } from "@/app/[city]/building/[borough]/[slug]/_data";
 import type { Building } from "@/types";
 import type { City } from "@/lib/cities";
 import { landlordUrl, buildingUrl } from "@/lib/seo";

@@ -15,7 +15,7 @@
  *   </section>
  */
 
-import type { BuildingV2Data } from "@/app/[city]/building/[borough]/[slug]/v2/_data";
+import type { BuildingV2Data } from "@/app/[city]/building/[borough]/[slug]/_data";
 
 interface Props {
   amenities: BuildingV2Data["amenities"];

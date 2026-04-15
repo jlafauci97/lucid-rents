@@ -11,7 +11,7 @@
  *   5. .ww-card .ww-mt "Recent records" — .rec-tabs + .rec-list + .ww-seeall
  */
 
-import type { BuildingV2Data } from "@/app/[city]/building/[borough]/[slug]/v2/_data";
+import type { BuildingV2Data } from "@/app/[city]/building/[borough]/[slug]/_data";
 
 interface Props {
   issues: BuildingV2Data["issues"];

@@ -18,7 +18,7 @@
  */
 
 import type { Building } from "@/types";
-import type { BuildingV2Data } from "@/app/[city]/building/[borough]/[slug]/v2/_data";
+import type { BuildingV2Data } from "@/app/[city]/building/[borough]/[slug]/_data";
 import { generateBuildingFAQ } from "@/lib/faq/building-faq";
 
 interface Props {
