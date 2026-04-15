@@ -256,28 +256,38 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
       }));
     }, [] as BuildingV2Data["rents"]["neighborhood"]),
 
-    // Top HPD violation categories — categorize by nov_description (Paint/Plaster,
-    // Water Leak, Door/Lock, etc.), NOT by class letter. Matches production page.
+    // Top HPD violation categories — categorize by nov_description
+    // (Paint/Plaster, Water Leak, Heat/Hot Water, etc.) to match the production
+    // page. Query nov_description without a non-null filter so rows with
+    // empty descriptions still count as "Other uncategorized" rather than
+    // silently falling back to raw class letters.
     safe(async () => {
       const { data } = await supabase
         .from("hpd_violations")
         .select("nov_description")
         .eq("building_id", buildingId)
-        .not("nov_description", "is", null)
         .order("inspection_date", { ascending: false })
         .limit(200);
       if (!data) return [];
       const counts = new Map<string, number>();
+      let uncategorized = 0;
       for (const row of data) {
         const desc = (row as { nov_description: string | null }).nov_description ?? "";
+        if (!desc.trim()) { uncategorized++; continue; }
         const cat = categorizeHpdViolation(desc);
-        if (cat === "Other") continue;
+        if (cat === "Other") { uncategorized++; continue; }
         counts.set(cat, (counts.get(cat) ?? 0) + 1);
       }
-      return Array.from(counts.entries())
+      const ranked = Array.from(counts.entries())
         .map(([category, count]) => ({ category, count }))
         .sort((a, b) => b.count - a.count)
         .slice(0, 5);
+      // If every violation fell through to Other (description missing), surface
+      // a single "Uncategorized" row so the card still has meaningful content.
+      if (ranked.length === 0 && uncategorized > 0) {
+        return [{ category: "Uncategorized", count: uncategorized }];
+      }
+      return ranked;
     }, [] as BuildingV2Data["issues"]["hpdTop"]),
 
     // Top 311 complaint types
