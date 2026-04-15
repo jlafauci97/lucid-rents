@@ -1,62 +1,36 @@
+/**
+ * Building V2 page — skeleton that matches the mockup structure.
+ *
+ * Mockup reference: public/mockups/building-v1.html
+ *
+ * Structure being built out section by section (verbatim ports):
+ *   <nav class="nav">              ← NavV2            ✅ done
+ *   <main class="container">
+ *     <nav class="crumbs">         ← Crumbs           ✅ done
+ *     <section class="hero">       ← Hero             ⏳ TODO
+ *     <section class="record">     ← RecordStrip      ⏳ TODO
+ *     <div class="layout">
+ *       <aside class="wayfinder">  ← WayfinderRail    ⏳ TODO
+ *       <main class="main">
+ *         9 sections               ← S01–S09          ⏳ TODO
+ *       <aside class="sr">         ← Right rail       ⏳ TODO
+ */
+
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
-import { regionFromSlug, regionSlug, buildingUrl, canonicalUrl } from "@/lib/seo";
+import { regionFromSlug, buildingUrl, canonicalUrl } from "@/lib/seo";
 import { VALID_CITIES, CITY_META, type City } from "@/lib/cities";
 import { cache } from "react";
 import type { Building } from "@/types";
-import { loadBuildingV2Data, scoreToGrade } from "./_data";
+import { loadBuildingV2Data } from "./_data";
 import { NavV2 } from "@/components/building/v2/NavV2";
 import { Crumbs } from "@/components/building/v2/Crumbs";
-import { WayfinderRail } from "@/components/building/v2/WayfinderRail";
-import { HeroV2 } from "@/components/building/v2/HeroV2";
-import { RecordStrip } from "@/components/building/v2/RecordStrip";
-import { S01_RentalIntelligence } from "@/components/building/v2/sections/S01_RentalIntelligence";
-import { S02_Issues } from "@/components/building/v2/sections/S02_Issues";
-import { S03_TenantReviews } from "@/components/building/v2/sections/S03_TenantReviews";
-import { S04_Amenities } from "@/components/building/v2/sections/S04_Amenities";
-import { S05_Landlord } from "@/components/building/v2/sections/S05_Landlord";
-import { S06_Location } from "@/components/building/v2/sections/S06_Location";
-import { S07_History } from "@/components/building/v2/sections/S07_History";
-import { S08_SimilarNearby } from "@/components/building/v2/sections/S08_SimilarNearby";
-import { S09_FAQ } from "@/components/building/v2/sections/S09_FAQ";
-import { RailContainer } from "@/components/building/v2/rail/RailContainer";
-import { R01_RentComparison } from "@/components/building/v2/rail/R01_RentComparison";
-import { R02_ReviewSummary } from "@/components/building/v2/rail/R02_ReviewSummary";
-import { R03_EnergyScore } from "@/components/building/v2/rail/R03_EnergyScore";
-import { R04_WalkTransit } from "@/components/building/v2/rail/R04_WalkTransit";
-import { R05_NearbyTransit } from "@/components/building/v2/rail/R05_NearbyTransit";
-import { R06_NearbySchools } from "@/components/building/v2/rail/R06_NearbySchools";
-import { R07_NearbyRecreation } from "@/components/building/v2/rail/R07_NearbyRecreation";
-import { R08_SafetyCrime } from "@/components/building/v2/rail/R08_SafetyCrime";
-import { R09_AtAGlance } from "@/components/building/v2/rail/R09_AtAGlance";
-import { R10_SimilarBuildingsRail } from "@/components/building/v2/rail/R10_SimilarBuildingsRail";
 
 export const revalidate = 86400;
 
 interface Props {
   params: Promise<{ city: string; borough: string; slug: string }>;
-}
-
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { city, borough, slug } = await params;
-  const building = await getBuilding(borough, slug, city);
-  if (!building) {
-    return {
-      title: "Building · v2 preview",
-      robots: { index: false, follow: false },
-    };
-  }
-  const productionPath = buildingUrl(
-    { borough: building.borough, slug: building.slug },
-    city as City
-  );
-  return {
-    title: `${building.full_address} · v2 preview`,
-    description: `Preview of redesigned building page for ${building.full_address}.`,
-    robots: { index: false, follow: false },
-    alternates: { canonical: canonicalUrl(productionPath) },
-  };
 }
 
 const getBuilding = cache(async (boroughSlug: string, slug: string, metro: string) => {
@@ -73,144 +47,68 @@ const getBuilding = cache(async (boroughSlug: string, slug: string, metro: strin
   return (data?.[0] as Building) ?? null;
 });
 
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { city, borough, slug } = await params;
+  if (!VALID_CITIES.includes(city as City)) {
+    return { title: "Building · v2 preview", robots: { index: false, follow: false } };
+  }
+  const building = await getBuilding(borough, slug, city);
+  if (!building) {
+    return { title: "Building · v2 preview", robots: { index: false, follow: false } };
+  }
+  const productionPath = buildingUrl({ borough: building.borough, slug: building.slug }, city as City);
+  return {
+    title: `${building.full_address} · v2 preview`,
+    description: `Preview of redesigned building page for ${building.full_address}.`,
+    robots: { index: false, follow: false },
+    alternates: { canonical: canonicalUrl(productionPath) },
+  };
+}
+
 export default async function BuildingV2Page({ params }: Props) {
   const { city, borough, slug } = await params;
   if (!VALID_CITIES.includes(city as City)) notFound();
-  const building = await getBuilding(borough, slug, city);
+  const typedCity = city as City;
+  const building = await getBuilding(borough, slug, typedCity);
   if (!building) notFound();
 
   const data = await loadBuildingV2Data(building);
+  // Suppress unused-var lint while sections are being built; the loader still
+  // runs so we catch data issues early.
+  void data;
 
-  const typedCity = city as City;
-  const cityPrefix = CITY_META[typedCity].urlPrefix;
-  const grade = scoreToGrade(building.overall_score);
-  const reviewsUrl = `/${cityPrefix}/building/${regionSlug(building.borough)}/${building.slug}/review`;
-
-  // Compute HPD, eviction, complaints counts from data bag
-  const hpdCount = data.issues.trends.reduce((sum, t) => sum + (t.hpd ?? 0), 0)
-    + data.issues.hpdTop.reduce((sum, t) => sum + (t.count ?? 0), 0);
-  // Use building.violation_count which is the full HPD tally if trends is sparse
-  const hpdDisplayCount = building.violation_count ?? hpdCount;
-  const evictionCount = building.eviction_count ?? data.issues.trends.reduce((sum, t) => sum + (t.evictions ?? 0), 0);
-  const complaintsCount = building.complaint_count ?? data.issues.trends.reduce((sum, t) => sum + (t.complaints ?? 0), 0);
+  const addressFirstLine = building.full_address.split(",")[0] ?? building.full_address;
 
   return (
     <>
-      {/* Skip to main content (a11y) — CSS-only, no client handlers */}
-      <a href="#main-content" className="v2-skip-link">
-        Skip to main content
-      </a>
+      {/* Skip to main content (a11y) */}
+      <a href="#main-content" className="v2-skip-link">Skip to main content</a>
 
-      {/* NavV2 — exact mockup port */}
+      {/* ────── <nav class="nav"> ────── */}
       <NavV2 city={typedCity} />
 
-      {/* Crumbs — exact mockup port, inside the mockup's `.container` wrapper */}
+      {/* ────── <main class="container"> ────── */}
       <main className="container">
+        {/* ── <nav class="crumbs"> ── */}
         <Crumbs
           city={typedCity}
           boroughSlug={borough}
           boroughName={building.borough}
           neighborhoodSlug={null}
           neighborhoodName={null}
-          addressLabel={building.full_address.split(",")[0] ?? building.full_address}
+          addressLabel={addressFirstLine}
         />
+
+        {/* Placeholders for the sections we're rebuilding verbatim */}
+        <div id="main-content" style={{ padding: "48px 0", color: "var(--ink-mute)", fontFamily: "var(--mono)", fontSize: "var(--f-14)" }}>
+          <p style={{ marginBottom: 12 }}>
+            V2 preview — rebuilding section-by-section from mockup.
+          </p>
+          <p style={{ marginBottom: 4 }}>✅ NavV2 (lines 2940–2961)</p>
+          <p style={{ marginBottom: 4 }}>✅ Crumbs (lines 2966–2972)</p>
+          <p style={{ marginBottom: 4, opacity: 0.5 }}>⏳ Hero, RecordStrip, Wayfinder, 9 sections, right rail</p>
+        </div>
       </main>
-
-      {/* Legacy grid (will be replaced section-by-section with exact mockup layout) */}
-      <div className="v2-page-grid">
-        {/* Wayfinder rail (sticky left) */}
-        <WayfinderRail
-          grade={grade}
-          rating={data.reviews.avgRating}
-          buildingName={building.full_address}
-          reviewsUrl={reviewsUrl}
-        />
-
-        {/* Main content column */}
-        <main id="main-content" style={{ minWidth: 0 }}>
-          {/* HeroV2 */}
-          <HeroV2
-            building={building}
-            rents={data.rents}
-            reviews={data.reviews}
-            landlord={data.landlord}
-            city={typedCity}
-            cityPrefix={cityPrefix}
-            borough={building.borough}
-            slug={building.slug}
-            grade={grade}
-          />
-
-          {/* RecordStrip */}
-          <RecordStrip
-            building={building}
-            reviews={data.reviews}
-            hpdCount={hpdDisplayCount}
-            evictionCount={evictionCount}
-            complaintsCount={complaintsCount}
-          />
-
-          {/* Phase 2A — main content sections */}
-          <S01_RentalIntelligence
-            rents={data.rents}
-            neighborhoodName={building.borough ?? "your neighborhood"}
-            zipCode={building.zip_code ?? null}
-          />
-
-          <S02_Issues
-            issues={data.issues}
-            buildingName={building.full_address}
-          />
-
-          <S03_TenantReviews
-            reviews={data.reviews}
-            reviewsUrl={`/${cityPrefix}/building/${regionSlug(building.borough)}/${building.slug}/reviews`}
-          />
-
-          {/* Phase 2B — amenities, landlord, location */}
-          <S04_Amenities amenities={data.amenities} />
-
-          <S05_Landlord
-            landlord={data.landlord}
-            city={typedCity}
-            currentBuildingSlug={slug}
-            currentBuildingBorough={building.borough}
-          />
-
-          <S06_Location building={building} city={typedCity} />
-
-          {/* Phase 2C — history, similar, FAQ */}
-          <S07_History
-            timeline={data.timeline}
-            building={building}
-            city={typedCity}
-          />
-
-          <S08_SimilarNearby
-            similar={data.similar}
-            city={typedCity}
-          />
-
-          <S09_FAQ
-            building={building}
-            data={data}
-          />
-        </main>
-
-        {/* Phase 3 — right rail */}
-        <RailContainer>
-          <R01_RentComparison rents={data.rents} buildingName={building.full_address} />
-          <R02_ReviewSummary reviews={data.reviews} />
-          <R03_EnergyScore energy={data.energy} city={typedCity} />
-          <R04_WalkTransit building={building} />
-          <R05_NearbyTransit building={building} />
-          <R06_NearbySchools building={building} />
-          <R07_NearbyRecreation building={building} />
-          <R08_SafetyCrime building={building} />
-          <R09_AtAGlance building={building} />
-          <R10_SimilarBuildingsRail similar={data.similar} city={typedCity} />
-        </RailContainer>
-      </div>
     </>
   );
 }
