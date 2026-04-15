@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import type { Building, EnergyBenchmark } from "@/types";
+import { normalizeTimelineEvents, type TimelineEvent } from "@/lib/timeline";
 
 // ──────────────────────────────────────────────────────────────
 // scoreToGrade — maps 0-100 overall score → letter grade
@@ -101,6 +102,7 @@ export interface BuildingV2Data {
     year_built: number | null;
     total_units: number | null;
   }>;
+  timeline: TimelineEvent[];
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -141,6 +143,7 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
     landlordOtherBuildings,
     landlordStats,
     similar,
+    timelineRaw,
   ] = await Promise.all([
     // Energy benchmark (latest year)
     safe(async () => {
@@ -429,6 +432,42 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
         .limit(6);
       return data ?? [];
     }, [] as BuildingV2Data["similar"]),
+
+    // Timeline: HPD violations + DOB violations + 311 complaints + evictions (last 20 events)
+    safe(async () => {
+      const [hpdRes, dobRes, compRes, evictRes] = await Promise.all([
+        supabase
+          .from("hpd_violations")
+          .select("id, inspection_date, nov_issue_date, class, nov_description, status")
+          .eq("building_id", buildingId)
+          .order("inspection_date", { ascending: false })
+          .limit(20),
+        supabase
+          .from("dob_violations")
+          .select("id, issue_date, violation_category, violation_type, description, disposition_comments")
+          .eq("building_id", buildingId)
+          .order("issue_date", { ascending: false })
+          .limit(20),
+        supabase
+          .from("complaints_311")
+          .select("id, created_date, complaint_type, descriptor, status, resolution_description, agency")
+          .eq("building_id", buildingId)
+          .order("created_date", { ascending: false })
+          .limit(20),
+        supabase
+          .from("evictions")
+          .select("id, executed_date, eviction_apt_num, eviction_possession, residential_commercial")
+          .eq("building_id", buildingId)
+          .order("executed_date", { ascending: false })
+          .limit(10),
+      ]);
+      return normalizeTimelineEvents({
+        violations: (hpdRes.data ?? []) as Parameters<typeof normalizeTimelineEvents>[0]["violations"],
+        dobViolations: (dobRes.data ?? []) as Parameters<typeof normalizeTimelineEvents>[0]["dobViolations"],
+        complaints: (compRes.data ?? []) as Parameters<typeof normalizeTimelineEvents>[0]["complaints"],
+        evictions: (evictRes.data ?? []) as Parameters<typeof normalizeTimelineEvents>[0]["evictions"],
+      }).slice(0, 20);
+    }, [] as TimelineEvent[]),
   ]);
 
   return {
@@ -458,5 +497,6 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
       portfolioAvgScore: landlordStats.portfolioAvgScore,
     },
     similar,
+    timeline: timelineRaw,
   };
 }
