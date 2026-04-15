@@ -1,13 +1,13 @@
 import { Metadata } from "next";
 import Link from "next/link";
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
-import { Siren, ArrowLeft, Building2, MapPin } from "lucide-react";
+import { Siren, Building2, MapPin } from "lucide-react";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { buildingUrl, canonicalUrl, neighborhoodUrl, cityPath, breadcrumbJsonLd } from "@/lib/seo";
-import { getNeighborhoodName } from "@/lib/nyc-neighborhoods";
-import { CITY_META } from "@/lib/cities";
+import { getNeighborhoodNameByCity } from "@/lib/neighborhoods";
+import { CITY_META, isValidCity } from "@/lib/cities";
 import type { City } from "@/lib/cities";
-import { normalizeScore } from "@/lib/constants";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
 import dynamic from "next/dynamic";
@@ -17,13 +17,10 @@ const CrimeTrend = dynamic(() => import("@/components/crime/CrimeTrend").then(m 
 const CrimeCategoryBreakdown = dynamic(() => import("@/components/crime/CrimeCategoryBreakdown").then(m => m.CrimeCategoryBreakdown), { loading: ChartSkeleton });
 import { FAQSection } from "@/components/seo/FAQSection";
 import { generateCrimeFAQ } from "@/lib/faq/area-faq";
-import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
-import {
-  CRIME_CATEGORY_LABELS,
-  CRIME_CATEGORY_COLORS,
-} from "@/lib/crime-categories";
-import type { CrimeCategory } from "@/lib/crime-categories";
+import { SafetyVerdict } from "@/components/crime/SafetyVerdict";
+import { CrimeStatsGrid } from "@/components/crime/CrimeStatsGrid";
+import { DailyCrimeFeed } from "@/components/crime/DailyCrimeFeed";
+import { safetyGrade, safetyVerdict, rankZips } from "@/lib/crime-stats";
 
 interface CrimeSummary {
   total: number;
@@ -48,59 +45,13 @@ interface RecentCrime {
 
 export const revalidate = 3600;
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ city: string; zipCode: string }>;
-}): Promise<Metadata> {
-  const { zipCode } = await params;
-  const name = getNeighborhoodName(zipCode);
-  const displayName = name ? `${name} (${zipCode})` : zipCode;
-  const { city } = await params;
-  const url = canonicalUrl(cityPath(`/crime/${zipCode}`, city as import("@/lib/cities").City));
-  return {
-    title: `Crime in ${displayName} | Lucid Rents`,
-    description: `Is ${displayName} safe? See crime trends, recent incidents, and category breakdowns to understand safety before you move.`,
-    alternates: { canonical: url },
-    openGraph: {
-      title: `Crime Data for ${displayName}`,
-      description: `Crime trends and recent incidents for ${displayName}, ${CITY_META[city as City].fullName}.`,
-      url,
-      siteName: "Lucid Rents",
-      type: "website",
-      locale: "en_US",
-    },
-  };
-}
-
-function formatDate(dateStr: string | null): string {
-  if (!dateStr) return "N/A";
-  const d = new Date(dateStr + "T00:00:00");
-  return d.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
-export default async function CrimeZipPage({
-  params,
-}: {
-  params: Promise<{ city: string; zipCode: string }>;
-}) {
-  const { city: cityParam, zipCode } = await params;
-  const city = cityParam as City;
-  const neighborhoodName = getNeighborhoodName(zipCode);
-  const displayName = neighborhoodName ? `${neighborhoodName} (${zipCode})` : zipCode;
+const getPageData = cache(async (city: City, zipCode: string) => {
   const supabase = await createClient();
-
-  // Fetch summary, recent crimes, and buildings in this zip in parallel
-  // Use 2-year lookback to capture all available data (LAPD data may lag)
   const twoYearsAgo = new Date();
   twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
   const sinceDate = twoYearsAgo.toISOString().split("T")[0];
 
-  const [summaryRes, recentRes, buildingsRes] = await Promise.all([
+  const [summaryRes, recentRes, buildingsRes, cityStatsRes, yoyRes, allZipsRes] = await Promise.all([
     supabase.rpc("crime_zip_summary", {
       target_zip: zipCode,
       since_date: sinceDate,
@@ -115,13 +66,16 @@ export default async function CrimeZipPage({
       .eq("metro", city)
       .gte("cmplnt_date", sinceDate)
       .order("cmplnt_date", { ascending: false })
-      .limit(25),
+      .limit(50),
     supabase
       .from("buildings")
       .select("id, full_address, borough, slug, overall_score, violation_count, crime_count")
       .eq("zip_code", zipCode)
       .order("violation_count", { ascending: false })
       .limit(10),
+    supabase.rpc("crime_city_stats", { since_date: sinceDate, metro: city }),
+    supabase.rpc("crime_zip_yoy", { metro: city }),
+    supabase.rpc("crime_by_zip", { since_date: sinceDate, metro: city }),
   ]);
 
   const summary: CrimeSummary = summaryRes.data?.[0] || {
@@ -136,9 +90,110 @@ export default async function CrimeZipPage({
 
   const recentCrimes: RecentCrime[] = recentRes.data || [];
   const buildings = buildingsRes.data || [];
+  const cityStats = cityStatsRes.data?.[0] || {
+    avg_per_zip: 0,
+    avg_violent_per_zip: 0,
+    avg_property_per_zip: 0,
+    avg_qol_per_zip: 0,
+  };
+
+  // Build YoY lookup map
+  const yoyMap = new Map<string, {
+    current_year_total: number; prior_year_total: number;
+    current_violent: number; prior_violent: number;
+    current_property: number; prior_property: number;
+  }>();
+  for (const row of yoyRes.data || []) {
+    yoyMap.set(row.zip_code, row);
+  }
+
+  // Rank all zips and find this one
+  const allZips = allZipsRes.data || [];
+  const ranked = rankZips(allZips, yoyMap, (z) => getNeighborhoodNameByCity(z, city));
+  const thisZipRanked = ranked.find((r) => r.zip_code === zipCode);
+
+  const zipGrade = thisZipRanked?.grade ?? safetyGrade(50);
+  const yoyTotalPct = thisZipRanked?.yoy_total_pct ?? null;
+  const yoyViolentPct = thisZipRanked?.yoy_violent_pct ?? null;
+  const yoyPropertyPct = thisZipRanked?.yoy_property_pct ?? null;
+
+  const neighborhoodName = getNeighborhoodNameByCity(zipCode, city);
+  const displayName = neighborhoodName ? `${neighborhoodName} (${zipCode})` : zipCode;
+
+  const verdictText = safetyVerdict(
+    zipGrade,
+    neighborhoodName || zipCode,
+    thisZipRanked?.yoy_total_pct ?? null,
+    summary.total,
+    cityStats.avg_per_zip,
+    summary.violent - (cityStats.avg_violent_per_zip || 0)
+  );
+
+  return {
+    summary,
+    recentCrimes,
+    buildings,
+    cityStats,
+    zipGrade,
+    yoyTotalPct,
+    yoyViolentPct,
+    yoyPropertyPct,
+    verdictText,
+    neighborhoodName,
+    displayName,
+  };
+});
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ city: string; zipCode: string }>;
+}): Promise<Metadata> {
+  const { city: cityParam, zipCode } = await params;
+  if (!isValidCity(cityParam)) return {};
+  const city = cityParam as City;
+
+  const { displayName, zipGrade } = await getPageData(city, zipCode);
+  const url = canonicalUrl(cityPath(`/crime/${zipCode}`, city));
+
+  return {
+    title: `Crime in ${displayName} — Safety Grade ${zipGrade} | Lucid Rents`,
+    description: `Is ${displayName} safe? See crime trends, recent incidents, and category breakdowns to understand safety before you move.`,
+    alternates: { canonical: url },
+    openGraph: {
+      title: `Crime Data for ${displayName}`,
+      description: `Crime trends and recent incidents for ${displayName}, ${CITY_META[city].fullName}.`,
+      url,
+      siteName: "Lucid Rents",
+      type: "website",
+      locale: "en_US",
+    },
+  };
+}
+
+export default async function CrimeZipPage({
+  params,
+}: {
+  params: Promise<{ city: string; zipCode: string }>;
+}) {
+  const { city: cityParam, zipCode } = await params;
+  const city = cityParam as City;
+
+  const {
+    summary,
+    recentCrimes,
+    buildings,
+    cityStats,
+    zipGrade,
+    yoyTotalPct,
+    yoyViolentPct,
+    yoyPropertyPct,
+    verdictText,
+    neighborhoodName,
+    displayName,
+  } = await getPageData(city, zipCode);
 
   return (
-    <AdSidebar>
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <JsonLd data={{
         "@context": "https://schema.org",
@@ -182,41 +237,20 @@ export default async function CrimeZipPage({
         </p>
       </div>
 
-      {/* Summary stat cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
-          <p className="text-xs text-[#64748b] font-medium uppercase tracking-wide">
-            Total
-          </p>
-          <p className="text-2xl font-bold text-[#0F1D2E] mt-1">
-            {Number(summary.total).toLocaleString()}
-          </p>
-        </div>
-        <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
-          <p className="text-xs text-[#EF4444] font-medium uppercase tracking-wide">
-            Violent
-          </p>
-          <p className="text-2xl font-bold text-[#0F1D2E] mt-1">
-            {Number(summary.violent).toLocaleString()}
-          </p>
-        </div>
-        <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
-          <p className="text-xs text-[#F59E0B] font-medium uppercase tracking-wide">
-            Property
-          </p>
-          <p className="text-2xl font-bold text-[#0F1D2E] mt-1">
-            {Number(summary.property).toLocaleString()}
-          </p>
-        </div>
-        <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
-          <p className="text-xs text-[#3B82F6] font-medium uppercase tracking-wide">
-            Quality of Life
-          </p>
-          <p className="text-2xl font-bold text-[#0F1D2E] mt-1">
-            {Number(summary.quality_of_life).toLocaleString()}
-          </p>
-        </div>
-      </div>
+      {/* Safety Verdict Banner */}
+      <SafetyVerdict
+        grade={zipGrade}
+        displayName={displayName}
+        verdictText={verdictText}
+      />
+
+      {/* Summary stat cards with YoY deltas */}
+      <CrimeStatsGrid stats={[
+        { label: "Total", value: summary.total, cityAvg: cityStats.avg_per_zip, yoyPct: yoyTotalPct, color: "#64748b" },
+        { label: "Violent", value: summary.violent, cityAvg: cityStats.avg_violent_per_zip, yoyPct: yoyViolentPct, color: "#EF4444" },
+        { label: "Property", value: summary.property, cityAvg: cityStats.avg_property_per_zip, yoyPct: yoyPropertyPct, color: "#F59E0B" },
+        { label: "Quality of Life", value: summary.quality_of_life, cityAvg: cityStats.avg_qol_per_zip, yoyPct: null, color: "#3B82F6" },
+      ]} />
 
       {/* Charts */}
       <div className="space-y-8 mb-8">
@@ -240,83 +274,11 @@ export default async function CrimeZipPage({
         </Link>
       )}
 
-      {/* Two column layout: recent crimes + buildings */}
+      {/* Two column layout: daily crime feed + buildings */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Recent crimes */}
+        {/* Daily Crime Feed */}
         <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <h2 className="text-xl font-bold text-[#0F1D2E]">
-                Recent Crimes
-              </h2>
-              <p className="text-sm text-[#64748b]">
-                Most recent incidents reported by {CITY_META[city].crimeSource}
-              </p>
-            </CardHeader>
-            <CardContent>
-              {recentCrimes.length === 0 ? (
-                <p className="text-center text-[#64748b] py-8">
-                  No recent crimes recorded in this zip code.
-                </p>
-              ) : (
-                <div className="space-y-3">
-                  {recentCrimes.map((crime) => (
-                    <div
-                      key={crime.id}
-                      className="flex items-start gap-3 py-3 border-b border-[#f1f5f9] last:border-0"
-                    >
-                      <span
-                        className="mt-1 w-2.5 h-2.5 rounded-full shrink-0"
-                        style={{
-                          backgroundColor:
-                            CRIME_CATEGORY_COLORS[
-                              (crime.crime_category as CrimeCategory) ||
-                                "quality_of_life"
-                            ],
-                        }}
-                      />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-[#0F1D2E] truncate">
-                          {crime.offense_description || "Unknown Offense"}
-                        </p>
-                        {crime.pd_description && (
-                          <p className="text-xs text-[#64748b] mt-0.5 truncate">
-                            {crime.pd_description}
-                          </p>
-                        )}
-                        <div className="flex items-center gap-3 mt-1 text-xs text-[#94a3b8]">
-                          <span>{formatDate(crime.cmplnt_date)}</span>
-                          {crime.law_category && (
-                            <span className="px-1.5 py-0.5 rounded bg-[#f1f5f9] text-[#64748b]">
-                              {crime.law_category}
-                            </span>
-                          )}
-                          {crime.crime_category && (
-                            <span
-                              className="px-1.5 py-0.5 rounded text-white text-[10px] font-medium"
-                              style={{
-                                backgroundColor:
-                                  CRIME_CATEGORY_COLORS[
-                                    crime.crime_category as CrimeCategory
-                                  ] || "#94a3b8",
-                              }}
-                            >
-                              {CRIME_CATEGORY_LABELS[
-                                crime.crime_category as CrimeCategory
-                              ] || crime.crime_category}
-                            </span>
-                          )}
-                          {crime.precinct && (
-                            <span>Precinct {crime.precinct}</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <DailyCrimeFeed crimes={recentCrimes} crimeSource={CITY_META[city].crimeSource} />
         </div>
 
         {/* Buildings in this zip */}
@@ -359,7 +321,7 @@ export default async function CrimeZipPage({
                             <span>
                               Score:{" "}
                               <span className="font-semibold">
-                                {normalizeScore(b.overall_score).toFixed(1)}/5
+                                {b.overall_score}
                               </span>
                             </span>
                           )}
@@ -378,8 +340,6 @@ export default async function CrimeZipPage({
         </div>
       </div>
 
-      <AdBlock adSlot="CRIME_ZIP_BOTTOM" adFormat="horizontal" />
-
       <FAQSection
         items={generateCrimeFAQ({
           displayName,
@@ -391,6 +351,5 @@ export default async function CrimeZipPage({
         title={`Frequently Asked Questions About Crime in ${displayName}`}
       />
     </div>
-    </AdSidebar>
   );
 }
