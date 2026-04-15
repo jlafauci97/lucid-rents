@@ -18,6 +18,17 @@ import { S06_Location } from "@/components/building/v2/sections/S06_Location";
 import { S07_History } from "@/components/building/v2/sections/S07_History";
 import { S08_SimilarNearby } from "@/components/building/v2/sections/S08_SimilarNearby";
 import { S09_FAQ } from "@/components/building/v2/sections/S09_FAQ";
+import { RailContainer } from "@/components/building/v2/rail/RailContainer";
+import { R01_RentComparison } from "@/components/building/v2/rail/R01_RentComparison";
+import { R02_ReviewSummary } from "@/components/building/v2/rail/R02_ReviewSummary";
+import { R03_EnergyScore } from "@/components/building/v2/rail/R03_EnergyScore";
+import { R04_WalkTransit } from "@/components/building/v2/rail/R04_WalkTransit";
+import { R05_NearbyTransit } from "@/components/building/v2/rail/R05_NearbyTransit";
+import { R06_NearbySchools } from "@/components/building/v2/rail/R06_NearbySchools";
+import { R07_NearbyRecreation } from "@/components/building/v2/rail/R07_NearbyRecreation";
+import { R08_SafetyCrime } from "@/components/building/v2/rail/R08_SafetyCrime";
+import { R09_AtAGlance } from "@/components/building/v2/rail/R09_AtAGlance";
+import { R10_SimilarBuildingsRail } from "@/components/building/v2/rail/R10_SimilarBuildingsRail";
 
 export const revalidate = 86400;
 
@@ -65,16 +76,24 @@ export default async function BuildingV2Page({ params }: Props) {
       {/* NavV2 */}
       <NavV2 city={typedCity} />
 
-      {/* Page-level grid: wayfinder | main content */}
+      {/* Page-level grid: wayfinder | main content | right rail */}
       <style>{`
         .v2-page-grid {
           max-width: 1440px;
           margin: 0 auto;
           padding: 32px 24px;
           display: grid;
-          grid-template-columns: 220px 1fr;
+          grid-template-columns: 220px 1fr 320px;
           gap: 24px;
           align-items: start;
+        }
+        @media (max-width: 1199px) {
+          .v2-page-grid {
+            grid-template-columns: 220px 1fr;
+          }
+          .v2-rail {
+            display: none !important;
+          }
         }
         @media (max-width: 899px) {
           .v2-page-grid {
@@ -162,6 +181,20 @@ export default async function BuildingV2Page({ params }: Props) {
             data={data}
           />
         </main>
+
+        {/* Phase 3 — right rail */}
+        <RailContainer>
+          <R01_RentComparison rents={data.rents} buildingName={building.full_address} />
+          <R02_ReviewSummary reviews={data.reviews} />
+          <R03_EnergyScore energy={data.energy} city={typedCity} />
+          <R04_WalkTransit building={building} />
+          <R05_NearbyTransit building={building} />
+          <R06_NearbySchools building={building} />
+          <R07_NearbyRecreation building={building} />
+          <R08_SafetyCrime building={building} />
+          <R09_AtAGlance building={building} />
+          <R10_SimilarBuildingsRail similar={data.similar} city={typedCity} />
+        </RailContainer>
       </div>
     </>
   );
