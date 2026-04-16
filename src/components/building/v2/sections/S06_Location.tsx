@@ -27,6 +27,8 @@ interface Props {
   city: City;
   nearby: BuildingV2Data["nearby"];
   neighborhoodStats: BuildingV2Data["neighborhoodStats"];
+  demographics: BuildingV2Data["demographics"];
+  vibe: BuildingV2Data["vibe"];
 }
 
 // Derive walk/transit/bike scores from real nearby-stop data.
@@ -59,7 +61,7 @@ function coords(b: Building): string {
   return "";
 }
 
-export function S06_Location({ building, city, nearby, neighborhoodStats }: Props) {
+export function S06_Location({ building, city, nearby, neighborhoodStats, demographics, vibe }: Props) {
   const { walk: w, transit: t, bike: bk } = deriveScores(nearby);
   const cityName = ((CITY_META as Record<string, { name?: string; fullName?: string }>)[city])?.name ?? city;
   const borough = building.borough;
@@ -70,9 +72,12 @@ export function S06_Location({ building, city, nearby, neighborhoodStats }: Prop
   const realNbhName = building.zip_code ? getNeighborhoodNameByCity(building.zip_code, city) : null;
   const neighborhoodName = realNbhName || borough;
   const neighborhoodHref = building.zip_code ? neighborhoodUrl(building.zip_code, city) : "#";
-  const vibe = building.zip_code ? getNeighborhoodVibe(city, building.zip_code) : null;
+  const localVibe = building.zip_code ? getNeighborhoodVibe(city, building.zip_code) : null;
+  // Prefer vibe description from props (data layer), fall back to local lookup, then generic
   const nbhDescription = vibe?.description
+    ?? localVibe?.description
     ?? `Learn more about ${neighborhoodName}${cityName ? ` in ${cityName}` : ""} — buildings tracked, typical rents, and resident sentiment.`;
+  const vibeTags = vibe?.tags?.length ? vibe.tags : localVibe?.vibeTags ?? [];
 
   const ring = (val: number) => (
     <svg className="ring" viewBox="0 0 36 36">
@@ -198,6 +203,35 @@ export function S06_Location({ building, city, nearby, neighborhoodStats }: Prop
               <small>median 1BR</small>
             </span>
           </div>
+          {(demographics?.population != null || demographics?.median_income != null || demographics?.renter_pct != null) && (
+            <div className="nb-meta" style={{ marginTop: 4 }}>
+              {demographics.population != null && (
+                <span className="nb-stat">
+                  <b>{demographics.population.toLocaleString()}</b>
+                  <small>population</small>
+                </span>
+              )}
+              {demographics.median_income != null && (
+                <span className="nb-stat">
+                  <b>${Math.round(demographics.median_income / 1000)}k</b>
+                  <small>median income</small>
+                </span>
+              )}
+              {demographics.renter_pct != null && (
+                <span className="nb-stat">
+                  <b>{Math.round(demographics.renter_pct)}%</b>
+                  <small>renters</small>
+                </span>
+              )}
+            </div>
+          )}
+          {vibeTags.length > 0 && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 6 }}>
+              {vibeTags.slice(0, 6).map((tag) => (
+                <span key={tag} style={{ fontSize: 11, padding: "2px 8px", borderRadius: 99, background: "rgba(59,130,246,0.08)", color: "oklch(0.45 0.10 250)" }}>{tag}</span>
+              ))}
+            </div>
+          )}
           <span className="nb-cta">
             Explore {neighborhoodName}
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>

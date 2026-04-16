@@ -146,6 +146,24 @@ export function SideRail({ building, data, city, cityPrefix }: Props) {
         <a className="sr-link" href="#reviews">Read all {data.reviews.total} reviews →</a>
       </section>
 
+      {/* 2.5 · Neighborhood Vibe (if available) */}
+      {data.vibe?.description ? (
+        <section className="sr-card">
+          <header className="sr-head">
+            <span className="sr-icon sky"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span>
+            <h4>Neighborhood Vibe</h4>
+          </header>
+          <p style={{ fontSize: 13, lineHeight: 1.5, opacity: 0.8, margin: "0 0 8px" }}>{data.vibe.description}</p>
+          {data.vibe.tags.length > 0 && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+              {data.vibe.tags.slice(0, 6).map((tag) => (
+                <span key={tag} style={{ fontSize: 11, padding: "2px 8px", borderRadius: 99, background: "rgba(59,130,246,0.08)", color: "oklch(0.45 0.10 250)" }}>{tag}</span>
+              ))}
+            </div>
+          )}
+        </section>
+      ) : null}
+
       {/* 3 · Energy Score */}
       <section className="sr-card">
         <header className="sr-head">

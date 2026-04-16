@@ -19,6 +19,7 @@ import type { BuildingV2Data } from "@/app/[city]/building/[borough]/[slug]/_dat
 
 interface Props {
   amenities: BuildingV2Data["amenities"];
+  amenityPremiums: BuildingV2Data["amenityPremiums"];
 }
 
 interface Category {
@@ -60,7 +61,7 @@ const CATEGORIES: Category[] = [
     match: (n) => /wine|cellar|penthouse|screening|private[-\s]?dining|butler/i.test(n) },
 ];
 
-export function S04_Amenities({ amenities }: Props) {
+export function S04_Amenities({ amenities, amenityPremiums }: Props) {
   // Dedupe by lowercased name and group into categories.
   const seen = new Set<string>();
   const unique = amenities.filter((a) => {
@@ -142,6 +143,34 @@ export function S04_Amenities({ amenities }: Props) {
             </div>
           </div>
         )}
+
+        {(() => {
+          // Match building amenities against premium data
+          const amenityNamesLower = new Set(unique.map((a) => a.amenity.toLowerCase()));
+          const matched = (amenityPremiums ?? []).filter(
+            (p) => amenityNamesLower.has(p.amenity.toLowerCase()) && p.premium_dollars != null && Math.abs(p.premium_dollars) > 0
+          );
+          if (matched.length === 0) return null;
+          // Dedupe by amenity name, keep highest premium
+          const byName = new Map<string, typeof matched[0]>();
+          for (const m of matched) {
+            const key = m.amenity.toLowerCase();
+            const existing = byName.get(key);
+            if (!existing || (m.premium_dollars ?? 0) > (existing.premium_dollars ?? 0)) byName.set(key, m);
+          }
+          const dedupedPremiums = Array.from(byName.values()).sort((a, b) => (b.premium_dollars ?? 0) - (a.premium_dollars ?? 0)).slice(0, 6);
+          return (
+            <div style={{ marginTop: 16, padding: "12px 16px", background: "rgba(59,130,246,0.04)", borderRadius: 10, fontSize: 13 }}>
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>Amenity value in this area</div>
+              {dedupedPremiums.map((p) => (
+                <div key={p.amenity} style={{ display: "flex", justifyContent: "space-between", padding: "2px 0", opacity: 0.8 }}>
+                  <span>{p.amenity}</span>
+                  <span style={{ fontWeight: 500 }}>adds ~${Math.round(p.premium_dollars!)}/mo</span>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
 
         <footer className="am-foot">Based on listing data &amp; verified tenant reports.</footer>
       </div>

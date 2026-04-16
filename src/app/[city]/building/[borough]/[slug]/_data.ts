@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { Building, EnergyBenchmark } from "@/types";
 import { normalizeTimelineEvents, type TimelineEvent } from "@/lib/timeline";
 import { normalizeScore } from "@/lib/constants";
+import { getNeighborhoodVibe } from "@/lib/neighborhood-vibes";
 
 // ──────────────────────────────────────────────────────────────
 // scoreToGrade — maps a score to a letter grade.
@@ -53,8 +54,15 @@ export interface BuildingV2Data {
       month: string;
       beds: number | null;
       median_rent: number | null;
+      p25_rent: number | null;
+      p75_rent: number | null;
+      listing_count: number | null;
     }>;
   };
+  seasonalIndex: Array<{ month_of_year: number; beds: number; rent_index: number }>;
+  amenityPremiums: Array<{ amenity: string; beds: number; premium_dollars: number | null; premium_pct: number | null; sample_size: number }>;
+  demographics: { population: number | null; median_income: number | null; renter_pct: number | null; median_age: number | null };
+  vibe: { description: string | null; tags: string[] };
   issues: {
     hpdTop: Array<{ category: string; count: number }>;
     complaintsTop: Array<{ type: string; count: number }>;
@@ -221,6 +229,9 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
     nearbySchools,
     crimeAgg,
     neighborhoodStats,
+    seasonalIndex,
+    amenityPremiums,
+    demographics,
   ] = await Promise.all([
     // Energy benchmark (latest year)
     safe(async () => {
@@ -259,7 +270,7 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
       if (!zipCode) return [];
       const { data } = await supabase
         .from("dewey_neighborhood_rents")
-        .select("zip, month, beds, median_rent")
+        .select("zip, month, beds, median_rent, p25_rent, p75_rent, listing_count")
         .eq("zip", zipCode)
         .order("month", { ascending: false })
         .limit(60);
@@ -268,6 +279,9 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
         month: (r as { month: string }).month,
         beds: (r as { beds: number | null }).beds,
         median_rent: (r as { median_rent: number | null }).median_rent,
+        p25_rent: (r as { p25_rent: number | null }).p25_rent ?? null,
+        p75_rent: (r as { p75_rent: number | null }).p75_rent ?? null,
+        listing_count: (r as { listing_count: number | null }).listing_count ?? null,
       }));
     }, [] as BuildingV2Data["rents"]["neighborhood"]),
 
@@ -694,7 +708,51 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
 
       return { buildingsTracked, avgLucidIQ, median1BR };
     }, { buildingsTracked: 0, avgLucidIQ: null, median1BR: null } as BuildingV2Data["neighborhoodStats"]),
+
+    // Seasonal rent index by zip
+    safe(async () => {
+      if (!zipCode) return [];
+      const { data } = await supabase
+        .from("dewey_seasonal_index")
+        .select("month_of_year, beds, rent_index")
+        .eq("zip", zipCode)
+        .eq("city", building.metro ?? "nyc");
+      return data ?? [];
+    }, [] as BuildingV2Data["seasonalIndex"]),
+
+    // Amenity premiums by zip
+    safe(async () => {
+      if (!zipCode) return [];
+      const { data } = await supabase
+        .from("dewey_amenity_premiums")
+        .select("amenity, beds, premium_dollars, premium_pct, sample_size")
+        .eq("zip", zipCode)
+        .eq("city", building.metro ?? "nyc")
+        .eq("period", "all_time")
+        .gt("sample_size", 5);
+      return data ?? [];
+    }, [] as BuildingV2Data["amenityPremiums"]),
+
+    // Census demographics by zip
+    safe(async () => {
+      if (!zipCode) return { population: null, median_income: null, renter_pct: null, median_age: null };
+      const { data } = await supabase
+        .from("census_demographics")
+        .select("population, median_household_income, renter_occupied_pct, median_age")
+        .eq("zip_code", zipCode)
+        .limit(1);
+      const row = data?.[0];
+      return {
+        population: (row as { population?: number | null } | undefined)?.population ?? null,
+        median_income: (row as { median_household_income?: number | null } | undefined)?.median_household_income ?? null,
+        renter_pct: (row as { renter_occupied_pct?: number | null } | undefined)?.renter_occupied_pct ?? null,
+        median_age: (row as { median_age?: number | null } | undefined)?.median_age ?? null,
+      };
+    }, { population: null, median_income: null, renter_pct: null, median_age: null } as BuildingV2Data["demographics"]),
   ]);
+
+  // Vibe — resolved from static mapping, no DB call needed
+  const vibeData = zipCode ? getNeighborhoodVibe(building.metro ?? "nyc", zipCode) : null;
 
   return {
     building,
@@ -704,6 +762,10 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
       historic: historicRents,
       neighborhood: neighborhoodRents,
     },
+    seasonalIndex,
+    amenityPremiums,
+    demographics,
+    vibe: { description: vibeData?.description ?? null, tags: vibeData?.vibeTags ?? [] },
     issues: {
       hpdTop,
       complaintsTop,

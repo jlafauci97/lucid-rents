@@ -23,6 +23,7 @@ interface Props {
   rents: BuildingV2Data["rents"];
   neighborhoodName: string;
   isRentStabilized: boolean;
+  seasonalIndex: BuildingV2Data["seasonalIndex"];
 }
 
 function money(n: number | null | undefined): string {
@@ -91,9 +92,37 @@ function monthlyIndex(series: BuildingV2Data["rents"]["neighborhood"]): { bars: 
   };
 }
 
-export function S01_RentalIntelligence({ rents, neighborhoodName, isRentStabilized }: Props) {
+export function S01_RentalIntelligence({ rents, neighborhoodName, isRentStabilized, seasonalIndex }: Props) {
   const { latest: nbhMedian, yoyPct, monthLabel } = neighborhoodYoY(rents.neighborhood);
-  const monthly = monthlyIndex(rents.neighborhood);
+
+  // Use seasonalIndex from Dewey when available, otherwise derive from raw monthly data
+  const monthly = (() => {
+    if (seasonalIndex && seasonalIndex.length > 0) {
+      const byMonth = new Array<number>(12).fill(0);
+      const counts = new Array<number>(12).fill(0);
+      for (const row of seasonalIndex) {
+        const idx = row.month_of_year - 1;
+        if (idx >= 0 && idx < 12) {
+          byMonth[idx] += row.rent_index;
+          counts[idx]++;
+        }
+      }
+      const avgs = byMonth.map((sum, i) => (counts[i] > 0 ? sum / counts[i] : 0));
+      const max = Math.max(...avgs, 0.01);
+      const min = Math.min(...avgs.filter((v) => v > 0), max);
+      const bars = avgs.map((v) => (v > 0 ? v / max : 0));
+      const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+      const minIdx = avgs.indexOf(min);
+      const maxIdx = avgs.indexOf(Math.max(...avgs));
+      return {
+        bars,
+        cheapest: avgs.some((v) => v > 0) ? months[minIdx] : "—",
+        priciest: avgs.some((v) => v > 0) ? months[maxIdx] : "—",
+      };
+    }
+    return monthlyIndex(rents.neighborhood);
+  })();
+
   const potentialSavings = monthly.bars.some((b) => b > 0)
     ? Math.round((1 - Math.min(...monthly.bars.filter((b) => b > 0)) / Math.max(...monthly.bars)) * 100)
     : null;
@@ -115,12 +144,20 @@ export function S01_RentalIntelligence({ rents, neighborhoodName, isRentStabiliz
   }
   const unitBeds = Array.from(unitsByBed.keys()).sort((a, b) => a - b).slice(0, 7);
 
-  // Neighborhood rent range — we only have median, not min/max per bedroom.
-  // Synthesize a ±50% band from the bedroom-level median from current rents.
+  // Neighborhood rent range — use p25/p75 from dewey when available,
+  // otherwise fall back to building listing min/max or synthetic ±40% band.
   const rangeBands = [0, 1, 2, 3, 4, 5, 6];
+  const latestNbhMonth = rents.neighborhood[0]?.month?.slice(0, 7) ?? "";
   const rangeRow = (beds: number) => {
     const r = rents.current.find((rr) => rr.bedrooms === beds);
     if (!r?.median_rent) return null;
+    // Try p25/p75 from neighborhood rents for this bedroom
+    const nbhRow = rents.neighborhood.find(
+      (nr) => nr.beds === beds && nr.month?.startsWith(latestNbhMonth) && nr.p25_rent != null && nr.p75_rent != null
+    );
+    if (nbhRow?.p25_rent != null && nbhRow?.p75_rent != null) {
+      return { lo: Math.round(nbhRow.p25_rent), hi: Math.round(nbhRow.p75_rent), median: r.median_rent, listings: r.listing_count, isSynthetic: false };
+    }
     const hasRealRange = r.min_rent != null && r.max_rent != null;
     const lo = Math.round((r.min_rent ?? r.median_rent * 0.6));
     const hi = Math.round((r.max_rent ?? r.median_rent * 1.4));

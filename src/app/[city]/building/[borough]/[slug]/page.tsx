@@ -233,6 +233,7 @@ export default async function BuildingPage({ params }: Props) {
                 rents={data.rents}
                 neighborhoodName={building.borough}
                 isRentStabilized={building.is_rent_stabilized}
+                seasonalIndex={data.seasonalIndex}
               />
               <S02_Issues
                 issues={data.issues}
@@ -248,9 +249,9 @@ export default async function BuildingPage({ params }: Props) {
                 reviews={data.reviews}
                 seeAllUrl={`/${cityPrefix}/building/${borough}/${slug}/reviews`}
               />
-              <S04_Amenities amenities={data.amenities} />
+              <S04_Amenities amenities={data.amenities} amenityPremiums={data.amenityPremiums} />
               <S05_Landlord building={building} landlord={data.landlord} city={typedCity} />
-              <S06_Location building={building} city={typedCity} nearby={data.nearby} neighborhoodStats={data.neighborhoodStats} />
+              <S06_Location building={building} city={typedCity} nearby={data.nearby} neighborhoodStats={data.neighborhoodStats} demographics={data.demographics} vibe={data.vibe} />
               <S07_History building={building} landlord={data.landlord} timeline={data.timeline} />
               <S08_SimilarNearby similar={data.similar} city={typedCity} />
               <S09_FAQ building={building} data={data} />
