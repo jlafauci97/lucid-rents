@@ -67,6 +67,14 @@ export interface BuildingV2Data {
       status: string | null;
       description: string;
     }>;
+    hpdViolations: Array<{
+      id: number;
+      apartment: string | null;
+      class: string | null;
+      status: string | null;
+      inspection_date: string | null;
+      nov_description: string | null;
+    }>;
     trends: Array<{
       month: string;
       hpd: number;
@@ -200,6 +208,7 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
     hpdTop,
     complaintsTop,
     recentViolations,
+    hpdViolations,
     trends,
     reviewsAggregate,
     pullQuotes,
@@ -368,6 +377,24 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
         .sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""))
         .slice(0, 20);
     }, [] as BuildingV2Data["issues"]["recentViolations"]),
+
+    // HPD violations with apartment field for ViolationsByUnit
+    safe(async () => {
+      const { data } = await supabase
+        .from("hpd_violations")
+        .select("id, apartment, class, status, inspection_date, nov_description")
+        .eq("building_id", buildingId)
+        .order("inspection_date", { ascending: false })
+        .limit(500);
+      return (data ?? []).map((r) => ({
+        id: (r as { id: number }).id,
+        apartment: (r as { apartment: string | null }).apartment,
+        class: (r as { class: string | null }).class,
+        status: (r as { status: string | null }).status,
+        inspection_date: (r as { inspection_date: string | null }).inspection_date,
+        nov_description: (r as { nov_description: string | null }).nov_description,
+      }));
+    }, [] as BuildingV2Data["issues"]["hpdViolations"]),
 
     // Monthly trends for last 84 months (7 years)
     safe(async () => {
@@ -678,6 +705,7 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
       hpdTop,
       complaintsTop,
       recentViolations,
+      hpdViolations,
       trends,
     },
     reviews: {

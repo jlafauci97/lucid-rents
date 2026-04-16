@@ -12,9 +12,12 @@
  */
 
 import type { BuildingV2Data } from "@/app/[city]/building/[borough]/[slug]/_data";
+import { ViolationsByUnit } from "@/components/building/ViolationsByUnit";
 
 interface Props {
   issues: BuildingV2Data["issues"];
+  hpdViolations: BuildingV2Data["issues"]["hpdViolations"];
+  buildingId: string;
   hpdCount: number;
   dobCount: number;
   complaintsCount: number;
@@ -52,7 +55,7 @@ function formatVioDate(iso: string): string {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-export function S02_Issues({ issues, hpdCount, dobCount, complaintsCount, evictionsCount, seeAllUrl }: Props) {
+export function S02_Issues({ issues, hpdViolations, buildingId, hpdCount, dobCount, complaintsCount, evictionsCount, seeAllUrl }: Props) {
   const totalAll = hpdCount + dobCount + complaintsCount + evictionsCount;
 
   // Reshape trends for 4 source paths. Pad to at least a few points.
@@ -225,27 +228,14 @@ export function S02_Issues({ issues, hpdCount, dobCount, complaintsCount, evicti
         </div>
       </div>
 
-      {/* Issues by Unit — placeholder until unit-level aggregation lands */}
-      <div className="ww-card ww-mt">
-        <header className="ww-head">
-          <div>
-            <h3>Issues by Unit</h3>
-            <p className="ww-sub">Filings per unit over the last 5 years · stacked by source</p>
-          </div>
-          <span className="ri-pill">unit aggregation coming soon</span>
-        </header>
-        <div className="unitchart">
-          <div className="unit-legend">
-            <span><i className="dot red"></i>HPD</span>
-            <span><i className="dot orange"></i>311</span>
-            <span><i className="dot sky"></i>DOB</span>
-            <span><i className="dot violet"></i>Evictions</span>
-          </div>
-          <p className="ww-sub" style={{ padding: "16px 0", textAlign: "center" }}>
-            Unit-level breakdowns land in a follow-up. For now, see the Recent records below.
-          </p>
-        </div>
-      </div>
+      {/* Issues by Unit — HPD violations grouped by apartment */}
+      {hpdViolations.length > 0 && (
+        <ViolationsByUnit
+          violationSummaries={hpdViolations}
+          units={[]}
+          buildingId={buildingId}
+        />
+      )}
 
       {/* Recent records — tabbed by source. Only HPD tab wired today. */}
       <div className="ww-card ww-mt">

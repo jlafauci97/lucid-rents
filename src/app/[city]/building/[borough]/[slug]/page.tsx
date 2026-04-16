@@ -6,7 +6,7 @@ import { VALID_CITIES, CITY_META, type City } from "@/lib/cities";
 import { cache } from "react";
 import { normalizeScore } from "@/lib/constants";
 import type { Building } from "@/types";
-import { loadBuildingV2Data } from "./_data";
+import { loadBuildingV2Data, scoreToGrade } from "./_data";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { TrackBuildingView } from "@/components/building/TrackBuildingView";
 import { Crumbs } from "@/components/building/v2/Crumbs";
@@ -181,8 +181,7 @@ export default async function BuildingPage({ params }: Props) {
   const shortAddress = addressFirstLine.trim() || building.full_address;
 
   // Grade for wayfinder header
-  const score = building.overall_score ?? 0;
-  const grade = score >= 90 ? "A+" : score >= 85 ? "A" : score >= 80 ? "A-" : score >= 75 ? "B+" : score >= 70 ? "B" : score >= 65 ? "B-" : score >= 60 ? "C+" : score >= 55 ? "C" : score >= 50 ? "C-" : score >= 45 ? "D" : score > 0 ? "F" : "\u2014";
+  const grade = scoreToGrade(building.overall_score);
 
   return (
     <>
@@ -227,7 +226,7 @@ export default async function BuildingPage({ params }: Props) {
           <RecordStrip building={building} reviews={data.reviews} />
 
           <div className="body">
-            <WayfinderRail grade={grade} buildingName={addressFirstLine} />
+            <WayfinderRail grade={grade} buildingName={addressFirstLine} city={typedCity} buildingPath={`/${cityPrefix}/building/${borough}/${slug}`} />
 
             <div className="main" id="main-content">
               <S01_RentalIntelligence
@@ -237,6 +236,8 @@ export default async function BuildingPage({ params }: Props) {
               />
               <S02_Issues
                 issues={data.issues}
+                hpdViolations={data.issues.hpdViolations}
+                buildingId={building.id}
                 hpdCount={building.violation_count ?? 0}
                 dobCount={building.dob_violation_count ?? 0}
                 complaintsCount={building.complaint_count ?? 0}
