@@ -226,7 +226,7 @@ export default async function BuildingPage({ params }: Props) {
           <RecordStrip building={building} reviews={data.reviews} />
 
           <div className="body">
-            <WayfinderRail grade={grade} buildingName={addressFirstLine} city={typedCity} buildingPath={`/${cityPrefix}/building/${borough}/${slug}`} />
+            <WayfinderRail grade={grade} buildingName={addressFirstLine} city={typedCity} buildingPath={`/${cityPrefix}/building/${borough}/${slug}`} buildingId={building.id} />
 
             <div className="main" id="main-content">
               <S01_RentalIntelligence

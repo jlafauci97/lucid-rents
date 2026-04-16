@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 interface Props {
@@ -8,6 +9,7 @@ interface Props {
   buildingName: string;
   city: string;
   buildingPath: string;
+  buildingId: string;
 }
 
 const SECTIONS = [
@@ -22,9 +24,12 @@ const SECTIONS = [
   { id: "faq", label: "FAQ", icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/></svg> },
 ];
 
-export function WayfinderRail({ grade, buildingName, city, buildingPath }: Props) {
+export function WayfinderRail({ grade, buildingName, city, buildingPath, buildingId }: Props) {
+  const router = useRouter();
   const [activeId, setActiveId] = useState("rent");
   const [copied, setCopied] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const els = SECTIONS.map((s) => document.getElementById(s.id)).filter(Boolean) as HTMLElement[];
@@ -85,7 +90,24 @@ export function WayfinderRail({ grade, buildingName, city, buildingPath }: Props
       </ol>
 
       <div className="tools">
-        <a className="tool" title="Coming soon" style={{ opacity: 0.5, cursor: "default" }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>Save</a>
+        <a
+          className="tool"
+          style={{ cursor: saving ? "wait" : "pointer" }}
+          onClick={async () => {
+            if (saving) return;
+            setSaving(true);
+            try {
+              const method = saved ? "DELETE" : "POST";
+              const res = await fetch("/api/save", {
+                method,
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ buildingId }),
+              });
+              if (res.status === 401) { router.push("/login"); return; }
+              if (res.ok || res.status === 409) setSaved(!saved);
+            } catch { /* network error */ } finally { setSaving(false); }
+          }}
+        ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" fill={saved ? "currentColor" : "none"}/></svg>{saved ? "Saved" : "Save"}</a>
         <a
           className="tool"
           style={{ cursor: "pointer" }}
