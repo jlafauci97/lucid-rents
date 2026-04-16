@@ -56,19 +56,18 @@ function BuildingMiniIllust() {
 }
 
 export function SideRail({ building, data, city, cityPrefix }: Props) {
-  // Derive rent comparison rows for each common bedroom band.
-  // Use per-bedroom neighborhood medians when available.
+  // Derive rent comparison rows — only for bedrooms with real per-bedroom data.
+  // Never show a row that falls back to a generic median from a different bedroom count.
   const bedBands = [0, 1, 2, 3, 4];
   const latestNbhMonth = data.rents.neighborhood[0]?.month?.slice(0, 7) ?? "";
   const rentRows = bedBands.map((beds) => {
     const mine = data.rents.current.find((r) => r.bedrooms === beds);
-    // Find area median for this specific bedroom count from latest month
+    // Only use neighborhood median that matches this exact bedroom count
     const nbhForBed = data.rents.neighborhood.find(
       (r) => r.beds === beds && r.month?.startsWith(latestNbhMonth) && r.median_rent
     );
-    // Fallback: overall area median (any bedroom) from latest month
-    const nbhAny = data.rents.neighborhood.find((r) => r.month?.startsWith(latestNbhMonth) && r.median_rent);
-    const area = nbhForBed?.median_rent ?? nbhAny?.median_rent ?? null;
+    const area = nbhForBed?.median_rent ?? null;
+    // Skip rows with no building data AND no per-bedroom area data
     if (!mine && !area) return null;
     const lo = mine?.min_rent ?? mine?.median_rent ?? null;
     const hi = mine?.max_rent ?? mine?.median_rent ?? null;
