@@ -149,6 +149,30 @@ export interface BuildingV2Data {
     total_units: number | null;
   }>;
   timeline: TimelineEvent[];
+  laData: {
+    buyouts: Array<{ id: string; disclosure_date: string | null; compensation_amount: number | null }>;
+    scepInspections: Array<{ id: string; inspection_date: string | null; compliance_status: string | null; violations_found: number | null }>;
+    earthquakeRetrofit: { retrofit_type: string | null; compliance_status: string | null; deadline: string | null; completion_date: string | null } | null;
+  };
+  chicagoData: {
+    rltoViolations: Array<{ id: string; case_number: string | null; violation_date: string | null; violation_description: string | null; status: string | null }>;
+    demolitions: Array<{ id: string; permit_number: string | null; issue_date: string | null; status: string | null; work_description: string | null }>;
+    leadInspections: Array<{ id: string; inspection_date: string | null; result: string | null; risk_level: string | null }>;
+    affordableUnits: Array<{ id: string; project_name: string | null; affordable_units: number | null; total_units: number | null }>;
+    energyRating: { energy_star_score: number | null; report_year: number | null; site_eui: number | null } | null;
+  };
+  miamiData: {
+    recerts: Array<{ id: string; recertification_status: string | null; due_date: string | null; completion_date: string | null }>;
+    unsafeStructures: Array<{ id: string; case_number: string | null; violation_type: string | null; case_date: string | null; status: string | null }>;
+    stormDamage: Array<{ id: string; disaster_name: string | null; disaster_date: string | null; damage_category: string | null; fema_verified_loss: number | null }>;
+    floodClaims: Array<{ id: string; claim_date: string | null; flood_zone: string | null; amount_paid: number | null }>;
+  };
+  houstonData: {
+    dangerousBuildings: Array<{ id: string; case_number: string | null; status: string | null; case_date: string | null; violation_description: string | null }>;
+    industrialProximity: Array<{ id: string; facility_name: string | null; distance_miles: number | null; industry_type: string | null; total_releases_lbs: number | null }>;
+    taxProtests: Array<{ id: string; protest_year: number | null; original_value: number | null; final_value: number | null; reduction_pct: number | null }>;
+    affordableHousing: Array<{ id: string; project_name: string | null; affordable_units: number | null; total_units: number | null }>;
+  };
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -205,8 +229,29 @@ async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
 export async function loadBuildingV2Data(building: Building): Promise<BuildingV2Data> {
   const supabase = await createClient();
   const buildingId = building.id;
+  const isLA = building.metro === "los-angeles";
+  const isChicago = building.metro === "chicago";
+  const isMiami = building.metro === "miami";
+  const isHouston = building.metro === "houston";
   const zipCode = building.zip_code ?? null;
   const ownerName = building.owner_name ?? building.management_company ?? null;
+
+  type LaBuyout = BuildingV2Data["laData"]["buyouts"][number];
+  type LaScep = BuildingV2Data["laData"]["scepInspections"][number];
+  type LaRetrofit = NonNullable<BuildingV2Data["laData"]["earthquakeRetrofit"]>;
+  type ChicagoRlto = BuildingV2Data["chicagoData"]["rltoViolations"][number];
+  type ChicagoDemo = BuildingV2Data["chicagoData"]["demolitions"][number];
+  type ChicagoLead = BuildingV2Data["chicagoData"]["leadInspections"][number];
+  type ChicagoAffordable = BuildingV2Data["chicagoData"]["affordableUnits"][number];
+  type ChicagoEnergy = NonNullable<BuildingV2Data["chicagoData"]["energyRating"]>;
+  type MiamiRecert = BuildingV2Data["miamiData"]["recerts"][number];
+  type MiamiUnsafe = BuildingV2Data["miamiData"]["unsafeStructures"][number];
+  type MiamiStorm = BuildingV2Data["miamiData"]["stormDamage"][number];
+  type MiamiFlood = BuildingV2Data["miamiData"]["floodClaims"][number];
+  type HoustonDangerous = BuildingV2Data["houstonData"]["dangerousBuildings"][number];
+  type HoustonIndustrial = BuildingV2Data["houstonData"]["industrialProximity"][number];
+  type HoustonTax = BuildingV2Data["houstonData"]["taxProtests"][number];
+  type HoustonAffordable = BuildingV2Data["houstonData"]["affordableHousing"][number];
 
   const [
     energy,
@@ -232,6 +277,22 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
     seasonalIndex,
     amenityPremiums,
     demographics,
+    laBuyouts,
+    laScep,
+    laRetrofit,
+    chicagoRlto,
+    chicagoDemolitions,
+    chicagoLead,
+    chicagoAffordable,
+    chicagoEnergy,
+    miamiRecerts,
+    miamiUnsafe,
+    miamiStorm,
+    miamiFlood,
+    houstonDangerous,
+    houstonIndustrial,
+    houstonTax,
+    houstonAffordable,
   ] = await Promise.all([
     // Energy benchmark (latest year)
     safe(async () => {
@@ -749,6 +810,179 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
         median_age: (row as { median_age?: number | null } | undefined)?.median_age ?? null,
       };
     }, { population: null, median_income: null, renter_pct: null, median_age: null } as BuildingV2Data["demographics"]),
+
+    // ─── LA: Tenant buyouts ─────────────────────────────────────
+    isLA ? safe(async () => {
+      const { data } = await supabase
+        .from("lahd_tenant_buyouts")
+        .select("id, disclosure_date, compensation_amount")
+        .eq("building_id", buildingId)
+        .order("disclosure_date", { ascending: false })
+        .limit(10);
+      return (data ?? []) as LaBuyout[];
+    }, [] as LaBuyout[]) : Promise.resolve([] as LaBuyout[]),
+
+    // ─── LA: SCEP inspections ───────────────────────────────────
+    isLA ? safe(async () => {
+      const { data } = await supabase
+        .from("lahd_scep_inspections")
+        .select("id, inspection_date, compliance_status, violations_found")
+        .eq("building_id", buildingId)
+        .order("inspection_date", { ascending: false })
+        .limit(10);
+      return (data ?? []) as LaScep[];
+    }, [] as LaScep[]) : Promise.resolve([] as LaScep[]),
+
+    // ─── LA: Earthquake retrofit ────────────────────────────────
+    isLA ? safe(async () => {
+      const { data } = await supabase
+        .from("la_earthquake_retrofit")
+        .select("retrofit_type, compliance_status, deadline, completion_date")
+        .eq("building_id", buildingId)
+        .limit(1);
+      return (data ?? []) as LaRetrofit[];
+    }, [] as LaRetrofit[]) : Promise.resolve([] as LaRetrofit[]),
+
+    // ─── Chicago: RLTO violations ───────────────────────────────
+    isChicago ? safe(async () => {
+      const { data } = await supabase
+        .from("chicago_rlto_violations")
+        .select("id, case_number, violation_date, violation_description, status")
+        .eq("building_id", buildingId)
+        .order("violation_date", { ascending: false })
+        .limit(10);
+      return (data ?? []) as ChicagoRlto[];
+    }, [] as ChicagoRlto[]) : Promise.resolve([] as ChicagoRlto[]),
+
+    // ─── Chicago: Demolitions ───────────────────────────────────
+    isChicago ? safe(async () => {
+      const { data } = await supabase
+        .from("chicago_demolitions")
+        .select("id, permit_number, issue_date, status, work_description")
+        .eq("building_id", buildingId)
+        .order("issue_date", { ascending: false })
+        .limit(10);
+      return (data ?? []) as ChicagoDemo[];
+    }, [] as ChicagoDemo[]) : Promise.resolve([] as ChicagoDemo[]),
+
+    // ─── Chicago: Lead inspections ──────────────────────────────
+    isChicago ? safe(async () => {
+      const { data } = await supabase
+        .from("chicago_lead_inspections")
+        .select("id, inspection_date, result, risk_level")
+        .eq("building_id", buildingId)
+        .order("inspection_date", { ascending: false })
+        .limit(10);
+      return (data ?? []) as ChicagoLead[];
+    }, [] as ChicagoLead[]) : Promise.resolve([] as ChicagoLead[]),
+
+    // ─── Chicago: Affordable units ──────────────────────────────
+    isChicago ? safe(async () => {
+      const { data } = await supabase
+        .from("chicago_affordable_units")
+        .select("id, project_name, affordable_units, total_units")
+        .eq("building_id", buildingId)
+        .limit(10);
+      return (data ?? []) as ChicagoAffordable[];
+    }, [] as ChicagoAffordable[]) : Promise.resolve([] as ChicagoAffordable[]),
+
+    // ─── Chicago: Energy rating (latest year) ───────────────────
+    isChicago ? safe(async () => {
+      const { data } = await supabase
+        .from("energy_benchmarks")
+        .select("energy_star_score, report_year, site_eui")
+        .eq("building_id", buildingId)
+        .order("report_year", { ascending: false })
+        .limit(1);
+      return (data ?? []) as ChicagoEnergy[];
+    }, [] as ChicagoEnergy[]) : Promise.resolve([] as ChicagoEnergy[]),
+
+    // ─── Miami: 40-year recertifications ────────────────────────
+    isMiami ? safe(async () => {
+      const { data } = await supabase
+        .from("miami_forty_year_recerts")
+        .select("id, recertification_status, due_date, completion_date")
+        .eq("building_id", buildingId)
+        .order("due_date", { ascending: false })
+        .limit(10);
+      return (data ?? []) as MiamiRecert[];
+    }, [] as MiamiRecert[]) : Promise.resolve([] as MiamiRecert[]),
+
+    // ─── Miami: Unsafe structures ───────────────────────────────
+    isMiami ? safe(async () => {
+      const { data } = await supabase
+        .from("miami_unsafe_structures")
+        .select("id, case_number, violation_type, case_date, status")
+        .eq("building_id", buildingId)
+        .order("case_date", { ascending: false })
+        .limit(10);
+      return (data ?? []) as MiamiUnsafe[];
+    }, [] as MiamiUnsafe[]) : Promise.resolve([] as MiamiUnsafe[]),
+
+    // ─── Miami: Storm damage ────────────────────────────────────
+    isMiami ? safe(async () => {
+      const { data } = await supabase
+        .from("miami_storm_damage")
+        .select("id, disaster_name, disaster_date, damage_category, fema_verified_loss")
+        .eq("building_id", buildingId)
+        .order("disaster_date", { ascending: false })
+        .limit(10);
+      return (data ?? []) as MiamiStorm[];
+    }, [] as MiamiStorm[]) : Promise.resolve([] as MiamiStorm[]),
+
+    // ─── Miami: Flood claims ────────────────────────────────────
+    isMiami ? safe(async () => {
+      const { data } = await supabase
+        .from("miami_flood_claims")
+        .select("id, claim_date, flood_zone, amount_paid")
+        .eq("building_id", buildingId)
+        .order("claim_date", { ascending: false })
+        .limit(10);
+      return (data ?? []) as MiamiFlood[];
+    }, [] as MiamiFlood[]) : Promise.resolve([] as MiamiFlood[]),
+
+    // ─── Houston: Dangerous buildings ───────────────────────────
+    isHouston ? safe(async () => {
+      const { data } = await supabase
+        .from("houston_dangerous_buildings")
+        .select("id, case_number, status, case_date, violation_description")
+        .eq("building_id", buildingId)
+        .order("case_date", { ascending: false })
+        .limit(10);
+      return (data ?? []) as HoustonDangerous[];
+    }, [] as HoustonDangerous[]) : Promise.resolve([] as HoustonDangerous[]),
+
+    // ─── Houston: Industrial proximity ──────────────────────────
+    isHouston ? safe(async () => {
+      const { data } = await supabase
+        .from("houston_industrial_proximity")
+        .select("id, facility_name, distance_miles, industry_type, total_releases_lbs")
+        .eq("building_id", buildingId)
+        .order("distance_miles", { ascending: true })
+        .limit(10);
+      return (data ?? []) as HoustonIndustrial[];
+    }, [] as HoustonIndustrial[]) : Promise.resolve([] as HoustonIndustrial[]),
+
+    // ─── Houston: Tax protests ──────────────────────────────────
+    isHouston ? safe(async () => {
+      const { data } = await supabase
+        .from("houston_tax_protests")
+        .select("id, protest_year, original_value, final_value, reduction_pct")
+        .eq("building_id", buildingId)
+        .order("protest_year", { ascending: false })
+        .limit(10);
+      return (data ?? []) as HoustonTax[];
+    }, [] as HoustonTax[]) : Promise.resolve([] as HoustonTax[]),
+
+    // ─── Houston: Affordable housing ────────────────────────────
+    isHouston ? safe(async () => {
+      const { data } = await supabase
+        .from("houston_affordable_housing")
+        .select("id, project_name, affordable_units, total_units")
+        .eq("building_id", buildingId)
+        .limit(10);
+      return (data ?? []) as HoustonAffordable[];
+    }, [] as HoustonAffordable[]) : Promise.resolve([] as HoustonAffordable[]),
   ]);
 
   // Vibe — resolved from static mapping, no DB call needed
@@ -797,5 +1031,29 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
     },
     crime: crimeAgg,
     neighborhoodStats,
+    laData: {
+      buyouts: laBuyouts,
+      scepInspections: laScep,
+      earthquakeRetrofit: laRetrofit?.[0] ?? null,
+    },
+    chicagoData: {
+      rltoViolations: chicagoRlto,
+      demolitions: chicagoDemolitions,
+      leadInspections: chicagoLead,
+      affordableUnits: chicagoAffordable,
+      energyRating: chicagoEnergy?.[0] ?? null,
+    },
+    miamiData: {
+      recerts: miamiRecerts,
+      unsafeStructures: miamiUnsafe,
+      stormDamage: miamiStorm,
+      floodClaims: miamiFlood,
+    },
+    houstonData: {
+      dangerousBuildings: houstonDangerous,
+      industrialProximity: houstonIndustrial,
+      taxProtests: houstonTax,
+      affordableHousing: houstonAffordable,
+    },
   };
 }

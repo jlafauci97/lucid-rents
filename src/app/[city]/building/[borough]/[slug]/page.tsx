@@ -23,6 +23,11 @@ import { S06_Location } from "@/components/building/v2/sections/S06_Location";
 import { S07_History } from "@/components/building/v2/sections/S07_History";
 import { S08_SimilarNearby } from "@/components/building/v2/sections/S08_SimilarNearby";
 import { S09_FAQ } from "@/components/building/v2/sections/S09_FAQ";
+import { S10_LAInsights } from "@/components/building/v2/sections/S10_LAInsights";
+import { S10_ChicagoInsights } from "@/components/building/v2/sections/S10_ChicagoInsights";
+import { S10_MiamiInsights } from "@/components/building/v2/sections/S10_MiamiInsights";
+import { S10_HoustonInsights } from "@/components/building/v2/sections/S10_HoustonInsights";
+import { S10_NYCInsights } from "@/components/building/v2/sections/S10_NYCInsights";
 
 export const revalidate = 86400; // 24h ISR
 
@@ -255,6 +260,11 @@ export default async function BuildingPage({ params }: Props) {
               <S07_History building={building} landlord={data.landlord} timeline={data.timeline} />
               <S08_SimilarNearby similar={data.similar} city={typedCity} />
               <S09_FAQ building={building} data={data} />
+              {typedCity === "los-angeles" && <S10_LAInsights building={building} laData={data.laData} />}
+              {typedCity === "chicago" && <S10_ChicagoInsights building={building} chicagoData={data.chicagoData} />}
+              {typedCity === "miami" && <S10_MiamiInsights building={building} miamiData={data.miamiData} />}
+              {typedCity === "houston" && <S10_HoustonInsights building={building} houstonData={data.houstonData} />}
+              {typedCity === "nyc" && <S10_NYCInsights building={building} />}
             </div>
 
             <SideRail building={building} data={data} city={typedCity} cityPrefix={cityPrefix} />
