@@ -41,28 +41,29 @@ function shortBedLabel(beds: number): string {
   return `${beds} Bed`;
 }
 
-// Compute latest neighborhood median per month, extract YoY %.
+// Compute latest neighborhood median (averaged across bedrooms), extract YoY %.
 function neighborhoodYoY(series: BuildingV2Data["rents"]["neighborhood"]): { latest: number | null; yoyPct: number | null; monthLabel: string } {
   if (!series.length) return { latest: null, yoyPct: null, monthLabel: "" };
-  const byMonth = [...series].sort((a, b) => b.month.localeCompare(a.month));
-  const latestEntry = byMonth[0];
-  const latest = latestEntry.median_rent;
-  // Parse date safely — month can be "2024-07" or "2024-07-01"
-  const datePart = latestEntry.month?.slice(0, 7); // "YYYY-MM"
-  const monthLabel = datePart
-    ? new Date(datePart + "-15").toLocaleString("en-US", { month: "long", year: "numeric" })
-    : "";
-  // Find ~12 months back: compute target month string
-  if (!datePart) return { latest, yoyPct: null, monthLabel };
-  const year = parseInt(datePart.slice(0, 4));
-  const mon = parseInt(datePart.slice(5, 7));
-  const priorYear = mon === 12 ? year - 1 : year - 1;
-  const priorMon = mon;
-  const priorPrefix = `${priorYear}-${String(priorMon).padStart(2, "0")}`;
-  const yearAgo = byMonth.find((r) => r.month.startsWith(priorPrefix));
+  const sorted = [...series].sort((a, b) => b.month.localeCompare(a.month));
+  const latestMonth = sorted[0].month?.slice(0, 7);
+  if (!latestMonth) return { latest: null, yoyPct: null, monthLabel: "" };
+
+  // Average all bedroom medians for the latest month
+  const latestRows = sorted.filter((r) => r.month?.startsWith(latestMonth) && r.median_rent);
+  const latest = latestRows.length
+    ? Math.round(latestRows.reduce((s, r) => s + (r.median_rent ?? 0), 0) / latestRows.length)
+    : null;
+
+  const monthLabel = new Date(latestMonth + "-15").toLocaleString("en-US", { month: "long", year: "numeric" });
+
+  // YoY: compare to same month last year
+  const year = parseInt(latestMonth.slice(0, 4));
+  const priorPrefix = `${year - 1}-${latestMonth.slice(5, 7)}`;
+  const priorRows = sorted.filter((r) => r.month?.startsWith(priorPrefix) && r.median_rent);
   let yoyPct: number | null = null;
-  if (latest && yearAgo?.median_rent) {
-    yoyPct = ((latest - yearAgo.median_rent) / yearAgo.median_rent) * 100;
+  if (latest && priorRows.length) {
+    const prior = Math.round(priorRows.reduce((s, r) => s + (r.median_rent ?? 0), 0) / priorRows.length);
+    if (prior > 0) yoyPct = ((latest - prior) / prior) * 100;
   }
   return { latest, yoyPct, monthLabel };
 }

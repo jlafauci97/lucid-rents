@@ -51,6 +51,7 @@ export interface BuildingV2Data {
     neighborhood: Array<{
       zip_code: string;
       month: string;
+      beds: number | null;
       median_rent: number | null;
     }>;
   };
@@ -243,20 +244,20 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
       return data ?? [];
     }, [] as BuildingV2Data["rents"]["historic"]),
 
-    // Neighborhood median rents by zip
+    // Neighborhood median rents by zip (per bedroom)
     // NOTE: dewey_neighborhood_rents uses "zip" column (not "zip_code")
     safe(async () => {
       if (!zipCode) return [];
       const { data } = await supabase
         .from("dewey_neighborhood_rents")
-        .select("zip, month, median_rent")
+        .select("zip, month, beds, median_rent")
         .eq("zip", zipCode)
         .order("month", { ascending: false })
-        .limit(24);
-      // Normalize "zip" → "zip_code" to match the BuildingV2Data shape
+        .limit(60);
       return (data ?? []).map((r) => ({
         zip_code: (r as { zip: string }).zip,
         month: (r as { month: string }).month,
+        beds: (r as { beds: number | null }).beds,
         median_rent: (r as { median_rent: number | null }).median_rent,
       }));
     }, [] as BuildingV2Data["rents"]["neighborhood"]),
