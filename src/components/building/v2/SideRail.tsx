@@ -40,6 +40,17 @@ function bedLabel(beds: number): string {
   return `${beds} Bed`;
 }
 
+function crimeSourceLabel(city: string): string {
+  switch (city) {
+    case "nyc": return "NYPD CompStat";
+    case "chicago": return "Chicago Police Dept";
+    case "los-angeles": return "LAPD";
+    case "miami": return "Miami-Dade PD";
+    case "houston": return "Houston PD";
+    default: return "Local police data";
+  }
+}
+
 function BuildingMiniIllust() {
   return (
     <svg viewBox="0 0 120 120" fill="none">
@@ -340,9 +351,9 @@ export function SideRail({ building, data, city, cityPrefix }: Props) {
 
       {/* 7 · Nearby Recreation — REMOVED. Redundant with S06 Location section, which has live recreation data. */}
 
-      {/* 8 · Safety & Crime — NYC only (aggregated from nypd_complaints in this zip, last 12 months).
-          Other cities don't have crime data loaded yet (the data query returns zeros for non-NYC). */}
-      {city === "nyc" && (
+      {/* 8 · Safety & Crime — aggregated from crime data in this zip, last 12 months.
+          Available for nyc, chicago, los-angeles, houston. Miami has no crime data loaded yet. */}
+      {city !== "miami" && data.crime.total12mo > 0 && (
       <section className="sr-card">
         <header className="sr-head">
           <span className="sr-icon navy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
@@ -376,7 +387,7 @@ export function SideRail({ building, data, city, cityPrefix }: Props) {
           </>
         ) : null}
 
-        <div className="sr-foot">NYPD CompStat · {data.crime.total12mo > 0 ? "updated weekly" : "no records in this zip"}</div>
+        <div className="sr-foot">{crimeSourceLabel(city)} · {data.crime.total12mo > 0 ? "updated weekly" : "no records in this zip"}</div>
       </section>
       )}
 

@@ -712,14 +712,17 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
     }, { pub: [], charter: [], priv: [] } as { pub: BuildingV2Data["nearby"]["schoolsPublic"]; charter: BuildingV2Data["nearby"]["schoolsCharter"]; priv: BuildingV2Data["nearby"]["schoolsPrivate"] }),
 
     // Crime — last 12 months in the zip (approximation for "0.5 mi radius").
-    // nypd_complaints only has NYC data; other metros return fallback.
+    // nypd_complaints actually stores crime for NYC, Chicago, LA, Houston via metro column.
+    // Miami has no crime data loaded yet.
     safe(async () => {
-      if (!zipCode || building.metro !== "nyc") return { total12mo: 0, violent: 0, property: 0, qualityOfLife: 0, safetyScore: 50, precinct: null };
+      if (!zipCode) return { total12mo: 0, violent: 0, property: 0, qualityOfLife: 0, safetyScore: 50, precinct: null };
+      if (building.metro === "miami") return { total12mo: 0, violent: 0, property: 0, qualityOfLife: 0, safetyScore: 50, precinct: null };
       const since = new Date(); since.setMonth(since.getMonth() - 12);
       const { data } = await supabase
         .from("nypd_complaints")
         .select("crime_category, law_category, precinct")
         .eq("zip_code", zipCode)
+        .eq("metro", building.metro ?? "nyc")
         .gte("cmplnt_date", since.toISOString().slice(0, 10));
       const rows = (data ?? []) as Array<{ crime_category: string | null; law_category: string | null; precinct: string | null }>;
       let violent = 0, property = 0, qol = 0;
