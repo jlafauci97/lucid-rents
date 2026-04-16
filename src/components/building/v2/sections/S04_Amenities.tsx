@@ -72,13 +72,19 @@ export function S04_Amenities({ amenities }: Props) {
 
   const buckets = new Map<string, string[]>();
   for (const cat of CATEGORIES) buckets.set(cat.key, []);
+  buckets.set("other", []);
   for (const a of unique) {
     const cat = CATEGORIES.find((c) => c.match(a.amenity));
-    if (cat) buckets.get(cat.key)!.push(a.amenity);
+    if (cat) {
+      buckets.get(cat.key)!.push(a.amenity);
+    } else {
+      buckets.get("other")!.push(a.amenity);
+    }
   }
 
   const total = unique.length;
   const nonEmpty = CATEGORIES.filter((c) => (buckets.get(c.key) ?? []).length > 0);
+  const otherItems = buckets.get("other") ?? [];
 
   return (
     <section className="section" id="amenities">
@@ -99,7 +105,7 @@ export function S04_Amenities({ amenities }: Props) {
           <span className="ri-pill">{total} amenit{total === 1 ? "y" : "ies"}</span>
         </header>
 
-        {nonEmpty.length ? (
+        {nonEmpty.length || otherItems.length ? (
           <div className="am-grid">
             {nonEmpty.map((cat) => (
               <div key={cat.key} className={`am-cat ${cat.colorClass}`}>
@@ -114,6 +120,19 @@ export function S04_Amenities({ amenities }: Props) {
                 </ul>
               </div>
             ))}
+            {otherItems.length > 0 && (
+              <div className="am-cat cat-slate">
+                <div className="am-cat-head">
+                  {BUILDING_SVG}
+                  OTHER
+                </div>
+                <ul>
+                  {otherItems.slice(0, 15).map((name) => (
+                    <li key={name}>{name}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         ) : (
           <div className="am-grid">

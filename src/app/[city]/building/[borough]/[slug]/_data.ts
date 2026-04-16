@@ -523,6 +523,7 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
         .from("buildings")
         .select("id, full_address, slug, borough, overall_score")
         .eq(column, ownerName)
+        .eq("metro", building.metro)
         .neq("id", buildingId)
         .limit(6);
       return data ?? [];
@@ -535,7 +536,8 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
       const { data } = await supabase
         .from("buildings")
         .select("overall_score")
-        .eq(column, ownerName);
+        .eq(column, ownerName)
+        .eq("metro", building.metro);
       const arr = (data as Array<{ overall_score: number | null }> | null) ?? [];
       const portfolioSize = arr.length;
       const scores = arr.map((r) => r.overall_score).filter((n): n is number => typeof n === "number");
@@ -635,8 +637,9 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
     }, { pub: [], charter: [], priv: [] } as { pub: BuildingV2Data["nearby"]["schoolsPublic"]; charter: BuildingV2Data["nearby"]["schoolsCharter"]; priv: BuildingV2Data["nearby"]["schoolsPrivate"] }),
 
     // Crime — last 12 months in the zip (approximation for "0.5 mi radius").
+    // nypd_complaints only has NYC data; other metros return fallback.
     safe(async () => {
-      if (!zipCode) return { total12mo: 0, violent: 0, property: 0, qualityOfLife: 0, safetyScore: 50, precinct: null };
+      if (!zipCode || building.metro !== "nyc") return { total12mo: 0, violent: 0, property: 0, qualityOfLife: 0, safetyScore: 50, precinct: null };
       const since = new Date(); since.setMonth(since.getMonth() - 12);
       const { data } = await supabase
         .from("nypd_complaints")

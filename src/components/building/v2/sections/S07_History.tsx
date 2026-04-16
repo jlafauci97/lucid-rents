@@ -8,13 +8,48 @@
 
 import type { BuildingV2Data } from "@/app/[city]/building/[borough]/[slug]/_data";
 import type { Building } from "@/types";
+import type { TimelineEvent } from "@/lib/timeline";
 
 interface Props {
   building: Building;
   landlord: BuildingV2Data["landlord"];
+  timeline: TimelineEvent[];
 }
 
-export function S07_History({ building, landlord }: Props) {
+function formatTimelineDate(iso: string): string {
+  if (!iso) return "\u2014";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "\u2014";
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function sourceColor(type: string): string {
+  switch (type) {
+    case "hpd_violation": return "#ef4444";
+    case "dob_violation": return "#f97316";
+    case "complaint_311": return "#eab308";
+    case "eviction": return "#991b1b";
+    case "litigation": return "#8b5cf6";
+    case "permit": return "#3b82f6";
+    case "bedbug": return "#92400e";
+    default: return "#64748b";
+  }
+}
+
+function sourceLabel(type: string): string {
+  switch (type) {
+    case "hpd_violation": return "HPD";
+    case "dob_violation": return "DOB";
+    case "complaint_311": return "311";
+    case "eviction": return "Eviction";
+    case "litigation": return "Litigation";
+    case "permit": return "Permit";
+    case "bedbug": return "Bedbug";
+    default: return "Event";
+  }
+}
+
+export function S07_History({ building, landlord, timeline }: Props) {
   // Decade markers that span the building's lifetime.
   const startYear = building.year_built ?? new Date().getFullYear() - 50;
   const endYear = new Date().getFullYear();
@@ -96,6 +131,30 @@ export function S07_History({ building, landlord }: Props) {
           )}
         </div>
       </div>
+
+      {/* Recent Activity — from timeline events */}
+      {timeline.length > 0 && (
+        <div className="ww-card ww-mt">
+          <header className="ww-head">
+            <h3>Recent Activity</h3>
+            <span className="ri-pill">{timeline.length} event{timeline.length === 1 ? "" : "s"}</span>
+          </header>
+          <ul className="rec-list">
+            {timeline.slice(0, 10).map((ev) => (
+              <li key={ev.id} className="rec-item">
+                <header className="rec-item-head">
+                  <span className="rec-class" style={{ color: sourceColor(ev.type) }}>{sourceLabel(ev.type)}</span>
+                  <span className={`rec-status ${ev.severity === "high" ? "open" : "closed"}`}>
+                    {ev.severity === "high" ? "HIGH" : ev.severity === "medium" ? "MEDIUM" : ev.severity === "info" ? "INFO" : "LOW"}
+                  </span>
+                  <span className="rec-date">{formatTimelineDate(ev.date)}</span>
+                </header>
+                <p className="rec-body">{ev.title}{ev.description && ev.description !== ev.title ? ` \u2014 ${ev.description.slice(0, 120)}` : ""}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </section>
   );
 }

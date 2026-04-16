@@ -121,9 +121,10 @@ export function S01_RentalIntelligence({ rents, neighborhoodName, isRentStabiliz
   const rangeRow = (beds: number) => {
     const r = rents.current.find((rr) => rr.bedrooms === beds);
     if (!r?.median_rent) return null;
+    const hasRealRange = r.min_rent != null && r.max_rent != null;
     const lo = Math.round((r.min_rent ?? r.median_rent * 0.6));
     const hi = Math.round((r.max_rent ?? r.median_rent * 1.4));
-    return { lo, hi, median: r.median_rent, listings: r.listing_count };
+    return { lo, hi, median: r.median_rent, listings: r.listing_count, isSynthetic: !hasRealRange };
   };
 
   return (
@@ -303,6 +304,11 @@ export function S01_RentalIntelligence({ rents, neighborhoodName, isRentStabiliz
           <span><span className="rr-dot median"></span>Median rent</span>
           <span style={{ marginLeft: "auto" }}>Based on recent listings in {neighborhoodName}</span>
         </div>
+        {rangeBands.some((beds) => { const r = rangeRow(beds); return r?.isSynthetic; }) && (
+          <div className="rr-legend" style={{ fontSize: 11, opacity: 0.6, marginTop: 4 }}>
+            * Range estimated from median where min/max data unavailable
+          </div>
+        )}
       </div>
     </section>
   );

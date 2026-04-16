@@ -112,6 +112,7 @@ export function S06_Location({ building, city, nearby, neighborhoodStats }: Prop
             <div className="walk-score">{ring(t)}<div className="n">{t}</div><div className="l">Transit</div></div>
             <div className="walk-score">{ring(bk)}<div className="n">{bk}</div><div className="l">Bike</div></div>
           </div>
+          <div style={{ fontSize: 11, opacity: 0.55, textAlign: "center", marginTop: 6 }}>Estimated from nearby transit &amp; amenity data</div>
           <div className="nearby">
             {nearby.transitSubway.length > 0 && (
               <div className="row">

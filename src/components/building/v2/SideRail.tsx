@@ -78,7 +78,7 @@ export function SideRail({ building, data, city, cityPrefix }: Props) {
 
   // Review summary stats.
   const rating = data.reviews.avgRating;
-  const recommendPct = rating > 0 ? Math.round((rating / 5) * 100) : 0;
+  const recommendPct = rating > 0 ? rating.toFixed(1) : "0.0";
 
   return (
     <aside className="sr" aria-label="Building side info">
@@ -117,8 +117,8 @@ export function SideRail({ building, data, city, cityPrefix }: Props) {
 
         <div className="rs-reco">
           <div className="rs-reco-num">
-            <span className="n">{recommendPct}%</span>
-            <span className="rs-reco-bar"><span style={{ width: `${recommendPct}%` }}></span></span>
+            <span className="n">{recommendPct} / 5</span>
+            <span className="rs-reco-bar"><span style={{ width: `${Math.round((rating / 5) * 100)}%` }}></span></span>
           </div>
           <div className="rs-reco-meta">
             <b>{rating >= 3.5 ? "Would recommend" : "Mixed feedback"}</b>
@@ -220,6 +220,7 @@ export function SideRail({ building, data, city, cityPrefix }: Props) {
                   {subwayCount > 0 ? <span className="sr-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="4" y="3" width="16" height="16" rx="2"/><circle cx="8" cy="17" r="1.5"/><circle cx="16" cy="17" r="1.5"/><path d="M4 11h16"/></svg>Subway</span> : null}
                   {busCount > 0 ? <span className="sr-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 6v6M16 6v6M2 12h20M7 18h.01M17 18h.01M20 18V8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v10"/></svg>Bus</span> : null}
                 </div>
+                <div className="sr-foot">Estimated from nearby transit stop data</div>
               </>
             ) : null}
           </section>
@@ -364,7 +365,7 @@ export function SideRail({ building, data, city, cityPrefix }: Props) {
           </>
         ) : null}
 
-        <div className="sr-foot">NYPD CompStat · {data.crime.total12mo > 0 ? "updated weekly" : "no records in this zip"}</div>
+        <div className="sr-foot">{city === "nyc" ? "NYPD CompStat" : city === "los-angeles" ? "LAPD Crime Data" : city === "chicago" ? "CPD Crime Data" : city === "miami" ? "Miami-Dade PD" : city === "houston" ? "HPD Crime Data" : "Police Dept."} · {data.crime.total12mo > 0 ? "updated weekly" : "no records in this zip"}</div>
       </section>
 
       {/* 9 · At a glance */}

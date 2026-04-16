@@ -55,7 +55,7 @@ export function S03_TenantReviews({ reviews, seeAllUrl }: Props) {
             {"★ ".repeat(filledStars)}
             {filledStars < 5 ? <span style={{ opacity: 0.35 }}>{"★ ".repeat(5 - filledStars).trim()}</span> : null}
           </div>
-          <div className="count">{reviews.total.toLocaleString()} reviews{reviews.total > 0 ? " · sentiment trending ↑" : ""}</div>
+          <div className="count">{reviews.total.toLocaleString()} reviews</div>
         </div>
         <div className="reviews-bars">
           {[5, 4, 3, 2, 1].map((stars, idx) => (

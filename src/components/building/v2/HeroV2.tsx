@@ -46,7 +46,7 @@ function addressParts(full: string): { street: string; rest: string } {
 }
 
 
-export function HeroV2({ building, rents, reviews, landlord }: Props) {
+export function HeroV2({ building, rents, reviews, landlord, city }: Props) {
   const { street, rest } = addressParts(building.full_address);
   const { low, high } = rentBounds(rents.current);
   const metaParts: string[] = [];
@@ -103,7 +103,7 @@ export function HeroV2({ building, rents, reviews, landlord }: Props) {
               )}
             </div>
           </div>
-          <a className="cta-btn primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Leave a review</a>
+          <Link className="cta-btn primary" href={`/${city}/building/${building.borough.toLowerCase().replace(/\s+/g, "-")}/${building.slug}/review`}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Leave a review</Link>
         </div>
 
         {/* Trust / protections / social signals combined */}
@@ -139,7 +139,7 @@ export function HeroV2({ building, rents, reviews, landlord }: Props) {
       <aside className="verdict">
         <div className="verdict-eyebrow">
           <span>The verdict</span>
-          <span className="src">updated today</span>
+          <span className="src">LucidIQ Score</span>
         </div>
         <div className="grade-row">
           {/* LucidIQ Score badge — Stack variant (dark hex, grade + stars + rating, ribbon overlay) */}

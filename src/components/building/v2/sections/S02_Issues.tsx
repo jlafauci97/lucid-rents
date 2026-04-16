@@ -13,6 +13,7 @@
 
 import type { BuildingV2Data } from "@/app/[city]/building/[borough]/[slug]/_data";
 import { ViolationsByUnit } from "@/components/building/ViolationsByUnit";
+import { RecentRecordsTabs } from "./RecentRecordsTabs";
 
 interface Props {
   issues: BuildingV2Data["issues"];
@@ -48,13 +49,6 @@ function trendDirection(total: number, recentHalfCount: number): "Improving" | "
   return "Steady";
 }
 
-function formatVioDate(iso: string): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-}
-
 export function S02_Issues({ issues, hpdViolations, buildingId, hpdCount, dobCount, complaintsCount, evictionsCount, seeAllUrl }: Props) {
   const totalAll = hpdCount + dobCount + complaintsCount + evictionsCount;
 
@@ -81,9 +75,6 @@ export function S02_Issues({ issues, hpdViolations, buildingId, hpdCount, dobCou
     for (let y = fy; y <= ly; y++) years.push(y.toString());
     return years;
   })();
-
-  // Render recent HPD from recentViolations (filter by source).
-  const hpdRecent = issues.recentViolations.filter((r) => r.source === "HPD").slice(0, 5);
 
   // Compute bar widths for top lists (proportional to max count).
   const barWidth = (n: number, all: typeof issues.hpdTop | typeof issues.complaintsTop) => {
@@ -212,18 +203,18 @@ export function S02_Issues({ issues, hpdViolations, buildingId, hpdCount, dobCou
             <span className="ri-pill">{dobCount.toLocaleString()} total</span>
           </header>
           <ul className="ww-list sky">
-            <li><div className="k">DOB aggregation coming soon</div><div className="bar"><span style={{ width: "0%" }}></span></div><div className="n">—</div></li>
+            <li><div className="k">DOB Violations</div><div className="bar"><span style={{ width: dobCount > 0 ? "100%" : "0%" }}></span></div><div className="n">{dobCount}</div></li>
           </ul>
         </div>
 
         {/* Evictions — placeholder (we have counts but not typology breakdown yet) */}
         <div className="ww-topcard">
           <header className="ww-head">
-            <h3><span className="src-pill violet">ACRIS</span>Evictions</h3>
+            <h3><span className="src-pill violet">Evictions</span>Evictions</h3>
             <span className="ri-pill">{evictionsCount.toLocaleString()} filed</span>
           </header>
           <ul className="ww-list violet">
-            <li><div className="k">Typology breakdown coming soon</div><div className="bar"><span style={{ width: "0%" }}></span></div><div className="n">—</div></li>
+            <li><div className="k">Evictions filed</div><div className="bar"><span style={{ width: evictionsCount > 0 ? "100%" : "0%" }}></span></div><div className="n">{evictionsCount}</div></li>
           </ul>
         </div>
       </div>
@@ -237,61 +228,8 @@ export function S02_Issues({ issues, hpdViolations, buildingId, hpdCount, dobCou
         />
       )}
 
-      {/* Recent records — tabbed by source. Only HPD tab wired today. */}
-      <div className="ww-card ww-mt">
-        <header className="ww-head">
-          <h3>Recent records</h3>
-          <span className="ri-pill">Last 7 years</span>
-        </header>
-
-        <div className="rec-tabs" role="tablist">
-          <button className="rec-tab active" data-src="hpd">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
-            HPD Violations <span className="c">({hpdCount.toLocaleString()})</span>
-          </button>
-          <button className="rec-tab" data-src="311">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            311 Complaints <span className="c">({complaintsCount.toLocaleString()})</span>
-          </button>
-          <button className="rec-tab" data-src="dob">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-            DOB Violations <span className="c">({dobCount.toLocaleString()})</span>
-          </button>
-          <button className="rec-tab" data-src="evict">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 21V7l9-4 9 4v14"/><path d="M9 21V12h6v9"/></svg>
-            Evictions <span className="c">({evictionsCount.toLocaleString()})</span>
-          </button>
-        </div>
-
-        <ul className="rec-list">
-          {hpdRecent.length ? hpdRecent.map((v) => (
-            <li key={v.id} className="rec-item">
-              <header className="rec-item-head">
-                <span className="rec-class">{v.class ? `Class ${v.class}` : "Violation"}</span>
-                <span className={`rec-status ${v.status?.toLowerCase().includes("open") ? "open" : "closed"}`}>
-                  {v.status || "Recorded"}
-                </span>
-                <span className="rec-date">{formatVioDate(v.date)}</span>
-              </header>
-              <p className="rec-body">{v.description || v.category}</p>
-            </li>
-          )) : (
-            <li className="rec-item">
-              <header className="rec-item-head">
-                <span className="rec-class">—</span>
-                <span className="rec-status closed">NO RECORDS</span>
-                <span className="rec-date">—</span>
-              </header>
-              <p className="rec-body">No HPD violations on file in the last 7 years.</p>
-            </li>
-          )}
-        </ul>
-
-        <a className="ww-seeall" href={seeAllUrl}>
-          See all {hpdCount.toLocaleString()} HPD violations
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-        </a>
-      </div>
+      {/* Recent records — tabbed by source */}
+      <RecentRecordsTabs records={issues.recentViolations} hpdCount={hpdCount} complaintsCount={complaintsCount} dobCount={dobCount} evictionsCount={evictionsCount} seeAllUrl={seeAllUrl} />
     </section>
   );
 }

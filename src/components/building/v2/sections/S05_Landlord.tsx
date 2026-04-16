@@ -162,11 +162,6 @@ export function S05_Landlord({ building, landlord, city }: Props) {
             <span className="ll-tl-year">now</span>
             <span className="ll-tl-body"><b>{landlord.name ?? "Current owner"}</b><small>Owner of record per HPD registration{landlord.portfolioSize > 1 ? ` · manages ${landlord.portfolioSize} buildings` : ""}.</small></span>
           </li>
-          <li className="ll-tl future">
-            <span className="ll-tl-dot"></span>
-            <span className="ll-tl-year">tbd</span>
-            <span className="ll-tl-body"><b>Deed history</b><small>ACRIS deed aggregation coming in a follow-up.</small></span>
-          </li>
         </ol>
       </div>
     </section>
