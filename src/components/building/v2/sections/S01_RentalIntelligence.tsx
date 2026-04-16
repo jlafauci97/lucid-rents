@@ -97,17 +97,12 @@ export function S01_RentalIntelligence({ rents, neighborhoodName, isRentStabiliz
     ? Math.round((1 - Math.min(...monthly.bars.filter((b) => b > 0)) / Math.max(...monthly.bars)) * 100)
     : null;
 
-  // Bedroom tiles for NMR — 4 bands (Studio/1/2/3). Show building-specific data
-  // when available; only fall back to neighborhood median for beds with no data.
-  const bedBands = [0, 1, 2, 3];
-  const tileFor = (beds: number) => {
-    const current = rents.current.find((r) => r.bedrooms === beds);
-    if (current?.median_rent) {
-      return { median: current.median_rent, delta: null as number | null, fromBuilding: true };
-    }
-    // No building-specific data for this bedroom count — show neighborhood median only if we have it
-    return { median: nbhMedian, delta: null as number | null, fromBuilding: false };
-  };
+  // Bedroom tiles — only show bedrooms with actual building listing data.
+  // Never repeat the same neighborhood median across different bedroom counts.
+  const buildingBeds = rents.current
+    .filter((r) => r.median_rent && r.median_rent > 0)
+    .sort((a, b) => a.bedrooms - b.bedrooms);
+  const hasListingData = buildingBeds.length > 0;
 
   // Units historic per bedroom — take latest historic entry per bedroom
   const unitsByBed = new Map<number, { rent: number | null; count: number }>();
@@ -163,30 +158,21 @@ export function S01_RentalIntelligence({ rents, neighborhoodName, isRentStabiliz
         </header>
 
         <div className="nmr-grid">
-          {bedBands.map((beds) => {
-            const t = tileFor(beds);
-            if (!t.median) return (
-              <div key={beds} className="nmr-tile">
-                <div className="nmr-top"><span className="nmr-k">{bedLabel(beds)}</span></div>
-                <div className="nmr-v">—</div>
+          {hasListingData ? buildingBeds.map((r) => (
+            <div key={r.bedrooms} className="nmr-tile">
+              <div className="nmr-top">
+                <span className="nmr-k">{bedLabel(r.bedrooms)}</span>
               </div>
-            );
-            return (
-              <div key={beds} className="nmr-tile">
-                <div className="nmr-top">
-                  <span className="nmr-k">{bedLabel(beds)}</span>
-                  {t.delta != null ? (
-                    <span className={`nmr-delta ${t.delta >= 0 ? "up" : "down"}`}>
-                      {t.delta >= 0 ? "▲" : "▼"} {Math.abs(t.delta).toFixed(1)}%
-                    </span>
-                  ) : null}
-                </div>
-                <div className="nmr-v">{money(t.median)}<small>/mo</small></div>
-                <div className="nmr-bar"><span style={{ width: `${Math.min(100, Math.round((t.median / 8000) * 100))}%` }}></span></div>
-                {!t.fromBuilding ? <div className="nmr-note" style={{ fontSize: 10, opacity: 0.5, marginTop: 2 }}>area median</div> : null}
-              </div>
-            );
-          })}
+              <div className="nmr-v">{money(r.median_rent)}<small>/mo</small></div>
+              <div className="nmr-bar"><span style={{ width: `${Math.min(100, Math.round(((r.median_rent ?? 0) / 8000) * 100))}%` }}></span></div>
+              {r.listing_count > 0 ? <div style={{ fontSize: 10, opacity: 0.5, marginTop: 2 }}>{r.listing_count} listing{r.listing_count > 1 ? "s" : ""}</div> : null}
+            </div>
+          )) : (
+            <div className="nmr-tile" style={{ gridColumn: "1 / -1", textAlign: "center", padding: "12px 0" }}>
+              <div className="nmr-v" style={{ fontSize: 14, opacity: 0.6 }}>No active listings for this building</div>
+              {nbhMedian ? <div style={{ marginTop: 4 }}>Area median: <b>{money(nbhMedian)}</b>/mo</div> : null}
+            </div>
+          )}
         </div>
 
         <div className="nmr-foot">
