@@ -338,18 +338,11 @@ export function SideRail({ building, data, city, cityPrefix }: Props) {
         ) : null}
       </section>
 
-      {/* 7 · Nearby Recreation — client-side fetch from /api/recreation/nearby (Overpass) */}
-      <section className="sr-card">
-        <header className="sr-head">
-          <span className="sr-icon good"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22V12M6 8a6 6 0 0 1 12 0c0 5-6 10-6 10S6 13 6 8z"/></svg></span>
-          <h4>Nearby Recreation</h4>
-        </header>
-        <div className="sr-foot" style={{ padding: "12px 0" }}>
-          Parks, gyms &amp; entertainment load on-demand from OpenStreetMap. See the Location section for live data.
-        </div>
-      </section>
+      {/* 7 · Nearby Recreation — REMOVED. Redundant with S06 Location section, which has live recreation data. */}
 
-      {/* 8 · Safety & Crime — aggregated from nypd_complaints in this zip, last 12 months */}
+      {/* 8 · Safety & Crime — NYC only (aggregated from nypd_complaints in this zip, last 12 months).
+          Other cities don't have crime data loaded yet (the data query returns zeros for non-NYC). */}
+      {city === "nyc" && (
       <section className="sr-card">
         <header className="sr-head">
           <span className="sr-icon navy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
@@ -383,23 +376,62 @@ export function SideRail({ building, data, city, cityPrefix }: Props) {
           </>
         ) : null}
 
-        <div className="sr-foot">{city === "nyc" ? "NYPD CompStat" : city === "los-angeles" ? "LAPD Crime Data" : city === "chicago" ? "CPD Crime Data" : city === "miami" ? "Miami-Dade PD" : city === "houston" ? "HPD Crime Data" : "Police Dept."} · {data.crime.total12mo > 0 ? "updated weekly" : "no records in this zip"}</div>
+        <div className="sr-foot">NYPD CompStat · {data.crime.total12mo > 0 ? "updated weekly" : "no records in this zip"}</div>
       </section>
+      )}
 
-      {/* 9 · At a glance */}
-      <section className="sr-card sr-facts">
-        <header className="sr-head">
-          <span className="sr-icon navy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-6h6v6M8 6h.01M16 6h.01M8 10h.01M16 10h.01M8 14h.01M16 14h.01"/></svg></span>
-          <h4>At a glance</h4>
-        </header>
-        <div className="es-row"><span className="k">Year built</span><span className="v">{building.year_built ?? "—"}</span></div>
-        <div className="es-row"><span className="k">Floors</span><span className="v">{building.num_floors ?? "—"}</span></div>
-        <div className="es-row"><span className="k">Total units</span><span className="v">{building.total_units?.toLocaleString() ?? "—"}</span></div>
-        <div className="es-row"><span className="k">Rent-stab units</span><span className="v">{building.is_rent_stabilized && building.total_units ? `${building.total_units.toLocaleString()}` : "—"}</span></div>
-        <div className="es-row"><span className="k">Class</span><span className="v">{building.building_class ?? "—"}</span></div>
-        {building.bbl ? <div className="es-row"><span className="k">BBL</span><span className="v mono-v">{building.bbl}</span></div> : null}
-        {building.bin ? <div className="es-row"><span className="k">BIN</span><span className="v mono-v">{building.bin}</span></div> : null}
-      </section>
+      {/* 9 · At a glance — city-aware fields. Hides entirely when there's nothing to show. */}
+      {(() => {
+        // Houston falls back to hcad_land_use for "Class" since building_class is rarely populated outside NYC.
+        const buildingAny = building as unknown as Record<string, unknown>;
+        const houstonClass = city === "houston"
+          ? (buildingAny.hcad_land_use as string | null | undefined) ?? null
+          : null;
+        const classValue = building.building_class ?? houstonClass ?? null;
+
+        // Stabilized/regulated unit row varies by city.
+        // - NYC: "Rent-stab units" — total_units when is_rent_stabilized
+        // - LA: "RSO units" — total_units when is_rent_stabilized
+        // - Chicago: "RLTO protected" — Yes/No based on is_rlto_protected
+        // - Miami/Houston: hide row entirely
+        const isRlto = (buildingAny.is_rlto_protected as boolean | null | undefined) ?? null;
+        let stabilizedRow: { label: string; value: string } | null = null;
+        if (city === "nyc" && building.is_rent_stabilized && building.total_units) {
+          stabilizedRow = { label: "Rent-stab units", value: building.total_units.toLocaleString() };
+        } else if (city === "los-angeles" && building.is_rent_stabilized && building.total_units) {
+          stabilizedRow = { label: "RSO units", value: building.total_units.toLocaleString() };
+        } else if (city === "chicago" && isRlto != null) {
+          stabilizedRow = { label: "RLTO protected", value: isRlto ? "Yes" : "No" };
+        }
+
+        // If every visible field is empty, render nothing — avoid an empty card of dashes.
+        const hasAnyData =
+          building.year_built != null ||
+          building.num_floors != null ||
+          building.total_units != null ||
+          stabilizedRow != null ||
+          classValue != null ||
+          building.bbl != null ||
+          building.bin != null;
+
+        if (!hasAnyData) return null;
+
+        return (
+          <section className="sr-card sr-facts">
+            <header className="sr-head">
+              <span className="sr-icon navy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-6h6v6M8 6h.01M16 6h.01M8 10h.01M16 10h.01M8 14h.01M16 14h.01"/></svg></span>
+              <h4>At a glance</h4>
+            </header>
+            {building.year_built != null ? <div className="es-row"><span className="k">Year built</span><span className="v">{building.year_built}</span></div> : null}
+            {building.num_floors != null ? <div className="es-row"><span className="k">Floors</span><span className="v">{building.num_floors}</span></div> : null}
+            {building.total_units != null ? <div className="es-row"><span className="k">Total units</span><span className="v">{building.total_units.toLocaleString()}</span></div> : null}
+            {stabilizedRow ? <div className="es-row"><span className="k">{stabilizedRow.label}</span><span className="v">{stabilizedRow.value}</span></div> : null}
+            {classValue ? <div className="es-row"><span className="k">Class</span><span className="v">{classValue}</span></div> : null}
+            {building.bbl ? <div className="es-row"><span className="k">BBL</span><span className="v mono-v">{building.bbl}</span></div> : null}
+            {building.bin ? <div className="es-row"><span className="k">BIN</span><span className="v mono-v">{building.bin}</span></div> : null}
+          </section>
+        );
+      })()}
 
       {/* 10 · Similar Buildings (5 cards) */}
       <section className="sr-card sr-similar">
