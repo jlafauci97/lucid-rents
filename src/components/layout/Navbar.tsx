@@ -67,15 +67,7 @@ function NavLinksRow({ city }: { city: City }) {
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
         Neighborhoods
       </Link>
-      <Link href={cityPath("/crime", city)}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        Crime
-      </Link>
-      <Link href={cityPath("/feed", city)}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 11a9 9 0 0 1 9 9M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1.5"/></svg>
-        Feed
-      </Link>
-      {/* Tenant Tools — functional dropdown (reuses existing NavDropdown client component) */}
+      {/* Tenant Tools — functional dropdown (includes Feed, Crime, News, and all tools) */}
       <NavDropdown city={city} />
       <Link href={`/${prefix}/review/new`}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
