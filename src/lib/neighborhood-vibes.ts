@@ -201,6 +201,26 @@ export const NEIGHBORHOOD_VIBES: Record<string, Record<string, NeighborhoodVibe>
   },
 };
 
+// Aliases: zip codes that share a neighborhood with another zip but don't
+// have their own vibe entry. Maps "lookup zip" -> "fallback zip with vibe data".
+const ZIP_VIBE_ALIASES: Record<string, Record<string, string>> = {
+  nyc: {
+    "11249": "11211", // North Williamsburg waterfront -> Williamsburg
+    "10004": "10005", // Battery Park area
+    "10006": "10005", // FiDi
+    "10007": "10005", // Tribeca/FiDi
+    "10038": "10005", // Lower Manhattan
+  },
+  "los-angeles": {},
+  chicago: {},
+  miami: {},
+  houston: {},
+};
+
 export function getNeighborhoodVibe(city: string, zipCode: string): NeighborhoodVibe | null {
-  return NEIGHBORHOOD_VIBES[city]?.[zipCode] ?? null;
+  const direct = NEIGHBORHOOD_VIBES[city]?.[zipCode];
+  if (direct) return direct;
+  const alias = ZIP_VIBE_ALIASES[city]?.[zipCode];
+  if (alias) return NEIGHBORHOOD_VIBES[city]?.[alias] ?? null;
+  return null;
 }
