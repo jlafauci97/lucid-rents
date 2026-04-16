@@ -47,9 +47,19 @@ function neighborhoodYoY(series: BuildingV2Data["rents"]["neighborhood"]): { lat
   const byMonth = [...series].sort((a, b) => b.month.localeCompare(a.month));
   const latestEntry = byMonth[0];
   const latest = latestEntry.median_rent;
-  const monthLabel = latestEntry.month ? new Date(latestEntry.month + "-01").toLocaleString("en-US", { month: "long", year: "numeric" }) : "";
-  // Find ~12 months back
-  const yearAgo = byMonth.find((r) => r.month < latestEntry.month.slice(0, 4) + "-" + latestEntry.month.slice(5) && r.month.startsWith((parseInt(latestEntry.month.slice(0, 4)) - 1).toString()));
+  // Parse date safely — month can be "2024-07" or "2024-07-01"
+  const datePart = latestEntry.month?.slice(0, 7); // "YYYY-MM"
+  const monthLabel = datePart
+    ? new Date(datePart + "-15").toLocaleString("en-US", { month: "long", year: "numeric" })
+    : "";
+  // Find ~12 months back: compute target month string
+  if (!datePart) return { latest, yoyPct: null, monthLabel };
+  const year = parseInt(datePart.slice(0, 4));
+  const mon = parseInt(datePart.slice(5, 7));
+  const priorYear = mon === 12 ? year - 1 : year - 1;
+  const priorMon = mon;
+  const priorPrefix = `${priorYear}-${String(priorMon).padStart(2, "0")}`;
+  const yearAgo = byMonth.find((r) => r.month.startsWith(priorPrefix));
   let yoyPct: number | null = null;
   if (latest && yearAgo?.median_rent) {
     yoyPct = ((latest - yearAgo.median_rent) / yearAgo.median_rent) * 100;
@@ -63,7 +73,7 @@ function monthlyIndex(series: BuildingV2Data["rents"]["neighborhood"]): { bars: 
   const buckets = new Array<number[]>(12).fill(null as unknown as number[]).map(() => [] as number[]);
   for (const row of series) {
     if (!row.median_rent || !row.month) continue;
-    const m = parseInt(row.month.slice(5, 7)) - 1;
+    const m = parseInt((row.month ?? "").slice(5, 7)) - 1;
     if (m >= 0 && m < 12) buckets[m].push(row.median_rent);
   }
   const avgs = buckets.map((arr) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0));
@@ -87,14 +97,16 @@ export function S01_RentalIntelligence({ rents, neighborhoodName, isRentStabiliz
     ? Math.round((1 - Math.min(...monthly.bars.filter((b) => b > 0)) / Math.max(...monthly.bars)) * 100)
     : null;
 
-  // Bedroom tiles for NMR — 4 bands (Studio/1/2/3). Pull from neighborhood latest OR current rents as fallback.
+  // Bedroom tiles for NMR — 4 bands (Studio/1/2/3). Show building-specific data
+  // when available; only fall back to neighborhood median for beds with no data.
   const bedBands = [0, 1, 2, 3];
   const tileFor = (beds: number) => {
     const current = rents.current.find((r) => r.bedrooms === beds);
-    return {
-      median: current?.median_rent ?? nbhMedian,
-      delta: null as number | null, // we don't have YoY per bedroom yet
-    };
+    if (current?.median_rent) {
+      return { median: current.median_rent, delta: null as number | null, fromBuilding: true };
+    }
+    // No building-specific data for this bedroom count — show neighborhood median only if we have it
+    return { median: nbhMedian, delta: null as number | null, fromBuilding: false };
   };
 
   // Units historic per bedroom — take latest historic entry per bedroom
@@ -153,6 +165,12 @@ export function S01_RentalIntelligence({ rents, neighborhoodName, isRentStabiliz
         <div className="nmr-grid">
           {bedBands.map((beds) => {
             const t = tileFor(beds);
+            if (!t.median) return (
+              <div key={beds} className="nmr-tile">
+                <div className="nmr-top"><span className="nmr-k">{bedLabel(beds)}</span></div>
+                <div className="nmr-v">—</div>
+              </div>
+            );
             return (
               <div key={beds} className="nmr-tile">
                 <div className="nmr-top">
@@ -164,7 +182,8 @@ export function S01_RentalIntelligence({ rents, neighborhoodName, isRentStabiliz
                   ) : null}
                 </div>
                 <div className="nmr-v">{money(t.median)}<small>/mo</small></div>
-                <div className="nmr-bar"><span style={{ width: t.median ? `${Math.min(100, Math.round((t.median / 8000) * 100))}%` : "0%" }}></span></div>
+                <div className="nmr-bar"><span style={{ width: `${Math.min(100, Math.round((t.median / 8000) * 100))}%` }}></span></div>
+                {!t.fromBuilding ? <div className="nmr-note" style={{ fontSize: 10, opacity: 0.5, marginTop: 2 }}>area median</div> : null}
               </div>
             );
           })}
