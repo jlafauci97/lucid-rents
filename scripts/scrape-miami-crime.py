@@ -92,8 +92,8 @@ DETAIL = f"{BASE}/map/GetDetailRecordInfoJson"
 PROGRESS_FILE = Path(__file__).parent / "progress" / "miami-crime.json"
 PROGRESS_FILE.parent.mkdir(parents=True, exist_ok=True)
 
-REQUEST_DELAY_MIN = 2.0
-REQUEST_DELAY_MAX = 5.0
+REQUEST_DELAY_MIN = float(os.environ.get("CM_DELAY_MIN", "2.0"))
+REQUEST_DELAY_MAX = float(os.environ.get("CM_DELAY_MAX", "5.0"))
 DETAIL_BATCH_SIZE = 8  # number of UUIDs per detail call (mirrors site behavior)
 MAX_RETRIES = 3
 CLUSTER_CAP = 200  # API truncates results above this; subdivide tile when hit
@@ -471,18 +471,17 @@ def scrape_bbox(client: CrimeMappingClient, bbox: tuple, start: datetime, end: d
                     },
                 })
 
-    # NOTE: cmplnt_num column is varchar(20) but our composite ID is longer
-    # (CM-233-<36-char-uuid>). We must truncate-deterministically: use first 20
-    # chars derived from a hash-free slice that's still unique enough for upsert.
-    # Strategy: prefix CM + first 6 of uuid ⇒ "CM<oid><uuid8>" (≤ 20 chars).
+    # cmplnt_num column is varchar(20). Pack a deterministic ID into 20 chars:
+    #   "C" + agency-id (3 char zero-pad) + first 16 hex chars of uuid (no dashes)
+    #   e.g. C233abcdef0123456789  — agency-prefixed ⇒ collision-resistant
+    #   16 hex chars = 64 bits of UUID entropy, collision probability negligible.
     deduped = []
     seen = set()
     for row in incident_rows:
-        # Re-derive a varchar(20)-safe deterministic key
         raw = row["raw_data"]
         oid = raw.get("agency_id") or 0
-        uid8 = (raw.get("uuid", "").split("_", 1)[-1])[:8]
-        key = f"CM{oid}{uid8}"[:20]
+        uid_clean = (raw.get("uuid", "").split("_", 1)[-1]).replace("-", "")
+        key = f"C{int(oid):03d}{uid_clean[:16]}"[:20]
         if key in seen:
             continue
         seen.add(key)
