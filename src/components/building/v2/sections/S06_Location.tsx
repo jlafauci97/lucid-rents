@@ -113,8 +113,33 @@ export function S06_Location({ building, city, nearby, neighborhoodStats }: Prop
             <div className="walk-score">{ring(bk)}<div className="n">{bk}</div><div className="l">Bike</div></div>
           </div>
           <div className="nearby">
-            <div className="row"><span>Live nearby data in right-rail cards</span><span className="d">→</span></div>
-            <div className="row"><span>Transit stops · schools · recreation</span><span className="d">see rail</span></div>
+            {nearby.transitSubway.length > 0 && (
+              <div className="row">
+                <span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 14, height: 14, display: "inline", verticalAlign: "-2px", marginRight: 6, opacity: 0.5 }}><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                  {nearby.transitSubway[0].name}
+                </span>
+                <span className="d">{nearby.transitSubway[0].walkMin} min walk</span>
+              </div>
+            )}
+            {nearby.transitBus.length > 0 && (
+              <div className="row">
+                <span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 14, height: 14, display: "inline", verticalAlign: "-2px", marginRight: 6, opacity: 0.5 }}><path d="M8 6v6M15 6v6M2 12h19.6M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3"/><circle cx="7" cy="18" r="2"/><path d="M9 18h5"/><circle cx="16" cy="18" r="2"/></svg>
+                  {nearby.transitBus.length} bus stop{nearby.transitBus.length > 1 ? "s" : ""} nearby
+                </span>
+                <span className="d">{nearby.transitBus[0].walkMin} min</span>
+              </div>
+            )}
+            {(nearby.schoolsPublic.length > 0 || nearby.schoolsCharter.length > 0) && (
+              <div className="row">
+                <span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 14, height: 14, display: "inline", verticalAlign: "-2px", marginRight: 6, opacity: 0.5 }}><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 12 3 12 0v-5"/></svg>
+                  {nearby.schoolsPublic.length + nearby.schoolsCharter.length} school{nearby.schoolsPublic.length + nearby.schoolsCharter.length > 1 ? "s" : ""} nearby
+                </span>
+                <span className="d">{(nearby.schoolsPublic[0] ?? nearby.schoolsCharter[0])?.walkMin} min</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
