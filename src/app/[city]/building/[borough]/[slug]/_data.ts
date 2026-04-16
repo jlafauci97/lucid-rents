@@ -712,11 +712,33 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
     }, { pub: [], charter: [], priv: [] } as { pub: BuildingV2Data["nearby"]["schoolsPublic"]; charter: BuildingV2Data["nearby"]["schoolsCharter"]; priv: BuildingV2Data["nearby"]["schoolsPrivate"] }),
 
     // Crime — last 12 months in the zip (approximation for "0.5 mi radius").
-    // nypd_complaints actually stores crime for NYC, Chicago, LA, Houston via metro column.
-    // Miami has no crime data loaded yet.
+    // nypd_complaints stores crime for NYC, Chicago, LA, Houston via metro column.
+    // Miami uses annual zip aggregates (apportioned from FDLE UCR by population)
+    // because no public incident-level Miami source exists. See
+    // miami_crime_aggregates and scripts/load-miami-crime-aggregates.mjs.
     safe(async () => {
       if (!zipCode) return { total12mo: 0, violent: 0, property: 0, qualityOfLife: 0, safetyScore: 50, precinct: null };
-      if (building.metro === "miami") return { total12mo: 0, violent: 0, property: 0, qualityOfLife: 0, safetyScore: 50, precinct: null };
+      if (building.metro === "miami") {
+        const { data: agg } = await supabase
+          .from("miami_crime_aggregates")
+          .select("total_incidents, violent_count, property_count, qol_count")
+          .eq("zip", zipCode)
+          .order("year", { ascending: false })
+          .limit(1);
+        const row = agg?.[0];
+        if (!row) return { total12mo: 0, violent: 0, property: 0, qualityOfLife: 0, safetyScore: 50, precinct: null };
+        const total = row.total_incidents ?? 0;
+        // Density-based score: ~12,000 incidents/yr → 0; 0/yr → 100.
+        const safetyScore = Math.max(0, Math.min(100, Math.round(100 - (total / 120))));
+        return {
+          total12mo: total,
+          violent: row.violent_count ?? 0,
+          property: row.property_count ?? 0,
+          qualityOfLife: row.qol_count ?? 0,
+          safetyScore,
+          precinct: null,
+        };
+      }
       const since = new Date(); since.setMonth(since.getMonth() - 12);
       const { data } = await supabase
         .from("nypd_complaints")

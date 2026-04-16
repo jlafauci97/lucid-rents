@@ -45,7 +45,7 @@ function crimeSourceLabel(city: string): string {
     case "nyc": return "NYPD CompStat";
     case "chicago": return "Chicago Police Dept";
     case "los-angeles": return "LAPD";
-    case "miami": return "Miami-Dade PD";
+    case "miami": return "FDLE UCR (annual)";
     case "houston": return "Houston PD";
     default: return "Local police data";
   }
