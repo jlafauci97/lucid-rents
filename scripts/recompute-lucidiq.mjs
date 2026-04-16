@@ -46,18 +46,18 @@ function weightedAverage(parts) {
 }
 
 function scoreToGrade(s) {
-  if (s >= 4.85) return "A+";
-  if (s >= 4.5) return "A";
-  if (s >= 4.15) return "A-";
-  if (s >= 3.85) return "B+";
-  if (s >= 3.5) return "B";
-  if (s >= 3.15) return "B-";
-  if (s >= 2.85) return "C+";
-  if (s >= 2.5) return "C";
-  if (s >= 2.15) return "C-";
-  if (s >= 1.85) return "D+";
-  if (s >= 1.5) return "D";
-  if (s >= 1.15) return "D-";
+  if (s >= 4.7) return "A+";
+  if (s >= 4.3) return "A";
+  if (s >= 4.0) return "A-";
+  if (s >= 3.7) return "B+";
+  if (s >= 3.3) return "B";
+  if (s >= 3.0) return "B-";
+  if (s >= 2.7) return "C+";
+  if (s >= 2.3) return "C";
+  if (s >= 2.0) return "C-";
+  if (s >= 1.7) return "D+";
+  if (s >= 1.3) return "D";
+  if (s >= 1.0) return "D-";
   return "F";
 }
 
@@ -153,9 +153,34 @@ function computeLucidIQ(inputs) {
   const cityRisk = { score: clamp(cScore, 0, 5), weight: WEIGHTS.cityRisk, reason: metro };
 
   const all = [reviews, health, rentFairness, protection, habitability, cityRisk];
+
+  // Count evidence-backed sub-scores (real data signals, not just "no negative info")
+  let evidenceCount = 0;
+  if (inputs.reviewCount > 0) evidenceCount++;
+  if (incidents > 0) evidenceCount++;
+  if (inputs.buildingMedianRent && inputs.neighborhoodMedianRent) evidenceCount++;
+  if (b.is_rent_stabilized || b.ellis_act_filing || evictions > 0 || num(b.buyout_count) > 0) evidenceCount++;
+  if (bedbugs > 0 || leadFails > 0 || num(b.rodent_complaint_count) > 5 || num(b.dangerous_building_count) > 0 || num(b.unsafe_structure_count) > 0) evidenceCount++;
+  if (b.is_soft_story || b.fire_hazard_zone || b.fair_plan_risk || b.is_scofflaw || num(b.sea_level_risk_feet) > 0 || b.in_floodplain || (b.forty_year_recert_status || "").toLowerCase() === "overdue") evidenceCount++;
+
+  // Skip unscoreable buildings entirely
+  if (evidenceCount === 0) {
+    return { score: null, grade: "—", evidenceCount: 0 };
+  }
+
+  // Confidence factor — softer penalty, capped at 0.75 points
+  let confidenceFactor;
+  if (evidenceCount >= 3) confidenceFactor = 1.0;
+  else if (evidenceCount === 2) confidenceFactor = 0.9;
+  else confidenceFactor = 0.75;
+
   const raw = weightedAverage(all);
-  const score = Math.round(clamp(raw, 0, 5) * 10) / 10;
-  return { score, grade: scoreToGrade(score) };
+  const idealAdjusted = 2.5 + (raw - 2.5) * confidenceFactor;
+  const delta = idealAdjusted - raw;
+  const cappedDelta = Math.sign(delta) * Math.min(Math.abs(delta), 0.75);
+  const adjusted = raw + cappedDelta;
+  const score = Math.round(clamp(adjusted, 0, 5) * 10) / 10;
+  return { score, grade: scoreToGrade(score), evidenceCount };
 }
 
 // ---------------------------------------------------------------------------
@@ -219,7 +244,7 @@ const BUILDING_COLS = [
 async function fetchReviewAggregates(buildingIds) {
   // Pull published reviews in chunks; aggregate client-side.
   const out = new Map();
-  const CHUNK = 500;
+  const CHUNK = 100;
   for (let i = 0; i < buildingIds.length; i += CHUNK) {
     const ids = buildingIds.slice(i, i + CHUNK);
     const { data, error } = await sb
@@ -250,7 +275,7 @@ async function fetchReviewAggregates(buildingIds) {
 async function fetchBuildingMedianRents(buildingIds) {
   // Latest median rent per building, any bedroom — use most recent month overall.
   const out = new Map();
-  const CHUNK = 500;
+  const CHUNK = 100;
   for (let i = 0; i < buildingIds.length; i += CHUNK) {
     const ids = buildingIds.slice(i, i + CHUNK);
     const { data, error } = await sb
@@ -300,7 +325,7 @@ async function fetchNeighborhoodMedianRents(zipBedsPairs) {
 async function fetchLeadFailures(buildingIds) {
   // Chicago-only signal; table may not exist or be empty for other metros — fail soft.
   const out = new Map();
-  const CHUNK = 500;
+  const CHUNK = 100;
   for (let i = 0; i < buildingIds.length; i += CHUNK) {
     const ids = buildingIds.slice(i, i + CHUNK);
     const { data, error } = await sb
@@ -386,7 +411,7 @@ async function processChunk(buildings) {
       industrialProximityClosestMi: null,
     });
     updates.push({ id: b.id, score: result.score });
-    sumScore += result.score;
+    if (result.score !== null) sumScore += result.score;
     dist[result.grade] = (dist[result.grade] || 0) + 1;
   }
 
@@ -460,14 +485,17 @@ async function main() {
     if (data.length < PAGE) break;
   }
 
-  const avg = totalProcessed > 0 ? (totalScoreSum / totalProcessed).toFixed(2) : "0";
-  console.log(`\n\nDone. Processed: ${totalProcessed.toLocaleString()}  Avg score: ${avg}`);
-  console.log("Distribution:");
+  const unscoreable = totalDist["—"] || 0;
+  const scored = totalProcessed - unscoreable;
+  const avg = scored > 0 ? (totalScoreSum / scored).toFixed(2) : "0";
+  console.log(`\n\nDone. Processed: ${totalProcessed.toLocaleString()}  Scored: ${scored.toLocaleString()}  Unscoreable: ${unscoreable.toLocaleString()}  Avg score: ${avg}`);
+  console.log("Distribution (of scored buildings):");
   const order = ["A+", "A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D+", "D", "D-", "F"];
+  const denom = scored || 1;
   for (const g of order) {
     const n = totalDist[g] || 0;
     if (!n) continue;
-    const pct = ((n / totalProcessed) * 100).toFixed(1);
+    const pct = ((n / denom) * 100).toFixed(1);
     console.log(`  ${g.padEnd(2)}  ${n.toString().padStart(7)}  ${pct}%`);
   }
 }

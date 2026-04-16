@@ -60,8 +60,10 @@ export interface SubScore {
 }
 
 export interface ScoreOutput {
-  score: number; // 0-5, 1 decimal
-  grade: string; // A+/A/A-/B+/B/B-/C+/C/C-/D+/D/D-/F
+  score: number | null; // 0-5, 1 decimal — null when building is unscoreable
+  grade: string; // A+/A/A-/B+/B/B-/C+/C/C-/D+/D/D-/F or "—"
+  confidence: "high" | "medium" | "low" | "none"; // based on # of evidence-backed sub-scores
+  evidenceCount: number; // number of sub-scores backed by real data signals (0-6)
   breakdown: {
     reviews: SubScore;
     health: SubScore;
@@ -116,18 +118,18 @@ function weightedAverage(parts: SubScore[]): number {
 
 /** Map a 0-5 score to a letter grade. */
 export function scoreToGrade(score: number): string {
-  if (score >= 4.85) return "A+";
-  if (score >= 4.5) return "A";
-  if (score >= 4.15) return "A-";
-  if (score >= 3.85) return "B+";
-  if (score >= 3.5) return "B";
-  if (score >= 3.15) return "B-";
-  if (score >= 2.85) return "C+";
-  if (score >= 2.5) return "C";
-  if (score >= 2.15) return "C-";
-  if (score >= 1.85) return "D+";
-  if (score >= 1.5) return "D";
-  if (score >= 1.15) return "D-";
+  if (score >= 4.7) return "A+";
+  if (score >= 4.3) return "A";
+  if (score >= 4.0) return "A-";
+  if (score >= 3.7) return "B+";
+  if (score >= 3.3) return "B";
+  if (score >= 3.0) return "B-";
+  if (score >= 2.7) return "C+";
+  if (score >= 2.3) return "C";
+  if (score >= 2.0) return "C-";
+  if (score >= 1.7) return "D+";
+  if (score >= 1.3) return "D";
+  if (score >= 1.0) return "D-";
   return "F";
 }
 
@@ -331,6 +333,30 @@ function cityRiskSubScore(inputs: ScoreInputs): SubScore {
 // Public entry
 // ---------------------------------------------------------------------------
 
+/**
+ * Determine which sub-scores are backed by real data signals (not just defaults).
+ * A sub-score with "no negative signals" still gets max score, but that's only
+ * meaningful evidence if we know the data was actually checked.
+ */
+function countEvidence(inputs: ScoreInputs): number {
+  const b = inputs.building;
+  let count = 0;
+  // reviews: real evidence if any reviews exist
+  if (inputs.reviewCount > 0) count++;
+  // health: real evidence if any incidents OR if total_units is known (means we have building data)
+  const incidents = num(b.violation_count) + num(b.dob_violation_count) + num(b.complaint_count) + num(b.litigation_count);
+  if (incidents > 0) count++;
+  // rent fairness: real evidence if both building & neighborhood rent exist
+  if (inputs.buildingMedianRent && inputs.neighborhoodMedianRent) count++;
+  // protection: real evidence if any protection signal is set (rent stab, ellis, evictions, buyouts)
+  if (b.is_rent_stabilized || b.ellis_act_filing || num(b.eviction_count) > 0 || num(b.buyout_count) > 0) count++;
+  // habitability: real evidence if any negative signal
+  if (num(b.bedbug_report_count) > 0 || inputs.leadInspectionFailures > 0 || num(b.rodent_complaint_count) > 5 || num(b.dangerous_building_count) > 0 || num(b.unsafe_structure_count) > 0) count++;
+  // city risk: real evidence if any city-specific risk flag is set
+  if (b.is_soft_story || b.fire_hazard_zone || b.fair_plan_risk || b.is_scofflaw || (b.sea_level_risk_feet ?? 0) > 0 || b.in_floodplain || (b.forty_year_recert_status || "").toLowerCase() === "overdue") count++;
+  return count;
+}
+
 export function computeLucidIQ(inputs: ScoreInputs): ScoreOutput {
   const breakdown = {
     reviews: reviewsSubScore(inputs),
@@ -350,9 +376,52 @@ export function computeLucidIQ(inputs: ScoreInputs): ScoreOutput {
     breakdown.cityRisk,
   ];
 
+  const evidenceCount = countEvidence(inputs);
+
+  // Skip unscoreable buildings: zero evidence = no signals at all
+  if (evidenceCount === 0) {
+    return {
+      score: null,
+      grade: "\u2014",
+      confidence: "none",
+      evidenceCount: 0,
+      breakdown,
+    };
+  }
+
   const raw = weightedAverage(all);
-  const score = Math.round(clamp(raw, 0, 5) * 10) / 10;
-  return { score, grade: scoreToGrade(score), breakdown };
+
+  // Confidence factor — softer than before. Only meaningfully penalize
+  // very thin evidence, and cap the penalty at 0.75 points off the raw score.
+  let confidenceFactor: number;
+  let confidence: "high" | "medium" | "low" | "none";
+  if (evidenceCount >= 3) {
+    confidenceFactor = 1.0;
+    confidence = "high";
+  } else if (evidenceCount === 2) {
+    confidenceFactor = 0.9;
+    confidence = "medium";
+  } else {
+    confidenceFactor = 0.75;
+    confidence = "low";
+  }
+
+  // Pull score toward neutral 2.5 by (1 - confidenceFactor),
+  // but cap the total adjustment at 0.75 points so good buildings with
+  // thin evidence aren't unfairly knocked down.
+  const idealAdjusted = 2.5 + (raw - 2.5) * confidenceFactor;
+  const delta = idealAdjusted - raw;
+  const cappedDelta = Math.sign(delta) * Math.min(Math.abs(delta), 0.75);
+  const adjusted = raw + cappedDelta;
+  const score = Math.round(clamp(adjusted, 0, 5) * 10) / 10;
+
+  return {
+    score,
+    grade: scoreToGrade(score),
+    confidence,
+    evidenceCount,
+    breakdown,
+  };
 }
 
 // ---------------------------------------------------------------------------
