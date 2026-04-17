@@ -3062,3 +3062,20 @@
   .v2 table, .v2 pre { max-width: 100%; overflow-x: auto; }
   .v2 img, .v2 svg.big-map, .v2 .leaflet-container { max-width: 100%; }
 }
+
+/* Mobile: re-enable the sidebar (it was hidden on tablet 900-1200px but mobile
+   should stack it below main column instead of dropping the content entirely). */
+@media (max-width: 900px) {
+  .v2 .sr { display: block; }
+  .v2 .sr > section { margin-bottom: 16px; }
+  /* Make fixed-width grid rows reflow on mobile so content doesn't clip */
+  .v2 .amenity-row { grid-template-columns: 1fr; gap: 6px; text-align: left; }
+  .v2 .amenity-row .val { text-align: left; }
+  .v2 .horizon-row { grid-template-columns: 1fr 60px; gap: 8px; }
+  .v2 .horizon-row .bars { grid-column: 1 / -1; }
+  .v2 .unit-item { grid-template-columns: 1fr auto; gap: 6px; padding: 10px 0; }
+  /* Cards flow comfortably */
+  .v2 .ri-card, .v2 .ww-card, .v2 .sr-card { padding: 16px; }
+  /* Prevent nowrap from blowing up width */
+  .v2 .nmr-k, .v2 .rr-k b, .v2 .pr-head small { white-space: normal; }
+}
