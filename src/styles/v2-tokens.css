@@ -3240,14 +3240,23 @@
   /* Sticky mobile bottom nav — reuse the waylist, pin to viewport bottom */
   .v2 .wayfinder {
     position: fixed !important;
-    bottom: 0; left: 0; right: 0;
-    width: 100% !important; max-width: 100% !important;
+    top: auto !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: 64px !important;
     z-index: 50;
     background: var(--navy, #0F1D2E);
     border-top: 1px solid rgba(255,255,255,0.1);
     padding: 0;
     margin: 0 !important;
     box-shadow: 0 -8px 24px -10px rgba(15,29,46,0.35);
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center;
   }
   /* Hide the LucidIQ header block in the bottom nav (already shown up top in hero) */
   .v2 .wayfinder .way-head { display: none; }
