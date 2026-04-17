@@ -3079,3 +3079,85 @@
   /* Prevent nowrap from blowing up width */
   .v2 .nmr-k, .v2 .rr-k b, .v2 .pr-head small { white-space: normal; }
 }
+
+/* ============================================================================
+   Mobile density pass — compress spacing + scale typography so the building
+   page doesn't feel 2x taller than it needs to be on a phone.
+   ============================================================================ */
+@media (max-width: 640px) {
+  /* Container padding */
+  .v2 .container, .v2 main.container { padding: 12px 14px !important; }
+
+  /* Section headers — serif at 28px instead of 48px */
+  .v2 .section-head { margin-bottom: 12px; }
+  .v2 .section-head h2 { font-size: 28px !important; line-height: 1.1; margin: 4px 0 0; }
+  .v2 .section-head .num { font-size: 11px; }
+  .v2 .section { margin-top: 24px; }
+
+  /* Hero compression */
+  .v2 .hero { gap: 14px !important; padding: 16px 0; }
+  .v2 .hero h1, .v2 .grade { font-size: 40px !important; line-height: 1.1; }
+  .v2 .hero .addr-line { font-size: 13px; }
+
+  /* Wayfinder: move the Save/Share/Write tools below the main column instead
+     of showing on top. Collapse the horizontal waylist to something readable. */
+  .v2 .wayfinder { margin-bottom: 8px; }
+  .v2 .wayfinder .way-head { padding: 10px 12px; }
+  .v2 .wayfinder .way-grade { font-size: 22px; padding: 6px 10px; }
+  .v2 .wayfinder .tools { display: none; }  /* redundant with in-page CTAs */
+  .v2 .waylist { gap: 4px; padding: 8px 0; }
+  .v2 .waylist li a { padding: 6px 10px; font-size: 13px; }
+
+  /* Cards — tighter padding everywhere */
+  .v2 .ri-card, .v2 .ww-card, .v2 .sr-card, .v2 .landlord-card,
+  .v2 .nmr-card, .v2 .walk-panel { padding: 14px !important; margin-top: 12px !important; }
+  .v2 .ri-head, .v2 .ww-head, .v2 .sr-head { margin-bottom: 10px; }
+  .v2 .ri-head h3, .v2 .ww-head h3, .v2 .sr-head h4 { font-size: 15px; }
+  .v2 .ri-sub, .v2 .ww-sub { font-size: 12px; }
+
+  /* Bedroom tiles (NMR) — 2-col stack with smaller text */
+  .v2 .nmr-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .v2 .nmr-tile { padding: 10px 12px 10px; gap: 4px; }
+  .v2 .nmr-v { font-size: 22px !important; }
+  .v2 .nmr-k { font-size: 11px; }
+  .v2 .nmr-foot { padding: 10px 0 0; font-size: 12px; }
+
+  /* Neighborhood rent range: cap the row height and cleanup spacing */
+  .v2 .rr-row { padding: 10px 0; gap: 6px !important; }
+  .v2 .rr-k b { font-size: 13px; }
+  .v2 .rr-val { font-size: 12px; }
+  .v2 .rr-median { font-size: 11px; }
+  .v2 .rr-median::before, .v2 .rr-median::after { display: none; } /* hide hover tooltip on mobile */
+
+  /* Trend chart: cap height so it doesn't dominate the viewport */
+  .v2 .ww-chart, .v2 .rent-chart { max-height: 260px; }
+  .v2 .ww-chart svg, .v2 .rent-chart svg { max-height: 260px; height: 260px !important; }
+  .v2 .ww-src-tabs { gap: 6px; flex-wrap: wrap; }
+  .v2 .ww-src-tabs button { padding: 5px 10px; font-size: 12px; }
+  .v2 .ww-legend { gap: 8px; flex-wrap: wrap; font-size: 11px; }
+  .v2 .ww-tops-4 { grid-template-columns: 1fr !important; gap: 8px; }
+
+  /* Tenant reviews */
+  .v2 .reviews-top .stars, .v2 .reviews-top .rating-big { font-size: 44px; }
+  .v2 .pull article { padding: 12px; }
+  .v2 .pull .quote { font-size: 13px; line-height: 1.4; }
+
+  /* Tables / lists compressed */
+  .v2 .uh-grid, .v2 .facts-grid { grid-template-columns: 1fr 1fr !important; gap: 8px; }
+  .v2 .uh-tile { padding: 10px !important; }
+
+  /* SideRail sub-sections tighter on mobile */
+  .v2 .sr > section { margin-bottom: 12px !important; padding: 14px !important; }
+
+  /* Seasonal pattern histogram compressed */
+  .v2 .sp-hist { height: 140px; }
+
+  /* FAQ list tighter */
+  .v2 .faq-list li { padding: 14px 0; }
+  .v2 .faq-question { font-size: 15px; }
+}
+
+/* Slightly less aggressive compression for 640-900px (small tablets) */
+@media (min-width: 641px) and (max-width: 900px) {
+  .v2 .section-head h2 { font-size: 32px !important; }
+}
