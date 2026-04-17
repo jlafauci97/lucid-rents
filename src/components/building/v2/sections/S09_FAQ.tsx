@@ -29,19 +29,95 @@ interface Props {
 export function S09_FAQ({ building, data }: Props) {
   let faqs: Array<{ question: string; answer: string }> = [];
   try {
-    // Delegate to the existing generator. Signature varies; pass what we have.
-    // Fields the generator may expect but we don't have are left undefined.
+    // Map BuildingV2Data into the shapes generateBuildingFAQ expects so every
+    // eligible question fires (previously all source arrays were passed empty,
+    // which meant only ~4 FAQs appeared per building).
+    const hpdViolations = data.issues.hpdViolations.map((v) => ({
+      id: typeof v.id === "number" ? v.id : parseInt(String(v.id), 10) || 0,
+      building_id: building.id,
+      apartment: v.apartment,
+      class: v.class,
+      status: v.status,
+      inspection_date: v.inspection_date,
+      nov_description: v.nov_description,
+    }));
+    const complaints311 = data.issues.recentViolations
+      .filter((r) => r.source === "311")
+      .map((r) => ({
+        id: r.id,
+        building_id: building.id,
+        created_date: r.date,
+        complaint_type: r.category,
+        descriptor: r.description,
+        status: r.status,
+      }));
+    const dobViolations = data.issues.recentViolations
+      .filter((r) => r.source === "DOB")
+      .map((r) => ({
+        id: r.id,
+        building_id: building.id,
+        issue_date: r.date,
+        violation_type: r.class,
+        violation_category: r.category,
+        description: r.description,
+        disposition_comments: r.status,
+      }));
+    const reviews = data.reviews.pullQuotes.map((q) => ({
+      id: q.id,
+      building_id: building.id,
+      overall_rating: q.rating,
+      body: q.body,
+      created_at: q.created_at,
+      pro_tags: [],
+      con_tags: [],
+      is_pet_friendly: null,
+      is_rent_stabilized: null,
+      is_doorman: null,
+      has_laundry: null,
+      has_gym: null,
+    }));
+    // Neighborhood rents: latest month per bedroom, collapsed to { bedrooms, median_rent }
+    const latestNbhMonth = data.rents.neighborhood[0]?.month?.slice(0, 7);
+    const neighborhoodRents = latestNbhMonth
+      ? data.rents.neighborhood
+          .filter((r) => r.month?.startsWith(latestNbhMonth) && r.median_rent)
+          .map((r) => ({ bedrooms: r.beds ?? 0, median_rent: r.median_rent as number }))
+      : [];
+    // Nearby schools grouped by type
+    const nearbySchools: Record<string, Array<{ name: string; distMiles: number; walkMin: number; grades: string | null }>> = {
+      Public: data.nearby.schoolsPublic.map((s) => ({ name: s.name, distMiles: s.distMiles, walkMin: s.walkMin, grades: s.grades })),
+      Charter: data.nearby.schoolsCharter.map((s) => ({ name: s.name, distMiles: s.distMiles, walkMin: s.walkMin, grades: s.grades })),
+      Private: data.nearby.schoolsPrivate.map((s) => ({ name: s.name, distMiles: s.distMiles, walkMin: s.walkMin, grades: s.grades })),
+    };
+    const nearbyTransit: Record<string, Array<{ name: string; lines: string[]; distMiles: number; walkMin: number }>> = {
+      Subway: data.nearby.transitSubway.map((s) => ({ name: s.name, lines: s.lines, distMiles: s.distMiles, walkMin: s.walkMin })),
+      Bus: data.nearby.transitBus.map((s) => ({ name: s.name, lines: s.lines, distMiles: s.distMiles, walkMin: s.walkMin })),
+    };
+    const crimeSummary = {
+      total: data.crime.total12mo,
+      violent: data.crime.violent,
+      property: data.crime.property,
+      quality_of_life: data.crime.qualityOfLife,
+    };
+
     faqs = generateBuildingFAQ({
       building,
       rents: data.rents.current,
-      reviews: [],
-      hpdViolations: [],
-      complaints311: [],
-      dobViolations: [],
+      reviews,
+      hpdViolations,
+      complaints311,
+      dobViolations,
       evictions: [],
       permits: [],
-      amenities: data.amenities.map((a) => ({ amenity: a.amenity, category: a.category })),
+      amenities: data.amenities.map((a) => ({ amenity: a.amenity, category: a.category, source: "public-records" })),
       energy: data.energy,
+      neighborhoodRents,
+      nearbySchools,
+      nearbyTransit,
+      crimeSummary,
+      violations: hpdViolations,
+      complaints: complaints311,
+      litigations: [],
     } as unknown as Parameters<typeof generateBuildingFAQ>[0]) as Array<{ question: string; answer: string }>;
   } catch {
     faqs = [];
