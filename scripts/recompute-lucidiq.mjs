@@ -459,13 +459,33 @@ async function main() {
   const startTime = Date.now();
 
   while (true) {
-    let q = sb.from("buildings").select(BUILDING_COLS).order("id").range(offset, offset + PAGE - 1);
-    if (argMetro) q = q.eq("metro", argMetro);
-
-    const { data, error } = await q;
-    if (error) {
-      console.error("query err:", error.message);
-      break;
+    // Retry the page query up to 5 times with exponential backoff on transient failures.
+    let data = null;
+    let lastErr = null;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      let q = sb.from("buildings").select(BUILDING_COLS).order("id").range(offset, offset + PAGE - 1);
+      if (argMetro) q = q.eq("metro", argMetro);
+      try {
+        const res = await q;
+        if (res.error) {
+          lastErr = res.error;
+          console.error(`\nquery err (attempt ${attempt + 1}/5):`, res.error.message);
+          await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt))); // 1s, 2s, 4s, 8s, 16s
+          continue;
+        }
+        data = res.data;
+        lastErr = null;
+        break;
+      } catch (e) {
+        lastErr = e;
+        console.error(`\nquery throw (attempt ${attempt + 1}/5):`, e.message);
+        await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
+      }
+    }
+    if (lastErr || data === null) {
+      console.error("\nquery failed after 5 retries; skipping page and continuing:", lastErr?.message);
+      offset += PAGE;
+      continue;
     }
     if (!data || data.length === 0) break;
 
