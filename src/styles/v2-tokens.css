@@ -3161,3 +3161,38 @@
 @media (min-width: 641px) and (max-width: 900px) {
   .v2 .section-head h2 { font-size: 32px !important; }
 }
+
+/* ============================================================================
+   Mobile wayfinder fix — container was being blown out to ~1300px because
+   the waylist items have white-space: nowrap and the flex row wasn't
+   constrained. Forces the whole wayfinder to respect the viewport and only
+   the inner waylist to horizontally scroll.
+   ============================================================================ */
+@media (max-width: 900px) {
+  .v2 .wayfinder {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0;
+    overflow: hidden;
+  }
+  .v2 .way-head {
+    max-width: 100%;
+    overflow: hidden;
+    flex-wrap: wrap;
+  }
+  .v2 .way-name {
+    min-width: 0;
+    word-break: break-word;
+  }
+  .v2 .waylist {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+  .v2 .waylist li { flex-shrink: 0; }
+  .v2 .way-head h3 { font-size: 18px !important; }
+  .v2 .body { min-width: 0; }
+  .v2 .body > * { min-width: 0; max-width: 100%; }
+}
