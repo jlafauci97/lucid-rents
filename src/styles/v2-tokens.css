@@ -3054,3 +3054,11 @@
 .v2-skip-link:focus-visible {
   left: 8px;
 }
+
+/* Mobile overflow safety: prevent any misbehaving child from causing horizontal scroll */
+@media (max-width: 900px) {
+  .v2 { overflow-x: hidden; max-width: 100vw; }
+  .v2 .container, .v2 main.container { max-width: 100vw; padding-left: 16px; padding-right: 16px; box-sizing: border-box; }
+  .v2 table, .v2 pre { max-width: 100%; overflow-x: auto; }
+  .v2 img, .v2 svg.big-map, .v2 .leaflet-container { max-width: 100%; }
+}
