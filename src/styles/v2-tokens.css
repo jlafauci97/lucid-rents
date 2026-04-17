@@ -2609,6 +2609,16 @@
   position: relative; border: 1px solid var(--border);
   display: grid; place-items: center;
   overflow: hidden;
+  /* Isolate so Leaflet's internal z-indexes (tile/marker/popup panes up to
+     ~999) don't bleed above sticky nav and mobile bottom nav. */
+  isolation: isolate;
+  z-index: 0;
+}
+.v2 .big-map .leaflet-container,
+.v2 .big-map .leaflet-pane,
+.v2 .big-map .leaflet-top,
+.v2 .big-map .leaflet-bottom {
+  z-index: auto !important;
 }
 .v2 .big-map .pin {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -100%);
