@@ -67,7 +67,7 @@ export function BigMap({ latitude, longitude, address, labelLine }: Props) {
           <span className="pin"></span>
         </div>
       )}
-      <div className="mlabel" style={{ position: "absolute", left: 12, bottom: 12, right: 12, zIndex: 1000, background: "rgba(255,255,255,0.92)", padding: "6px 10px", borderRadius: 8, fontSize: 11 }}>
+      <div className="mlabel" style={{ position: "absolute", left: 12, bottom: 12, right: 12, zIndex: 2, background: "rgba(255,255,255,0.92)", padding: "6px 10px", borderRadius: 8, fontSize: 11, pointerEvents: "none" }}>
         {labelLine}
       </div>
     </div>
