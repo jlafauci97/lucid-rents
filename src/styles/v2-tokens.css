@@ -3196,3 +3196,26 @@
   .v2 .body { min-width: 0; }
   .v2 .body > * { min-width: 0; max-width: 100%; }
 }
+
+/* ============================================================================
+   Mobile hero / verdict / rent range fixes — verified issues from iframe test:
+   - verdict text squished to 2 words/line beside the 158px B+ hex
+   - rent range "Leave a review" button overlaps rent text (flex-wrap:nowrap)
+   ============================================================================ */
+@media (max-width: 640px) {
+  /* Verdict: stack grade badge above text so text has full width */
+  .v2 .grade-row { flex-direction: column; gap: 14px; align-items: stretch; }
+  .v2 .liq-badge { width: 120px; height: 126px; margin: 0 auto; }
+  .v2 .liq-hex { height: 106px; }
+  .v2 .grade-meta, .v2 .verdict-axes { padding-top: 0; }
+  .v2 .verdict { padding: 18px 16px; }
+  .v2 .verdict-eyebrow { font-size: 11px; }
+
+  /* Leasing card: CTA wraps below the rent text so no overlap */
+  .v2 .leasing-card { flex-wrap: wrap; gap: 10px; padding: 14px 16px; }
+  .v2 .leasing-card .cta-btn { width: 100%; justify-content: center; }
+  .v2 .pr-value { font-size: 20px; }
+
+  /* Hero h1 auto-clamp didn't fire at 388px; pin it explicitly */
+  .v2 .hero-left h1 { font-size: 42px !important; line-height: 1.05; }
+}
