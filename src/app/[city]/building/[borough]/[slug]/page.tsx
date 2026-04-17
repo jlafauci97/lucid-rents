@@ -10,6 +10,7 @@ import { loadBuildingV2Data, scoreToGrade } from "./_data";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { TrackBuildingView } from "@/components/building/TrackBuildingView";
 import { Crumbs } from "@/components/building/v2/Crumbs";
+import { V2Zoom } from "@/components/building/v2/V2Zoom";
 import { HeroV2 } from "@/components/building/v2/HeroV2";
 import { RecordStrip } from "@/components/building/v2/RecordStrip";
 import { WayfinderRail } from "@/components/building/v2/WayfinderRail";
@@ -207,7 +208,8 @@ export default async function BuildingPage({ params }: Props) {
         { name: shortAddress, url: buildingUrl(building, typedCity) },
       ])} />
 
-      <div className="v2" style={{ zoom: 0.9 }}>
+      <div className="v2" style={{ overflowX: "hidden" }}>
+        <V2Zoom />
         <a href="#main-content" className="v2-skip-link">Skip to main content</a>
 
         <main className="container">
