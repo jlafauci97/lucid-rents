@@ -3219,3 +3219,72 @@
   /* Hero h1 auto-clamp didn't fire at 388px; pin it explicitly */
   .v2 .hero-left h1 { font-size: 42px !important; line-height: 1.05; }
 }
+
+/* ============================================================================
+   Mobile: sticky bottom navigation + reorder Similar buildings to last
+   ============================================================================ */
+@media (max-width: 900px) {
+  /* Turn the main column into a flex-column so we can re-order sections */
+  .v2 .main { display: flex; flex-direction: column; }
+  /* Push Similar Buildings to the end on mobile */
+  .v2 .main #similar { order: 100; }
+  /* FAQ stays after Similar? User asked to move Similar to bottom — that means below everything else, incl FAQ */
+  .v2 .main #faq { order: 99; }
+  /* All other sections keep natural DOM order (default order: 0) */
+
+  /* Reserve space for fixed bottom nav */
+  .v2 { padding-bottom: 80px; }
+}
+
+@media (max-width: 900px) {
+  /* Sticky mobile bottom nav — reuse the waylist, pin to viewport bottom */
+  .v2 .wayfinder {
+    position: fixed !important;
+    bottom: 0; left: 0; right: 0;
+    width: 100% !important; max-width: 100% !important;
+    z-index: 50;
+    background: var(--navy, #0F1D2E);
+    border-top: 1px solid rgba(255,255,255,0.1);
+    padding: 0;
+    margin: 0 !important;
+    box-shadow: 0 -8px 24px -10px rgba(15,29,46,0.35);
+  }
+  /* Hide the LucidIQ header block in the bottom nav (already shown up top in hero) */
+  .v2 .wayfinder .way-head { display: none; }
+  .v2 .wayfinder .tools { display: none; } /* already hidden by prior rule — kept for safety */
+
+  /* Waylist becomes a horizontal scrollable tab strip */
+  .v2 .waylist {
+    flex-direction: row;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 8px 12px env(safe-area-inset-bottom, 8px);
+    margin: 0;
+    gap: 4px;
+    background: transparent;
+  }
+  .v2 .waylist::-webkit-scrollbar { display: none; }
+  .v2 .waylist li {
+    flex: 0 0 auto;
+  }
+  .v2 .waylist li a {
+    color: rgba(255,255,255,0.85);
+    padding: 8px 12px;
+    font-size: 12px;
+    display: inline-flex; align-items: center; gap: 6px;
+    border-radius: 999px;
+    white-space: nowrap;
+    background: transparent;
+  }
+  .v2 .waylist li a:hover,
+  .v2 .waylist li.active a {
+    background: rgba(96,165,250,0.2);
+    color: white;
+  }
+  .v2 .waylist li a .wicon {
+    width: 18px; height: 18px;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .v2 .waylist li a .wicon svg { width: 14px; height: 14px; }
+}
