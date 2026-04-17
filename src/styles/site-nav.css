@@ -1,0 +1,163 @@
+/* ============================================================
+   Site-wide top nav styling.
+   Lifted from src/styles/v2-tokens.css (.v2 .nav rules) into
+   unscoped selectors so the nav works on every route without
+   needing a .v2 ancestor or zoom applied.
+
+   Tokens referenced (--ink, --sans, --radius-chip) are also
+   declared locally here so this stylesheet is self-contained
+   and does not depend on the v2 token bundle.
+   ============================================================ */
+
+/* Minimal tokens just for the nav. Using exact hex values ported
+   from the v2 mockup so they match what's used under .v2 scope. */
+.nav {
+  --nav-ink: #0F1D2E;
+  --nav-sky: #60a5fa;
+  --nav-radius-chip: 999px;
+  --nav-sans: "Geist", system-ui, -apple-system, sans-serif;
+}
+
+/* ---------- Top nav — navy bg + Geist sans + city selector ---------- */
+.nav {
+  position: sticky; top: 0; z-index: 40;
+  background: var(--nav-ink);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  font-family: var(--nav-sans);
+}
+.nav-inner {
+  max-width: 1440px; margin: 0 auto;
+  display: flex; align-items: center; gap: 20px;
+  padding: 12px 24px;
+}
+.brand {
+  font-family: var(--nav-sans);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.018em;
+  color: #fff;
+  display: flex; align-items: center; gap: 7px;
+  text-decoration: none;
+}
+.brand:hover { color: #fff; }
+.brand .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--nav-sky); display: inline-block; }
+
+/* City selector pill */
+.city-picker {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 12px;
+  border-radius: var(--nav-radius-chip);
+  background: rgba(96,165,250,0.1);
+  border: 1px solid rgba(96,165,250,0.25);
+  color: var(--nav-sky);
+  font-family: var(--nav-sans);
+  font-size: 13px; font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.city-picker:hover { background: rgba(96,165,250,0.2); }
+.city-picker svg { width: 14px; height: 14px; }
+.city-picker .chev { width: 12px; height: 12px; opacity: 0.85; }
+
+.nav-search {
+  flex: 1; max-width: 380px;
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: var(--nav-radius-chip);
+  padding: 7px 14px;
+  color: rgba(255,255,255,0.7);
+  font-family: var(--nav-sans); font-size: 13px; font-weight: 500;
+}
+.nav-search svg { flex: 0 0 14px; width: 14px; height: 14px; opacity: 0.8; color: var(--nav-sky); }
+.nav-search input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #fff;
+  font: inherit;
+  padding: 0;
+  min-width: 0;
+}
+.nav-search input::placeholder { color: rgba(255,255,255,0.55); }
+
+.nav-links {
+  display: flex; gap: 2px;
+  font-family: var(--nav-sans); font-size: 14px; font-weight: 600;
+  margin-left: auto;
+  align-items: center;
+}
+.nav-links a,
+.nav-links > div > button {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 12px;
+  border-radius: var(--nav-radius-chip);
+  color: #fff;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.nav-links a svg,
+.nav-links > div > button svg { width: 14px; height: 14px; color: var(--nav-sky); opacity: 0.9; flex: 0 0 14px; }
+.nav-links a:hover,
+.nav-links > div > button:hover { background: rgba(255,255,255,0.08); color: #fff; }
+.nav-links a.active { background: rgba(96,165,250,0.16); color: #fff; }
+.nav-links a.active svg { opacity: 1; }
+
+.nav-login {
+  font-family: var(--nav-sans); font-size: 14px; font-weight: 700;
+  padding: 8px 18px;
+  border: none;
+  background: #3B82F6;
+  color: #fff;
+  border-radius: var(--nav-radius-chip);
+  letter-spacing: -0.005em;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.nav-login:hover { background: #2563EB; color: #fff; }
+
+/* Auth section — logged-in profile / sign-out */
+.nav-auth {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: 4px;
+}
+.nav-auth a, .nav-auth button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--nav-sans);
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  background: none;
+  border: none;
+  padding: 7px 10px;
+  cursor: pointer;
+  transition: color 0.15s ease;
+  text-decoration: none;
+}
+.nav-auth a:hover, .nav-auth button:hover { color: rgba(255,255,255,0.8); }
+.nav-auth svg { width: 14px; height: 14px; }
+
+@media (max-width: 1024px) {
+  .nav-links { display: none; }
+}
+@media (max-width: 640px) {
+  .nav-inner { gap: 10px; padding: 10px 14px; }
+  .nav-search { display: none; }
+  .city-picker { padding: 6px 10px; font-size: 12px; }
+  .brand { font-size: 16px; }
+}

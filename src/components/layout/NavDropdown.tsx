@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { ChevronDown, ArrowLeftRight, ShieldCheck, ShieldAlert, Wrench, BarChart3, Construction, ClipboardList, Zap, TrainFront, Scale, Tent, FileText, AlertTriangle, Home, Droplets, Flame, Calculator, DollarSign, Newspaper } from "lucide-react";
+import { ChevronDown, ArrowLeftRight, ShieldCheck, ShieldAlert, Wrench, BarChart3, Construction, ClipboardList, Zap, TrainFront, Scale, Tent, FileText, AlertTriangle, Home, Droplets, Flame, Calculator, DollarSign, Newspaper, Radio, Siren } from "lucide-react";
 import { type City, DEFAULT_CITY, CITY_META } from "@/lib/cities";
 import { cityPath } from "@/lib/seo";
 
@@ -17,6 +17,18 @@ interface ToolItem {
 }
 
 const tools: ToolItem[] = [
+  {
+    path: "/feed",
+    icon: Radio,
+    label: "Feed",
+    description: "Real-time violations, complaints & activity",
+  },
+  {
+    path: "/crime",
+    icon: Siren,
+    label: "Crime",
+    description: "Crime data & safety stats by neighborhood",
+  },
   {
     path: "/news",
     icon: Newspaper,
@@ -207,7 +219,10 @@ export function NavDropdown({ city = DEFAULT_CITY }: { city?: City }) {
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 mt-2 w-[520px] bg-[#1A2B3D] border border-white/10 rounded-lg shadow-xl overflow-hidden z-50">
+        <div
+          className="absolute top-full right-0 mt-2 w-[520px] max-w-[calc(100vw-2rem)] bg-[#1A2B3D] border border-white/10 rounded-lg shadow-xl overflow-hidden z-50"
+          style={{ maxHeight: "calc(100vh - 80px)", overflowY: "auto" }}
+        >
           <div className="grid grid-cols-2">
             {tools
               .filter((tool) => !tool.cities || tool.cities.includes(city))

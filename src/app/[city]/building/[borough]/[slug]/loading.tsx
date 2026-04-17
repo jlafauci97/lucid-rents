@@ -1,72 +1,157 @@
-export default function BuildingLoading() {
+export default function Loading() {
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Breadcrumbs skeleton */}
-      <div className="flex items-center gap-2 mb-6">
-        <div className="h-4 w-12 bg-gray-200 rounded animate-pulse" />
-        <div className="h-4 w-4 bg-gray-200 rounded animate-pulse" />
-        <div className="h-4 w-16 bg-gray-200 rounded animate-pulse" />
-        <div className="h-4 w-4 bg-gray-200 rounded animate-pulse" />
-        <div className="h-4 w-20 bg-gray-200 rounded animate-pulse" />
+    <div className="v2" style={{ minHeight: "100vh", background: "var(--v2-paper)" }}>
+      <style>{`
+        @keyframes v2-pulse {
+          0%   { opacity: 0.6; }
+          50%  { opacity: 0.3; }
+          100% { opacity: 0.6; }
+        }
+        .v2-skeleton {
+          animation: v2-pulse 1.4s ease-in-out infinite;
+        }
+        .v2-loading-grid {
+          max-width: 1440px;
+          margin: 0 auto;
+          padding: 32px 24px;
+          display: grid;
+          grid-template-columns: 220px 1fr 320px;
+          gap: 24px;
+          align-items: start;
+        }
+        @media (max-width: 1199px) {
+          .v2-loading-grid {
+            grid-template-columns: 220px 1fr;
+          }
+          .v2-loading-rail {
+            display: none;
+          }
+        }
+        @media (max-width: 899px) {
+          .v2-loading-grid {
+            grid-template-columns: 1fr;
+          }
+          .v2-loading-wayfinder {
+            display: none;
+          }
+        }
+      `}</style>
+
+      {/* Nav skeleton */}
+      <div
+        style={{
+          height: 60,
+          background: "var(--v2-navy)",
+          width: "100%",
+        }}
+      />
+
+      {/* Hero skeleton */}
+      <div
+        style={{
+          maxWidth: 1440,
+          margin: "0 auto",
+          padding: "32px 24px 24px",
+        }}
+      >
+        {/* Breadcrumb */}
+        <div
+          className="v2-skeleton"
+          style={{
+            height: 14,
+            width: 280,
+            background: "var(--v2-border)",
+            borderRadius: 6,
+            marginBottom: 20,
+          }}
+        />
+        {/* H1 */}
+        <div
+          className="v2-skeleton"
+          style={{
+            height: 52,
+            width: "55%",
+            background: "var(--v2-border)",
+            borderRadius: 8,
+            marginBottom: 10,
+          }}
+        />
+        {/* Sub-line */}
+        <div
+          className="v2-skeleton"
+          style={{
+            height: 14,
+            width: "35%",
+            background: "var(--v2-border)",
+            borderRadius: 6,
+            marginBottom: 28,
+          }}
+        />
       </div>
 
-      {/* Header skeleton */}
-      <div className="mb-8">
-        <div className="h-8 w-80 bg-gray-200 rounded animate-pulse mb-2" />
-        <div className="h-5 w-48 bg-gray-200 rounded animate-pulse mb-4" />
-        <div className="flex gap-3">
-          <div className="h-16 w-24 bg-gray-200 rounded-lg animate-pulse" />
-          <div className="h-16 w-24 bg-gray-200 rounded-lg animate-pulse" />
-          <div className="h-16 w-24 bg-gray-200 rounded-lg animate-pulse" />
-          <div className="h-16 w-24 bg-gray-200 rounded-lg animate-pulse" />
-        </div>
-      </div>
+      {/* 3-col grid skeleton */}
+      <div className="v2-loading-grid">
+        {/* Wayfinder rail (left) */}
+        <aside
+          className="v2-loading-wayfinder"
+          style={{ display: "grid", gap: 12 }}
+        >
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div
+              key={i}
+              className="v2-skeleton"
+              style={{
+                height: i === 0 ? 160 : 80,
+                background: "var(--v2-border)",
+                borderRadius: 12,
+              }}
+            />
+          ))}
+        </aside>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main column */}
-        <div className="lg:col-span-2 space-y-8">
-          {/* Reviews skeleton */}
-          <div>
-            <div className="h-6 w-40 bg-gray-200 rounded animate-pulse mb-4" />
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <div className="h-4 w-full bg-gray-200 rounded animate-pulse mb-3" />
-              <div className="h-4 w-3/4 bg-gray-200 rounded animate-pulse mb-3" />
-              <div className="h-4 w-1/2 bg-gray-200 rounded animate-pulse" />
-            </div>
-          </div>
+        <main style={{ display: "grid", gap: 32, minWidth: 0 }}>
+          {/* Record strip */}
+          <div
+            className="v2-skeleton"
+            style={{
+              height: 88,
+              background: "var(--v2-border)",
+              borderRadius: 14,
+            }}
+          />
+          {/* Section cards */}
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div
+              key={i}
+              className="v2-skeleton"
+              style={{
+                height: i === 0 ? 260 : 200,
+                background: "var(--v2-border)",
+                borderRadius: 14,
+                opacity: 0.5 + i * 0.05,
+              }}
+            />
+          ))}
+        </main>
 
-          {/* Trends skeleton */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="h-6 w-48 bg-gray-200 rounded animate-pulse mb-4" />
-            <div className="h-48 bg-gray-200 rounded animate-pulse" />
-          </div>
-
-          {/* Violations skeleton */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="h-6 w-56 bg-gray-200 rounded animate-pulse mb-4" />
-            <div className="space-y-3">
-              <div className="h-12 bg-gray-200 rounded animate-pulse" />
-              <div className="h-12 bg-gray-200 rounded animate-pulse" />
-              <div className="h-12 bg-gray-200 rounded animate-pulse" />
-            </div>
-          </div>
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="h-5 w-32 bg-gray-200 rounded animate-pulse mb-4" />
-            <div className="space-y-3">
-              <div className="h-4 w-full bg-gray-200 rounded animate-pulse" />
-              <div className="h-4 w-3/4 bg-gray-200 rounded animate-pulse" />
-              <div className="h-4 w-1/2 bg-gray-200 rounded animate-pulse" />
-            </div>
-          </div>
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="h-5 w-36 bg-gray-200 rounded animate-pulse mb-4" />
-            <div className="h-4 w-full bg-gray-200 rounded animate-pulse" />
-          </div>
-        </div>
+        {/* Right rail */}
+        <aside
+          className="v2-loading-rail"
+          style={{ display: "grid", gap: 16 }}
+        >
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              className="v2-skeleton"
+              style={{
+                height: i === 0 ? 200 : 160,
+                background: "rgba(219, 234, 254, 0.4)",
+                borderRadius: 14,
+              }}
+            />
+          ))}
+        </aside>
       </div>
     </div>
   );

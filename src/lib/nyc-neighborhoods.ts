@@ -89,6 +89,7 @@ export const NYC_ZIP_NEIGHBORHOODS: Record<string, string> = {
   "11209": "Bay Ridge",
   "11210": "Flatbush",
   "11211": "Williamsburg",
+  "11249": "Williamsburg",
   "11212": "Brownsville",
   "11213": "Crown Heights",
   "11214": "Bensonhurst",
@@ -197,7 +198,7 @@ for (const zip of Object.keys(NYC_ZIP_NEIGHBORHOODS)) {
   if (zip >= "10001" && zip <= "10282") NYC_ZIP_BOROUGHS[zip] = "Manhattan";
   else if (zip >= "10301" && zip <= "10314") NYC_ZIP_BOROUGHS[zip] = "Staten Island";
   else if (zip >= "10451" && zip <= "10475") NYC_ZIP_BOROUGHS[zip] = "Bronx";
-  else if (zip >= "11201" && zip <= "11239") NYC_ZIP_BOROUGHS[zip] = "Brooklyn";
+  else if ((zip >= "11201" && zip <= "11239") || zip === "11249") NYC_ZIP_BOROUGHS[zip] = "Brooklyn";
   else NYC_ZIP_BOROUGHS[zip] = "Queens";
 }
 

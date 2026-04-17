@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Nav variations — navy + white</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Geist:wght@300;400;500;600;700;800&family=Geist+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --ink: #0F1D2E;
+  --ink-2: #1e293b;
+  --ink-mute: #64748b;
+  --navy: #3B82F6;
+  --navy-hi: #2563EB;
+  --navy-dark: #0F1D2E;
+  --navy-deep: #091325;
+  --sky-deep: #60a5fa;
+  --sky: #dbeafe;
+  --paper: #f8fafc;
+  --surface: #ffffff;
+  --border: #e2e8f0;
+  --sun: #fbbf24;
+  --sans: "Geist", system-ui, sans-serif;
+  --mono: "Geist Mono", ui-monospace, monospace;
+  --serif: "Young Serif", serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+a { color: inherit; text-decoration: none; }
+
+.page { max-width: 1440px; margin: 0 auto; padding: 48px 24px 120px; }
+.page-head { padding-bottom: 28px; margin-bottom: 32px; border-bottom: 1px solid var(--border); }
+.page-head h1 { font-family: var(--serif); font-size: 40px; margin: 0 0 6px; letter-spacing: -0.02em; }
+.page-head p { color: var(--ink-mute); font-size: 15px; max-width: 64ch; margin: 0; line-height: 1.6; }
+.head-links { display: flex; gap: 14px; font-size: 13px; font-family: var(--mono); margin-top: 12px; flex-wrap: wrap; }
+.head-links a { color: var(--navy); text-decoration: underline; text-underline-offset: 2px; }
+
+.variant { margin-bottom: 36px; }
+.variant-label {
+  display: flex; align-items: baseline; gap: 14px;
+  padding-bottom: 10px; margin-bottom: 14px;
+  border-bottom: 1px dashed var(--border);
+}
+.variant-label .num { font-family: var(--mono); font-size: 10px; color: var(--navy); font-weight: 700; letter-spacing: 0.14em; padding: 3px 8px; border: 1px solid var(--navy); border-radius: 999px; }
+.variant-label h2 { font-family: var(--serif); font-size: 20px; margin: 0; letter-spacing: -0.01em; font-weight: 400; }
+.variant-label .sub { color: var(--ink-mute); font-size: 12px; margin-left: auto; font-family: var(--mono); letter-spacing: 0.02em; }
+
+/* Shared nav scaffold */
+.nav {
+  background: var(--navy-dark);
+  color: white;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.nav-inner {
+  max-width: 1440px;
+  margin: 0 auto;
+  display: flex; align-items: center; gap: 24px;
+  padding: 14px 24px;
+}
+.brand { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 17px; letter-spacing: -0.015em; color: white; }
+.brand .dot { width: 8px; height: 8px; border-radius: 2px; background: var(--navy); display: inline-block; }
+.nav-search {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 999px;
+  padding: 8px 14px;
+  color: rgba(255,255,255,0.65);
+  font-size: 14px;
+  flex: 1; max-width: 520px;
+}
+.nav-search svg { width: 14px; height: 14px; opacity: 0.7; flex: 0 0 14px; }
+.nav-search .kbd {
+  margin-left: auto; padding: 2px 7px;
+  font-family: var(--mono); font-size: 11px; font-weight: 600;
+  color: rgba(255,255,255,0.55);
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 4px;
+}
+
+/* ===== search variants ===== */
+
+/* 02 — City filter prefix */
+.search-filter {
+  display: flex; align-items: center;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 999px;
+  flex: 1; max-width: 560px;
+  overflow: hidden;
+  font-size: 14px;
+}
+.search-filter .city {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 14px;
+  font-family: var(--mono); font-size: 12px; font-weight: 600;
+  color: rgba(255,255,255,0.85);
+  letter-spacing: 0.06em;
+  border-right: 1px solid rgba(255,255,255,0.12);
+  cursor: pointer;
+  background: rgba(255,255,255,0.03);
+}
+.search-filter .city:hover { background: rgba(255,255,255,0.1); color: white; }
+.search-filter .city svg { width: 10px; height: 10px; opacity: 0.7; }
+.search-filter .query {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 14px; flex: 1;
+  color: rgba(255,255,255,0.65);
+}
+.search-filter .query svg { width: 14px; height: 14px; opacity: 0.7; flex: 0 0 14px; }
+
+/* 03 — trailing search icon only (pipe nav) */
+.search-trailing {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+  display: grid; place-items: center; color: rgba(255,255,255,0.75);
+  cursor: pointer;
+}
+.search-trailing:hover { background: rgba(255,255,255,0.15); color: white; }
+.search-trailing svg { width: 14px; height: 14px; }
+
+/* 04 — underline only, no pill */
+.search-underline {
+  display: flex; align-items: center; gap: 10px;
+  flex: 1; max-width: 420px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.25);
+  color: rgba(255,255,255,0.7);
+  font-size: 14px;
+  font-family: var(--serif);
+  font-style: italic;
+}
+.search-underline svg { width: 14px; height: 14px; opacity: 0.7; flex: 0 0 14px; }
+
+/* 06 — boxed (not pill), rounded-small rectangle */
+.search-box {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 8px;
+  padding: 9px 14px;
+  color: rgba(255,255,255,0.65);
+  font-size: 14px;
+  flex: 1; max-width: 520px;
+}
+.search-box svg { width: 14px; height: 14px; opacity: 0.7; flex: 0 0 14px; }
+
+/* 07 — ghost input with bottom search row */
+.search-block {
+  display: flex; align-items: center;
+  background: rgba(255,255,255,0.05);
+  border-radius: 0;
+  padding: 0;
+  flex: 1; max-width: 560px;
+  overflow: hidden;
+  border: none;
+  border-bottom: 2px solid rgba(255,255,255,0.18);
+}
+.search-block svg { width: 14px; height: 14px; opacity: 0.7; flex: 0 0 14px; margin-right: 10px; margin-left: 2px; }
+.search-block span { font-size: 14px; color: rgba(255,255,255,0.65); padding: 10px 0; }
+
+/* 08 — accented pill w/ focus ring */
+.search-accent {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(96,165,250,0.08);
+  border: 1px solid rgba(96,165,250,0.25);
+  border-radius: 999px;
+  padding: 8px 14px;
+  color: rgba(255,255,255,0.75);
+  font-size: 14px;
+  flex: 1; max-width: 520px;
+}
+.search-accent svg { width: 14px; height: 14px; color: var(--sky-deep); flex: 0 0 14px; }
+
+/* 09 — outline only (hollow pill) */
+.search-outline {
+  display: flex; align-items: center; gap: 8px;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 999px;
+  padding: 7px 16px;
+  color: rgba(255,255,255,0.7);
+  font-size: 13px;
+  min-width: 180px;
+}
+.search-outline svg { width: 13px; height: 13px; opacity: 0.7; flex: 0 0 13px; }
+
+/* 10 — large with filter + mic icons */
+.search-large {
+  display: flex; align-items: center; gap: 10px;
+  background: white;
+  border: 1px solid white;
+  border-radius: 999px;
+  padding: 10px 18px;
+  color: var(--navy-dark);
+  font-size: 14px;
+  flex: 1; max-width: 640px;
+  box-shadow: 0 8px 20px -10px rgba(96,165,250,0.5);
+}
+.search-large svg { width: 16px; height: 16px; opacity: 0.65; flex: 0 0 16px; color: var(--ink); }
+.search-large .text { flex: 1; color: var(--ink-mute); }
+.search-large .tools { display: inline-flex; gap: 10px; align-items: center; color: var(--ink-mute); }
+.search-large .tools .div { width: 1px; height: 18px; background: var(--border); }
+.search-large .tools svg { width: 15px; height: 15px; opacity: 0.75; cursor: pointer; }
+.search-large .tools svg:hover { opacity: 1; color: var(--navy); }
+.login {
+  padding: 8px 16px; border-radius: 999px;
+  font-size: 13px; font-weight: 600;
+  color: white; border: 1px solid rgba(255,255,255,0.25);
+  cursor: pointer; background: transparent;
+}
+.login:hover { background: rgba(255,255,255,0.08); }
+.login.filled { background: var(--navy); border-color: var(--navy); }
+.login.filled:hover { background: var(--navy-hi); border-color: var(--navy-hi); }
+.login.white { background: white; color: var(--navy-dark); border-color: white; }
+.login.white:hover { background: var(--sky); }
+
+/* ============================================================
+   01 · CLEAN
+============================================================ */
+.nav-01 .links { margin-left: auto; display: flex; gap: 28px; font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.85); }
+.nav-01 .links a:hover { color: white; }
+
+/* ============================================================
+   02 · TABBED — bottom underline on hover/active
+============================================================ */
+.nav-02 .links { margin-left: auto; display: flex; gap: 4px; font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.75); }
+.nav-02 .links a { padding: 10px 14px; border-bottom: 2px solid transparent; margin-bottom: -14px; }
+.nav-02 .links a:hover { color: white; border-bottom-color: rgba(255,255,255,0.3); }
+.nav-02 .links a.active { color: white; border-bottom-color: var(--sky-deep); }
+
+/* ============================================================
+   03 · PIPE — minimal pipe separators
+============================================================ */
+.nav-03 .links { margin-left: auto; display: flex; align-items: center; gap: 0; font-family: var(--mono); font-size: 12px; color: rgba(255,255,255,0.75); letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600; }
+.nav-03 .links a { padding: 0 16px; }
+.nav-03 .links a:hover { color: white; }
+.nav-03 .links a + a { border-left: 1px solid rgba(255,255,255,0.15); }
+
+/* ============================================================
+   04 · DOT — small dot separators
+============================================================ */
+.nav-04 .links { margin-left: auto; display: flex; align-items: center; gap: 18px; font-size: 14px; color: rgba(255,255,255,0.8); }
+.nav-04 .links .item { display: inline-flex; align-items: center; gap: 18px; }
+.nav-04 .links .item:not(:last-child)::after { content: '·'; color: rgba(255,255,255,0.35); }
+.nav-04 .links a:hover { color: white; }
+
+/* ============================================================
+   05 · COMPACT — monospace, tight, icon-only search
+============================================================ */
+.nav-05 .links { margin-left: auto; display: flex; gap: 20px; font-family: var(--mono); font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.75); letter-spacing: 0.04em; text-transform: uppercase; }
+.nav-05 .search-icon {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+  display: grid; place-items: center; color: rgba(255,255,255,0.75);
+  cursor: pointer;
+}
+.nav-05 .search-icon:hover { background: rgba(255,255,255,0.16); color: white; }
+.nav-05 .search-icon svg { width: 14px; height: 14px; }
+
+/* ============================================================
+   06 · ICONS — each link prefixed with a glyph
+============================================================ */
+.nav-06 .links { margin-left: auto; display: flex; gap: 20px; font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.85); }
+.nav-06 .links a { display: inline-flex; align-items: center; gap: 6px; }
+.nav-06 .links a svg { width: 14px; height: 14px; opacity: 0.7; }
+.nav-06 .links a:hover { color: white; }
+.nav-06 .links a:hover svg { opacity: 1; color: var(--sky-deep); }
+
+/* ============================================================
+   07 · CAPS — all uppercase, tracked out
+============================================================ */
+.nav-07 .links { margin-left: auto; display: flex; gap: 26px; font-size: 11px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.8); }
+.nav-07 .links a:hover { color: var(--sky-deep); }
+
+/* ============================================================
+   08 · PILLS — nav links as subtle pills
+============================================================ */
+.nav-08 .links { margin-left: auto; display: flex; gap: 4px; font-size: 13px; font-weight: 500; }
+.nav-08 .links a { padding: 8px 14px; border-radius: 999px; color: rgba(255,255,255,0.8); }
+.nav-08 .links a:hover { background: rgba(255,255,255,0.08); color: white; }
+.nav-08 .links a.active { background: rgba(96,165,250,0.18); color: var(--sky-deep); }
+
+/* ============================================================
+   09 · SPLIT — two-section: core left, utility right
+============================================================ */
+.nav-09 .core-links { display: flex; gap: 22px; font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.85); padding-left: 4px; border-left: 1px solid rgba(255,255,255,0.15); margin-left: 4px; }
+.nav-09 .core-links a { padding: 6px 4px; }
+.nav-09 .core-links a:hover { color: white; }
+.nav-09 .utility { margin-left: auto; display: flex; gap: 12px; align-items: center; font-size: 13px; color: rgba(255,255,255,0.7); }
+.nav-09 .utility a:hover { color: white; }
+.nav-09 .utility .u-sep { width: 1px; height: 18px; background: rgba(255,255,255,0.15); }
+
+/* ============================================================
+   10 · STACKED — brand marquee row above primary nav
+============================================================ */
+.nav-10 .top-strip {
+  background: var(--navy-deep);
+  padding: 7px 24px;
+  font-family: var(--mono); font-size: 10px;
+  color: rgba(255,255,255,0.65); letter-spacing: 0.16em; text-transform: uppercase;
+  display: flex; gap: 18px; align-items: center; max-width: 1440px; margin: 0 auto;
+}
+.nav-10 .top-strip span { display: inline-flex; align-items: center; gap: 6px; }
+.nav-10 .top-strip .sep { color: rgba(255,255,255,0.3); }
+.nav-10 .top-strip a { color: rgba(255,255,255,0.8); }
+.nav-10 .top-strip a:hover { color: white; }
+.nav-10 .top-strip .right { margin-left: auto; display: flex; gap: 18px; }
+.nav-10 .main-row { padding: 14px 24px; display: flex; align-items: center; gap: 24px; max-width: 1440px; margin: 0 auto; }
+.nav-10 .links { margin-left: auto; display: flex; gap: 22px; font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.85); }
+.nav-10 .links a:hover { color: white; }
+
+/* Responsive fallback */
+@media (max-width: 860px) {
+  .nav-01 .links,
+  .nav-02 .links,
+  .nav-03 .links,
+  .nav-04 .links,
+  .nav-06 .links,
+  .nav-07 .links,
+  .nav-08 .links,
+  .nav-09 .core-links,
+  .nav-09 .utility,
+  .nav-10 .links,
+  .nav-05 .links { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <header class="page-head">
+    <h1>Nav — 10 navy &amp; white variations</h1>
+    <p>Same content (brand, search, primary links, log in) in ten different styles. All use a solid navy background with white text, LucidRents palette.</p>
+    <div class="head-links">
+      <a href="/mockups/building-v1.html">← building-v1</a>
+      <a href="/mockups/lucidiq-ribbon.html">lucidiq ribbons</a>
+      <a href="/mockups/lucidiq-shield.html">shield variants</a>
+      <a href="/mockups/score-badges.html">hexagons</a>
+    </div>
+  </header>
+
+  <!-- 01 CLEAN -->
+  <section class="variant">
+    <div class="variant-label"><span class="num">01</span><h2>Clean</h2><span class="sub">baseline · sans links · pill search · outline login</span></div>
+    <nav class="nav nav-01">
+      <div class="nav-inner">
+        <a class="brand"><span class="dot"></span>lucidrents</a>
+        <div class="nav-search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <span>Search an address, building, or landlord…</span>
+          <span class="kbd">⌘K</span>
+        </div>
+        <div class="links">
+          <a>Buildings</a><a>Landlords</a><a>Neighborhoods</a><a>Tenant tools</a><a>Guides</a>
+        </div>
+        <button class="login">Log in</button>
+      </div>
+    </nav>
+  </section>
+
+  <!-- 02 TABBED -->
+  <section class="variant">
+    <div class="variant-label"><span class="num">02</span><h2>Tabbed</h2><span class="sub">sky-blue underline · active tab highlight</span></div>
+    <nav class="nav nav-02">
+      <div class="nav-inner">
+        <a class="brand"><span class="dot"></span>lucidrents</a>
+        <div class="search-filter">
+          <span class="city">NYC <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span>
+          <div class="query">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <span>Search address, building, landlord…</span>
+          </div>
+        </div>
+        <div class="links">
+          <a class="active">Buildings</a><a>Landlords</a><a>Neighborhoods</a><a>Tenant tools</a><a>Guides</a>
+        </div>
+        <button class="login">Log in</button>
+      </div>
+    </nav>
+  </section>
+
+  <!-- 03 PIPE -->
+  <section class="variant">
+    <div class="variant-label"><span class="num">03</span><h2>Pipe</h2><span class="sub">mono caps · vertical dividers · editorial</span></div>
+    <nav class="nav nav-03">
+      <div class="nav-inner">
+        <a class="brand"><span class="dot"></span>lucidrents</a>
+        <div class="links" style="margin-left: 32px;">
+          <a>Buildings</a><a>Landlords</a><a>Neighborhoods</a><a>Tenant tools</a><a>Guides</a>
+        </div>
+        <button class="search-trailing" aria-label="Search" style="margin-left: auto;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        </button>
+        <button class="login">Log in</button>
+      </div>
+    </nav>
+  </section>
+
+  <!-- 04 DOT -->
+  <section class="variant">
+    <div class="variant-label"><span class="num">04</span><h2>Dot</h2><span class="sub">middle-dot separators · quiet hierarchy</span></div>
+    <nav class="nav nav-04">
+      <div class="nav-inner">
+        <a class="brand"><span class="dot"></span>lucidrents</a>
+        <div class="search-underline">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <span>Look up an address…</span>
+        </div>
+        <div class="links">
+          <span class="item"><a>Buildings</a></span>
+          <span class="item"><a>Landlords</a></span>
+          <span class="item"><a>Neighborhoods</a></span>
+          <span class="item"><a>Tenant tools</a></span>
+          <span class="item"><a>Guides</a></span>
+        </div>
+        <button class="login">Log in</button>
+      </div>
+    </nav>
+  </section>
+
+  <!-- 05 COMPACT -->
+  <section class="variant">
+    <div class="variant-label"><span class="num">05</span><h2>Compact</h2><span class="sub">mono uppercase · icon-only search · tight</span></div>
+    <nav class="nav nav-05">
+      <div class="nav-inner">
+        <a class="brand"><span class="dot"></span>lucidrents</a>
+        <div class="links">
+          <a>Buildings</a><a>Landlords</a><a>Neighborhoods</a><a>Tenant tools</a><a>Guides</a>
+        </div>
+        <button class="search-icon" aria-label="Search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        </button>
+        <button class="login filled">Log in</button>
+      </div>
+    </nav>
+  </section>
+
+  <!-- 06 ICONS -->
+  <section class="variant">
+    <div class="variant-label"><span class="num">06</span><h2>Icons</h2><span class="sub">each link with a glyph · consumer-friendly</span></div>
+    <nav class="nav nav-06">
+      <div class="nav-inner">
+        <a class="brand"><span class="dot"></span>lucidrents</a>
+        <div class="search-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <span>Search an address, building, or landlord…</span>
+        </div>
+        <div class="links">
+          <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-6h6v6"/></svg>Buildings</a>
+          <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Landlords</a>
+          <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Neighborhoods</a>
+          <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>Tenant tools</a>
+          <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Guides</a>
+        </div>
+        <button class="login">Log in</button>
+      </div>
+    </nav>
+  </section>
+
+  <!-- 07 CAPS -->
+  <section class="variant">
+    <div class="variant-label"><span class="num">07</span><h2>Caps</h2><span class="sub">uppercase · tracked · newsroom nav</span></div>
+    <nav class="nav nav-07">
+      <div class="nav-inner">
+        <a class="brand"><span class="dot"></span>lucidrents</a>
+        <div class="search-block">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <span>Search…</span>
+        </div>
+        <div class="links">
+          <a>Buildings</a><a>Landlords</a><a>Neighborhoods</a><a>Tenant tools</a><a>Guides</a>
+        </div>
+        <button class="login">Log in</button>
+      </div>
+    </nav>
+  </section>
+
+  <!-- 08 PILLS -->
+  <section class="variant">
+    <div class="variant-label"><span class="num">08</span><h2>Pills</h2><span class="sub">pill-shaped hover · active state · app nav</span></div>
+    <nav class="nav nav-08">
+      <div class="nav-inner">
+        <a class="brand"><span class="dot"></span>lucidrents</a>
+        <div class="search-accent">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <span>Search an address, building, or landlord…</span>
+        </div>
+        <div class="links">
+          <a class="active">Buildings</a><a>Landlords</a><a>Neighborhoods</a><a>Tenant tools</a><a>Guides</a>
+        </div>
+        <button class="login filled">Log in</button>
+      </div>
+    </nav>
+  </section>
+
+  <!-- 09 SPLIT -->
+  <section class="variant">
+    <div class="variant-label"><span class="num">09</span><h2>Split</h2><span class="sub">core nav next to brand · utility far right</span></div>
+    <nav class="nav nav-09">
+      <div class="nav-inner">
+        <a class="brand"><span class="dot"></span>lucidrents</a>
+        <div class="core-links">
+          <a>Buildings</a><a>Landlords</a><a>Neighborhoods</a>
+        </div>
+        <div class="utility">
+          <a>Tenant tools</a>
+          <a>Guides</a>
+          <span class="u-sep"></span>
+          <div class="search-outline">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <span>Search</span>
+          </div>
+          <button class="login filled">Log in</button>
+        </div>
+      </div>
+    </nav>
+  </section>
+
+  <!-- 10 STACKED -->
+  <section class="variant">
+    <div class="variant-label"><span class="num">10</span><h2>Stacked</h2><span class="sub">mini brand strip on top · primary row below</span></div>
+    <nav class="nav nav-10">
+      <div class="top-strip">
+        <span>NYC · 432 buildings added this month</span>
+        <span class="sep">·</span>
+        <span>LucidIQ v2</span>
+        <div class="right">
+          <a>For journalists</a>
+          <a>API</a>
+          <a>Sources</a>
+        </div>
+      </div>
+      <div class="main-row">
+        <a class="brand"><span class="dot"></span>lucidrents</a>
+        <div class="search-large">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <span class="text">Search an address, building, or landlord…</span>
+          <span class="tools">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-label="Filters"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+            <span class="div"></span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-label="Map"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+          </span>
+        </div>
+        <div class="links">
+          <a>Buildings</a><a>Landlords</a><a>Neighborhoods</a><a>Tenant tools</a><a>Guides</a>
+        </div>
+        <button class="login white">Log in</button>
+      </div>
+    </nav>
+  </section>
+
+</div>
+
+</body>
+</html>
