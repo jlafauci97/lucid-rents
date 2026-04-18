@@ -174,7 +174,13 @@ export function S02_Issues({ issues, hpdViolations, buildingId, hpdCount, dobCou
                 <div className="n">{row.count}</div>
               </li>
             ))}
-            {!issues.hpdTop.length && <li><div className="k">No violations</div><div className="bar"><span style={{ width: "0%" }}></span></div><div className="n">0</div></li>}
+            {!issues.hpdTop.length && (
+              <li>
+                <div className="k">{hpdCount > 0 ? "Category breakdown loading" : "No violations"}</div>
+                <div className="bar"><span style={{ width: "0%" }}></span></div>
+                <div className="n">{hpdCount > 0 ? hpdCount.toLocaleString() : 0}</div>
+              </li>
+            )}
           </ul>
         </div>
 
@@ -192,7 +198,13 @@ export function S02_Issues({ issues, hpdViolations, buildingId, hpdCount, dobCou
                 <div className="n">{row.count}</div>
               </li>
             ))}
-            {!issues.complaintsTop.length && <li><div className="k">No complaints</div><div className="bar"><span style={{ width: "0%" }}></span></div><div className="n">0</div></li>}
+            {!issues.complaintsTop.length && (
+              <li>
+                <div className="k">{complaintsCount > 0 ? "Category breakdown loading" : "No complaints"}</div>
+                <div className="bar"><span style={{ width: "0%" }}></span></div>
+                <div className="n">{complaintsCount > 0 ? complaintsCount.toLocaleString() : 0}</div>
+              </li>
+            )}
           </ul>
         </div>
 
