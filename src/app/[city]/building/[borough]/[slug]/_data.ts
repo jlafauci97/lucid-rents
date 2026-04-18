@@ -223,89 +223,29 @@ async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
 }
 
 // ──────────────────────────────────────────────────────────────
-// Main loader
+// Per-section loaders.
+//
+// Each loader fetches ONLY the data its section needs so that the page can
+// stream section-by-section via React Suspense. Sections that truly need
+// the entire data bag (S09 FAQ, SideRail) compose multiple loaders in
+// parallel rather than calling the monolithic loader.
+//
+// The original `loadBuildingV2Data` is kept as a backward-compatible wrapper
+// that composes all of these — handy for any callers that still want the
+// full bag in one shot.
 // ──────────────────────────────────────────────────────────────
 
-export async function loadBuildingV2Data(building: Building): Promise<BuildingV2Data> {
+// ── Rents ──────────────────────────────────────────────────────
+export async function loadRentsData(
+  buildingId: string,
+  metro: string | null,
+  zipCode: string | null,
+): Promise<{
+  rents: BuildingV2Data["rents"];
+  seasonalIndex: BuildingV2Data["seasonalIndex"];
+}> {
   const supabase = await createClient();
-  const buildingId = building.id;
-  const isLA = building.metro === "los-angeles";
-  const isChicago = building.metro === "chicago";
-  const isMiami = building.metro === "miami";
-  const isHouston = building.metro === "houston";
-  const zipCode = building.zip_code ?? null;
-  const ownerName = building.owner_name ?? building.management_company ?? null;
-
-  type LaBuyout = BuildingV2Data["laData"]["buyouts"][number];
-  type LaScep = BuildingV2Data["laData"]["scepInspections"][number];
-  type LaRetrofit = NonNullable<BuildingV2Data["laData"]["earthquakeRetrofit"]>;
-  type ChicagoRlto = BuildingV2Data["chicagoData"]["rltoViolations"][number];
-  type ChicagoDemo = BuildingV2Data["chicagoData"]["demolitions"][number];
-  type ChicagoLead = BuildingV2Data["chicagoData"]["leadInspections"][number];
-  type ChicagoAffordable = BuildingV2Data["chicagoData"]["affordableUnits"][number];
-  type ChicagoEnergy = NonNullable<BuildingV2Data["chicagoData"]["energyRating"]>;
-  type MiamiRecert = BuildingV2Data["miamiData"]["recerts"][number];
-  type MiamiUnsafe = BuildingV2Data["miamiData"]["unsafeStructures"][number];
-  type MiamiStorm = BuildingV2Data["miamiData"]["stormDamage"][number];
-  type MiamiFlood = BuildingV2Data["miamiData"]["floodClaims"][number];
-  type HoustonDangerous = BuildingV2Data["houstonData"]["dangerousBuildings"][number];
-  type HoustonIndustrial = BuildingV2Data["houstonData"]["industrialProximity"][number];
-  type HoustonTax = BuildingV2Data["houstonData"]["taxProtests"][number];
-  type HoustonAffordable = BuildingV2Data["houstonData"]["affordableHousing"][number];
-
-  const [
-    energy,
-    currentRents,
-    historicRents,
-    neighborhoodRents,
-    hpdTop,
-    complaintsTop,
-    recentViolations,
-    hpdViolations,
-    trends,
-    reviewsAggregate,
-    pullQuotes,
-    amenities,
-    landlordOtherBuildings,
-    landlordStats,
-    similar,
-    timelineRaw,
-    nearbyTransit,
-    nearbySchools,
-    crimeAgg,
-    neighborhoodStats,
-    seasonalIndex,
-    amenityPremiums,
-    demographics,
-    laBuyouts,
-    laScep,
-    laRetrofit,
-    chicagoRlto,
-    chicagoDemolitions,
-    chicagoLead,
-    chicagoAffordable,
-    chicagoEnergy,
-    miamiRecerts,
-    miamiUnsafe,
-    miamiStorm,
-    miamiFlood,
-    houstonDangerous,
-    houstonIndustrial,
-    houstonTax,
-    houstonAffordable,
-  ] = await Promise.all([
-    // Energy benchmark (latest year)
-    safe(async () => {
-      const { data } = await supabase
-        .from("energy_benchmarks")
-        .select("*")
-        .eq("building_id", buildingId)
-        .order("report_year", { ascending: false })
-        .limit(1);
-      return (data?.[0] as EnergyBenchmark) ?? null;
-    }, null as EnergyBenchmark | null),
-
-    // Current rents by bedroom
+  const [current, historic, neighborhood, seasonalIndex] = await Promise.all([
     safe(async () => {
       const { data } = await supabase
         .from("building_rents")
@@ -314,7 +254,6 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
       return data ?? [];
     }, [] as BuildingV2Data["rents"]["current"]),
 
-    // Historic monthly rents (last 12 months)
     safe(async () => {
       const { data } = await supabase
         .from("dewey_building_rents")
@@ -325,8 +264,6 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
       return data ?? [];
     }, [] as BuildingV2Data["rents"]["historic"]),
 
-    // Neighborhood median rents by zip (per bedroom)
-    // NOTE: dewey_neighborhood_rents uses "zip" column (not "zip_code")
     safe(async () => {
       if (!zipCode) return [];
       const { data } = await supabase
@@ -346,11 +283,27 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
       }));
     }, [] as BuildingV2Data["rents"]["neighborhood"]),
 
-    // Top HPD violation categories — categorize by nov_description
-    // (Paint/Plaster, Water Leak, Heat/Hot Water, etc.) to match the production
-    // page. Query nov_description without a non-null filter so rows with
-    // empty descriptions still count as "Other uncategorized" rather than
-    // silently falling back to raw class letters.
+    safe(async () => {
+      if (!zipCode) return [];
+      const { data } = await supabase
+        .from("dewey_seasonal_index")
+        .select("month_of_year, beds, rent_index")
+        .eq("zip", zipCode)
+        .eq("city", metro ?? "nyc");
+      return data ?? [];
+    }, [] as BuildingV2Data["seasonalIndex"]),
+  ]);
+  return {
+    rents: { current, historic, neighborhood },
+    seasonalIndex,
+  };
+}
+
+// ── Issues ─────────────────────────────────────────────────────
+export async function loadIssuesData(buildingId: string): Promise<BuildingV2Data["issues"]> {
+  const supabase = await createClient();
+  const [hpdTop, complaintsTop, recentViolations, hpdViolations, trends] = await Promise.all([
+    // Top HPD violation categories
     safe(async () => {
       const { data } = await supabase
         .from("hpd_violations")
@@ -372,8 +325,6 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
         .map(([category, count]) => ({ category, count }))
         .sort((a, b) => b.count - a.count)
         .slice(0, 5);
-      // If every violation fell through to Other (description missing), surface
-      // a single "Uncategorized" row so the card still has meaningful content.
       if (ranked.length === 0 && uncategorized > 0) {
         return [{ category: "Uncategorized", count: uncategorized }];
       }
@@ -399,7 +350,6 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
     }, [] as BuildingV2Data["issues"]["complaintsTop"]),
 
     // Recent violations across HPD + DOB + 311 (top 20)
-    // NOTE: hpd_violations uses "nov_description" and "status" (not "novdescription"/"currentstatus")
     safe(async () => {
       const [hpdRes, dobRes, compRes] = await Promise.all([
         supabase
@@ -453,7 +403,7 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
         .slice(0, 20);
     }, [] as BuildingV2Data["issues"]["recentViolations"]),
 
-    // HPD violations with apartment field for ViolationsByUnit
+    // HPD violations with apartment field
     safe(async () => {
       const { data } = await supabase
         .from("hpd_violations")
@@ -478,26 +428,10 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
       const sinceISO = since.toISOString().slice(0, 10);
 
       const [hpdRes, dobRes, compRes, evictRes] = await Promise.all([
-        supabase
-          .from("hpd_violations")
-          .select("inspection_date")
-          .eq("building_id", buildingId)
-          .gte("inspection_date", sinceISO),
-        supabase
-          .from("dob_violations")
-          .select("issue_date")
-          .eq("building_id", buildingId)
-          .gte("issue_date", sinceISO),
-        supabase
-          .from("complaints_311")
-          .select("created_date")
-          .eq("building_id", buildingId)
-          .gte("created_date", sinceISO),
-        supabase
-          .from("evictions")
-          .select("executed_date")
-          .eq("building_id", buildingId)
-          .gte("executed_date", sinceISO),
+        supabase.from("hpd_violations").select("inspection_date").eq("building_id", buildingId).gte("inspection_date", sinceISO),
+        supabase.from("dob_violations").select("issue_date").eq("building_id", buildingId).gte("issue_date", sinceISO),
+        supabase.from("complaints_311").select("created_date").eq("building_id", buildingId).gte("created_date", sinceISO),
+        supabase.from("evictions").select("executed_date").eq("building_id", buildingId).gte("executed_date", sinceISO),
       ]);
 
       const buckets = new Map<string, { hpd: number; dob: number; complaints: number; evictions: number }>();
@@ -528,9 +462,14 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
         .map(([month, v]) => ({ month, ...v }))
         .sort((a, b) => a.month.localeCompare(b.month));
     }, [] as BuildingV2Data["issues"]["trends"]),
+  ]);
+  return { hpdTop, complaintsTop, recentViolations, hpdViolations, trends };
+}
 
-    // Reviews aggregate (count + avg)
-    // NOTE: reviews table uses "overall_rating" not "rating"
+// ── Reviews ────────────────────────────────────────────────────
+export async function loadReviewsData(buildingId: string): Promise<BuildingV2Data["reviews"]> {
+  const supabase = await createClient();
+  const [aggregate, pullQuotes] = await Promise.all([
     safe(async () => {
       const { data } = await supabase
         .from("reviews")
@@ -541,8 +480,7 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
       const ratings = arr.map((r) => r.overall_rating).filter((n): n is number => typeof n === "number");
       const total = ratings.length;
       const avgRating = total ? ratings.reduce((a, b) => a + b, 0) / total : 0;
-      // Bucket ratings into 5 stars (rounded).
-      const buckets = [0, 0, 0, 0, 0]; // index 0 = 1★, 4 = 5★
+      const buckets = [0, 0, 0, 0, 0];
       for (const r of ratings) {
         const stars = Math.max(1, Math.min(5, Math.round(r)));
         buckets[stars - 1]++;
@@ -555,8 +493,6 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
       return { total, avgRating, distribution };
     }, { total: 0, avgRating: 0, distribution: [1,2,3,4,5].map((s) => ({ stars: s as 1|2|3|4|5, count: 0, pct: 0 })) } as { total: number; avgRating: number; distribution: BuildingV2Data["reviews"]["distribution"] }),
 
-    // Pull quotes: top 3 newest published reviews
-    // NOTE: reviews table uses "overall_rating" not "rating"
     safe(async () => {
       const { data } = await supabase
         .from("reviews")
@@ -580,8 +516,26 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
         })(),
       }));
     }, [] as BuildingV2Data["reviews"]["pullQuotes"]),
+  ]);
+  return {
+    total: aggregate.total,
+    avgRating: aggregate.avgRating,
+    distribution: aggregate.distribution,
+    pullQuotes,
+  };
+}
 
-    // Amenities
+// ── Amenities ──────────────────────────────────────────────────
+export async function loadAmenitiesData(
+  buildingId: string,
+  zipCode: string | null,
+  metro: string | null,
+): Promise<{
+  amenities: BuildingV2Data["amenities"];
+  amenityPremiums: BuildingV2Data["amenityPremiums"];
+}> {
+  const supabase = await createClient();
+  const [amenities, amenityPremiums] = await Promise.all([
     safe(async () => {
       const { data } = await supabase
         .from("building_amenities")
@@ -590,7 +544,28 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
       return data ?? [];
     }, [] as BuildingV2Data["amenities"]),
 
-    // Landlord: other buildings (up to 6)
+    safe(async () => {
+      if (!zipCode) return [];
+      const { data } = await supabase
+        .from("dewey_amenity_premiums")
+        .select("amenity, beds, premium_dollars, premium_pct, sample_size")
+        .eq("zip", zipCode)
+        .eq("city", metro ?? "nyc")
+        .eq("period", "all_time")
+        .gt("sample_size", 5);
+      return data ?? [];
+    }, [] as BuildingV2Data["amenityPremiums"]),
+  ]);
+  return { amenities, amenityPremiums };
+}
+
+// ── Landlord ───────────────────────────────────────────────────
+export async function loadLandlordData(building: Building): Promise<BuildingV2Data["landlord"]> {
+  const supabase = await createClient();
+  const buildingId = building.id;
+  const ownerName = building.owner_name ?? building.management_company ?? null;
+
+  const [otherBuildings, stats] = await Promise.all([
     safe(async () => {
       if (!ownerName) return [];
       const column = building.management_company ? "management_company" : "owner_name";
@@ -604,7 +579,6 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
       return data ?? [];
     }, [] as BuildingV2Data["landlord"]["otherBuildings"]),
 
-    // Landlord stats: portfolio size + avg score
     safe(async () => {
       if (!ownerName) return { portfolioSize: 0, portfolioAvgScore: null };
       const column = building.management_company ? "management_company" : "owner_name";
@@ -619,60 +593,33 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
       const portfolioAvgScore = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
       return { portfolioSize, portfolioAvgScore };
     }, { portfolioSize: 0, portfolioAvgScore: null } as { portfolioSize: number; portfolioAvgScore: number | null }),
+  ]);
 
-    // Similar buildings (proxied by zip + non-self) — up to 6
-    safe(async () => {
-      if (!zipCode) return [];
-      const { data } = await supabase
-        .from("buildings")
-        .select("id, full_address, slug, borough, overall_score, year_built, total_units")
-        .eq("zip_code", zipCode)
-        .neq("id", buildingId)
-        .limit(6);
-      return data ?? [];
-    }, [] as BuildingV2Data["similar"]),
+  return {
+    name: ownerName,
+    otherBuildings,
+    portfolioSize: stats.portfolioSize,
+    portfolioAvgScore: stats.portfolioAvgScore,
+  };
+}
 
-    // Timeline: HPD violations + DOB violations + 311 complaints + evictions (last 20 events)
-    safe(async () => {
-      const [hpdRes, dobRes, compRes, evictRes] = await Promise.all([
-        supabase
-          .from("hpd_violations")
-          .select("id, inspection_date, nov_issue_date, class, nov_description, status")
-          .eq("building_id", buildingId)
-          .order("inspection_date", { ascending: false })
-          .limit(20),
-        supabase
-          .from("dob_violations")
-          .select("id, issue_date, violation_category, violation_type, description, disposition_comments")
-          .eq("building_id", buildingId)
-          .order("issue_date", { ascending: false })
-          .limit(20),
-        supabase
-          .from("complaints_311")
-          .select("id, created_date, complaint_type, descriptor, status, resolution_description, agency")
-          .eq("building_id", buildingId)
-          .order("created_date", { ascending: false })
-          .limit(20),
-        supabase
-          .from("evictions")
-          .select("id, executed_date, eviction_apt_num, eviction_possession, residential_commercial")
-          .eq("building_id", buildingId)
-          .order("executed_date", { ascending: false })
-          .limit(10),
-      ]);
-      return normalizeTimelineEvents({
-        violations: (hpdRes.data ?? []) as Parameters<typeof normalizeTimelineEvents>[0]["violations"],
-        dobViolations: (dobRes.data ?? []) as Parameters<typeof normalizeTimelineEvents>[0]["dobViolations"],
-        complaints: (compRes.data ?? []) as Parameters<typeof normalizeTimelineEvents>[0]["complaints"],
-        evictions: (evictRes.data ?? []) as Parameters<typeof normalizeTimelineEvents>[0]["evictions"],
-      }).slice(0, 20);
-    }, [] as TimelineEvent[]),
+// ── Location (nearby + crime + neighborhood stats + demographics + vibe) ──
+export async function loadLocationData(building: Building): Promise<{
+  nearby: BuildingV2Data["nearby"];
+  crime: BuildingV2Data["crime"];
+  neighborhoodStats: BuildingV2Data["neighborhoodStats"];
+  demographics: BuildingV2Data["demographics"];
+  vibe: BuildingV2Data["vibe"];
+}> {
+  const supabase = await createClient();
+  const zipCode = building.zip_code ?? null;
 
-    // Nearby transit (subway + bus) — pulls from transit_stops within bbox, sorted by haversine.
+  const [nearbyTransit, nearbySchools, crimeAgg, neighborhoodStats, demographics] = await Promise.all([
+    // Nearby transit
     safe(async () => {
       const lat = building.latitude; const lng = building.longitude;
       if (lat == null || lng == null) return { subway: [], bus: [] };
-      const BBOX = 0.012; // ~0.8 mi
+      const BBOX = 0.012;
       const { data } = await supabase
         .from("transit_stops")
         .select("type, stop_id, name, latitude, longitude, routes")
@@ -692,7 +639,7 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
       return { subway, bus };
     }, { subway: [], bus: [] } as { subway: BuildingV2Data["nearby"]["transitSubway"]; bus: BuildingV2Data["nearby"]["transitBus"] }),
 
-    // Nearby schools — pulls from nearby_schools within bbox.
+    // Nearby schools
     safe(async () => {
       const lat = building.latitude; const lng = building.longitude;
       if (lat == null || lng == null) return { pub: [], charter: [], priv: [] };
@@ -711,11 +658,7 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
       return { pub, charter, priv };
     }, { pub: [], charter: [], priv: [] } as { pub: BuildingV2Data["nearby"]["schoolsPublic"]; charter: BuildingV2Data["nearby"]["schoolsCharter"]; priv: BuildingV2Data["nearby"]["schoolsPrivate"] }),
 
-    // Crime — last 12 months in the zip (approximation for "0.5 mi radius").
-    // nypd_complaints stores crime for NYC, Chicago, LA, Houston via metro column.
-    // Miami uses annual zip aggregates (apportioned from FDLE UCR by population)
-    // because no public incident-level Miami source exists. See
-    // miami_crime_aggregates and scripts/load-miami-crime-aggregates.mjs.
+    // Crime
     safe(async () => {
       if (!zipCode) return { total12mo: 0, violent: 0, property: 0, qualityOfLife: 0, safetyScore: 50, precinct: null };
       if (building.metro === "miami") {
@@ -728,7 +671,6 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
         const row = agg?.[0];
         if (!row) return { total12mo: 0, violent: 0, property: 0, qualityOfLife: 0, safetyScore: 50, precinct: null };
         const total = row.total_incidents ?? 0;
-        // Density-based score: ~12,000 incidents/yr → 0; 0/yr → 100.
         const safetyScore = Math.max(0, Math.min(100, Math.round(100 - (total / 120))));
         return {
           total12mo: total,
@@ -761,16 +703,14 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
         if (r.precinct) precinctCounts.set(r.precinct, (precinctCounts.get(r.precinct) ?? 0) + 1);
       }
       const total12mo = rows.length;
-      // Safety score: lower density = higher score. Benchmark zip typical density ~ 800 incidents/yr.
       const safetyScore = Math.max(0, Math.min(100, Math.round(100 - (total12mo / 12))));
       const precinct = [...precinctCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
       return { total12mo, violent, property, qualityOfLife: qol, safetyScore, precinct };
     }, { total12mo: 0, violent: 0, property: 0, qualityOfLife: 0, safetyScore: 50, precinct: null } as BuildingV2Data["crime"]),
 
-    // Neighborhood stats — buildings tracked + avg score + median 1BR for this zip.
+    // Neighborhood stats
     safe(async () => {
       if (!zipCode) return { buildingsTracked: 0, avgLucidIQ: null, median1BR: null };
-      // Buildings in this zip
       const { data: nbhBuildings } = await supabase
         .from("buildings")
         .select("id, overall_score")
@@ -780,7 +720,6 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
       const scores = rows.map((b) => b.overall_score).filter((n): n is number => typeof n === "number");
       const avgLucidIQ = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
 
-      // Latest 1BR neighborhood median — try dewey_neighborhood_rents first.
       let median1BR: number | null = null;
       const { data: deweyRents } = await supabase
         .from("dewey_neighborhood_rents")
@@ -795,31 +734,7 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
       return { buildingsTracked, avgLucidIQ, median1BR };
     }, { buildingsTracked: 0, avgLucidIQ: null, median1BR: null } as BuildingV2Data["neighborhoodStats"]),
 
-    // Seasonal rent index by zip
-    safe(async () => {
-      if (!zipCode) return [];
-      const { data } = await supabase
-        .from("dewey_seasonal_index")
-        .select("month_of_year, beds, rent_index")
-        .eq("zip", zipCode)
-        .eq("city", building.metro ?? "nyc");
-      return data ?? [];
-    }, [] as BuildingV2Data["seasonalIndex"]),
-
-    // Amenity premiums by zip
-    safe(async () => {
-      if (!zipCode) return [];
-      const { data } = await supabase
-        .from("dewey_amenity_premiums")
-        .select("amenity, beds, premium_dollars, premium_pct, sample_size")
-        .eq("zip", zipCode)
-        .eq("city", building.metro ?? "nyc")
-        .eq("period", "all_time")
-        .gt("sample_size", 5);
-      return data ?? [];
-    }, [] as BuildingV2Data["amenityPremiums"]),
-
-    // Census demographics by zip
+    // Census demographics
     safe(async () => {
       if (!zipCode) return { population: null, median_income: null, renter_pct: null, median_age: null };
       const { data } = await supabase
@@ -835,218 +750,11 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
         median_age: (row as { median_age?: number | null } | undefined)?.median_age ?? null,
       };
     }, { population: null, median_income: null, renter_pct: null, median_age: null } as BuildingV2Data["demographics"]),
-
-    // ─── LA: Tenant buyouts ─────────────────────────────────────
-    isLA ? safe(async () => {
-      const { data } = await supabase
-        .from("lahd_tenant_buyouts")
-        .select("id, disclosure_date, compensation_amount")
-        .eq("building_id", buildingId)
-        .order("disclosure_date", { ascending: false })
-        .limit(10);
-      return (data ?? []) as LaBuyout[];
-    }, [] as LaBuyout[]) : Promise.resolve([] as LaBuyout[]),
-
-    // ─── LA: SCEP inspections ───────────────────────────────────
-    isLA ? safe(async () => {
-      const { data } = await supabase
-        .from("lahd_scep_inspections")
-        .select("id, inspection_date, compliance_status, violations_found")
-        .eq("building_id", buildingId)
-        .order("inspection_date", { ascending: false })
-        .limit(10);
-      return (data ?? []) as LaScep[];
-    }, [] as LaScep[]) : Promise.resolve([] as LaScep[]),
-
-    // ─── LA: Earthquake retrofit ────────────────────────────────
-    isLA ? safe(async () => {
-      const { data } = await supabase
-        .from("la_earthquake_retrofit")
-        .select("retrofit_type, compliance_status, deadline, completion_date")
-        .eq("building_id", buildingId)
-        .limit(1);
-      return (data ?? []) as LaRetrofit[];
-    }, [] as LaRetrofit[]) : Promise.resolve([] as LaRetrofit[]),
-
-    // ─── Chicago: RLTO violations ───────────────────────────────
-    isChicago ? safe(async () => {
-      const { data } = await supabase
-        .from("chicago_rlto_violations")
-        .select("id, case_number, violation_date, violation_description, status")
-        .eq("building_id", buildingId)
-        .order("violation_date", { ascending: false })
-        .limit(10);
-      return (data ?? []) as ChicagoRlto[];
-    }, [] as ChicagoRlto[]) : Promise.resolve([] as ChicagoRlto[]),
-
-    // ─── Chicago: Demolitions ───────────────────────────────────
-    isChicago ? safe(async () => {
-      const { data } = await supabase
-        .from("chicago_demolitions")
-        .select("id, permit_number, issue_date, status, work_description")
-        .eq("building_id", buildingId)
-        .order("issue_date", { ascending: false })
-        .limit(10);
-      return (data ?? []) as ChicagoDemo[];
-    }, [] as ChicagoDemo[]) : Promise.resolve([] as ChicagoDemo[]),
-
-    // ─── Chicago: Lead inspections ──────────────────────────────
-    isChicago ? safe(async () => {
-      const { data } = await supabase
-        .from("chicago_lead_inspections")
-        .select("id, inspection_date, result, risk_level")
-        .eq("building_id", buildingId)
-        .order("inspection_date", { ascending: false })
-        .limit(10);
-      return (data ?? []) as ChicagoLead[];
-    }, [] as ChicagoLead[]) : Promise.resolve([] as ChicagoLead[]),
-
-    // ─── Chicago: Affordable units ──────────────────────────────
-    isChicago ? safe(async () => {
-      const { data } = await supabase
-        .from("chicago_affordable_units")
-        .select("id, project_name, affordable_units, total_units")
-        .eq("building_id", buildingId)
-        .limit(10);
-      return (data ?? []) as ChicagoAffordable[];
-    }, [] as ChicagoAffordable[]) : Promise.resolve([] as ChicagoAffordable[]),
-
-    // ─── Chicago: Energy rating (latest year) ───────────────────
-    isChicago ? safe(async () => {
-      const { data } = await supabase
-        .from("energy_benchmarks")
-        .select("energy_star_score, report_year, site_eui")
-        .eq("building_id", buildingId)
-        .order("report_year", { ascending: false })
-        .limit(1);
-      return (data ?? []) as ChicagoEnergy[];
-    }, [] as ChicagoEnergy[]) : Promise.resolve([] as ChicagoEnergy[]),
-
-    // ─── Miami: 40-year recertifications ────────────────────────
-    isMiami ? safe(async () => {
-      const { data } = await supabase
-        .from("miami_forty_year_recerts")
-        .select("id, recertification_status, due_date, completion_date")
-        .eq("building_id", buildingId)
-        .order("due_date", { ascending: false })
-        .limit(10);
-      return (data ?? []) as MiamiRecert[];
-    }, [] as MiamiRecert[]) : Promise.resolve([] as MiamiRecert[]),
-
-    // ─── Miami: Unsafe structures ───────────────────────────────
-    isMiami ? safe(async () => {
-      const { data } = await supabase
-        .from("miami_unsafe_structures")
-        .select("id, case_number, violation_type, case_date, status")
-        .eq("building_id", buildingId)
-        .order("case_date", { ascending: false })
-        .limit(10);
-      return (data ?? []) as MiamiUnsafe[];
-    }, [] as MiamiUnsafe[]) : Promise.resolve([] as MiamiUnsafe[]),
-
-    // ─── Miami: Storm damage ────────────────────────────────────
-    isMiami ? safe(async () => {
-      const { data } = await supabase
-        .from("miami_storm_damage")
-        .select("id, disaster_name, disaster_date, damage_category, fema_verified_loss")
-        .eq("building_id", buildingId)
-        .order("disaster_date", { ascending: false })
-        .limit(10);
-      return (data ?? []) as MiamiStorm[];
-    }, [] as MiamiStorm[]) : Promise.resolve([] as MiamiStorm[]),
-
-    // ─── Miami: Flood claims ────────────────────────────────────
-    isMiami ? safe(async () => {
-      const { data } = await supabase
-        .from("miami_flood_claims")
-        .select("id, claim_date, flood_zone, amount_paid")
-        .eq("building_id", buildingId)
-        .order("claim_date", { ascending: false })
-        .limit(10);
-      return (data ?? []) as MiamiFlood[];
-    }, [] as MiamiFlood[]) : Promise.resolve([] as MiamiFlood[]),
-
-    // ─── Houston: Dangerous buildings ───────────────────────────
-    isHouston ? safe(async () => {
-      const { data } = await supabase
-        .from("houston_dangerous_buildings")
-        .select("id, case_number, status, case_date, violation_description")
-        .eq("building_id", buildingId)
-        .order("case_date", { ascending: false })
-        .limit(10);
-      return (data ?? []) as HoustonDangerous[];
-    }, [] as HoustonDangerous[]) : Promise.resolve([] as HoustonDangerous[]),
-
-    // ─── Houston: Industrial proximity ──────────────────────────
-    isHouston ? safe(async () => {
-      const { data } = await supabase
-        .from("houston_industrial_proximity")
-        .select("id, facility_name, distance_miles, industry_type, total_releases_lbs")
-        .eq("building_id", buildingId)
-        .order("distance_miles", { ascending: true })
-        .limit(10);
-      return (data ?? []) as HoustonIndustrial[];
-    }, [] as HoustonIndustrial[]) : Promise.resolve([] as HoustonIndustrial[]),
-
-    // ─── Houston: Tax protests ──────────────────────────────────
-    isHouston ? safe(async () => {
-      const { data } = await supabase
-        .from("houston_tax_protests")
-        .select("id, protest_year, original_value, final_value, reduction_pct")
-        .eq("building_id", buildingId)
-        .order("protest_year", { ascending: false })
-        .limit(10);
-      return (data ?? []) as HoustonTax[];
-    }, [] as HoustonTax[]) : Promise.resolve([] as HoustonTax[]),
-
-    // ─── Houston: Affordable housing ────────────────────────────
-    isHouston ? safe(async () => {
-      const { data } = await supabase
-        .from("houston_affordable_housing")
-        .select("id, project_name, affordable_units, total_units")
-        .eq("building_id", buildingId)
-        .limit(10);
-      return (data ?? []) as HoustonAffordable[];
-    }, [] as HoustonAffordable[]) : Promise.resolve([] as HoustonAffordable[]),
   ]);
 
-  // Vibe — resolved from static mapping, no DB call needed
   const vibeData = zipCode ? getNeighborhoodVibe(building.metro ?? "nyc", zipCode) : null;
 
   return {
-    building,
-    energy,
-    rents: {
-      current: currentRents,
-      historic: historicRents,
-      neighborhood: neighborhoodRents,
-    },
-    seasonalIndex,
-    amenityPremiums,
-    demographics,
-    vibe: { description: vibeData?.description ?? null, tags: vibeData?.vibeTags ?? [] },
-    issues: {
-      hpdTop,
-      complaintsTop,
-      recentViolations,
-      hpdViolations,
-      trends,
-    },
-    reviews: {
-      total: reviewsAggregate.total,
-      avgRating: reviewsAggregate.avgRating,
-      distribution: reviewsAggregate.distribution,
-      pullQuotes,
-    },
-    amenities,
-    landlord: {
-      name: ownerName,
-      otherBuildings: landlordOtherBuildings,
-      portfolioSize: landlordStats.portfolioSize,
-      portfolioAvgScore: landlordStats.portfolioAvgScore,
-    },
-    similar,
-    timeline: timelineRaw,
     nearby: {
       transitSubway: nearbyTransit.subway,
       transitBus: nearbyTransit.bus,
@@ -1056,29 +764,351 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
     },
     crime: crimeAgg,
     neighborhoodStats,
-    laData: {
-      buyouts: laBuyouts,
-      scepInspections: laScep,
-      earthquakeRetrofit: laRetrofit?.[0] ?? null,
-    },
-    chicagoData: {
-      rltoViolations: chicagoRlto,
-      demolitions: chicagoDemolitions,
-      leadInspections: chicagoLead,
-      affordableUnits: chicagoAffordable,
-      energyRating: chicagoEnergy?.[0] ?? null,
-    },
-    miamiData: {
-      recerts: miamiRecerts,
-      unsafeStructures: miamiUnsafe,
-      stormDamage: miamiStorm,
-      floodClaims: miamiFlood,
-    },
-    houstonData: {
-      dangerousBuildings: houstonDangerous,
-      industrialProximity: houstonIndustrial,
-      taxProtests: houstonTax,
-      affordableHousing: houstonAffordable,
-    },
+    demographics,
+    vibe: { description: vibeData?.description ?? null, tags: vibeData?.vibeTags ?? [] },
+  };
+}
+
+// ── History (timeline) ─────────────────────────────────────────
+export async function loadHistoryData(buildingId: string): Promise<{ timeline: TimelineEvent[] }> {
+  const supabase = await createClient();
+  const timeline = await safe(async () => {
+    const [hpdRes, dobRes, compRes, evictRes] = await Promise.all([
+      supabase.from("hpd_violations")
+        .select("id, inspection_date, nov_issue_date, class, nov_description, status")
+        .eq("building_id", buildingId)
+        .order("inspection_date", { ascending: false })
+        .limit(20),
+      supabase.from("dob_violations")
+        .select("id, issue_date, violation_category, violation_type, description, disposition_comments")
+        .eq("building_id", buildingId)
+        .order("issue_date", { ascending: false })
+        .limit(20),
+      supabase.from("complaints_311")
+        .select("id, created_date, complaint_type, descriptor, status, resolution_description, agency")
+        .eq("building_id", buildingId)
+        .order("created_date", { ascending: false })
+        .limit(20),
+      supabase.from("evictions")
+        .select("id, executed_date, eviction_apt_num, eviction_possession, residential_commercial")
+        .eq("building_id", buildingId)
+        .order("executed_date", { ascending: false })
+        .limit(10),
+    ]);
+    return normalizeTimelineEvents({
+      violations: (hpdRes.data ?? []) as Parameters<typeof normalizeTimelineEvents>[0]["violations"],
+      dobViolations: (dobRes.data ?? []) as Parameters<typeof normalizeTimelineEvents>[0]["dobViolations"],
+      complaints: (compRes.data ?? []) as Parameters<typeof normalizeTimelineEvents>[0]["complaints"],
+      evictions: (evictRes.data ?? []) as Parameters<typeof normalizeTimelineEvents>[0]["evictions"],
+    }).slice(0, 20);
+  }, [] as TimelineEvent[]);
+  return { timeline };
+}
+
+// ── Similar ────────────────────────────────────────────────────
+export async function loadSimilarData(
+  buildingId: string,
+  zipCode: string | null,
+): Promise<BuildingV2Data["similar"]> {
+  const supabase = await createClient();
+  return safe(async () => {
+    if (!zipCode) return [];
+    const { data } = await supabase
+      .from("buildings")
+      .select("id, full_address, slug, borough, overall_score, year_built, total_units")
+      .eq("zip_code", zipCode)
+      .neq("id", buildingId)
+      .limit(6);
+    return data ?? [];
+  }, [] as BuildingV2Data["similar"]);
+}
+
+// ── Energy benchmark ───────────────────────────────────────────
+export async function loadEnergyData(buildingId: string): Promise<EnergyBenchmark | null> {
+  const supabase = await createClient();
+  return safe(async () => {
+    const { data } = await supabase
+      .from("energy_benchmarks")
+      .select("*")
+      .eq("building_id", buildingId)
+      .order("report_year", { ascending: false })
+      .limit(1);
+    return (data?.[0] as EnergyBenchmark) ?? null;
+  }, null as EnergyBenchmark | null);
+}
+
+// ── City-specific ──────────────────────────────────────────────
+export async function loadLAData(buildingId: string): Promise<BuildingV2Data["laData"]> {
+  const supabase = await createClient();
+  type LaBuyout = BuildingV2Data["laData"]["buyouts"][number];
+  type LaScep = BuildingV2Data["laData"]["scepInspections"][number];
+  type LaRetrofit = NonNullable<BuildingV2Data["laData"]["earthquakeRetrofit"]>;
+
+  const [buyouts, scepInspections, retrofits] = await Promise.all([
+    safe(async () => {
+      const { data } = await supabase
+        .from("lahd_tenant_buyouts")
+        .select("id, disclosure_date, compensation_amount")
+        .eq("building_id", buildingId)
+        .order("disclosure_date", { ascending: false })
+        .limit(10);
+      return (data ?? []) as LaBuyout[];
+    }, [] as LaBuyout[]),
+    safe(async () => {
+      const { data } = await supabase
+        .from("lahd_scep_inspections")
+        .select("id, inspection_date, compliance_status, violations_found")
+        .eq("building_id", buildingId)
+        .order("inspection_date", { ascending: false })
+        .limit(10);
+      return (data ?? []) as LaScep[];
+    }, [] as LaScep[]),
+    safe(async () => {
+      const { data } = await supabase
+        .from("la_earthquake_retrofit")
+        .select("retrofit_type, compliance_status, deadline, completion_date")
+        .eq("building_id", buildingId)
+        .limit(1);
+      return (data ?? []) as LaRetrofit[];
+    }, [] as LaRetrofit[]),
+  ]);
+  return {
+    buyouts,
+    scepInspections,
+    earthquakeRetrofit: retrofits[0] ?? null,
+  };
+}
+
+export async function loadChicagoData(buildingId: string): Promise<BuildingV2Data["chicagoData"]> {
+  const supabase = await createClient();
+  type ChicagoRlto = BuildingV2Data["chicagoData"]["rltoViolations"][number];
+  type ChicagoDemo = BuildingV2Data["chicagoData"]["demolitions"][number];
+  type ChicagoLead = BuildingV2Data["chicagoData"]["leadInspections"][number];
+  type ChicagoAffordable = BuildingV2Data["chicagoData"]["affordableUnits"][number];
+  type ChicagoEnergy = NonNullable<BuildingV2Data["chicagoData"]["energyRating"]>;
+
+  const [rltoViolations, demolitions, leadInspections, affordableUnits, energyRows] = await Promise.all([
+    safe(async () => {
+      const { data } = await supabase
+        .from("chicago_rlto_violations")
+        .select("id, case_number, violation_date, violation_description, status")
+        .eq("building_id", buildingId)
+        .order("violation_date", { ascending: false })
+        .limit(10);
+      return (data ?? []) as ChicagoRlto[];
+    }, [] as ChicagoRlto[]),
+    safe(async () => {
+      const { data } = await supabase
+        .from("chicago_demolitions")
+        .select("id, permit_number, issue_date, status, work_description")
+        .eq("building_id", buildingId)
+        .order("issue_date", { ascending: false })
+        .limit(10);
+      return (data ?? []) as ChicagoDemo[];
+    }, [] as ChicagoDemo[]),
+    safe(async () => {
+      const { data } = await supabase
+        .from("chicago_lead_inspections")
+        .select("id, inspection_date, result, risk_level")
+        .eq("building_id", buildingId)
+        .order("inspection_date", { ascending: false })
+        .limit(10);
+      return (data ?? []) as ChicagoLead[];
+    }, [] as ChicagoLead[]),
+    safe(async () => {
+      const { data } = await supabase
+        .from("chicago_affordable_units")
+        .select("id, project_name, affordable_units, total_units")
+        .eq("building_id", buildingId)
+        .limit(10);
+      return (data ?? []) as ChicagoAffordable[];
+    }, [] as ChicagoAffordable[]),
+    safe(async () => {
+      const { data } = await supabase
+        .from("energy_benchmarks")
+        .select("energy_star_score, report_year, site_eui")
+        .eq("building_id", buildingId)
+        .order("report_year", { ascending: false })
+        .limit(1);
+      return (data ?? []) as ChicagoEnergy[];
+    }, [] as ChicagoEnergy[]),
+  ]);
+  return {
+    rltoViolations,
+    demolitions,
+    leadInspections,
+    affordableUnits,
+    energyRating: energyRows[0] ?? null,
+  };
+}
+
+export async function loadMiamiData(buildingId: string): Promise<BuildingV2Data["miamiData"]> {
+  const supabase = await createClient();
+  type MiamiRecert = BuildingV2Data["miamiData"]["recerts"][number];
+  type MiamiUnsafe = BuildingV2Data["miamiData"]["unsafeStructures"][number];
+  type MiamiStorm = BuildingV2Data["miamiData"]["stormDamage"][number];
+  type MiamiFlood = BuildingV2Data["miamiData"]["floodClaims"][number];
+
+  const [recerts, unsafeStructures, stormDamage, floodClaims] = await Promise.all([
+    safe(async () => {
+      const { data } = await supabase
+        .from("miami_forty_year_recerts")
+        .select("id, recertification_status, due_date, completion_date")
+        .eq("building_id", buildingId)
+        .order("due_date", { ascending: false })
+        .limit(10);
+      return (data ?? []) as MiamiRecert[];
+    }, [] as MiamiRecert[]),
+    safe(async () => {
+      const { data } = await supabase
+        .from("miami_unsafe_structures")
+        .select("id, case_number, violation_type, case_date, status")
+        .eq("building_id", buildingId)
+        .order("case_date", { ascending: false })
+        .limit(10);
+      return (data ?? []) as MiamiUnsafe[];
+    }, [] as MiamiUnsafe[]),
+    safe(async () => {
+      const { data } = await supabase
+        .from("miami_storm_damage")
+        .select("id, disaster_name, disaster_date, damage_category, fema_verified_loss")
+        .eq("building_id", buildingId)
+        .order("disaster_date", { ascending: false })
+        .limit(10);
+      return (data ?? []) as MiamiStorm[];
+    }, [] as MiamiStorm[]),
+    safe(async () => {
+      const { data } = await supabase
+        .from("miami_flood_claims")
+        .select("id, claim_date, flood_zone, amount_paid")
+        .eq("building_id", buildingId)
+        .order("claim_date", { ascending: false })
+        .limit(10);
+      return (data ?? []) as MiamiFlood[];
+    }, [] as MiamiFlood[]),
+  ]);
+  return { recerts, unsafeStructures, stormDamage, floodClaims };
+}
+
+export async function loadHoustonData(buildingId: string): Promise<BuildingV2Data["houstonData"]> {
+  const supabase = await createClient();
+  type HoustonDangerous = BuildingV2Data["houstonData"]["dangerousBuildings"][number];
+  type HoustonIndustrial = BuildingV2Data["houstonData"]["industrialProximity"][number];
+  type HoustonTax = BuildingV2Data["houstonData"]["taxProtests"][number];
+  type HoustonAffordable = BuildingV2Data["houstonData"]["affordableHousing"][number];
+
+  const [dangerousBuildings, industrialProximity, taxProtests, affordableHousing] = await Promise.all([
+    safe(async () => {
+      const { data } = await supabase
+        .from("houston_dangerous_buildings")
+        .select("id, case_number, status, case_date, violation_description")
+        .eq("building_id", buildingId)
+        .order("case_date", { ascending: false })
+        .limit(10);
+      return (data ?? []) as HoustonDangerous[];
+    }, [] as HoustonDangerous[]),
+    safe(async () => {
+      const { data } = await supabase
+        .from("houston_industrial_proximity")
+        .select("id, facility_name, distance_miles, industry_type, total_releases_lbs")
+        .eq("building_id", buildingId)
+        .order("distance_miles", { ascending: true })
+        .limit(10);
+      return (data ?? []) as HoustonIndustrial[];
+    }, [] as HoustonIndustrial[]),
+    safe(async () => {
+      const { data } = await supabase
+        .from("houston_tax_protests")
+        .select("id, protest_year, original_value, final_value, reduction_pct")
+        .eq("building_id", buildingId)
+        .order("protest_year", { ascending: false })
+        .limit(10);
+      return (data ?? []) as HoustonTax[];
+    }, [] as HoustonTax[]),
+    safe(async () => {
+      const { data } = await supabase
+        .from("houston_affordable_housing")
+        .select("id, project_name, affordable_units, total_units")
+        .eq("building_id", buildingId)
+        .limit(10);
+      return (data ?? []) as HoustonAffordable[];
+    }, [] as HoustonAffordable[]),
+  ]);
+  return { dangerousBuildings, industrialProximity, taxProtests, affordableHousing };
+}
+
+// ──────────────────────────────────────────────────────────────
+// Backward-compat: full loader, now composed from the per-section loaders.
+// Used by any callers that still want the entire bag in one shot (e.g. SideRail
+// and S09 FAQ, which reach into most data slices).
+// ──────────────────────────────────────────────────────────────
+
+export async function loadBuildingV2Data(building: Building): Promise<BuildingV2Data> {
+  const buildingId = building.id;
+  const isLA = building.metro === "los-angeles";
+  const isChicago = building.metro === "chicago";
+  const isMiami = building.metro === "miami";
+  const isHouston = building.metro === "houston";
+  const zipCode = building.zip_code ?? null;
+
+  const [
+    energy,
+    rentsBundle,
+    issues,
+    reviews,
+    amenitiesBundle,
+    landlord,
+    similar,
+    historyBundle,
+    locationBundle,
+    laData,
+    chicagoData,
+    miamiData,
+    houstonData,
+  ] = await Promise.all([
+    loadEnergyData(buildingId),
+    loadRentsData(buildingId, building.metro, zipCode),
+    loadIssuesData(buildingId),
+    loadReviewsData(buildingId),
+    loadAmenitiesData(buildingId, zipCode, building.metro),
+    loadLandlordData(building),
+    loadSimilarData(buildingId, zipCode),
+    loadHistoryData(buildingId),
+    loadLocationData(building),
+    isLA ? loadLAData(buildingId) : Promise.resolve({
+      buyouts: [], scepInspections: [], earthquakeRetrofit: null,
+    } as BuildingV2Data["laData"]),
+    isChicago ? loadChicagoData(buildingId) : Promise.resolve({
+      rltoViolations: [], demolitions: [], leadInspections: [], affordableUnits: [], energyRating: null,
+    } as BuildingV2Data["chicagoData"]),
+    isMiami ? loadMiamiData(buildingId) : Promise.resolve({
+      recerts: [], unsafeStructures: [], stormDamage: [], floodClaims: [],
+    } as BuildingV2Data["miamiData"]),
+    isHouston ? loadHoustonData(buildingId) : Promise.resolve({
+      dangerousBuildings: [], industrialProximity: [], taxProtests: [], affordableHousing: [],
+    } as BuildingV2Data["houstonData"]),
+  ]);
+
+  return {
+    building,
+    energy,
+    rents: rentsBundle.rents,
+    seasonalIndex: rentsBundle.seasonalIndex,
+    amenityPremiums: amenitiesBundle.amenityPremiums,
+    demographics: locationBundle.demographics,
+    vibe: locationBundle.vibe,
+    issues,
+    reviews,
+    amenities: amenitiesBundle.amenities,
+    landlord,
+    similar,
+    timeline: historyBundle.timeline,
+    nearby: locationBundle.nearby,
+    crime: locationBundle.crime,
+    neighborhoodStats: locationBundle.neighborhoodStats,
+    laData,
+    chicagoData,
+    miamiData,
+    houstonData,
   };
 }
