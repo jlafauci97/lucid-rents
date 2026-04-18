@@ -6,29 +6,31 @@ import { VALID_CITIES, CITY_META, type City } from "@/lib/cities";
 import { cache } from "react";
 import { normalizeScore } from "@/lib/constants";
 import type { Building } from "@/types";
-import { loadBuildingV2Data, scoreToGrade } from "./_data";
+import { scoreToGrade } from "./_data";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { TrackBuildingView } from "@/components/building/TrackBuildingView";
 import { Crumbs } from "@/components/building/v2/Crumbs";
 import { V2Zoom } from "@/components/building/v2/V2Zoom";
-import { HeroV2 } from "@/components/building/v2/HeroV2";
-import { RecordStrip } from "@/components/building/v2/RecordStrip";
 import { WayfinderRail } from "@/components/building/v2/WayfinderRail";
-import { SideRail } from "@/components/building/v2/SideRail";
-import { S01_RentalIntelligence } from "@/components/building/v2/sections/S01_RentalIntelligence";
-import { S02_Issues } from "@/components/building/v2/sections/S02_Issues";
-import { S03_TenantReviews } from "@/components/building/v2/sections/S03_TenantReviews";
-import { S04_Amenities } from "@/components/building/v2/sections/S04_Amenities";
-import { S05_Landlord } from "@/components/building/v2/sections/S05_Landlord";
-import { S06_Location } from "@/components/building/v2/sections/S06_Location";
-import { S07_History } from "@/components/building/v2/sections/S07_History";
-import { S08_SimilarNearby } from "@/components/building/v2/sections/S08_SimilarNearby";
-import { S09_FAQ } from "@/components/building/v2/sections/S09_FAQ";
-import { S10_LAInsights } from "@/components/building/v2/sections/S10_LAInsights";
-import { S10_ChicagoInsights } from "@/components/building/v2/sections/S10_ChicagoInsights";
-import { S10_MiamiInsights } from "@/components/building/v2/sections/S10_MiamiInsights";
-import { S10_HoustonInsights } from "@/components/building/v2/sections/S10_HoustonInsights";
 import { S10_NYCInsights } from "@/components/building/v2/sections/S10_NYCInsights";
+import { HeroV2Streamed } from "@/components/building/v2/streaming/HeroV2Streamed";
+import { RecordStripStreamed } from "@/components/building/v2/streaming/RecordStripStreamed";
+import { S01RentalIntelligenceStreamed } from "@/components/building/v2/streaming/S01RentalIntelligenceStreamed";
+import { S02IssuesStreamed } from "@/components/building/v2/streaming/S02IssuesStreamed";
+import { S03TenantReviewsStreamed } from "@/components/building/v2/streaming/S03TenantReviewsStreamed";
+import { S04AmenitiesStreamed } from "@/components/building/v2/streaming/S04AmenitiesStreamed";
+import { S05LandlordStreamed } from "@/components/building/v2/streaming/S05LandlordStreamed";
+import { S06LocationStreamed } from "@/components/building/v2/streaming/S06LocationStreamed";
+import { S07HistoryStreamed } from "@/components/building/v2/streaming/S07HistoryStreamed";
+import { S08SimilarNearbyStreamed } from "@/components/building/v2/streaming/S08SimilarNearbyStreamed";
+import { S09FAQStreamed } from "@/components/building/v2/streaming/S09FAQStreamed";
+import { S10LAInsightsStreamed } from "@/components/building/v2/streaming/S10LAInsightsStreamed";
+import { S10ChicagoInsightsStreamed } from "@/components/building/v2/streaming/S10ChicagoInsightsStreamed";
+import { S10MiamiInsightsStreamed } from "@/components/building/v2/streaming/S10MiamiInsightsStreamed";
+import { S10HoustonInsightsStreamed } from "@/components/building/v2/streaming/S10HoustonInsightsStreamed";
+import { SideRailStreamed } from "@/components/building/v2/streaming/SideRailStreamed";
+import { LazyOnScroll } from "@/components/building/v2/streaming/LazyOnScroll";
+import { SectionSkeleton } from "@/components/building/v2/streaming/SectionSkeleton";
 
 export const revalidate = 86400; // 24h ISR
 
@@ -158,13 +160,27 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 // ── Page component ─────────────────────────────────────────────
-
+//
+// Streaming layout:
+//   1. Only the `building` row is awaited eagerly — it's tiny, cheap, and
+//      powers the shell (breadcrumbs, nav, JSON-LD, metadata).
+//   2. Every other section is an async server component wrapped in its own
+//      Suspense boundary. Next.js streams their HTML into the response as
+//      each query resolves, so users see the hero and early sections before
+//      slow queries (crime, transit, city-specific) finish.
+//   3. Below-fold sections (Similar, FAQ, S10 city insights) are further
+//      gated by <LazyOnScroll> — the Supabase round-trips don't even start
+//      until the user scrolls within 400px of them.
+//
+// Previously the page awaited `loadBuildingV2Data(building)` — one massive
+// Promise.all of ~25 queries. The slowest query blocked the entire first
+// paint.
 export default async function BuildingPage({ params }: Props) {
   const { city: cityParam, borough, slug } = await params;
   if (!VALID_CITIES.includes(cityParam as City)) notFound();
   const typedCity = cityParam as City;
 
-  let building = await getBuilding(borough, slug, typedCity);
+  const building = await getBuilding(borough, slug, typedCity);
 
   if (!building) {
     const match = await findBuildingAnywhere(slug);
@@ -181,12 +197,9 @@ export default async function BuildingPage({ params }: Props) {
     redirect(buildingUrl(building, buildingCity));
   }
 
-  const data = await loadBuildingV2Data(building);
   const addressFirstLine = building.full_address.split(",")[0] ?? building.full_address;
   const cityPrefix = CITY_META[typedCity]?.urlPrefix ?? "nyc";
   const shortAddress = addressFirstLine.trim() || building.full_address;
-
-  // Grade for wayfinder header
   const grade = scoreToGrade(building.overall_score);
 
   return (
@@ -222,61 +235,83 @@ export default async function BuildingPage({ params }: Props) {
             addressLabel={addressFirstLine}
           />
 
-          <HeroV2
-            building={building}
-            rents={data.rents}
-            reviews={data.reviews}
-            landlord={data.landlord}
-            city={typedCity}
-          />
+          <HeroV2Streamed building={building} city={typedCity} />
 
-          <RecordStrip building={building} reviews={data.reviews} />
+          <RecordStripStreamed building={building} />
 
           <div className="body">
-            <WayfinderRail grade={grade} buildingName={addressFirstLine} city={typedCity} buildingPath={`/${cityPrefix}/building/${borough}/${slug}`} buildingId={building.id} />
+            <WayfinderRail
+              grade={grade}
+              buildingName={addressFirstLine}
+              city={typedCity}
+              buildingPath={`/${cityPrefix}/building/${borough}/${slug}`}
+              buildingId={building.id}
+            />
 
             <div className="main" id="main-content">
-              <S01_RentalIntelligence
-                rents={data.rents}
-                neighborhoodName={building.borough}
-                isRentStabilized={building.is_rent_stabilized}
-                seasonalIndex={data.seasonalIndex}
-              />
-              <S02_Issues
-                issues={data.issues}
-                hpdViolations={data.issues.hpdViolations}
-                buildingId={building.id}
-                hpdCount={building.violation_count ?? 0}
-                dobCount={building.dob_violation_count ?? 0}
-                complaintsCount={building.complaint_count ?? 0}
-                evictionsCount={building.eviction_count ?? 0}
-                seeAllUrl={`/${cityPrefix}/building/${borough}/${slug}/violations`}
-              />
-              <S03_TenantReviews
-                reviews={data.reviews}
-                seeAllUrl={`/${cityPrefix}/building/${borough}/${slug}/reviews`}
-              />
-              <S04_Amenities amenities={data.amenities} amenityPremiums={data.amenityPremiums} />
-              <S05_Landlord building={building} landlord={data.landlord} city={typedCity} />
-              <S06_Location building={building} city={typedCity} nearby={data.nearby} neighborhoodStats={data.neighborhoodStats} demographics={data.demographics} vibe={data.vibe} />
-              <S07_History building={building} landlord={data.landlord} timeline={data.timeline} />
-              <S09_FAQ building={building} data={data} />
-              {typedCity === "los-angeles" && <S10_LAInsights building={building} laData={data.laData} />}
-              {typedCity === "chicago" && <S10_ChicagoInsights building={building} chicagoData={data.chicagoData} />}
-              {typedCity === "miami" && <S10_MiamiInsights building={building} miamiData={data.miamiData} />}
-              {typedCity === "houston" && <S10_HoustonInsights building={building} houstonData={data.houstonData} />}
+              <S01RentalIntelligenceStreamed building={building} />
+              <S02IssuesStreamed building={building} cityPrefix={cityPrefix} borough={borough} slug={slug} />
+              <S03TenantReviewsStreamed building={building} cityPrefix={cityPrefix} borough={borough} slug={slug} />
+              <S04AmenitiesStreamed building={building} />
+              <S05LandlordStreamed building={building} city={typedCity} />
+              <S06LocationStreamed building={building} city={typedCity} />
+              <S07HistoryStreamed building={building} />
+
+              <LazyOnScroll
+                fallback={<SectionSkeleton id="faq" num="09 / 09" title="Frequently asked questions." height={420} />}
+              >
+                <S09FAQStreamed building={building} />
+              </LazyOnScroll>
+
+              {typedCity === "los-angeles" && (
+                <LazyOnScroll
+                  fallback={<SectionSkeleton id="la-insights" num="10 / 10" title="Los Angeles-specific insights." height={280} />}
+                >
+                  <S10LAInsightsStreamed building={building} />
+                </LazyOnScroll>
+              )}
+              {typedCity === "chicago" && (
+                <LazyOnScroll
+                  fallback={<SectionSkeleton id="chicago-insights" num="10 / 10" title="Chicago-specific insights." height={280} />}
+                >
+                  <S10ChicagoInsightsStreamed building={building} />
+                </LazyOnScroll>
+              )}
+              {typedCity === "miami" && (
+                <LazyOnScroll
+                  fallback={<SectionSkeleton id="miami-insights" num="10 / 10" title="Miami-specific insights." height={280} />}
+                >
+                  <S10MiamiInsightsStreamed building={building} />
+                </LazyOnScroll>
+              )}
+              {typedCity === "houston" && (
+                <LazyOnScroll
+                  fallback={<SectionSkeleton id="houston-insights" num="10 / 10" title="Houston-specific insights." height={280} />}
+                >
+                  <S10HoustonInsightsStreamed building={building} />
+                </LazyOnScroll>
+              )}
               {typedCity === "nyc" && <S10_NYCInsights building={building} />}
             </div>
 
-            <SideRail building={building} data={data} city={typedCity} cityPrefix={cityPrefix} />
+            <SideRailStreamed building={building} city={typedCity} cityPrefix={cityPrefix} />
           </div>
 
           {/* Similar Buildings — rendered AFTER both .main and .sr so it sits at
               the very bottom of the page on mobile (after sidebar cards reflow
-              below main) and stays at the bottom of desktop too. */}
-          <div className="similar-bottom" style={{ marginTop: 24 }}>
-            <S08_SimilarNearby similar={data.similar} city={typedCity} />
-          </div>
+              below main) and stays at the bottom of desktop too. Lazily loaded
+              since it's below the fold. */}
+          <LazyOnScroll
+            fallback={
+              <div className="similar-bottom" style={{ marginTop: 24 }}>
+                <SectionSkeleton id="similar" num="08 / 09" title="Similar buildings nearby." height={360} />
+              </div>
+            }
+          >
+            <div className="similar-bottom" style={{ marginTop: 24 }}>
+              <S08SimilarNearbyStreamed building={building} city={typedCity} />
+            </div>
+          </LazyOnScroll>
         </main>
       </div>
     </>
