@@ -19,6 +19,7 @@ import Link from "next/link";
 import { CITY_META, type City } from "@/lib/cities";
 import { buildingUrl, landlordUrl } from "@/lib/seo";
 import { getAllNeighborhoodsByCity, neighborhoodPageSlugByCity } from "@/lib/neighborhoods";
+import { useCityFromPath } from "@/lib/city-context";
 
 interface BuildingSuggestion {
   kind: "building";
@@ -49,7 +50,10 @@ interface Props {
   city: City;
 }
 
-export function NavSearch({ city }: Props) {
+export function NavSearch({ city: propCity }: Props) {
+  // Root layout doesn't re-render on client navigation — use the live path.
+  const pathCity = useCityFromPath();
+  const city: City = pathCity ?? propCity;
   const router = useRouter();
   const rootRef = useRef<HTMLFormElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);

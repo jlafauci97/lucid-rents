@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ChevronDown, ArrowLeftRight, ShieldCheck, ShieldAlert, Wrench, BarChart3, Construction, ClipboardList, Zap, TrainFront, Scale, Tent, FileText, AlertTriangle, Home, Droplets, Flame, Calculator, DollarSign, Newspaper, Radio, Siren } from "lucide-react";
 import { type City, DEFAULT_CITY, CITY_META } from "@/lib/cities";
 import { cityPath } from "@/lib/seo";
+import { useCityFromPath } from "@/lib/city-context";
 
 interface ToolItem {
   path: string;
@@ -193,7 +194,9 @@ function getToolDescription(tool: ToolItem, city: City): string {
   return tool.description;
 }
 
-export function NavDropdown({ city = DEFAULT_CITY }: { city?: City }) {
+export function NavDropdown({ city: propCity = DEFAULT_CITY }: { city?: City }) {
+  const pathCity = useCityFromPath();
+  const city: City = pathCity ?? propCity;
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
