@@ -3236,10 +3236,9 @@
 @media (max-width: 900px) {
   /* Turn the main column into a flex-column so we can re-order sections */
   .v2 .main { display: flex; flex-direction: column; }
-  /* Push Similar Buildings to the end on mobile */
-  .v2 .main #similar { order: 100; }
-  /* FAQ stays after Similar? User asked to move Similar to bottom — that means below everything else, incl FAQ */
-  .v2 .main #faq { order: 99; }
+  /* Similar Buildings is now rendered as a sibling AFTER .body so it sits
+     at the very bottom of the page (below the SideRail cards on mobile too). */
+  .v2 .similar-bottom { padding-top: 12px; }
   /* All other sections keep natural DOM order (default order: 0) */
 
   /* Reserve space for fixed bottom nav */
