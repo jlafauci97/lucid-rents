@@ -260,7 +260,6 @@ export default async function BuildingPage({ params }: Props) {
               <S05_Landlord building={building} landlord={data.landlord} city={typedCity} />
               <S06_Location building={building} city={typedCity} nearby={data.nearby} neighborhoodStats={data.neighborhoodStats} demographics={data.demographics} vibe={data.vibe} />
               <S07_History building={building} landlord={data.landlord} timeline={data.timeline} />
-              <S08_SimilarNearby similar={data.similar} city={typedCity} />
               <S09_FAQ building={building} data={data} />
               {typedCity === "los-angeles" && <S10_LAInsights building={building} laData={data.laData} />}
               {typedCity === "chicago" && <S10_ChicagoInsights building={building} chicagoData={data.chicagoData} />}
@@ -270,6 +269,13 @@ export default async function BuildingPage({ params }: Props) {
             </div>
 
             <SideRail building={building} data={data} city={typedCity} cityPrefix={cityPrefix} />
+          </div>
+
+          {/* Similar Buildings — rendered AFTER both .main and .sr so it sits at
+              the very bottom of the page on mobile (after sidebar cards reflow
+              below main) and stays at the bottom of desktop too. */}
+          <div className="similar-bottom" style={{ marginTop: 24 }}>
+            <S08_SimilarNearby similar={data.similar} city={typedCity} />
           </div>
         </main>
       </div>
