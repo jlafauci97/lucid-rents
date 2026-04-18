@@ -9,12 +9,19 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { VALID_CITIES, CITY_META, type City } from "@/lib/cities";
+import { useCityFromPath } from "@/lib/city-context";
 
 interface Props {
   currentCity: City;
 }
 
 export function NavCityPicker({ currentCity }: Props) {
+  // Root layout is cached across client navigations in Next.js App Router,
+  // so the server-rendered `currentCity` prop goes stale after the user
+  // navigates between cities via <Link>. Read from the live pathname to
+  // always reflect the current URL.
+  const pathCity = useCityFromPath();
+  const activeCity: City = pathCity ?? currentCity;
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -35,7 +42,7 @@ export function NavCityPicker({ currentCity }: Props) {
     };
   }, [open]);
 
-  const cityName = CITY_META[currentCity]?.name ?? "City";
+  const cityName = CITY_META[activeCity]?.name ?? "City";
 
   return (
     <div ref={rootRef} style={{ position: "relative" }}>
@@ -70,7 +77,7 @@ export function NavCityPicker({ currentCity }: Props) {
         >
           {VALID_CITIES.map((c) => {
             const meta = CITY_META[c];
-            const isActive = c === currentCity;
+            const isActive = c === activeCity;
             return (
               <Link
                 key={c}
