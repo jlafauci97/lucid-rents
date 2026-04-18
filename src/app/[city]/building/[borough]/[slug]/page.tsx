@@ -208,7 +208,7 @@ export default async function BuildingPage({ params }: Props) {
         { name: shortAddress, url: buildingUrl(building, typedCity) },
       ])} />
 
-      <div className="v2" style={{ overflowX: "hidden" }}>
+      <div className="v2">
         <V2Zoom />
         <a href="#main-content" className="v2-skip-link">Skip to main content</a>
 
