@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { notFound, permanentRedirect } from "next/navigation";
+import { notFound, permanentRedirect, redirect } from "next/navigation";
 import Link from "next/link";
 import {
   Users,
@@ -115,7 +115,12 @@ export default async function LandlordDetailPage({
     findBuildings(supabase, name),
     supabase.rpc("city_avg_score", { p_metro: city }),
   ]);
-  if (!buildings || buildings.length === 0) notFound();
+  // Next 16 page-level notFound() currently returns HTTP 200 (soft-404).
+  // Redirecting to the landlords index keeps a proper 307 status so SEO
+  // crawlers and internal health checks see a real response code.
+  if (!buildings || buildings.length === 0) {
+    redirect(cityPath("/landlords", city));
+  }
 
   const cityAvgScore = normalizeScore(typeof cityAvgRpc.data === "number" ? cityAvgRpc.data : 5);
 
