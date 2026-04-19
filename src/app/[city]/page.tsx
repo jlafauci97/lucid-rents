@@ -1,5 +1,4 @@
 import Image from "next/image";
-import Link from "next/link";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
@@ -8,20 +7,18 @@ import { ActivityFeed } from "@/components/ActivityFeed";
 import { LiveStats } from "@/components/home/LiveStats";
 import { NearbyBuildings } from "@/components/home/NearbyBuildings";
 import { ViolationTickerServer } from "@/components/home/ViolationTickerServer";
+import { RegionGrid } from "@/components/home/RegionGrid";
+import { PopularListicles } from "@/components/home/PopularListicles";
+import { LucidIQShowcase } from "@/components/home/LucidIQShowcase";
+import { ExploreDataGrid } from "@/components/home/ExploreDataGrid";
+import { HomepageNewsGrid } from "@/components/home/HomepageNewsGrid";
+import { CityFaq } from "@/components/home/CityFaq";
+import { CityHomeCta } from "@/components/home/CityHomeCta";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalUrl, cityPath } from "@/lib/seo";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
-import {
-  Building2,
-  Users,
-  Siren,
-  Train,
-  BarChart3,
-  HardHat,
-  Calculator,
-} from "lucide-react";
 
 export async function generateMetadata({
   params,
@@ -77,7 +74,7 @@ export default async function CityHomePage({
           }}
         />
 
-        {/* Hero */}
+        {/* Hero — preserved */}
         <section className="relative text-white overflow-x-clip">
           <Image
             src={meta.heroImage}
@@ -105,18 +102,12 @@ export default async function CityHomePage({
             </h1>
             <p className="text-sm sm:text-base text-white/80 mb-4 max-w-2xl mx-auto">
               See the truth about any {meta.name} building before you sign.
-              Violations, complaints, tenant reviews, and crime data — all in
-              one place.
+              Violations, complaints, tenant reviews, and crime data — all in one place.
             </p>
             <div className="max-w-2xl mx-auto">
-              <SearchBar
-                size="hero"
-                placeholder={searchPlaceholders[city]}
-              />
+              <SearchBar size="hero" placeholder={searchPlaceholders[city]} />
             </div>
-            <p className="text-sm text-white/60 mt-2">
-              {searchExamples[city]}
-            </p>
+            <p className="text-sm text-white/60 mt-2">{searchExamples[city]}</p>
           </div>
         </section>
 
@@ -128,13 +119,25 @@ export default async function CityHomePage({
         {/* Stats */}
         <section className="border-b border-[#e2e8f0]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <Suspense fallback={<div className="grid grid-cols-2 md:grid-cols-4 gap-6">{[...Array(4)].map((_, i) => <div key={i} className="text-center"><div className="w-8 h-8 bg-[#e2e8f0] rounded mx-auto mb-2 animate-pulse" /><div className="h-7 w-20 bg-[#e2e8f0] rounded mx-auto mb-1 animate-pulse" /><div className="h-4 w-24 bg-[#e2e8f0] rounded mx-auto animate-pulse" /></div>)}</div>}>
+            <Suspense
+              fallback={
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="text-center">
+                      <div className="w-8 h-8 bg-[#e2e8f0] rounded mx-auto mb-2 animate-pulse" />
+                      <div className="h-7 w-20 bg-[#e2e8f0] rounded mx-auto mb-1 animate-pulse" />
+                      <div className="h-4 w-24 bg-[#e2e8f0] rounded mx-auto animate-pulse" />
+                    </div>
+                  ))}
+                </div>
+              }
+            >
               <LiveStats metro={city} />
             </Suspense>
           </div>
         </section>
 
-        {/* Nearby Buildings */}
+        {/* Nearby Buildings — preserved */}
         <section className="py-12 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-6">
@@ -149,7 +152,16 @@ export default async function CityHomePage({
           </div>
         </section>
 
-        {/* Recent Activity */}
+        {/* NEW — Region grid */}
+        <RegionGrid city={city} />
+
+        {/* NEW — Popular listicles, links into /best-buildings */}
+        <PopularListicles city={city} />
+
+        {/* NEW — LucidIQ educational showcase */}
+        <LucidIQShowcase city={city} />
+
+        {/* Live Activity — preserved */}
         <section className="py-16 bg-[#EFF6FF]">
           <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-8">
@@ -157,94 +169,28 @@ export default async function CityHomePage({
                 Recent Activity
               </h2>
               <p className="text-[#64748b]">
-                The latest violations, complaints, and tenant reviews across{" "}
-                {meta.name} buildings
+                The latest violations, complaints, and tenant reviews across {meta.name} buildings
               </p>
             </div>
             <ActivityFeed />
           </div>
         </section>
 
-        {/* Ad */}
         <AdBlock adSlot="HOME_MID_2" adFormat="horizontal" />
 
-        {/* Explore */}
-        <section className="py-12 bg-white border-t border-[#e2e8f0]">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 className="text-2xl font-bold text-center text-[#0F1D2E] mb-8">
-              Explore {meta.name} Housing Data
-            </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-              {[
-                {
-                  href: cityPath("/buildings", city),
-                  icon: Building2,
-                  label: "Buildings",
-                },
-                {
-                  href: cityPath("/landlords", city),
-                  icon: Users,
-                  label: "Landlords",
-                },
-                {
-                  href: cityPath("/crime", city),
-                  icon: Siren,
-                  label: "Crime Data",
-                },
-                {
-                  href: cityPath("/transit", city),
-                  icon: Train,
-                  label: "Transit",
-                },
-                {
-                  href: cityPath("/rent-data", city),
-                  icon: BarChart3,
-                  label: "Rent Data",
-                },
-                {
-                  href: cityPath("/permits", city),
-                  icon: HardHat,
-                  label: "Permits",
-                },
-                {
-                  href: "/rent-affordability-calculator",
-                  icon: Calculator,
-                  label: "Rent Calculator",
-                },
-              ].map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="flex flex-col items-center gap-2 p-4 rounded-xl border border-[#e2e8f0] hover:border-[#3B82F6] hover:bg-[#EFF6FF] transition-colors text-center"
-                >
-                  <item.icon className="w-6 h-6 text-[#3B82F6]" />
-                  <span className="text-sm font-medium text-[#0F1D2E]">
-                    {item.label}
-                  </span>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
+        {/* NEW — Explore grid (replaces old inline Explore section) */}
+        <ExploreDataGrid city={city} />
 
-        {/* CTA */}
-        <section className="bg-[#0F1D2E] text-white py-16">
-          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h2 className="text-2xl sm:text-3xl font-bold mb-4">
-              Lived in a {meta.name} Apartment?
-            </h2>
-            <p className="text-gray-300 mb-8">
-              Help fellow renters by sharing your experience. Rate your building
-              on noise, pests, management, and more.
-            </p>
-            <a
-              href={cityPath("/review/new", city)}
-              className="inline-flex items-center px-6 py-3 bg-[#3B82F6] hover:bg-[#2563EB] text-white font-semibold rounded-lg transition-colors"
-            >
-              Submit a Review
-            </a>
-          </div>
-        </section>
+        {/* NEW — per-city news from news_articles */}
+        <Suspense fallback={null}>
+          <HomepageNewsGrid city={city} />
+        </Suspense>
+
+        {/* NEW — FAQ */}
+        <CityFaq city={city} />
+
+        {/* NEW — Close-out CTA (replaces old inline review CTA) */}
+        <CityHomeCta city={city} />
       </div>
     </AdSidebar>
   );
