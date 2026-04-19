@@ -133,21 +133,6 @@ export default async function CityHomePage({
           </div>
         </section>
 
-        {/* Nearby Buildings — preserved */}
-        <section className="py-12 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-[#0F1D2E] mb-2">
-                Buildings Near You
-              </h2>
-              <p className="text-[#64748b] text-sm">
-                Discover what&apos;s happening in buildings around your location
-              </p>
-            </div>
-            <NearbyBuildings />
-          </div>
-        </section>
-
         {/* NEW — Region grid */}
         <RegionGrid city={city} />
 
@@ -181,6 +166,21 @@ export default async function CityHomePage({
         <Suspense fallback={null}>
           <HomepageNewsGrid city={city} />
         </Suspense>
+
+        {/* Nearby Buildings — moved to bottom, right before FAQ */}
+        <section className="py-16 bg-white border-t border-[#e2e8f0]">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-6">
+              <h2 className="text-2xl font-bold text-[#0F1D2E] mb-2">
+                Buildings Near You
+              </h2>
+              <p className="text-[#64748b] text-sm">
+                Discover what&apos;s happening in buildings around your location
+              </p>
+            </div>
+            <NearbyBuildings />
+          </div>
+        </section>
 
         {/* NEW — FAQ */}
         <CityFaq city={city} />
