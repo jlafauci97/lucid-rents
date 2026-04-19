@@ -176,7 +176,10 @@ export default async function BuildingPage({ params }: Props) {
       const correctCity = metroToCity(match.metro);
       redirect(buildingUrl(match, correctCity));
     }
-    notFound();
+    // Next 16 page-level notFound() returns HTTP 200 (soft-404). Redirect
+    // to the city's buildings directory so the response code is a real 307
+    // that crawlers + monitoring treat as a real miss.
+    redirect(cityPath("/buildings", city));
   }
 
   // Redirect to correct city if metro doesn't match URL
