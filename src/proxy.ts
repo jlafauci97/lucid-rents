@@ -115,7 +115,7 @@ function checkBestBuildingsChip(
   return null; // valid — let the normal city routing flow handle it
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Split path segments: "/nyc/buildings" => ["", "nyc", "buildings"]
