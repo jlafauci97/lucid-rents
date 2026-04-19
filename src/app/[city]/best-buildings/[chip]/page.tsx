@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { canonicalUrl, cityPath, buildingUrl } from "@/lib/seo";
 import { isValidCity, CITY_META, VALID_CITIES, type City } from "@/lib/cities";
@@ -21,10 +21,6 @@ import { JsonLd } from "@/components/seo/JsonLd";
 const PER_PAGE = 30;
 
 export const revalidate = 3600;
-// Any (city, chip) pair not emitted by generateStaticParams (e.g. rent-stabilized
-// requested for Chicago/Miami/Houston, which aren't in chipsForCity()) returns
-// a 404 instead of rendering an empty-state page.
-export const dynamicParams = false;
 
 export async function generateMetadata({
   params,
@@ -71,7 +67,14 @@ export default async function CategoryPage({
   const { city: cityParam, chip: chipParam } = await params;
   if (!isValidCity(cityParam)) notFound();
   const city = cityParam as City;
-  if (!isValidChipForCity(chipParam, city)) notFound();
+  // If the chip slug doesn't exist at all, return a real 404.
+  if (!(chipParam in CHIPS)) notFound();
+  // If the chip exists but isn't enabled for this city (e.g. rent-stabilized
+  // requested for Chicago), redirect to the city's index instead of 404'ing —
+  // better UX, proper 307 status, no soft-404 risk.
+  if (!isValidChipForCity(chipParam, city)) {
+    redirect(cityPath("/best-buildings", city));
+  }
 
   const meta = CITY_META[city];
   const chip = CHIPS[chipParam as ChipId];
