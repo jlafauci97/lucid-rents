@@ -1,11 +1,29 @@
 import type { City } from "@/lib/cities";
 
 export type SignalType =
+  // Original 5
   | "rent-trend"
   | "violation-spike"
   | "new-top-rated"
   | "new-construction"
-  | "neighborhood-feature";
+  | "neighborhood-feature"
+  // Trend stories
+  | "eviction-trend"
+  | "permit-trend"
+  | "listings-trend"
+  // Seasonal
+  | "heat-season-kickoff"
+  | "hurricane-watch"
+  | "wildfire-impact"
+  // Data insight
+  | "best-of-month"
+  | "milestone-count"
+  // Explainers (low-score fallbacks)
+  | "explainer-class-c"
+  | "explainer-rent-stab"
+  | "explainer-lucidiq"
+  | "explainer-notice-rights"
+  | "explainer-file-complaint";
 
 export interface CityNewsConfig {
   /** IANA timezone (used to interpret "today" when detectors run). */
@@ -66,6 +84,17 @@ export const CITY_NEWS_CONFIG: Record<City, CityNewsConfig> = {
       "new-top-rated",
       "new-construction",
       "neighborhood-feature",
+      "eviction-trend",
+      "permit-trend",
+      "listings-trend",
+      "heat-season-kickoff",
+      "best-of-month",
+      "milestone-count",
+      "explainer-class-c",
+      "explainer-rent-stab",
+      "explainer-lucidiq",
+      "explainer-notice-rights",
+      "explainer-file-complaint",
     ],
     thresholds: {
       rent_delta_pct: 2.0,
@@ -96,6 +125,15 @@ export const CITY_NEWS_CONFIG: Record<City, CityNewsConfig> = {
       "new-top-rated",
       "new-construction",
       "neighborhood-feature",
+      "eviction-trend",
+      "listings-trend",
+      "wildfire-impact",
+      "best-of-month",
+      "milestone-count",
+      "explainer-rent-stab",
+      "explainer-lucidiq",
+      "explainer-notice-rights",
+      "explainer-file-complaint",
     ],
     thresholds: {
       rent_delta_pct: 2.0,
@@ -137,6 +175,13 @@ export const CITY_NEWS_CONFIG: Record<City, CityNewsConfig> = {
       "new-top-rated",
       "new-construction",
       "neighborhood-feature",
+      "listings-trend",
+      "heat-season-kickoff",
+      "best-of-month",
+      "milestone-count",
+      "explainer-lucidiq",
+      "explainer-notice-rights",
+      "explainer-file-complaint",
     ],
     thresholds: {
       rent_delta_pct: 1.5,
@@ -170,6 +215,13 @@ export const CITY_NEWS_CONFIG: Record<City, CityNewsConfig> = {
       "new-top-rated",
       "new-construction",
       "neighborhood-feature",
+      "listings-trend",
+      "hurricane-watch",
+      "best-of-month",
+      "milestone-count",
+      "explainer-lucidiq",
+      "explainer-notice-rights",
+      "explainer-file-complaint",
     ],
     thresholds: {
       rent_delta_pct: 1.5,
@@ -203,6 +255,12 @@ export const CITY_NEWS_CONFIG: Record<City, CityNewsConfig> = {
       "new-top-rated",
       "new-construction",
       "neighborhood-feature",
+      "listings-trend",
+      "best-of-month",
+      "milestone-count",
+      "explainer-lucidiq",
+      "explainer-notice-rights",
+      "explainer-file-complaint",
     ],
     thresholds: {
       rent_delta_pct: 1.5,
