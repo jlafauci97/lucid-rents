@@ -1,3 +1,8 @@
+// Next.js 16 proxy (formerly middleware.ts). Running in the Node.js runtime
+// so response status codes for notFound() / redirect() propagate correctly —
+// on Edge the old middleware.ts was coercing these into HTTP 200 soft-404s.
+export const runtime = "nodejs";
+
 import { NextResponse, type NextRequest } from "next/server";
 import { VALID_CITIES, STATE_CITY_MAP, CITY_META } from "@/lib/cities";
 import { neighborhoodPageSlug } from "@/lib/nyc-neighborhoods";
@@ -41,12 +46,88 @@ function withNoindex(response: NextResponse, request: NextRequest): NextResponse
   return response;
 }
 
+// Best-buildings chip eligibility. Duplicated in middleware (rather than
+// imported from the route) because middleware runs in the Edge runtime and
+// must be kept small + self-contained.
+const BB_CHIPS = new Set([
+  "top-rated",
+  "rent-stabilized",
+  "most-reviewed",
+  "no-violations",
+  "large-buildings",
+]);
+const BB_CHIP_CITY_ALLOWLIST: Record<string, ReadonlyArray<string>> = {
+  "rent-stabilized": ["nyc", "los-angeles"],
+};
+
+/**
+ * If the request is /[city]/best-buildings/[chip] with an invalid chip, return
+ * a proper 404 or 307 at the edge. Runtime notFound()/redirect() calls from
+ * the page were being coerced to HTTP 200 in this Next.js 16 deployment.
+ */
+function checkBestBuildingsChip(
+  request: NextRequest,
+  segments: string[],
+  firstSegment: string,
+): NextResponse | null {
+  // Locate internal city + external prefix from the URL. Two forms:
+  //   /CA/Los-Angeles/best-buildings/<chip>         (state-prefixed external URL)
+  //   /nyc/best-buildings/<chip>                    (internal-city URL)
+  let internalCity: string | null = null;
+  let externalPrefix: string | null = null;
+  let chip: string | null = null;
+
+  const stateMap = STATE_CITY_MAP[firstSegment.toUpperCase()];
+  if (stateMap && segments[3] === "best-buildings" && segments[4]) {
+    const citySlugSegment = segments[2] || "";
+    const city = stateMap[citySlugSegment];
+    if (city) {
+      internalCity = city;
+      externalPrefix = `/${firstSegment}/${citySlugSegment}`;
+      chip = segments[4].split("?")[0];
+    }
+  } else if (
+    VALID_CITIES.includes(firstSegment as (typeof VALID_CITIES)[number]) &&
+    segments[2] === "best-buildings" &&
+    segments[3]
+  ) {
+    internalCity = firstSegment;
+    externalPrefix = `/${CITY_META[firstSegment as (typeof VALID_CITIES)[number]].urlPrefix}`;
+    chip = segments[3].split("?")[0];
+  }
+
+  if (!internalCity || !externalPrefix || !chip) return null;
+
+  // 1) Completely unknown chip slug → 404
+  if (!BB_CHIPS.has(chip)) {
+    return new NextResponse(null, { status: 404 });
+  }
+
+  // 2) Known chip but not enabled for this city → 307 to the city's index
+  const allow = BB_CHIP_CITY_ALLOWLIST[chip];
+  if (allow && !allow.includes(internalCity)) {
+    const url = request.nextUrl.clone();
+    url.pathname = `${externalPrefix}/best-buildings`;
+    url.search = "";
+    return NextResponse.redirect(url, 307);
+  }
+
+  return null; // valid — let the normal city routing flow handle it
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Split path segments: "/nyc/buildings" => ["", "nyc", "buildings"]
   const segments = pathname.split("/");
   const firstSegment = segments[1] || "";
+
+  // 0. Best-buildings chip guard. Intercepts invalid (city, chip) combos at
+  // the edge so the HTTP response is a real 307 redirect or 404 — Next.js
+  // runtime notFound()/redirect() from the page were ending up as 200
+  // soft-404s on this deployment.
+  const bbResponse = checkBestBuildingsChip(request, segments, firstSegment);
+  if (bbResponse) return withNoindex(bbResponse, request);
 
   // 1a. Check for multi-segment city prefix: /CA/Los-Angeles/... → rewrite to /los-angeles/...
   const stateMap = STATE_CITY_MAP[firstSegment.toUpperCase()];
