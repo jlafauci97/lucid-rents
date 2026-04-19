@@ -71,7 +71,13 @@ export async function getChipSummary(
   chipId: ChipId,
 ): Promise<{ count: number; avg_score: number | null }> {
   const chip = CHIPS[chipId];
-  let q = supabase.from("buildings").select("overall_score").eq("metro", city);
+  // `{ count: 'exact' }` asks PostgREST to compute a total count alongside
+  // the returned rows. Without it `count` comes back as null — which was the
+  // bug that hid every card on the index page.
+  let q = supabase
+    .from("buildings")
+    .select("overall_score", { count: "exact" })
+    .eq("metro", city);
   for (const f of chip.column_filters) {
     if (f.op === "eq") q = q.eq(f.column, f.value);
     else if (f.op === "gte") q = q.gte(f.column, f.value);
@@ -79,6 +85,8 @@ export async function getChipSummary(
     else if (f.op === "gt") q = q.gt(f.column, f.value);
     else if (f.op === "lt") q = q.lt(f.column, f.value);
   }
+  // Pull up to 1000 rows just for the avg calculation; the count field is
+  // the true total (not capped by the limit).
   const { data, count } = await q.limit(1000);
   if (!data || data.length === 0) return { count: count ?? 0, avg_score: null };
   const scores = (data as { overall_score: number | null }[])
