@@ -1,7 +1,5 @@
-// Next.js 16 proxy (formerly middleware.ts). Running in the Node.js runtime
-// so response status codes for notFound() / redirect() propagate correctly —
-// on Edge the old middleware.ts was coercing these into HTTP 200 soft-404s.
-export const runtime = "nodejs";
+// Next.js 16 proxy (formerly middleware.ts). Runs in the Node.js runtime by
+// default in Next 16 — no runtime export allowed.
 
 import { NextResponse, type NextRequest } from "next/server";
 import { VALID_CITIES, STATE_CITY_MAP, CITY_META } from "@/lib/cities";
