@@ -20,7 +20,10 @@ import { JsonLd } from "@/components/seo/JsonLd";
 
 const PER_PAGE = 30;
 
-export const revalidate = 3600;
+// Run per-request so runtime validation (notFound / redirect) always executes
+// and doesn't get stuck behind an ISR-cached "200 with not-found body" soft-404.
+// Page itself is cheap — just a filtered buildings select + count.
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params,
