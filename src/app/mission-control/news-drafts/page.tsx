@@ -1,9 +1,9 @@
-import { redirect } from "next/navigation";
-import { createClient as createServerSupabase } from "@/lib/supabase/server";
 import { createClient } from "@supabase/supabase-js";
 import { CITY_META, type City } from "@/lib/cities";
 import { approveDraft, rejectDraft } from "./actions";
 
+// Middleware enforces /mission-control/* auth; this page is unreachable
+// without a valid mc_auth cookie.
 export const dynamic = "force-dynamic";
 
 interface Draft {
@@ -29,25 +29,6 @@ function timeAgo(iso: string): string {
 }
 
 export default async function NewsDraftsPage() {
-  const supabase = await createServerSupabase();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) redirect("/login?next=/admin/news-drafts");
-
-  const allowed = process.env.ADMIN_EMAIL;
-  if (allowed && user.email?.toLowerCase() !== allowed.toLowerCase()) {
-    return (
-      <main className="max-w-2xl mx-auto p-8">
-        <h1 className="text-2xl font-bold mb-2">Forbidden</h1>
-        <p className="text-[#64748b]">
-          Your account ({user.email}) is not on the admin allowlist.
-        </p>
-      </main>
-    );
-  }
-
   // Service-role fetch so we see drafts (RLS blocks them for anon).
   const admin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -84,7 +65,7 @@ export default async function NewsDraftsPage() {
       <header className="mb-8 flex items-end justify-between gap-4 border-b border-[#e2e8f0] pb-4">
         <div>
           <p className="text-xs uppercase tracking-wider text-[#3B82F6] font-medium">
-            Admin
+            Mission Control
           </p>
           <h1 className="text-3xl font-bold mt-1">News drafts</h1>
           <p className="text-sm text-[#64748b] mt-2">
@@ -92,8 +73,18 @@ export default async function NewsDraftsPage() {
             delete.
           </p>
         </div>
-        <div className="text-sm text-[#64748b]">
-          {rows.length} draft{rows.length === 1 ? "" : "s"} pending
+        <div className="flex items-center gap-4">
+          <span className="text-sm text-[#64748b]">
+            {rows.length} draft{rows.length === 1 ? "" : "s"} pending
+          </span>
+          <form action="/api/mission-control/logout" method="post">
+            <button
+              type="submit"
+              className="text-sm text-[#64748b] hover:text-[#0F1D2E] font-medium"
+            >
+              Log out
+            </button>
+          </form>
         </div>
       </header>
 

@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { VALID_CITIES, STATE_CITY_MAP, CITY_META } from "@/lib/cities";
 import { neighborhoodPageSlug } from "@/lib/nyc-neighborhoods";
 import { neighborhoodPageSlugByCity } from "@/lib/neighborhoods";
+import { MC_COOKIE, verifyCookieValue } from "@/lib/mission-control/auth";
 
 /** Route prefixes that are city-specific and should be under /[city]/ */
 const CITY_ROUTES = new Set([
@@ -43,6 +44,17 @@ function withNoindex(response: NextResponse, request: NextRequest): NextResponse
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // 0. Mission Control password gate (runs before any city routing).
+  if (pathname.startsWith("/mission-control") && pathname !== "/mission-control/login") {
+    const cookie = request.cookies.get(MC_COOKIE);
+    if (!verifyCookieValue(cookie?.value)) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/mission-control/login";
+      url.searchParams.set("next", pathname);
+      return NextResponse.redirect(url);
+    }
+  }
 
   // Split path segments: "/nyc/buildings" => ["", "nyc", "buildings"]
   const segments = pathname.split("/");
