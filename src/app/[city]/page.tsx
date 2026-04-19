@@ -139,6 +139,14 @@ export default async function CityHomePage({
         {/* NEW — Popular listicles, links into /best-buildings */}
         <PopularListicles city={city} />
 
+        {/* NEW — Explore grid (moved up to follow listicles) */}
+        <ExploreDataGrid city={city} />
+
+        {/* NEW — per-city news from news_articles (moved up to follow explore) */}
+        <Suspense fallback={null}>
+          <HomepageNewsGrid city={city} />
+        </Suspense>
+
         {/* NEW — LucidIQ educational showcase */}
         <LucidIQShowcase city={city} />
 
@@ -158,14 +166,6 @@ export default async function CityHomePage({
         </section>
 
         <AdBlock adSlot="HOME_MID_2" adFormat="horizontal" />
-
-        {/* NEW — Explore grid (replaces old inline Explore section) */}
-        <ExploreDataGrid city={city} />
-
-        {/* NEW — per-city news from news_articles */}
-        <Suspense fallback={null}>
-          <HomepageNewsGrid city={city} />
-        </Suspense>
 
         {/* Nearby Buildings — moved to bottom, right before FAQ */}
         <section className="py-16 bg-white border-t border-[#e2e8f0]">
