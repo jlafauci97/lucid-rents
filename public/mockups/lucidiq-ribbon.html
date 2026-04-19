@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LucidIQ Score — ribbon variations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --ink: #0F1D2E;
+  --ink-mute: #64748b;
+  --ink-faint: #94a3b8;
+  --navy: #3B82F6;
+  --navy-hi: #2563EB;
+  --navy-dark: #0F1D2E;
+  --navy-deep: #091325;
+  --sky: #dbeafe;
+  --sky-deep: #60a5fa;
+  --paper: #f8fafc;
+  --surface: #ffffff;
+  --border: #e2e8f0;
+  --sans: "Geist", system-ui, sans-serif;
+  --mono: "Geist Mono", ui-monospace, monospace;
+  --serif: "Young Serif", serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+a { color: inherit; text-decoration: none; }
+
+.page { max-width: 1280px; margin: 0 auto; padding: 48px 24px 120px; }
+.page-head { padding-bottom: 28px; margin-bottom: 40px; border-bottom: 1px solid var(--border); }
+.page-head h1 { font-family: var(--serif); font-size: 40px; margin: 0 0 6px; letter-spacing: -0.02em; }
+.page-head p { color: var(--ink-mute); font-size: 15px; max-width: 64ch; margin: 0; line-height: 1.6; }
+.head-links { display: flex; gap: 14px; font-size: 13px; font-family: var(--mono); margin-top: 12px; flex-wrap: wrap; }
+.head-links a { color: var(--navy); text-decoration: underline; text-underline-offset: 2px; }
+
+.grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 20px;
+}
+.cell {
+  background: var(--navy-deep); border: 1px solid #1e293b; border-radius: 14px;
+  padding: 40px 18px 18px;
+  display: flex; flex-direction: column; align-items: center; gap: 20px;
+  min-height: 320px; position: relative;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.cell:hover { transform: translateY(-2px); box-shadow: 0 18px 36px -22px rgba(15,29,46,0.45); }
+.cell.light { background: var(--surface); border-color: var(--border); }
+.cell .idx { position: absolute; top: 14px; left: 14px; font-family: var(--mono); font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.35); letter-spacing: 0.14em; }
+.cell .code { position: absolute; top: 14px; right: 14px; font-family: var(--mono); font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.7); letter-spacing: 0.14em; }
+.cell.light .idx { color: var(--ink-faint); }
+.cell.light .code { color: var(--ink); }
+.cell .tag { margin-top: auto; text-align: center; padding-top: 14px; border-top: 1px dashed rgba(255,255,255,0.08); width: 100%; }
+.cell.light .tag { border-top-color: var(--border); }
+.cell .tag .name { font-size: 13px; font-weight: 600; color: white; }
+.cell.light .tag .name { color: var(--ink); }
+.cell .tag .desc { font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 2px; font-family: var(--mono); letter-spacing: 0.02em; line-height: 1.4; }
+.cell.light .tag .desc { color: var(--ink-mute); }
+
+/* ========= Badge wrapper ========= */
+.badge {
+  width: 180px; height: 200px;
+  position: relative;
+  display: grid; place-items: center;
+}
+.badge .hex {
+  width: 100%;
+  height: 170px;
+  position: relative;
+}
+.badge .hex svg { width: 100%; height: 100%; display: block; }
+.badge .content {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding-bottom: 24px;
+  color: white;
+}
+.badge .content .letter {
+  font-family: var(--sans); font-size: 52px; font-weight: 900;
+  letter-spacing: -0.03em; line-height: 1;
+}
+.badge .content .rating {
+  font-family: var(--mono); font-size: 11px; font-weight: 700;
+  color: var(--sky-deep); letter-spacing: 0.1em; margin-top: 6px;
+}
+.badge .content.light-text { color: var(--navy-dark); }
+.badge .content.light-text .rating { color: var(--navy); }
+
+/* ========= Ribbon — default (flat banner overlaying bottom third of hex) ========= */
+.ribbon {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 36px;                 /* lifted up to overlay the hex */
+  background: var(--sky-deep);
+  color: var(--navy-dark);
+  font-family: var(--mono); font-size: 10px; font-weight: 800;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  padding: 8px 22px;
+  clip-path: polygon(0% 0%, 100% 0%, 93% 50%, 100% 100%, 0% 100%, 7% 50%);
+  white-space: nowrap;
+  box-shadow: 0 8px 18px -8px rgba(96,165,250,0.6);
+  z-index: 2;
+}
+
+/* Variant ribbon styles */
+.ribbon.flat {
+  clip-path: none;
+  border-radius: 3px;
+}
+.ribbon.tails {
+  clip-path: polygon(
+    6% 0%, 94% 0%,
+    100% 50%,
+    94% 100%, 6% 100%,
+    0% 50%
+  );
+}
+.ribbon.double-tails {
+  padding: 8px 30px;
+  clip-path: polygon(
+    0% 0%, 88% 0%, 82% 50%, 88% 100%, 0% 100%,
+    6% 50%
+  );
+}
+.ribbon.double-tails::after {
+  content: '';
+  position: absolute; left: -14px; top: -6px; bottom: -6px; width: 16px;
+  background: #1e40af;
+  clip-path: polygon(0 50%, 100% 0, 100% 100%);
+  z-index: -1;
+}
+.ribbon.navy {
+  background: var(--navy);
+  color: white;
+}
+.ribbon.ink {
+  background: var(--ink);
+  color: white;
+  border: 1px solid var(--sky-deep);
+}
+.ribbon.white {
+  background: white;
+  color: var(--navy-dark);
+  border: 1px solid var(--border);
+}
+.ribbon.pill {
+  clip-path: none;
+  border-radius: 999px;
+  padding: 7px 18px;
+}
+.ribbon.lifted-high { bottom: 66px; }
+.ribbon.lifted-mid  { bottom: 50px; }
+.ribbon.lifted-low  { bottom: 22px; }
+.ribbon.wide { padding: 8px 32px; }
+.ribbon.narrow { padding: 7px 16px; font-size: 9.5px; }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <header class="page-head">
+    <h1>LucidIQ Score — ribbon variations</h1>
+    <p>Ten clean hex + ribbon pairings. Ribbon overlays the hex, reads <code style="font-family:var(--mono); background:var(--sky); padding:1px 6px; border-radius:4px; color:var(--navy-dark);">LucidIQ Score</code> across all variants. Differences are in hex treatment + ribbon style + overlay depth.</p>
+    <div class="head-links">
+      <a href="/mockups/lucidiq-shield.html">shield variants</a>
+      <a href="/mockups/score-badges-aperture-proof.html">20 aperture + proof</a>
+      <a href="/mockups/score-badges.html">8 hexagons</a>
+      <a href="/mockups/building-v1.html">building-v1</a>
+    </div>
+  </header>
+
+  <div class="grid">
+
+    <!-- 01 CLASSIC — dark hex + sky-deep banner overlay -->
+    <div class="cell">
+      <span class="idx">01</span><span class="code">CLASSIC</span>
+      <div class="badge">
+        <div class="hex">
+          <svg viewBox="0 0 180 170">
+            <defs><linearGradient id="r1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1e293b"/><stop offset="100%" stop-color="#050a14"/></linearGradient></defs>
+            <polygon points="90,4 172,43 172,127 90,166 8,127 8,43" fill="url(#r1)"/>
+            <polygon points="90,14 162,48 162,122 90,156 18,122 18,48" fill="none" stroke="rgba(96,165,250,0.25)" stroke-width="0.75"/>
+          </svg>
+        </div>
+        <div class="content">
+          <div class="letter">B+</div>
+          <div class="rating">3.9 / 5</div>
+        </div>
+        <span class="ribbon">LucidIQ Score</span>
+      </div>
+      <div class="tag"><div class="name">Classic</div><div class="desc">dark hex · sky-blue banner overlay</div></div>
+    </div>
+
+    <!-- 02 LIGHT — light hex + navy banner -->
+    <div class="cell light">
+      <span class="idx">02</span><span class="code">LIGHT</span>
+      <div class="badge">
+        <div class="hex">
+          <svg viewBox="0 0 180 170">
+            <polygon points="90,4 172,43 172,127 90,166 8,127 8,43" fill="white" stroke="#0F1D2E" stroke-width="1.2"/>
+            <polygon points="90,14 162,48 162,122 90,156 18,122 18,48" fill="none" stroke="#3B82F6" stroke-width="0.5" stroke-dasharray="1.5 3"/>
+          </svg>
+        </div>
+        <div class="content light-text">
+          <div class="letter">B+</div>
+          <div class="rating">3.9 / 5</div>
+        </div>
+        <span class="ribbon navy">LucidIQ Score</span>
+      </div>
+      <div class="tag"><div class="name">Light</div><div class="desc">white hex · navy banner · hairline</div></div>
+    </div>
+
+    <!-- 03 TAILS — dark hex + tailed banner -->
+    <div class="cell">
+      <span class="idx">03</span><span class="code">TAILS</span>
+      <div class="badge">
+        <div class="hex">
+          <svg viewBox="0 0 180 170">
+            <defs><linearGradient id="r3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1e293b"/><stop offset="100%" stop-color="#050a14"/></linearGradient></defs>
+            <polygon points="90,4 172,43 172,127 90,166 8,127 8,43" fill="url(#r3)"/>
+            <polygon points="90,14 162,48 162,122 90,156 18,122 18,48" fill="none" stroke="rgba(96,165,250,0.25)" stroke-width="0.75"/>
+          </svg>
+        </div>
+        <div class="content">
+          <div class="letter">B+</div>
+          <div class="rating">3.9 / 5</div>
+        </div>
+        <span class="ribbon tails wide">LucidIQ Score</span>
+      </div>
+      <div class="tag"><div class="name">Tails</div><div class="desc">pointed end-caps · wider banner</div></div>
+    </div>
+
+    <!-- 04 DEEP OVERLAY — banner sits higher, covering mid-hex -->
+    <div class="cell">
+      <span class="idx">04</span><span class="code">DEEP</span>
+      <div class="badge">
+        <div class="hex">
+          <svg viewBox="0 0 180 170">
+            <polygon points="90,4 172,43 172,127 90,166 8,127 8,43" fill="#0F1D2E"/>
+            <polygon points="90,14 162,48 162,122 90,156 18,122 18,48" fill="none" stroke="rgba(96,165,250,0.25)" stroke-width="0.75"/>
+          </svg>
+        </div>
+        <div class="content" style="padding-bottom: 54px;">
+          <div class="letter">B+</div>
+          <div class="rating">3.9 / 5</div>
+        </div>
+        <span class="ribbon lifted-mid wide">LucidIQ Score</span>
+      </div>
+      <div class="tag"><div class="name">Deep</div><div class="desc">banner lifted high · mid-hex overlay</div></div>
+    </div>
+
+    <!-- 05 PILL — rounded-pill ribbon, subtle -->
+    <div class="cell">
+      <span class="idx">05</span><span class="code">PILL</span>
+      <div class="badge">
+        <div class="hex">
+          <svg viewBox="0 0 180 170">
+            <polygon points="90,4 172,43 172,127 90,166 8,127 8,43" fill="#0F1D2E"/>
+            <polygon points="90,14 162,48 162,122 90,156 18,122 18,48" fill="none" stroke="rgba(96,165,250,0.25)" stroke-width="0.75"/>
+          </svg>
+        </div>
+        <div class="content">
+          <div class="letter">B+</div>
+          <div class="rating">3.9 / 5</div>
+        </div>
+        <span class="ribbon pill navy">LucidIQ Score</span>
+      </div>
+      <div class="tag"><div class="name">Pill</div><div class="desc">rounded pill · no chevron tails</div></div>
+    </div>
+
+    <!-- 06 BICHROME — split hex (top navy / bottom blue) + white ribbon -->
+    <div class="cell">
+      <span class="idx">06</span><span class="code">BICHROME</span>
+      <div class="badge">
+        <div class="hex">
+          <svg viewBox="0 0 180 170">
+            <defs>
+              <clipPath id="r6-clip"><polygon points="90,4 172,43 172,127 90,166 8,127 8,43"/></clipPath>
+            </defs>
+            <g clip-path="url(#r6-clip)">
+              <rect x="0" y="0" width="180" height="85" fill="#0F1D2E"/>
+              <rect x="0" y="85" width="180" height="85" fill="#3B82F6"/>
+              <line x1="0" y1="85" x2="180" y2="85" stroke="#60a5fa" stroke-width="1.2"/>
+            </g>
+            <polygon points="90,4 172,43 172,127 90,166 8,127 8,43" fill="none" stroke="#0F1D2E" stroke-width="1"/>
+          </svg>
+        </div>
+        <div class="content" style="padding-bottom: 40px;">
+          <div class="letter">B+</div>
+          <div class="rating" style="color: white;">3.9 / 5</div>
+        </div>
+        <span class="ribbon white lifted-mid">LucidIQ Score</span>
+      </div>
+      <div class="tag"><div class="name">Bichrome</div><div class="desc">split hex · white banner · ticker</div></div>
+    </div>
+
+    <!-- 07 GRADIENT — full-range navy gradient + sky-deep pill -->
+    <div class="cell">
+      <span class="idx">07</span><span class="code">GRADIENT</span>
+      <div class="badge">
+        <div class="hex">
+          <svg viewBox="0 0 180 170">
+            <defs>
+              <linearGradient id="r7" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#3B82F6"/>
+                <stop offset="55%" stop-color="#1e40af"/>
+                <stop offset="100%" stop-color="#050a14"/>
+              </linearGradient>
+            </defs>
+            <polygon points="90,4 172,43 172,127 90,166 8,127 8,43" fill="url(#r7)"/>
+            <polygon points="90,14 162,48 162,122 90,156 18,122 18,48" fill="none" stroke="rgba(255,255,255,0.16)" stroke-width="0.75"/>
+          </svg>
+        </div>
+        <div class="content">
+          <div class="letter">B+</div>
+          <div class="rating" style="color: rgba(255,255,255,0.75);">3.9 / 5</div>
+        </div>
+        <span class="ribbon pill white">LucidIQ Score</span>
+      </div>
+      <div class="tag"><div class="name">Gradient</div><div class="desc">diagonal blue→black · white pill</div></div>
+    </div>
+
+    <!-- 08 INK BANNER — ink ribbon with sky-deep edge stroke -->
+    <div class="cell">
+      <span class="idx">08</span><span class="code">SIGNET</span>
+      <div class="badge">
+        <div class="hex">
+          <svg viewBox="0 0 180 170">
+            <polygon points="90,4 172,43 172,127 90,166 8,127 8,43" fill="#0F1D2E"/>
+            <polygon points="90,14 162,48 162,122 90,156 18,122 18,48" fill="none" stroke="rgba(96,165,250,0.25)" stroke-width="0.75"/>
+          </svg>
+        </div>
+        <div class="content">
+          <div class="letter">B+</div>
+          <div class="rating">3.9 / 5</div>
+        </div>
+        <span class="ribbon ink tails">LucidIQ Score</span>
+      </div>
+      <div class="tag"><div class="name">Signet</div><div class="desc">ink banner · sky-deep outline</div></div>
+    </div>
+
+    <!-- 09 DOUBLE RAIL — sky-deep banner lifted low, thin + wide -->
+    <div class="cell">
+      <span class="idx">09</span><span class="code">RAIL</span>
+      <div class="badge">
+        <div class="hex">
+          <svg viewBox="0 0 180 170">
+            <polygon points="90,4 172,43 172,127 90,166 8,127 8,43" fill="#0F1D2E"/>
+            <polygon points="90,10 166,45 166,125 90,160 14,125 14,45" fill="none" stroke="rgba(96,165,250,0.4)" stroke-width="0.5"/>
+            <polygon points="90,18 158,50 158,120 90,152 22,120 22,50" fill="none" stroke="rgba(96,165,250,0.2)" stroke-width="0.5"/>
+          </svg>
+        </div>
+        <div class="content">
+          <div class="letter">B+</div>
+          <div class="rating">3.9 / 5</div>
+        </div>
+        <span class="ribbon lifted-low narrow">LucidIQ Score</span>
+      </div>
+      <div class="tag"><div class="name">Rail</div><div class="desc">double inner rail · lower banner</div></div>
+    </div>
+
+    <!-- 10 WIDE HEX + FLAT BLOCK banner -->
+    <div class="cell">
+      <span class="idx">10</span><span class="code">SLAB</span>
+      <div class="badge">
+        <div class="hex">
+          <svg viewBox="0 0 180 170">
+            <polygon points="90,4 172,43 172,127 90,166 8,127 8,43" fill="#0F1D2E"/>
+            <polygon points="90,14 162,48 162,122 90,156 18,122 18,48" fill="none" stroke="rgba(96,165,250,0.25)" stroke-width="0.75"/>
+          </svg>
+        </div>
+        <div class="content">
+          <div class="letter">B+</div>
+          <div class="rating">3.9 / 5</div>
+        </div>
+        <span class="ribbon flat wide">LucidIQ Score</span>
+      </div>
+      <div class="tag"><div class="name">Slab</div><div class="desc">flat block banner · no chevrons</div></div>
+    </div>
+
+  </div>
+
+</div>
+
+</body>
+</html>

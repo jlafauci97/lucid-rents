@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Rental intelligence — better design options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --ink: #0F1D2E;
+  --ink-soft: #1e293b;
+  --ink-mute: #64748b;
+  --ink-faint: #94a3b8;
+  --navy: #3B82F6;
+  --navy-hi: #2563EB;
+  --navy-dark: #0F1D2E;
+  --sky: #dbeafe;
+  --sky-deep: #60a5fa;
+  --sky-bg: #eff6ff;
+  --paper: #f8fafc;
+  --paper-2: #f1f5f9;
+  --surface: #ffffff;
+  --border: #e2e8f0;
+  --border-hi: #cbd5e1;
+  --good: #10b981;
+  --warn: #f97316;
+  --bad: #ef4444;
+  --sun: #fbbf24;
+  --sans: "Geist", system-ui, sans-serif;
+  --mono: "Geist Mono", ui-monospace, monospace;
+  --serif: "Young Serif", serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+a { color: inherit; text-decoration: none; }
+
+.page { max-width: 1200px; margin: 0 auto; padding: 48px 24px 120px; }
+.page-head { padding-bottom: 28px; margin-bottom: 40px; border-bottom: 1px solid var(--border); }
+.page-head h1 { font-family: var(--serif); font-size: 40px; margin: 0 0 6px; letter-spacing: -0.02em; }
+.page-head p { color: var(--ink-mute); font-size: 15px; max-width: 64ch; margin: 0; line-height: 1.6; }
+.head-links { display: flex; gap: 14px; font-size: 13px; font-family: var(--mono); margin-top: 12px; flex-wrap: wrap; }
+.head-links a { color: var(--navy); text-decoration: underline; text-underline-offset: 2px; }
+
+.variant { margin-bottom: 56px; }
+.variant-label { display: flex; align-items: baseline; gap: 14px; padding-bottom: 14px; margin-bottom: 20px; border-bottom: 1px dashed var(--border); }
+.variant-label .num { font-family: var(--mono); font-size: 10px; color: var(--navy); font-weight: 700; letter-spacing: 0.14em; padding: 3px 8px; border: 1px solid var(--navy); border-radius: 999px; }
+.variant-label h2 { font-family: var(--serif); font-size: 24px; margin: 0; letter-spacing: -0.015em; font-weight: 400; }
+.variant-label .sub { color: var(--ink-mute); font-size: 12px; margin-left: auto; font-family: var(--mono); letter-spacing: 0.02em; }
+
+/* ============== Shared card shell ============== */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 22px 24px;
+}
+.card-head { display: flex; gap: 12px; align-items: center; margin-bottom: 18px; }
+.card-head .icon {
+  width: 28px; height: 28px; border-radius: 8px;
+  display: grid; place-items: center;
+  background: rgba(16,185,129,0.12); color: var(--good);
+  flex-shrink: 0;
+}
+.card-head .icon svg { width: 15px; height: 15px; }
+.card-head .icon.sky { background: rgba(96,165,250,0.14); color: var(--sky-deep); }
+.card-head h3 {
+  margin: 0; font-size: 17px; font-weight: 700; color: var(--ink);
+  letter-spacing: -0.015em;
+  display: inline-flex; gap: 10px; align-items: center;
+}
+.card-head .pill {
+  font-family: var(--mono); font-size: 10px; font-weight: 700; color: var(--ink-mute);
+  padding: 3px 8px; border: 1px solid var(--border); border-radius: 999px; background: var(--paper-2);
+  letter-spacing: 0.04em;
+}
+.card-foot { padding-top: 12px; margin-top: 8px; border-top: 1px dashed var(--border); font-family: var(--mono); font-size: 11px; color: var(--ink-mute); letter-spacing: 0.02em; }
+
+/* ============================================================
+   A · RANGE BARS — each bed-type row shows min→max range as a
+   whisker bar with your-building marker overlaid. Answers both
+   Units Historic and Neighborhood Range in a single viz.
+============================================================ */
+.rb-list { display: flex; flex-direction: column; gap: 14px; }
+.rb-row { display: grid; grid-template-columns: 76px 1fr 80px; gap: 14px; align-items: center; }
+.rb-key { display: flex; flex-direction: column; gap: 2px; }
+.rb-key b { font-family: var(--sans); font-weight: 700; font-size: 14px; letter-spacing: -0.01em; color: var(--ink); }
+.rb-key span { font-family: var(--mono); font-size: 10px; color: var(--ink-faint); letter-spacing: 0.04em; }
+.rb-track {
+  position: relative; height: 28px;
+  display: flex; align-items: center;
+}
+.rb-track::before {
+  content: ''; position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%);
+  height: 2px; background: var(--border);
+  border-radius: 1px;
+}
+.rb-range {
+  position: absolute; height: 8px; border-radius: 4px;
+  background: linear-gradient(90deg, rgba(96,165,250,0.25), rgba(96,165,250,0.55));
+  top: 50%; transform: translateY(-50%);
+  border: 1px solid rgba(96,165,250,0.35);
+}
+.rb-min, .rb-max {
+  position: absolute; top: 50%; transform: translate(-50%, -50%);
+  width: 2px; height: 14px; background: var(--sky-deep);
+}
+.rb-your {
+  position: absolute; top: 50%; transform: translate(-50%, -50%);
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--good);
+  border: 2px solid white;
+  box-shadow: 0 2px 6px rgba(16,185,129,0.55);
+  z-index: 2;
+}
+.rb-yourlbl {
+  position: absolute; top: -22px; transform: translateX(-50%);
+  background: var(--good); color: white;
+  padding: 2px 7px; border-radius: 4px;
+  font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.rb-yourlbl::after {
+  content: ''; position: absolute; left: 50%; transform: translateX(-50%);
+  bottom: -4px; width: 0; height: 0;
+  border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 4px solid var(--good);
+}
+.rb-ticks { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 9px; color: var(--ink-faint); margin-top: 4px; letter-spacing: 0.04em; padding-left: 90px; padding-right: 94px; }
+.rb-val { text-align: right; font-family: var(--sans); font-size: 14px; font-weight: 700; color: var(--good); letter-spacing: -0.005em; line-height: 1.1; }
+.rb-val small { display: block; font-size: 10px; color: var(--ink-mute); font-weight: 500; letter-spacing: 0; margin-top: 2px; }
+.rb-legend { display: flex; gap: 18px; font-family: var(--mono); font-size: 10px; color: var(--ink-mute); margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--border); letter-spacing: 0.04em; }
+.rb-legend .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+.rb-legend .dot.your { background: var(--good); border: 2px solid white; box-shadow: 0 0 0 1px var(--good); }
+.rb-legend .dot.range { background: linear-gradient(90deg, rgba(96,165,250,0.25), rgba(96,165,250,0.55)); border-radius: 2px; height: 6px; }
+
+/* ============================================================
+   B · UNIT TILES + SIDE BY SIDE COMPARISON
+   Historic rents as price tiles, Neighborhood range as a
+   tight density grid with building price marked.
+============================================================ */
+.tiles { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+.tile {
+  background: var(--paper-2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 12px 10px;
+  display: flex; flex-direction: column; gap: 3px;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.15s;
+}
+.tile:hover { border-color: var(--sky-deep); transform: translateY(-2px); }
+.tile .t-k { font-family: var(--mono); font-size: 10px; color: var(--ink-mute); letter-spacing: 0.06em; text-transform: uppercase; font-weight: 700; }
+.tile .t-v { font-family: var(--sans); font-size: 16px; color: var(--good); font-weight: 800; letter-spacing: -0.02em; margin-top: 2px; }
+.tile .t-c { font-family: var(--mono); font-size: 9px; color: var(--ink-faint); margin-top: 2px; }
+
+@media (max-width: 900px) { .tiles { grid-template-columns: repeat(3, 1fr); } }
+
+/* ============================================================
+   C · HORIZONTAL BAR CHART — historic rents as growing bars
+============================================================ */
+.bc-wrap { display: flex; flex-direction: column; gap: 10px; }
+.bc-row { display: grid; grid-template-columns: 80px 1fr 90px; align-items: center; gap: 14px; }
+.bc-k { font-family: var(--sans); font-weight: 700; font-size: 13px; color: var(--ink); letter-spacing: -0.005em; }
+.bc-k small { display: block; font-family: var(--mono); font-size: 10px; color: var(--ink-faint); letter-spacing: 0.04em; font-weight: 500; margin-top: 2px; }
+.bc-bar { position: relative; height: 22px; background: var(--paper-2); border-radius: 6px; overflow: hidden; }
+.bc-bar .fill {
+  position: absolute; left: 0; top: 0; bottom: 0;
+  background: linear-gradient(90deg, rgba(16,185,129,0.6), var(--good));
+  border-radius: 6px;
+}
+.bc-bar .grid-line {
+  position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(255,255,255,0.7);
+}
+.bc-val { text-align: right; font-family: var(--sans); font-size: 14px; font-weight: 700; color: var(--ink); letter-spacing: -0.005em; }
+.bc-val small { font-size: 10px; font-weight: 500; color: var(--ink-mute); margin-left: 2px; }
+
+/* ============================================================
+   D · HISTORIC TREND CHART — the 10-yr line chart restored
+   with modern styling + mini stats above.
+============================================================ */
+.chart-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 18px; }
+.cs-stat { padding: 12px 14px; background: var(--paper-2); border-radius: 10px; }
+.cs-stat .k { font-family: var(--mono); font-size: 10px; color: var(--ink-mute); letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700; }
+.cs-stat .v { font-family: var(--sans); font-size: 22px; font-weight: 800; color: var(--ink); letter-spacing: -0.025em; margin-top: 2px; }
+.cs-stat .v.good { color: var(--good); }
+.cs-stat .sub { font-family: var(--sans); font-size: 11px; color: var(--ink-mute); margin-top: 2px; }
+.chart-wrap { background: var(--paper-2); border-radius: 10px; padding: 16px 12px 10px; }
+.chart-wrap svg { width: 100%; height: auto; display: block; }
+
+/* ============================================================
+   E · COMPARISON TABLE — bed type × this building vs neighborhood
+============================================================ */
+.ctab { width: 100%; border-collapse: collapse; }
+.ctab thead th {
+  font-family: var(--mono); font-size: 10px; font-weight: 700;
+  color: var(--ink-mute); letter-spacing: 0.12em; text-transform: uppercase;
+  text-align: left; padding: 8px 12px;
+  border-bottom: 2px solid var(--ink);
+}
+.ctab thead th:last-child, .ctab tbody td:last-child { text-align: right; }
+.ctab thead th.num { text-align: right; }
+.ctab tbody td {
+  padding: 14px 12px;
+  border-bottom: 1px dashed var(--border);
+  vertical-align: middle;
+  font-family: var(--sans); font-size: 14px;
+}
+.ctab tbody tr:last-child td { border-bottom: none; }
+.ctab .bed b { font-weight: 700; color: var(--ink); letter-spacing: -0.005em; }
+.ctab .bed small { display: block; font-family: var(--mono); font-size: 10px; color: var(--ink-faint); font-weight: 500; margin-top: 2px; letter-spacing: 0.04em; }
+.ctab .this-b { color: var(--good); font-weight: 700; white-space: nowrap; }
+.ctab .range { color: var(--ink-soft); font-weight: 500; white-space: nowrap; }
+.ctab .range em { font-style: normal; color: var(--ink-mute); margin: 0 4px; }
+.ctab .delta { font-family: var(--mono); font-weight: 700; letter-spacing: 0.02em; }
+.ctab .delta.below { color: var(--good); }
+.ctab .delta.above { color: var(--bad); }
+.ctab .sparkbar { position: relative; height: 8px; background: var(--paper-2); border-radius: 4px; width: 120px; margin-left: auto; }
+.ctab .sparkbar .span { position: absolute; top: 0; bottom: 0; background: rgba(96,165,250,0.4); border-radius: 4px; }
+.ctab .sparkbar .pin { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--good); border-radius: 1px; }
+
+/* ============================================================
+   F · DISTRIBUTION / HISTOGRAM
+============================================================ */
+.hist-wrap { display: flex; flex-direction: column; gap: 14px; }
+.hist-row { display: grid; grid-template-columns: 80px 1fr 100px; gap: 14px; align-items: center; }
+.hist-bars { display: flex; gap: 3px; align-items: flex-end; height: 44px; }
+.hist-bars i { flex: 1; background: rgba(96,165,250,0.35); border-radius: 2px 2px 0 0; display: block; }
+.hist-bars i.peak { background: var(--sky-deep); }
+.hist-summary { font-family: var(--sans); font-size: 13px; font-weight: 700; color: var(--good); text-align: right; }
+.hist-summary small { display: block; font-size: 10px; color: var(--ink-mute); font-weight: 500; margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <header class="page-head">
+    <h1>Rental intelligence — design options</h1>
+    <p>Six designs for the <strong>Units Historic Rent</strong> and <strong>Neighborhood Rent Range</strong> blocks. Also answers the chart question — the old 10-year line chart is preserved in Option D.</p>
+    <div class="head-links">
+      <a href="/mockups/building-v1.html">← back to building-v1</a>
+      <a href="/mockups/wayfinder-combo.html">wayfinder combos</a>
+    </div>
+  </header>
+
+  <!-- ============================================================
+       A · RANGE BARS
+  ============================================================ -->
+  <section class="variant">
+    <div class="variant-label">
+      <span class="num">A</span>
+      <h2>Range bars with your-price marker</h2>
+      <span class="sub">combines historic + neighborhood into one viz</span>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
+        <h3>Rent landscape by bed type <span class="pill">Hell's Kitchen</span></h3>
+      </div>
+      <div class="rb-list">
+        <!-- Studio: nb range $1,700–$50,000; building $3,995 -->
+        <div class="rb-row">
+          <div class="rb-key"><b>Studio</b><span>1,317 listings</span></div>
+          <div class="rb-track">
+            <div class="rb-range" style="left:3%; right:10%;"></div>
+            <div class="rb-min" style="left:3%"></div>
+            <div class="rb-max" style="left:90%"></div>
+            <div class="rb-your" style="left:7%"></div>
+            <div class="rb-yourlbl" style="left:7%">$3,995</div>
+          </div>
+          <div class="rb-val">$1.7K – $50K<small>this: $3,995</small></div>
+        </div>
+        <!-- 1 Bed: nb $1,200–$45,000; building $5,000 -->
+        <div class="rb-row">
+          <div class="rb-key"><b>1 Bed</b><span>2,697 listings</span></div>
+          <div class="rb-track">
+            <div class="rb-range" style="left:2%; right:19%;"></div>
+            <div class="rb-min" style="left:2%"></div>
+            <div class="rb-max" style="left:81%"></div>
+            <div class="rb-your" style="left:9%"></div>
+            <div class="rb-yourlbl" style="left:9%">$5,000</div>
+          </div>
+          <div class="rb-val">$1.2K – $45K<small>this: $5,000</small></div>
+        </div>
+        <!-- 2 Bed -->
+        <div class="rb-row">
+          <div class="rb-key"><b>2 Bed</b><span>1,891 listings</span></div>
+          <div class="rb-track">
+            <div class="rb-range" style="left:4%; right:10%;"></div>
+            <div class="rb-min" style="left:4%"></div>
+            <div class="rb-max" style="left:90%"></div>
+            <div class="rb-your" style="left:12%"></div>
+            <div class="rb-yourlbl" style="left:12%">$6,500</div>
+          </div>
+          <div class="rb-val">$2.2K – $49.5K<small>this: $6,500</small></div>
+        </div>
+        <!-- 3 Bed -->
+        <div class="rb-row">
+          <div class="rb-key"><b>3 Bed</b><span>832 listings</span></div>
+          <div class="rb-track">
+            <div class="rb-range" style="left:2%; right:10%;"></div>
+            <div class="rb-min" style="left:2%"></div>
+            <div class="rb-max" style="left:90%"></div>
+            <div class="rb-your" style="left:15%"></div>
+            <div class="rb-yourlbl" style="left:15%">$7,635</div>
+          </div>
+          <div class="rb-val">$1.25K – $50K<small>this: $7,635</small></div>
+        </div>
+        <!-- 4 Bed -->
+        <div class="rb-row">
+          <div class="rb-key"><b>4 Bed</b><span>254 listings</span></div>
+          <div class="rb-track">
+            <div class="rb-range" style="left:2%; right:10%;"></div>
+            <div class="rb-min" style="left:2%"></div>
+            <div class="rb-max" style="left:90%"></div>
+            <div class="rb-your" style="left:18%"></div>
+            <div class="rb-yourlbl" style="left:18%">$9,200</div>
+          </div>
+          <div class="rb-val">$1.2K – $50K<small>this: $9,200</small></div>
+        </div>
+      </div>
+      <div class="rb-legend">
+        <span><span class="dot your"></span>This building</span>
+        <span><span class="dot range"></span>Neighborhood listings range</span>
+        <span style="margin-left:auto">Based on recent listings · updated March 2026</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       B · UNIT TILES — punchy grid
+  ============================================================ -->
+  <section class="variant">
+    <div class="variant-label">
+      <span class="num">B</span>
+      <h2>Price tiles grid</h2>
+      <span class="sub">scannable · 7 units at a glance</span>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <span class="icon sky"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
+        <h3>Units historic rent <span class="pill">7 listings</span></h3>
+      </div>
+      <div class="tiles">
+        <div class="tile"><span class="t-k">Studio</span><span class="t-v">$3,995</span><span class="t-c">1 listing</span></div>
+        <div class="tile"><span class="t-k">1 Bed</span><span class="t-v">$5,000</span><span class="t-c">1 listing</span></div>
+        <div class="tile"><span class="t-k">2 Bed</span><span class="t-v">$6,500</span><span class="t-c">1 listing</span></div>
+        <div class="tile"><span class="t-k">3 Bed</span><span class="t-v">$7,635</span><span class="t-c">1 listing</span></div>
+        <div class="tile"><span class="t-k">4 Bed</span><span class="t-v">$9,200</span><span class="t-c">1 listing</span></div>
+        <div class="tile"><span class="t-k">5 Bed</span><span class="t-v">$15,650</span><span class="t-c">1 listing</span></div>
+        <div class="tile"><span class="t-k">6 Bed</span><span class="t-v">$29,750</span><span class="t-c">1 listing</span></div>
+      </div>
+      <div class="card-foot">Based on listings recorded at this building.</div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       C · HORIZONTAL BAR CHART
+  ============================================================ -->
+  <section class="variant">
+    <div class="variant-label">
+      <span class="num">C</span>
+      <h2>Bar chart · price gradient</h2>
+      <span class="sub">sizes grow left-to-right · shows the premium curve</span>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
+        <h3>Rent by unit size at this building</h3>
+      </div>
+      <div class="bc-wrap">
+        <div class="bc-row"><div class="bc-k">Studio<small>1 listing</small></div><div class="bc-bar"><div class="fill" style="width:13%"></div></div><div class="bc-val">$3,995<small>/mo</small></div></div>
+        <div class="bc-row"><div class="bc-k">1 Bed<small>1 listing</small></div><div class="bc-bar"><div class="fill" style="width:17%"></div></div><div class="bc-val">$5,000<small>/mo</small></div></div>
+        <div class="bc-row"><div class="bc-k">2 Bed<small>1 listing</small></div><div class="bc-bar"><div class="fill" style="width:22%"></div></div><div class="bc-val">$6,500<small>/mo</small></div></div>
+        <div class="bc-row"><div class="bc-k">3 Bed<small>1 listing</small></div><div class="bc-bar"><div class="fill" style="width:26%"></div></div><div class="bc-val">$7,635<small>/mo</small></div></div>
+        <div class="bc-row"><div class="bc-k">4 Bed<small>1 listing</small></div><div class="bc-bar"><div class="fill" style="width:31%"></div></div><div class="bc-val">$9,200<small>/mo</small></div></div>
+        <div class="bc-row"><div class="bc-k">5 Bed<small>1 listing</small></div><div class="bc-bar"><div class="fill" style="width:53%"></div></div><div class="bc-val">$15,650<small>/mo</small></div></div>
+        <div class="bc-row"><div class="bc-k">6 Bed<small>1 listing</small></div><div class="bc-bar"><div class="fill" style="width:100%"></div></div><div class="bc-val">$29,750<small>/mo</small></div></div>
+      </div>
+      <div class="card-foot">Bar length relative to the 6-Bed maximum at this building.</div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       D · 10-YR LINE CHART — restored
+  ============================================================ -->
+  <section class="variant">
+    <div class="variant-label">
+      <span class="num">D</span>
+      <h2>10-year trend chart</h2>
+      <span class="sub">the chart we had before · restored + modernized</span>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <span class="icon sky"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></span>
+        <h3>Median 1-bedroom rent · 2015 – 2024</h3>
+      </div>
+      <div class="chart-stats">
+        <div class="cs-stat"><div class="k">Manhattan Plaza</div><div class="v">+19%</div><div class="sub">10-yr base-rent growth</div></div>
+        <div class="cs-stat"><div class="k">Hell's Kitchen market</div><div class="v">+34%</div><div class="sub">same window</div></div>
+        <div class="cs-stat"><div class="k">Your advantage</div><div class="v good">−60%</div><div class="sub">vs. market median</div></div>
+      </div>
+      <div class="chart-wrap">
+        <svg viewBox="0 0 720 240" preserveAspectRatio="none" role="img" aria-label="Rent over time">
+          <g stroke="#e2e8f0" stroke-width="1">
+            <line x1="40" y1="50" x2="720" y2="50"/>
+            <line x1="40" y1="100" x2="720" y2="100"/>
+            <line x1="40" y1="150" x2="720" y2="150"/>
+            <line x1="40" y1="200" x2="720" y2="200"/>
+          </g>
+          <g fill="#94a3b8" font-family="Geist Mono" font-size="10">
+            <text x="0" y="53">$4k</text>
+            <text x="0" y="103">$3.2k</text>
+            <text x="0" y="153">$2.4k</text>
+            <text x="0" y="203">$1.6k</text>
+          </g>
+          <path d="M 50 130 L 120 125 L 190 115 L 260 105 L 330 98 L 400 88 L 470 78 L 540 66 L 610 58 L 680 52"
+                stroke="#60a5fa" stroke-width="2.5" fill="none" stroke-dasharray="4 3"/>
+          <path d="M 50 180 L 120 176 L 190 170 L 260 166 L 330 160 L 400 156 L 470 152 L 540 148 L 610 144 L 680 140 L 680 210 L 50 210 Z"
+                fill="#10b981" opacity="0.1"/>
+          <path d="M 50 180 L 120 176 L 190 170 L 260 166 L 330 160 L 400 156 L 470 152 L 540 148 L 610 144 L 680 140"
+                stroke="#10b981" stroke-width="3" fill="none"/>
+          <g>
+            <line x1="330" y1="160" x2="330" y2="30" stroke="#0F1D2E" stroke-width="1" stroke-dasharray="3,3" opacity="0.4"/>
+            <circle cx="330" cy="160" r="4" fill="#0F1D2E"/>
+            <text x="336" y="28" fill="#0F1D2E" font-family="Geist" font-size="11" font-weight="600">Tishman → Related, 2019</text>
+            <line x1="540" y1="148" x2="540" y2="30" stroke="#0F1D2E" stroke-width="1" stroke-dasharray="3,3" opacity="0.4"/>
+            <circle cx="540" cy="148" r="4" fill="#0F1D2E"/>
+            <text x="546" y="28" fill="#0F1D2E" font-family="Geist" font-size="11" font-weight="600">J-51 tax abatement expires, 2022</text>
+          </g>
+          <g fill="#94a3b8" font-family="Geist Mono" font-size="10">
+            <text x="50" y="228">'15</text><text x="190" y="228">'17</text><text x="330" y="228">'19</text><text x="470" y="228">'21</text><text x="610" y="228">'23</text>
+          </g>
+          <g transform="translate(560,220)" font-family="Geist Mono" font-size="10" fill="#64748b">
+            <rect x="0" y="-12" width="9" height="3" fill="#10b981"/>
+            <text x="14" y="-8">Manhattan Plaza</text>
+            <rect x="108" y="-12" width="9" height="3" fill="#60a5fa"/>
+            <text x="122" y="-8">Hell's Kitchen</text>
+          </g>
+        </svg>
+      </div>
+      <div class="card-foot">RGB · DHCR · Dewey market data. Annotations mark inflection points.</div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       E · COMPARISON TABLE — building vs neighborhood
+  ============================================================ -->
+  <section class="variant">
+    <div class="variant-label">
+      <span class="num">E</span>
+      <h2>Comparison table</h2>
+      <span class="sub">this building vs. neighborhood range · with sparkbar</span>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></span>
+        <h3>This building vs. Hell's Kitchen market</h3>
+      </div>
+      <table class="ctab">
+        <thead>
+          <tr>
+            <th>Bed type</th>
+            <th class="num">This building</th>
+            <th class="num">Neighborhood range</th>
+            <th class="num">Delta vs. median</th>
+            <th class="num">Where it sits</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="bed"><b>Studio</b><small>1 listing · 1,317 neighborhood</small></td><td class="this-b">$3,995</td><td class="range">$1,700<em>–</em>$50,000</td><td class="delta below">−7%</td><td><div class="sparkbar"><div class="span" style="left:3%;right:10%;"></div><div class="pin" style="left:7%"></div></div></td></tr>
+          <tr><td class="bed"><b>1 Bed</b><small>1 listing · 2,697 neighborhood</small></td><td class="this-b">$5,000</td><td class="range">$1,200<em>–</em>$45,000</td><td class="delta below">−13%</td><td><div class="sparkbar"><div class="span" style="left:2%;right:19%;"></div><div class="pin" style="left:9%"></div></div></td></tr>
+          <tr><td class="bed"><b>2 Bed</b><small>1 listing · 1,891 neighborhood</small></td><td class="this-b">$6,500</td><td class="range">$2,200<em>–</em>$49,500</td><td class="delta below">−23%</td><td><div class="sparkbar"><div class="span" style="left:4%;right:10%;"></div><div class="pin" style="left:12%"></div></div></td></tr>
+          <tr><td class="bed"><b>3 Bed</b><small>1 listing · 832 neighborhood</small></td><td class="this-b">$7,635</td><td class="range">$1,250<em>–</em>$50,000</td><td class="delta below">−31%</td><td><div class="sparkbar"><div class="span" style="left:2%;right:10%;"></div><div class="pin" style="left:15%"></div></div></td></tr>
+          <tr><td class="bed"><b>4+ Bed</b><small>3 listings · 254 neighborhood</small></td><td class="this-b">$9,200</td><td class="range">$1,200<em>–</em>$50,000</td><td class="delta below">−42%</td><td><div class="sparkbar"><div class="span" style="left:2%;right:10%;"></div><div class="pin" style="left:18%"></div></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       F · DISTRIBUTION HISTOGRAM
+  ============================================================ -->
+  <section class="variant">
+    <div class="variant-label">
+      <span class="num">F</span>
+      <h2>Distribution histogram</h2>
+      <span class="sub">how dense each price bucket is · tall bars = most listings</span>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <span class="icon sky"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
+        <h3>Neighborhood listing distribution <span class="pill">2026</span></h3>
+      </div>
+      <div class="hist-wrap">
+        <div class="hist-row">
+          <div class="bc-k">Studio<small>1,317 total</small></div>
+          <div class="hist-bars">
+            <i style="height:18%"></i><i style="height:40%"></i><i style="height:72%" class="peak"></i><i style="height:60%"></i><i style="height:34%"></i><i style="height:22%"></i><i style="height:14%"></i><i style="height:9%"></i><i style="height:5%"></i><i style="height:3%"></i>
+          </div>
+          <div class="hist-summary">Most common: $2.5–3.5K<small>building: $3,995</small></div>
+        </div>
+        <div class="hist-row">
+          <div class="bc-k">1 Bed<small>2,697 total</small></div>
+          <div class="hist-bars">
+            <i style="height:12%"></i><i style="height:36%"></i><i style="height:62%"></i><i style="height:84%" class="peak"></i><i style="height:54%"></i><i style="height:30%"></i><i style="height:20%"></i><i style="height:12%"></i><i style="height:6%"></i><i style="height:3%"></i>
+          </div>
+          <div class="hist-summary">Most common: $4–5K<small>building: $5,000</small></div>
+        </div>
+        <div class="hist-row">
+          <div class="bc-k">2 Bed<small>1,891 total</small></div>
+          <div class="hist-bars">
+            <i style="height:8%"></i><i style="height:24%"></i><i style="height:44%"></i><i style="height:70%"></i><i style="height:82%" class="peak"></i><i style="height:46%"></i><i style="height:26%"></i><i style="height:14%"></i><i style="height:6%"></i><i style="height:3%"></i>
+          </div>
+          <div class="hist-summary">Most common: $6–8K<small>building: $6,500</small></div>
+        </div>
+        <div class="hist-row">
+          <div class="bc-k">3 Bed<small>832 total</small></div>
+          <div class="hist-bars">
+            <i style="height:6%"></i><i style="height:18%"></i><i style="height:32%"></i><i style="height:54%"></i><i style="height:70%" class="peak"></i><i style="height:46%"></i><i style="height:26%"></i><i style="height:14%"></i><i style="height:8%"></i><i style="height:4%"></i>
+          </div>
+          <div class="hist-summary">Most common: $8–10K<small>building: $7,635</small></div>
+        </div>
+      </div>
+      <div class="card-foot">Distribution of recent Hell's Kitchen listings by rent bucket. Sky-blue peak = mode.</div>
+    </div>
+  </section>
+
+</div>
+</body>
+</html>

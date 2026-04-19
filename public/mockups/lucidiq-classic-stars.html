@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LucidIQ Score — Classic with stars</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --ink: #0F1D2E;
+  --ink-mute: #64748b;
+  --ink-faint: #94a3b8;
+  --navy: #3B82F6;
+  --navy-hi: #2563EB;
+  --navy-dark: #0F1D2E;
+  --navy-deep: #091325;
+  --sky: #dbeafe;
+  --sky-deep: #60a5fa;
+  --paper: #f8fafc;
+  --border: #e2e8f0;
+  --sun: #fbbf24;
+  --sun-dim: rgba(251, 191, 36, 0.2);
+  --sans: "Geist", system-ui, sans-serif;
+  --mono: "Geist Mono", ui-monospace, monospace;
+  --serif: "Young Serif", serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+a { color: inherit; text-decoration: none; }
+
+.page { max-width: 1280px; margin: 0 auto; padding: 48px 24px 120px; }
+.page-head { padding-bottom: 28px; margin-bottom: 40px; border-bottom: 1px solid var(--border); }
+.page-head h1 { font-family: var(--serif); font-size: 40px; margin: 0 0 6px; letter-spacing: -0.02em; }
+.page-head p { color: var(--ink-mute); font-size: 15px; max-width: 64ch; margin: 0; line-height: 1.6; }
+.head-links { display: flex; gap: 14px; font-size: 13px; font-family: var(--mono); margin-top: 12px; flex-wrap: wrap; }
+.head-links a { color: var(--navy); text-decoration: underline; text-underline-offset: 2px; }
+
+.grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
+}
+.cell {
+  background: var(--navy-deep); border: 1px solid #1e293b; border-radius: 14px;
+  padding: 40px 18px 18px;
+  display: flex; flex-direction: column; align-items: center; gap: 20px;
+  min-height: 340px; position: relative;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.cell:hover { transform: translateY(-2px); box-shadow: 0 18px 36px -22px rgba(15,29,46,0.45); }
+.cell .idx { position: absolute; top: 14px; left: 14px; font-family: var(--mono); font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.35); letter-spacing: 0.14em; }
+.cell .code { position: absolute; top: 14px; right: 14px; font-family: var(--mono); font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.7); letter-spacing: 0.14em; }
+.cell .tag { margin-top: auto; text-align: center; padding-top: 14px; border-top: 1px dashed rgba(255,255,255,0.08); width: 100%; }
+.cell .tag .name { font-size: 13px; font-weight: 600; color: white; }
+.cell .tag .desc { font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 2px; font-family: var(--mono); letter-spacing: 0.02em; line-height: 1.4; }
+
+/* Badge */
+.badge {
+  width: 200px; height: 210px;
+  position: relative; display: grid; place-items: center;
+}
+.badge .hex { width: 100%; height: 180px; position: relative; }
+.badge .hex svg { width: 100%; height: 100%; display: block; }
+.badge .content {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding-bottom: 28px;
+  color: white;
+}
+.badge .letter {
+  font-family: var(--sans); font-size: 50px; font-weight: 900;
+  letter-spacing: -0.03em; line-height: 1;
+}
+.badge .rating-num {
+  font-family: var(--mono); font-size: 11px; font-weight: 700;
+  color: var(--sky-deep); letter-spacing: 0.1em; margin-top: 4px;
+}
+
+/* Stars — rating row */
+.stars-row {
+  display: inline-flex; align-items: center; gap: 3px;
+  line-height: 1;
+}
+.stars-row .star {
+  font-size: 14px;
+  color: var(--sun);
+  line-height: 1;
+}
+.stars-row .star.empty { color: rgba(251, 191, 36, 0.22); }
+.stars-row .star.half {
+  position: relative;
+  color: rgba(251, 191, 36, 0.22);
+}
+.stars-row .star.half::before {
+  content: '★';
+  position: absolute; left: 0; top: 0;
+  width: 60%; overflow: hidden;
+  color: var(--sun);
+}
+.stars-row.large .star { font-size: 24px; }
+.stars-row.small .star { font-size: 11px; }
+
+/* Ribbon overlay (shared) */
+.ribbon {
+  position: absolute;
+  left: 50%;
+  bottom: 42px;
+  transform: translateX(-50%);
+  background: var(--sky-deep);
+  color: var(--navy-dark);
+  font-family: var(--mono); font-size: 10px; font-weight: 800;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  padding: 8px 22px;
+  clip-path: polygon(0% 0%, 100% 0%, 93% 50%, 100% 100%, 0% 100%, 7% 50%);
+  white-space: nowrap;
+  box-shadow: 0 8px 18px -8px rgba(96,165,250,0.6);
+  z-index: 2;
+}
+</style>
+</head>
+<body>
+
+<div class="page">
+  <header class="page-head">
+    <h1>LucidIQ Score — Classic with stars</h1>
+    <p>Five variations of the <code style="font-family:var(--mono); background:var(--sky); padding:1px 6px; border-radius:4px; color:var(--navy-dark);">Classic</code> badge with stars visualizing the 3.9/5 rating. Blue hairline inner outline removed across all of them.</p>
+    <div class="head-links">
+      <a href="/mockups/lucidiq-ribbon.html">← all 10 ribbons</a>
+      <a href="/mockups/lucidiq-shield.html">shield variants</a>
+      <a href="/mockups/score-badges.html">8 hexagons</a>
+      <a href="/mockups/building-v1.html">building-v1</a>
+    </div>
+  </header>
+
+  <div class="grid">
+
+    <!-- V1 — Stars above grade -->
+    <div class="cell">
+      <span class="idx">01</span><span class="code">STARS · ABOVE</span>
+      <div class="badge">
+        <div class="hex">
+          <svg viewBox="0 0 200 180">
+            <defs><linearGradient id="s1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1e293b"/><stop offset="100%" stop-color="#050a14"/></linearGradient></defs>
+            <polygon points="100,4 192,46 192,134 100,176 8,134 8,46" fill="url(#s1)"/>
+          </svg>
+        </div>
+        <div class="content">
+          <span class="stars-row small" style="margin-bottom: 10px;">
+            <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star empty">★</span>
+          </span>
+          <div class="letter">B+</div>
+          <div class="rating-num">3.9 / 5</div>
+        </div>
+        <span class="ribbon">LucidIQ Score</span>
+      </div>
+      <div class="tag"><div class="name">Above</div><div class="desc">small stars above grade · restrained</div></div>
+    </div>
+
+    <!-- V2 — Stars below grade, above rating number -->
+    <div class="cell">
+      <span class="idx">02</span><span class="code">STARS · STACK</span>
+      <div class="badge">
+        <div class="hex">
+          <svg viewBox="0 0 200 180">
+            <defs><linearGradient id="s2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1e293b"/><stop offset="100%" stop-color="#050a14"/></linearGradient></defs>
+            <polygon points="100,4 192,46 192,134 100,176 8,134 8,46" fill="url(#s2)"/>
+          </svg>
+        </div>
+        <div class="content">
+          <div class="letter">B+</div>
+          <span class="stars-row" style="margin-top: 8px;">
+            <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star empty">★</span>
+          </span>
+          <div class="rating-num" style="margin-top: 4px;">3.9 / 5</div>
+        </div>
+        <span class="ribbon">LucidIQ Score</span>
+      </div>
+      <div class="tag"><div class="name">Stack</div><div class="desc">stars between grade + rating · classic</div></div>
+    </div>
+
+    <!-- V3 — Stars REPLACE the rating text -->
+    <div class="cell">
+      <span class="idx">03</span><span class="code">STARS · ONLY</span>
+      <div class="badge">
+        <div class="hex">
+          <svg viewBox="0 0 200 180">
+            <defs><linearGradient id="s3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1e293b"/><stop offset="100%" stop-color="#050a14"/></linearGradient></defs>
+            <polygon points="100,4 192,46 192,134 100,176 8,134 8,46" fill="url(#s3)"/>
+          </svg>
+        </div>
+        <div class="content">
+          <div class="letter">B+</div>
+          <span class="stars-row" style="margin-top: 10px;">
+            <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star half">★</span><span class="star empty">★</span>
+          </span>
+        </div>
+        <span class="ribbon">LucidIQ Score</span>
+      </div>
+      <div class="tag"><div class="name">Only</div><div class="desc">stars replace "3.9 / 5" · half-star for .9</div></div>
+    </div>
+
+    <!-- V4 — LARGE stars dominating the rating -->
+    <div class="cell">
+      <span class="idx">04</span><span class="code">STARS · LARGE</span>
+      <div class="badge">
+        <div class="hex">
+          <svg viewBox="0 0 200 180">
+            <defs><linearGradient id="s4" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1e293b"/><stop offset="100%" stop-color="#050a14"/></linearGradient></defs>
+            <polygon points="100,4 192,46 192,134 100,176 8,134 8,46" fill="url(#s4)"/>
+          </svg>
+        </div>
+        <div class="content">
+          <div class="letter" style="font-size: 42px;">B+</div>
+          <span class="stars-row large" style="margin-top: 8px;">
+            <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star empty">★</span>
+          </span>
+        </div>
+        <span class="ribbon">LucidIQ Score</span>
+      </div>
+      <div class="tag"><div class="name">Large</div><div class="desc">big stars · rating-forward · bold</div></div>
+    </div>
+
+    <!-- V5 — Stars FLANKING the grade (2 left, 2 right, 1 empty below) -->
+    <div class="cell">
+      <span class="idx">05</span><span class="code">STARS · FLANK</span>
+      <div class="badge">
+        <div class="hex">
+          <svg viewBox="0 0 200 180">
+            <defs><linearGradient id="s5" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1e293b"/><stop offset="100%" stop-color="#050a14"/></linearGradient></defs>
+            <polygon points="100,4 192,46 192,134 100,176 8,134 8,46" fill="url(#s5)"/>
+          </svg>
+        </div>
+        <div class="content">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="stars-row small" style="flex-direction: column; gap: 2px;">
+              <span class="star">★</span>
+              <span class="star">★</span>
+            </span>
+            <div class="letter">B+</div>
+            <span class="stars-row small" style="flex-direction: column; gap: 2px;">
+              <span class="star">★</span>
+              <span class="star">★</span>
+            </span>
+          </div>
+          <div class="rating-num" style="margin-top: 6px;">3.9 / 5</div>
+        </div>
+        <span class="ribbon">LucidIQ Score</span>
+      </div>
+      <div class="tag"><div class="name">Flank</div><div class="desc">4 stars flanking grade · symmetric</div></div>
+    </div>
+
+  </div>
+
+</div>
+
+</body>
+</html>

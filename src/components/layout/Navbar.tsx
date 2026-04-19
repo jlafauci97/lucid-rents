@@ -1,11 +1,55 @@
-import Image from "next/image";
+/**
+ * Site-wide top navigation. Uses the v2 design (navy bg, pill links,
+ * shield logo, city picker dropdown, real search input, tenant-tools
+ * dropdown) across every page. Supersedes the earlier Tailwind-only nav.
+ *
+ * Styling lives in src/styles/site-nav.css (class names: .nav, .nav-inner,
+ * .brand, .city-picker, .nav-search, .nav-links, .nav-login, .nav-auth).
+ */
+
 import Link from "next/link";
 import { Suspense } from "react";
+import { headers } from "next/headers";
 import { User, LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { CitySwitcher } from "./CitySwitcher";
-import { NavLinks } from "./NavLinks";
+import { CITY_META, DEFAULT_CITY, VALID_CITIES, type City } from "@/lib/cities";
+import { cityPath } from "@/lib/seo";
+import { NavCityPicker } from "@/components/building/v2/NavCityPicker";
+import { NavSearch } from "@/components/building/v2/NavSearch";
+import { NavLinksRow } from "./NavLinksRow";
 import { MobileMenu } from "./MobileMenu";
+
+// Read the current city from the middleware-set x-city header.
+// Falls back to DEFAULT_CITY when the route isn't city-scoped.
+async function getCurrentCity(): Promise<City> {
+  const h = await headers();
+  const xCity = h.get("x-city");
+  if (xCity && VALID_CITIES.includes(xCity as City)) return xCity as City;
+  return DEFAULT_CITY;
+}
+
+function BrandShield() {
+  return (
+    <svg viewBox="0 0 120 138" width="22" height="26" aria-hidden="true" style={{ flexShrink: 0 }}>
+      <defs>
+        <clipPath id="siteNavShieldClip"><path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z"/></clipPath>
+      </defs>
+      <path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z" fill="#3B82F6"/>
+      <g clipPath="url(#siteNavShieldClip)" fill="#fff">
+        <rect x="16" y="80" width="14" height="54"/>
+        <rect x="32" y="66" width="14" height="68"/>
+        <rect x="48" y="46" width="18" height="88"/>
+        <rect x="68" y="56" width="14" height="78"/>
+        <rect x="84" y="74" width="14" height="60"/>
+      </g>
+      <g clipPath="url(#siteNavShieldClip)" fill="#3B82F6">
+        <rect x="52" y="52" width="2" height="3"/><rect x="58" y="52" width="2" height="3"/><rect x="62" y="52" width="2" height="3"/>
+        <rect x="52" y="60" width="2" height="3"/><rect x="58" y="60" width="2" height="3"/><rect x="62" y="60" width="2" height="3"/>
+        <rect x="52" y="68" width="2" height="3"/><rect x="58" y="68" width="2" height="3"/><rect x="62" y="68" width="2" height="3"/>
+      </g>
+    </svg>
+  );
+}
 
 async function AuthSection() {
   const supabase = await createClient();
@@ -13,46 +57,23 @@ async function AuthSection() {
     data: { user },
   } = await supabase.auth.getUser();
 
+  if (user) {
+    return (
+      <>
+        <div className="nav-auth">
+          <Link href="/profile"><User className="w-4 h-4" /> Profile</Link>
+          <form action="/api/auth/signout" method="post">
+            <button type="submit"><LogOut className="w-4 h-4" /> Sign Out</button>
+          </form>
+        </div>
+        <MobileMenu isLoggedIn />
+      </>
+    );
+  }
   return (
     <>
-      <div className="hidden md:flex items-center gap-4">
-        {user ? (
-          <div className="flex items-center gap-4">
-            <Link
-              href="/profile"
-              className="flex items-center gap-2 text-sm font-semibold text-white hover:text-white/80 transition-colors"
-            >
-              <User className="w-4 h-4" />
-              Profile
-            </Link>
-            <form action="/api/auth/signout" method="post">
-              <button
-                type="submit"
-                className="flex items-center gap-2 text-sm font-semibold text-white hover:text-white/80 transition-colors"
-              >
-                <LogOut className="w-4 h-4" />
-                Sign Out
-              </button>
-            </form>
-          </div>
-        ) : (
-          <div className="flex items-center gap-3">
-            <Link
-              href="/login"
-              className="text-sm font-semibold text-white hover:text-white/80 transition-colors"
-            >
-              Log In
-            </Link>
-            <Link
-              href="/register"
-              className="text-sm bg-[#3B82F6] hover:bg-[#2563EB] text-white font-semibold px-5 py-2 rounded-full transition-colors whitespace-nowrap"
-            >
-              Sign Up
-            </Link>
-          </div>
-        )}
-      </div>
-      <MobileMenu isLoggedIn={!!user} />
+      <Link href="/login" className="nav-login">Log in</Link>
+      <MobileMenu isLoggedIn={false} />
     </>
   );
 }
@@ -60,50 +81,27 @@ async function AuthSection() {
 function AuthFallback() {
   return (
     <>
-      <div className="hidden md:flex items-center gap-3">
-        <Link
-          href="/login"
-          className="text-sm font-semibold text-white hover:text-white/80 transition-colors"
-        >
-          Log In
-        </Link>
-        <Link
-          href="/register"
-          className="text-sm bg-[#3B82F6] hover:bg-[#2563EB] text-white font-semibold px-5 py-2 rounded-full transition-colors whitespace-nowrap"
-        >
-          Sign Up
-        </Link>
-      </div>
+      <Link href="/login" className="nav-login">Log in</Link>
       <MobileMenu isLoggedIn={false} />
     </>
   );
 }
 
-export function Navbar() {
+export async function Navbar() {
+  const city = await getCurrentCity();
   return (
-    <nav className="bg-[#0F1D2E] text-white sticky top-0 z-50 border-b border-white/90">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          <div className="flex items-center gap-8">
-            <Link href="/" className="flex-shrink-0 flex items-center absolute left-1/2 -translate-x-1/2 md:static md:translate-x-0">
-              <Image
-                src="/lucid-rents-logo.png"
-                alt="Lucid Rents"
-                width={200}
-                height={64}
-                className="h-[88px] w-auto"
-                priority
-              />
-            </Link>
-            <div className="hidden md:block">
-              <CitySwitcher />
-            </div>
-            <NavLinks />
-          </div>
-          <Suspense fallback={<AuthFallback />}>
-            <AuthSection />
-          </Suspense>
-        </div>
+    <nav className="nav">
+      <div className="nav-inner">
+        <Link href="/" className="brand">
+          <BrandShield />
+          LucidRents
+        </Link>
+        <NavCityPicker currentCity={city} />
+        <NavSearch city={city} />
+        <NavLinksRow city={city} />
+        <Suspense fallback={<AuthFallback />}>
+          <AuthSection />
+        </Suspense>
       </div>
     </nav>
   );

@@ -14,3 +14,7 @@ scripts/.sitemap-progress.json
 scripts/.backfill-progress.json
 scripts/test-landlord-query.mjs
 scripts/la-owner-backfill.mjs
+coverage/
+
+# Scrape progress files (machine-local)
+scripts/progress/*.json
