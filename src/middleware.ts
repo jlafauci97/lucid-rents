@@ -42,13 +42,13 @@ function withNoindex(response: NextResponse, request: NextRequest): NextResponse
   return response;
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // 0. Mission Control password gate (runs before any city routing).
   if (pathname.startsWith("/mission-control") && pathname !== "/mission-control/login") {
     const cookie = request.cookies.get(MC_COOKIE);
-    if (!verifyCookieValue(cookie?.value)) {
+    if (!(await verifyCookieValue(cookie?.value))) {
       const url = request.nextUrl.clone();
       url.pathname = "/mission-control/login";
       url.searchParams.set("next", pathname);

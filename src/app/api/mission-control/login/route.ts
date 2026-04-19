@@ -27,6 +27,6 @@ export async function POST(req: NextRequest) {
   url.pathname = next;
   url.search = "";
   const res = NextResponse.redirect(url, 303);
-  res.cookies.set(MC_COOKIE, makeCookieValue(), MC_COOKIE_OPTIONS);
+  res.cookies.set(MC_COOKIE, await makeCookieValue(), MC_COOKIE_OPTIONS);
   return res;
 }
