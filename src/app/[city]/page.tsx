@@ -64,7 +64,7 @@ export default async function CityHomePage({
 
   return (
     <AdSidebar>
-      <div>
+      <div style={{ zoom: 0.9 }}>
         <JsonLd
           data={{
             "@context": "https://schema.org",
