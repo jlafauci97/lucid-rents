@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Lucid Score — Aperture & Proof variations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --ink: #0F1D2E;
+  --ink-mute: #64748b;
+  --ink-faint: #94a3b8;
+  --navy: #3B82F6;
+  --navy-hi: #2563EB;
+  --navy-dark: #0F1D2E;
+  --navy-deep: #091325;
+  --sky: #dbeafe;
+  --sky-deep: #60a5fa;
+  --paper: #f8fafc;
+  --surface: #ffffff;
+  --border: #e2e8f0;
+  --good: #10b981;
+  --sun: #fbbf24;
+  --sans: "Geist", system-ui, sans-serif;
+  --mono: "Geist Mono", ui-monospace, monospace;
+  --serif: "Young Serif", serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+a { color: inherit; text-decoration: none; }
+
+.page { max-width: 1280px; margin: 0 auto; padding: 48px 24px 120px; }
+.page-head { padding-bottom: 28px; margin-bottom: 40px; border-bottom: 1px solid var(--border); }
+.page-head h1 { font-family: var(--serif); font-size: 40px; margin: 0 0 6px; letter-spacing: -0.02em; }
+.page-head p { color: var(--ink-mute); font-size: 15px; max-width: 64ch; margin: 0; line-height: 1.6; }
+.head-links { display: flex; gap: 14px; font-size: 13px; font-family: var(--mono); margin-top: 12px; }
+.head-links a { color: var(--navy); text-decoration: underline; text-underline-offset: 2px; }
+
+.family-head {
+  margin: 48px 0 20px; padding: 24px 0 8px;
+  border-top: 2px solid var(--ink);
+  display: flex; align-items: baseline; gap: 18px;
+}
+.family-head h2 { font-family: var(--serif); font-size: 30px; margin: 0; letter-spacing: -0.02em; }
+.family-head .count { font-family: var(--mono); font-size: 11px; color: var(--ink-mute); font-weight: 700; letter-spacing: 0.16em; }
+.family-head .desc { color: var(--ink-mute); font-size: 14px; margin-left: auto; max-width: 40ch; text-align: right; }
+
+.grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 18px;
+}
+.cell {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  padding: 40px 18px 18px;
+  display: flex; flex-direction: column; align-items: center; gap: 22px;
+  min-height: 300px; position: relative;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.cell:hover { box-shadow: 0 16px 34px -22px rgba(15,29,46,0.18); transform: translateY(-2px); }
+.cell.dark { background: var(--navy-deep); border-color: #1e293b; }
+.cell.dark .tag .name { color: white; }
+.cell.dark .tag .desc { color: rgba(255,255,255,0.5); }
+.cell.dark .tag { border-top-color: rgba(255,255,255,0.08); }
+.cell.dark .idx, .cell.dark .codename { color: rgba(255,255,255,0.35); }
+.cell .idx { position: absolute; top: 14px; left: 14px; font-family: var(--mono); font-size: 10px; font-weight: 700; color: var(--ink-faint); letter-spacing: 0.14em; }
+.cell .codename { position: absolute; top: 14px; right: 14px; font-family: var(--mono); font-size: 10px; font-weight: 700; color: var(--ink); letter-spacing: 0.14em; }
+.cell .tag { margin-top: auto; text-align: center; padding-top: 14px; border-top: 1px dashed var(--border); width: 100%; }
+.cell .tag .name { font-size: 13px; font-weight: 600; color: var(--ink); }
+.cell .tag .desc { font-size: 11px; color: var(--ink-mute); margin-top: 2px; font-family: var(--mono); letter-spacing: 0.02em; line-height: 1.4; }
+
+/* ============================================================
+   APERTURE FAMILY — faceted volumetric hex
+   All share the 6-triangle facet structure of the original.
+============================================================ */
+.ap {
+  width: 136px; height: 150px;
+  position: relative;
+  display: grid; place-items: center;
+}
+.ap svg.base { width: 100%; height: 100%; display: block; }
+.ap .core {
+  position: absolute;
+  width: 52px; height: 60px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  color: white;
+  background: var(--navy-deep);
+}
+.ap .core .letter { font-family: var(--sans); font-size: 22px; font-weight: 800; letter-spacing: -0.03em; line-height: 1; }
+.ap .core .score { font-family: var(--mono); font-size: 7.5px; font-weight: 700; letter-spacing: 0.18em; color: var(--sky-deep); margin-top: 2px; }
+
+/* Specific core variants */
+.ap.ap-light-core .core { background: white; color: var(--navy-dark); border: 1px solid var(--navy); }
+.ap.ap-light-core .core .score { color: var(--navy); }
+.ap.ap-wire .core { background: white; color: var(--ink); border: 1.5px solid var(--ink); }
+.ap.ap-wire .core .score { color: var(--ink-mute); }
+
+/* ============================================================
+   PROOF FAMILY — hex + certification chip/mark
+============================================================ */
+.pf-wrap {
+  width: 150px; height: 190px;
+  position: relative;
+}
+.pf-wrap .shape {
+  width: 100%; height: 166px; position: relative;
+}
+.pf-wrap svg { width: 100%; height: 100%; display: block; }
+.pf-wrap .g {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  color: white;
+  gap: 4px; padding-bottom: 6px;
+}
+.pf-wrap .g .letter {
+  font-family: var(--sans); font-size: 46px; font-weight: 900;
+  letter-spacing: -0.03em; line-height: 1;
+}
+.pf-wrap .g .score {
+  font-family: var(--mono); font-size: 10px; font-weight: 700;
+  letter-spacing: 0.1em; color: var(--sky-deep);
+}
+/* Light-hex Proof variants */
+.pf-wrap.light .g { color: var(--navy-dark); }
+.pf-wrap.light .g .score { color: var(--navy); }
+
+/* Certification marks (positioned at bottom of hex) */
+.pf-mark {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  bottom: 0;
+}
+
+/* Pill chip */
+.mark-pill {
+  background: white; color: var(--navy-dark);
+  border: 1px solid var(--border);
+  font-family: var(--mono); font-size: 9px; font-weight: 700;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  padding: 5px 12px; border-radius: 999px;
+  display: inline-flex; align-items: center; gap: 6px;
+  box-shadow: 0 6px 14px -6px rgba(15,29,46,0.25);
+  white-space: nowrap;
+}
+.mark-pill svg { width: 11px; height: 11px; color: var(--good); }
+.mark-pill.navy { background: var(--navy); color: white; border-color: var(--navy); }
+.mark-pill.navy svg { color: white; }
+.mark-pill.ink { background: var(--ink); color: white; border-color: var(--ink); }
+.mark-pill.ink svg { color: #6ee7b7; }
+
+/* Ribbon */
+.mark-ribbon {
+  position: relative;
+  background: var(--sun);
+  color: var(--navy-dark);
+  font-family: var(--mono); font-size: 9px; font-weight: 800;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  padding: 6px 22px;
+  clip-path: polygon(0% 0%, 100% 0%, 92% 50%, 100% 100%, 0% 100%, 8% 50%);
+  white-space: nowrap;
+}
+.mark-ribbon.blue { background: var(--navy); color: white; }
+
+/* Circular seal */
+.mark-circle {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: white;
+  border: 2px solid var(--navy);
+  display: grid; place-items: center;
+  font-family: var(--mono); font-size: 9px; font-weight: 800;
+  letter-spacing: 0.1em; color: var(--navy-dark);
+  box-shadow: 0 6px 14px -6px rgba(15,29,46,0.3);
+  text-align: center; line-height: 1;
+}
+.mark-circle.ink { background: var(--ink); color: white; border-color: var(--sky-deep); }
+
+/* Barcode strip */
+.mark-barcode {
+  background: white; border: 1px solid var(--border);
+  padding: 4px 10px 5px;
+  border-radius: 4px;
+  box-shadow: 0 6px 14px -6px rgba(15,29,46,0.2);
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+}
+.mark-barcode .bars { display: flex; gap: 1px; }
+.mark-barcode .bars i { display: block; width: 1.5px; height: 14px; background: var(--ink); }
+.mark-barcode .bars i.th { width: 3px; }
+.mark-barcode .bars i.md { width: 2px; }
+.mark-barcode .serial { font-family: var(--mono); font-size: 7.5px; font-weight: 700; letter-spacing: 0.08em; color: var(--ink-mute); }
+
+/* Signature line */
+.mark-sig {
+  background: white; border: 1px solid var(--border);
+  padding: 4px 14px 7px; border-radius: 6px;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  box-shadow: 0 6px 14px -6px rgba(15,29,46,0.2);
+}
+.mark-sig .sig {
+  font-family: "Brush Script MT", cursive;
+  font-size: 15px; color: var(--navy-dark); line-height: 1;
+}
+.mark-sig .sig-label { font-family: var(--mono); font-size: 7.5px; font-weight: 700; letter-spacing: 0.16em; color: var(--ink-mute); text-transform: uppercase; }
+
+/* Date stamp */
+.mark-date {
+  background: white; border: 1.5px dashed var(--navy);
+  padding: 3px 10px 4px; border-radius: 4px;
+  display: flex; flex-direction: column; align-items: center;
+  box-shadow: 0 6px 14px -6px rgba(15,29,46,0.2);
+}
+.mark-date .d1 { font-family: var(--mono); font-size: 7.5px; font-weight: 700; letter-spacing: 0.14em; color: var(--navy); text-transform: uppercase; }
+.mark-date .d2 { font-family: var(--mono); font-size: 10px; font-weight: 800; color: var(--ink); letter-spacing: 0.04em; margin-top: 1px; }
+
+/* Star chip */
+.mark-star {
+  background: var(--navy); color: white;
+  padding: 5px 12px 5px 10px; border-radius: 999px;
+  font-family: var(--mono); font-size: 9px; font-weight: 800;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  display: inline-flex; align-items: center; gap: 6px;
+  box-shadow: 0 6px 14px -6px rgba(59,130,246,0.5);
+  white-space: nowrap;
+}
+.mark-star .star { color: var(--sun); font-size: 12px; }
+
+/* Notary wafer */
+.mark-wafer {
+  width: 46px; height: 46px;
+  background:
+    radial-gradient(circle at 50% 50%, #fcd34d 0 40%, #f59e0b 100%);
+  clip-path: polygon(50% 0%, 60% 10%, 72% 4%, 78% 18%, 91% 18%, 91% 30%, 100% 40%, 90% 50%, 100% 60%, 91% 70%, 91% 82%, 78% 82%, 72% 96%, 60% 90%, 50% 100%, 40% 90%, 28% 96%, 22% 82%, 9% 82%, 9% 70%, 0 60%, 10% 50%, 0 40%, 9% 30%, 9% 18%, 22% 18%, 28% 4%, 40% 10%);
+  display: grid; place-items: center;
+  font-family: var(--serif); font-size: 11px; font-weight: 700;
+  color: #78350f; letter-spacing: 0.04em;
+  box-shadow: 0 6px 14px -6px rgba(120,80,15,0.4);
+}
+
+/* Section divider */
+.section-divider {
+  margin: 60px 0 20px;
+  height: 1px; background: var(--border);
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="page-head">
+    <h1>Aperture &amp; Proof — 10 variations each</h1>
+    <p>20 total: 10 faceted volumetric hexes (Aperture family) and 10 hexes paired with a certification mark (Proof family). All use the LucidRents palette. Each has a codename so we can reference them quickly.</p>
+    <div class="head-links">
+      <a href="/mockups/score-badges.html">← back to all 8 hexagons</a>
+      <a href="/mockups/building-v1.html">building-v1</a>
+    </div>
+  </header>
+
+  <!-- ============================================================
+       APERTURE FAMILY
+  ============================================================ -->
+  <div class="family-head">
+    <h2>Aperture</h2>
+    <span class="count">FACETED · VOLUMETRIC · 10 VARIANTS</span>
+    <span class="desc">six triangular planes meet at center, varying palette + depth</span>
+  </div>
+
+  <div class="grid">
+
+    <!-- A01 ORIGINAL -->
+    <div class="cell">
+      <span class="idx">A01</span><span class="codename">OPAL</span>
+      <div class="ap">
+        <svg class="base" viewBox="0 0 160 176">
+          <polygon points="80,4 80,88 152,46" fill="#2563EB"/>
+          <polygon points="152,46 80,88 152,130" fill="#1d4ed8"/>
+          <polygon points="152,130 80,88 80,172" fill="#3B82F6"/>
+          <polygon points="80,172 80,88 8,130" fill="#60a5fa"/>
+          <polygon points="8,130 80,88 8,46" fill="#3B82F6"/>
+          <polygon points="8,46 80,88 80,4" fill="#60a5fa"/>
+          <polygon points="80,4 152,46 152,130 80,172 8,130 8,46" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+        </svg>
+        <div class="core"><div class="letter">B+</div><div class="score">7.84</div></div>
+      </div>
+      <div class="tag"><div class="name">Opal</div><div class="desc">original blue facets · baseline</div></div>
+    </div>
+
+    <!-- A02 GLACIER (light) -->
+    <div class="cell">
+      <span class="idx">A02</span><span class="codename">GLACIER</span>
+      <div class="ap ap-light-core">
+        <svg class="base" viewBox="0 0 160 176">
+          <polygon points="80,4 80,88 152,46" fill="#bfdbfe"/>
+          <polygon points="152,46 80,88 152,130" fill="#93c5fd"/>
+          <polygon points="152,130 80,88 80,172" fill="#dbeafe"/>
+          <polygon points="80,172 80,88 8,130" fill="#eff6ff"/>
+          <polygon points="8,130 80,88 8,46" fill="#dbeafe"/>
+          <polygon points="8,46 80,88 80,4" fill="#eff6ff"/>
+          <polygon points="80,4 152,46 152,130 80,172 8,130 8,46" fill="none" stroke="rgba(15,29,46,0.1)" stroke-width="1"/>
+        </svg>
+        <div class="core"><div class="letter">B+</div><div class="score">7.84</div></div>
+      </div>
+      <div class="tag"><div class="name">Glacier</div><div class="desc">pale blue facets · soft · airy</div></div>
+    </div>
+
+    <!-- A03 MIDNIGHT (dark) -->
+    <div class="cell dark">
+      <span class="idx">A03</span><span class="codename">MIDNIGHT</span>
+      <div class="ap">
+        <svg class="base" viewBox="0 0 160 176">
+          <polygon points="80,4 80,88 152,46" fill="#1e3a8a"/>
+          <polygon points="152,46 80,88 152,130" fill="#0f1d4e"/>
+          <polygon points="152,130 80,88 80,172" fill="#1e40af"/>
+          <polygon points="80,172 80,88 8,130" fill="#2563EB"/>
+          <polygon points="8,130 80,88 8,46" fill="#1e40af"/>
+          <polygon points="8,46 80,88 80,4" fill="#2563EB"/>
+          <polygon points="80,4 152,46 152,130 80,172 8,130 8,46" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+        </svg>
+        <div class="core" style="background: #050a14; border: 1px solid rgba(96,165,250,0.3);"><div class="letter">B+</div><div class="score">7.84</div></div>
+      </div>
+      <div class="tag"><div class="name">Midnight</div><div class="desc">deep navy · moody · premium</div></div>
+    </div>
+
+    <!-- A04 WIREFRAME -->
+    <div class="cell">
+      <span class="idx">A04</span><span class="codename">BLUEPRINT</span>
+      <div class="ap ap-wire">
+        <svg class="base" viewBox="0 0 160 176">
+          <polygon points="80,4 152,46 152,130 80,172 8,130 8,46" fill="white" stroke="#0F1D2E" stroke-width="1.2"/>
+          <line x1="80" y1="4" x2="80" y2="172" stroke="#0F1D2E" stroke-width="0.75"/>
+          <line x1="152" y1="46" x2="8" y2="130" stroke="#0F1D2E" stroke-width="0.75"/>
+          <line x1="152" y1="130" x2="8" y2="46" stroke="#0F1D2E" stroke-width="0.75"/>
+          <circle cx="80" cy="88" r="3" fill="#0F1D2E"/>
+        </svg>
+        <div class="core" style="width: 54px; height: 62px;"><div class="letter">B+</div><div class="score">7.84</div></div>
+      </div>
+      <div class="tag"><div class="name">Blueprint</div><div class="desc">wireframe · hairline · technical</div></div>
+    </div>
+
+    <!-- A05 SUNRISE (gradient) -->
+    <div class="cell">
+      <span class="idx">A05</span><span class="codename">SUNRISE</span>
+      <div class="ap">
+        <svg class="base" viewBox="0 0 160 176">
+          <polygon points="80,4 80,88 152,46" fill="#60a5fa"/>
+          <polygon points="152,46 80,88 152,130" fill="#3B82F6"/>
+          <polygon points="152,130 80,88 80,172" fill="#1e40af"/>
+          <polygon points="80,172 80,88 8,130" fill="#1e3a8a"/>
+          <polygon points="8,130 80,88 8,46" fill="#1d4ed8"/>
+          <polygon points="8,46 80,88 80,4" fill="#3B82F6"/>
+          <polygon points="80,4 152,46 152,130 80,172 8,130 8,46" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+        </svg>
+        <div class="core"><div class="letter">B+</div><div class="score">7.84</div></div>
+      </div>
+      <div class="tag"><div class="name">Sunrise</div><div class="desc">gradient rotation · sky→deep</div></div>
+    </div>
+
+    <!-- A06 ISO (three-tone isometric) -->
+    <div class="cell">
+      <span class="idx">A06</span><span class="codename">ISO</span>
+      <div class="ap">
+        <svg class="base" viewBox="0 0 160 176">
+          <!-- Top-left & top-right light, right dark, bottom-right dark, bottom-left mid, left mid -->
+          <polygon points="80,4 80,88 152,46" fill="#93c5fd"/>
+          <polygon points="152,46 80,88 152,130" fill="#1e40af"/>
+          <polygon points="152,130 80,88 80,172" fill="#1e40af"/>
+          <polygon points="80,172 80,88 8,130" fill="#3B82F6"/>
+          <polygon points="8,130 80,88 8,46" fill="#3B82F6"/>
+          <polygon points="8,46 80,88 80,4" fill="#93c5fd"/>
+          <polygon points="80,4 152,46 152,130 80,172 8,130 8,46" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1.2"/>
+        </svg>
+        <div class="core"><div class="letter">B+</div><div class="score">7.84</div></div>
+      </div>
+      <div class="tag"><div class="name">Iso</div><div class="desc">3-tone isometric · cube-like</div></div>
+    </div>
+
+    <!-- A07 BICHROME -->
+    <div class="cell">
+      <span class="idx">A07</span><span class="codename">BICHROME</span>
+      <div class="ap">
+        <svg class="base" viewBox="0 0 160 176">
+          <polygon points="80,4 80,88 152,46" fill="#0F1D2E"/>
+          <polygon points="152,46 80,88 152,130" fill="#3B82F6"/>
+          <polygon points="152,130 80,88 80,172" fill="#0F1D2E"/>
+          <polygon points="80,172 80,88 8,130" fill="#3B82F6"/>
+          <polygon points="8,130 80,88 8,46" fill="#0F1D2E"/>
+          <polygon points="8,46 80,88 80,4" fill="#3B82F6"/>
+          <polygon points="80,4 152,46 152,130 80,172 8,130 8,46" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+        </svg>
+        <div class="core" style="background: white; color: var(--navy-dark);"><div class="letter">B+</div><div class="score" style="color: var(--navy);">7.84</div></div>
+      </div>
+      <div class="tag"><div class="name">Bichrome</div><div class="desc">alternating navy/blue · bold</div></div>
+    </div>
+
+    <!-- A08 TEAL ACCENT -->
+    <div class="cell dark">
+      <span class="idx">A08</span><span class="codename">CYAN</span>
+      <div class="ap">
+        <svg class="base" viewBox="0 0 160 176">
+          <polygon points="80,4 80,88 152,46" fill="#1e40af"/>
+          <polygon points="152,46 80,88 152,130" fill="#0e7490"/>
+          <polygon points="152,130 80,88 80,172" fill="#1e3a8a"/>
+          <polygon points="80,172 80,88 8,130" fill="#0891b2"/>
+          <polygon points="8,130 80,88 8,46" fill="#1e40af"/>
+          <polygon points="8,46 80,88 80,4" fill="#0e7490"/>
+          <polygon points="80,4 152,46 152,130 80,172 8,130 8,46" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+        </svg>
+        <div class="core"><div class="letter">B+</div><div class="score" style="color: #67e8f9;">7.84</div></div>
+      </div>
+      <div class="tag"><div class="name">Cyan</div><div class="desc">navy + cyan accent · techy</div></div>
+    </div>
+
+    <!-- A09 INVERTED CORE -->
+    <div class="cell">
+      <span class="idx">A09</span><span class="codename">CAMEO</span>
+      <div class="ap">
+        <svg class="base" viewBox="0 0 160 176">
+          <polygon points="80,4 80,88 152,46" fill="#1e40af"/>
+          <polygon points="152,46 80,88 152,130" fill="#1e3a8a"/>
+          <polygon points="152,130 80,88 80,172" fill="#2563EB"/>
+          <polygon points="80,172 80,88 8,130" fill="#3B82F6"/>
+          <polygon points="8,130 80,88 8,46" fill="#2563EB"/>
+          <polygon points="8,46 80,88 80,4" fill="#60a5fa"/>
+          <polygon points="80,4 152,46 152,130 80,172 8,130 8,46" fill="none" stroke="rgba(255,255,255,0.14)" stroke-width="1"/>
+        </svg>
+        <div class="core" style="background: white; border: 2px solid var(--navy-dark); color: var(--navy-dark); width: 58px; height: 66px;"><div class="letter">B+</div><div class="score" style="color: var(--navy);">7.84</div></div>
+      </div>
+      <div class="tag"><div class="name">Cameo</div><div class="desc">white core · navy outline · inverted</div></div>
+    </div>
+
+    <!-- A10 PRISM (highest contrast) -->
+    <div class="cell">
+      <span class="idx">A10</span><span class="codename">PRISM</span>
+      <div class="ap">
+        <svg class="base" viewBox="0 0 160 176">
+          <polygon points="80,4 80,88 152,46" fill="#dbeafe"/>
+          <polygon points="152,46 80,88 152,130" fill="#1e40af"/>
+          <polygon points="152,130 80,88 80,172" fill="#60a5fa"/>
+          <polygon points="80,172 80,88 8,130" fill="#0F1D2E"/>
+          <polygon points="8,130 80,88 8,46" fill="#3B82F6"/>
+          <polygon points="8,46 80,88 80,4" fill="#93c5fd"/>
+          <polygon points="80,4 152,46 152,130 80,172 8,130 8,46" fill="none" stroke="rgba(15,29,46,0.15)" stroke-width="1"/>
+        </svg>
+        <div class="core"><div class="letter">B+</div><div class="score">7.84</div></div>
+      </div>
+      <div class="tag"><div class="name">Prism</div><div class="desc">high-contrast · refracted light</div></div>
+    </div>
+
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- ============================================================
+       PROOF FAMILY
+  ============================================================ -->
+  <div class="family-head">
+    <h2>Proof</h2>
+    <span class="count">HEX + CERTIFICATION MARK · 10 VARIANTS</span>
+    <span class="desc">hallmark treatments: chip, ribbon, seal, stamp, wafer, signature</span>
+  </div>
+
+  <div class="grid">
+
+    <!-- P01 ORIGINAL -->
+    <div class="cell">
+      <span class="idx">P01</span><span class="codename">ATTEST</span>
+      <div class="pf-wrap">
+        <div class="shape">
+          <svg viewBox="0 0 150 166">
+            <defs><linearGradient id="pf1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0F1D2E"/><stop offset="100%" stop-color="#050a14"/></linearGradient></defs>
+            <polygon points="75,4 144,42 144,124 75,162 6,124 6,42" fill="url(#pf1)"/>
+            <polygon points="75,12 136,46 136,120 75,154 14,120 14,46" fill="none" stroke="rgba(96,165,250,0.25)" stroke-width="0.75"/>
+          </svg>
+          <div class="g"><div class="letter">B+</div><div class="score">7.84</div></div>
+        </div>
+        <div class="pf-mark">
+          <span class="mark-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Verified · Lucid</span>
+        </div>
+      </div>
+      <div class="tag"><div class="name">Attest</div><div class="desc">dark hex · verified pill · baseline</div></div>
+    </div>
+
+    <!-- P02 LIGHT HEX + NAVY PILL -->
+    <div class="cell">
+      <span class="idx">P02</span><span class="codename">VELLUM</span>
+      <div class="pf-wrap light">
+        <div class="shape">
+          <svg viewBox="0 0 150 166">
+            <polygon points="75,4 144,42 144,124 75,162 6,124 6,42" fill="white" stroke="#0F1D2E" stroke-width="1.2"/>
+            <polygon points="75,14 136,46 136,120 75,154 14,120 14,46" fill="none" stroke="#3B82F6" stroke-width="0.5" stroke-dasharray="1.5 3"/>
+          </svg>
+          <div class="g"><div class="letter">B+</div><div class="score">7.84</div></div>
+        </div>
+        <div class="pf-mark">
+          <span class="mark-pill navy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Verified</span>
+        </div>
+      </div>
+      <div class="tag"><div class="name">Vellum</div><div class="desc">light hex · navy pill · crisp</div></div>
+    </div>
+
+    <!-- P03 RIBBON -->
+    <div class="cell">
+      <span class="idx">P03</span><span class="codename">ENSIGN</span>
+      <div class="pf-wrap">
+        <div class="shape">
+          <svg viewBox="0 0 150 166">
+            <defs><linearGradient id="pf3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1e293b"/><stop offset="100%" stop-color="#050a14"/></linearGradient></defs>
+            <polygon points="75,4 144,42 144,124 75,162 6,124 6,42" fill="url(#pf3)"/>
+            <polygon points="75,12 136,46 136,120 75,154 14,120 14,46" fill="none" stroke="rgba(96,165,250,0.22)" stroke-width="0.75"/>
+          </svg>
+          <div class="g"><div class="letter">B+</div><div class="score">7.84</div></div>
+        </div>
+        <div class="pf-mark" style="bottom: 4px;">
+          <span class="mark-ribbon blue">Lucid Verified</span>
+        </div>
+      </div>
+      <div class="tag"><div class="name">Ensign</div><div class="desc">navy ribbon banner · heraldic</div></div>
+    </div>
+
+    <!-- P04 CIRCULAR SEAL -->
+    <div class="cell">
+      <span class="idx">P04</span><span class="codename">CREST</span>
+      <div class="pf-wrap">
+        <div class="shape">
+          <svg viewBox="0 0 150 166">
+            <polygon points="75,4 144,42 144,124 75,162 6,124 6,42" fill="#0F1D2E"/>
+            <polygon points="75,12 136,46 136,120 75,154 14,120 14,46" fill="none" stroke="rgba(96,165,250,0.22)" stroke-width="0.75"/>
+          </svg>
+          <div class="g" style="padding-bottom: 22px;"><div class="letter">B+</div><div class="score">7.84</div></div>
+        </div>
+        <div class="pf-mark" style="bottom: 0;">
+          <span class="mark-circle">★<br/>LUCID</span>
+        </div>
+      </div>
+      <div class="tag"><div class="name">Crest</div><div class="desc">circular seal · coin overlay</div></div>
+    </div>
+
+    <!-- P05 BARCODE -->
+    <div class="cell">
+      <span class="idx">P05</span><span class="codename">SERIAL</span>
+      <div class="pf-wrap">
+        <div class="shape">
+          <svg viewBox="0 0 150 166">
+            <polygon points="75,4 144,42 144,124 75,162 6,124 6,42" fill="#0F1D2E"/>
+            <polygon points="75,12 136,46 136,120 75,154 14,120 14,46" fill="none" stroke="rgba(96,165,250,0.22)" stroke-width="0.75"/>
+          </svg>
+          <div class="g" style="padding-bottom: 18px;"><div class="letter">B+</div><div class="score">7.84</div></div>
+        </div>
+        <div class="pf-mark">
+          <span class="mark-barcode">
+            <span class="bars"><i class="th"></i><i></i><i class="md"></i><i></i><i></i><i class="md"></i><i></i><i class="th"></i><i></i><i></i><i class="md"></i><i></i><i class="th"></i><i></i><i></i><i class="md"></i></span>
+            <span class="serial">LS-07.84-NYC</span>
+          </span>
+        </div>
+      </div>
+      <div class="tag"><div class="name">Serial</div><div class="desc">barcode strip · scannable</div></div>
+    </div>
+
+    <!-- P06 SIGNATURE -->
+    <div class="cell">
+      <span class="idx">P06</span><span class="codename">SCRIBE</span>
+      <div class="pf-wrap light">
+        <div class="shape">
+          <svg viewBox="0 0 150 166">
+            <polygon points="75,4 144,42 144,124 75,162 6,124 6,42" fill="white" stroke="#0F1D2E" stroke-width="1.2"/>
+            <polygon points="75,14 136,46 136,120 75,154 14,120 14,46" fill="none" stroke="#3B82F6" stroke-width="0.5" stroke-dasharray="1.5 3"/>
+          </svg>
+          <div class="g" style="padding-bottom: 20px;"><div class="letter">B+</div><div class="score">7.84</div></div>
+        </div>
+        <div class="pf-mark">
+          <span class="mark-sig">
+            <span class="sig">Lucid</span>
+            <span class="sig-label">Verified · 2026</span>
+          </span>
+        </div>
+      </div>
+      <div class="tag"><div class="name">Scribe</div><div class="desc">handwritten sig · notarized</div></div>
+    </div>
+
+    <!-- P07 DATE STAMP -->
+    <div class="cell">
+      <span class="idx">P07</span><span class="codename">POSTMARK</span>
+      <div class="pf-wrap">
+        <div class="shape">
+          <svg viewBox="0 0 150 166">
+            <polygon points="75,4 144,42 144,124 75,162 6,124 6,42" fill="#0F1D2E"/>
+            <polygon points="75,12 136,46 136,120 75,154 14,120 14,46" fill="none" stroke="rgba(96,165,250,0.22)" stroke-width="0.75"/>
+          </svg>
+          <div class="g" style="padding-bottom: 18px;"><div class="letter">B+</div><div class="score">7.84</div></div>
+        </div>
+        <div class="pf-mark">
+          <span class="mark-date">
+            <span class="d1">Lucid · Apr</span>
+            <span class="d2">14 · 2026</span>
+          </span>
+        </div>
+      </div>
+      <div class="tag"><div class="name">Postmark</div><div class="desc">dashed date stamp · timestamped</div></div>
+    </div>
+
+    <!-- P08 STAR CHIP -->
+    <div class="cell">
+      <span class="idx">P08</span><span class="codename">LAUREATE</span>
+      <div class="pf-wrap light">
+        <div class="shape">
+          <svg viewBox="0 0 150 166">
+            <polygon points="75,4 144,42 144,124 75,162 6,124 6,42" fill="white" stroke="#0F1D2E" stroke-width="1.2"/>
+          </svg>
+          <div class="g"><div class="letter">B+</div><div class="score">7.84</div></div>
+        </div>
+        <div class="pf-mark" style="bottom: 2px;">
+          <span class="mark-star"><span class="star">★</span>Top 18%</span>
+        </div>
+      </div>
+      <div class="tag"><div class="name">Laureate</div><div class="desc">ranking chip · percentile pill</div></div>
+    </div>
+
+    <!-- P09 NOTARY WAFER -->
+    <div class="cell">
+      <span class="idx">P09</span><span class="codename">NOTARY</span>
+      <div class="pf-wrap">
+        <div class="shape">
+          <svg viewBox="0 0 150 166">
+            <polygon points="75,4 144,42 144,124 75,162 6,124 6,42" fill="#0F1D2E"/>
+            <polygon points="75,12 136,46 136,120 75,154 14,120 14,46" fill="none" stroke="rgba(96,165,250,0.22)" stroke-width="0.75"/>
+          </svg>
+          <div class="g" style="padding-bottom: 20px;"><div class="letter">B+</div><div class="score">7.84</div></div>
+        </div>
+        <div class="pf-mark" style="bottom: -2px;">
+          <span class="mark-wafer">LR</span>
+        </div>
+      </div>
+      <div class="tag"><div class="name">Notary</div><div class="desc">gold wax-seal wafer · official</div></div>
+    </div>
+
+    <!-- P10 DUAL CHIPS -->
+    <div class="cell">
+      <span class="idx">P10</span><span class="codename">DOSSIER</span>
+      <div class="pf-wrap">
+        <div class="shape">
+          <svg viewBox="0 0 150 166">
+            <polygon points="75,4 144,42 144,124 75,162 6,124 6,42" fill="#0F1D2E"/>
+            <polygon points="75,12 136,46 136,120 75,154 14,120 14,46" fill="none" stroke="rgba(96,165,250,0.22)" stroke-width="0.75"/>
+          </svg>
+          <div class="g" style="padding-bottom: 16px;"><div class="letter">B+</div><div class="score">7.84</div></div>
+        </div>
+        <div class="pf-mark" style="bottom: -6px; display: flex; gap: 4px;">
+          <span class="mark-pill ink" style="padding: 4px 8px; font-size: 8px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Verified</span>
+          <span class="mark-pill" style="padding: 4px 8px; font-size: 8px;">Top 18%</span>
+        </div>
+      </div>
+      <div class="tag"><div class="name">Dossier</div><div class="desc">twin chips · verified + rank</div></div>
+    </div>
+
+  </div>
+
+</div>
+</body>
+</html>

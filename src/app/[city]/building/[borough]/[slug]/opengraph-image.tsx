@@ -5,28 +5,6 @@ export const alt = "Building Report - Lucid Rents";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-function normalizeScore(score: number | null): number {
-  if (score == null) return 0;
-  if (score > 5) return score / 2;
-  return score;
-}
-
-function getLetterGrade(score: number) {
-  if (score >= 4) return "A";
-  if (score >= 3) return "B";
-  if (score >= 2) return "C";
-  if (score >= 1) return "D";
-  return "F";
-}
-
-function getGradeColor(score: number) {
-  if (score >= 4) return "#10b981";
-  if (score >= 3) return "#22c55e";
-  if (score >= 2) return "#f97316";
-  if (score >= 1) return "#ef4444";
-  return "#dc2626";
-}
-
 const SLUG_TO_BOROUGH: Record<string, string> = {
   manhattan: "Manhattan",
   brooklyn: "Brooklyn",
@@ -41,6 +19,26 @@ const SLUG_TO_BOROUGH: Record<string, string> = {
   "south-bay": "South Bay",
 };
 
+function normalizeScore(score: number | null): number {
+  if (score == null) return 0;
+  if (score > 5) return score / 2;
+  return score;
+}
+
+function getLetterGrade(score: number) {
+  if (score >= 90) return "A+";
+  if (score >= 85) return "A";
+  if (score >= 80) return "A-";
+  if (score >= 75) return "B+";
+  if (score >= 70) return "B";
+  if (score >= 65) return "B-";
+  if (score >= 60) return "C+";
+  if (score >= 55) return "C";
+  if (score >= 50) return "C-";
+  if (score >= 45) return "D";
+  return "F";
+}
+
 export default async function Image({
   params,
 }: {
@@ -51,7 +49,7 @@ export default async function Image({
 
   const [res, soraFont] = await Promise.all([
     fetch(
-      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/buildings?slug=eq.${slug}&borough=eq.${encodeURIComponent(borough || boroughSlug)}${city ? `&metro=eq.${city}` : ""}&select=full_address,borough,zip_code,overall_score,violation_count,complaint_count,review_count,bedbug_report_count,eviction_count,dob_violation_count&limit=1`,
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/buildings?slug=eq.${slug}&borough=eq.${encodeURIComponent(borough || boroughSlug)}${city ? `&metro=eq.${city}` : ""}&select=full_address,borough,zip_code,overall_score,violation_count,complaint_count,review_count,eviction_count&limit=1`,
       {
         headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! },
       }
@@ -75,20 +73,22 @@ export default async function Image({
     ],
   };
 
-  const siteUrl = "https://lucidrents.com";
+  const NAVY = "#0F1D2E";
+  const BRAND = "#3B82F6";
+  const INK_MUTE = "#64748b";
 
   if (!building) {
     return new ImageResponse(
       (
         <div
           style={{
-            background: "#0B1829",
+            background: NAVY,
             width: "100%",
             height: "100%",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            color: "#64748b",
+            color: INK_MUTE,
             fontSize: 32,
             fontFamily: "Sora",
           }}
@@ -101,29 +101,16 @@ export default async function Image({
   }
 
   const rawScore = building.overall_score;
-  const score = rawScore !== null ? normalizeScore(rawScore) : null;
-  const grade = score !== null ? getLetterGrade(score) : "—";
-  const gradeColor = score !== null ? getGradeColor(score) : "#64748b";
-  const isChicago = city === "chicago" || city === "miami";
-  const violationCount = isChicago
-    ? (building.dob_violation_count || 0)
-    : (building.violation_count || 0);
-
-  const stats = [
-    { value: violationCount, label: "Violations" },
-    { value: building.complaint_count || 0, label: "Complaints" },
-    { value: building.bedbug_report_count || 0, label: "Bedbugs" },
-    { value: building.eviction_count || 0, label: "Evictions" },
-  ];
-
+  const score = rawScore != null ? normalizeScore(rawScore) : null;
+  const grade = score != null ? getLetterGrade(score * 20) : "—";
   const address = building.full_address || "";
-  const location = `${building.borough || ""}, NY ${building.zip_code || ""}`.trim();
+  const location = `${building.borough || ""} · ${city?.toUpperCase() || ""}`.trim();
 
   return new ImageResponse(
     (
       <div
         style={{
-          background: "#0B1829",
+          background: NAVY,
           width: "100%",
           height: "100%",
           display: "flex",
@@ -133,131 +120,134 @@ export default async function Image({
           overflow: "hidden",
         }}
       >
-        {/* Subtle top glow */}
+        {/* Subtle radial glow at top */}
         <div
           style={{
             position: "absolute",
-            top: -120,
+            top: -150,
             left: "50%",
             transform: "translateX(-50%)",
-            width: 800,
-            height: 400,
+            width: 900,
+            height: 450,
             borderRadius: "50%",
             background:
-              "radial-gradient(ellipse, rgba(59,130,246,0.07) 0%, transparent 70%)",
+              "radial-gradient(ellipse, rgba(59,130,246,0.08) 0%, transparent 70%)",
             display: "flex",
           }}
         />
 
-        {/* Top bar: Logo centered */}
+        {/* Top bar: wordmark */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
-            justifyContent: "center",
-            padding: "28px 64px 0",
+            justifyContent: "space-between",
+            padding: "32px 72px 0",
           }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={`${siteUrl}/lucid-rents-logo.png`}
-            width={360}
-            height={240}
-            alt="Lucid Rents"
-          />
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div
+              style={{
+                width: 12,
+                height: 12,
+                borderRadius: "50%",
+                background: BRAND,
+                display: "flex",
+              }}
+            />
+            <span
+              style={{
+                fontSize: 28,
+                fontWeight: 700,
+                color: "#ffffff",
+                letterSpacing: "-0.02em",
+                display: "flex",
+              }}
+            >
+              LucidRents
+            </span>
+          </div>
         </div>
 
-        {/* Main content */}
+        {/* Main content area */}
         <div
           style={{
             display: "flex",
             flex: 1,
             alignItems: "center",
             padding: "0 72px",
-            gap: 48,
+            gap: 56,
           }}
         >
-          {/* Shield */}
+          {/* Grade badge */}
           <div
             style={{
-              position: "relative",
-              width: 190,
-              height: 220,
               display: "flex",
+              flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
+              width: 180,
+              height: 200,
+              background: "rgba(59,130,246,0.15)",
+              border: `2px solid ${BRAND}`,
+              borderRadius: 16,
               flexShrink: 0,
             }}
           >
-            <svg
-              viewBox="0 0 64 76"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              width="190"
-              height="220"
-              style={{
-                filter: "drop-shadow(0 8px 24px rgba(59,130,246,0.35))",
-              }}
-            >
-              <path
-                d="M32 2L4 14V34C4 54 32 72 32 72C32 72 60 54 60 34V14L32 2Z"
-                fill="#3B82F6"
-              />
-            </svg>
             <div
               style={{
-                position: "absolute",
-                inset: 0,
+                fontSize: 80,
+                fontWeight: 700,
+                color: "#ffffff",
+                lineHeight: 1,
                 display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                paddingBottom: 22,
               }}
             >
+              {grade}
+            </div>
+            {score !== null && (
               <div
                 style={{
-                  fontSize: 88,
+                  fontSize: 20,
                   fontWeight: 700,
-                  color: "#ffffff",
-                  lineHeight: 1,
+                  color: BRAND,
+                  marginTop: 6,
                   display: "flex",
                 }}
               >
-                {grade}
+                {score.toFixed(1)} / 5
               </div>
-              {score !== null && (
-                <div
-                  style={{
-                    fontSize: 24,
-                    fontWeight: 700,
-                    color: gradeColor,
-                    marginTop: 2,
-                    display: "flex",
-                  }}
-                >
-                  {score.toFixed(1)}
-                </div>
-              )}
+            )}
+            <div
+              style={{
+                fontSize: 11,
+                color: INK_MUTE,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                marginTop: 6,
+                display: "flex",
+              }}
+            >
+              LucidIQ
             </div>
           </div>
 
-          {/* Info */}
+          {/* Address + stats */}
           <div
             style={{
               display: "flex",
               flexDirection: "column",
               flex: 1,
-              gap: 6,
+              gap: 8,
             }}
           >
             <div
               style={{
-                fontSize: 46,
+                fontSize: 48,
                 fontWeight: 700,
                 color: "#ffffff",
-                lineHeight: 1.12,
-                letterSpacing: -0.5,
+                lineHeight: 1.1,
+                letterSpacing: "-0.5px",
                 display: "flex",
               }}
             >
@@ -265,39 +255,60 @@ export default async function Image({
             </div>
             <div
               style={{
-                fontSize: 20,
-                color: "#64748b",
+                fontSize: 18,
+                color: INK_MUTE,
                 fontWeight: 700,
                 display: "flex",
-                marginBottom: 22,
+                marginBottom: 20,
               }}
             >
               {location}
             </div>
 
-            {/* Stats */}
+            {/* Stats row */}
             <div style={{ display: "flex", gap: 40 }}>
-              {stats.map((stat) => (
+              {[
+                {
+                  value: (building.violation_count || 0).toLocaleString(),
+                  label: "Violations",
+                },
+                {
+                  value: (building.complaint_count || 0).toLocaleString(),
+                  label: "Complaints",
+                },
+                {
+                  value: (building.eviction_count || 0).toLocaleString(),
+                  label: "Evictions",
+                },
+                {
+                  value: (building.review_count || 0).toLocaleString(),
+                  label: "Reviews",
+                },
+              ].map((stat) => (
                 <div
                   key={stat.label}
-                  style={{ display: "flex", flexDirection: "column", gap: 4 }}
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 4,
+                  }}
                 >
                   <div
                     style={{
-                      fontSize: 36,
+                      fontSize: 34,
                       fontWeight: 700,
-                      color: stat.value > 0 ? "#ffffff" : "#1e293b",
+                      color: "#ffffff",
                       lineHeight: 1,
                       display: "flex",
                     }}
                   >
-                    {stat.value.toLocaleString()}
+                    {stat.value}
                   </div>
                   <div
                     style={{
-                      fontSize: 11,
-                      color: "#475569",
-                      letterSpacing: 1.5,
+                      fontSize: 10,
+                      color: INK_MUTE,
+                      letterSpacing: "0.12em",
                       textTransform: "uppercase",
                       fontWeight: 700,
                       display: "flex",
@@ -317,15 +328,15 @@ export default async function Image({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            padding: "0 64px 40px",
+            padding: "0 72px 40px",
           }}
         >
           <div
             style={{
-              fontSize: 28,
+              fontSize: 24,
               fontWeight: 700,
-              color: "#3B82F6",
-              letterSpacing: 6,
+              color: BRAND,
+              letterSpacing: "0.18em",
               textTransform: "uppercase",
               display: "flex",
             }}

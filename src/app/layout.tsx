@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Sora } from "next/font/google";
 import { Geist_Mono } from "next/font/google";
+import { Young_Serif } from "next/font/google";
+import { Geist } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
@@ -16,6 +18,17 @@ const sora = Sora({
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+const youngSerif = Young_Serif({
+  variable: "--font-young-serif",
+  subsets: ["latin"],
+  weight: "400",
+});
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
   subsets: ["latin"],
 });
 
@@ -84,7 +97,7 @@ export default async function RootLayout({
         `}
       </Script>
       <body
-        className={`${sora.variable} ${geistMono.variable} antialiased`}
+        className={`${sora.variable} ${geistMono.variable} ${geistSans.variable} ${youngSerif.variable} antialiased`}
         style={{ fontFamily: "var(--font-sora), system-ui, sans-serif" }}
       >
         <Navbar />

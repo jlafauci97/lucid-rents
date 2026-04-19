@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LucidRents — Shield + Skyline · 10 building styles</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --ink:#0F1D2E; --ink-mute:#64748b; --ink-faint:#94a3b8;
+  --navy:#3B82F6; --navy-hi:#2563EB; --navy-dark:#0F1D2E;
+  --sky:#dbeafe; --sky-deep:#60a5fa;
+  --paper:#f8fafc; --surface:#fff; --border:#e2e8f0;
+  --sans:"Geist", system-ui, sans-serif;
+  --mono:"Geist Mono", ui-monospace, monospace;
+  --serif:"Young Serif", serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+.page{max-width:1280px;margin:0 auto;padding:48px 24px 120px}
+.page-head{padding-bottom:28px;margin-bottom:40px;border-bottom:1px solid var(--border)}
+.page-head h1{font-family:var(--serif);font-size:40px;margin:0 0 6px;letter-spacing:-0.02em}
+.page-head p{color:var(--ink-mute);font-size:15px;max-width:64ch;margin:0;line-height:1.6}
+.links{display:flex;gap:14px;font-size:13px;font-family:var(--mono);margin-top:12px;flex-wrap:wrap}
+.links a{color:var(--navy);text-decoration:underline;text-underline-offset:2px}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.cell{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;position:relative;transition:transform .2s, box-shadow .2s}
+.cell:hover{transform:translateY(-2px);box-shadow:0 18px 36px -22px rgba(15,29,46,0.2)}
+.cell .idx{position:absolute;top:10px;left:14px;font-family:var(--mono);font-size:10px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.14em;z-index:2}
+.cell .code{position:absolute;top:10px;right:14px;font-family:var(--mono);font-size:10px;font-weight:700;color:rgba(255,255,255,0.75);letter-spacing:0.14em;z-index:2}
+.stage-dark{background:var(--ink);display:flex;align-items:center;justify-content:center;gap:28px;padding:44px 20px;min-height:200px;color:#fff}
+.stage-dark .big{width:120px;height:138px}
+.stage-dark .lockup{display:flex;align-items:center;gap:12px}
+.stage-dark .lockup svg{width:44px;height:50px}
+.stage-dark .wm{font-family:var(--sans);font-weight:700;font-size:22px;letter-spacing:-0.025em;color:#fff}
+
+.stage-light{background:#fff;display:flex;align-items:center;justify-content:center;gap:28px;padding:44px 20px;min-height:200px;border-top:1px solid var(--border)}
+.stage-light .big{width:120px;height:138px}
+.stage-light .lockup{display:flex;align-items:center;gap:12px}
+.stage-light .lockup svg{width:44px;height:50px}
+.stage-light .wm{font-family:var(--sans);font-weight:700;font-size:22px;letter-spacing:-0.025em;color:var(--ink)}
+
+.tag{padding:14px 18px 16px;border-top:1px dashed var(--border);text-align:center}
+.tag .name{font-size:13px;font-weight:600;color:var(--ink);letter-spacing:-0.005em}
+.tag .desc{font-size:11px;color:var(--ink-mute);margin-top:2px;font-family:var(--mono);letter-spacing:0.02em;line-height:1.5}
+
+svg{display:block}
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="page-head">
+    <h1>Shield + Skyline — 10 building styles</h1>
+    <p>Same shield silhouette, ten different building treatments inside. Each shown at full size (dark) and as a logo lockup (light). Palette stays strict: navy <code>#0F1D2E</code>, brand <code>#3B82F6</code>, sky <code>#60a5fa</code>, white.</p>
+    <div class="links">
+      <a href="/mockups/logo-shield.html">← shield fusions</a>
+      <a href="/mockups/logo-aperture.html">aperture fusions</a>
+      <a href="/mockups/logo-variants.html">10 concepts</a>
+    </div>
+  </header>
+
+  <div class="grid">
+
+    <!-- 01 · ORIGINAL (NYC varied heights) -->
+    <div class="cell">
+      <span class="idx">01</span><span class="code">NYC CLASSIC</span>
+      <div class="stage-dark">
+        <svg class="big" viewBox="0 0 120 138" fill="none">
+          <defs><clipPath id="c01"><path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z"/></clipPath></defs>
+          <path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z" fill="#3B82F6"/>
+          <g clip-path="url(#c01)" fill="#fff">
+            <rect x="16" y="80" width="14" height="54"/>
+            <rect x="32" y="66" width="14" height="68"/>
+            <rect x="48" y="46" width="18" height="88"/>
+            <rect x="68" y="56" width="14" height="78"/>
+            <rect x="84" y="74" width="14" height="60"/>
+            <rect x="52" y="52" width="2" height="3" fill="#3B82F6"/>
+            <rect x="58" y="52" width="2" height="3" fill="#3B82F6"/>
+            <rect x="62" y="52" width="2" height="3" fill="#3B82F6"/>
+            <rect x="52" y="60" width="2" height="3" fill="#3B82F6"/>
+            <rect x="58" y="60" width="2" height="3" fill="#3B82F6"/>
+            <rect x="62" y="60" width="2" height="3" fill="#3B82F6"/>
+            <rect x="52" y="68" width="2" height="3" fill="#3B82F6"/>
+            <rect x="58" y="68" width="2" height="3" fill="#3B82F6"/>
+            <rect x="62" y="68" width="2" height="3" fill="#3B82F6"/>
+          </g>
+        </svg>
+        <div class="lockup">
+          <svg viewBox="0 0 44 50" fill="none">
+            <defs><clipPath id="c01s"><path d="M22 1L3 7V22C3 35 22 49 22 49C22 49 41 35 41 22V7L22 1Z"/></clipPath></defs>
+            <path d="M22 1L3 7V22C3 35 22 49 22 49C22 49 41 35 41 22V7L22 1Z" fill="#3B82F6"/>
+            <g clip-path="url(#c01s)" fill="#fff">
+              <rect x="6" y="30" width="5" height="20"/>
+              <rect x="12" y="24" width="5" height="26"/>
+              <rect x="18" y="17" width="7" height="33"/>
+              <rect x="26" y="21" width="5" height="29"/>
+              <rect x="32" y="28" width="5" height="22"/>
+            </g>
+          </svg>
+          <span class="wm">lucidrents</span>
+        </div>
+      </div>
+      <div class="tag"><div class="name">NYC classic</div><div class="desc">5 buildings · varied heights · tiny navy windows</div></div>
+    </div>
+
+    <!-- 02 · MODERN GLASS TOWERS -->
+    <div class="cell">
+      <span class="idx">02</span><span class="code">GLASS TOWERS</span>
+      <div class="stage-dark">
+        <svg class="big" viewBox="0 0 120 138" fill="none">
+          <defs><clipPath id="c02"><path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z"/></clipPath></defs>
+          <path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z" fill="#3B82F6"/>
+          <g clip-path="url(#c02)">
+            <!-- tall sleek glass -->
+            <rect x="28" y="34" width="16" height="100" fill="#fff"/>
+            <rect x="50" y="22" width="20" height="112" fill="#fff"/>
+            <rect x="76" y="42" width="16" height="92" fill="#fff"/>
+            <!-- glass stripes (windows as full-width thin lines) -->
+            <g fill="#3B82F6" opacity="0.4">
+              <rect x="28" y="42" width="16" height="1.5"/>
+              <rect x="28" y="50" width="16" height="1.5"/>
+              <rect x="28" y="58" width="16" height="1.5"/>
+              <rect x="28" y="66" width="16" height="1.5"/>
+              <rect x="28" y="74" width="16" height="1.5"/>
+              <rect x="28" y="82" width="16" height="1.5"/>
+              <rect x="28" y="90" width="16" height="1.5"/>
+              <rect x="28" y="98" width="16" height="1.5"/>
+              <rect x="28" y="106" width="16" height="1.5"/>
+              <rect x="50" y="30" width="20" height="1.5"/>
+              <rect x="50" y="38" width="20" height="1.5"/>
+              <rect x="50" y="46" width="20" height="1.5"/>
+              <rect x="50" y="54" width="20" height="1.5"/>
+              <rect x="50" y="62" width="20" height="1.5"/>
+              <rect x="50" y="70" width="20" height="1.5"/>
+              <rect x="50" y="78" width="20" height="1.5"/>
+              <rect x="50" y="86" width="20" height="1.5"/>
+              <rect x="50" y="94" width="20" height="1.5"/>
+              <rect x="50" y="102" width="20" height="1.5"/>
+              <rect x="76" y="50" width="16" height="1.5"/>
+              <rect x="76" y="58" width="16" height="1.5"/>
+              <rect x="76" y="66" width="16" height="1.5"/>
+              <rect x="76" y="74" width="16" height="1.5"/>
+              <rect x="76" y="82" width="16" height="1.5"/>
+              <rect x="76" y="90" width="16" height="1.5"/>
+              <rect x="76" y="98" width="16" height="1.5"/>
+              <rect x="76" y="106" width="16" height="1.5"/>
+            </g>
+          </g>
+        </svg>
+        <div class="lockup">
+          <svg viewBox="0 0 44 50" fill="none">
+            <defs><clipPath id="c02s"><path d="M22 1L3 7V22C3 35 22 49 22 49C22 49 41 35 41 22V7L22 1Z"/></clipPath></defs>
+            <path d="M22 1L3 7V22C3 35 22 49 22 49C22 49 41 35 41 22V7L22 1Z" fill="#3B82F6"/>
+            <g clip-path="url(#c02s)" fill="#fff">
+              <rect x="9" y="14" width="6" height="36"/>
+              <rect x="18" y="9" width="8" height="41"/>
+              <rect x="29" y="17" width="6" height="33"/>
+            </g>
+          </svg>
+          <span class="wm">lucidrents</span>
+        </div>
+      </div>
+      <div class="tag"><div class="name">Glass towers</div><div class="desc">sleek vertical lines · modern high-rise</div></div>
+    </div>
+
+    <!-- 03 · ART DECO (Empire State stepped) -->
+    <div class="cell">
+      <span class="idx">03</span><span class="code">ART DECO</span>
+      <div class="stage-dark">
+        <svg class="big" viewBox="0 0 120 138" fill="none">
+          <defs><clipPath id="c03"><path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z"/></clipPath></defs>
+          <path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z" fill="#3B82F6"/>
+          <g clip-path="url(#c03)" fill="#fff">
+            <!-- stepped empire-state-ish -->
+            <rect x="18" y="90" width="16" height="44"/>
+            <rect x="36" y="70" width="14" height="64"/>
+            <!-- center stepped tower -->
+            <rect x="50" y="32" width="20" height="102"/>
+            <rect x="53" y="22" width="14" height="10"/>
+            <rect x="56" y="12" width="8" height="10"/>
+            <line x1="60" y1="4" x2="60" y2="12" stroke="#fff" stroke-width="1.5"/>
+            <rect x="72" y="72" width="14" height="62"/>
+            <rect x="88" y="90" width="14" height="44"/>
+          </g>
+        </svg>
+        <div class="lockup">
+          <svg viewBox="0 0 44 50" fill="none">
+            <defs><clipPath id="c03s"><path d="M22 1L3 7V22C3 35 22 49 22 49C22 49 41 35 41 22V7L22 1Z"/></clipPath></defs>
+            <path d="M22 1L3 7V22C3 35 22 49 22 49C22 49 41 35 41 22V7L22 1Z" fill="#3B82F6"/>
+            <g clip-path="url(#c03s)" fill="#fff">
+              <rect x="7" y="32" width="5" height="18"/>
+              <rect x="13" y="26" width="5" height="24"/>
+              <rect x="19" y="13" width="7" height="37"/>
+              <rect x="20.5" y="8" width="4" height="5"/>
+              <line x1="22.5" y1="3" x2="22.5" y2="8" stroke="#fff" stroke-width="1"/>
+              <rect x="27" y="26" width="5" height="24"/>
+              <rect x="33" y="32" width="5" height="18"/>
+            </g>
+          </svg>
+          <span class="wm">lucidrents</span>
+        </div>
+      </div>
+      <div class="tag"><div class="name">Art Deco</div><div class="desc">stepped central tower with spire · Empire State</div></div>
+    </div>
+
+    <!-- 04 · BROWNSTONES (row houses) -->
+    <div class="cell">
+      <span class="idx">04</span><span class="code">BROWNSTONES</span>
+      <div class="stage-dark">
+        <svg class="big" viewBox="0 0 120 138" fill="none">
+          <defs><clipPath id="c04"><path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z"/></clipPath></defs>
+          <path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z" fill="#3B82F6"/>
+          <g clip-path="url(#c04)" fill="#fff">
+            <!-- row of 4 identical brownstones -->
+            <rect x="14" y="66" width="22" height="68"/>
+            <rect x="37" y="66" width="22" height="68"/>
+            <rect x="60" y="66" width="22" height="68"/>
+            <rect x="83" y="66" width="22" height="68"/>
+          </g>
+          <g clip-path="url(#c04)" fill="#3B82F6">
+            <!-- windows row 1 -->
+            <rect x="19" y="74" width="5" height="8"/><rect x="27" y="74" width="5" height="8"/>
+            <rect x="42" y="74" width="5" height="8"/><rect x="50" y="74" width="5" height="8"/>
+            <rect x="65" y="74" width="5" height="8"/><rect x="73" y="74" width="5" height="8"/>
+            <rect x="88" y="74" width="5" height="8"/><rect x="96" y="74" width="5" height="8"/>
+            <!-- windows row 2 -->
+            <rect x="19" y="88" width="5" height="8"/><rect x="27" y="88" width="5" height="8"/>
+            <rect x="42" y="88" width="5" height="8"/><rect x="50" y="88" width="5" height="8"/>
+            <rect x="65" y="88" width="5" height="8"/><rect x="73" y="88" width="5" height="8"/>
+            <rect x="88" y="88" width="5" height="8"/><rect x="96" y="88" width="5" height="8"/>
+            <!-- doors -->
+            <rect x="23" y="116" width="4" height="18"/>
+            <rect x="46" y="116" width="4" height="18"/>
+            <rect x="69" y="116" width="4" height="18"/>
+            <rect x="92" y="116" width="4" height="18"/>
+          </g>
+        </svg>
+        <div class="lockup">
+          <svg viewBox="0 0 44 50" fill="none">
+            <defs><clipPath id="c04s"><path d="M22 1L3 7V22C3 35 22 49 22 49C22 49 41 35 41 22V7L22 1Z"/></clipPath></defs>
+            <path d="M22 1L3 7V22C3 35 22 49 22 49C22 49 41 35 41 22V7L22 1Z" fill="#3B82F6"/>
+            <g clip-path="url(#c04s)" fill="#fff">
+              <rect x="5" y="24" width="9" height="26"/>
+              <rect x="15" y="24" width="9" height="26"/>
+              <rect x="25" y="24" width="9" height="26"/>
+              <rect x="35" y="24" width="6" height="26"/>
+            </g>
+          </svg>
+          <span class="wm">lucidrents</span>
+        </div>
+      </div>
+      <div class="tag"><div class="name">Brownstones</div><div class="desc">4 row houses · classic NY residential</div></div>
+    </div>
+
+    <!-- 05 · PRE-WAR WITH WATER TOWER -->
+    <div class="cell">
+      <span class="idx">05</span><span class="code">PRE-WAR</span>
+      <div class="stage-dark">
+        <svg class="big" viewBox="0 0 120 138" fill="none">
+          <defs><clipPath id="c05"><path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z"/></clipPath></defs>
+          <path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z" fill="#3B82F6"/>
+          <g clip-path="url(#c05)">
+            <!-- main block -->
+            <rect x="30" y="46" width="60" height="88" fill="#fff"/>
+            <!-- cornice -->
+            <rect x="26" y="42" width="68" height="6" fill="#fff"/>
+            <!-- water tower (classic NY roofline) -->
+            <rect x="70" y="28" width="12" height="14" fill="#fff"/>
+            <polygon points="68,28 72,18 80,18 84,28" fill="#fff"/>
+            <!-- roof bulkhead -->
+            <rect x="42" y="34" width="12" height="8" fill="#fff"/>
+            <!-- grid of windows -->
+            <g fill="#3B82F6">
+              <rect x="36" y="54" width="5" height="6"/><rect x="44" y="54" width="5" height="6"/><rect x="52" y="54" width="5" height="6"/><rect x="60" y="54" width="5" height="6"/><rect x="68" y="54" width="5" height="6"/><rect x="76" y="54" width="5" height="6"/><rect x="84" y="54" width="5" height="6"/>
+              <rect x="36" y="66" width="5" height="6"/><rect x="44" y="66" width="5" height="6"/><rect x="52" y="66" width="5" height="6"/><rect x="60" y="66" width="5" height="6"/><rect x="68" y="66" width="5" height="6"/><rect x="76" y="66" width="5" height="6"/><rect x="84" y="66" width="5" height="6"/>
+              <rect x="36" y="78" width="5" height="6"/><rect x="44" y="78" width="5" height="6"/><rect x="52" y="78" width="5" height="6"/><rect x="60" y="78" width="5" height="6"/><rect x="68" y="78" width="5" height="6"/><rect x="76" y="78" width="5" height="6"/><rect x="84" y="78" width="5" height="6"/>
+              <rect x="36" y="90" width="5" height="6"/><rect x="44" y="90" width="5" height="6"/><rect x="52" y="90" width="5" height="6"/><rect x="60" y="90" width="5" height="6"/><rect x="68" y="90" width="5" height="6"/><rect x="76" y="90" width="5" height="6"/><rect x="84" y="90" width="5" height="6"/>
+              <rect x="36" y="102" width="5" height="6"/><rect x="44" y="102" width="5" height="6"/><rect x="52" y="102" width="5" height="6"/><rect x="60" y="102" width="5" height="6"/><rect x="68" y="102" width="5" height="6"/><rect x="76" y="102" width="5" height="6"/><rect x="84" y="102" width="5" height="6"/>
+              <!-- entry -->
+              <rect x="58" y="120" width="8" height="14"/>
+            </g>
+          </g>
+        </svg>
+        <div class="lockup">
+          <svg viewBox="0 0 44 50" fill="none">
+            <defs><clipPath id="c05s"><path d="M22 1L3 7V22C3 35 22 49 22 49C22 49 41 35 41 22V7L22 1Z"/></clipPath></defs>
+            <path d="M22 1L3 7V22C3 35 22 49 22 49C22 49 41 35 41 22V7L22 1Z" fill="#3B82F6"/>
+            <g clip-path="url(#c05s)" fill="#fff">
+              <rect x="10" y="17" width="24" height="33"/>
+              <rect x="26" y="10" width="5" height="7"/>
+              <polygon points="25,10 27,6 30,6 32,10"/>
+            </g>
+          </svg>
+          <span class="wm">lucidrents</span>
+        </div>
+      </div>
+      <div class="tag"><div class="name">Pre-war block</div><div class="desc">single apartment tower with water tower on top</div></div>
+    </div>
+
+    <!-- 06 · ASYMMETRIC MODERNIST -->
+    <div class="cell">
+      <span class="idx">06</span><span class="code">MODERNIST</span>
+      <div class="stage-dark">
+        <svg class="big" viewBox="0 0 120 138" fill="none">
+          <defs><clipPath id="c06"><path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z"/></clipPath></defs>
+          <path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z" fill="#3B82F6"/>
+          <g clip-path="url(#c06)" fill="#fff">
+            <!-- angled / cantilevered shapes -->
+            <polygon points="18,60 38,48 38,134 18,134"/>
+            <rect x="38" y="70" width="14" height="64"/>
+            <!-- tilted center column -->
+            <polygon points="52,28 72,34 72,134 52,134"/>
+            <rect x="72" y="54" width="14" height="80"/>
+            <!-- angled right -->
+            <polygon points="86,80 102,66 102,134 86,134"/>
+          </g>
+        </svg>
+        <div class="lockup">
+          <svg viewBox="0 0 44 50" fill="none">
+            <defs><clipPath id="c06s"><path d="M22 1L3 7V22C3 35 22 49 22 49C22 49 41 35 41 22V7L22 1Z"/></clipPath></defs>
+            <path d="M22 1L3 7V22C3 35 22 49 22 49C22 49 41 35 41 22V7L22 1Z" fill="#3B82F6"/>
+            <g clip-path="url(#c06s)" fill="#fff">
+              <polygon points="6,22 14,18 14,50 6,50"/>
+              <rect x="14" y="25" width="6" height="25"/>
+              <polygon points="20,10 28,12 28,50 20,50"/>
+              <rect x="28" y="20" width="6" height="30"/>
+              <polygon points="34,30 40,25 40,50 34,50"/>
+            </g>
+          </svg>
+          <span class="wm">lucidrents</span>
+        </div>
+      </div>
+      <div class="tag"><div class="name">Modernist</div><div class="desc">angled + cantilevered forms · contemporary architecture</div></div>
+    </div>
+
+    <!-- 07 · GOTHIC SPIRES -->
+    <div class="cell">
+      <span class="idx">07</span><span class="code">SPIRES</span>
+      <div class="stage-dark">
+        <svg class="big" viewBox="0 0 120 138" fill="none">
+          <defs><clipPath id="c07"><path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z"/></clipPath></defs>
+          <path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z" fill="#3B82F6"/>
+          <g clip-path="url(#c07)" fill="#fff">
+            <!-- left tower -->
+            <rect x="22" y="70" width="14" height="64"/>
+            <polygon points="22,70 29,52 36,70"/>
+            <!-- center main tower -->
+            <rect x="48" y="46" width="22" height="88"/>
+            <polygon points="48,46 59,20 70,46"/>
+            <line x1="59" y1="6" x2="59" y2="20" stroke="#fff" stroke-width="2"/>
+            <circle cx="59" cy="8" r="2"/>
+            <!-- right tower -->
+            <rect x="82" y="68" width="14" height="66"/>
+            <polygon points="82,68 89,50 96,68"/>
+          </g>
+        </svg>
+        <div class="lockup">
+          <svg viewBox="0 0 44 50" fill="none">
+            <defs><clipPath id="c07s"><path d="M22 1L3 7V22C3 35 22 49 22 49C22 49 41 35 41 22V7L22 1Z"/></clipPath></defs>
+            <path d="M22 1L3 7V22C3 35 22 49 22 49C22 49 41 35 41 22V7L22 1Z" fill="#3B82F6"/>
+            <g clip-path="url(#c07s)" fill="#fff">
+              <rect x="8" y="26" width="5" height="24"/>
+              <polygon points="8,26 10.5,19 13,26"/>
+              <rect x="18" y="18" width="8" height="32"/>
+              <polygon points="18,18 22,9 26,18"/>
+              <rect x="31" y="25" width="5" height="25"/>
+              <polygon points="31,25 33.5,18 36,25"/>
+            </g>
+          </svg>
+          <span class="wm">lucidrents</span>
+        </div>
+      </div>
+      <div class="tag"><div class="name">Gothic spires</div><div class="desc">pointed tops · chrysler / woolworth feel</div></div>
+    </div>
+
+    <!-- 08 · MINIMAL BARS -->
+    <div class="cell">
+      <span class="idx">08</span><span class="code">BARS</span>
+      <div class="stage-dark">
+        <svg class="big" viewBox="0 0 120 138" fill="none">
+          <defs><clipPath id="c08"><path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z"/></clipPath></defs>
+          <path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z" fill="#3B82F6"/>
+          <g clip-path="url(#c08)" fill="#fff">
+            <!-- abstract bars of varying heights -->
+            <rect x="20" y="90" width="8" height="44" rx="1"/>
+            <rect x="32" y="78" width="8" height="56" rx="1"/>
+            <rect x="44" y="60" width="8" height="74" rx="1"/>
+            <rect x="56" y="44" width="8" height="90" rx="1"/>
+            <rect x="68" y="52" width="8" height="82" rx="1"/>
+            <rect x="80" y="66" width="8" height="68" rx="1"/>
+            <rect x="92" y="82" width="8" height="52" rx="1"/>
+          </g>
+        </svg>
+        <div class="lockup">
+          <svg viewBox="0 0 44 50" fill="none">
+            <defs><clipPath id="c08s"><path d="M22 1L3 7V22C3 35 22 49 22 49C22 49 41 35 41 22V7L22 1Z"/></clipPath></defs>
+            <path d="M22 1L3 7V22C3 35 22 49 22 49C22 49 41 35 41 22V7L22 1Z" fill="#3B82F6"/>
+            <g clip-path="url(#c08s)" fill="#fff">
+              <rect x="7" y="32" width="3" height="18" rx="0.5"/>
+              <rect x="12" y="28" width="3" height="22" rx="0.5"/>
+              <rect x="17" y="22" width="3" height="28" rx="0.5"/>
+              <rect x="22" y="16" width="3" height="34" rx="0.5"/>
+              <rect x="27" y="19" width="3" height="31" rx="0.5"/>
+              <rect x="32" y="25" width="3" height="25" rx="0.5"/>
+              <rect x="37" y="30" width="3" height="20" rx="0.5"/>
+            </g>
+          </svg>
+          <span class="wm">lucidrents</span>
+        </div>
+      </div>
+      <div class="tag"><div class="name">Minimal bars</div><div class="desc">pure vertical bars · abstract · scales to favicon</div></div>
+    </div>
+
+    <!-- 09 · SKYSCRAPER TRIO -->
+    <div class="cell">
+      <span class="idx">09</span><span class="code">TRIO</span>
+      <div class="stage-dark">
+        <svg class="big" viewBox="0 0 120 138" fill="none">
+          <defs><clipPath id="c09"><path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z"/></clipPath></defs>
+          <path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z" fill="#3B82F6"/>
+          <g clip-path="url(#c09)" fill="#fff">
+            <rect x="24" y="56" width="20" height="78"/>
+            <rect x="48" y="36" width="24" height="98"/>
+            <rect x="76" y="48" width="20" height="86"/>
+            <!-- subtle window bands -->
+            <g fill="#3B82F6" opacity="0.55">
+              <rect x="28" y="64" width="12" height="1.5"/><rect x="28" y="72" width="12" height="1.5"/>
+              <rect x="28" y="80" width="12" height="1.5"/><rect x="28" y="88" width="12" height="1.5"/>
+              <rect x="28" y="96" width="12" height="1.5"/><rect x="28" y="104" width="12" height="1.5"/>
+              <rect x="52" y="44" width="16" height="1.5"/><rect x="52" y="52" width="16" height="1.5"/>
+              <rect x="52" y="60" width="16" height="1.5"/><rect x="52" y="68" width="16" height="1.5"/>
+              <rect x="52" y="76" width="16" height="1.5"/><rect x="52" y="84" width="16" height="1.5"/>
+              <rect x="52" y="92" width="16" height="1.5"/><rect x="52" y="100" width="16" height="1.5"/>
+              <rect x="80" y="56" width="12" height="1.5"/><rect x="80" y="64" width="12" height="1.5"/>
+              <rect x="80" y="72" width="12" height="1.5"/><rect x="80" y="80" width="12" height="1.5"/>
+              <rect x="80" y="88" width="12" height="1.5"/><rect x="80" y="96" width="12" height="1.5"/>
+            </g>
+          </g>
+        </svg>
+        <div class="lockup">
+          <svg viewBox="0 0 44 50" fill="none">
+            <defs><clipPath id="c09s"><path d="M22 1L3 7V22C3 35 22 49 22 49C22 49 41 35 41 22V7L22 1Z"/></clipPath></defs>
+            <path d="M22 1L3 7V22C3 35 22 49 22 49C22 49 41 35 41 22V7L22 1Z" fill="#3B82F6"/>
+            <g clip-path="url(#c09s)" fill="#fff">
+              <rect x="8" y="21" width="7" height="29"/>
+              <rect x="17" y="13" width="9" height="37"/>
+              <rect x="28" y="18" width="7" height="32"/>
+            </g>
+          </svg>
+          <span class="wm">lucidrents</span>
+        </div>
+      </div>
+      <div class="tag"><div class="name">Skyscraper trio</div><div class="desc">3 prominent towers · bold + simple</div></div>
+    </div>
+
+    <!-- 10 · ROWHOUSES WITH STOOPS -->
+    <div class="cell">
+      <span class="idx">10</span><span class="code">ROWHOUSES</span>
+      <div class="stage-dark">
+        <svg class="big" viewBox="0 0 120 138" fill="none">
+          <defs><clipPath id="c10"><path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z"/></clipPath></defs>
+          <path d="M60 2L8 18V58C8 96 60 134 60 134C60 134 112 96 112 58V18L60 2Z" fill="#3B82F6"/>
+          <g clip-path="url(#c10)">
+            <!-- 5 flat-top townhouses -->
+            <g fill="#fff">
+              <rect x="14" y="72" width="18" height="62"/>
+              <rect x="33" y="66" width="18" height="68"/>
+              <rect x="52" y="60" width="18" height="74"/>
+              <rect x="71" y="66" width="18" height="68"/>
+              <rect x="90" y="72" width="18" height="62"/>
+            </g>
+            <g fill="#3B82F6">
+              <!-- cornice lines -->
+              <rect x="14" y="72" width="18" height="2"/>
+              <rect x="33" y="66" width="18" height="2"/>
+              <rect x="52" y="60" width="18" height="2"/>
+              <rect x="71" y="66" width="18" height="2"/>
+              <rect x="90" y="72" width="18" height="2"/>
+              <!-- windows -->
+              <rect x="18" y="84" width="4" height="6"/><rect x="24" y="84" width="4" height="6"/>
+              <rect x="37" y="78" width="4" height="6"/><rect x="43" y="78" width="4" height="6"/>
+              <rect x="56" y="72" width="4" height="6"/><rect x="62" y="72" width="4" height="6"/>
+              <rect x="75" y="78" width="4" height="6"/><rect x="81" y="78" width="4" height="6"/>
+              <rect x="94" y="84" width="4" height="6"/><rect x="100" y="84" width="4" height="6"/>
+              <rect x="18" y="98" width="4" height="6"/><rect x="24" y="98" width="4" height="6"/>
+              <rect x="37" y="92" width="4" height="6"/><rect x="43" y="92" width="4" height="6"/>
+              <rect x="56" y="86" width="4" height="6"/><rect x="62" y="86" width="4" height="6"/>
+              <rect x="75" y="92" width="4" height="6"/><rect x="81" y="92" width="4" height="6"/>
+              <rect x="94" y="98" width="4" height="6"/><rect x="100" y="98" width="4" height="6"/>
+              <!-- doors -->
+              <rect x="21" y="120" width="4" height="14"/>
+              <rect x="40" y="116" width="4" height="18"/>
+              <rect x="59" y="112" width="4" height="22"/>
+              <rect x="78" y="116" width="4" height="18"/>
+              <rect x="97" y="120" width="4" height="14"/>
+            </g>
+          </g>
+        </svg>
+        <div class="lockup">
+          <svg viewBox="0 0 44 50" fill="none">
+            <defs><clipPath id="c10s"><path d="M22 1L3 7V22C3 35 22 49 22 49C22 49 41 35 41 22V7L22 1Z"/></clipPath></defs>
+            <path d="M22 1L3 7V22C3 35 22 49 22 49C22 49 41 35 41 22V7L22 1Z" fill="#3B82F6"/>
+            <g clip-path="url(#c10s)" fill="#fff">
+              <rect x="5" y="27" width="7" height="23"/>
+              <rect x="13" y="24" width="7" height="26"/>
+              <rect x="21" y="20" width="8" height="30"/>
+              <rect x="30" y="24" width="7" height="26"/>
+              <rect x="38" y="27" width="4" height="23"/>
+            </g>
+          </svg>
+          <span class="wm">lucidrents</span>
+        </div>
+      </div>
+      <div class="tag"><div class="name">Rowhouses</div><div class="desc">5 flat-top townhouses with doors · neighborhood feel</div></div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>
