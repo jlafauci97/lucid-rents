@@ -14,6 +14,7 @@ import { ExploreDataGrid } from "@/components/home/ExploreDataGrid";
 import { HomepageNewsGrid } from "@/components/home/HomepageNewsGrid";
 import { CityFaq } from "@/components/home/CityFaq";
 import { CityHomeCta } from "@/components/home/CityHomeCta";
+import { BrandShield } from "@/components/layout/BrandShield";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { AdBlock } from "@/components/ui/AdBlock";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -86,14 +87,9 @@ export default async function CityHomePage({
           />
           <div className="absolute inset-0 bg-[#0F1D2E]/50" />
           <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-12 pb-10 sm:pb-16 text-center">
-            <Image
-              src="/lucid-rents-logo.png"
-              alt="Lucid Rents"
-              width={300}
-              height={200}
-              className="mx-auto mb-1 h-[120px] sm:h-[150px] w-auto drop-shadow-lg"
-              priority
-            />
+            <div className="mx-auto mb-3 w-fit drop-shadow-[0_10px_15px_rgba(0,0,0,0.4)]">
+              <BrandShield size={140} clipId="heroShield" />
+            </div>
             <p className="text-xs sm:text-sm uppercase tracking-[0.2em] text-white/70 font-medium mb-3">
               A Rental Intelligence Platform
             </p>
