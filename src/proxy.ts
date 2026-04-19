@@ -5,6 +5,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { VALID_CITIES, STATE_CITY_MAP, CITY_META } from "@/lib/cities";
 import { neighborhoodPageSlug } from "@/lib/nyc-neighborhoods";
 import { neighborhoodPageSlugByCity } from "@/lib/neighborhoods";
+import { MC_COOKIE, verifyCookieValue } from "@/lib/mission-control/auth";
 
 /** Route prefixes that are city-specific and should be under /[city]/ */
 const CITY_ROUTES = new Set([
@@ -44,9 +45,8 @@ function withNoindex(response: NextResponse, request: NextRequest): NextResponse
   return response;
 }
 
-// Best-buildings chip eligibility. Duplicated in middleware (rather than
-// imported from the route) because middleware runs in the Edge runtime and
-// must be kept small + self-contained.
+// Best-buildings chip eligibility. Duplicated here (rather than
+// imported from the route) so the proxy stays self-contained.
 const BB_CHIPS = new Set([
   "top-rated",
   "rent-stabilized",
@@ -68,9 +68,6 @@ function checkBestBuildingsChip(
   segments: string[],
   firstSegment: string,
 ): NextResponse | null {
-  // Locate internal city + external prefix from the URL. Two forms:
-  //   /CA/Los-Angeles/best-buildings/<chip>         (state-prefixed external URL)
-  //   /nyc/best-buildings/<chip>                    (internal-city URL)
   let internalCity: string | null = null;
   let externalPrefix: string | null = null;
   let chip: string | null = null;
@@ -96,12 +93,10 @@ function checkBestBuildingsChip(
 
   if (!internalCity || !externalPrefix || !chip) return null;
 
-  // 1) Completely unknown chip slug → 404
   if (!BB_CHIPS.has(chip)) {
     return new NextResponse(null, { status: 404 });
   }
 
-  // 2) Known chip but not enabled for this city → 307 to the city's index
   const allow = BB_CHIP_CITY_ALLOWLIST[chip];
   if (allow && !allow.includes(internalCity)) {
     const url = request.nextUrl.clone();
@@ -110,11 +105,22 @@ function checkBestBuildingsChip(
     return NextResponse.redirect(url, 307);
   }
 
-  return null; // valid — let the normal city routing flow handle it
+  return null;
 }
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // 0. Mission Control password gate (runs before any city routing).
+  if (pathname.startsWith("/mission-control") && pathname !== "/mission-control/login") {
+    const cookie = request.cookies.get(MC_COOKIE);
+    if (!(await verifyCookieValue(cookie?.value))) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/mission-control/login";
+      url.searchParams.set("next", pathname);
+      return NextResponse.redirect(url);
+    }
+  }
 
   // Split path segments: "/nyc/buildings" => ["", "nyc", "buildings"]
   const segments = pathname.split("/");
