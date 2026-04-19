@@ -21,6 +21,10 @@ import { JsonLd } from "@/components/seo/JsonLd";
 const PER_PAGE = 30;
 
 export const revalidate = 3600;
+// Any (city, chip) pair not emitted by generateStaticParams (e.g. rent-stabilized
+// requested for Chicago/Miami/Houston, which aren't in chipsForCity()) returns
+// a 404 instead of rendering an empty-state page.
+export const dynamicParams = false;
 
 export async function generateMetadata({
   params,
