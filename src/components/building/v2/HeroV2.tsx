@@ -92,8 +92,7 @@ export function HeroV2({ building, rents, reviews, landlord, city }: Props) {
 
         {/* Address directly under name */}
         <div className="hero-address">
-          {!neighborhoodIsFallback ? <span>{neighborhoodName} · </span> : null}
-          {rest ? <span>{rest}</span> : null}
+          {[!neighborhoodIsFallback ? neighborhoodName : null, rest].filter(Boolean).join(" · ")}
         </div>
 
         {/* Meta line under address */}
