@@ -1,10 +1,27 @@
 import Link from "next/link";
+import Image from "next/image";
+import {
+  Trophy,
+  ShieldCheck,
+  MessageSquare,
+  CheckCircle2,
+  Building2,
+} from "lucide-react";
 import type { City } from "@/lib/cities";
 import { CITY_META } from "@/lib/cities";
-import { chipsForCity } from "@/lib/best-buildings/chips";
+import { chipsForCity } from "@/lib/building-list/chips";
+
+const ICONS = {
+  Trophy,
+  ShieldCheck,
+  MessageSquare,
+  CheckCircle2,
+  Building2,
+} as const;
 
 export function PopularListicles({ city }: { city: City }) {
-  const prefix = CITY_META[city].urlPrefix;
+  const meta = CITY_META[city];
+  const prefix = meta.urlPrefix;
   const chips = chipsForCity(city).slice(0, 3);
   if (chips.length === 0) return null;
 
@@ -21,7 +38,7 @@ export function PopularListicles({ city }: { city: City }) {
             </h2>
           </div>
           <Link
-            href={`/${prefix}/best-buildings`}
+            href={`/${prefix}/building-list`}
             className="font-mono text-xs tracking-wider text-[#0F1D2E] border-b border-[#e2e8f0] hover:border-[#0F1D2E] pb-0.5 font-medium"
           >
             All lists →
@@ -30,26 +47,31 @@ export function PopularListicles({ city }: { city: City }) {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {chips.map((chip) => {
-            const bg = `https://loremflickr.com/900/600/${encodeURIComponent(chip.image_hint.replace(/\s+/g, ","))}/all`;
+            const Icon = ICONS[chip.icon];
             return (
               <Link
                 key={chip.id}
-                href={`/${prefix}/best-buildings/${chip.slug}`}
+                href={`/${prefix}/building-list/${chip.slug}`}
                 className="group block bg-white border border-[#e2e8f0] rounded-xl overflow-hidden transition hover:border-[#0F1D2E] hover:-translate-y-0.5"
               >
                 <div className="relative h-40 overflow-hidden">
-                  <div
-                    className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
-                    style={{ backgroundImage: `url(${bg})` }}
+                  <Image
+                    src={meta.heroImage}
+                    alt={`${meta.fullName} skyline`}
+                    fill
+                    className="object-cover transition-transform duration-500 group-hover:scale-105"
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                   />
                   <div
                     className="absolute inset-0"
                     style={{
-                      background:
-                        "linear-gradient(135deg, rgba(59,130,246,0.35), rgba(15,29,46,0.5))",
+                      background: `linear-gradient(135deg, ${chip.gradient.from}, ${chip.gradient.to})`,
                     }}
                   />
-                  <span className="absolute top-3 left-3 bg-white text-[#0F1D2E] text-[10px] font-mono tracking-[0.1em] uppercase px-2 py-1 rounded-full">
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Icon className="w-12 h-12 text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]" />
+                  </div>
+                  <span className="absolute top-3 left-3 bg-white/95 text-[#0F1D2E] text-[10px] font-mono tracking-[0.1em] uppercase px-2 py-1 rounded-full">
                     {chip.label}
                   </span>
                 </div>

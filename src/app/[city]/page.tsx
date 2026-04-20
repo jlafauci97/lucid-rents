@@ -136,7 +136,7 @@ export default async function CityHomePage({
         {/* NEW — Region grid */}
         <RegionGrid city={city} />
 
-        {/* NEW — Popular listicles, links into /best-buildings */}
+        {/* NEW — Popular listicles, links into /building-list */}
         <PopularListicles city={city} />
 
         {/* NEW — Explore grid (moved up to follow listicles) */}
