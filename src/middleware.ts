@@ -7,6 +7,7 @@ import { neighborhoodPageSlugByCity } from "@/lib/neighborhoods";
 const CITY_ROUTES = new Set([
   "buildings",
   "building",
+  "building-list",
   "landlords",
   "landlord",
   "search",
