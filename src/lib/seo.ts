@@ -1,6 +1,6 @@
 import { type City, DEFAULT_CITY, CITY_META } from "./cities";
 import { normalizeScore } from "./constants";
-import { neighborhoodPageSlugByCity } from "./neighborhoods";
+import { neighborhoodPageSlugByCity, buildingNeighborhood } from "./neighborhoods";
 
 const BASE_URL = "https://lucidrents.com";
 
@@ -111,15 +111,22 @@ export function buildingJsonLd(
   // Prefer the building's proper name for SEO when available (e.g., "Carnegie Mews");
   // fall back to the address otherwise.
   const hasProperName = building.name && !/^\d/.test(building.name.trim()) && building.name.trim().length > 3;
+
+  const { name: addressLocality } = buildingNeighborhood(
+    { zip_code: building.zip_code, borough: building.borough },
+    city
+  );
+
   const schema: Record<string, unknown> = {
     "@context": "https://schema.org",
-    "@type": "ApartmentComplex",
+    "@type": ["ApartmentComplex", "LocalBusiness"],
     name: hasProperName ? building.name : building.full_address,
     url,
+    priceRange: "$$",
     address: {
       "@type": "PostalAddress",
       streetAddress: building.full_address.split(",")[0]?.trim(),
-      addressLocality: building.borough,
+      addressLocality,
       addressRegion: meta.stateCode,
       postalCode: building.zip_code,
       addressCountry: "US",
@@ -143,7 +150,7 @@ export function buildingJsonLd(
       "@type": "AggregateRating",
       ratingValue: normalizeScore(building.overall_score),
       bestRating: 5,
-      worstRating: 0,
+      worstRating: 1,
       ratingCount: building.review_count,
     };
   }
@@ -155,15 +162,20 @@ export function landlordJsonLd(
   name: string,
   buildingCount: number,
   city: City = DEFAULT_CITY,
-  updatedAt?: string
+  updatedAt?: string,
+  totalIssues?: number
 ) {
   const meta = CITY_META[city];
+  const issueClause =
+    totalIssues != null && totalIssues > 0
+      ? ` with ${totalIssues.toLocaleString("en-US")} issues filed`
+      : "";
   const ld: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "Organization",
     name,
     url: canonicalUrl(landlordUrl(name, city)),
-    description: `Property owner managing ${buildingCount} building${buildingCount !== 1 ? "s" : ""} in ${meta.fullName}`,
+    description: `Property owner managing ${buildingCount.toLocaleString("en-US")} building${buildingCount !== 1 ? "s" : ""}${issueClause} in ${meta.fullName}`,
   };
   if (updatedAt) {
     ld.dateModified = updatedAt;
