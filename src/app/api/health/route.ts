@@ -2,8 +2,22 @@ import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import type { City } from "@/lib/cities";
 
-export const revalidate = 0;
+// Cache the response at the edge so we don't re-run ~70 Supabase queries on
+// every mission-control render. Mission-control polls every few seconds in
+// dev — without this cache the pool saturates.
+export const revalidate = 60;
 export const maxDuration = 30;
+
+/** Returns a Promise that resolves to `fallback` if `p` doesn't settle in `ms`. */
+function withTimeout<T>(p: Promise<T>, ms: number, fallback: T): Promise<T> {
+  let timer: ReturnType<typeof setTimeout>;
+  return Promise.race<T>([
+    p.finally(() => clearTimeout(timer)),
+    new Promise<T>((resolve) => {
+      timer = setTimeout(() => resolve(fallback), ms);
+    }),
+  ]);
+}
 
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
@@ -228,12 +242,39 @@ export async function GET(request: NextRequest) {
     ? pages.filter((p) => !p.city || p.city === metroParam || p.city === "all")
     : pages;
 
-  // Run ALL checks in parallel for speed
+  // Run ALL checks in parallel. Each arm has its own inner timeout — if the
+  // DB pool is saturated we'd rather return partial data with "error" states
+  // than hit Vercel's 30s max and serve a 504.
+  const ARM_TIMEOUT = 20_000;
+  const emptySyncs = filteredSyncs.map((s) => ({
+    sync_type: s.type,
+    status: "error" as const,
+    last_run: null,
+    last_status: null,
+    records_added: 0,
+    records_linked: 0,
+    hours_since_sync: null,
+    error_preview: "Health check timed out",
+    schedule: s.schedule,
+    category: s.category,
+    city: s.city,
+  }));
+  const emptyTables = filteredTables.map((t) => ({
+    name: t.name,
+    label: t.label,
+    status: "error" as const,
+    row_count: 0,
+    latest_record: null,
+    details: "Health check timed out",
+    category: t.category,
+    city: t.city,
+  }));
+
   const [syncResults, dataResults, rpcResults, feedResult, syncHistoryResult] = await Promise.all([
     // 1. Sync checks — one bulk query instead of N parallel ones. Before this
     //    change we opened ~43 simultaneous sync_log queries which saturated
     //    the Supabase connection pool.
-    (async (): Promise<Array<SyncCheck & { city: City | "all" }>> => {
+    withTimeout((async (): Promise<Array<SyncCheck & { city: City | "all" }>> => {
       const wantedTypes = filteredSyncs.map((s) => s.type);
       // Fetch recent rows for all wanted sync_types in one call, then pick
       // the latest per type in JS. 14-day window keeps the payload small
@@ -303,12 +344,12 @@ export async function GET(request: NextRequest) {
           city: syncDef.city,
         };
       });
-    })(),
+    })(), ARM_TIMEOUT, emptySyncs),
 
     // 2. Data table checks — capped at 5 concurrent queries. Each table needs
     //    its own round-trip (Postgres can't COUNT across tables in one call),
     //    but we mustn't flood the pool here either.
-    mapLimit(filteredTables, 5, async (t): Promise<DataCheck & { city: City | "all" }> => {
+    withTimeout(mapLimit(filteredTables, 5, async (t): Promise<DataCheck & { city: City | "all" }> => {
         try {
           const { count } = await supabase
             .from(t.name)
@@ -342,10 +383,10 @@ export async function GET(request: NextRequest) {
         } catch {
           return { name: t.name, label: t.label, status: "error", row_count: 0, latest_record: null, details: "Query failed", category: t.category, city: t.city };
         }
-      }),
+      }), ARM_TIMEOUT, emptyTables),
 
     // 3. RPC checks — all in parallel
-    Promise.all(
+    withTimeout(Promise.all(
       rpcNames.map(async (rpcName): Promise<RpcCheck> => {
         const rpcStart = Date.now();
         try {
@@ -369,10 +410,10 @@ export async function GET(request: NextRequest) {
           };
         }
       })
-    ),
+    ), ARM_TIMEOUT, rpcNames.map((n) => ({ name: n, status: "error" as const, response_time_ms: ARM_TIMEOUT, row_count: 0, error: "Health check timed out" }))),
 
     // 4. Activity feed check
-    (async () => {
+    withTimeout((async () => {
       try {
         const cutoff = new Date();
         cutoff.setDate(cutoff.getDate() - 90);
@@ -388,10 +429,10 @@ export async function GET(request: NextRequest) {
       } catch (err) {
         return { status: "error" as const, details: String(err) };
       }
-    })(),
+    })(), ARM_TIMEOUT, { status: "error" as const, details: "Health check timed out" }),
 
     // 5. Sync history — last 7 days of sync_log entries
-    (async () => {
+    withTimeout((async () => {
       try {
         const cutoff = new Date();
         cutoff.setDate(cutoff.getDate() - 7);
@@ -406,7 +447,7 @@ export async function GET(request: NextRequest) {
       } catch {
         return [];
       }
-    })(),
+    })(), ARM_TIMEOUT, [] as unknown[]),
   ]);
 
   // Overall health
