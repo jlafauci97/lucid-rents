@@ -25,6 +25,7 @@ import { landlordSlug, landlordUrl, landlordJsonLd, breadcrumbJsonLd, canonicalU
 import { deriveScore, normalizeScore } from "@/lib/constants";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import type { Metadata } from "next";
+import { CITY_META } from "@/lib/cities";
 import type { City } from "@/lib/cities";
 import { buildLandlordTitle, buildLandlordDescription } from "@/lib/seo-metadata";
 import { getLandlordStats } from "@/lib/landlord-stats";
@@ -236,7 +237,7 @@ export default async function LandlordDetailPage({
               </h1>
               <p className="text-blue-200/80 mt-1.5 text-sm sm:text-base">
                 Property owner with {totalBuildings} building
-                {totalBuildings !== 1 ? "s" : ""} in New York City
+                {totalBuildings !== 1 ? "s" : ""} in {CITY_META[city].fullName}
               </p>
               <div className="mt-3 flex flex-wrap items-center gap-3">
                 <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
