@@ -6,20 +6,40 @@
       "schedule": "0 11 * * *"
     },
     {
+      "path": "/api/cron/generate-news?city=nyc",
+      "schedule": "0 23 * * *"
+    },
+    {
       "path": "/api/cron/generate-news?city=miami",
       "schedule": "15 11 * * *"
+    },
+    {
+      "path": "/api/cron/generate-news?city=miami",
+      "schedule": "15 23 * * *"
     },
     {
       "path": "/api/cron/generate-news?city=chicago",
       "schedule": "0 12 * * *"
     },
     {
+      "path": "/api/cron/generate-news?city=chicago",
+      "schedule": "0 0 * * *"
+    },
+    {
       "path": "/api/cron/generate-news?city=houston",
       "schedule": "15 12 * * *"
     },
     {
+      "path": "/api/cron/generate-news?city=houston",
+      "schedule": "15 0 * * *"
+    },
+    {
       "path": "/api/cron/generate-news?city=los-angeles",
       "schedule": "0 14 * * *"
+    },
+    {
+      "path": "/api/cron/generate-news?city=los-angeles",
+      "schedule": "0 2 * * *"
     },
 
     {
