@@ -52,9 +52,9 @@ export async function crossPostArticle(input: PostBridgeInput): Promise<
   const caption = buildCaption(input);
   const body: Record<string, unknown> = {
     caption,
-    socialAccounts,
+    social_accounts: socialAccounts,
   };
-  if (input.imageUrl) body.mediaUrls = [input.imageUrl];
+  if (input.imageUrl) body.media_urls = [input.imageUrl];
 
   // Per-platform overrides: Pinterest needs the destination link + pin title.
   const platformConfigurations: Record<string, unknown> = {};
@@ -65,7 +65,7 @@ export async function crossPostArticle(input: PostBridgeInput): Promise<
     };
   }
   if (Object.keys(platformConfigurations).length > 0) {
-    body.platformConfigurations = platformConfigurations;
+    body.platform_configurations = platformConfigurations;
   }
 
   const ctrl = new AbortController();
