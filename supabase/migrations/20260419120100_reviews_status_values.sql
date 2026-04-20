@@ -20,9 +20,12 @@ begin
 end$$;
 
 -- Add back a permissive CHECK that allows all moderation states.
+-- Includes legacy 'approved' value (119 existing rows as of 2026-04-19) so the
+-- constraint doesn't reject existing data. Treat 'approved' as equivalent to
+-- 'published' in app logic.
 alter table public.reviews
   add constraint reviews_status_check
-  check (status in ('draft','published','flagged','removed'));
+  check (status in ('draft','published','approved','flagged','removed'));
 
 create index if not exists reviews_status_created_idx
   on public.reviews(status, created_at desc);
