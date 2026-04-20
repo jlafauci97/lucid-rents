@@ -116,6 +116,21 @@ export async function setUserRole(userId: string, role: UserRole): Promise<void>
   if (error) throw error;
 }
 
+export interface RecentSignup {
+  id: string;
+  email: string;
+  created_at: string;
+}
+
+export async function listRecentSignups(limit = 10): Promise<RecentSignup[]> {
+  const sb = admin();
+  const { data, error } = await sb.auth.admin.listUsers({ page: 1, perPage: limit });
+  if (error) throw error;
+  return data.users
+    .slice(0, limit)
+    .map((u) => ({ id: u.id, email: u.email ?? "", created_at: u.created_at }));
+}
+
 export async function createImpersonationLink(userId: string): Promise<string> {
   const sb = admin();
   const { data: user } = await sb.auth.admin.getUserById(userId);
