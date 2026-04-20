@@ -5,7 +5,6 @@ import Link from "next/link";
 import { landlordUrl, canonicalUrl, cityPath } from "@/lib/seo";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
 import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
 import type { Metadata } from "next";
 
 export async function generateMetadata({ params, searchParams }: { params: Promise<{ city: string }>; searchParams: Promise<{ search?: string; sort?: string; page?: string }> }): Promise<Metadata> {
@@ -380,8 +379,6 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
           )}
         </div>
       )}
-
-      <AdBlock adSlot="LANDLORDS_BOTTOM" adFormat="horizontal" />
 
       {/* Cross-links */}
       <section className="mt-10">

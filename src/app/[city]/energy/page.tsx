@@ -4,7 +4,6 @@ import { canonicalUrl, cityPath, cityBreadcrumbs } from "@/lib/seo";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
 import { EnergyMap } from "@/components/energy/EnergyMap";
 import dynamic from "next/dynamic";
 
@@ -306,8 +305,6 @@ export default async function EnergyPage({ params }: { params: Promise<{ city: s
             </section>
           </>
         )}
-
-        <AdBlock adSlot="ENERGY_BOTTOM" adFormat="horizontal" />
       </div>
     </AdSidebar>
   );

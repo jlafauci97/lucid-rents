@@ -5,7 +5,6 @@ import { canonicalUrl, cityPath } from "@/lib/seo";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
 import { notFound } from "next/navigation";
 import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
 import { ProposalFilters } from "@/components/proposals/ProposalFilters";
 import { ProposalList } from "@/components/proposals/ProposalList";
 import { ProposalMap } from "@/components/proposals/ProposalMap";
@@ -125,8 +124,6 @@ export default async function ProposalsPage({
             />
           </Suspense>
         )}
-
-        <AdBlock adSlot="PROPOSALS_BOTTOM" adFormat="horizontal" />
       </div>
     </AdSidebar>
   );

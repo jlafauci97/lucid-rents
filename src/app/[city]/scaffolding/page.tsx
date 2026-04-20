@@ -4,7 +4,6 @@ import { canonicalUrl, cityPath, cityBreadcrumbs } from "@/lib/seo";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
 import { ScaffoldingMap } from "@/components/scaffolding/ScaffoldingMap";
 import { ScaffoldingTable } from "@/components/scaffolding/ScaffoldingTable";
 import dynamic from "next/dynamic";
@@ -227,8 +226,6 @@ export default async function ScaffoldingPage() {
             a 311 complaint requesting an update on the construction timeline.
           </p>
         </section>
-
-        <AdBlock adSlot="SCAFFOLDING_BOTTOM" adFormat="horizontal" />
       </div>
     </AdSidebar>
   );

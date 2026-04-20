@@ -9,7 +9,6 @@ import { NEWS_CATEGORIES, type NewsCategory } from "@/lib/news-sources";
 import { NewsList } from "@/components/news/NewsList";
 import { CategoryIcon } from "@/components/news/CategoryIcon";
 import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
 import type { NewsArticle } from "@/types";
 
 export const revalidate = 1800; // 30 minutes
@@ -168,7 +167,6 @@ export default async function NewsPage({
                 ))}
               </div>
             </div>
-            <AdBlock adSlot="NEWS_SIDEBAR" adFormat="rectangle" />
           </aside>
         </div>
       </div>

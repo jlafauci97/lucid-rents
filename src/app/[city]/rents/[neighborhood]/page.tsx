@@ -10,7 +10,6 @@ import { canonicalUrl, cityPath } from "@/lib/seo";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
 import { NeighborhoodRentChart } from "@/components/neighborhood/NeighborhoodRentChart";
 import type { NeighborhoodRentRow } from "@/components/neighborhood/NeighborhoodRentChart";
 
@@ -559,8 +558,6 @@ export default async function NeighborhoodRentsPage({
           </div>
         )}
 
-        <AdBlock adSlot="NEIGHBORHOOD_RENTS_MID" adFormat="horizontal" />
-
         {/* ── Amenity Premiums ─────────────────────────────────────── */}
         {aggregatedAmenities.length > 0 && (
           <div className="mb-8">
@@ -667,8 +664,6 @@ export default async function NeighborhoodRentsPage({
             Search {displayName}
           </Link>
         </div>
-
-        <AdBlock adSlot="NEIGHBORHOOD_RENTS_BOTTOM" adFormat="horizontal" />
       </div>
     </AdSidebar>
   );

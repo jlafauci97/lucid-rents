@@ -12,7 +12,6 @@ import type { City } from "@/lib/cities";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
 import { NeighborhoodRankCard } from "@/components/neighborhood/NeighborhoodRankCard";
 import { NeighborhoodRentChart, type NeighborhoodRentRow } from "@/components/neighborhood/NeighborhoodRentChart";
 import { BestApartments } from "@/components/neighborhood/BestApartments";
@@ -452,8 +451,6 @@ export default async function NeighborhoodPage({
           <DemographicSnapshot zipCode={zipCode} />
         </Suspense>
       </div>
-
-      <AdBlock adSlot="NEIGHBORHOOD_BOTTOM" adFormat="horizontal" />
 
       {/* Vibe Check */}
       {(() => {

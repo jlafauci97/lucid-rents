@@ -8,7 +8,6 @@ import { RentRangeCard } from "@/components/building/RentRangeCard";
 import { IssuesTabs } from "@/components/building/IssuesTabs";
 import { SaveButton } from "@/components/building/SaveButton";
 import { ShareButton } from "@/components/building/ShareButton";
-import { AdBlock } from "@/components/ui/AdBlock";
 import { canonicalUrl, buildingUrl } from "@/lib/seo";
 import { Clock } from "lucide-react";
 import { BuildingLocationMap } from "@/components/building/BuildingLocationMap";
@@ -181,8 +180,6 @@ export async function DeferredBuildingContent({ building, buildingId, city, rent
           buildingId={buildingId}
         />
       </div>
-
-      <AdBlock adSlot="BUILDING_MID_2" adFormat="horizontal" />
 
       {/* Violations & Complaints Tabs */}
       <div id="violations" className="scroll-mt-28">

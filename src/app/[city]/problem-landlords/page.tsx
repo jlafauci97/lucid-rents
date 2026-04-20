@@ -13,7 +13,6 @@ import {
 import { canonicalUrl, cityPath, buildingUrl } from "@/lib/seo";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
 import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
 
 export async function generateMetadata({
   params,
@@ -398,8 +397,6 @@ export default async function ProblemLandlordsPage({
             </p>
           </div>
         </div>
-
-        <AdBlock adSlot="PROBLEM_LANDLORDS_BOTTOM" adFormat="horizontal" />
       </div>
     </AdSidebar>
   );

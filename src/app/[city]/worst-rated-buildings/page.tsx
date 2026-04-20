@@ -3,7 +3,6 @@ import { AlertTriangle, Building2, MapPin, ChevronLeft, ChevronRight, Users, Tro
 import Link from "next/link";
 import { buildingUrl, canonicalUrl, cityPath, landlordUrl } from "@/lib/seo";
 import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
 import { getRegions, getRegionLabel, normalizeScore } from "@/lib/constants";
 import { type City, isValidCity, CITY_META } from "@/lib/cities";
 import type { Metadata } from "next";
@@ -363,8 +362,6 @@ export default async function RankingsPage({ params: routeParams, searchParams }
           </p>
         </div>
       )}
-
-      <AdBlock adSlot="RANKINGS_BOTTOM" adFormat="horizontal" />
 
       {/* Cross-links */}
       <section className="mt-10">

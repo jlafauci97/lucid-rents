@@ -16,7 +16,6 @@ import { CityFaq } from "@/components/home/CityFaq";
 import { CityHomeCta } from "@/components/home/CityHomeCta";
 import { BrandShield } from "@/components/layout/BrandShield";
 import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalUrl, cityPath } from "@/lib/seo";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
@@ -164,8 +163,6 @@ export default async function CityHomePage({
             <ActivityFeed />
           </div>
         </section>
-
-        <AdBlock adSlot="HOME_MID_2" adFormat="horizontal" />
 
         {/* Nearby Buildings — moved to bottom, right before FAQ */}
         <section className="py-16 bg-white border-t border-[#e2e8f0]">

@@ -7,7 +7,6 @@ import { BuildingCard } from "@/components/search/BuildingCard";
 import { TrendingBuildings } from "@/components/search/TrendingBuildings";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
 import { createClient } from "@/lib/supabase/server";
 import type { Building } from "@/types";
 import { normalizeAddressQuery } from "@/lib/address-normalization";
@@ -254,7 +253,6 @@ export default async function SearchPage({ params: routeParams, searchParams }: 
           </div>
         </div>
       )}
-      <AdBlock adSlot="SEARCH_BOTTOM" adFormat="horizontal" />
     </div>
     </AdSidebar>
   );
