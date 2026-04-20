@@ -186,6 +186,30 @@ const pages: PageCheck[] = [
   { path: "/profile/settings", label: "Settings", category: "profile", city: "all" },
 ];
 
+/**
+ * Run tasks with a bounded concurrency. Critical for Supabase: blowing the
+ * connection pool with 70+ parallel queries causes PGRST003 timeouts, which
+ * is what used to take mission-control down.
+ */
+async function mapLimit<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const out: R[] = new Array(items.length);
+  let i = 0;
+  async function worker() {
+    while (true) {
+      const idx = i++;
+      if (idx >= items.length) return;
+      out[idx] = await fn(items[idx]);
+    }
+  }
+  const workers = Array.from({ length: Math.min(limit, items.length) }, worker);
+  await Promise.all(workers);
+  return out;
+}
+
 export async function GET(request: NextRequest) {
   const startTime = Date.now();
   const supabase = getSupabaseAdmin();
@@ -206,21 +230,45 @@ export async function GET(request: NextRequest) {
 
   // Run ALL checks in parallel for speed
   const [syncResults, dataResults, rpcResults, feedResult, syncHistoryResult] = await Promise.all([
-    // 1. Sync checks — all in parallel
-    Promise.all(
-      filteredSyncs.map(async (syncDef): Promise<SyncCheck & { city: City | "all" }> => {
-        const { data } = await supabase
-          .from("sync_log")
-          .select("sync_type, status, started_at, completed_at, records_added, records_linked, errors")
-          .eq("sync_type", syncDef.type)
-          .order("started_at", { ascending: false })
-          .limit(1)
-          .single();
+    // 1. Sync checks — one bulk query instead of N parallel ones. Before this
+    //    change we opened ~43 simultaneous sync_log queries which saturated
+    //    the Supabase connection pool.
+    (async (): Promise<Array<SyncCheck & { city: City | "all" }>> => {
+      const wantedTypes = filteredSyncs.map((s) => s.type);
+      // Fetch recent rows for all wanted sync_types in one call, then pick
+      // the latest per type in JS. 14-day window keeps the payload small
+      // while still surfacing stale/missing syncs as nulls.
+      const sinceCutoff = new Date();
+      sinceCutoff.setDate(sinceCutoff.getDate() - 14);
+      const { data: rows } = await supabase
+        .from("sync_log")
+        .select(
+          "sync_type, status, started_at, completed_at, records_added, records_linked, errors",
+        )
+        .in("sync_type", wantedTypes)
+        .gte("started_at", sinceCutoff.toISOString())
+        .order("started_at", { ascending: false })
+        .limit(2000);
 
+      type LogRow = {
+        sync_type: string;
+        status: string | null;
+        started_at: string | null;
+        records_added: number | null;
+        records_linked: number | null;
+        errors: string[] | null;
+      };
+      const latestByType = new Map<string, LogRow>();
+      for (const row of (rows ?? []) as LogRow[]) {
+        if (!latestByType.has(row.sync_type)) latestByType.set(row.sync_type, row);
+      }
+
+      return filteredSyncs.map((syncDef) => {
+        const data = latestByType.get(syncDef.type) ?? null;
         if (!data) {
           return {
             sync_type: syncDef.type,
-            status: "error",
+            status: "error" as const,
             last_run: null,
             last_status: null,
             records_added: 0,
@@ -232,18 +280,15 @@ export async function GET(request: NextRequest) {
             city: syncDef.city,
           };
         }
-
         const hoursSince = data.started_at
           ? (Date.now() - new Date(data.started_at).getTime()) / (1000 * 60 * 60)
           : null;
-
         let status: "healthy" | "warning" | "error" = "healthy";
         if (data.status === "failed") status = "error";
         else if (data.status === "running") status = "warning";
         else if (hoursSince && hoursSince > syncDef.warnHours * 2) status = "error";
         else if (hoursSince && hoursSince > syncDef.warnHours) status = "warning";
-
-        const errArr = data.errors as string[] | null;
+        const errArr = data.errors;
         return {
           sync_type: syncDef.type,
           status,
@@ -257,12 +302,13 @@ export async function GET(request: NextRequest) {
           category: syncDef.category,
           city: syncDef.city,
         };
-      })
-    ),
+      });
+    })(),
 
-    // 2. Data table checks — all in parallel
-    Promise.all(
-      filteredTables.map(async (t): Promise<DataCheck & { city: City | "all" }> => {
+    // 2. Data table checks — capped at 5 concurrent queries. Each table needs
+    //    its own round-trip (Postgres can't COUNT across tables in one call),
+    //    but we mustn't flood the pool here either.
+    mapLimit(filteredTables, 5, async (t): Promise<DataCheck & { city: City | "all" }> => {
         try {
           const { count } = await supabase
             .from(t.name)
@@ -296,8 +342,7 @@ export async function GET(request: NextRequest) {
         } catch {
           return { name: t.name, label: t.label, status: "error", row_count: 0, latest_record: null, details: "Query failed", category: t.category, city: t.city };
         }
-      })
-    ),
+      }),
 
     // 3. RPC checks — all in parallel
     Promise.all(
