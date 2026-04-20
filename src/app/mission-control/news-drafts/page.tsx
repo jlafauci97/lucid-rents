@@ -122,6 +122,16 @@ function DraftCard({ draft }: { draft: Draft }) {
 
   return (
     <article className="border border-[#e2e8f0] rounded-xl overflow-hidden bg-white">
+      {draft.image_url && (
+        <div className="relative h-48 w-full bg-[#f1f5f9]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={draft.image_url}
+            alt=""
+            className="h-full w-full object-cover"
+          />
+        </div>
+      )}
       <div className="p-5">
         <div className="flex items-center gap-2 text-xs text-[#64748b] mb-3">
           <span className="px-2 py-0.5 rounded-full bg-[#EFF6FF] text-[#3B82F6] font-medium">
