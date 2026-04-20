@@ -1,15 +1,13 @@
 import { MCHeader } from "@/components/mission-control/MCHeader";
 import { HubCard } from "@/components/mission-control/HubCard";
 import { getHubStats } from "@/lib/mission-control/stats";
+import { fetchSyncsOk } from "@/lib/mission-control/syncs-health";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function MissionControlHub() {
-  const stats = await getHubStats();
-
-  // Syncs health is hardcoded true for Phase 1; Task 2.3 wires in the real check.
-  const syncsOk = true;
+  const [stats, syncsOk] = await Promise.all([getHubStats(), fetchSyncsOk()]);
 
   return (
     <>
