@@ -9,6 +9,7 @@ import { FileSearch, Users, Shield, ArrowRight, Search, ClipboardList, CheckCirc
 import { ViolationTickerServer } from "@/components/home/ViolationTickerServer";
 import { LiveStats } from "@/components/home/LiveStats";
 import { ActivityFeed } from "@/components/ActivityFeed";
+import { BrandShield } from "@/components/brand/BrandShield";
 
 export const metadata: Metadata = {
   title: "Lucid Rents — Apartment Building Intelligence",
@@ -116,15 +117,13 @@ export default function HomePage() {
         />
         <div className="absolute inset-0 bg-[#0F1D2E]/40" />
         <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-10 pb-8 sm:pb-12 text-center">
-          <Image
-            src="/lucid-rents-logo.png"
-            alt="Lucid Rents"
-            width={300}
-            height={200}
-            className="mx-auto mb-1 h-[100px] sm:h-[120px] w-auto drop-shadow-lg"
-            priority
-            fetchPriority="high"
-          />
+          <div className="mx-auto mb-2 flex justify-center drop-shadow-lg">
+            <BrandShield
+              width="auto"
+              height="auto"
+              className="h-[100px] sm:h-[120px] w-auto"
+            />
+          </div>
           <p className="text-xs sm:text-sm uppercase tracking-[0.2em] text-white/70 font-medium mb-2">
             A Rental Intelligence Platform
           </p>
