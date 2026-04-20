@@ -7,6 +7,7 @@ import { cache } from "react";
 import { normalizeScore } from "@/lib/constants";
 import { buildBuildingTitle, buildBuildingDescription } from "@/lib/seo-metadata";
 import { buildingNeighborhood } from "@/lib/neighborhoods";
+import { BuildingLeadParagraph } from "@/components/building/BuildingLeadParagraph";
 import type { Building } from "@/types";
 import { scoreToGrade } from "./_data";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -202,6 +203,10 @@ export default async function BuildingPage({ params }: Props) {
   const addressFirstLine = building.full_address.split(",")[0] ?? building.full_address;
   const cityPrefix = CITY_META[typedCity]?.urlPrefix ?? "nyc";
   const shortAddress = addressFirstLine.trim() || building.full_address;
+  const { name: neighborhoodName } = buildingNeighborhood(
+    { zip_code: building.zip_code, borough: building.borough },
+    typedCity
+  );
 
   // Grade for wayfinder header — overall_score is already on the building row.
   const grade = scoreToGrade(building.overall_score);
@@ -242,6 +247,12 @@ export default async function BuildingPage({ params }: Props) {
           />
 
           <HeroV2Streamed building={building} city={typedCity} />
+          <BuildingLeadParagraph
+            fullAddress={building.full_address}
+            neighborhood={neighborhoodName}
+            city={typedCity}
+            totalUnits={building.total_units}
+          />
 
           <RecordStripStreamed building={building} />
 
