@@ -11,6 +11,7 @@ import { MC_COOKIE, verifyCookieValue } from "@/lib/mission-control/auth";
 const CITY_ROUTES = new Set([
   "buildings",
   "building",
+  "building-list",
   "landlords",
   "landlord",
   "search",
@@ -59,11 +60,11 @@ const BB_CHIP_CITY_ALLOWLIST: Record<string, ReadonlyArray<string>> = {
 };
 
 /**
- * If the request is /[city]/best-buildings/[chip] with an invalid chip, return
+ * If the request is /[city]/building-list/[chip] with an invalid chip, return
  * a proper 404 or 307 at the edge. Runtime notFound()/redirect() calls from
  * the page were being coerced to HTTP 200 in this Next.js 16 deployment.
  */
-function checkBestBuildingsChip(
+function checkBuildingListChip(
   request: NextRequest,
   segments: string[],
   firstSegment: string,
@@ -73,7 +74,7 @@ function checkBestBuildingsChip(
   let chip: string | null = null;
 
   const stateMap = STATE_CITY_MAP[firstSegment.toUpperCase()];
-  if (stateMap && segments[3] === "best-buildings" && segments[4]) {
+  if (stateMap && segments[3] === "building-list" && segments[4]) {
     const citySlugSegment = segments[2] || "";
     const city = stateMap[citySlugSegment];
     if (city) {
@@ -83,7 +84,7 @@ function checkBestBuildingsChip(
     }
   } else if (
     VALID_CITIES.includes(firstSegment as (typeof VALID_CITIES)[number]) &&
-    segments[2] === "best-buildings" &&
+    segments[2] === "building-list" &&
     segments[3]
   ) {
     internalCity = firstSegment;
@@ -100,7 +101,7 @@ function checkBestBuildingsChip(
   const allow = BB_CHIP_CITY_ALLOWLIST[chip];
   if (allow && !allow.includes(internalCity)) {
     const url = request.nextUrl.clone();
-    url.pathname = `${externalPrefix}/best-buildings`;
+    url.pathname = `${externalPrefix}/building-list`;
     url.search = "";
     return NextResponse.redirect(url, 307);
   }
@@ -130,7 +131,7 @@ export async function proxy(request: NextRequest) {
   // the edge so the HTTP response is a real 307 redirect or 404 — Next.js
   // runtime notFound()/redirect() from the page were ending up as 200
   // soft-404s on this deployment.
-  const bbResponse = checkBestBuildingsChip(request, segments, firstSegment);
+  const bbResponse = checkBuildingListChip(request, segments, firstSegment);
   if (bbResponse) return withNoindex(bbResponse, request);
 
   // 1a. Check for multi-segment city prefix: /CA/Los-Angeles/... → rewrite to /los-angeles/...

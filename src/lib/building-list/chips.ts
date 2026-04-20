@@ -1,15 +1,18 @@
 import type { City } from "@/lib/cities";
 
-/**
- * Chip = one of the "best buildings by category" filters.
- * Each chip has a slug used in URLs and a filter applied to the buildings table.
- */
 export type ChipId =
   | "top-rated"
   | "rent-stabilized"
   | "most-reviewed"
   | "no-violations"
   | "large-buildings";
+
+export type ChipIconName =
+  | "Trophy"
+  | "ShieldCheck"
+  | "MessageSquare"
+  | "CheckCircle2"
+  | "Building2";
 
 export interface Chip {
   id: ChipId;
@@ -27,8 +30,12 @@ export interface Chip {
   column_filters: Array<{ column: string; op: "eq" | "gte" | "lte" | "gt" | "lt"; value: unknown }>;
   /** Default sort column + direction. */
   sort: { column: string; ascending: boolean };
-  /** Background hint for the card image (loremflickr query). */
-  image_hint: string;
+  /** lucide-react icon used on the category card overlay */
+  icon: ChipIconName;
+  /** Gradient overlay stops applied on top of the city skyline */
+  gradient: { from: string; to: string };
+  /** Deprecated — kept so older code doesn't crash on import. */
+  image_hint?: string;
 }
 
 export const CHIPS: Record<ChipId, Chip> = {
@@ -45,7 +52,8 @@ export const CHIPS: Record<ChipId, Chip> = {
       { column: "review_count", op: "gte", value: 5 },
     ],
     sort: { column: "overall_score", ascending: false },
-    image_hint: "luxury apartment",
+    icon: "Trophy",
+    gradient: { from: "rgba(16,185,129,0.55)", to: "rgba(15,29,46,0.75)" },
   },
   "rent-stabilized": {
     id: "rent-stabilized",
@@ -57,7 +65,8 @@ export const CHIPS: Record<ChipId, Chip> = {
     cities: ["nyc", "los-angeles"],
     column_filters: [{ column: "is_rent_stabilized", op: "eq", value: true }],
     sort: { column: "overall_score", ascending: false },
-    image_hint: "brownstone apartment",
+    icon: "ShieldCheck",
+    gradient: { from: "rgba(59,130,246,0.55)", to: "rgba(15,29,46,0.75)" },
   },
   "most-reviewed": {
     id: "most-reviewed",
@@ -69,7 +78,8 @@ export const CHIPS: Record<ChipId, Chip> = {
     cities: "all",
     column_filters: [{ column: "review_count", op: "gte", value: 5 }],
     sort: { column: "review_count", ascending: false },
-    image_hint: "apartment lobby",
+    icon: "MessageSquare",
+    gradient: { from: "rgba(168,85,247,0.55)", to: "rgba(15,29,46,0.75)" },
   },
   "no-violations": {
     id: "no-violations",
@@ -84,7 +94,8 @@ export const CHIPS: Record<ChipId, Chip> = {
       { column: "review_count", op: "gte", value: 1 },
     ],
     sort: { column: "overall_score", ascending: false },
-    image_hint: "modern apartment",
+    icon: "CheckCircle2",
+    gradient: { from: "rgba(20,184,166,0.55)", to: "rgba(15,29,46,0.75)" },
   },
   "large-buildings": {
     id: "large-buildings",
@@ -96,7 +107,8 @@ export const CHIPS: Record<ChipId, Chip> = {
     cities: "all",
     column_filters: [{ column: "residential_units", op: "gte", value: 50 }],
     sort: { column: "residential_units", ascending: false },
-    image_hint: "high-rise apartment tower",
+    icon: "Building2",
+    gradient: { from: "rgba(234,88,12,0.55)", to: "rgba(15,29,46,0.75)" },
   },
 };
 

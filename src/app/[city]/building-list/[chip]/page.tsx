@@ -9,10 +9,10 @@ import {
   chipsForCity,
   isValidChipForCity,
   type ChipId,
-} from "@/lib/best-buildings/chips";
-import { getBuildingsForChip, countBuildingsForChip } from "@/lib/best-buildings/query";
-import { CategoryCard } from "@/components/best-buildings/CategoryCard";
-import { getChipSummary } from "@/lib/best-buildings/query";
+} from "@/lib/building-list/chips";
+import { getBuildingsForChip, countBuildingsForChip } from "@/lib/building-list/query";
+import { CategoryCard } from "@/components/building-list/CategoryCard";
+import { getChipSummary } from "@/lib/building-list/query";
 import { BuildingCard } from "@/components/search/BuildingCard";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { AdSidebar } from "@/components/ui/AdSidebar";
@@ -38,12 +38,12 @@ export async function generateMetadata({
     title: `${chipCfg.label} buildings in ${c.fullName} | Lucid Rents`,
     description: chipCfg.long_description,
     alternates: {
-      canonical: canonicalUrl(cityPath(`/best-buildings/${chipCfg.slug}`, city)),
+      canonical: canonicalUrl(cityPath(`/building-list/${chipCfg.slug}`, city)),
     },
     openGraph: {
       title: `${chipCfg.label} buildings in ${c.fullName}`,
       description: chipCfg.long_description,
-      url: canonicalUrl(cityPath(`/best-buildings/${chipCfg.slug}`, city)),
+      url: canonicalUrl(cityPath(`/building-list/${chipCfg.slug}`, city)),
       siteName: "Lucid Rents",
       type: "website",
     },
@@ -76,7 +76,7 @@ export default async function CategoryPage({
   // requested for Chicago), redirect to the city's index instead of 404'ing —
   // better UX, proper 307 status, no soft-404 risk.
   if (!isValidChipForCity(chipParam, city)) {
-    redirect(cityPath("/best-buildings", city));
+    redirect(cityPath("/building-list", city));
   }
 
   const meta = CITY_META[city];
@@ -94,7 +94,7 @@ export default async function CategoryPage({
   });
 
   const totalPages = Math.max(1, Math.ceil(count / PER_PAGE));
-  const basePath = cityPath(`/best-buildings/${chip.slug}`, city);
+  const basePath = cityPath(`/building-list/${chip.slug}`, city);
 
   // Related chips (sibling categories in the same city)
   const relatedChips = chipsForCity(city).filter((c) => c.id !== chip.id);
@@ -132,14 +132,14 @@ export default async function CategoryPage({
           items={[
             { label: "Home", href: "/" },
             { label: meta.fullName, href: cityPath("/", city) },
-            { label: "Best Buildings", href: cityPath("/best-buildings", city) },
-            { label: chip.label, href: cityPath(`/best-buildings/${chip.slug}`, city) },
+            { label: "Building List", href: cityPath("/building-list", city) },
+            { label: chip.label, href: cityPath(`/building-list/${chip.slug}`, city) },
           ]}
         />
 
         <header className="mt-6 mb-10 max-w-3xl">
           <p className="text-xs uppercase tracking-[0.18em] text-[#3B82F6] font-medium">
-            {meta.fullName} · Best Buildings
+            {meta.fullName} · Building List
           </p>
           <h1 className="font-serif text-4xl sm:text-5xl text-[#0F1D2E] mt-2 leading-[1.05] tracking-tight">
             {chip.label} buildings in {meta.fullName}
@@ -256,6 +256,8 @@ export default async function CategoryPage({
                   key={s.chip.id}
                   chip={s.chip}
                   cityUrlPrefix={meta.urlPrefix}
+                  cityImage={meta.heroImage}
+                  cityFullName={meta.fullName}
                   count={s.count}
                   avgScore={s.avg_score}
                 />

@@ -58,7 +58,7 @@ export function LucidIQShowcase({ city }: { city: City }) {
             <div className="text-[#334155] text-[15px] leading-relaxed mt-2 max-w-md">
               Top-bracket buildings have strong tenant satisfaction and no open violations. You&apos;ll find them in{" "}
               <a
-                href={`/${meta.urlPrefix}/best-buildings/top-rated`}
+                href={`/${meta.urlPrefix}/building-list/top-rated`}
                 className="text-[#3B82F6] underline-offset-2 border-b border-[#3B82F6] no-underline"
               >
                 our top-rated list

@@ -1,13 +1,31 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
-import type { Chip } from "@/lib/best-buildings/chips";
+import Image from "next/image";
+import {
+  ArrowRight,
+  Trophy,
+  ShieldCheck,
+  MessageSquare,
+  CheckCircle2,
+  Building2,
+} from "lucide-react";
+import type { Chip } from "@/lib/building-list/chips";
 
 interface Props {
   chip: Chip;
   cityUrlPrefix: string;
+  cityImage: string;
+  cityFullName: string;
   count: number;
   avgScore: number | null;
 }
+
+const ICONS = {
+  Trophy,
+  ShieldCheck,
+  MessageSquare,
+  CheckCircle2,
+  Building2,
+} as const;
 
 function gradeLetter(score: number | null): string {
   if (score === null) return "—";
@@ -18,10 +36,16 @@ function gradeLetter(score: number | null): string {
   return "F";
 }
 
-export function CategoryCard({ chip, cityUrlPrefix, count, avgScore }: Props) {
-  const href = `/${cityUrlPrefix}/best-buildings/${chip.slug}`;
-  const imageQuery = chip.image_hint.trim().replace(/\s+/g, ",");
-  const bg = `https://loremflickr.com/900/600/${encodeURIComponent(imageQuery)}/all`;
+export function CategoryCard({
+  chip,
+  cityUrlPrefix,
+  cityImage,
+  cityFullName,
+  count,
+  avgScore,
+}: Props) {
+  const href = `/${cityUrlPrefix}/building-list/${chip.slug}`;
+  const Icon = ICONS[chip.icon];
 
   return (
     <Link
@@ -29,18 +53,23 @@ export function CategoryCard({ chip, cityUrlPrefix, count, avgScore }: Props) {
       className="group block rounded-xl overflow-hidden border border-[#e2e8f0] bg-white hover:border-[#0F1D2E] hover:shadow-md transition"
     >
       <div className="relative h-40 overflow-hidden">
-        <div
-          className="absolute inset-0 bg-cover bg-center transition-transform group-hover:scale-105"
-          style={{ backgroundImage: `url(${bg})` }}
+        <Image
+          src={cityImage}
+          alt={`${cityFullName} skyline`}
+          fill
+          className="object-cover transition-transform group-hover:scale-105"
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
         />
         <div
           className="absolute inset-0"
           style={{
-            background:
-              "linear-gradient(135deg, rgba(59,130,246,0.35), rgba(15,29,46,0.55))",
+            background: `linear-gradient(135deg, ${chip.gradient.from}, ${chip.gradient.to})`,
           }}
         />
-        <span className="absolute top-3 left-3 text-[10px] font-mono tracking-widest uppercase bg-white text-[#0F1D2E] px-2 py-1 rounded-full">
+        <div className="absolute inset-0 flex items-center justify-center">
+          <Icon className="w-12 h-12 text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]" />
+        </div>
+        <span className="absolute top-3 left-3 text-[10px] font-mono tracking-widest uppercase bg-white/95 text-[#0F1D2E] px-2 py-1 rounded-full">
           {chip.label}
         </span>
       </div>

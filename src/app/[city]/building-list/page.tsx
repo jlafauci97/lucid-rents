@@ -4,9 +4,9 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { canonicalUrl, cityPath } from "@/lib/seo";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
-import { chipsForCity } from "@/lib/best-buildings/chips";
-import { getChipSummary } from "@/lib/best-buildings/query";
-import { CategoryCard } from "@/components/best-buildings/CategoryCard";
+import { chipsForCity } from "@/lib/building-list/chips";
+import { getChipSummary } from "@/lib/building-list/query";
+import { CategoryCard } from "@/components/building-list/CategoryCard";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -22,13 +22,13 @@ export async function generateMetadata({
   if (!isValidCity(city)) return {};
   const meta = CITY_META[city];
   return {
-    title: `Best Buildings in ${meta.fullName} — Curated Lists | Lucid Rents`,
+    title: `Building List in ${meta.fullName} — Curated Lists | Lucid Rents`,
     description: `Top-rated, rent-stabilized, most-reviewed, and more — curated ${meta.fullName} building lists based on real tenant data.`,
-    alternates: { canonical: canonicalUrl(cityPath("/best-buildings", city)) },
+    alternates: { canonical: canonicalUrl(cityPath("/building-list", city)) },
     openGraph: {
-      title: `Best Buildings in ${meta.fullName}`,
+      title: `Building List in ${meta.fullName}`,
       description: `Curated ${meta.fullName} apartment-building lists based on LucidIQ scores and real tenant reviews.`,
-      url: canonicalUrl(cityPath("/best-buildings", city)),
+      url: canonicalUrl(cityPath("/building-list", city)),
       siteName: "Lucid Rents",
       type: "website",
     },
@@ -40,7 +40,7 @@ export async function generateStaticParams() {
   return VALID_CITIES.map((c) => ({ city: c }));
 }
 
-export default async function BestBuildingsIndex({
+export default async function BuildingListIndex({
   params,
 }: {
   params: Promise<{ city: string }>;
@@ -67,8 +67,8 @@ export default async function BestBuildingsIndex({
         data={{
           "@context": "https://schema.org",
           "@type": "CollectionPage",
-          name: `Best Buildings in ${meta.fullName}`,
-          url: `https://lucidrents.com${cityPath("/best-buildings", city)}`,
+          name: `Building List in ${meta.fullName}`,
+          url: `https://lucidrents.com${cityPath("/building-list", city)}`,
           description: `Curated ${meta.fullName} apartment-building lists.`,
         }}
       />
@@ -78,13 +78,13 @@ export default async function BestBuildingsIndex({
           items={[
             { label: "Home", href: "/" },
             { label: meta.fullName, href: cityPath("/", city) },
-            { label: "Best Buildings", href: cityPath("/best-buildings", city) },
+            { label: "Building List", href: cityPath("/building-list", city) },
           ]}
         />
 
         <header className="mt-6 mb-10 max-w-3xl">
           <p className="text-xs uppercase tracking-[0.18em] text-[#3B82F6] font-medium">
-            Best Buildings · {meta.fullName}
+            Building List · {meta.fullName}
           </p>
           <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl text-[#0F1D2E] mt-2 leading-[1.05] tracking-tight">
             Curated lists for renters.
@@ -109,6 +109,8 @@ export default async function BestBuildingsIndex({
                 key={chip.id}
                 chip={chip}
                 cityUrlPrefix={meta.urlPrefix}
+                cityImage={meta.heroImage}
+                cityFullName={meta.fullName}
                 count={count}
                 avgScore={avg_score}
               />
