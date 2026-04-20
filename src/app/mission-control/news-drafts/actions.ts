@@ -1,5 +1,7 @@
 "use server";
 
+import { after } from "next/server";
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import { CITY_META, isValidCity, type City } from "@/lib/cities";
@@ -39,25 +41,34 @@ export async function approveDraft(id: string) {
     revalidatePath(`/${prefix}`);
     revalidatePath(`/${prefix}/news`);
 
+    // Fire Post Bridge after the response is sent — avoids blocking the UI.
     const link = `https://lucidrents.com/${prefix}/news/${draft.slug}`;
-    const result = await crossPostArticle({
-      title: draft.title,
-      excerpt: draft.excerpt,
-      link,
-      imageUrl: draft.image_url,
+    after(async () => {
+      const result = await crossPostArticle({
+        title: draft.title,
+        excerpt: draft.excerpt,
+        link,
+        imageUrl: draft.image_url,
+      });
+      if (!result.ok && result.reason === "api_error") {
+        console.error("[post-bridge] cross-post failed:", result.detail);
+      }
     });
-    if (!result.ok && result.reason === "api_error") {
-      console.error("[post-bridge] cross-post failed:", result.detail);
-    }
   }
+
+  redirect("/mission-control/news-drafts?tab=approved");
 }
 
 export async function rejectDraft(id: string) {
   await requireMissionControl();
   const db = adminDb();
-  const { error } = await db.from("news_articles").delete().eq("id", id);
+  const { error } = await db
+    .from("news_articles")
+    .update({ status: "rejected" })
+    .eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/mission-control/news-drafts");
+  redirect("/mission-control/news-drafts?tab=rejected");
 }
 
 export async function editDraftBody(id: string, body: string) {
