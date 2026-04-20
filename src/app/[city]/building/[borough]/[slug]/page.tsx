@@ -224,7 +224,7 @@ export default async function BuildingPage({ params }: Props) {
           overall_score: building.overall_score,
         }}
       />
-      <JsonLd data={buildingJsonLd(building)} />
+      <JsonLd data={buildingJsonLd(building, typedCity)} />
       <JsonLd data={breadcrumbJsonLd([
         { name: "Home", url: "/" },
         { name: "Buildings", url: cityPath("/buildings", typedCity) },

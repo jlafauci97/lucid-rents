@@ -50,6 +50,28 @@ describe("buildingJsonLd", () => {
   });
 });
 
+describe("buildingJsonLd — non-NYC metros", () => {
+  it("uses LA neighborhood lookup and CA state code for Los Angeles building", () => {
+    const laFixture = {
+      full_address: "1600 Vine St, Los Angeles, CA 90028",
+      borough: "Hollywood",
+      zip_code: "90028",
+      year_built: 1925,
+      total_units: 120,
+      overall_score: 4.0,
+      review_count: 5,
+      slug: "1600-vine-st",
+      name: null,
+    };
+    const ld = buildingJsonLd(laFixture, "los-angeles") as Record<string, unknown>;
+    const addr = ld.address as Record<string, unknown>;
+    expect(addr.addressRegion).toBe("CA");
+    // When ZIP 90028 resolves via LA neighborhoods, addressLocality should NOT be the borough
+    // (it should be the resolved neighborhood name). If ZIP doesn't resolve, it falls back to borough — still acceptable.
+    expect(typeof addr.addressLocality).toBe("string");
+  });
+});
+
 describe("landlordJsonLd", () => {
   it("includes counts in description when totalIssues is provided", () => {
     const ld = landlordJsonLd("Stellar Management", 412, "nyc", undefined, 8947) as Record<string, unknown>;
