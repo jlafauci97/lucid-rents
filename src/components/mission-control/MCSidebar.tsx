@@ -41,13 +41,15 @@ export function MCSidebar() {
         })}
       </ul>
       <div className="mt-6 border-t border-slate-800 pt-4">
-        <Link
-          href="/mission-control/logout"
-          className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-slate-400 hover:bg-slate-800/50 hover:text-slate-100"
-        >
-          <LogOut className="h-4 w-4" />
-          Sign out
-        </Link>
+        <form action="/mission-control/logout" method="post">
+          <button
+            type="submit"
+            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-slate-400 hover:bg-slate-800/50 hover:text-slate-100"
+          >
+            <LogOut className="h-4 w-4" />
+            Sign out
+          </button>
+        </form>
       </div>
     </nav>
   );
