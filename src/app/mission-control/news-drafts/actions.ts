@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import { CITY_META, isValidCity, type City } from "@/lib/cities";
 import { requireMissionControl } from "@/lib/mission-control/auth";
+import { crossPostArticle } from "@/lib/news/post-bridge";
 
 function adminDb() {
   return createClient(
@@ -18,7 +19,7 @@ export async function approveDraft(id: string) {
 
   const { data: draft, error: fetchErr } = await db
     .from("news_articles")
-    .select("metro")
+    .select("metro, title, excerpt, slug, image_url")
     .eq("id", id)
     .single();
   if (fetchErr || !draft) throw new Error(`Draft not found: ${id}`);
@@ -37,6 +38,17 @@ export async function approveDraft(id: string) {
     const prefix = CITY_META[draft.metro as City].urlPrefix;
     revalidatePath(`/${prefix}`);
     revalidatePath(`/${prefix}/news`);
+
+    const link = `https://lucidrents.com/${prefix}/news/${draft.slug}`;
+    const result = await crossPostArticle({
+      title: draft.title,
+      excerpt: draft.excerpt,
+      link,
+      imageUrl: draft.image_url,
+    });
+    if (!result.ok && result.reason === "api_error") {
+      console.error("[post-bridge] cross-post failed:", result.detail);
+    }
   }
 }
 
