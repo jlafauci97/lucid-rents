@@ -205,3 +205,28 @@ describe("buildLandlordDescription", () => {
     expect(d.length).toBeLessThanOrEqual(160);
   });
 });
+
+describe("metro matrix — char caps hold across 5 metros", () => {
+  const cases = [
+    { shortAddress: "240 1st Ave", neighborhood: "Stuyvesant Town", city: "nyc" as const },
+    { shortAddress: "1600 Vine St", neighborhood: "Hollywood", city: "los-angeles" as const },
+    { shortAddress: "875 N Michigan Ave", neighborhood: "Gold Coast", city: "chicago" as const },
+    { shortAddress: "1100 Brickell Bay Dr", neighborhood: "Brickell", city: "miami" as const },
+    { shortAddress: "1600 Smith St", neighborhood: "Downtown", city: "houston" as const },
+  ] as const;
+
+  it.each(cases)("title ≤70 for %o", (input) => {
+    expect(buildBuildingTitle(input).length).toBeLessThanOrEqual(70);
+  });
+
+  it.each(cases)("description ≤160 for %o", (input) => {
+    const d = buildBuildingDescription({
+      shortAddress: input.shortAddress,
+      neighborhood: input.neighborhood,
+      issues: 1234,
+      reviewCount: 56,
+      overallScore: 4.1,
+    });
+    expect(d.length).toBeLessThanOrEqual(160);
+  });
+});
