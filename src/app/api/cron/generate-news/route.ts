@@ -84,29 +84,31 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  // 2. Pick the strongest signal.
-  const winner = candidates.sort((a, b) => b.score - a.score)[0];
+  // 2. Sort candidates by score, then pick the highest-scored one whose
+  //    signal_type hasn't been used for this city in the last 24h. This lets
+  //    the twice-daily cron produce a *different* story for the second run
+  //    instead of bailing as `recent_duplicate`.
+  const sorted = candidates.sort((a, b) => b.score - a.score);
 
-  // 3. Dedupe — don't draft the same signal twice in 48h for the same city.
-  const { data: existing } = await supabase
+  const sinceIso = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const { data: recent } = await supabase
     .from("news_articles")
-    .select("id")
+    .select("signal_type")
     .eq("metro", city)
-    .eq("signal_type", winner.type)
-    .gte(
-      "created_at",
-      new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
-    )
-    .limit(1);
+    .gte("created_at", sinceIso);
+  const usedTypes = new Set((recent ?? []).map((r) => r.signal_type));
 
-  if (existing && existing.length > 0) {
+  const winner = sorted.find((c) => !usedTypes.has(c.type));
+
+  if (!winner) {
     return NextResponse.json(
       {
         city,
         today,
         drafted: false,
-        reason: "recent_duplicate",
-        signal_type: winner.type,
+        reason: "all_candidates_recent",
+        candidate_types: sorted.map((c) => c.type),
+        used_types: Array.from(usedTypes),
       },
       { status: 200 }
     );
