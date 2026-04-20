@@ -86,7 +86,7 @@ describe("buildBuildingDescription", () => {
     expect(d.length).toBeLessThanOrEqual(160);
   });
 
-  it("drops closer first, then LucidIQ, then reviews to fit under 155", () => {
+  it("drops closer first when full string exceeds 155", () => {
     const d = buildBuildingDescription({
       shortAddress: "12345 Extremely Long Street Name That Goes On",
       neighborhood: "Unusually Long Neighborhood Name Example",
@@ -96,6 +96,34 @@ describe("buildBuildingDescription", () => {
     });
     expect(d.length).toBeLessThanOrEqual(155);
     expect(d).toContain("issues filed");
+  });
+
+  it("drops LucidIQ when even noCloser exceeds 155", () => {
+    // noCloser=161 > 155, noScore=146 <= 155 — forces Step 2 (drop LucidIQ)
+    const d = buildBuildingDescription({
+      shortAddress: "12345 An Unusually Long Street Name Going On Forever",
+      neighborhood: "A Long And Descriptive Neighborhood Name Example",
+      issues: 12345,
+      reviewCount: 678,
+      overallScore: 4.9,
+    });
+    expect(d.length).toBeLessThanOrEqual(155);
+    expect(d).not.toMatch(/LucidIQ/);
+    expect(d).not.toMatch(/Free rent intelligence/);
+    expect(d).toContain("tenant reviews");
+  });
+
+  it("drops reviews when even noScore exceeds 155, and truncates with ellipsis when only firstClause remains > 155", () => {
+    // firstOnly=196 > 155 — forces Step 4 (ellipsis truncation)
+    const d = buildBuildingDescription({
+      shortAddress: "12345 An Absurdly Long Street Name That Will Not Fit In Any Reasonable Meta Description Tag At All",
+      neighborhood: "An Equally Long Neighborhood Descriptor Name Designed To Blow The Cap",
+      issues: 9999999,
+      reviewCount: 99999,
+      overallScore: 4.5,
+    });
+    expect(d.length).toBeLessThanOrEqual(155);
+    expect(d.endsWith("…")).toBe(true);
   });
 });
 
@@ -155,5 +183,25 @@ describe("buildLandlordDescription", () => {
     expect(d).toContain("Stellar Management's 412");
     expect(d).toContain("8,947 violations + 311 complaints");
     expect(d).toContain("New York City");
+  });
+
+  it("stays under 160 chars for the example fixture", () => {
+    const d = buildLandlordDescription({
+      name: "Stellar Management",
+      buildingCount: 412,
+      totalIssues: 8947,
+      city: "nyc",
+    });
+    expect(d.length).toBeLessThanOrEqual(160);
+  });
+
+  it("stays under 160 chars even for large portfolios with long names", () => {
+    const d = buildLandlordDescription({
+      name: "Highbridge House Ogden LLC Property Management Division",
+      buildingCount: 1247,
+      totalIssues: 25431,
+      city: "nyc",
+    });
+    expect(d.length).toBeLessThanOrEqual(160);
   });
 });

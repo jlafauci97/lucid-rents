@@ -100,5 +100,25 @@ export function buildLandlordTitle(input: LandlordTitleInput): string {
 
 export function buildLandlordDescription(input: LandlordTitleInput): string {
   const cityLong = CITY_META[input.city].fullName;
-  return `See every one of ${input.name}'s ${input.buildingCount.toLocaleString("en-US")} ${cityLong} buildings, all ${input.totalIssues.toLocaleString("en-US")} violations + 311 complaints filed against them, and real tenant reviews. Free rent intelligence.`;
+  const bc = input.buildingCount.toLocaleString("en-US");
+  const ti = input.totalIssues.toLocaleString("en-US");
+
+  // Full form
+  const full = `See every one of ${input.name}'s ${bc} ${cityLong} buildings, all ${ti} violations + 311 complaints filed against them, and real tenant reviews. Free rent intelligence.`;
+  if (full.length <= DESCRIPTION_MAX) return full;
+
+  // Step 1: drop " Free rent intelligence."
+  const noCloser = `See every one of ${input.name}'s ${bc} ${cityLong} buildings, all ${ti} violations + 311 complaints filed against them, and real tenant reviews.`;
+  if (noCloser.length <= DESCRIPTION_MAX) return noCloser;
+
+  // Step 2: drop "and real tenant reviews"
+  const noReviews = `See every one of ${input.name}'s ${bc} ${cityLong} buildings, all ${ti} violations + 311 complaints filed against them.`;
+  if (noReviews.length <= DESCRIPTION_MAX) return noReviews;
+
+  // Step 3: drop " + 311 complaints"
+  const noComplaints = `See every one of ${input.name}'s ${bc} ${cityLong} buildings, all ${ti} violations filed.`;
+  if (noComplaints.length <= DESCRIPTION_MAX) return noComplaints;
+
+  // Step 4: truncate with ellipsis
+  return noComplaints.slice(0, DESCRIPTION_MAX - 1) + "…";
 }
