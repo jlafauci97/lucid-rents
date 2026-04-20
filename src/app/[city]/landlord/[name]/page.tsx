@@ -25,6 +25,10 @@ import { landlordSlug, landlordUrl, landlordJsonLd, breadcrumbJsonLd, canonicalU
 import { deriveScore, normalizeScore } from "@/lib/constants";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import type { Metadata } from "next";
+import { CITY_META } from "@/lib/cities";
+import type { City } from "@/lib/cities";
+import { buildLandlordTitle, buildLandlordDescription } from "@/lib/seo-metadata";
+import { getLandlordStats } from "@/lib/landlord-stats";
 
 export const revalidate = 3600; // ISR: revalidate hourly
 
@@ -35,7 +39,11 @@ interface LandlordPageProps {
 const BUILDING_SELECT =
   "id, full_address, borough, zip_code, year_built, total_units, num_floors, owner_name, slug, overall_score, violation_count, complaint_count, litigation_count, dob_violation_count, review_count";
 
-async function findBuildings(supabase: Awaited<ReturnType<typeof createClient>>, param: string) {
+async function findBuildings(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  param: string,
+  city: City
+) {
   // Step 1: Look up exact owner name from landlord_stats by slug
   const { data: statsRows } = await supabase
     .from("landlord_stats")
@@ -52,6 +60,7 @@ async function findBuildings(supabase: Awaited<ReturnType<typeof createClient>>,
       .from("buildings")
       .select(BUILDING_SELECT)
       .ilike("owner_name", decodedName)
+      .eq("metro", city)
       .order("violation_count", { ascending: false })
       .limit(500);
     return byName && byName.length > 0 ? byName : null;
@@ -62,32 +71,39 @@ async function findBuildings(supabase: Awaited<ReturnType<typeof createClient>>,
     .from("buildings")
     .select(BUILDING_SELECT)
     .eq("owner_name", ownerName)
+    .eq("metro", city)
     .order("violation_count", { ascending: false })
     .limit(500);
 
   return buildings && buildings.length > 0 ? buildings : null;
 }
 
-// Shared lookup — used by both generateMetadata and the page to avoid duplicate queries
-async function lookupLandlordName(slug: string) {
-  const supabase = await createClient();
-  const { data: statsRows } = await supabase
-    .from("landlord_stats")
-    .select("name")
-    .eq("slug", slug)
-    .limit(1);
-  return statsRows?.[0]?.name || decodeURIComponent(slug);
-}
-
 export async function generateMetadata({
   params,
 }: LandlordPageProps): Promise<Metadata> {
-  const { name } = await params;
-  const displayName = await lookupLandlordName(name);
+  const { city: cityParam, name } = await params;
+  const city = (cityParam || "nyc") as City;
+  const stats = await getLandlordStats(name, city);
 
-  const title = `${displayName} — Buildings, Violations & Tenant Reviews`;
-  const description = `Renting from ${displayName}? See every building they own, their full violation record, and real tenant reviews — all in one place.`;
-  const url = canonicalUrl(landlordUrl(displayName));
+  if (!stats) {
+    return { title: "Landlord Not Found" };
+  }
+
+  const title = buildLandlordTitle({
+    name: stats.name,
+    buildingCount: stats.buildingCount,
+    totalIssues: stats.totalIssues,
+    city,
+  });
+
+  const description = buildLandlordDescription({
+    name: stats.name,
+    buildingCount: stats.buildingCount,
+    totalIssues: stats.totalIssues,
+    city,
+  });
+
+  const url = canonicalUrl(landlordUrl(stats.name, city));
 
   return {
     title,
@@ -107,12 +123,13 @@ export default async function LandlordDetailPage({
   params,
 }: LandlordPageProps) {
   const { city: cityParam, name } = await params;
-  const city = (cityParam || "nyc") as import("@/lib/cities").City;
+  const city = (cityParam || "nyc") as City;
   const supabase = await createClient();
 
-  const [buildings, cityAvgRpc] = await Promise.all([
-    findBuildings(supabase, name),
+  const [buildings, cityAvgRpc, cachedStats] = await Promise.all([
+    findBuildings(supabase, name, city),
     supabase.rpc("city_avg_score", { p_metro: city }),
+    getLandlordStats(name, city),
   ]);
   // Next 16 page-level notFound() currently returns HTTP 200 (soft-404).
   // Redirecting to the landlords index keeps a proper 307 status so SEO
@@ -178,7 +195,13 @@ export default async function LandlordDetailPage({
   return (
     <AdSidebar>
     <div>
-      <JsonLd data={landlordJsonLd(displayName, totalBuildings)} />
+      <JsonLd data={landlordJsonLd(
+        cachedStats?.name ?? displayName,
+        cachedStats?.buildingCount ?? totalBuildings,
+        city,
+        undefined,
+        cachedStats?.totalIssues
+      )} />
       <JsonLd data={breadcrumbJsonLd([
         { name: "Home", url: "/" },
         { name: "Landlords", url: cityPath("/landlords") },
@@ -214,7 +237,7 @@ export default async function LandlordDetailPage({
               </h1>
               <p className="text-blue-200/80 mt-1.5 text-sm sm:text-base">
                 Property owner with {totalBuildings} building
-                {totalBuildings !== 1 ? "s" : ""} in New York City
+                {totalBuildings !== 1 ? "s" : ""} in {CITY_META[city].fullName}
               </p>
               <div className="mt-3 flex flex-wrap items-center gap-3">
                 <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${

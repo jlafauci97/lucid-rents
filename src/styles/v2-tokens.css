@@ -333,6 +333,15 @@
   margin: var(--s-4) 0 0;
 }
 
+/* SEO lead paragraph — rendered below hero for keyword context */
+.building-lead-paragraph {
+  max-width: 72ch;
+  margin: 12px 0 24px;
+  color: #475569;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
 .v2 .chip {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 6px 12px;

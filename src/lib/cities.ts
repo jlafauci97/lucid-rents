@@ -362,3 +362,12 @@ export function isValidCity(s: string): s is City {
 export function getCityName(city: City): string {
   return CITY_META[city].fullName;
 }
+
+/** Short display name used in SEO metadata (titles, descriptions). */
+export const CITY_SHORT_NAME: Record<City, string> = {
+  nyc: "NYC",
+  "los-angeles": "LA",
+  chicago: "Chicago",
+  miami: "Miami",
+  houston: "Houston",
+};

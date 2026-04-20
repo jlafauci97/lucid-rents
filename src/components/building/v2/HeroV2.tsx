@@ -10,6 +10,8 @@ import type { Building } from "@/types";
 import type { BuildingV2Data } from "@/app/[city]/building/[borough]/[slug]/_data";
 import { scoreToGrade } from "@/app/[city]/building/[borough]/[slug]/_data";
 import type { City } from "@/lib/cities";
+import { CITY_SHORT_NAME } from "@/lib/cities";
+import { buildingNeighborhood } from "@/lib/neighborhoods";
 
 interface Props {
   building: Building;
@@ -49,6 +51,11 @@ function addressParts(full: string): { street: string; rest: string } {
 export function HeroV2({ building, rents, reviews, landlord, city }: Props) {
   const { street, rest } = addressParts(building.full_address);
   const { low, high } = rentBounds(rents.current);
+  const { name: neighborhoodName, isFallback: neighborhoodIsFallback } = buildingNeighborhood(
+    { zip_code: building.zip_code, borough: building.borough },
+    city
+  );
+  const cityShort = CITY_SHORT_NAME[city];
   const metaParts: string[] = [];
   if (building.year_built) metaParts.push(`Built ${building.year_built}`);
   if (building.num_floors) metaParts.push(`${building.num_floors} floors`);
@@ -78,11 +85,14 @@ export function HeroV2({ building, rents, reviews, landlord, city }: Props) {
           proper name, so when the h1 IS the street we elide the street from
           hero-address to avoid duplication — only the "rest" (city + zip) stays.
         */}
-        <h1>{street}</h1>
+        <h1>
+          {street}
+          <span className="sr-only"> — Rent Intelligence for {neighborhoodName}, {cityShort}</span>
+        </h1>
 
         {/* Address directly under name */}
         <div className="hero-address">
-          {rest ? <span>{rest}</span> : null}
+          {[!neighborhoodIsFallback ? neighborhoodName : null, rest].filter(Boolean).join(" · ")}
         </div>
 
         {/* Meta line under address */}

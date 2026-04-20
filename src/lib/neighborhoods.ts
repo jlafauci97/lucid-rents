@@ -104,6 +104,27 @@ export function getNeighborhoodNameByCity(
   return null;
 }
 
+export interface BuildingNeighborhood {
+  name: string;
+  isFallback: boolean;
+}
+
+/**
+ * Resolve a building's neighborhood from its ZIP code, with borough fallback.
+ * Single source of truth — all SEO metadata, H1, breadcrumbs, and JSON-LD
+ * should call this instead of touching the ZIP tables directly.
+ */
+export function buildingNeighborhood(
+  building: { zip_code: string | null; borough: string },
+  city: City
+): BuildingNeighborhood {
+  if (building.zip_code) {
+    const resolved = getNeighborhoodNameByCity(building.zip_code, city);
+    if (resolved) return { name: resolved, isFallback: false };
+  }
+  return { name: building.borough, isFallback: true };
+}
+
 /** Get all neighborhoods for a city */
 export function getAllNeighborhoodsByCity(city: City): NeighborhoodResult[] {
   const mapToResults = (

@@ -5,6 +5,9 @@ import { regionFromSlug, buildingUrl, canonicalUrl, buildingJsonLd, breadcrumbJs
 import { VALID_CITIES, CITY_META, type City } from "@/lib/cities";
 import { cache } from "react";
 import { normalizeScore } from "@/lib/constants";
+import { buildBuildingTitle, buildBuildingDescription } from "@/lib/seo-metadata";
+import { buildingNeighborhood } from "@/lib/neighborhoods";
+import { BuildingLeadParagraph } from "@/components/building/BuildingLeadParagraph";
 import type { Building } from "@/types";
 import { scoreToGrade } from "./_data";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -114,31 +117,36 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return { title: "Building Not Found" };
   }
 
-  const title =
-    building.review_count > 0 && building.overall_score != null
-      ? `${building.full_address} \u2014 Rated ${normalizeScore(building.overall_score).toFixed(1)}/5 by Tenants`
-      : `${building.full_address} \u2014 Violations, Reviews & Building Score`;
+  const addressFirstLine = building.full_address.split(",")[0]?.trim() ?? building.full_address;
+  const shortAddress = addressFirstLine || building.full_address;
+
+  const { name: neighborhoodName } = buildingNeighborhood(
+    { zip_code: building.zip_code, borough: building.borough },
+    cityParam as City
+  );
 
   const isAltMetro = cityParam === "chicago" || cityParam === "miami" || cityParam === "houston";
   const metaViolationCount = isAltMetro
     ? (building.dob_violation_count || 0)
     : (building.violation_count || 0);
+  const issuesFiled = metaViolationCount + (building.complaint_count || 0);
 
-  const descParts = [
-    `${metaViolationCount} violations`,
-    `${building.complaint_count} complaints`,
-  ];
-  if (building.bedbug_report_count > 0) descParts.push(`${building.bedbug_report_count} bedbug reports`);
-  if (building.eviction_count > 0) descParts.push(`${building.eviction_count} evictions`);
+  const title = buildBuildingTitle({
+    shortAddress,
+    neighborhood: neighborhoodName,
+    city: cityParam as City,
+  });
 
-  const laExtras: string[] = [];
-  if (cityParam === "los-angeles") {
-    if (building.is_rent_stabilized) laExtras.push("RSO protected");
-    if (building.fire_hazard_zone) laExtras.push(`${building.fire_hazard_zone} fire zone`);
-    if (building.ellis_act_filing) laExtras.push("Ellis Act history");
-  }
-  const laExtraStr = laExtras.length > 0 ? ` ${laExtras.join(", ")}.` : "";
-  const description = `${building.full_address} has ${descParts.join(" and ")}.${laExtraStr} Read tenant reviews, check bedbug history, and see the building score \u2014 free.`;
+  const description = buildBuildingDescription({
+    shortAddress,
+    neighborhood: neighborhoodName,
+    issues: issuesFiled,
+    reviewCount: building.review_count,
+    overallScore:
+      building.overall_score != null
+        ? Number(normalizeScore(building.overall_score).toFixed(1))
+        : null,
+  });
   const url = canonicalUrl(buildingUrl(building, cityParam as City));
 
   return {
@@ -195,6 +203,10 @@ export default async function BuildingPage({ params }: Props) {
   const addressFirstLine = building.full_address.split(",")[0] ?? building.full_address;
   const cityPrefix = CITY_META[typedCity]?.urlPrefix ?? "nyc";
   const shortAddress = addressFirstLine.trim() || building.full_address;
+  const { name: neighborhoodName } = buildingNeighborhood(
+    { zip_code: building.zip_code, borough: building.borough },
+    typedCity
+  );
 
   // Grade for wayfinder header — overall_score is already on the building row.
   const grade = scoreToGrade(building.overall_score);
@@ -212,7 +224,7 @@ export default async function BuildingPage({ params }: Props) {
           overall_score: building.overall_score,
         }}
       />
-      <JsonLd data={buildingJsonLd(building)} />
+      <JsonLd data={buildingJsonLd(building, typedCity)} />
       <JsonLd data={breadcrumbJsonLd([
         { name: "Home", url: "/" },
         { name: "Buildings", url: cityPath("/buildings", typedCity) },
@@ -235,6 +247,12 @@ export default async function BuildingPage({ params }: Props) {
           />
 
           <HeroV2Streamed building={building} city={typedCity} />
+          <BuildingLeadParagraph
+            fullAddress={building.full_address}
+            neighborhood={neighborhoodName}
+            city={typedCity}
+            totalUnits={building.total_units}
+          />
 
           <RecordStripStreamed building={building} />
 
