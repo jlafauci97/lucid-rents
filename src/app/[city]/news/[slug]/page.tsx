@@ -9,6 +9,7 @@ import { NewsList } from "@/components/news/NewsList";
 import { CategoryIcon } from "@/components/news/CategoryIcon";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { NewsCard } from "@/components/news/NewsCard";
+import { ArticleBody } from "@/components/news/ArticleBody";
 import type { NewsArticle } from "@/types";
 
 export const revalidate = 1800;
@@ -346,44 +347,64 @@ async function ArticleView({ slug, city }: { slug: string; city: import("@/lib/c
           </div>
         )}
 
-        <div className="rounded-xl border border-[#e2e8f0] overflow-hidden bg-white mb-6">
-          <div className="flex items-center justify-between px-4 py-2 bg-[#f8fafc] border-b border-[#e2e8f0]">
-            <span className="text-xs text-[#94a3b8]">Source: {typedArticle.source_name}</span>
-            <a
-              href={typedArticle.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 text-xs text-[#3B82F6] hover:underline"
-            >
-              Open original
-              <ExternalLink className="w-3 h-3" />
-            </a>
-          </div>
-          <iframe
-            src={typedArticle.url}
-            title={typedArticle.title}
-            className="w-full border-0"
-            style={{ height: "70vh", minHeight: "500px" }}
-            sandbox="allow-scripts allow-same-origin allow-popups"
-            loading="lazy"
-            referrerPolicy="no-referrer"
-          />
-        </div>
+        {typedArticle.auto_generated && typedArticle.body ? (
+          <>
+            {typedArticle.image_url && (
+              <div className="rounded-xl overflow-hidden border border-[#e2e8f0] mb-6">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={typedArticle.image_url}
+                  alt={typedArticle.title}
+                  className="w-full h-auto object-cover"
+                />
+              </div>
+            )}
+            <article className="max-w-3xl mb-8">
+              <ArticleBody body={typedArticle.body} />
+            </article>
+          </>
+        ) : (
+          <>
+            <div className="rounded-xl border border-[#e2e8f0] overflow-hidden bg-white mb-6">
+              <div className="flex items-center justify-between px-4 py-2 bg-[#f8fafc] border-b border-[#e2e8f0]">
+                <span className="text-xs text-[#94a3b8]">Source: {typedArticle.source_name}</span>
+                <a
+                  href={typedArticle.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-xs text-[#3B82F6] hover:underline"
+                >
+                  Open original
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+              <iframe
+                src={typedArticle.url}
+                title={typedArticle.title}
+                className="w-full border-0"
+                style={{ height: "70vh", minHeight: "500px" }}
+                sandbox="allow-scripts allow-same-origin allow-popups"
+                loading="lazy"
+                referrerPolicy="no-referrer"
+              />
+            </div>
 
-        <div className="text-center mb-8">
-          <p className="text-sm text-[#94a3b8] mb-2">
-            Article not loading? Some sites restrict embedding.
-          </p>
-          <a
-            href={typedArticle.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#3B82F6] border border-[#3B82F6] rounded-lg hover:bg-[#EFF6FF] transition-colors"
-          >
-            Read on {typedArticle.source_name}
-            <ExternalLink className="w-4 h-4" />
-          </a>
-        </div>
+            <div className="text-center mb-8">
+              <p className="text-sm text-[#94a3b8] mb-2">
+                Article not loading? Some sites restrict embedding.
+              </p>
+              <a
+                href={typedArticle.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#3B82F6] border border-[#3B82F6] rounded-lg hover:bg-[#EFF6FF] transition-colors"
+              >
+                Read on {typedArticle.source_name}
+                <ExternalLink className="w-4 h-4" />
+              </a>
+            </div>
+          </>
+        )}
 
         {related && related.length > 0 && (
           <div className="mt-8 pt-8 border-t border-[#e2e8f0]">

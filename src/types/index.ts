@@ -434,6 +434,7 @@ export interface NewsArticle {
   slug: string;
   title: string;
   excerpt: string | null;
+  body: string | null;
   url: string;
   source_name: string;
   source_slug: string;
@@ -443,6 +444,7 @@ export interface NewsArticle {
   published_at: string;
   fetched_at: string;
   created_at: string;
+  auto_generated: boolean | null;
 }
 
 export interface SearchResult {
