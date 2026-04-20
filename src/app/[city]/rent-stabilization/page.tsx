@@ -6,7 +6,6 @@ import { canonicalUrl, buildingUrl, cityPath, cityBreadcrumbs } from "@/lib/seo"
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { FAQSection } from "@/components/seo/FAQSection";
 import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
 
 /* ---------------------------------------------------------------------------
@@ -526,8 +525,6 @@ export default async function RentStabilizationPage({
             <p key={i}>{p}</p>
           ))}
         </section>
-
-        <AdBlock adSlot="RENT_STAB_BOTTOM" adFormat="horizontal" />
 
         {/* FAQ */}
         <FAQSection

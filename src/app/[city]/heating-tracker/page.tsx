@@ -13,7 +13,6 @@ import {
 import { canonicalUrl, cityPath } from "@/lib/seo";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
 import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
 
 export async function generateMetadata({
   params,
@@ -490,8 +489,6 @@ export default async function HeatingTrackerPage({
             </p>
           </div>
         </div>
-
-        <AdBlock adSlot="HEATING_TRACKER_BOTTOM" adFormat="horizontal" />
       </div>
     </AdSidebar>
   );

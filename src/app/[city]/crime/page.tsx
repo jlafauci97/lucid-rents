@@ -6,7 +6,6 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { getNeighborhoodName } from "@/lib/nyc-neighborhoods";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
 import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
 import { CrimeMapSection } from "@/components/crime/CrimeMapSection";
 
 export async function generateMetadata({ params }: { params: Promise<{ city: string }> }): Promise<Metadata> {
@@ -301,8 +300,6 @@ export default async function CrimePage({
           </div>
         </div>
       )}
-
-      <AdBlock adSlot="CRIME_BOTTOM" adFormat="horizontal" />
     </div>
     </AdSidebar>
   );

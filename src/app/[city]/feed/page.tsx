@@ -4,7 +4,6 @@ import { FeedView } from "@/components/feed/FeedView";
 import { Shield, MessageSquare, Building2, Scale, HardHat, TrendingUp, ChevronRight } from "lucide-react";
 import { buildingUrl, canonicalUrl, cityPath } from "@/lib/seo";
 import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
 import type { Metadata } from "next";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
 
@@ -147,7 +146,6 @@ export default async function FeedPage({ params }: { params: Promise<{ city: str
         {/* Sidebar — sticky */}
         <aside className="hidden lg:block space-y-6 sticky top-20 self-start">
           <FeedStats city={cityParam as import("@/lib/cities").City} />
-          <AdBlock adSlot="FEED_SIDEBAR" adFormat="rectangle" />
           <TrendingBuildings city={cityParam as import("@/lib/cities").City} />
           <FeedSourceLabel />
         </aside>

@@ -8,7 +8,6 @@ import { NEWS_CATEGORIES, type NewsCategory } from "@/lib/news-sources";
 import { NewsList } from "@/components/news/NewsList";
 import { CategoryIcon } from "@/components/news/CategoryIcon";
 import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
 import { NewsCard } from "@/components/news/NewsCard";
 import type { NewsArticle } from "@/types";
 
@@ -385,8 +384,6 @@ async function ArticleView({ slug, city }: { slug: string; city: import("@/lib/c
             <ExternalLink className="w-4 h-4" />
           </a>
         </div>
-
-        <AdBlock adSlot="NEWS_ARTICLE_BOTTOM" adFormat="horizontal" />
 
         {related && related.length > 0 && (
           <div className="mt-8 pt-8 border-t border-[#e2e8f0]">

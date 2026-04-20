@@ -3,7 +3,6 @@ import { BarChart3 } from "lucide-react";
 import { canonicalUrl, cityPath, cityBreadcrumbs } from "@/lib/seo";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
 import dynamic from "next/dynamic";
 import { ZipRentTable } from "@/components/rent-data/ZipRentTable";
 
@@ -216,8 +215,6 @@ export default async function RentDataPage({ params: routeParams }: { params: Pr
           </p>
           <RentMap data={zipData} city={city} />
         </section>
-
-        <AdBlock adSlot="RENT_DATA_BOTTOM" adFormat="horizontal" />
       </div>
     </AdSidebar>
   );

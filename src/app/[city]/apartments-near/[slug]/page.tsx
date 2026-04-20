@@ -8,7 +8,6 @@ import { isValidCity, CITY_META, type City } from "@/lib/cities";
 import { normalizeScore } from "@/lib/constants";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
 import {
   getLineBySlug,
   getMetroLineBySlug,
@@ -254,8 +253,6 @@ export default async function ApartmentsNearPage({
           </div>
 
           <TransitBuildingList buildings={buildingsWithDistance} lineSlug={slug} lineType={lineInfo.type === "rail" ? "subway" : lineInfo.type} lineColor={lineInfo.color} lineTextColor={lineInfo.textColor} routeName={lineInfo.routeName} city={city} rsLabel={rsLabel} />
-
-          <AdBlock adSlot="TRANSIT_BOTTOM" adFormat="horizontal" />
         </div>
       </AdSidebar>
     );
@@ -368,8 +365,6 @@ export default async function ApartmentsNearPage({
             )}
           </div>
         )}
-
-        <AdBlock adSlot="TRANSIT_BOTTOM" adFormat="horizontal" />
 
         <div className="mt-8">
           <h2 className="text-lg font-bold text-[#0F1D2E] mb-4">Other Landmarks in {meta.fullName}</h2>

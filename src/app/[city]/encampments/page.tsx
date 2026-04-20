@@ -4,7 +4,6 @@ import { canonicalUrl, cityPath } from "@/lib/seo";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
 import { notFound } from "next/navigation";
 import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
 import { EncampmentMapSection } from "@/components/encampments/EncampmentMapSection";
 
 export async function generateMetadata({
@@ -202,8 +201,6 @@ export default async function EncampmentsPage({
             </p>
           </div>
         </div>
-
-        <AdBlock adSlot="ENCAMPMENTS_BOTTOM" adFormat="horizontal" />
       </div>
     </AdSidebar>
   );

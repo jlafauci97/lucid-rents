@@ -3,7 +3,6 @@ import { AlertTriangle, Building2, MapPin, ChevronLeft, ChevronRight } from "luc
 import Link from "next/link";
 import { buildingUrl, canonicalUrl } from "@/lib/seo";
 import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
 import { getRegions, getRegionLabel } from "@/lib/constants";
 import { CITY_META, type City } from "@/lib/cities";
 import type { Metadata } from "next";
@@ -272,8 +271,6 @@ export default async function RankingsPage({ params: routeParams, searchParams }
           </p>
         </div>
       )}
-
-      <AdBlock adSlot="RANKINGS_BOTTOM" adFormat="horizontal" />
     </div>
     </AdSidebar>
   );

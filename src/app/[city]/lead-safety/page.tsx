@@ -13,7 +13,6 @@ import {
 import { canonicalUrl, cityPath, buildingUrl } from "@/lib/seo";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
 import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
 
 export async function generateMetadata({
   params,
@@ -471,8 +470,6 @@ export default async function LeadSafetyPage({
             </p>
           </div>
         </div>
-
-        <AdBlock adSlot="LEAD_SAFETY_BOTTOM" adFormat="horizontal" />
       </div>
     </AdSidebar>
   );

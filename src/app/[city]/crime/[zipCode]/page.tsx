@@ -18,7 +18,6 @@ const CrimeCategoryBreakdown = dynamic(() => import("@/components/crime/CrimeCat
 import { FAQSection } from "@/components/seo/FAQSection";
 import { generateCrimeFAQ } from "@/lib/faq/area-faq";
 import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
 import {
   CRIME_CATEGORY_LABELS,
   CRIME_CATEGORY_COLORS,
@@ -377,8 +376,6 @@ export default async function CrimeZipPage({
           </Card>
         </div>
       </div>
-
-      <AdBlock adSlot="CRIME_ZIP_BOTTOM" adFormat="horizontal" />
 
       <FAQSection
         items={generateCrimeFAQ({

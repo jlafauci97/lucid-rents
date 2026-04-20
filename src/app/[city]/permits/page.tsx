@@ -5,7 +5,6 @@ import { isValidCity, CITY_META, type City } from "@/lib/cities";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { VIOLATION_AGENCIES } from "@/lib/constants";
 import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
 import { PermitMap } from "@/components/permits/PermitMap";
 import { PermitTable } from "@/components/permits/PermitTable";
 import dynamic from "next/dynamic";
@@ -215,8 +214,6 @@ export default async function PermitsPage({ params }: { params: Promise<{ city: 
           </p>
           <WorkTypeBreakdown data={typeData || []} />
         </section>
-
-        <AdBlock adSlot="PERMITS_BOTTOM" adFormat="horizontal" />
       </div>
     </AdSidebar>
   );

@@ -7,9 +7,9 @@ import Script from "next/script";
 import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
-import { CookieConsent } from "@/components/ui/CookieConsent";
 
 const GA_MEASUREMENT_ID = "G-FS7Q3PF982";
+const ADSENSE_CLIENT_ID = "ca-pub-2908534121884582";
 
 const sora = Sora({
   variable: "--font-sora",
@@ -71,6 +71,9 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     images: ["/og-image.jpg"],
   },
+  other: {
+    "google-adsense-account": ADSENSE_CLIENT_ID,
+  },
 };
 
 export default async function RootLayout({
@@ -80,10 +83,6 @@ export default async function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <head>
-        <link rel="preconnect" href="https://www.googletagmanager.com" />
-        <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
-      </head>
       <Script
         src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
         strategy="afterInteractive"
@@ -96,6 +95,13 @@ export default async function RootLayout({
           gtag('config', '${GA_MEASUREMENT_ID}');
         `}
       </Script>
+      <Script
+        id="google-adsense"
+        async
+        src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT_ID}`}
+        crossOrigin="anonymous"
+        strategy="afterInteractive"
+      />
       <body
         className={`${sora.variable} ${geistMono.variable} ${geistSans.variable} ${youngSerif.variable} antialiased`}
         style={{ fontFamily: "var(--font-sora), system-ui, sans-serif" }}
@@ -103,7 +109,6 @@ export default async function RootLayout({
         <Navbar />
         <main className="min-h-[calc(100vh-64px-200px)]">{children}</main>
         <Footer />
-        <CookieConsent />
       </body>
     </html>
   );

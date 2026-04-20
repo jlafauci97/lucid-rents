@@ -7,7 +7,6 @@ import { getNeighborhoodNameByCity } from "@/lib/neighborhoods";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { Card, CardContent } from "@/components/ui/Card";
 import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
 import { NeighborhoodCompareSearch } from "@/components/neighborhood/NeighborhoodCompareSearch";
 import {
   NeighborhoodCompareGrid,
@@ -167,8 +166,6 @@ async function CompareContent({ params: paramsPromise, searchParams }: PageProps
           />
         </CardContent>
       </Card>
-
-      <AdBlock adSlot="NEIGHBORHOOD_COMPARE_MID" adFormat="horizontal" />
 
       {neighborhoods.length >= 2 ? (
         <Card>

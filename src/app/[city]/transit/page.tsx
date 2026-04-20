@@ -6,7 +6,6 @@ import { getLandmarksByCity } from "@/lib/landmarks";
 import { MapPin } from "lucide-react";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
 import {
   SUBWAY_LINES,
   LA_METRO_LINES,
@@ -454,8 +453,6 @@ export default async function TransitHubPage({ params }: { params: Promise<{ cit
             </section>
           );
         })()}
-
-        <AdBlock adSlot="TRANSIT_HUB_BOTTOM" adFormat="horizontal" />
       </div>
     </AdSidebar>
   );

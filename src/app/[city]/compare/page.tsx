@@ -4,7 +4,6 @@ import { CompareSearch } from "@/components/compare/CompareSearch";
 import { CompareGrid } from "@/components/compare/CompareGrid";
 import { Card, CardContent } from "@/components/ui/Card";
 import { AdSidebar } from "@/components/ui/AdSidebar";
-import { AdBlock } from "@/components/ui/AdBlock";
 import { ArrowLeftRight } from "lucide-react";
 import { canonicalUrl, cityPath, cityBreadcrumbs } from "@/lib/seo";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
@@ -87,8 +86,6 @@ async function CompareContent({ params: paramsPromise, searchParams }: ComparePa
           <CompareSearch selectedIds={ids} selectedBuildings={buildings} />
         </CardContent>
       </Card>
-
-      <AdBlock adSlot="COMPARE_MID" adFormat="horizontal" />
 
       {/* Comparison grid */}
       {buildings.length >= 2 ? (
