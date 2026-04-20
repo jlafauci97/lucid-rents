@@ -21,6 +21,7 @@ import { S10_NYCInsights } from "@/components/building/v2/sections/S10_NYCInsigh
 import { HeroV2Streamed } from "@/components/building/v2/streaming/HeroV2Streamed";
 import { RecordStripStreamed } from "@/components/building/v2/streaming/RecordStripStreamed";
 import { S01RentalIntelligenceStreamed } from "@/components/building/v2/streaming/S01RentalIntelligenceStreamed";
+import { SubmarketTrendsStreamed } from "@/components/building/v2/streaming/SubmarketTrendsStreamed";
 import { S02IssuesStreamed } from "@/components/building/v2/streaming/S02IssuesStreamed";
 import { S03TenantReviewsStreamed } from "@/components/building/v2/streaming/S03TenantReviewsStreamed";
 import { S04AmenitiesStreamed } from "@/components/building/v2/streaming/S04AmenitiesStreamed";
@@ -267,6 +268,7 @@ export default async function BuildingPage({ params }: Props) {
 
             <div className="main" id="main-content">
               <S01RentalIntelligenceStreamed building={building} />
+              <SubmarketTrendsStreamed building={building} />
               <S02IssuesStreamed building={building} seeAllUrl={seeAllIssuesUrl} />
               <S03TenantReviewsStreamed building={building} seeAllUrl={seeAllReviewsUrl} />
               <S04AmenitiesStreamed building={building} />
