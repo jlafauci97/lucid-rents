@@ -21,29 +21,45 @@ export interface LandlordStats {
  * city.
  */
 export const getLandlordStats = cache(async (
-  slug: string,
+  slugOrName: string,
   city: City
 ): Promise<LandlordStats | null> => {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
+  // Primary: match by slug
+  const bySlug = await supabase
     .from("landlord_stats")
     .select("name, slug, building_count, total_violations, total_dob_violations, total_complaints")
-    .eq("slug", slug)
+    .eq("slug", slugOrName)
     .eq("metro", city)
     .limit(1)
-    .single();
+    .maybeSingle();
 
-  if (error || !data) return null;
+  let row = bySlug.data;
+
+  // Fallback: legacy URL format — resolve by ilike name match
+  if (!row && !bySlug.error) {
+    const decoded = decodeURIComponent(slugOrName);
+    const byName = await supabase
+      .from("landlord_stats")
+      .select("name, slug, building_count, total_violations, total_dob_violations, total_complaints")
+      .ilike("name", decoded)
+      .eq("metro", city)
+      .limit(1)
+      .maybeSingle();
+    row = byName.data;
+  }
+
+  if (!row) return null;
 
   const isAltMetro = city === "chicago" || city === "miami" || city === "houston";
-  const totalViolations = (isAltMetro ? data.total_dob_violations : data.total_violations) ?? 0;
-  const totalComplaints = data.total_complaints ?? 0;
+  const totalViolations = (isAltMetro ? row.total_dob_violations : row.total_violations) ?? 0;
+  const totalComplaints = row.total_complaints ?? 0;
 
   return {
-    name: data.name,
-    slug: data.slug,
-    buildingCount: data.building_count ?? 0,
+    name: row.name,
+    slug: row.slug,
+    buildingCount: row.building_count ?? 0,
     totalIssues: totalViolations + totalComplaints,
     totalViolations,
     totalComplaints,
