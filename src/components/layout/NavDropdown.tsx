@@ -223,7 +223,7 @@ export function NavDropdown({ city: propCity = DEFAULT_CITY }: { city?: City }) 
 
       {open && (
         <div
-          className="absolute top-full right-0 mt-2 w-[520px] max-w-[calc(100vw-2rem)] bg-[#1A2B3D] border border-white/10 rounded-lg shadow-xl overflow-hidden z-50"
+          className="absolute top-full right-0 mt-2 w-[640px] max-w-[calc(100vw-2rem)] bg-[#1A2B3D] border border-white/10 rounded-lg shadow-xl overflow-hidden z-50"
           style={{ maxHeight: "calc(100vh - 80px)", overflowY: "auto" }}
         >
           <div className="grid grid-cols-2">
@@ -237,9 +237,9 @@ export function NavDropdown({ city: propCity = DEFAULT_CITY }: { city?: City }) 
                 className="flex items-start gap-3 px-4 py-3 hover:bg-white/5 transition-colors"
               >
                 <tool.icon className="w-4 h-4 text-[#3B82F6] mt-0.5 flex-shrink-0" />
-                <div>
+                <div className="min-w-0 flex-1">
                   <div className="text-sm font-medium text-white">{getToolLabel(tool, city)}</div>
-                  <div className="text-xs text-gray-400 mt-0.5">{getToolDescription(tool, city)}</div>
+                  <div className="text-xs text-gray-400 mt-0.5 leading-snug">{getToolDescription(tool, city)}</div>
                 </div>
               </Link>
             ))}
