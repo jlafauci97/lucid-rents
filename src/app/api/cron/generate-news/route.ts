@@ -6,6 +6,7 @@ import { isValidCity, CITY_META, type City } from "@/lib/cities";
 import { TEMPLATES } from "@/lib/news/templates";
 import type { SignalCandidate } from "@/lib/news/templates/types";
 import { draftArticle } from "@/lib/news/drafter";
+import { imageUrlForQuery } from "@/lib/news/image-search";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -32,11 +33,6 @@ function todayInTz(tz: string): string {
     day: "2-digit",
   });
   return fmt.format(new Date());
-}
-
-function imageUrlForQuery(q: string): string {
-  const slug = q.trim().replace(/\s+/g, ",");
-  return `https://loremflickr.com/1200/800/${encodeURIComponent(slug)}/all`;
 }
 
 export async function GET(req: NextRequest) {
@@ -159,7 +155,7 @@ export async function GET(req: NextRequest) {
       source_slug: "lucid-rents",
       source_type: "lucid-rents",
       category: drafted.category,
-      image_url: imageUrlForQuery(drafted.image_query),
+      image_url: await imageUrlForQuery(drafted.image_query),
       author: "Lucid Rents Newsroom",
       published_at: publishedAt,
       metro: city,
