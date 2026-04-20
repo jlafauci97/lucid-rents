@@ -5,7 +5,7 @@ export const runtime = "nodejs";
 
 function safeRedirect(pathname: string | null | undefined): string {
   if (!pathname || !pathname.startsWith("/mission-control")) {
-    return "/mission-control/news-drafts";
+    return "/mission-control";
   }
   return pathname;
 }

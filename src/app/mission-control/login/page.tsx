@@ -11,7 +11,7 @@ export default async function MissionControlLogin({
   searchParams: Promise<SearchParams>;
 }) {
   const { next, error } = await searchParams;
-  const nextPath = next && next.startsWith("/mission-control") ? next : "/mission-control/news-drafts";
+  const nextPath = next && next.startsWith("/mission-control") ? next : "/mission-control";
 
   return (
     <main className="min-h-screen bg-[#0F1D2E] flex items-center justify-center p-6 text-white">
