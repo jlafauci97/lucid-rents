@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Newspaper, Activity, Users, MessageSquare, Megaphone } from "lucide-react";
+import { LayoutDashboard, Newspaper, Activity, Users, MessageSquare, Megaphone, LogOut } from "lucide-react";
 
 const NAV = [
   { href: "/mission-control", label: "Hub", icon: LayoutDashboard },
@@ -40,6 +40,15 @@ export function MCSidebar() {
           );
         })}
       </ul>
+      <div className="mt-6 border-t border-slate-800 pt-4">
+        <Link
+          href="/mission-control/logout"
+          className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-slate-400 hover:bg-slate-800/50 hover:text-slate-100"
+        >
+          <LogOut className="h-4 w-4" />
+          Sign out
+        </Link>
+      </div>
     </nav>
   );
 }

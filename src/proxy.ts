@@ -113,7 +113,11 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // 0. Mission Control password gate (runs before any city routing).
-  if (pathname.startsWith("/mission-control") && pathname !== "/mission-control/login") {
+  if (
+    pathname.startsWith("/mission-control") &&
+    pathname !== "/mission-control/login" &&
+    pathname !== "/mission-control/logout"
+  ) {
     const cookie = request.cookies.get(MC_COOKIE);
     if (!(await verifyCookieValue(cookie?.value))) {
       const url = request.nextUrl.clone();
