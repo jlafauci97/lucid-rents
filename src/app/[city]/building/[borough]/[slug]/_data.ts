@@ -1436,12 +1436,16 @@ export async function loadLandlordData(
   const supabase = await createClient();
   const isNYC = building.metro === "nyc";
 
-  // HPD Registration data (NYC only). Used both to enrich display
-  // and as a fallback source for owner_name when buildings.owner_name is null.
-  const hpdOwner = isNYC
+  // HPD Registration data (NYC only). Looked up by BBL so we don't depend on
+  // hpd_registrations.building_id being populated — linking that FK column is
+  // a bulk-update against the buildings table, which is under heavy live
+  // traffic I/O and serializes against page-load queries. BBL lookup hits
+  // hpd_registrations directly (indexed) and works day-one for any building
+  // with a BBL.
+  const hpdOwner = isNYC && building.bbl
     ? await safe(async () => {
         const { data } = await supabase
-          .rpc("get_building_owner_info", { target_building_id: building.id })
+          .rpc("get_building_owner_info_by_bbl", { target_bbl: building.bbl })
           .maybeSingle();
         return (data as {
           corporation_name: string | null;
