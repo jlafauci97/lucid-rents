@@ -97,6 +97,14 @@
       "schedule": "35 5 * * 1"
     },
     {
+      "path": "/api/cron/trigger?source=hpd-registrations",
+      "schedule": "5 4 * * 4"
+    },
+    {
+      "path": "/api/cron/trigger?source=hpd-contacts",
+      "schedule": "35 4 * * 4"
+    },
+    {
       "path": "/api/cron/trigger?source=sync-rent-stabilization",
       "schedule": "5 7 1 * *"
     },
