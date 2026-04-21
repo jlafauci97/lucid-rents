@@ -95,7 +95,25 @@ export interface LandlordTitleInput {
 
 export function buildLandlordTitle(input: LandlordTitleInput): string {
   const cityShort = CITY_SHORT_NAME[input.city];
-  return `${input.name}: ${input.buildingCount.toLocaleString("en-US")} Buildings, ${input.totalIssues.toLocaleString("en-US")} Issues Filed & Tenant Reviews | ${cityShort}`;
+  const bc = input.buildingCount.toLocaleString("en-US");
+  const ti = input.totalIssues.toLocaleString("en-US");
+
+  const full = `${input.name}: ${bc} Buildings, ${ti} Issues Filed & Tenant Reviews | ${cityShort}`;
+  if (full.length <= TITLE_MAX) return full;
+
+  const noReviews = `${input.name}: ${bc} Buildings, ${ti} Issues Filed | ${cityShort}`;
+  if (noReviews.length <= TITLE_MAX) return noReviews;
+
+  const noFiled = `${input.name}: ${bc} Buildings, ${ti} Issues | ${cityShort}`;
+  if (noFiled.length <= TITLE_MAX) return noFiled;
+
+  const noIssues = `${input.name}: ${bc} Buildings | ${cityShort}`;
+  if (noIssues.length <= TITLE_MAX) return noIssues;
+
+  const noCity = `${input.name}: ${bc} Buildings`;
+  if (noCity.length <= TITLE_MAX) return noCity;
+
+  return noCity.slice(0, TITLE_MAX - 1) + "…";
 }
 
 export function buildLandlordDescription(input: LandlordTitleInput): string {

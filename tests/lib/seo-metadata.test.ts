@@ -160,15 +160,61 @@ describe("buildBuildingLeadParagraph", () => {
 });
 
 describe("buildLandlordTitle", () => {
-  it("formats with counts", () => {
+  it("formats the full template when it fits", () => {
     expect(
       buildLandlordTitle({
-        name: "Stellar Management",
-        buildingCount: 412,
-        totalIssues: 8947,
+        name: "Acme LLC",
+        buildingCount: 3,
+        totalIssues: 12,
         city: "nyc",
       })
-    ).toBe("Stellar Management: 412 Buildings, 8,947 Issues Filed & Tenant Reviews | NYC");
+    ).toBe("Acme LLC: 3 Buildings, 12 Issues Filed & Tenant Reviews | NYC");
+  });
+
+  it("drops ' & Tenant Reviews' when full exceeds 70 chars", () => {
+    const t = buildLandlordTitle({
+      name: "Stellar Management",
+      buildingCount: 412,
+      totalIssues: 8947,
+      city: "nyc",
+    });
+    expect(t.length).toBeLessThanOrEqual(70);
+    expect(t).not.toMatch(/Tenant Reviews/);
+    expect(t).toContain("Issues Filed");
+  });
+
+  it("drops 'Filed' for longer names", () => {
+    const t = buildLandlordTitle({
+      name: "NYC PACT Preservation Partners LLC",
+      buildingCount: 100,
+      totalIssues: 1200,
+      city: "nyc",
+    });
+    expect(t.length).toBeLessThanOrEqual(70);
+    expect(t).not.toMatch(/Filed/);
+    expect(t).toContain("Issues");
+  });
+
+  it("drops issues clause for very long names", () => {
+    const t = buildLandlordTitle({
+      name: "One Hundred Sixty Fourth Street Associates Ltd",
+      buildingCount: 25,
+      totalIssues: 500,
+      city: "nyc",
+    });
+    expect(t.length).toBeLessThanOrEqual(70);
+    expect(t).toContain("Buildings");
+  });
+
+  it("truncates with ellipsis for absurdly long names", () => {
+    const t = buildLandlordTitle({
+      name: "Highbridge House Ogden LLC Property Management Division Holdings International",
+      buildingCount: 1247,
+      totalIssues: 25431,
+      city: "nyc",
+    });
+    expect(t.length).toBeLessThanOrEqual(70);
+    expect(t.endsWith("…")).toBe(true);
   });
 });
 
