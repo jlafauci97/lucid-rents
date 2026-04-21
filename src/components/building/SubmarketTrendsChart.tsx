@@ -76,50 +76,22 @@ export function SubmarketTrendsChart({
   const [beds, setBeds] = useState<SubmarketRentRow["beds"]>(defaultTab);
 
   const { chartData, latest, yoyPct, concessionGapPct, tenYearPct } = useMemo(() => {
-    type QuarterBucket = {
-      asking?: number;
-      effective?: number;
-      studio?: number;
-      br1?: number;
-      br2?: number;
-      br3?: number;
-    };
-    const byQuarter = new Map<string, QuarterBucket>();
-
+    const byQuarter = new Map<string, { asking?: number; effective?: number }>();
     for (const r of rows) {
+      if (r.beds !== beds) continue;
       const q = byQuarter.get(r.quarter) ?? {};
-      if (beds === "all") {
-        // On "all" we plot one asking line per bedroom type (Studio/1BR/2BR/3BR)
-        // plus keep the blended asking for the stat card.
-        if (r.rent_type === "asking") {
-          if (r.beds === "all") q.asking = Number(r.rent_per_unit);
-          else if (r.beds === "studio") q.studio = Number(r.rent_per_unit);
-          else if (r.beds === "1br") q.br1 = Number(r.rent_per_unit);
-          else if (r.beds === "2br") q.br2 = Number(r.rent_per_unit);
-          else if (r.beds === "3br") q.br3 = Number(r.rent_per_unit);
-        }
-      } else {
-        if (r.beds !== beds) continue;
-        if (r.rent_type === "asking") q.asking = Number(r.rent_per_unit);
-        else q.effective = Number(r.rent_per_unit);
-      }
+      if (r.rent_type === "asking") q.asking = Number(r.rent_per_unit);
+      else q.effective = Number(r.rent_per_unit);
       byQuarter.set(r.quarter, q);
     }
 
     const quarters = Array.from(byQuarter.keys()).sort();
-    const chartData = quarters.map((q) => {
-      const b = byQuarter.get(q) ?? {};
-      return {
-        quarter: q,
-        label: quarterLabel(q),
-        asking: b.asking ?? null,
-        effective: b.effective ?? null,
-        studio: b.studio ?? null,
-        br1: b.br1 ?? null,
-        br2: b.br2 ?? null,
-        br3: b.br3 ?? null,
-      };
-    });
+    const chartData = quarters.map((q) => ({
+      quarter: q,
+      label: quarterLabel(q),
+      asking: byQuarter.get(q)?.asking ?? null,
+      effective: byQuarter.get(q)?.effective ?? null,
+    }));
 
     const latestRow = chartData[chartData.length - 1];
     const latest = {
@@ -218,11 +190,7 @@ export function SubmarketTrendsChart({
         }}
       >
         <Stat label="Asking rent" value={fmtDollar(latest.asking)} hint="current quarter" />
-        <Stat
-          label="Effective rent"
-          value={fmtDollar(latest.effective)}
-          hint={beds === "all" ? "per bedroom only" : "net of concessions"}
-        />
+        <Stat label="Effective rent" value={fmtDollar(latest.effective)} hint="net of concessions" />
         <Stat
           label="YoY change"
           value={yoyPct == null ? "—" : `${(yoyPct * 100).toFixed(1)}%`}
@@ -326,80 +294,32 @@ export function SubmarketTrendsChart({
                 }}
               />
             )}
-            {beds === "all" ? (
-              <>
-                <Line
-                  type="monotone"
-                  dataKey="studio"
-                  name="Studio"
-                  stroke="#8b5cf6"
-                  strokeWidth={2}
-                  dot={false}
-                  activeDot={{ r: 4 }}
-                  connectNulls
-                />
-                <Line
-                  type="monotone"
-                  dataKey="br1"
-                  name="1 BR"
-                  stroke="#0ea5e9"
-                  strokeWidth={2}
-                  dot={false}
-                  activeDot={{ r: 4 }}
-                  connectNulls
-                />
-                <Line
-                  type="monotone"
-                  dataKey="br2"
-                  name="2 BR"
-                  stroke="#10b981"
-                  strokeWidth={2}
-                  dot={false}
-                  activeDot={{ r: 4 }}
-                  connectNulls
-                />
-                <Line
-                  type="monotone"
-                  dataKey="br3"
-                  name="3 BR"
-                  stroke="#f59e0b"
-                  strokeWidth={2}
-                  dot={false}
-                  activeDot={{ r: 4 }}
-                  connectNulls
-                />
-              </>
-            ) : (
-              <>
-                <Line
-                  type="monotone"
-                  dataKey="asking"
-                  name="Asking"
-                  stroke="#0f172a"
-                  strokeWidth={2}
-                  dot={false}
-                  activeDot={{ r: 4 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="effective"
-                  name="Effective (paid)"
-                  stroke="#14b8a6"
-                  strokeWidth={2}
-                  strokeDasharray="5 3"
-                  dot={false}
-                  activeDot={{ r: 4 }}
-                />
-              </>
-            )}
+            <Line
+              type="monotone"
+              dataKey="asking"
+              name="Asking"
+              stroke="#0f172a"
+              strokeWidth={2}
+              dot={false}
+              activeDot={{ r: 4 }}
+            />
+            <Line
+              type="monotone"
+              dataKey="effective"
+              name="Effective (paid)"
+              stroke="#14b8a6"
+              strokeWidth={2}
+              strokeDasharray="5 3"
+              dot={false}
+              activeDot={{ r: 4 }}
+            />
           </LineChart>
         </ResponsiveContainer>
       </div>
 
       <p style={{ fontSize: 11, color: "#64748b", marginTop: 12 }}>
-        {beds === "all"
-          ? "Asking rent per bedroom type — switch tabs to see each with effective (concession-net) rent."
-          : "Asking = rent as listed. Effective = rent actually paid after concessions (free months, broker credits). A wider gap means more room to negotiate."}
+        Asking = rent as listed. Effective = rent actually paid after concessions (free months,
+        broker credits). A wider gap means more room to negotiate.
       </p>
     </div>
   );
