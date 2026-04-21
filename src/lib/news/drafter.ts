@@ -75,7 +75,7 @@ Write the article as JSON now. No prose outside the JSON.`;
 
   const response = await anthropic.messages.create({
     model: MODEL,
-    max_tokens: 1600,
+    max_tokens: 2400,
     system: [
       {
         type: "text",
