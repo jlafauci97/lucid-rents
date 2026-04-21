@@ -22,11 +22,30 @@ export interface PostBridgeInput {
   excerpt: string | null;
   link: string;
   imageUrl: string | null;
+  hashtags?: string[];
 }
 
-function buildCaption({ title, excerpt, link }: PostBridgeInput): string {
+function formatHashtags(raw: string[] | undefined): string {
+  if (!raw || raw.length === 0) return "";
+  // Normalize again defensively: strip "#", strip non-alphanumerics, dedupe, cap 10.
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const t of raw) {
+    const clean = t.replace(/^#+/, "").replace(/[^A-Za-z0-9]/g, "").toLowerCase();
+    if (!clean || seen.has(clean)) continue;
+    seen.add(clean);
+    out.push(`#${clean}`);
+    if (out.length >= 10) break;
+  }
+  return out.join(" ");
+}
+
+function buildCaption({ title, excerpt, link, hashtags }: PostBridgeInput): string {
   const teaser = excerpt?.trim() || title.trim();
-  return `${teaser}\n\n${link}`;
+  const tagLine = formatHashtags(hashtags);
+  return tagLine
+    ? `${teaser}\n\n${link}\n\n${tagLine}`
+    : `${teaser}\n\n${link}`;
 }
 
 function parseAccountId(raw: string | undefined): number | null {

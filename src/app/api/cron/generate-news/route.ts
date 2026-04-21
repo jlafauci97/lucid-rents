@@ -163,7 +163,11 @@ export async function GET(req: NextRequest) {
       metro: city,
       status: "draft",
       signal_type: winner.type,
-      signal_metadata: { ...winner.metadata, score: winner.score },
+      signal_metadata: {
+        ...winner.metadata,
+        score: winner.score,
+        hashtags: drafted.hashtags,
+      },
       auto_generated: true,
     })
     .select("id, slug")
