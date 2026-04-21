@@ -21,7 +21,7 @@ export async function approveDraft(id: string) {
 
   const { data: draft, error: fetchErr } = await db
     .from("news_articles")
-    .select("metro, title, excerpt, slug, image_url")
+    .select("metro, title, excerpt, slug, image_url, signal_metadata")
     .eq("id", id)
     .single();
   if (fetchErr || !draft) throw new Error(`Draft not found: ${id}`);
@@ -43,12 +43,17 @@ export async function approveDraft(id: string) {
 
     // Fire Post Bridge after the response is sent — avoids blocking the UI.
     const link = `https://lucidrents.com/${prefix}/news/${draft.slug}`;
+    const meta = draft.signal_metadata as { hashtags?: unknown } | null;
+    const hashtags = Array.isArray(meta?.hashtags)
+      ? (meta!.hashtags as unknown[]).filter((t): t is string => typeof t === "string")
+      : [];
     after(async () => {
       const result = await crossPostArticle({
         title: draft.title,
         excerpt: draft.excerpt,
         link,
         imageUrl: draft.image_url,
+        hashtags,
       });
       if (!result.ok && result.reason === "api_error") {
         console.error("[post-bridge] cross-post failed:", result.detail);

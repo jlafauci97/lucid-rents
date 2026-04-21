@@ -9,6 +9,7 @@ export interface DraftedArticle {
   body: string;
   category: "Rental Market" | "Tenant Rights" | "Data" | "Guide";
   image_query: string;
+  hashtags: string[];
 }
 
 const MODEL = "claude-sonnet-4-6";
@@ -34,9 +35,14 @@ Structure:
 - Body: 280–500 words in markdown. Open with a hook (scene, observation, surprising contrast). Land the data by paragraph 2. Give context in the middle (what this means for rent, risk, neighborhood trajectory). Close with a line that feels earned — a "so what" that respects the reader's time.
 - Category must be exactly one of: "Rental Market", "Tenant Rights", "Data", "Guide".
 - image_query: 2–4 words for a stock photo search. Favor evocative ("rainy brooklyn stoop") over literal ("rent chart"). No proper nouns unless needed.
+- hashtags: exactly 10 hashtags tuned to get this story in front of the right readers on X/Twitter. Rules:
+    • Plain tokens, no "#" prefix (the system adds it)
+    • Alphanumeric only, no spaces, 3–25 chars each (e.g. "nycrealestate", "renterslife", "brickell", "hpdviolations")
+    • Mix: 2-3 geo-specific (city/neighborhood), 2-3 topical (rent, violations, landlords, housing), 2-3 audience (renters, apartmenthunting, firsttimerenter), 1-2 broader (realestate, housing). Avoid trendy unrelated tags.
+    • Lowercase preferred. No duplicates. Never inflammatory or slurs.
 
 Output format — always a single JSON object with keys:
-title, excerpt, body, category, image_query. No prose outside the JSON.`;
+title, excerpt, body, category, image_query, hashtags. No prose outside the JSON.`;
 
 export async function draftArticle({
   city,
@@ -114,6 +120,21 @@ Write the article as JSON now. No prose outside the JSON.`;
   if (!parsed.title || !parsed.excerpt || !parsed.body || !parsed.image_query) {
     throw new Error(`Missing required fields in draft: ${Object.keys(parsed).join(",")}`);
   }
+
+  // Normalize hashtags: strip any leading "#", drop invalid, dedupe, cap at 10.
+  const rawTags = Array.isArray(parsed.hashtags) ? parsed.hashtags : [];
+  const seen = new Set<string>();
+  const cleaned: string[] = [];
+  for (const t of rawTags) {
+    if (typeof t !== "string") continue;
+    const tag = t.replace(/^#+/, "").replace(/[^A-Za-z0-9]/g, "").toLowerCase();
+    if (!tag || tag.length < 2 || tag.length > 30) continue;
+    if (seen.has(tag)) continue;
+    seen.add(tag);
+    cleaned.push(tag);
+    if (cleaned.length >= 10) break;
+  }
+  parsed.hashtags = cleaned;
 
   return parsed;
 }
