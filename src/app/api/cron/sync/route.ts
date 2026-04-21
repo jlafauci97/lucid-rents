@@ -1185,6 +1185,273 @@ async function syncHPDLitigations(supabase: ReturnType<typeof getSupabaseAdmin>)
 }
 
 // ---------------------------------------------------------------------------
+// HPD Registrations + Contacts sync
+// ---------------------------------------------------------------------------
+
+/** Compute NYC 10-char BBL from boroid + block + lot. */
+function computeNycBbl(boroid: unknown, block: unknown, lot: unknown): string | null {
+  if (boroid == null || block == null || lot == null) return null;
+  const b = String(boroid).trim();
+  const bl = String(block).trim();
+  const lt = String(lot).trim();
+  if (!/^[1-5]$/.test(b)) return null;
+  if (!/^\d+$/.test(bl) || !/^\d+$/.test(lt)) return null;
+  return b + bl.padStart(5, "0") + lt.padStart(4, "0");
+}
+
+interface HPDRegistrationRawRecord {
+  registrationid?: string;
+  buildingid?: string;
+  boroid?: string;
+  boro?: string;
+  housenumber?: string;
+  lowhousenumber?: string;
+  highhousenumber?: string;
+  streetname?: string;
+  zip?: string;
+  block?: string;
+  lot?: string;
+  bin?: string;
+  communityboard?: string;
+  lastregistrationdate?: string;
+  registrationenddate?: string;
+  [key: string]: unknown;
+}
+
+async function syncHPDRegistrations(
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+  sinceOverride?: string
+): Promise<SyncResult> {
+  const lastSync = sinceOverride ?? (await getLastSyncDate(supabase, "hpd_registrations"));
+  const logId = await createSyncLog(supabase, "hpd_registrations");
+  const syncStartTime = new Date().toISOString();
+
+  let totalAdded = 0;
+  let totalLinked = 0;
+  const errors: string[] = [];
+  const affectedBuildingIds = new Set<string>();
+
+  try {
+    let offset = 0;
+    let hasMore = true;
+    let pagesFetched = 0;
+
+    while (hasMore) {
+      const url = buildSodaUrl(
+        "tesw-yqqr",
+        `lastregistrationdate > '${lastSync}'`,
+        PAGE_SIZE,
+        offset,
+        "lastregistrationdate ASC"
+      );
+
+      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+      if (!res.ok) {
+        const errText = await res.text();
+        errors.push(`HPD Registrations API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
+        break;
+      }
+
+      const records: HPDRegistrationRawRecord[] = await res.json();
+      if (records.length === 0) {
+        hasMore = false;
+        break;
+      }
+
+      const rows = records
+        .filter((r) => r.registrationid)
+        .map((r) => ({
+          registration_id: String(r.registrationid),
+          hpd_building_id: r.buildingid ? String(r.buildingid) : null,
+          bbl: computeNycBbl(r.boroid, r.block, r.lot),
+          bin: r.bin ? String(r.bin) : null,
+          borough: r.boroid ? BOROUGH_MAP[r.boroid] || r.boro || null : r.boro || null,
+          boro_id: r.boroid ? String(r.boroid) : null,
+          block: r.block ? parseInt(String(r.block), 10) : null,
+          lot: r.lot ? parseInt(String(r.lot), 10) : null,
+          house_number: r.housenumber || null,
+          low_house_number: r.lowhousenumber || null,
+          high_house_number: r.highhousenumber || null,
+          street_name: r.streetname || null,
+          zip: r.zip || null,
+          community_board: r.communityboard ? String(r.communityboard) : null,
+          last_registration_date: parseDate(r.lastregistrationdate),
+          registration_end_date: parseDate(r.registrationenddate),
+          metro: "nyc",
+          imported_at: new Date().toISOString(),
+        }));
+
+      if (rows.length > 0) {
+        totalAdded += await batchUpsert(
+          supabase,
+          "hpd_registrations",
+          rows,
+          "registration_id",
+          errors,
+          "HPD Registrations"
+        );
+      }
+
+      pagesFetched++;
+      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
+        hasMore = false;
+      } else {
+        offset += PAGE_SIZE;
+      }
+    }
+
+    // Linking: match by BBL (scoped to this sync run). createBuildings=false —
+    // rely on other sources (violations, permits, evictions) to seed new buildings.
+    try {
+      const linkResult = await linkByBbl(
+        supabase,
+        "hpd_registrations",
+        syncStartTime,
+        errors,
+        "HPD Registrations",
+        false
+      );
+      totalLinked = linkResult.linked;
+      for (const id of linkResult.affectedBuildingIds) affectedBuildingIds.add(id);
+    } catch (linkErr) {
+      errors.push(`HPD Registrations linking phase error: ${String(linkErr)}`);
+    }
+
+    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
+  } catch (err) {
+    errors.push(`HPD Registrations fatal error: ${String(err)}`);
+    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
+  }
+
+  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+}
+
+interface HPDContactRawRecord {
+  registrationcontactid?: string;
+  registrationid?: string;
+  type?: string;
+  contactdescription?: string;
+  corporationname?: string;
+  title?: string;
+  firstname?: string;
+  middleinitial?: string;
+  lastname?: string;
+  businesshousenumber?: string;
+  businessstreetname?: string;
+  businessapartment?: string;
+  businesscity?: string;
+  businessstate?: string;
+  businesszip?: string;
+  [key: string]: unknown;
+}
+
+async function syncHPDContacts(
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+  sinceOverride?: string
+): Promise<SyncResult> {
+  const lastSync = sinceOverride ?? (await getLastSyncDate(supabase, "hpd_contacts"));
+  const logId = await createSyncLog(supabase, "hpd_contacts");
+  const syncStartTime = new Date().toISOString();
+
+  let totalAdded = 0;
+  let totalLinked = 0;
+  const errors: string[] = [];
+  const affectedBuildingIds = new Set<string>();
+
+  try {
+    let offset = 0;
+    let hasMore = true;
+    let pagesFetched = 0;
+
+    while (hasMore) {
+      // Contacts have no natural date field, so use SODA's :updated_at
+      const url = buildSodaUrl(
+        "feu5-w2e2",
+        `:updated_at > '${lastSync}'`,
+        PAGE_SIZE,
+        offset,
+        ":updated_at ASC"
+      );
+
+      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+      if (!res.ok) {
+        const errText = await res.text();
+        errors.push(`HPD Contacts API error (offset ${offset}): ${res.status} ${errText.slice(0, 200)}`);
+        break;
+      }
+
+      const records: HPDContactRawRecord[] = await res.json();
+      if (records.length === 0) {
+        hasMore = false;
+        break;
+      }
+
+      const rows = records
+        .filter((r) => r.registrationcontactid && r.registrationid)
+        .map((r) => ({
+          registration_contact_id: String(r.registrationcontactid),
+          registration_id: String(r.registrationid),
+          contact_type: r.type || null,
+          contact_description: r.contactdescription || null,
+          corporation_name: r.corporationname ? r.corporationname.trim().toUpperCase().slice(0, 200) : null,
+          title: r.title || null,
+          first_name: r.firstname || null,
+          middle_initial: r.middleinitial || null,
+          last_name: r.lastname || null,
+          business_house_number: r.businesshousenumber || null,
+          business_street_name: r.businessstreetname || null,
+          business_apartment: r.businessapartment || null,
+          business_city: r.businesscity || null,
+          business_state: r.businessstate || null,
+          business_zip: r.businesszip || null,
+          metro: "nyc",
+          imported_at: new Date().toISOString(),
+        }));
+
+      if (rows.length > 0) {
+        totalAdded += await batchUpsert(
+          supabase,
+          "hpd_contacts",
+          rows,
+          "registration_contact_id",
+          errors,
+          "HPD Contacts"
+        );
+      }
+
+      pagesFetched++;
+      if (records.length < PAGE_SIZE || pagesFetched >= MAX_PAGES) {
+        hasMore = false;
+      } else {
+        offset += PAGE_SIZE;
+      }
+    }
+
+    // Link contacts → buildings by joining on hpd_registrations.registration_id
+    try {
+      const { data: linkedCount, error: linkErr } = await supabase.rpc(
+        "link_hpd_contacts_to_buildings",
+        { since: syncStartTime }
+      );
+      if (linkErr) {
+        errors.push(`HPD Contacts linking error: ${linkErr.message}`);
+      } else if (typeof linkedCount === "number") {
+        totalLinked = linkedCount;
+      }
+    } catch (linkErr) {
+      errors.push(`HPD Contacts linking fatal: ${String(linkErr)}`);
+    }
+
+    await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
+  } catch (err) {
+    errors.push(`HPD Contacts fatal error: ${String(err)}`);
+    await finalizeSyncLog(supabase, logId, "failed", totalAdded, totalLinked, errors);
+  }
+
+  return { totalAdded, totalLinked, errors, affectedBuildingIds };
+}
+
+// ---------------------------------------------------------------------------
 // DOB Violations sync
 // ---------------------------------------------------------------------------
 
@@ -4744,6 +5011,8 @@ const SOURCES: Record<string, (supabase: ReturnType<typeof getSupabaseAdmin>, si
   hpd: syncHPDViolations,
   complaints: sync311Complaints,
   litigations: syncHPDLitigations,
+  "hpd-registrations": syncHPDRegistrations,
+  "hpd-contacts": syncHPDContacts,
   dob: syncDOBViolations,
   nypd: syncNYPDComplaints,
   bedbugs: syncBedBugReports,
@@ -4791,6 +5060,7 @@ const SOURCES: Record<string, (supabase: ReturnType<typeof getSupabaseAdmin>, si
 const LINK_TABLES: Record<string, { table: string; label: string }> = {
   hpd: { table: "hpd_violations", label: "HPD" },
   litigations: { table: "hpd_litigations", label: "HPD Litigations" },
+  "hpd-registrations": { table: "hpd_registrations", label: "HPD Registrations" },
   dob: { table: "dob_violations", label: "DOB" },
   bedbugs: { table: "bedbug_reports", label: "Bedbugs" },
   evictions: { table: "evictions", label: "Evictions" },

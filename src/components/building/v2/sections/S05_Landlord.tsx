@@ -68,6 +68,15 @@ export function S05_Landlord({ building, landlord, city }: Props) {
               {building.management_company && building.management_company !== landlord.name
                 ? <span>Managed by {building.management_company}</span>
                 : null}
+              {landlord.headOfficerName ? (
+                <span>
+                  {landlord.headOfficerTitle ? `${landlord.headOfficerTitle}: ` : "Head officer: "}
+                  {landlord.headOfficerName}
+                </span>
+              ) : null}
+              {landlord.businessAddress ? (
+                <span title="Business address on file with HPD">Mail: {landlord.businessAddress}</span>
+              ) : null}
             </div>
             <p className="prose" style={{ fontSize: "var(--f-16)", maxWidth: "none", marginTop: "var(--s-3)" }}>
               {landlord.name
@@ -160,7 +169,14 @@ export function S05_Landlord({ building, landlord, city }: Props) {
           <li className="ll-tl">
             <span className="ll-tl-dot current"></span>
             <span className="ll-tl-year">now</span>
-            <span className="ll-tl-body"><b>{landlord.name ?? "Current owner"}</b><small>Owner of record per HPD registration{landlord.portfolioSize > 1 ? ` · manages ${landlord.portfolioSize} buildings` : ""}.</small></span>
+            <span className="ll-tl-body">
+              <b>{landlord.name ?? "Current owner"}</b>
+              <small>
+                Owner of record per HPD registration
+                {landlord.portfolioSize > 1 ? ` · manages ${landlord.portfolioSize} buildings` : ""}
+                {landlord.registrationEndDate ? ` · registration active through ${landlord.registrationEndDate}` : ""}.
+              </small>
+            </span>
           </li>
         </ol>
       </div>

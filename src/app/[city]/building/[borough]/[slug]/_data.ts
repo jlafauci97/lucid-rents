@@ -138,6 +138,11 @@ export interface BuildingV2Data {
     }>;
     portfolioSize: number;
     portfolioAvgScore: number | null;
+    // HPD Registration-derived (NYC only). All null when no HPD data.
+    headOfficerName: string | null;
+    headOfficerTitle: string | null;
+    businessAddress: string | null;
+    registrationEndDate: string | null;
   };
   similar: Array<{
     id: string;
@@ -1044,6 +1049,10 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
       otherBuildings: landlordOtherBuildings,
       portfolioSize: landlordStats.portfolioSize,
       portfolioAvgScore: landlordStats.portfolioAvgScore,
+      headOfficerName: null,
+      headOfficerTitle: null,
+      businessAddress: null,
+      registrationEndDate: null,
     },
     similar,
     timeline: timelineRaw,
@@ -1425,7 +1434,45 @@ export async function loadLandlordData(
   building: Building,
 ): Promise<BuildingV2Data["landlord"]> {
   const supabase = await createClient();
-  const ownerName = building.owner_name ?? building.management_company ?? null;
+  const isNYC = building.metro === "nyc";
+
+  // HPD Registration data (NYC only). Used both to enrich display
+  // and as a fallback source for owner_name when buildings.owner_name is null.
+  const hpdOwner = isNYC
+    ? await safe(async () => {
+        const { data } = await supabase
+          .rpc("get_building_owner_info", { target_building_id: building.id })
+          .maybeSingle();
+        return (data as {
+          corporation_name: string | null;
+          head_officer_name: string | null;
+          head_officer_title: string | null;
+          business_house_number: string | null;
+          business_street_name: string | null;
+          business_city: string | null;
+          business_state: string | null;
+          business_zip: string | null;
+          registration_end_date: string | null;
+        } | null) ?? null;
+      }, null)
+    : null;
+
+  const ownerName =
+    building.owner_name ??
+    building.management_company ??
+    hpdOwner?.corporation_name ??
+    null;
+
+  const businessAddress = hpdOwner
+    ? [
+        [hpdOwner.business_house_number, hpdOwner.business_street_name].filter(Boolean).join(" ").trim(),
+        [hpdOwner.business_city, hpdOwner.business_state].filter(Boolean).join(", ").trim(),
+        hpdOwner.business_zip,
+      ]
+        .filter((s): s is string => !!s && s.length > 0)
+        .join(", ")
+    : null;
+
   const [otherBuildings, stats] = await Promise.all([
     safe(async () => {
       if (!ownerName) return [];
@@ -1459,6 +1506,10 @@ export async function loadLandlordData(
     otherBuildings,
     portfolioSize: stats.portfolioSize,
     portfolioAvgScore: stats.portfolioAvgScore,
+    headOfficerName: hpdOwner?.head_officer_name ?? null,
+    headOfficerTitle: hpdOwner?.head_officer_title ?? null,
+    businessAddress: businessAddress && businessAddress.length > 0 ? businessAddress : null,
+    registrationEndDate: hpdOwner?.registration_end_date ?? null,
   };
 }
 
