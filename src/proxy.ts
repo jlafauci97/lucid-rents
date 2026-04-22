@@ -247,5 +247,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next|api|favicon|.*\\..*).*)"],
+  matcher: ["/((?!_next|api|\\.well-known/workflow|favicon|.*\\..*).*)"],
 };
