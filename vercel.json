@@ -284,6 +284,11 @@
     {
       "path": "/api/cron/health-check",
       "schedule": "0 22 * * *"
+    },
+
+    {
+      "path": "/api/cron/marketing",
+      "schedule": "0 */6 * * *"
     }
   ]
 }

@@ -9,6 +9,8 @@ import type { MarketingRedditThread, MarketingRedditStatus } from "@/types/marke
 
 type RedditFilter = "draft_ready" | "approved" | "replied" | "skipped" | "all";
 
+type CountsByStatus = Partial<Record<RedditFilter, number>>;
+
 function formatRelativeTime(isoDate: string): string {
   const diff = Date.now() - new Date(isoDate).getTime();
   const mins = Math.floor(diff / 60000);
@@ -22,8 +24,8 @@ function formatRelativeTime(isoDate: string): string {
 const REDDIT_FILTERS: { key: RedditFilter; label: string }[] = [
   { key: "draft_ready", label: "Pending" },
   { key: "approved", label: "Approved" },
-  { key: "replied", label: "Replied" },
-  { key: "skipped", label: "Skipped" },
+  { key: "replied", label: "Posted" },
+  { key: "skipped", label: "Denied" },
   { key: "all", label: "All" },
 ];
 
@@ -33,6 +35,7 @@ export function RedditTab() {
   const [filter, setFilter] = useState<RedditFilter>("draft_ready");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [editedReplies, setEditedReplies] = useState<Record<string, string>>({});
+  const [counts, setCounts] = useState<CountsByStatus>({});
 
   const fetchThreads = useCallback(async () => {
     try {
@@ -53,11 +56,27 @@ export function RedditTab() {
     }
   }, [filter]);
 
+  const fetchCounts = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/marketing/reddit/counts`);
+      const data = await res.json();
+      if (data?.byStatus) {
+        setCounts({ ...data.byStatus, all: data.total });
+      }
+    } catch (err) {
+      console.error("Failed to fetch Reddit counts:", err);
+    }
+  }, []);
+
   useEffect(() => {
     fetchThreads();
-    const interval = setInterval(fetchThreads, 30000);
+    fetchCounts();
+    const interval = setInterval(() => {
+      fetchThreads();
+      fetchCounts();
+    }, 30000);
     return () => clearInterval(interval);
-  }, [fetchThreads]);
+  }, [fetchThreads, fetchCounts]);
 
   async function handleAction(threadId: string, action: "approve" | "skip") {
     setActionLoading(threadId);
@@ -97,19 +116,33 @@ export function RedditTab() {
       {/* Filter tabs */}
       <div className="flex items-center justify-between">
         <div className="flex gap-1">
-          {REDDIT_FILTERS.map(({ key, label }) => (
-            <button
-              key={key}
-              onClick={() => { setFilter(key); setLoading(true); }}
-              className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
-                filter === key
-                  ? "bg-[#0F1D2E] text-white"
-                  : "bg-gray-100 text-[#64748b] hover:bg-gray-200"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
+          {REDDIT_FILTERS.map(({ key, label }) => {
+            const count = counts[key];
+            return (
+              <button
+                key={key}
+                onClick={() => { setFilter(key); setLoading(true); }}
+                className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                  filter === key
+                    ? "bg-[#0F1D2E] text-white"
+                    : "bg-gray-100 text-[#64748b] hover:bg-gray-200"
+                }`}
+              >
+                {label}
+                {typeof count === "number" && (
+                  <span
+                    className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] tabular-nums ${
+                      filter === key
+                        ? "bg-white/20 text-white"
+                        : "bg-gray-200 text-[#64748b]"
+                    }`}
+                  >
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
         <Button
           variant="ghost"
@@ -123,6 +156,14 @@ export function RedditTab() {
         </Button>
       </div>
 
+      {/* Approved tab — tell user what happens next */}
+      {filter === "approved" && threads.length > 0 && (
+        <div className="rounded-lg border border-[#f59e0b]/30 bg-[#fffbeb] px-3 py-2 text-xs text-[#92400e]">
+          <strong>{threads.length}</strong> approved repl{threads.length === 1 ? "y" : "ies"} waiting to post.
+          Run <code className="px-1 py-0.5 rounded bg-[#f59e0b]/20 font-mono text-[11px]">/reddit-post</code> in a Claude session to push them to Reddit.
+        </div>
+      )}
+
       {threads.length === 0 && !loading && (
         <Card>
           <CardContent className="py-16 text-center">
@@ -130,7 +171,13 @@ export function RedditTab() {
             <p className="text-[#64748b]">
               {filter === "draft_ready"
                 ? "No Reddit threads awaiting review"
-                : `No ${filter === "all" ? "" : filter} threads`}
+                : filter === "approved"
+                  ? "No approved replies waiting to post"
+                  : filter === "replied"
+                    ? "No posted replies yet"
+                    : filter === "skipped"
+                      ? "No denied drafts"
+                      : "No threads"}
             </p>
           </CardContent>
         </Card>

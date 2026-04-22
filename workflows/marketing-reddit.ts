@@ -2,7 +2,6 @@ import {
   getWritable,
   defineHook,
   sleep,
-  FatalError,
   RetryableError,
 } from "workflow";
 
@@ -25,7 +24,6 @@ import {
   canPostToday,
   canPostToSubreddit,
   getWaitTimeSeconds,
-  checkAllLimits,
 } from "@/lib/marketing/reddit";
 
 // Brand voice
@@ -581,6 +579,12 @@ async function markSkipped(id: string): Promise<void> {
 // Step 5 - Post reply to Reddit
 // ---------------------------------------------------------------------------
 
+// Reddit posting is handled out-of-band by scripts/post-reddit-queue.mjs,
+// which drives the user's logged-in Chrome session. Approval sets
+// status='approved'; the browser poster picks approved rows up, posts, and
+// transitions them to 'replied'. This step only persists an edited reply so
+// the browser poster reads the final text, and enforces rate limits happen
+// there (not here).
 async function postReply(
   id: string,
   subreddit: string,
@@ -590,91 +594,18 @@ async function postReply(
   const t0 = Date.now();
   console.log(JSON.stringify({ step: "postReply", event: "start", id }));
 
-  // Re-check all rate limits before posting
-  const limits = await checkAllLimits(subreddit);
-
-  if (!limits.canPost && limits.waitSeconds && limits.waitSeconds > 0) {
-    // Wait time available -- we'll return and let the workflow sleep
-    console.log(
-      JSON.stringify({
-        step: "postReply",
-        event: "must_wait",
-        waitSeconds: limits.waitSeconds,
-      })
-    );
-    throw new RetryableError(
-      `WAIT:${limits.waitSeconds}:Must wait before posting (rate limit gap)`
-    );
+  if (editedReply) {
+    await updateRedditThread(id, { draftReply: editedReply });
   }
-
-  if (!limits.canPost) {
-    console.log(
-      JSON.stringify({
-        step: "postReply",
-        event: "limit_reached",
-        reason: limits.reason,
-      })
-    );
-    await updateRedditThread(id, { status: "skipped" });
-    return;
-  }
-
-  // Get the thread from DB to retrieve the draft reply and thread ID
-  const { getRedditThread } = await import(
-    "@/lib/marketing/supabase-queries"
-  );
-  const thread = await getRedditThread(id);
-  if (!thread) {
-    throw new FatalError(`Reddit thread ${id} not found in DB`);
-  }
-
-  const replyText = editedReply ?? thread.draft_reply ?? "";
-  if (!replyText) {
-    throw new FatalError(`No reply text for thread ${id}`);
-  }
-
-  // Post to Reddit via OAuth API
-  const accessToken = process.env.REDDIT_ACCESS_TOKEN;
-  if (!accessToken) {
-    throw new FatalError(
-      "REDDIT_ACCESS_TOKEN env var not set -- cannot post replies"
-    );
-  }
-
-  const res = await fetch("https://oauth.reddit.com/api/comment", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-      "User-Agent": "LucidRents/1.0 (marketing-poster)",
-    },
-    body: new URLSearchParams({
-      thing_id: thread.thread_id, // fullname e.g. t3_abc123
-      text: replyText,
-    }),
-  });
-
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    if (res.status === 401 || res.status === 403) {
-      throw new FatalError(
-        `Reddit auth error (${res.status}): ${body.slice(0, 200)}`
-      );
-    }
-    throw new RetryableError(
-      `Reddit API error (${res.status}): ${body.slice(0, 200)}`
-    );
-  }
-
-  // Update DB status
-  await updateRedditThread(id, {
-    status: "replied",
-    repliedAt: new Date().toISOString(),
-    ...(editedReply ? { draftReply: editedReply } : {}),
-  });
 
   console.log(
-    JSON.stringify({ step: "postReply", event: "done", id, ms: Date.now() - t0 })
+    JSON.stringify({
+      step: "postReply",
+      event: "queued_for_browser",
+      id,
+      subreddit,
+      ms: Date.now() - t0,
+    })
   );
 }
 
