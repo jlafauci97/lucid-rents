@@ -11,7 +11,7 @@ on:
         required: false
         default: "6"
       dry_run:
-        description: "Dry run — do not write to DB"
+        description: "Dry run — scan Reddit + log what would be sent, but do not call the draft endpoint"
         required: false
         default: "false"
 
@@ -27,16 +27,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "npm"
 
-      - name: Install deps
-        run: npm ci --no-audit --no-fund
-
-      - name: Scan + draft
+      - name: Scan Reddit + POST to draft-batch endpoint
         env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          BASE_URL: ${{ vars.BASE_URL || 'https://lucidrents.com' }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
           REDDIT_LOOKBACK_HOURS: ${{ github.event.inputs.lookback_hours || '6' }}
         run: |
           node scripts/scan-and-draft-reddit.mjs ${{ github.event.inputs.dry_run == 'true' && '--dry' || '' }}
