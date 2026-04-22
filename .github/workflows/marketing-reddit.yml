@@ -1,0 +1,42 @@
+name: Marketing Reddit Scanner
+
+on:
+  # Every 6 hours at minute 5 (stagger from existing hourly crons)
+  schedule:
+    - cron: "5 */6 * * *"
+  workflow_dispatch:
+    inputs:
+      lookback_hours:
+        description: "How many hours back to scan (default 6)"
+        required: false
+        default: "6"
+      dry_run:
+        description: "Dry run — do not write to DB"
+        required: false
+        default: "false"
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install deps
+        run: npm ci --no-audit --no-fund
+
+      - name: Scan + draft
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          REDDIT_LOOKBACK_HOURS: ${{ github.event.inputs.lookback_hours || '6' }}
+        run: |
+          node scripts/scan-and-draft-reddit.mjs ${{ github.event.inputs.dry_run == 'true' && '--dry' || '' }}
