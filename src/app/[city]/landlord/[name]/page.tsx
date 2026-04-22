@@ -19,6 +19,7 @@ const LandlordViolationTrend = dynamic(() => import("@/components/landlord/Landl
   loading: () => <div className="bg-white rounded-xl border border-[#e2e8f0] p-6"><div className="h-6 w-48 bg-[#e2e8f0] rounded animate-pulse mb-4" /><div className="h-[300px] bg-[#f8fafc] rounded-lg animate-pulse" /></div>,
 });
 import { LandlordActionLinks } from "@/components/landlord/LandlordActionLinks";
+import { LandlordOathCard } from "@/components/landlord/LandlordOathCard";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { landlordSlug, landlordUrl, landlordJsonLd, breadcrumbJsonLd, canonicalUrl, buildingUrl, cityPath } from "@/lib/seo";
@@ -131,6 +132,43 @@ export default async function LandlordDetailPage({
     supabase.rpc("city_avg_score", { p_metro: city }),
     getLandlordStats(name, city),
   ]);
+
+  // Derive ownerName from fetched buildings for the OATH RPC (city-agnostic
+  // because we only query OATH when metro === "nyc").
+  const ownerNameForOath = buildings?.[0]?.owner_name ?? null;
+
+  const [oathSummaryRes, oathRecentRes] = city === "nyc" && ownerNameForOath
+    ? await Promise.all([
+        supabase.rpc("get_landlord_oath_summary", { landlord_owner_name: ownerNameForOath }).maybeSingle(),
+        supabase.rpc("get_landlord_oath_recent", { landlord_owner_name: ownerNameForOath, row_limit: 12 }),
+      ])
+    : [{ data: null, error: null }, { data: null, error: null }];
+
+  const oathSummary = (oathSummaryRes.data as {
+    building_count: number;
+    total_hearings: number;
+    unpaid_hearings: number;
+    total_unpaid_balance: number;
+    total_penalty_imposed: number;
+    total_paid: number;
+    default_judgments: number;
+    latest_violation_date: string | null;
+  } | null) ?? null;
+
+  const oathRecent = (oathRecentRes.data as Array<{
+    ticket_number: string;
+    bbl: string;
+    violation_date: string | null;
+    issuing_agency: string | null;
+    violation_description: string | null;
+    hearing_status: string | null;
+    hearing_result: string | null;
+    penalty_imposed: number | null;
+    balance_due: number | null;
+    house_number: string | null;
+    street_name: string | null;
+    borough: string | null;
+  }> | null) ?? [];
   // Next 16 page-level notFound() currently returns HTTP 200 (soft-404).
   // Redirecting to the landlords index keeps a proper 307 status so SEO
   // crawlers and internal health checks see a real response code.
@@ -328,6 +366,13 @@ export default async function LandlordDetailPage({
         <div className="mb-8">
           <LandlordViolationTrend landlordName={displayName} />
         </div>
+
+        {/* OATH Record (NYC only) — portfolio-wide adjudicated DOB cases */}
+        {oathSummary && oathSummary.total_hearings > 0 && (
+          <div className="mb-8">
+            <LandlordOathCard summary={oathSummary} recent={oathRecent} city={city} />
+          </div>
+        )}
 
         {/* Tenant Resources */}
         <LandlordActionLinks compareIds={buildings.slice(0, 3).map((b) => b.id)} />
