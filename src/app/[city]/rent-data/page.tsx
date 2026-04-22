@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
   if (!isValidCity(city)) return {};
   const meta = CITY_META[city];
   return {
-    title: `${meta.fullName} Rent Data & Trends | Lucid Rents`,
+    title: `${meta.fullName} Rent Data & Trends`,
     description: `What should you actually pay for rent in ${meta.fullName}? See median prices by neighborhood, rent trends over time, and an interactive map.`,
     alternates: { canonical: canonicalUrl(cityPath("/rent-data", city)) },
     openGraph: {

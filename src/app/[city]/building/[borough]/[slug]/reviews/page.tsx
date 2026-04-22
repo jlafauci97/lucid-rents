@@ -58,7 +58,8 @@ export async function generateMetadata({
   }
 
   const city = metroToCity(building.metro);
-  const title = `Tenant Reviews for ${building.full_address} | Lucid Rents`;
+  const shortAddress = building.full_address.split(",")[0]?.trim() || building.full_address;
+  const title = `Tenant Reviews for ${shortAddress}`;
   const description = `Read all ${building.review_count || 0} tenant reviews for ${building.full_address}. Sort by most recent, highest rated, lowest rated, or most helpful.`;
   const url = canonicalUrl(`${buildingUrl(building, city)}/reviews`);
 

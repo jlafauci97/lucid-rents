@@ -9,7 +9,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { TENANT_RIGHTS_BY_CITY } from "@/lib/tenant-rights-data";
-import { CITY_META, type City } from "@/lib/cities";
+import { CITY_META, CITY_SHORT_NAME, type City } from "@/lib/cities";
 import { FAQSection } from "@/components/seo/FAQSection";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { cityBreadcrumbs, canonicalUrl, cityPath } from "@/lib/seo";
@@ -26,7 +26,9 @@ export async function generateMetadata({
   if (!topic) return { title: "Not Found" };
   const meta = CITY_META[city as City];
   const cityName = meta?.fullName ?? city;
-  const title = `${topic.title} — ${cityName} Tenant Rights | Lucid Rents`;
+  const cityShort = CITY_SHORT_NAME[city as City] ?? city;
+  // Use short city name to keep room for "Tenant Rights" + " | Lucid Rents" template suffix.
+  const title = `${topic.title} — ${cityShort} Tenant Rights`;
   const description = topic.summary;
   const url = canonicalUrl(cityPath(`/tenant-rights/${slug}`, city as City));
   return {

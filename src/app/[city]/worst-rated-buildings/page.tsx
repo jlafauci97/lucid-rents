@@ -24,7 +24,7 @@ export async function generateMetadata({
     ? `Top-rated ${meta.fullName} buildings with the best reviews and fewest violations.`
     : `These ${meta.fullName} buildings have the most violations and complaints. Check the list before you sign a lease.`;
   return {
-    title: `${label} in ${meta.fullName} | Lucid Rents`,
+    title: `${label} in ${meta.fullName}`,
     description: desc,
     alternates: { canonical: canonicalUrl(cityPath("/worst-rated-buildings", city)) },
     openGraph: {

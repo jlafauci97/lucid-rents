@@ -36,7 +36,7 @@ export async function generateMetadata({
   if (!borough) return { title: "Not Found" };
 
   const page = Math.max(1, parseInt(pageStr || "1"));
-  const title = `${borough} Buildings${page > 1 ? ` — Page ${page}` : ""} | Lucid Rents`;
+  const title = `${borough} Buildings${page > 1 ? ` — Page ${page}` : ""}`;
   const description = `Apartment hunting in ${borough}? Browse every building with violation scores, complaint history, and real tenant reviews.`;
   const basePath = cityPath(`/buildings/${boroughSlug}`, city as import("@/lib/cities").City);
   const sortSuffix = sort ? `&sort=${sort}` : "";

@@ -12,7 +12,7 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
   if (!isValidCity(city)) return {};
   const meta = CITY_META[city];
   return {
-    title: `Live Feed | ${meta.fullName} | Lucid Rents`,
+    title: `Live Feed | ${meta.fullName}`,
     description: `See what's happening right now in ${meta.fullName} buildings — new violations, complaints, and tenant reviews as they come in.`,
     alternates: { canonical: canonicalUrl(cityPath("/feed", city)) },
     openGraph: {

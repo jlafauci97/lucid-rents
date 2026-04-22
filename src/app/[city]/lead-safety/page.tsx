@@ -23,7 +23,7 @@ export async function generateMetadata({
   if (!isValidCity(city)) return {};
   const meta = CITY_META[city];
   return {
-    title: `Lead Safety — Inspection Results | ${meta.fullName} | Lucid Rents`,
+    title: `Lead Safety — Inspection Results | ${meta.fullName}`,
     description: `Lead paint inspection results for Chicago buildings. See pass/fail rates, risk levels, and hazard types by address and ward.`,
     alternates: {
       canonical: canonicalUrl(cityPath("/lead-safety", city)),

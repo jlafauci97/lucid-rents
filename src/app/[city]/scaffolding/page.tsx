@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
   if (!isValidCity(city)) return {};
   const meta = CITY_META[city];
   return {
-    title: `${meta.fullName} Scaffolding & Sidewalk Sheds Tracker | Lucid Rents`,
+    title: `${meta.fullName} Scaffolding & Sidewalk Sheds Tracker`,
     description: `Is there scaffolding on your block? Track every active sidewalk shed across ${meta.fullName} — see how long it's been up and when the permit expires.`,
     alternates: { canonical: canonicalUrl(cityPath("/scaffolding", city)) },
     openGraph: {

@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
   if (!isValidCity(city)) return {};
   const meta = CITY_META[city];
   return {
-    title: `${meta.fullName} Housing News | Lucid Rents`,
+    title: `${meta.fullName} Housing News`,
     description: `The latest ${meta.fullName} housing news that actually affects renters — policy changes, tenant rights updates, and market shifts you need to know.`,
     alternates: { canonical: canonicalUrl(cityPath("/news", city)) },
     openGraph: {

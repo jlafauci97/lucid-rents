@@ -8,35 +8,33 @@ import {
   buildLandlordDescription,
 } from "@/lib/seo-metadata";
 
-describe("buildBuildingTitle", () => {
-  const base = {
-    shortAddress: "240 1st Ave",
-    neighborhood: "Stuyvesant Town",
-    city: "nyc" as const,
-  };
+// Helpers cap at 56 because the root layout's title.template adds " | Lucid Rents"
+// (14 chars) on top of whatever they return, yielding a final <title> of ≤70.
+const HELPER_TITLE_MAX = 56;
 
-  it("formats the standard template", () => {
-    expect(buildBuildingTitle(base)).toBe(
-      "240 1st Ave: Reviews, Violations & Score | Stuyvesant Town, NYC"
-    );
+describe("buildBuildingTitle", () => {
+  it("formats the full template when it fits in 56", () => {
+    expect(
+      buildBuildingTitle({ shortAddress: "100 Main", neighborhood: "Soho", city: "nyc" })
+    ).toBe("100 Main: Reviews, Violations & Score | Soho, NYC");
+  });
+
+  it("drops ' Violations &' clause when full exceeds 56", () => {
+    const t = buildBuildingTitle({
+      shortAddress: "240 1st Ave",
+      neighborhood: "Stuyvesant Town",
+      city: "nyc",
+    });
+    expect(t.length).toBeLessThanOrEqual(HELPER_TITLE_MAX);
+    expect(t).not.toMatch(/Violations &/);
+    expect(t).toContain("Reviews");
+    expect(t).toContain("Score");
   });
 
   it("uses 'LA' short name for los-angeles", () => {
-    expect(
-      buildBuildingTitle({ shortAddress: "1600 Vine St", neighborhood: "Hollywood", city: "los-angeles" })
-    ).toBe("1600 Vine St: Reviews, Violations & Score | Hollywood, LA");
-  });
-
-  it("drops ' Violations &' clause when title exceeds 70 chars", () => {
-    const long = buildBuildingTitle({
-      shortAddress: "1234 Very Long Example Street Name",
-      neighborhood: "A Somewhat Long Neighborhood Name",
-      city: "nyc",
-    });
-    expect(long.length).toBeLessThanOrEqual(70);
-    expect(long).not.toMatch(/Violations &/);
-    expect(long).toContain("Reviews");
-    expect(long).toContain("Score");
+    const t = buildBuildingTitle({ shortAddress: "1600 Vine St", neighborhood: "Hollywood", city: "los-angeles" });
+    expect(t).toContain("LA");
+    expect(t.length).toBeLessThanOrEqual(HELPER_TITLE_MAX);
   });
 
   it("drops city suffix as a last resort", () => {
@@ -45,7 +43,7 @@ describe("buildBuildingTitle", () => {
       neighborhood: "An Even Longer Neighborhood Descriptor Name",
       city: "chicago",
     });
-    expect(veryLong.length).toBeLessThanOrEqual(70);
+    expect(veryLong.length).toBeLessThanOrEqual(HELPER_TITLE_MAX);
   });
 });
 
@@ -160,49 +158,50 @@ describe("buildBuildingLeadParagraph", () => {
 });
 
 describe("buildLandlordTitle", () => {
-  it("formats the full template when it fits", () => {
+  it("formats the full template when it fits in 56", () => {
     expect(
       buildLandlordTitle({
-        name: "Acme LLC",
-        buildingCount: 3,
-        totalIssues: 12,
+        name: "X Co",
+        buildingCount: 1,
+        totalIssues: 0,
         city: "nyc",
       })
-    ).toBe("Acme LLC: 3 Buildings, 12 Issues Filed & Tenant Reviews | NYC");
+    ).toBe("X Co: 1 Buildings, 0 Issues Filed & Tenant Reviews | NYC");
   });
 
-  it("drops ' & Tenant Reviews' when full exceeds 70 chars", () => {
+  it("drops ' & Tenant Reviews' for moderate names", () => {
+    const t = buildLandlordTitle({
+      name: "Acme LLC",
+      buildingCount: 12,
+      totalIssues: 50,
+      city: "nyc",
+    });
+    expect(t.length).toBeLessThanOrEqual(HELPER_TITLE_MAX);
+    expect(t).not.toMatch(/Tenant Reviews/);
+    expect(t).toContain("Issues Filed");
+  });
+
+  it("drops 'Filed' for typical names", () => {
     const t = buildLandlordTitle({
       name: "Stellar Management",
       buildingCount: 412,
       totalIssues: 8947,
       city: "nyc",
     });
-    expect(t.length).toBeLessThanOrEqual(70);
-    expect(t).not.toMatch(/Tenant Reviews/);
-    expect(t).toContain("Issues Filed");
+    expect(t.length).toBeLessThanOrEqual(HELPER_TITLE_MAX);
+    expect(t).not.toMatch(/Filed/);
+    expect(t).toContain("Issues");
   });
 
-  it("drops 'Filed' for longer names", () => {
+  it("drops issues clause for longer names", () => {
     const t = buildLandlordTitle({
       name: "NYC PACT Preservation Partners LLC",
       buildingCount: 100,
       totalIssues: 1200,
       city: "nyc",
     });
-    expect(t.length).toBeLessThanOrEqual(70);
-    expect(t).not.toMatch(/Filed/);
-    expect(t).toContain("Issues");
-  });
-
-  it("drops issues clause for very long names", () => {
-    const t = buildLandlordTitle({
-      name: "One Hundred Sixty Fourth Street Associates Ltd",
-      buildingCount: 25,
-      totalIssues: 500,
-      city: "nyc",
-    });
-    expect(t.length).toBeLessThanOrEqual(70);
+    expect(t.length).toBeLessThanOrEqual(HELPER_TITLE_MAX);
+    expect(t).not.toMatch(/Issues/);
     expect(t).toContain("Buildings");
   });
 
@@ -213,7 +212,7 @@ describe("buildLandlordTitle", () => {
       totalIssues: 25431,
       city: "nyc",
     });
-    expect(t.length).toBeLessThanOrEqual(70);
+    expect(t.length).toBeLessThanOrEqual(HELPER_TITLE_MAX);
     expect(t.endsWith("…")).toBe(true);
   });
 });
@@ -261,8 +260,8 @@ describe("metro matrix — char caps hold across 5 metros", () => {
     { shortAddress: "1600 Smith St", neighborhood: "Downtown", city: "houston" as const },
   ] as const;
 
-  it.each(cases)("title ≤70 for %o", (input) => {
-    expect(buildBuildingTitle(input).length).toBeLessThanOrEqual(70);
+  it.each(cases)("title ≤56 (helper cap, leaves room for template) for %o", (input) => {
+    expect(buildBuildingTitle(input).length).toBeLessThanOrEqual(HELPER_TITLE_MAX);
   });
 
   it.each(cases)("description ≤160 for %o", (input) => {

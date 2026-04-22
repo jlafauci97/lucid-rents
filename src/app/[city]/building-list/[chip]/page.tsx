@@ -35,7 +35,7 @@ export async function generateMetadata({
   const c = CITY_META[city];
   const chipCfg = CHIPS[chip as ChipId];
   return {
-    title: `${chipCfg.label} buildings in ${c.fullName} | Lucid Rents`,
+    title: `${chipCfg.label} buildings in ${c.fullName}`,
     description: chipCfg.long_description,
     alternates: {
       canonical: canonicalUrl(cityPath(`/building-list/${chipCfg.slug}`, city)),

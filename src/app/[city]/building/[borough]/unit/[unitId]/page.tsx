@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: UnitPageProps): Promise<Metad
 
   const cityName = CITY_META[city]?.name || "NYC";
   return {
-    title: `Unit ${unit.unit_number} - ${building.full_address}`,
+    title: `Unit ${unit.unit_number} - ${building.full_address.split(",")[0]}`,
     description: `What's it really like living in Unit ${unit.unit_number} at ${building.full_address}? See tenant reviews, violation history, and unit-specific details.`,
   };
 }

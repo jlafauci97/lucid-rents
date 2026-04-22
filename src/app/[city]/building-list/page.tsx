@@ -22,7 +22,7 @@ export async function generateMetadata({
   if (!isValidCity(city)) return {};
   const meta = CITY_META[city];
   return {
-    title: `Building List in ${meta.fullName} — Curated Lists | Lucid Rents`,
+    title: `Building List in ${meta.fullName} — Curated Lists`,
     description: `Top-rated, rent-stabilized, most-reviewed, and more — curated ${meta.fullName} building lists based on real tenant data.`,
     alternates: { canonical: canonicalUrl(cityPath("/building-list", city)) },
     openGraph: {

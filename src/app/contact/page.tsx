@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { Mail, MessageSquare, AlertCircle } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Contact Us | Lucid Rents",
+  title: "Contact Us",
   description:
     "Found a data issue or have feedback? Reach out to the Lucid Rents team — we read every message.",
   alternates: { canonical: canonicalUrl("/contact") },

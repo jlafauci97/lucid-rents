@@ -15,7 +15,7 @@ export async function generateMetadata({
   if (!isValidCity(city)) return {};
   const meta = CITY_META[city];
   return {
-    title: `Homeless Encampment Reports | ${meta.fullName} | Lucid Rents`,
+    title: `Homeless Encampment Reports | ${meta.fullName}`,
     description: `See where homeless encampments have been reported across ${meta.fullName}. Interactive map with open, pending, and closed 311 reports by location.`,
     alternates: { canonical: canonicalUrl(cityPath("/encampments", city)) },
     openGraph: {

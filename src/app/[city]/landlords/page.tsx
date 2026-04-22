@@ -16,7 +16,7 @@ export async function generateMetadata({ params, searchParams }: { params: Promi
   const url = canonicalUrl(cityPath("/landlords", city));
 
   return {
-    title: `Landlord Directory${page > 1 ? ` — Page ${page}` : ""} | ${meta.fullName} | Lucid Rents`,
+    title: `Landlord Directory${page > 1 ? ` — Page ${page}` : ""} | ${meta.fullName}`,
     description: `Look up any ${meta.fullName} landlord. See their full portfolio, violation history, and complaint record before you rent from them.`,
     alternates: { canonical: url },
     openGraph: {

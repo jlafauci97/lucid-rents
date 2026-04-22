@@ -2,7 +2,7 @@ import { canonicalUrl } from "@/lib/seo";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy | Lucid Rents",
+  title: "Privacy Policy",
   description:
     "How Lucid Rents collects, uses, and protects your data. We respect your privacy — read our full policy.",
   alternates: { canonical: canonicalUrl("/privacy") },

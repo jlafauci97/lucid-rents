@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: ComparePageProps): Promise<Me
   const { city: cityParam } = await params;
   const cityName = isValidCity(cityParam) ? CITY_META[cityParam].fullName : "NYC";
   return {
-    title: `${cityName} Apartment Comparison Tool | Lucid Rents`,
+    title: `${cityName} Apartment Comparison Tool`,
     description: `Compare ${cityName} apartments side by side — violations, scores, rent trends, reviews, and more. Make smarter rental decisions with real data.`,
     alternates: { canonical: canonicalUrl(cityPath("/compare", isValidCity(cityParam) ? cityParam : undefined)) },
     openGraph: {

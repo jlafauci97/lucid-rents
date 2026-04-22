@@ -16,7 +16,7 @@ export async function generateMetadata({
   const cityName = meta?.fullName ?? "Your City";
   const canonical = canonicalUrl(cityPath("/tenant-tools/templates", city as City));
   return {
-    title: `${cityName} Tenant Letter Templates | Lucid Rents`,
+    title: `${cityName} Tenant Letter Templates`,
     description: `Free downloadable tenant letter templates for ${cityName} renters — rent reduction requests, repair notices, security deposit demands, lease negotiations, and more.`,
     alternates: { canonical },
     openGraph: {

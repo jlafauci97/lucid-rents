@@ -13,7 +13,7 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
   if (!isValidCity(city)) return {};
   const meta = CITY_META[city];
   return {
-    title: `Crime by Zip Code | ${meta.fullName} | Lucid Rents`,
+    title: `Crime by Zip Code | ${meta.fullName}`,
     description: `How safe is your neighborhood? See ${meta.fullName} crime rates by zip code — violent, property, and quality-of-life breakdowns with interactive maps.`,
     alternates: { canonical: canonicalUrl(cityPath("/crime", city)) },
     openGraph: {
