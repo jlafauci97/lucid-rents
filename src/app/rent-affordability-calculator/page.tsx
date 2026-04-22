@@ -5,7 +5,7 @@ import { AffordabilityDisclaimer } from "@/components/rent-calculator/Affordabil
 import { AffordabilityWizardLoader } from "@/components/rent-calculator/AffordabilityWizardLoader";
 
 export const metadata: Metadata = {
-  title: "Rent Affordability Calculator — Can I Afford to Live Here? | Lucid Rents",
+  title: "Rent Affordability Calculator — How Much Can You Pay? | Lucid Rents",
   description:
     "Find out how much rent you can actually afford. Enter your income and expenses, then discover which neighborhoods in NYC, LA, Chicago, Miami, or Houston fit your budget — backed by real rent data.",
   alternates: { canonical: canonicalUrl("/rent-affordability-calculator") },
