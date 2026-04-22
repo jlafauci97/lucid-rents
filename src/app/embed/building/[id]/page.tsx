@@ -16,7 +16,7 @@ export async function generateMetadata({
   const supabase = await createClient();
   const { data } = await supabase.from("buildings").select("full_address").eq("id", id).single();
   return {
-    title: data?.full_address ? `${data.full_address} | Lucid Rents` : "Building Embed",
+    title: data?.full_address ? `${data.full_address}` : "Building Embed",
     robots: { index: false },
   };
 }

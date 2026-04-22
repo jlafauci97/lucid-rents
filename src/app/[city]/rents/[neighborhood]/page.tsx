@@ -269,7 +269,7 @@ export async function generateMetadata({
   const url = canonicalUrl(cityPath(`/rents/${slug}`, city));
 
   return {
-    title: `Rent Trends in ${displayName} | LucidRents`,
+    title: `Rent Trends in ${displayName}`,
     description,
     alternates: { canonical: url },
     openGraph: {

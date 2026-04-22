@@ -18,7 +18,7 @@ export async function generateMetadata({
   if (!isValidCity(city)) return {};
   const meta = CITY_META[city];
   return {
-    title: `Proposals & Land Use | ${meta.fullName} | Lucid Rents`,
+    title: `Proposals & Land Use | ${meta.fullName}`,
     description: `Track city council legislation and land use applications in ${meta.fullName}. See zoning changes, rent regulations, tenant protections, and development proposals under review.`,
     alternates: { canonical: canonicalUrl(cityPath("/proposals", city)) },
     openGraph: {

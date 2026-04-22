@@ -131,7 +131,7 @@ export async function generateMetadata({
   const cfg = RENT_STAB_CONFIG[city];
   const meta = CITY_META[city];
   return {
-    title: `${cfg.title} | Lucid Rents`,
+    title: `${cfg.title}`,
     description: cfg.metaDescription,
     alternates: { canonical: canonicalUrl(cityPath("/rent-stabilization", city)) },
     openGraph: {

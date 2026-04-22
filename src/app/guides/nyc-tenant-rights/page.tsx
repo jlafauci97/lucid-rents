@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Scale, ShieldCheck, Wrench, Phone, AlertTriangle, Home } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "NYC Tenant Rights Guide 2026 | Lucid Rents",
+  title: "NYC Tenant Rights Guide 2026",
   description:
     "Every NYC renter should know these rights. Rent stabilization, lease renewals, repair obligations, eviction protections, and how to fight back when your landlord won't act.",
   alternates: { canonical: canonicalUrl("/guides/nyc-tenant-rights") },

@@ -105,7 +105,7 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
   const meta = CITY_META[city];
   const cfg = ENERGY_CONFIG[city];
   return {
-    title: `${meta.fullName} Building Energy Scores | Lucid Rents`,
+    title: `${meta.fullName} Building Energy Scores`,
     description: cfg.metaDescription,
     alternates: { canonical: canonicalUrl(cityPath("/energy", city)) },
     openGraph: {

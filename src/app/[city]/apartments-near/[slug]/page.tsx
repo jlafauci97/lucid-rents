@@ -101,7 +101,7 @@ export async function generateMetadata({
   // Transit line
   const lineInfo = parseLineSlug(slug, city);
   if (lineInfo) {
-    const title = `Apartments Near the ${lineInfo.displayName} | ${meta.fullName} | Lucid Rents`;
+    const title = `Apartments Near the ${lineInfo.displayName}`;
     const description = `Live near the ${lineInfo.displayName}? Browse ${meta.fullName} apartments within walking distance of every stop — with violation records, reviews, and rent stabilization status.`;
     return {
       title,
@@ -115,7 +115,7 @@ export async function generateMetadata({
   const landmarkData = getLandmarkBySlug(slug, city);
   if (landmarkData) {
     return {
-      title: `Apartments Near ${landmarkData.name} | ${meta.fullName} | Lucid Rents`,
+      title: `Apartments Near ${landmarkData.name}`,
       description: `Find apartments within walking distance of ${landmarkData.name} in ${meta.fullName}. Browse buildings, check violations, and compare rents.`,
       alternates: { canonical: canonicalUrl(cityPath(`/apartments-near/${slug}`, city)) },
       openGraph: {
@@ -128,7 +128,7 @@ export async function generateMetadata({
     };
   }
 
-  return { title: "Not Found | Lucid Rents" };
+  return { title: "Not Found" };
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────

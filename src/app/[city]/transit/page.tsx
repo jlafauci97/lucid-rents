@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
   const meta = CITY_META[city];
   const transitLabel = city === "los-angeles" ? "Metro Rail and bus" : "subway and bus";
   return {
-    title: `Apartments Near Transit | ${meta.fullName} | Lucid Rents`,
+    title: `Apartments Near Transit | ${meta.fullName}`,
     description: `Find ${meta.fullName} apartments you can actually commute from. Browse buildings within walking distance of every ${transitLabel} line.`,
     alternates: { canonical: canonicalUrl(cityPath("/transit", city)) },
     openGraph: {

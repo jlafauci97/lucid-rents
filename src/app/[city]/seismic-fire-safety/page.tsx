@@ -24,7 +24,7 @@ export async function generateMetadata({
   const meta = CITY_META[city as City];
   const cityName = meta?.fullName ?? "Los Angeles";
   return {
-    title: `Seismic & Fire Zones — ${cityName} | Lucid Rents`,
+    title: `Seismic & Fire Zones — ${cityName}`,
     description: `Explore earthquake fault zones, liquefaction risk, fire hazard severity zones, and landslide areas on an interactive map for ${cityName} rental buildings.`,
   };
 }

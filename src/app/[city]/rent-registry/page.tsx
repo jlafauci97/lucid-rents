@@ -10,7 +10,7 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
   const cityName = meta?.fullName ?? "Los Angeles";
   const canonical = canonicalUrl(cityPath("/rent-registry", city as City));
   return {
-    title: `${cityName} Rent Registry — Track Rents by Building | Lucid Rents`,
+    title: `${cityName} Rent Registry — Track Rents by Building`,
     description: `Los Angeles passed a mandatory rent registry ordinance requiring landlords to register rents annually. Track registered rents by building when data becomes available.`,
     alternates: { canonical },
   };

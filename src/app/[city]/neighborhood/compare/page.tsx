@@ -28,7 +28,7 @@ export async function generateMetadata({
   const city = isValidCity(cityParam) ? cityParam : "nyc";
   const cityName = CITY_META[city].fullName;
   return {
-    title: `Compare ${cityName} Neighborhoods Side by Side | Lucid Rents`,
+    title: `Compare ${cityName} Neighborhoods Side by Side`,
     description: `Compare ${cityName} neighborhoods on building quality, violations, crime, rents, and more. Pick the best area for your next apartment.`,
     alternates: {
       canonical: canonicalUrl(cityPath("/neighborhood/compare", city)),

@@ -23,7 +23,7 @@ export async function generateMetadata({
   if (!isValidCity(city)) return {};
   const meta = CITY_META[city];
   return {
-    title: `Problem Landlords in ${meta.fullName} — Code Scofflaws | Lucid Rents`,
+    title: `Problem Landlords in ${meta.fullName} — Code Scofflaws`,
     description: `Chicago's Building Code Scofflaw List — the worst landlords with the most unpaid fines and building code violations. Search by name, address, or ward.`,
     alternates: {
       canonical: canonicalUrl(cityPath("/problem-landlords", city)),

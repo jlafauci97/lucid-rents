@@ -34,7 +34,7 @@ export async function generateMetadata({
   const building = await getBuilding(borough, slug, city);
   if (!building) return { title: "Building Not Found" };
   return {
-    title: `${building.full_address} — Full History Timeline | Lucid Rents`,
+    title: `${building.full_address.split(",")[0]} — Full History Timeline`,
     description: `Complete chronological history of violations, complaints, litigation, evictions, and permits for ${building.full_address}.`,
     alternates: {
       canonical: canonicalUrl(`${buildingUrl(building, city as City)}/timeline`),

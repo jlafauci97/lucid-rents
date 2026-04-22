@@ -12,7 +12,7 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
   const cityName = meta?.fullName ?? "Los Angeles";
   const canonical = canonicalUrl(cityPath("/ellis-act", city as City));
   return {
-    title: `${cityName} Ellis Act Evictions — Lookup by Building | Lucid Rents`,
+    title: `${cityName} Ellis Act Evictions — Lookup by Building`,
     description: `Check if a ${cityName} building has been subject to Ellis Act evictions. Research building history before signing a lease.`,
     alternates: { canonical },
   };

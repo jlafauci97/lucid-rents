@@ -32,7 +32,7 @@ export async function generateMetadata({
   const meta = CITY_META[city];
   const url = canonicalUrl(cityPath("/crime/safest", city));
   return {
-    title: `Safest Neighborhoods in ${meta.fullName} (2026) | Lucid Rents`,
+    title: `Safest Neighborhoods in ${meta.fullName} (2026)`,
     description: `Ranked list of the safest neighborhoods and zip codes in ${meta.fullName} based on crime data. See safety grades, crime trends, and detailed breakdowns.`,
     alternates: { canonical: url },
     openGraph: {

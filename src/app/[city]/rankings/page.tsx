@@ -12,7 +12,7 @@ export async function generateMetadata({ params }: RankingsPageProps): Promise<M
   const city = cityParam as City;
   const { fullName } = CITY_META[city] || CITY_META.nyc;
   return {
-    title: `Worst Rated Buildings in ${fullName} | Lucid Rents`,
+    title: `Worst Rated Buildings in ${fullName}`,
     description: `Which ${fullName} buildings have the most problems? See the worst-rated buildings ranked by violations and 311 complaints.`,
     alternates: { canonical: canonicalUrl(`/${city}/rankings`) },
     openGraph: {

@@ -12,7 +12,7 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
   const cityName = meta?.fullName ?? "Los Angeles";
   const canonical = canonicalUrl(cityPath("/fire-safety", city as City));
   return {
-    title: `${cityName} Wildfire Risk Checker — Fire Hazard Zones | Lucid Rents`,
+    title: `${cityName} Wildfire Risk Checker — Fire Hazard Zones`,
     description: `Check if your building is in a Very High Fire Hazard Severity Zone in ${cityName}. See CAL FIRE data, FAIR Plan insurance risk, and soft-story retrofit status.`,
     alternates: { canonical },
   };

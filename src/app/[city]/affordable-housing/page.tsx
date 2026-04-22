@@ -22,7 +22,7 @@ export async function generateMetadata({
   if (!isValidCity(city)) return {};
   const meta = CITY_META[city];
   return {
-    title: `Affordable Housing Tracker — ARO Units | ${meta.fullName} | Lucid Rents`,
+    title: `Affordable Housing Tracker — ARO Units | ${meta.fullName}`,
     description: `Track affordable housing units created under Chicago's Affordable Requirements Ordinance (ARO). Search by ward, project, and income level.`,
     alternates: {
       canonical: canonicalUrl(cityPath("/affordable-housing", city)),

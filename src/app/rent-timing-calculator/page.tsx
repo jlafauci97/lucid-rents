@@ -4,7 +4,7 @@ import { canonicalUrl } from "@/lib/seo";
 import { SeasonalCalculator } from "@/components/rent-calculator/SeasonalCalculator";
 
 export const metadata: Metadata = {
-  title: "Best Time to Rent — Seasonal Rent Calculator | Lucid Rents",
+  title: "Best Time to Rent — Seasonal Rent Calculator",
   description:
     "Find the cheapest month to sign your lease. Based on 12 years of rental data across NYC, LA, Chicago, Miami, and Houston.",
   alternates: { canonical: canonicalUrl("/rent-timing-calculator") },

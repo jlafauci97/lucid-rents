@@ -2,7 +2,7 @@ import { canonicalUrl } from "@/lib/seo";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Terms of Service | Lucid Rents",
+  title: "Terms of Service",
   description:
     "Read the Lucid Rents Terms of Service — the rules and guidelines that govern your use of our platform.",
   alternates: { canonical: canonicalUrl("/terms") },

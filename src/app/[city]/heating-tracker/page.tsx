@@ -23,7 +23,7 @@ export async function generateMetadata({
   if (!isValidCity(city)) return {};
   const meta = CITY_META[city];
   return {
-    title: `Heating Complaint Tracker | ${meta.fullName} | Lucid Rents`,
+    title: `Heating Complaint Tracker | ${meta.fullName}`,
     description: `Track heating complaints filed through Chicago 311. See which buildings have the most no-heat complaints, complaint trends, and tenant heating rights.`,
     alternates: {
       canonical: canonicalUrl(cityPath("/heating-tracker", city)),

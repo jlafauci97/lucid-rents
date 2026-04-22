@@ -1,7 +1,10 @@
 import type { City } from "./cities";
 import { CITY_SHORT_NAME, CITY_META } from "./cities";
 
-const TITLE_MAX = 70;
+// Root layout sets `title.template = "%s | Lucid Rents"`, which appends 14 chars
+// to whatever each helper returns. Cap helpers at 56 so the final <title> is ≤70.
+const TITLE_BRAND_SUFFIX = " | Lucid Rents";
+const TITLE_MAX = 70 - TITLE_BRAND_SUFFIX.length; // 56
 const DESCRIPTION_MAX = 155;
 
 export interface BuildingTitleInput {

@@ -22,7 +22,7 @@ export async function generateMetadata({
   const cityName = meta?.fullName ?? "Your City";
   const canonical = canonicalUrl(cityPath(`/tenant-tools/templates/${slug}`, city as City));
   return {
-    title: `${template.title} — ${cityName} | Lucid Rents`,
+    title: `${template.title} — ${cityName}`,
     description: `Free ${template.title.toLowerCase()} template for ${cityName} renters. Fill in your details and download or print your letter instantly.`,
     alternates: { canonical },
     openGraph: {

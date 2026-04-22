@@ -30,7 +30,7 @@ export async function generateMetadata({
   // Category page metadata
   if (isCategory(slug)) {
     const meta = NEWS_CATEGORIES[slug];
-    const title = `${meta.label} — NYC Housing News | Lucid Rents`;
+    const title = `${meta.label} — NYC Housing News`;
     return {
       title,
       description: meta.description,
@@ -56,7 +56,7 @@ export async function generateMetadata({
 
   if (!article) return {};
 
-  const title = `${article.title} | Lucid Rents News`;
+  const title = article.title;
   const description =
     article.excerpt ||
     `${article.category} coverage from ${article.source_name} — read the full story on Lucid Rents.`;

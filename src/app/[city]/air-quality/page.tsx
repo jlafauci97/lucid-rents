@@ -12,7 +12,7 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
   const cityName = meta?.fullName ?? "Los Angeles";
   const canonical = canonicalUrl(cityPath("/air-quality", city as City));
   return {
-    title: `${cityName} Air Quality & Pollution by Address | Lucid Rents`,
+    title: `${cityName} Air Quality & Pollution by Address`,
     description: `Check pollution levels for any ${cityName} building using CalEnviroScreen data. See PM2.5, ozone, diesel particulate, traffic density, and health indicators by neighborhood.`,
     alternates: { canonical },
   };

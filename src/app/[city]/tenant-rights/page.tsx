@@ -17,10 +17,10 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { city } = await params;
   const config = TENANT_RIGHTS_BY_CITY[city];
-  if (!config) return { title: "Tenant Rights | Lucid Rents" };
+  if (!config) return { title: "Tenant Rights" };
   const meta = CITY_META[city as City];
   const cityName = meta?.fullName ?? city;
-  const title = `${cityName} Tenant Rights Guide | Lucid Rents`;
+  const title = `${cityName} Tenant Rights Guide`;
   const description = `Don't let your landlord take advantage of you. Know your rights as a ${cityName} tenant — from rent increases to eviction protections.`;
   const url = canonicalUrl(cityPath("/tenant-rights", city as City));
   return {

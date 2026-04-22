@@ -66,7 +66,7 @@ export async function generateMetadata({
 
   const city = metroToCity(building.metro);
   const shortAddress = building.full_address.split(",")[0]?.trim() || building.full_address;
-  const title = `Violations & Issues for ${shortAddress} | Lucid Rents`;
+  const title = `Violations & Issues for ${shortAddress}`;
   const description = `View all violations, complaints, litigations, and issues for ${building.full_address}. Complete history of building code violations and tenant complaints.`;
   const url = canonicalUrl(`${buildingUrl(building, city)}/violations`);
 

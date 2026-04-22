@@ -58,7 +58,7 @@ export async function generateMetadata({
   const { city } = await params;
   const url = canonicalUrl(cityPath(`/crime/${zipCode}`, city as import("@/lib/cities").City));
   return {
-    title: `Crime in ${displayName} | Lucid Rents`,
+    title: `Crime in ${displayName}`,
     description: `Is ${displayName} safe? See crime trends, recent incidents, and category breakdowns to understand safety before you move.`,
     alternates: { canonical: url },
     openGraph: {
