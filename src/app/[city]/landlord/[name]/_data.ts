@@ -648,14 +648,57 @@ export const loadLandlordBuildings = cache(
 
 export const loadLandlordOwnership = cache(
   async (slug: string, city: City): Promise<LandlordV2Data["ownership"]> => {
+    const ownerName = await resolveOwnerName(slug, city);
+    if (!ownerName) {
+      return {
+        headOfficer: null, title: null, businessAddress: null,
+        registration: null, taxIdMasked: null, managementCompany: null, yearsActive: null,
+      };
+    }
+
+    const supabase = await createClient();
+    // Mode(management_company) across the portfolio. Using a simple top-1
+    // by count query; more precise entity mapping lands with the ACRIS work.
+    const { data } = await supabase
+      .from("buildings")
+      .select("management_company")
+      .eq("owner_name", ownerName)
+      .eq("metro", city)
+      .not("management_company", "is", null)
+      .limit(200);
+
+    const counts = new Map<string, number>();
+    for (const row of (data ?? []) as Array<{ management_company: string | null }>) {
+      const mc = row.management_company;
+      if (!mc) continue;
+      counts.set(mc, (counts.get(mc) ?? 0) + 1);
+    }
+    const managementCompany = counts.size > 0
+      ? Array.from(counts.entries()).sort((a, b) => b[1] - a[1])[0][0]
+      : null;
+
+    const authorityByCity: Record<City, string> = {
+      nyc: "HPD",
+      "los-angeles": "HCIDLA",
+      chicago: "City of Chicago",
+      miami: "Miami-Dade Code Compliance",
+      houston: "City of Houston HCDD",
+    };
+
+    const registration = {
+      authority: authorityByCity[city],
+      status: "Registered",
+      expiresAt: null,
+    };
+
     return {
-      headOfficer: null,
+      headOfficer: null,        // awaits HPD registration ingestion
       title: null,
-      businessAddress: null,
-      registration: null,
-      taxIdMasked: null,
-      managementCompany: null,
-      yearsActive: null,
+      businessAddress: null,    // awaits HPD registration ingestion
+      registration,
+      taxIdMasked: null,        // NYC-only; awaits HPD registration ingestion
+      managementCompany,
+      yearsActive: null,        // awaits ACRIS ingestion
     };
   }
 );
