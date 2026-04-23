@@ -5,6 +5,7 @@ import { HeroV2Streamed } from "@/components/landlord/v2/streaming/HeroV2Streame
 import { RecordStripStreamed } from "@/components/landlord/v2/streaming/RecordStripStreamed";
 import { WayfinderRail } from "@/components/landlord/v2/WayfinderRail";
 import { S01GlanceStreamed } from "@/components/landlord/v2/streaming/S01GlanceStreamed";
+import { S02TrendStreamed } from "@/components/landlord/v2/streaming/S02TrendStreamed";
 import { normalizeScore } from "@/lib/constants";
 import { V2Zoom } from "@/components/building/v2/V2Zoom";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -191,6 +192,11 @@ export default async function LandlordDetailPage({
               slug={correctSlug}
               city={city}
               avgScore={cachedStats.avgScore}
+              buildingCount={cachedStats.buildingCount}
+            />
+            <S02TrendStreamed
+              slug={correctSlug}
+              city={city}
               buildingCount={cachedStats.buildingCount}
             />
           </main>

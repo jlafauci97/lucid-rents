@@ -490,13 +490,31 @@ export const loadLandlordGlance = cache(
 
 export const loadLandlordTrend = cache(
   async (slug: string, city: City): Promise<LandlordV2Data["trend"]> => {
+    const buildings = await loadLandlordBuildingList(slug, city);
+    if (buildings.length === 0) {
+      return { monthly: [], summary24mo: { violationsDelta: 0, concentrationPct: 0, escalationsThisYear: 0 } };
+    }
+
+    // Concentration: fraction of total complaints that come from the top 10%
+    // of buildings (or at minimum 5 buildings, whichever is greater). Gives a
+    // portfolio-level read on whether issues are spread evenly or clustered.
+    const complaints = buildings
+      .map((b) => b.complaint_count ?? 0)
+      .sort((a, b) => b - a);
+    const total = complaints.reduce((a, b) => a + b, 0);
+    const topN = Math.max(5, Math.ceil(buildings.length * 0.1));
+    const topSum = complaints.slice(0, topN).reduce((a, b) => a + b, 0);
+    const concentrationPct = total > 0 ? Math.round((topSum / total) * 100) : 0;
+
+    // Escalations = count of buildings with any litigation on file.
+    const escalationsThisYear = buildings.filter((b) => (b.litigation_count ?? 0) > 0).length;
+
+    // Phase 1 leaves the 24-month violations delta at 0 — computing this well
+    // requires a time-series query against hpd_violations / dob_violations
+    // across the whole portfolio. S02 renders without the delta when it's 0.
     return {
       monthly: [],
-      summary24mo: {
-        violationsDelta: 0,
-        concentrationPct: 0,
-        escalationsThisYear: 0,
-      },
+      summary24mo: { violationsDelta: 0, concentrationPct, escalationsThisYear },
     };
   }
 );
