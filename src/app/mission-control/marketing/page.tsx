@@ -8,7 +8,7 @@ export const metadata = { title: "Marketing Dashboard" };
 export default function MarketingPage() {
   return (
     <>
-      <MCHeader title="Marketing" subtitle="Content pipeline, Reddit, analytics" />
+      <MCHeader title="Marketing" subtitle="Content pipeline & analytics" />
       <main className="flex-1 overflow-y-auto p-8">
         <MarketingDashboard />
       </main>

@@ -156,11 +156,11 @@ export function RedditTab() {
         </Button>
       </div>
 
-      {/* Approved tab — tell user what happens next */}
+      {/* Approved tab — explain the auto-post cadence */}
       {filter === "approved" && threads.length > 0 && (
         <div className="rounded-lg border border-[#f59e0b]/30 bg-[#fffbeb] px-3 py-2 text-xs text-[#92400e]">
-          <strong>{threads.length}</strong> approved repl{threads.length === 1 ? "y" : "ies"} waiting to post.
-          Run <code className="px-1 py-0.5 rounded bg-[#f59e0b]/20 font-mono text-[11px]">/reddit-post</code> in a Claude session to push them to Reddit.
+          <strong>{threads.length}</strong> approved repl{threads.length === 1 ? "y" : "ies"} queued.
+          A scheduled task posts one every 30 min (respecting 5/day + 15-min gap) via your logged-in Chrome.
         </div>
       )}
 
@@ -249,7 +249,7 @@ export function RedditTab() {
                   }))
                 }
                 rows={4}
-                className="w-full rounded-lg border border-[#e2e8f0] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6] resize-y"
+                className="w-full rounded-lg border border-[#e2e8f0] bg-white px-3 py-2 text-sm text-[#0F1D2E] placeholder-[#94a3b8] focus:outline-none focus:ring-2 focus:ring-[#3B82F6] resize-y"
               />
             )}
 

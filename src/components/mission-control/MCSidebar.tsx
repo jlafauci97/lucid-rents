@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, Newspaper, Activity, Users, MessageSquare, Megaphone, LogOut } from "lucide-react";
+import { RedditIcon } from "@/components/icons/RedditIcon";
 
 const NAV = [
   { href: "/mission-control", label: "Hub", icon: LayoutDashboard },
@@ -10,6 +11,7 @@ const NAV = [
   { href: "/mission-control/users", label: "Users", icon: Users },
   { href: "/mission-control/reviews", label: "Reviews", icon: MessageSquare },
   { href: "/mission-control/marketing", label: "Marketing", icon: Megaphone },
+  { href: "/mission-control/reddit", label: "Reddit", icon: RedditIcon },
 ] as const;
 
 export function MCSidebar() {
