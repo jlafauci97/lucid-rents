@@ -68,7 +68,14 @@ export function WayfinderRail({ grade, displayName, city, slug }: Props) {
   const secondLine = spaceIdx > 0 ? displayName.slice(spaceIdx + 1) : null;
 
   return (
-    <aside className="wayfinder">
+    <aside
+      className="wayfinder"
+      // Explicit sticky override: the shared `.v2 .wayfinder` rule declares
+      // `position: sticky; top: 84px;`, but the `zoom: 0.9` applied to the
+      // root `.v2` container via V2Zoom can break sticky in some browsers.
+      // Pinning inline guarantees the rail tracks the viewport on scroll.
+      style={{ position: "sticky", top: 20 }}
+    >
       <header className="way-head">
         <div className="way-grade">{grade}</div>
         <div className="way-meta">
