@@ -572,6 +572,19 @@
   padding-bottom: var(--s-9);
 }
 
+/*
+ * Landlord v2 has no right-hand side rail (unlike building v2), so we
+ * override the 3-column body grid to 2 columns. The responsive collapse
+ * to a single column at <= 900px is already handled by the shared rule
+ * below and applies to both layouts.
+ */
+.v2 .body.v2-landlord-body {
+  grid-template-columns: 220px minmax(0, 1fr);
+}
+@media (max-width: 1200px) {
+  .v2 .body.v2-landlord-body { grid-template-columns: 200px minmax(0, 1fr); }
+}
+
 /* Wayfinder — navy bg · editorial badge header + tile icons */
 .v2 .wayfinder {
   position: sticky; top: 84px;

@@ -187,7 +187,13 @@ export default async function LandlordDetailPage({
         <RecordStripStreamed slug={correctSlug} city={city} />
 
         {/* ────────── Body ────────── */}
-        <div className="body">
+        {/*
+          Landlord v2 has only wayfinder + main (no right-hand side rail like
+          building v2), so we override the 3-col `.body` grid to 2 columns
+          here. An inline style is the simplest override that also respects
+          the responsive 1-column collapse at ≤900px (handled by v2-tokens.css).
+        */}
+        <div className="body v2-landlord-body">
           <WayfinderRail
             grade={grade}
             displayName={displayName}
