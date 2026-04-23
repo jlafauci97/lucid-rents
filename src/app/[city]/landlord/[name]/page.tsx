@@ -1,82 +1,57 @@
 import { createClient } from "@/lib/supabase/server";
-import { notFound, permanentRedirect, redirect } from "next/navigation";
-import Link from "next/link";
-import {
-  Users,
-  Building2,
-  AlertTriangle,
-  MessageSquare,
-  MapPin,
-  ArrowLeft,
-  ExternalLink,
-  Scale,
-  HardHat,
-} from "lucide-react";
-import { LetterGrade } from "@/components/ui/LetterGrade";
-import dynamic from "next/dynamic";
-
-const LandlordViolationTrend = dynamic(() => import("@/components/landlord/LandlordViolationTrend").then(m => m.LandlordViolationTrend), {
-  loading: () => <div className="bg-white rounded-xl border border-[#e2e8f0] p-6"><div className="h-6 w-48 bg-[#e2e8f0] rounded animate-pulse mb-4" /><div className="h-[300px] bg-[#f8fafc] rounded-lg animate-pulse" /></div>,
-});
-import { LandlordActionLinks } from "@/components/landlord/LandlordActionLinks";
-import { LandlordOathCard } from "@/components/landlord/LandlordOathCard";
-import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
+import { permanentRedirect, redirect } from "next/navigation";
+import { Crumbs } from "@/components/landlord/v2/Crumbs";
+import { V2Zoom } from "@/components/building/v2/V2Zoom";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { landlordSlug, landlordUrl, landlordJsonLd, breadcrumbJsonLd, canonicalUrl, buildingUrl, cityPath } from "@/lib/seo";
-import { deriveScore, normalizeScore } from "@/lib/constants";
-import { AdSidebar } from "@/components/ui/AdSidebar";
+import {
+  landlordSlug,
+  landlordUrl,
+  landlordJsonLd,
+  breadcrumbJsonLd,
+  canonicalUrl,
+  cityPath,
+} from "@/lib/seo";
 import type { Metadata } from "next";
 import { CITY_META } from "@/lib/cities";
 import type { City } from "@/lib/cities";
-import { buildLandlordTitle, buildLandlordDescription } from "@/lib/seo-metadata";
+import {
+  buildLandlordTitle,
+  buildLandlordDescription,
+} from "@/lib/seo-metadata";
 import { getLandlordStats } from "@/lib/landlord-stats";
 
-export const revalidate = 3600; // ISR: revalidate hourly
+export const revalidate = 86400; // 24h ISR — matches building v2
 
 interface LandlordPageProps {
   params: Promise<{ city: string; name: string }>;
 }
 
-const BUILDING_SELECT =
-  "id, full_address, borough, zip_code, year_built, total_units, num_floors, owner_name, slug, overall_score, violation_count, complaint_count, litigation_count, dob_violation_count, review_count";
-
-async function findBuildings(
+// Resolve the canonical owner_name for a slug. Returns `null` if the slug has
+// no landlord record in this metro. Also handles the legacy "decoded name" URL.
+async function resolveOwnerName(
   supabase: Awaited<ReturnType<typeof createClient>>,
-  param: string,
+  slugOrName: string,
   city: City
-) {
-  // Step 1: Look up exact owner name from landlord_stats by slug
+): Promise<string | null> {
   const { data: statsRows } = await supabase
     .from("landlord_stats")
     .select("name")
-    .eq("slug", param)
+    .eq("slug", slugOrName)
+    .eq("metro", city)
     .limit(1);
 
-  const ownerName = statsRows?.[0]?.name;
+  if (statsRows?.[0]?.name) return statsRows[0].name;
 
-  if (!ownerName) {
-    // Fallback: try decoded name match (old URL format)
-    const decodedName = decodeURIComponent(param);
-    const { data: byName } = await supabase
-      .from("buildings")
-      .select(BUILDING_SELECT)
-      .ilike("owner_name", decodedName)
-      .eq("metro", city)
-      .order("violation_count", { ascending: false })
-      .limit(500);
-    return byName && byName.length > 0 ? byName : null;
-  }
-
-  // Step 2: Fetch buildings by exact owner_name match
-  const { data: buildings } = await supabase
+  // Legacy fallback: old URLs had the owner name URL-encoded directly.
+  const decoded = decodeURIComponent(slugOrName);
+  const { data: byName } = await supabase
     .from("buildings")
-    .select(BUILDING_SELECT)
-    .eq("owner_name", ownerName)
+    .select("owner_name")
+    .ilike("owner_name", decoded)
     .eq("metro", city)
-    .order("violation_count", { ascending: false })
-    .limit(500);
+    .limit(1);
 
-  return buildings && buildings.length > 0 ? buildings : null;
+  return byName?.[0]?.owner_name ?? null;
 }
 
 export async function generateMetadata({
@@ -127,385 +102,84 @@ export default async function LandlordDetailPage({
   const city = (cityParam || "nyc") as City;
   const supabase = await createClient();
 
-  const [buildings, cityAvgRpc, cachedStats] = await Promise.all([
-    findBuildings(supabase, name, city),
-    supabase.rpc("city_avg_score", { p_metro: city }),
+  const [ownerName, cachedStats] = await Promise.all([
+    resolveOwnerName(supabase, name, city),
     getLandlordStats(name, city),
   ]);
 
-  // Derive ownerName from fetched buildings for the OATH RPC (city-agnostic
-  // because we only query OATH when metro === "nyc").
-  const ownerNameForOath = buildings?.[0]?.owner_name ?? null;
-
-  const [oathSummaryRes, oathRecentRes] = city === "nyc" && ownerNameForOath
-    ? await Promise.all([
-        supabase.rpc("get_landlord_oath_summary", { landlord_owner_name: ownerNameForOath }).maybeSingle(),
-        supabase.rpc("get_landlord_oath_recent", { landlord_owner_name: ownerNameForOath, row_limit: 12 }),
-      ])
-    : [{ data: null, error: null }, { data: null, error: null }];
-
-  const oathSummary = (oathSummaryRes.data as {
-    building_count: number;
-    total_hearings: number;
-    unpaid_hearings: number;
-    total_unpaid_balance: number;
-    total_penalty_imposed: number;
-    total_paid: number;
-    default_judgments: number;
-    latest_violation_date: string | null;
-  } | null) ?? null;
-
-  const oathRecent = (oathRecentRes.data as Array<{
-    ticket_number: string;
-    bbl: string;
-    violation_date: string | null;
-    issuing_agency: string | null;
-    violation_description: string | null;
-    hearing_status: string | null;
-    hearing_result: string | null;
-    penalty_imposed: number | null;
-    balance_due: number | null;
-    house_number: string | null;
-    street_name: string | null;
-    borough: string | null;
-  }> | null) ?? [];
-  // Next 16 page-level notFound() currently returns HTTP 200 (soft-404).
-  // Redirecting to the landlords index keeps a proper 307 status so SEO
-  // crawlers and internal health checks see a real response code.
-  if (!buildings || buildings.length === 0) {
+  // No matching landlord — send to the directory with a real 307 so crawlers
+  // and health checks see a status code (page-level `notFound()` returns 200).
+  if (!ownerName || !cachedStats) {
     redirect(cityPath("/landlords", city));
   }
 
-  const cityAvgScore = normalizeScore(typeof cityAvgRpc.data === "number" ? cityAvgRpc.data : 5);
-
-  // If found via old URL format, redirect to slug URL
-  if (buildings[0].owner_name) {
-    const correctSlug = landlordSlug(buildings[0].owner_name);
-    if (correctSlug !== name) {
-      permanentRedirect(cityPath(`/landlord/${correctSlug}`));
-    }
+  // Canonicalise to the slug URL when the caller used a decoded owner name.
+  const correctSlug = landlordSlug(ownerName);
+  if (correctSlug !== name) {
+    permanentRedirect(cityPath(`/landlord/${correctSlug}`, city));
   }
 
-  // Aggregate stats
-  const totalBuildings = buildings.length;
-  const totalViolations = buildings.reduce(
-    (sum, b) => sum + (b.violation_count || 0),
-    0
-  );
-  const totalComplaints = buildings.reduce(
-    (sum, b) => sum + (b.complaint_count || 0),
-    0
-  );
-  const totalLitigations = buildings.reduce(
-    (sum, b) => sum + (b.litigation_count || 0),
-    0
-  );
-  const totalDobViolations = buildings.reduce(
-    (sum, b) => sum + (b.dob_violation_count || 0),
-    0
-  );
-  const avgScore = (() => {
-    const scores = buildings.map((b) =>
-      normalizeScore(b.overall_score ?? deriveScore(b.violation_count || 0, b.complaint_count || 0))
-    );
-    return scores.reduce((a, b) => a + b, 0) / scores.length;
-  })();
-  const totalUnits = buildings.reduce(
-    (sum, b) => sum + (b.total_units || 0),
-    0
-  );
-
-  // Use the owner_name from first building for display (preserves original casing)
-  const displayName = buildings[0].owner_name || decodeURIComponent(name);
-
-  const diff = avgScore - cityAvgScore;
-  const isAboveAverage = diff > 0;
-
-  const stats = [
-    { label: "Buildings", value: totalBuildings, icon: Building2, color: "#3B82F6" },
-    { label: "HPD Violations", value: totalViolations, icon: AlertTriangle, color: "#EF4444" },
-    { label: "311 Complaints", value: totalComplaints, icon: MessageSquare, color: "#F59E0B" },
-    { label: "Litigations", value: totalLitigations, icon: Scale, color: "#8B5CF6" },
-    { label: "DOB Violations", value: totalDobViolations, icon: HardHat, color: "#3B82F6" },
-    { label: "Total Units", value: totalUnits > 0 ? totalUnits : null, icon: Users, color: "#64748b" },
-  ];
+  const displayName = cachedStats.name;
 
   return (
-    <AdSidebar>
-    <div>
-      <JsonLd data={landlordJsonLd(
-        cachedStats?.name ?? displayName,
-        cachedStats?.buildingCount ?? totalBuildings,
-        city,
-        undefined,
-        cachedStats?.totalIssues
-      )} />
-      <JsonLd data={breadcrumbJsonLd([
-        { name: "Home", url: "/" },
-        { name: "Landlords", url: cityPath("/landlords") },
-        { name: displayName, url: landlordUrl(displayName) },
-      ])} />
+    <div className="v2">
+      <V2Zoom />
+      <JsonLd
+        data={landlordJsonLd(
+          displayName,
+          cachedStats.buildingCount,
+          city,
+          undefined,
+          cachedStats.totalIssues
+        )}
+      />
+      <JsonLd
+        data={breadcrumbJsonLd([
+          { name: "Home", url: "/" },
+          { name: "Landlords", url: cityPath("/landlords", city) },
+          { name: displayName, url: landlordUrl(displayName, city) },
+        ])}
+      />
 
-      {/* Hero header */}
-      <div className="bg-gradient-to-br from-[#0F1D2E] via-[#162a45] to-[#1a3352] relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTTYwIDBIMHY2MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMDMpIiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IGZpbGw9InVybCgjZykiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIvPjwvc3ZnPg==')] opacity-50" />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-10 relative">
-          <Breadcrumbs
-            items={[
-              { label: "Home", href: "/" },
-              { label: "Landlords", href: cityPath("/landlords") },
-              { label: displayName, href: landlordUrl(displayName) },
-            ]}
-            variant="dark"
+      <div className="container">
+        <Crumbs city={city} displayName={displayName} />
+
+        {/* ────────── Above-the-fold ────────── */}
+        {/* Hero — Task 1.2 */}
+        <section
+          className="hero"
+          aria-label="Landlord overview"
+          style={{ minHeight: 360 }}
+        >
+          <div className="hero-left">
+            <h1>{displayName}</h1>
+            <div className="hero-address">
+              <span>{CITY_META[city].fullName}</span>
+            </div>
+            <div className="hero-meta">
+              <span>{cachedStats.buildingCount.toLocaleString()} buildings tracked</span>
+            </div>
+          </div>
+          <aside
+            className="verdict"
+            aria-hidden="true"
+            style={{ minHeight: 320 }}
           />
+        </section>
 
-          <Link
-            href={cityPath("/landlords")}
-            className="inline-flex items-center gap-1.5 text-sm text-blue-300 hover:text-blue-200 font-medium mb-6 mt-3 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Landlord Directory
-          </Link>
+        {/* Record strip — Task 1.3 */}
+        <section className="record" aria-label="Portfolio record" style={{ minHeight: 90 }} />
 
-          <div className="flex items-start gap-5">
-            <LetterGrade score={avgScore} size="lg" showScore />
-            <div className="flex-1 min-w-0">
-              <h1 className="text-2xl sm:text-3xl font-bold text-white">
-                {displayName}
-              </h1>
-              <p className="text-blue-200/80 mt-1.5 text-sm sm:text-base">
-                Property owner with {totalBuildings} building
-                {totalBuildings !== 1 ? "s" : ""} in {CITY_META[city].fullName}
-              </p>
-              <div className="mt-3 flex flex-wrap items-center gap-3">
-                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
-                  isAboveAverage
-                    ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
-                    : "bg-red-500/20 text-red-300 border border-red-500/30"
-                }`}>
-                  {avgScore.toFixed(1)}/5 avg
-                  <span className="opacity-70">vs {cityAvgScore.toFixed(1)} city avg</span>
-                </span>
-                {totalUnits > 0 && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-white/10 text-blue-200 border border-white/10">
-                    <Users className="w-3 h-3" />
-                    {totalUnits.toLocaleString()} units
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+        {/* ────────── Body ────────── */}
+        <div className="body">
+          {/* Wayfinder rail — Task 1.4 */}
+          <aside className="wayfinder" aria-hidden="true" style={{ minHeight: 500 }} />
 
-      {/* Stats bar — pulls up into the hero */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-5">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          {stats.map((stat) => {
-            const Icon = stat.icon;
-            return (
-              <div
-                key={stat.label}
-                className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm hover:shadow-md transition-shadow p-4"
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${stat.color}14` }}>
-                    <Icon className="w-3.5 h-3.5" style={{ color: stat.color }} />
-                  </div>
-                  <p className="text-[11px] font-semibold text-[#94a3b8] uppercase tracking-wider">
-                    {stat.label}
-                  </p>
-                </div>
-                <p className="text-2xl font-bold text-[#0F1D2E]">
-                  {stat.value !== null ? stat.value.toLocaleString() : "---"}
-                </p>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-
-        {/* Worst Buildings */}
-        {buildings.length > 1 && (
-          <div className="mb-8">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
-                <AlertTriangle className="w-4 h-4 text-[#EF4444]" />
-              </div>
-              <h2 className="text-lg font-bold text-[#0F1D2E]">Worst Buildings</h2>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {buildings.slice(0, 3).map((b, i) => {
-                const score = b.overall_score ?? deriveScore(b.violation_count || 0, b.complaint_count || 0);
-                return (
-                  <Link key={b.id} href={buildingUrl(b, city)}>
-                    <div className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm hover:shadow-md hover:border-red-200 p-4 transition-all group relative overflow-hidden">
-                      <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-[#EF4444] to-[#F59E0B] rounded-l-xl" />
-                      <div className="pl-2">
-                        <div className="flex items-center gap-2 mb-3">
-                          <span className="text-xs font-bold text-[#EF4444] bg-red-50 w-5 h-5 rounded flex items-center justify-center">#{i + 1}</span>
-                          <p className="text-sm font-semibold text-[#0F1D2E] truncate group-hover:text-[#3B82F6] transition-colors flex-1">{b.full_address}</p>
-                          <LetterGrade score={score} size="sm" />
-                        </div>
-                        <div className="flex items-center gap-4 text-xs">
-                          <span className="text-[#EF4444] font-semibold">{(b.violation_count || 0).toLocaleString()} violations</span>
-                          <span className="text-[#64748b]">{(b.complaint_count || 0).toLocaleString()} complaints</span>
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Violation Trend */}
-        <div className="mb-8">
-          <LandlordViolationTrend landlordName={displayName} />
-        </div>
-
-        {/* OATH Record (NYC only) — portfolio-wide adjudicated DOB cases */}
-        {oathSummary && oathSummary.total_hearings > 0 && (
-          <div className="mb-8">
-            <LandlordOathCard summary={oathSummary} recent={oathRecent} city={city} />
-          </div>
-        )}
-
-        {/* Tenant Resources */}
-        <LandlordActionLinks compareIds={buildings.slice(0, 3).map((b) => b.id)} />
-
-        {/* Buildings section */}
-        <div className="mb-5 flex items-end justify-between">
-          <div>
-            <h2 className="text-xl font-bold text-[#0F1D2E]">
-              Building Portfolio
-            </h2>
-            <p className="text-sm text-[#64748b] mt-1">
-              {totalBuildings} propert{totalBuildings !== 1 ? "ies" : "y"} owned by {displayName}
-            </p>
-          </div>
-          <span className="text-xs font-medium text-[#94a3b8] bg-[#f1f5f9] px-3 py-1.5 rounded-full">
-            Sorted by violations
-          </span>
-        </div>
-
-        {/* Building cards grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {buildings.map((building) => {
-            const score = building.overall_score ?? deriveScore(building.violation_count || 0, building.complaint_count || 0);
-            return (
-              <Link key={building.id} href={buildingUrl(building, city)}>
-                <div className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm hover:shadow-md hover:border-[#cbd5e1] transition-all h-full p-5 group">
-                  <div className="flex items-start justify-between gap-3 mb-3">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-[#0F1D2E] truncate group-hover:text-[#3B82F6] transition-colors">
-                        {building.full_address}
-                      </p>
-                      <div className="flex items-center gap-1 text-xs text-[#94a3b8] mt-0.5">
-                        <MapPin className="w-3 h-3 flex-shrink-0" />
-                        <span>
-                          {building.borough}
-                          {building.zip_code && ` ${building.zip_code}`}
-                        </span>
-                      </div>
-                    </div>
-                    <LetterGrade score={score} size="sm" />
-                  </div>
-
-                  {/* Building info row */}
-                  <div className="flex items-center gap-1 text-xs text-[#64748b] mb-3">
-                    {building.year_built && (
-                      <span>Built {building.year_built}</span>
-                    )}
-                    {building.year_built && building.total_units && (
-                      <span className="mx-1">&middot;</span>
-                    )}
-                    {building.total_units && (
-                      <span>{building.total_units} units</span>
-                    )}
-                    {building.num_floors && (
-                      <>
-                        <span className="mx-1">&middot;</span>
-                        <span>{building.num_floors} floors</span>
-                      </>
-                    )}
-                  </div>
-
-                  {/* Stats */}
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-3 border-t border-[#f1f5f9]">
-                    <div className="flex items-center gap-1.5">
-                      <AlertTriangle
-                        className={`w-3.5 h-3.5 ${
-                          (building.violation_count || 0) > 10
-                            ? "text-[#EF4444]"
-                            : "text-[#94a3b8]"
-                        }`}
-                      />
-                      <span
-                        className={`text-sm font-semibold ${
-                          (building.violation_count || 0) > 10
-                            ? "text-[#EF4444]"
-                            : "text-[#64748b]"
-                        }`}
-                      >
-                        {(building.violation_count || 0).toLocaleString()}
-                      </span>
-                      <span className="text-xs text-[#94a3b8]">violations</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <MessageSquare
-                        className={`w-3.5 h-3.5 ${
-                          (building.complaint_count || 0) > 10
-                            ? "text-[#F59E0B]"
-                            : "text-[#94a3b8]"
-                        }`}
-                      />
-                      <span
-                        className={`text-sm font-semibold ${
-                          (building.complaint_count || 0) > 10
-                            ? "text-[#F59E0B]"
-                            : "text-[#64748b]"
-                        }`}
-                      >
-                        {(building.complaint_count || 0).toLocaleString()}
-                      </span>
-                      <span className="text-xs text-[#94a3b8]">complaints</span>
-                    </div>
-                    {(building.litigation_count || 0) > 0 && (
-                      <div className="flex items-center gap-1.5">
-                        <Scale className="w-3.5 h-3.5 text-[#8B5CF6]" />
-                        <span className="text-sm font-semibold text-[#8B5CF6]">
-                          {(building.litigation_count || 0).toLocaleString()}
-                        </span>
-                        <span className="text-xs text-[#94a3b8]">litigations</span>
-                      </div>
-                    )}
-                    {(building.dob_violation_count || 0) > 0 && (
-                      <div className="flex items-center gap-1.5">
-                        <HardHat className="w-3.5 h-3.5 text-[#3B82F6]" />
-                        <span className="text-sm font-semibold text-[#3B82F6]">
-                          {(building.dob_violation_count || 0).toLocaleString()}
-                        </span>
-                        <span className="text-xs text-[#94a3b8]">DOB</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* View link */}
-                  <div className="mt-3 flex items-center gap-1 text-xs font-medium text-[#3B82F6] opacity-0 group-hover:opacity-100 transition-opacity">
-                    <ExternalLink className="w-3 h-3" />
-                    View building details
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
+          <main id="main-content">
+            {/* Sections 01-10 land in Tasks 2.x through 4.x */}
+          </main>
         </div>
       </div>
     </div>
-    </AdSidebar>
   );
 }
