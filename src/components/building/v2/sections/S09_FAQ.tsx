@@ -83,15 +83,19 @@ export function S09_FAQ({ building, data }: Props) {
           .filter((r) => r.month?.startsWith(latestNbhMonth) && r.median_rent)
           .map((r) => ({ bedrooms: r.beds ?? 0, median_rent: r.median_rent as number }))
       : [];
-    // Nearby schools grouped by type
-    const nearbySchools: Record<string, Array<{ name: string; distMiles: number; walkMin: number; grades: string | null }>> = {
-      Public: data.nearby.schoolsPublic.map((s) => ({ name: s.name, distMiles: s.distMiles, walkMin: s.walkMin, grades: s.grades })),
-      Charter: data.nearby.schoolsCharter.map((s) => ({ name: s.name, distMiles: s.distMiles, walkMin: s.walkMin, grades: s.grades })),
-      Private: data.nearby.schoolsPrivate.map((s) => ({ name: s.name, distMiles: s.distMiles, walkMin: s.walkMin, grades: s.grades })),
+    // Shape nearby data for generateBuildingFAQ: it expects `distance` as a
+    // formatted string and transit stops keyed by `routes`, not `lines`. Keys
+    // map to the generator's label switch (subway/bus/...) and to a readable
+    // school-type summary.
+    const miles = (n: number) => `${n.toFixed(2)} mi`;
+    const nearbySchools = {
+      "public school": data.nearby.schoolsPublic.map((s) => ({ name: s.name, distance: miles(s.distMiles), walkMin: s.walkMin, grades: s.grades })),
+      "charter school": data.nearby.schoolsCharter.map((s) => ({ name: s.name, distance: miles(s.distMiles), walkMin: s.walkMin, grades: s.grades })),
+      "private school": data.nearby.schoolsPrivate.map((s) => ({ name: s.name, distance: miles(s.distMiles), walkMin: s.walkMin, grades: s.grades })),
     };
-    const nearbyTransit: Record<string, Array<{ name: string; lines: string[]; distMiles: number; walkMin: number }>> = {
-      Subway: data.nearby.transitSubway.map((s) => ({ name: s.name, lines: s.lines, distMiles: s.distMiles, walkMin: s.walkMin })),
-      Bus: data.nearby.transitBus.map((s) => ({ name: s.name, lines: s.lines, distMiles: s.distMiles, walkMin: s.walkMin })),
+    const nearbyTransit = {
+      subway: data.nearby.transitSubway.map((s) => ({ name: s.name, routes: s.lines, distance: miles(s.distMiles), walkMin: s.walkMin })),
+      bus: data.nearby.transitBus.map((s) => ({ name: s.name, routes: s.lines, distance: miles(s.distMiles), walkMin: s.walkMin })),
     };
     const crimeSummary = {
       total: data.crime.total12mo,
