@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { CITY_META, type City } from "@/lib/cities";
 import { approveDraft, rejectDraft } from "./actions";
+import PendingList, { type PendingDraft } from "./PendingList";
 
 // Middleware enforces /mission-control/* auth; this page is unreachable
 // without a valid mc_auth cookie.
@@ -156,6 +157,8 @@ export default async function NewsDraftsPage({
               ? "No approved articles yet."
               : "No rejected drafts."}
         </p>
+      ) : activeTab === "pending" ? (
+        <PendingList drafts={rows as PendingDraft[]} />
       ) : (
         Array.from(byCity.entries()).map(([cityKey, cityDrafts]) => {
           const cityName = CITY_META[cityKey as City]?.name ?? cityKey;
