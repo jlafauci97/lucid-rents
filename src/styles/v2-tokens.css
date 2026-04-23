@@ -2929,6 +2929,7 @@
   align-items: start;
   margin-top: 16px;
 }
+.v2 .faq-tab-input { position: absolute; opacity: 0; pointer-events: none; }
 .v2 .faq-side { position: sticky; top: 20px; }
 .v2 .faq-side-label {
   font-family: var(--sans); font-size: 11px; font-weight: 600;
@@ -2951,14 +2952,34 @@
   transition: background 0.12s ease, color 0.12s ease;
 }
 .v2 .faq-side-btn:hover { background: var(--paper-2); color: var(--ink); }
-.v2 .faq-side-btn.is-active {
+.v2 .faq-side-count { opacity: 0.5; font-size: 12px; font-variant-numeric: tabular-nums; }
+.v2 .faq-panes .faq-pane { margin-top: 0; display: none; }
+.v2 .faq-layout .faq-list { margin-top: 0; }
+
+/* Active-tab highlights + pane visibility driven by :checked radios. */
+.v2 .faq-layout:has(#faq-tab-Rent:checked) .faq-pane-Rent,
+.v2 .faq-layout:has(#faq-tab-Landlord:checked) .faq-pane-Landlord,
+.v2 .faq-layout:has(#faq-tab-Safety:checked) .faq-pane-Safety,
+.v2 .faq-layout:has(#faq-tab-Amenities:checked) .faq-pane-Amenities,
+.v2 .faq-layout:has(#faq-tab-Location:checked) .faq-pane-Location,
+.v2 .faq-layout:has(#faq-tab-Building:checked) .faq-pane-Building { display: flex; }
+
+.v2 .faq-layout:has(#faq-tab-Rent:checked) .faq-side-btn-Rent,
+.v2 .faq-layout:has(#faq-tab-Landlord:checked) .faq-side-btn-Landlord,
+.v2 .faq-layout:has(#faq-tab-Safety:checked) .faq-side-btn-Safety,
+.v2 .faq-layout:has(#faq-tab-Amenities:checked) .faq-side-btn-Amenities,
+.v2 .faq-layout:has(#faq-tab-Location:checked) .faq-side-btn-Location,
+.v2 .faq-layout:has(#faq-tab-Building:checked) .faq-side-btn-Building {
   background: var(--ink);
   color: var(--paper);
   font-weight: 600;
 }
-.v2 .faq-side-count { opacity: 0.5; font-size: 12px; font-variant-numeric: tabular-nums; }
-.v2 .faq-side-btn.is-active .faq-side-count { opacity: 0.7; }
-.v2 .faq-layout .faq-list { margin-top: 0; }
+.v2 .faq-layout:has(#faq-tab-Rent:checked) .faq-side-btn-Rent .faq-side-count,
+.v2 .faq-layout:has(#faq-tab-Landlord:checked) .faq-side-btn-Landlord .faq-side-count,
+.v2 .faq-layout:has(#faq-tab-Safety:checked) .faq-side-btn-Safety .faq-side-count,
+.v2 .faq-layout:has(#faq-tab-Amenities:checked) .faq-side-btn-Amenities .faq-side-count,
+.v2 .faq-layout:has(#faq-tab-Location:checked) .faq-side-btn-Location .faq-side-count,
+.v2 .faq-layout:has(#faq-tab-Building:checked) .faq-side-btn-Building .faq-side-count { opacity: 0.7; }
 
 @media (max-width: 900px) {
   .v2 .faq-layout { grid-template-columns: 1fr; gap: 16px; }
@@ -2973,7 +2994,6 @@
     border: 1px solid var(--border);
     white-space: nowrap;
   }
-  .v2 .faq-side-btn.is-active { border-color: var(--ink); }
 }
 
 /* ---------- Responsive reflow ---------- */
