@@ -824,7 +824,54 @@ export const loadLandlordWhere = cache(
 
 export const loadLandlordPeers = cache(
   async (slug: string, city: City): Promise<LandlordV2Data["peers"]> => {
-    return [];
+    const supabase = await createClient();
+    const { data: self } = await supabase
+      .from("landlord_stats")
+      .select("building_count, avg_score")
+      .eq("slug", slug)
+      .eq("metro", city)
+      .limit(1)
+      .maybeSingle();
+    if (!self) return [];
+
+    const buildingCount = self.building_count ?? 0;
+    if (buildingCount === 0) return [];
+
+    const low = Math.floor(buildingCount * 0.6);
+    const high = Math.ceil(buildingCount * 1.4);
+
+    const { data } = await supabase
+      .from("landlord_stats")
+      .select("name, slug, building_count, avg_score")
+      .eq("metro", city)
+      .neq("slug", slug)
+      .gte("building_count", low)
+      .lte("building_count", high)
+      .order("building_count", { ascending: false })
+      .limit(40);
+
+    const rows = (data ?? []) as Array<{
+      name: string;
+      slug: string;
+      building_count: number | null;
+      avg_score: number | null;
+    }>;
+
+    const currentScore = typeof self.avg_score === "number" ? self.avg_score : null;
+    const distance = (s: number | null) =>
+      currentScore === null || s === null ? Infinity : Math.abs(s - currentScore);
+
+    return rows
+      .sort((a, b) => distance(a.avg_score) - distance(b.avg_score))
+      .slice(0, 4)
+      .map((r) => ({
+        name: r.name,
+        slug: r.slug,
+        buildingCount: r.building_count ?? 0,
+        unitCount: 0, // landlord_stats doesn't carry unit totals today
+        avgScore: typeof r.avg_score === "number" ? r.avg_score : null,
+        metro: city,
+      }));
   }
 );
 
