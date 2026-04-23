@@ -81,7 +81,7 @@ export function RedditTab() {
   async function handleAction(threadId: string, action: "approve" | "skip") {
     setActionLoading(threadId);
     try {
-      await fetch("/api/marketing/approve-reddit", {
+      const res = await fetch("/api/marketing/approve-reddit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -92,9 +92,17 @@ export function RedditTab() {
             : {}),
         }),
       });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        const msg = body?.error ?? `HTTP ${res.status}`;
+        alert(`${action === "approve" ? "Approve" : "Decline"} failed: ${msg}`);
+        return;
+      }
       setThreads((prev) => prev.filter((t) => t.id !== threadId));
+      fetchCounts();
     } catch (err) {
       console.error("Reddit action failed:", err);
+      alert(`${action === "approve" ? "Approve" : "Decline"} failed: network error`);
     } finally {
       setActionLoading(null);
     }
@@ -275,7 +283,7 @@ export function RedditTab() {
                   onClick={() => handleAction(thread.id, "skip")}
                   loading={actionLoading === thread.id}
                 >
-                  Skip
+                  Decline
                 </Button>
                 <Button
                   variant="primary"
