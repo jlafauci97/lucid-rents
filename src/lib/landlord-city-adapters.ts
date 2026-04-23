@@ -277,7 +277,10 @@ export function tenantResourcesForCity(city: City): TenantResource[] {
       return [
         {
           label: "File a 311 complaint",
-          href: "https://portal.311.nyc.gov/article/?kanumber=KA-01253",
+          // Root of the NYC 311 portal — a stable entry point where users
+          // pick a housing topic. The previous `?kanumber=KA-01253` URL
+          // actually pointed to property-tax info, not housing complaints.
+          href: "https://portal.311.nyc.gov/",
           description: "Report housing conditions to NYC 311",
           icon: "phone",
           external: true,
@@ -291,10 +294,11 @@ export function tenantResourcesForCity(city: City): TenantResource[] {
         },
         {
           label: "Report to HPD",
-          // HPD's online portal moved under portal.311.nyc.gov/s/ask (the
-          // "services-and-information/online-complaint-system.page" URL now
-          // 404s). Point at the live HPD portal landing page.
-          href: "https://portal.311.nyc.gov/s/ask?topic=Housing",
+          // HPD's canonical "how to file a complaint" landing page.
+          // Verified 200 with title "Complaints and Inspections - HPD".
+          // Previous URLs (online-complaint-system.page, /s/ask?topic=Housing)
+          // both 404 as of this deploy.
+          href: "https://www.nyc.gov/site/hpd/renters/complaints-and-inspections.page",
           description: "File a complaint with Housing Preservation",
           icon: "file-warning",
           external: true,
