@@ -227,7 +227,12 @@ export default async function LandlordDetailPage({
               currentAvgScore={cachedStats.avgScore}
             />
             <S09FAQStreamed slug={correctSlug} city={city} />
-            <S10CityInsightsStreamed slug={correctSlug} city={city} />
+            {/* Only NYC has a loaded insights payload in Phase 1. Skipping
+                the streamed wrapper for the other metros avoids a Suspense
+                skeleton flash before the inner resolves to null. */}
+            {city === "nyc" ? (
+              <S10CityInsightsStreamed slug={correctSlug} city={city} />
+            ) : null}
           </main>
         </div>
       </div>
