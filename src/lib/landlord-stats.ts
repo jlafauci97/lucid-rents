@@ -9,6 +9,9 @@ export interface LandlordStats {
   totalIssues: number;
   totalViolations: number;
   totalComplaints: number;
+  /** Portfolio-level LucidIQ average (0-5). Null when the landlord has no
+   *  scoreable buildings yet. Used by the wayfinder rail's grade badge. */
+  avgScore: number | null;
 }
 
 /**
@@ -29,7 +32,7 @@ export const getLandlordStats = cache(async (
   // Primary: match by slug
   const bySlug = await supabase
     .from("landlord_stats")
-    .select("name, slug, building_count, total_violations, total_dob_violations, total_complaints")
+    .select("name, slug, building_count, total_violations, total_dob_violations, total_complaints, avg_score")
     .eq("slug", slugOrName)
     .eq("metro", city)
     .limit(1)
@@ -42,7 +45,7 @@ export const getLandlordStats = cache(async (
     const decoded = decodeURIComponent(slugOrName);
     const byName = await supabase
       .from("landlord_stats")
-      .select("name, slug, building_count, total_violations, total_dob_violations, total_complaints")
+      .select("name, slug, building_count, total_violations, total_dob_violations, total_complaints, avg_score")
       .ilike("name", decoded)
       .eq("metro", city)
       .limit(1)
@@ -63,5 +66,6 @@ export const getLandlordStats = cache(async (
     totalIssues: totalViolations + totalComplaints,
     totalViolations,
     totalComplaints,
+    avgScore: typeof row.avg_score === "number" ? row.avg_score : null,
   };
 });
