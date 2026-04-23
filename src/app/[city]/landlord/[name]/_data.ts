@@ -788,8 +788,36 @@ export const loadLandlordTenantVoice = cache(
 
 export const loadLandlordWhere = cache(
   async (slug: string, city: City): Promise<LandlordV2Data["where"]> => {
+    const buildings = await loadLandlordBuildingList(slug, city);
+    if (buildings.length === 0) return { regions: [] };
+
+    const regions = aggregateRegions(
+      buildings.map((b) => ({ zip_code: b.zip_code, borough: b.borough })),
+      city
+    );
+
+    // Rough centroid per region from the landlord's buildings — lets us drop
+    // a map cluster pin even without a separate geocoding pass.
+    const centroidByRegion = new Map<string, { lat: number; lng: number; n: number }>();
+    for (const b of buildings) {
+      if (typeof b.latitude !== "number" || typeof b.longitude !== "number") continue;
+      const key = b.borough ?? "—";
+      const acc = centroidByRegion.get(key) ?? { lat: 0, lng: 0, n: 0 };
+      acc.lat += b.latitude;
+      acc.lng += b.longitude;
+      acc.n += 1;
+      centroidByRegion.set(key, acc);
+    }
+
     return {
-      regions: [],
+      regions: regions.map((r) => {
+        const c = centroidByRegion.get(r.name);
+        return {
+          ...r,
+          lat: c && c.n > 0 ? c.lat / c.n : undefined,
+          lng: c && c.n > 0 ? c.lng / c.n : undefined,
+        };
+      }),
     };
   }
 );

@@ -10,6 +10,7 @@ import { S03CaseFileStreamed } from "@/components/landlord/v2/streaming/S03CaseF
 import { S04BuildingsStreamed } from "@/components/landlord/v2/streaming/S04BuildingsStreamed";
 import { S05OwnershipStreamed } from "@/components/landlord/v2/streaming/S05OwnershipStreamed";
 import { S06TenantVoiceStreamed } from "@/components/landlord/v2/streaming/S06TenantVoiceStreamed";
+import { S07WhereStreamed } from "@/components/landlord/v2/streaming/S07WhereStreamed";
 import { normalizeScore } from "@/lib/constants";
 import { V2Zoom } from "@/components/building/v2/V2Zoom";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -212,6 +213,11 @@ export default async function LandlordDetailPage({
               buildingCount={cachedStats.buildingCount}
             />
             <S06TenantVoiceStreamed slug={correctSlug} city={city} />
+            <S07WhereStreamed
+              slug={correctSlug}
+              city={city}
+              buildingCount={cachedStats.buildingCount}
+            />
           </main>
         </div>
       </div>
