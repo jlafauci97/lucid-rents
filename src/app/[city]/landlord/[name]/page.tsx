@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { permanentRedirect, redirect } from "next/navigation";
 import { Crumbs } from "@/components/landlord/v2/Crumbs";
 import { HeroV2Streamed } from "@/components/landlord/v2/streaming/HeroV2Streamed";
+import { RecordStripStreamed } from "@/components/landlord/v2/streaming/RecordStripStreamed";
 import { V2Zoom } from "@/components/building/v2/V2Zoom";
 import { JsonLd } from "@/components/seo/JsonLd";
 import {
@@ -153,8 +154,7 @@ export default async function LandlordDetailPage({
           fullCity={CITY_META[city].fullName}
         />
 
-        {/* Record strip — Task 1.3 */}
-        <section className="record" aria-label="Portfolio record" style={{ minHeight: 90 }} />
+        <RecordStripStreamed slug={correctSlug} city={city} />
 
         {/* ────────── Body ────────── */}
         <div className="body">

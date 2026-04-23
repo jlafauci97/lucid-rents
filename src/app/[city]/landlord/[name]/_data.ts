@@ -332,7 +332,8 @@ export const loadLandlordHero = cache(
 
 export const loadLandlordRecord = cache(
   async (slug: string, city: City): Promise<LandlordRecordAggregate> => {
-    return {
+    const ownerName = await resolveOwnerName(slug, city);
+    const empty: LandlordRecordAggregate = {
       hpdViolations: 0,
       comp311: 0,
       litigations: 0,
@@ -345,6 +346,71 @@ export const loadLandlordRecord = cache(
       recerts: 0,
       deoOrders: 0,
       codeBalance: 0,
+    };
+    if (!ownerName) return empty;
+
+    const supabase = await createClient();
+
+    // Single aggregate pull — every per-city record slot is derivable from
+    // these building-level counts plus (for NYC) the OATH summary RPC.
+    const [bldgResult, oathResult] = await Promise.all([
+      supabase
+        .from("buildings")
+        .select(
+          "violation_count, dob_violation_count, complaint_count, litigation_count, eviction_count, is_rent_stabilized, stabilized_units, is_rso, total_units, is_scofflaw, rlto_violation_count, forty_year_recert_status, unsafe_structure_count"
+        )
+        .eq("owner_name", ownerName)
+        .eq("metro", city),
+      city === "nyc"
+        ? supabase
+            .rpc("get_landlord_oath_summary", { landlord_owner_name: ownerName })
+            .maybeSingle()
+        : Promise.resolve({ data: null, error: null } as const),
+    ]);
+
+    const rows = (bldgResult.data ?? []) as Array<{
+      violation_count: number | null;
+      dob_violation_count: number | null;
+      complaint_count: number | null;
+      litigation_count: number | null;
+      eviction_count: number | null;
+      is_rent_stabilized: boolean | null;
+      stabilized_units: number | null;
+      is_rso: boolean | null;
+      total_units: number | null;
+      is_scofflaw: boolean | null;
+      rlto_violation_count: number | null;
+      forty_year_recert_status: string | null;
+      unsafe_structure_count: number | null;
+    }>;
+
+    const sum = (k: keyof (typeof rows)[number]) =>
+      rows.reduce((acc, r) => {
+        const v = r[k];
+        return acc + (typeof v === "number" ? v : 0);
+      }, 0);
+
+    const oathSummary = (oathResult.data as { total_unpaid_balance?: number } | null) ?? null;
+
+    const rentStabUnits = city === "nyc"
+      ? rows.reduce((acc, r) => acc + (r.is_rent_stabilized && r.stabilized_units ? r.stabilized_units : 0), 0)
+      : city === "los-angeles"
+        ? rows.reduce((acc, r) => acc + (r.is_rso && r.total_units ? r.total_units : 0), 0)
+        : 0;
+
+    return {
+      hpdViolations: sum("violation_count"),
+      comp311: sum("complaint_count"),
+      litigations: sum("litigation_count"),
+      oathBalance: typeof oathSummary?.total_unpaid_balance === "number" ? oathSummary.total_unpaid_balance : 0,
+      rentStabUnits,
+      evictions: sum("eviction_count"),
+      ladbsViolations: sum("violation_count"), // same source for now; LA-specific table lands later
+      scepCycles: 0, // Phase 2 — needs la_scep table join
+      scofflaw: rows.some((r) => r.is_scofflaw === true),
+      recerts: rows.filter((r) => (r.forty_year_recert_status ?? "").toLowerCase() === "pending").length,
+      deoOrders: sum("unsafe_structure_count"),
+      codeBalance: 0, // Phase 2 — per-city balance sources
     };
   }
 );
