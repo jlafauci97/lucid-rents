@@ -1,7 +1,12 @@
+import Link from "next/link";
 import type { LandlordV2Data } from "@/app/[city]/landlord/[name]/_data";
+import type { City } from "@/lib/cities";
+import { cityPath } from "@/lib/seo";
 
 interface Props {
   voice: LandlordV2Data["tenantVoice"];
+  city: City;
+  slug: string;
 }
 
 function stars(rating: number): React.ReactNode {
@@ -24,7 +29,7 @@ function relative(iso: string): string {
   return `${Math.floor(days / 365)}y ago`;
 }
 
-export function S06_TenantVoice({ voice }: Props) {
+export function S06_TenantVoice({ voice, city, slug }: Props) {
   const { avgRating, totalReviews, distribution, excerpts } = voice;
   const max = Math.max(1, ...distribution);
 
@@ -169,6 +174,26 @@ export function S06_TenantVoice({ voice }: Props) {
               </div>
             ))
           )}
+          {voice.totalReviews > 0 ? (
+            <Link
+              href={cityPath(`/landlord/${slug}/reviews`, city)}
+              style={{
+                alignSelf: "flex-start",
+                fontFamily: "var(--mono)",
+                fontSize: 12,
+                color: "var(--navy-hi)",
+                fontWeight: 700,
+                letterSpacing: "0.04em",
+                textDecoration: "none",
+                padding: "8px 12px",
+                background: "var(--paper-2)",
+                border: "1px solid var(--border)",
+                borderRadius: 999,
+              }}
+            >
+              See all {voice.totalReviews.toLocaleString()} reviews →
+            </Link>
+          ) : null}
         </div>
       </div>
     </section>

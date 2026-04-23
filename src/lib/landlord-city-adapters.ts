@@ -291,7 +291,10 @@ export function tenantResourcesForCity(city: City): TenantResource[] {
         },
         {
           label: "Report to HPD",
-          href: "https://www.nyc.gov/site/hpd/services-and-information/online-complaint-system.page",
+          // HPD's online portal moved under portal.311.nyc.gov/s/ask (the
+          // "services-and-information/online-complaint-system.page" URL now
+          // 404s). Point at the live HPD portal landing page.
+          href: "https://portal.311.nyc.gov/s/ask?topic=Housing",
           description: "File a complaint with Housing Preservation",
           icon: "file-warning",
           external: true,

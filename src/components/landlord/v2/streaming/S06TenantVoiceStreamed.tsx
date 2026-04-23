@@ -7,7 +7,7 @@ import type { City } from "@/lib/cities";
 async function Inner({ slug, city }: { slug: string; city: City }) {
   const voice = await loadLandlordTenantVoice(slug, city);
   if (voice.totalReviews === 0) return null;
-  return <S06_TenantVoice voice={voice} />;
+  return <S06_TenantVoice voice={voice} city={city} slug={slug} />;
 }
 
 export function S06TenantVoiceStreamed({ slug, city }: { slug: string; city: City }) {

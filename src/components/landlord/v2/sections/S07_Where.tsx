@@ -21,10 +21,11 @@ export function S07_Where({ where, city, buildingCount }: Props) {
     LandlordV2Data["where"]["regions"][number] & { lat: number; lng: number }
   >;
   const hasPins = withCoords.length > 0;
-  const minLat = Math.min(...withCoords.map((r) => r.lat));
-  const maxLat = Math.max(...withCoords.map((r) => r.lat));
-  const minLng = Math.min(...withCoords.map((r) => r.lng));
-  const maxLng = Math.max(...withCoords.map((r) => r.lng));
+  const singleRegion = withCoords.length <= 1;
+  const minLat = hasPins ? Math.min(...withCoords.map((r) => r.lat)) : 0;
+  const maxLat = hasPins ? Math.max(...withCoords.map((r) => r.lat)) : 0;
+  const minLng = hasPins ? Math.min(...withCoords.map((r) => r.lng)) : 0;
+  const maxLng = hasPins ? Math.max(...withCoords.map((r) => r.lng)) : 0;
   const latSpan = Math.max(0.001, maxLat - minLat);
   const lngSpan = Math.max(0.001, maxLng - minLng);
 
@@ -63,9 +64,12 @@ export function S07_Where({ where, city, buildingCount }: Props) {
         >
           {hasPins
             ? withCoords.map((r) => {
-                const xPct = ((r.lng - minLng) / lngSpan) * 80 + 10;
+                // When every building sits in a single region the range
+                // collapses — pin the cluster to the middle of the viewport
+                // so it isn't stuck in a corner.
+                const xPct = singleRegion ? 50 : ((r.lng - minLng) / lngSpan) * 80 + 10;
                 // y flips because lat goes south→north but pixel y is top→bottom
-                const yPct = ((maxLat - r.lat) / latSpan) * 80 + 10;
+                const yPct = singleRegion ? 50 : ((maxLat - r.lat) / latSpan) * 80 + 10;
                 return (
                   <div
                     key={r.name}
@@ -77,14 +81,16 @@ export function S07_Where({ where, city, buildingCount }: Props) {
                       background: "var(--navy)",
                       color: "white",
                       fontFamily: "var(--mono)",
-                      fontSize: 11,
+                      fontSize: 13,
                       fontWeight: 700,
-                      padding: "4px 8px",
+                      padding: "6px 12px",
                       borderRadius: 999,
                       whiteSpace: "nowrap",
+                      boxShadow: "0 10px 24px -12px rgba(15,29,46,0.45)",
                     }}
                   >
-                    {r.count}
+                    <span style={{ marginRight: 8 }}>{r.name}</span>
+                    <span style={{ color: "var(--sky-deep)" }}>{r.count.toLocaleString()}</span>
                   </div>
                 );
               })

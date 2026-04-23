@@ -902,6 +902,52 @@ export const loadLandlordCityInsights = cache(
   }
 );
 
+export type LandlordReviewRow = {
+  id: string;
+  overall_rating: number;
+  body: string | null;
+  created_at: string;
+  building_id: string;
+  building_address: string;
+  region: string;
+};
+
+/**
+ * Full (paged) list of published reviews across the portfolio, ordered
+ * newest-first. Used by `/landlord/[slug]/reviews` — S06 only needs 3
+ * excerpts and uses `loadLandlordTenantVoice` instead.
+ */
+export const loadLandlordAllReviews = cache(
+  async (slug: string, city: City): Promise<LandlordReviewRow[]> => {
+    const buildings = await loadLandlordBuildingList(slug, city);
+    if (buildings.length === 0) return [];
+    const supabase = await createClient();
+    const byId = new Map(buildings.map((b) => [b.id, b]));
+    const { data } = await supabase
+      .from("reviews")
+      .select("id, overall_rating, body, created_at, building_id")
+      .in("building_id", buildings.map((b) => b.id))
+      .eq("status", "published")
+      .order("created_at", { ascending: false })
+      .limit(1000);
+    type Row = { id: string; overall_rating: number | null; body: string | null; created_at: string; building_id: string };
+    return ((data ?? []) as Row[])
+      .filter((r) => typeof r.overall_rating === "number" && r.overall_rating > 0)
+      .map((r) => {
+        const b = byId.get(r.building_id);
+        return {
+          id: r.id,
+          overall_rating: r.overall_rating as number,
+          body: r.body,
+          created_at: r.created_at,
+          building_id: r.building_id,
+          building_address: b?.full_address ?? "—",
+          region: b?.borough ?? "—",
+        };
+      });
+  }
+);
+
 export type LandlordFAQItem = { q: string; a: string };
 
 export const loadLandlordFAQ = cache(

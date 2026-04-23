@@ -6,7 +6,7 @@ import type { City } from "@/lib/cities";
 
 async function Inner({ slug, city }: { slug: string; city: City }) {
   const buildings = await loadLandlordBuildings(slug, city);
-  return <S04_Buildings buildings={buildings} city={city} />;
+  return <S04_Buildings buildings={buildings} city={city} slug={slug} />;
 }
 
 export function S04BuildingsStreamed({ slug, city }: { slug: string; city: City }) {

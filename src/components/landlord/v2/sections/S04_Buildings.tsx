@@ -2,12 +2,13 @@ import Link from "next/link";
 import type { LandlordV2Data } from "@/app/[city]/landlord/[name]/_data";
 import type { City } from "@/lib/cities";
 import { CITY_META } from "@/lib/cities";
-import { buildingUrl } from "@/lib/seo";
+import { buildingUrl, cityPath } from "@/lib/seo";
 import { normalizeScore } from "@/lib/constants";
 
 interface Props {
   buildings: LandlordV2Data["buildings"];
   city: City;
+  slug: string;
 }
 
 function gradeFor(score: number | null): { letter: string; bg: string; fg: string } {
@@ -25,7 +26,7 @@ function score10(score: number | null): string {
   return (normalizeScore(score) * 2).toFixed(1);
 }
 
-export function S04_Buildings({ buildings, city }: Props) {
+export function S04_Buildings({ buildings, city, slug }: Props) {
   const { worstThree, rows, total, filterCounts } = buildings;
   const regionLabel = CITY_META[city].regionLabel.toLowerCase();
 
@@ -284,22 +285,25 @@ export function S04_Buildings({ buildings, city }: Props) {
             </Link>
           );
         })}
-        {total > rows.length ? (
-          <div
-            style={{
-              background: "var(--paper-2)",
-              textAlign: "center",
-              fontFamily: "var(--mono)",
-              fontSize: 12,
-              color: "var(--navy-hi)",
-              fontWeight: 700,
-              padding: "10px 0",
-              letterSpacing: "0.04em",
-            }}
-          >
-            Showing {rows.length.toLocaleString()} of {total.toLocaleString()} buildings · sorted by score
-          </div>
-        ) : null}
+        <Link
+          href={cityPath(`/landlord/${slug}/buildings`, city)}
+          style={{
+            display: "block",
+            background: "var(--paper-2)",
+            textAlign: "center",
+            fontFamily: "var(--mono)",
+            fontSize: 12,
+            color: "var(--navy-hi)",
+            fontWeight: 700,
+            padding: "12px 0",
+            letterSpacing: "0.04em",
+            textDecoration: "none",
+          }}
+        >
+          {total > rows.length
+            ? `See all ${total.toLocaleString()} buildings →`
+            : `Open the full building list →`}
+        </Link>
       </div>
     </section>
   );
