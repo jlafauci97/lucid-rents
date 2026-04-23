@@ -3,6 +3,8 @@ import { permanentRedirect, redirect } from "next/navigation";
 import { Crumbs } from "@/components/landlord/v2/Crumbs";
 import { HeroV2Streamed } from "@/components/landlord/v2/streaming/HeroV2Streamed";
 import { RecordStripStreamed } from "@/components/landlord/v2/streaming/RecordStripStreamed";
+import { WayfinderRail } from "@/components/landlord/v2/WayfinderRail";
+import { normalizeScore } from "@/lib/constants";
 import { V2Zoom } from "@/components/building/v2/V2Zoom";
 import { JsonLd } from "@/components/seo/JsonLd";
 import {
@@ -23,6 +25,23 @@ import {
 import { getLandlordStats } from "@/lib/landlord-stats";
 
 export const revalidate = 86400; // 24h ISR — matches building v2
+
+// Coarse landlord letter grade used by the wayfinder rail. Full scoring
+// and grade breakdown live in HeroV2.
+function letterGrade(score: number | null): string {
+  if (score === null) return "—";
+  const s = normalizeScore(score);
+  if (s >= 4.5) return "A";
+  if (s >= 4.0) return "A-";
+  if (s >= 3.65) return "B+";
+  if (s >= 3.3) return "B";
+  if (s >= 3.0) return "B-";
+  if (s >= 2.65) return "C+";
+  if (s >= 2.3) return "C";
+  if (s >= 2.0) return "C-";
+  if (s >= 1.0) return "D";
+  return "F";
+}
 
 interface LandlordPageProps {
   params: Promise<{ city: string; name: string }>;
@@ -122,6 +141,7 @@ export default async function LandlordDetailPage({
   }
 
   const displayName = cachedStats.name;
+  const grade = letterGrade(cachedStats.avgScore);
 
   return (
     <div className="v2">
@@ -158,8 +178,12 @@ export default async function LandlordDetailPage({
 
         {/* ────────── Body ────────── */}
         <div className="body">
-          {/* Wayfinder rail — Task 1.4 */}
-          <aside className="wayfinder" aria-hidden="true" style={{ minHeight: 500 }} />
+          <WayfinderRail
+            grade={grade}
+            displayName={displayName}
+            city={city}
+            slug={correctSlug}
+          />
 
           <main id="main-content">
             {/* Sections 01-10 land in Tasks 2.x through 4.x */}
