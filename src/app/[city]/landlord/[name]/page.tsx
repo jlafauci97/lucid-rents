@@ -7,6 +7,7 @@ import { WayfinderRail } from "@/components/landlord/v2/WayfinderRail";
 import { S01GlanceStreamed } from "@/components/landlord/v2/streaming/S01GlanceStreamed";
 import { S02TrendStreamed } from "@/components/landlord/v2/streaming/S02TrendStreamed";
 import { S03CaseFileStreamed } from "@/components/landlord/v2/streaming/S03CaseFileStreamed";
+import { S04BuildingsStreamed } from "@/components/landlord/v2/streaming/S04BuildingsStreamed";
 import { normalizeScore } from "@/lib/constants";
 import { V2Zoom } from "@/components/building/v2/V2Zoom";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -201,6 +202,7 @@ export default async function LandlordDetailPage({
               buildingCount={cachedStats.buildingCount}
             />
             <S03CaseFileStreamed slug={correctSlug} city={city} />
+            <S04BuildingsStreamed slug={correctSlug} city={city} />
           </main>
         </div>
       </div>

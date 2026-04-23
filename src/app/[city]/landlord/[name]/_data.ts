@@ -592,15 +592,56 @@ export const loadLandlordCaseFile = cache(
 
 export const loadLandlordBuildings = cache(
   async (slug: string, city: City): Promise<LandlordV2Data["buildings"]> => {
+    const buildings = await loadLandlordBuildingList(slug, city);
+    if (buildings.length === 0) {
+      return {
+        worstThree: [],
+        rows: [],
+        total: 0,
+        filterCounts: { regions: [], violations100Plus: 0, rentStab: 0 },
+      };
+    }
+
+    // Sort ascending by score (NULL LAST) — worst first matches the building
+    // v2 sort direction and the mockup's worst-3 callout.
+    const scoreOf = (b: LandlordBuildingRow) => (b.overall_score == null ? Infinity : b.overall_score);
+    const sorted = [...buildings].sort((a, b) => scoreOf(a) - scoreOf(b));
+
+    const isAltMetro = city === "chicago" || city === "miami" || city === "houston";
+    const violations100Plus = buildings.filter((b) => {
+      const n = isAltMetro ? (b.dob_violation_count ?? 0) : (b.violation_count ?? 0);
+      return n >= 100;
+    }).length;
+    const rentStab = buildings.filter((b) => b.is_rent_stabilized === true).length;
+
+    const regionCounts = new Map<string, number>();
+    for (const b of buildings) {
+      const region = b.borough ?? "—";
+      regionCounts.set(region, (regionCounts.get(region) ?? 0) + 1);
+    }
+    const regions = Array.from(regionCounts.entries())
+      .map(([region, count]) => ({ region, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 6);
+
+    const toRow = (b: LandlordBuildingRow): WorstBuildingRow => ({
+      id: b.id,
+      full_address: b.full_address,
+      borough: b.borough,
+      slug: b.slug,
+      year_built: b.year_built,
+      total_units: b.total_units,
+      overall_score: b.overall_score,
+      violation_count: isAltMetro ? (b.dob_violation_count ?? 0) : (b.violation_count ?? 0),
+      complaint_count: b.complaint_count,
+      litigation_count: b.litigation_count,
+    });
+
     return {
-      worstThree: [],
-      rows: [],
-      total: 0,
-      filterCounts: {
-        regions: [],
-        violations100Plus: 0,
-        rentStab: 0,
-      },
+      worstThree: sorted.slice(0, 3).map(toRow),
+      rows: sorted.slice(0, 30).map(toRow),
+      total: buildings.length,
+      filterCounts: { regions, violations100Plus, rentStab },
     };
   }
 );
