@@ -4,6 +4,7 @@ import { Crumbs } from "@/components/landlord/v2/Crumbs";
 import { HeroV2Streamed } from "@/components/landlord/v2/streaming/HeroV2Streamed";
 import { RecordStripStreamed } from "@/components/landlord/v2/streaming/RecordStripStreamed";
 import { WayfinderRail } from "@/components/landlord/v2/WayfinderRail";
+import { S01GlanceStreamed } from "@/components/landlord/v2/streaming/S01GlanceStreamed";
 import { normalizeScore } from "@/lib/constants";
 import { V2Zoom } from "@/components/building/v2/V2Zoom";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -186,7 +187,12 @@ export default async function LandlordDetailPage({
           />
 
           <main id="main-content">
-            {/* Sections 01-10 land in Tasks 2.x through 4.x */}
+            <S01GlanceStreamed
+              slug={correctSlug}
+              city={city}
+              avgScore={cachedStats.avgScore}
+              buildingCount={cachedStats.buildingCount}
+            />
           </main>
         </div>
       </div>

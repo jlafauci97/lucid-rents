@@ -1,6 +1,7 @@
 import { cache } from "react";
 import type { City } from "@/lib/cities";
 import { createClient } from "@/lib/supabase/server";
+import { computeGradeDistribution, aggregateRegions } from "@/lib/landlord-v2-helpers";
 
 // ──────────────────────────────────────────────────────────────
 // LandlordV2Data — full type shape for landlord page v2
@@ -215,6 +216,50 @@ export const resolveOwnerName = cache(
   }
 );
 
+/**
+ * Fetch every building in the landlord's portfolio with the columns any
+ * section might need. Cached once per (slug, city) so S01/S02/S04/S07 all
+ * share one row set instead of issuing four overlapping queries.
+ */
+export type LandlordBuildingRow = {
+  id: string;
+  full_address: string;
+  borough: string | null;
+  zip_code: string | null;
+  slug: string | null;
+  year_built: number | null;
+  total_units: number | null;
+  overall_score: number | null;
+  violation_count: number | null;
+  dob_violation_count: number | null;
+  complaint_count: number | null;
+  litigation_count: number | null;
+  eviction_count: number | null;
+  is_rent_stabilized: boolean | null;
+  stabilized_units: number | null;
+  is_rso: boolean | null;
+  is_scofflaw: boolean | null;
+  latitude: number | null;
+  longitude: number | null;
+};
+
+const BUILDING_LIST_COLUMNS =
+  "id, full_address, borough, zip_code, slug, year_built, total_units, overall_score, violation_count, dob_violation_count, complaint_count, litigation_count, eviction_count, is_rent_stabilized, stabilized_units, is_rso, is_scofflaw, latitude, longitude";
+
+export const loadLandlordBuildingList = cache(
+  async (slug: string, city: City): Promise<LandlordBuildingRow[]> => {
+    const ownerName = await resolveOwnerName(slug, city);
+    if (!ownerName) return [];
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("buildings")
+      .select(BUILDING_LIST_COLUMNS)
+      .eq("owner_name", ownerName)
+      .eq("metro", city);
+    return (data ?? []) as LandlordBuildingRow[];
+  }
+);
+
 // ──────────────────────────────────────────────────────────────
 // Individual loaders — one per section, all wrapped in cache()
 // ──────────────────────────────────────────────────────────────
@@ -417,11 +462,28 @@ export const loadLandlordRecord = cache(
 
 export const loadLandlordGlance = cache(
   async (slug: string, city: City): Promise<LandlordV2Data["portfolio"]> => {
+    const supabase = await createClient();
+    const [buildings, cityAvgResult] = await Promise.all([
+      loadLandlordBuildingList(slug, city),
+      supabase.rpc("city_avg_score", { p_metro: city }),
+    ]);
+
+    const isAltMetro = city === "chicago" || city === "miami" || city === "houston";
+    const worstCount100 = buildings.filter((b) => {
+      const n = isAltMetro ? (b.dob_violation_count ?? 0) : (b.violation_count ?? 0);
+      return n >= 100;
+    }).length;
+
+    const regionAgg = aggregateRegions(
+      buildings.map((b) => ({ zip_code: b.zip_code, borough: b.borough })),
+      city
+    );
+
     return {
-      gradeDist: { A: 0, B: 0, C: 0, D: 0, F: 0 },
-      regionPreview: [],
-      worstCount100: 0,
-      cityAvgScore: 0,
+      gradeDist: computeGradeDistribution(buildings),
+      regionPreview: regionAgg.slice(0, 4).map((r) => ({ name: r.name, count: r.count })),
+      worstCount100,
+      cityAvgScore: typeof cityAvgResult.data === "number" ? cityAvgResult.data : 0,
     };
   }
 );
