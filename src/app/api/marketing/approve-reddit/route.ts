@@ -1,28 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resumeHook } from "workflow/api";
-import { createClient } from "@/lib/supabase/server";
+import { cookies } from "next/headers";
+import { MC_COOKIE, verifyCookieValue } from "@/lib/mission-control/auth";
 import {
   getRedditThread,
   updateRedditThread,
 } from "@/lib/marketing/supabase-queries";
 import type { ApproveRedditRequest } from "@/types/marketing";
 
-async function checkAdmin(): Promise<string | null> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-  const adminIds = (process.env.MARKETING_ADMIN_IDS || "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-  return adminIds.includes(user.id) ? user.id : null;
-}
-
 export async function POST(req: NextRequest) {
-  const adminId = await checkAdmin();
-  if (!adminId) {
+  // Mission Control is gated by a password cookie (MC_COOKIE), not Supabase
+  // auth. Anyone who can reach /mission-control/reddit has already cleared
+  // the proxy gate — reuse the same cookie here instead of requiring a
+  // separate Supabase login.
+  const store = await cookies();
+  const cookieVal = store.get(MC_COOKIE)?.value;
+  if (!(await verifyCookieValue(cookieVal))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
