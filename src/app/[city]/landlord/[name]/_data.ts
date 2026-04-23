@@ -2,6 +2,8 @@ import { cache } from "react";
 import type { City } from "@/lib/cities";
 import { createClient } from "@/lib/supabase/server";
 import { computeGradeDistribution, aggregateRegions } from "@/lib/landlord-v2-helpers";
+import { faqBankForCity } from "@/lib/landlord-city-adapters";
+import { CITY_META } from "@/lib/cities";
 
 // ──────────────────────────────────────────────────────────────
 // LandlordV2Data — full type shape for landlord page v2
@@ -878,5 +880,89 @@ export const loadLandlordPeers = cache(
 export const loadLandlordCityInsights = cache(
   async (slug: string, city: City): Promise<LandlordV2Data["cityInsights"]> => {
     return null;
+  }
+);
+
+export type LandlordFAQItem = { q: string; a: string };
+
+export const loadLandlordFAQ = cache(
+  async (slug: string, city: City): Promise<LandlordFAQItem[]> => {
+    const bank = faqBankForCity(city);
+    const supabase = await createClient();
+
+    // Fetch everything we need to fill in the templates.
+    const ownerName = await resolveOwnerName(slug, city);
+    if (!ownerName) return [];
+
+    const [buildings, statsResult, rankResult] = await Promise.all([
+      loadLandlordBuildingList(slug, city),
+      supabase
+        .from("landlord_stats")
+        .select("building_count, total_violations, total_dob_violations, avg_score")
+        .eq("slug", slug)
+        .eq("metro", city)
+        .maybeSingle(),
+      supabase
+        .from("landlord_stats")
+        .select("slug", { count: "exact", head: true })
+        .eq("metro", city),
+    ]);
+
+    const self = statsResult.data as {
+      building_count: number | null;
+      total_violations: number | null;
+      total_dob_violations: number | null;
+      avg_score: number | null;
+    } | null;
+
+    const rankCount = rankResult.count ?? 0;
+    const totalStabUnits = buildings.reduce(
+      (acc, b) => acc + (b.is_rent_stabilized && b.stabilized_units ? b.stabilized_units : 0),
+      0
+    );
+    const totalUnits = buildings.reduce((acc, b) => acc + (b.total_units ?? 0), 0);
+    const rentStabShare = totalUnits > 0 ? Math.round((totalStabUnits / totalUnits) * 100) : 0;
+    const activeLitigations = buildings.reduce((acc, b) => acc + (b.litigation_count ?? 0), 0);
+
+    const worstBuildings = [...buildings]
+      .filter((b) => b.slug)
+      .sort((a, b) => (a.overall_score ?? Infinity) - (b.overall_score ?? Infinity))
+      .slice(0, 3)
+      .map((b) => b.full_address.split(",")[0] ?? b.full_address);
+
+    const portfolioRank = (() => {
+      if (!self?.building_count || rankCount === 0) return "—";
+      // Rough: landlord_stats isn't sorted, but we can pull a rank for this
+      // city's building-count ordering. Skip for Phase 1 and just say "top 10%" etc.
+      return "among the tracked portfolios";
+    })();
+
+    const dict: Record<string, string> = {
+      "{{buildingCount}}": (self?.building_count ?? 0).toLocaleString(),
+      "{{portfolioRank}}": portfolioRank,
+      "{{city}}": CITY_META[city].fullName,
+      "{{rentStabShare}}": rentStabShare.toString(),
+      "{{activeLitigations}}": activeLitigations.toLocaleString(),
+      "{{worstBuilding1}}": worstBuildings[0] ?? "—",
+      "{{worstBuilding2}}": worstBuildings[1] ?? "—",
+      "{{worstBuilding3}}": worstBuildings[2] ?? "—",
+      "{{trendDirection24mo}}": "tracked",
+      "{{trendDeltaPct}}": "0",
+      "{{founderYear}}": "an unknown year",
+      "{{headOfficer}}": "The head officer",
+      "{{rltoStatus}}": city === "chicago"
+        ? buildings.some((b) => b.is_scofflaw) ? "Flagged scofflaw" : "No scofflaw flag on record"
+        : "—",
+      "{{recertsPending}}": buildings.reduce(
+        (acc, _b) => acc, // placeholder; recert details land with Miami data ingestion
+        0
+      ).toLocaleString(),
+      "{{dangerousCount}}": "—",
+    };
+
+    const substitute = (tpl: string) =>
+      Object.entries(dict).reduce((s, [k, v]) => s.replace(new RegExp(k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"), v), tpl);
+
+    return bank.map((item) => ({ q: substitute(item.q), a: substitute(item.aTemplate) }));
   }
 );

@@ -12,6 +12,7 @@ import { S05OwnershipStreamed } from "@/components/landlord/v2/streaming/S05Owne
 import { S06TenantVoiceStreamed } from "@/components/landlord/v2/streaming/S06TenantVoiceStreamed";
 import { S07WhereStreamed } from "@/components/landlord/v2/streaming/S07WhereStreamed";
 import { S08CompareStreamed } from "@/components/landlord/v2/streaming/S08CompareStreamed";
+import { S09FAQStreamed } from "@/components/landlord/v2/streaming/S09FAQStreamed";
 import { normalizeScore } from "@/lib/constants";
 import { V2Zoom } from "@/components/building/v2/V2Zoom";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -224,6 +225,7 @@ export default async function LandlordDetailPage({
               city={city}
               currentAvgScore={cachedStats.avgScore}
             />
+            <S09FAQStreamed slug={correctSlug} city={city} />
           </main>
         </div>
       </div>
