@@ -249,7 +249,7 @@ export function RedditTab() {
                   }))
                 }
                 rows={4}
-                className="w-full rounded-lg border border-[#e2e8f0] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6] resize-y"
+                className="w-full rounded-lg border border-[#e2e8f0] bg-white px-3 py-2 text-sm text-[#0F1D2E] placeholder-[#94a3b8] focus:outline-none focus:ring-2 focus:ring-[#3B82F6] resize-y"
               />
             )}
 
