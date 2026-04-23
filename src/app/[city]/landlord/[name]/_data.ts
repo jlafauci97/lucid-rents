@@ -705,11 +705,83 @@ export const loadLandlordOwnership = cache(
 
 export const loadLandlordTenantVoice = cache(
   async (slug: string, city: City): Promise<LandlordV2Data["tenantVoice"]> => {
+    const buildings = await loadLandlordBuildingList(slug, city);
+    if (buildings.length === 0) {
+      return { avgRating: 0, totalReviews: 0, distribution: [0, 0, 0, 0, 0], excerpts: [] };
+    }
+    const supabase = await createClient();
+    const buildingIds = buildings.map((b) => b.id);
+
+    const { data } = await supabase
+      .from("reviews")
+      .select("overall_rating, body, building_id, created_at")
+      .in("building_id", buildingIds)
+      .eq("status", "published")
+      .order("created_at", { ascending: false })
+      .limit(500);
+
+    type Row = {
+      overall_rating: number | null;
+      body: string | null;
+      building_id: string;
+      created_at: string;
+    };
+    const rows = ((data ?? []) as Row[]).filter(
+      (r) => typeof r.overall_rating === "number" && r.overall_rating > 0
+    ) as Array<Row & { overall_rating: number }>;
+
+    if (rows.length === 0) {
+      return { avgRating: 0, totalReviews: 0, distribution: [0, 0, 0, 0, 0], excerpts: [] };
+    }
+
+    const totalReviews = rows.length;
+    const avgRating = rows.reduce((a, r) => a + r.overall_rating, 0) / totalReviews;
+
+    const dist: [number, number, number, number, number] = [0, 0, 0, 0, 0];
+    for (const r of rows) {
+      const idx = Math.max(1, Math.min(5, Math.round(r.overall_rating))) - 1;
+      dist[idx]++;
+    }
+
+    // Pick one top-rated with text, one bottom-rated with text, one middle with text
+    const byBuildingId = new Map(buildings.map((b) => [b.id, b]));
+    const withText = rows.filter((r) => (r.body ?? "").trim().length > 0);
+    const top = [...withText].sort((a, b) => b.overall_rating - a.overall_rating || b.created_at.localeCompare(a.created_at))[0];
+    const bot = [...withText].sort((a, b) => a.overall_rating - b.overall_rating || b.created_at.localeCompare(a.created_at))[0];
+    const middle = withText.find((r) => r.overall_rating >= 2.5 && r.overall_rating <= 3.5);
+
+    const toExcerpt = (r: (typeof withText)[number] | undefined) => {
+      if (!r) return null;
+      const building = byBuildingId.get(r.building_id);
+      return {
+        rating: r.overall_rating,
+        text: r.body!.length > 240 ? `${r.body!.slice(0, 240).trim()}…` : r.body!,
+        building_address: building?.full_address ?? "—",
+        region: building?.borough ?? "—",
+        created_at: r.created_at,
+      };
+    };
+
+    const excerptSet = new Set<string>();
+    const pushExcerpt = (r: (typeof withText)[number] | undefined, out: ReturnType<typeof toExcerpt>[]) => {
+      if (!r || excerptSet.has(r.building_id + "|" + r.created_at)) return;
+      const e = toExcerpt(r);
+      if (e) {
+        excerptSet.add(r.building_id + "|" + r.created_at);
+        out.push(e);
+      }
+    };
+
+    const excerpts: NonNullable<ReturnType<typeof toExcerpt>>[] = [];
+    pushExcerpt(top, excerpts);
+    pushExcerpt(bot, excerpts);
+    pushExcerpt(middle ?? withText[0], excerpts);
+
     return {
-      avgRating: 0,
-      totalReviews: 0,
-      distribution: [0, 0, 0, 0, 0],
-      excerpts: [],
+      avgRating,
+      totalReviews,
+      distribution: dist,
+      excerpts: excerpts.slice(0, 3),
     };
   }
 );

@@ -9,6 +9,7 @@ import { S02TrendStreamed } from "@/components/landlord/v2/streaming/S02TrendStr
 import { S03CaseFileStreamed } from "@/components/landlord/v2/streaming/S03CaseFileStreamed";
 import { S04BuildingsStreamed } from "@/components/landlord/v2/streaming/S04BuildingsStreamed";
 import { S05OwnershipStreamed } from "@/components/landlord/v2/streaming/S05OwnershipStreamed";
+import { S06TenantVoiceStreamed } from "@/components/landlord/v2/streaming/S06TenantVoiceStreamed";
 import { normalizeScore } from "@/lib/constants";
 import { V2Zoom } from "@/components/building/v2/V2Zoom";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -210,6 +211,7 @@ export default async function LandlordDetailPage({
               displayName={displayName}
               buildingCount={cachedStats.buildingCount}
             />
+            <S06TenantVoiceStreamed slug={correctSlug} city={city} />
           </main>
         </div>
       </div>
