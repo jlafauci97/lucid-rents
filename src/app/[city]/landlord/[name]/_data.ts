@@ -879,6 +879,25 @@ export const loadLandlordPeers = cache(
 
 export const loadLandlordCityInsights = cache(
   async (slug: string, city: City): Promise<LandlordV2Data["cityInsights"]> => {
+    const buildings = await loadLandlordBuildingList(slug, city);
+    if (buildings.length === 0) return null;
+
+    // Phase 1: NYC is live, other cities stub null until their insight sources
+    // ship. The component stays identical — only the payload changes.
+    if (city === "nyc") {
+      const rentStabUnits = buildings.reduce(
+        (acc, b) => acc + (b.is_rent_stabilized && b.stabilized_units ? b.stabilized_units : 0),
+        0
+      );
+      if (rentStabUnits === 0) return null;
+      return {
+        kind: "nyc",
+        rentStabUnits,
+        erapRecipient: false,   // Phase 2 — needs ERAP recipient table
+        abatements: [],         // Phase 2 — needs J-51 / 421-a tax abatement data
+      };
+    }
+
     return null;
   }
 );
