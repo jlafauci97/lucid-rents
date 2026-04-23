@@ -47,24 +47,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Thread not found" }, { status: 404 });
     }
 
+    // Drafts produced by the scheduled task (scripts/scan-and-draft-reddit + draft-batch endpoint)
+    // have no hook_token because they bypass Vercel Workflow entirely. Only drafts from the legacy
+    // workflow path have one, and in that case we still need to resume the hook so the workflow
+    // completes. Both paths update the DB status the same way.
     const hookToken = thread.hook_token;
-    if (!hookToken) {
-      return NextResponse.json(
-        { error: "Thread has no pending approval hook" },
-        { status: 409 }
-      );
-    }
 
     if (action === "approve") {
-      await updateRedditThread(threadId, { status: "approved" });
-      await resumeHook(hookToken, {
-        approved: true,
-        editedReply,
+      await updateRedditThread(threadId, {
+        status: "approved",
+        ...(editedReply ? { draftReply: editedReply } : {}),
       });
+      if (hookToken) {
+        await resumeHook(hookToken, { approved: true, editedReply });
+      }
     } else {
-      // skip
       await updateRedditThread(threadId, { status: "skipped" });
-      await resumeHook(hookToken, { approved: false });
+      if (hookToken) {
+        await resumeHook(hookToken, { approved: false });
+      }
     }
 
     return NextResponse.json({ ok: true });
