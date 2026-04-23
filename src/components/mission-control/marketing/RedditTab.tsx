@@ -201,21 +201,34 @@ export function RedditTab() {
                   </span>
                 </div>
                 {thread.title && (
-                  <div className="flex items-center gap-1">
-                    <h3 className="text-sm font-medium text-[#0F1D2E] truncate">
-                      {thread.title}
-                    </h3>
+                  <>
+                    {thread.url ? (
+                      <a
+                        href={thread.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group inline-flex items-center gap-1 text-sm font-medium text-[#0F1D2E] hover:text-[#3B82F6]"
+                      >
+                        <span className="truncate">{thread.title}</span>
+                        <ExternalLink className="h-3.5 w-3.5 flex-shrink-0 text-[#64748b] group-hover:text-[#3B82F6]" />
+                      </a>
+                    ) : (
+                      <h3 className="text-sm font-medium text-[#0F1D2E] truncate">
+                        {thread.title}
+                      </h3>
+                    )}
                     {thread.url && (
                       <a
                         href={thread.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex-shrink-0"
+                        className="block mt-0.5 text-[11px] text-[#64748b] hover:text-[#3B82F6] truncate font-mono"
+                        title={thread.url}
                       >
-                        <ExternalLink className="h-3.5 w-3.5 text-[#64748b] hover:text-[#3B82F6]" />
+                        {thread.url.replace(/^https?:\/\/(www\.)?/, "")}
                       </a>
                     )}
-                  </div>
+                  </>
                 )}
               </div>
             </div>
