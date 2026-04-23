@@ -2922,6 +2922,60 @@
 .v2 .faq-body b { color: var(--ink); font-weight: 700; }
 .v2 .faq-body a { color: var(--navy-hi); text-decoration: underline; text-underline-offset: 2px; }
 
+.v2 .faq-layout {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 36px;
+  align-items: start;
+  margin-top: 16px;
+}
+.v2 .faq-side { position: sticky; top: 20px; }
+.v2 .faq-side-label {
+  font-family: var(--sans); font-size: 11px; font-weight: 600;
+  color: var(--ink-mute); letter-spacing: 0.1em; text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.v2 .faq-side-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.v2 .faq-side-btn {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--ink-soft);
+  font-family: var(--sans); font-size: 14px; font-weight: 500;
+  letter-spacing: -0.005em;
+  cursor: pointer;
+  display: flex; justify-content: space-between; align-items: center;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.v2 .faq-side-btn:hover { background: var(--paper-2); color: var(--ink); }
+.v2 .faq-side-btn.is-active {
+  background: var(--ink);
+  color: var(--paper);
+  font-weight: 600;
+}
+.v2 .faq-side-count { opacity: 0.5; font-size: 12px; font-variant-numeric: tabular-nums; }
+.v2 .faq-side-btn.is-active .faq-side-count { opacity: 0.7; }
+.v2 .faq-layout .faq-list { margin-top: 0; }
+
+@media (max-width: 900px) {
+  .v2 .faq-layout { grid-template-columns: 1fr; gap: 16px; }
+  .v2 .faq-side { position: static; }
+  .v2 .faq-side-label { display: none; }
+  .v2 .faq-side-list { flex-direction: row; overflow-x: auto; padding-bottom: 4px; gap: 6px; }
+  .v2 .faq-side-list li { flex: 0 0 auto; }
+  .v2 .faq-side-btn {
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: var(--paper);
+    border: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  .v2 .faq-side-btn.is-active { border-color: var(--ink); }
+}
+
 /* ---------- Responsive reflow ---------- */
 @media (max-width: 1200px) {
   .v2 .body { grid-template-columns: 200px minmax(0, 1fr); }

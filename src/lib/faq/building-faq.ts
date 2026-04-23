@@ -1,5 +1,5 @@
 import { getLetterGrade, normalizeScore } from "@/lib/constants";
-import type { FAQItem } from "./types";
+import type { FAQItem, FAQGroup } from "./types";
 import type {
   Building,
   HpdViolation,
@@ -124,8 +124,14 @@ export function generateBuildingFAQ({
 }): FAQItem[] {
   const items: FAQItem[] = [];
   const addr = building.full_address;
+  let currentGroup: FAQGroup = "Rent";
+  const group = (g: FAQGroup) => { currentGroup = g; };
+  const push = (item: { question: string; answer: string }) => {
+    items.push({ ...item, group: currentGroup });
+  };
 
   // --- Rent & Cost ---
+  group("Rent");
 
   // Rent per bedroom type
   const sortedRents = [...rents].sort((a, b) => a.bedrooms - b.bedrooms);
@@ -136,7 +142,7 @@ export function generateBuildingFAQ({
         r.min_rent !== r.max_rent
           ? `ranges from ${fmt(r.min_rent)} to ${fmt(r.max_rent)} per month, with a median of ${fmt(r.median_rent)}`
           : `is approximately ${fmt(r.median_rent)} per month`;
-      items.push({
+      push({
         question: `What is the rent for a ${label} at ${addr}?`,
         answer: `Based on recent listing data, rent for a ${label} at ${addr} ${rangeText}.`,
       });
@@ -165,7 +171,7 @@ export function generateBuildingFAQ({
       }
     }
     if (comparisons.length > 0) {
-      items.push({
+      push({
         question: `How does rent at ${addr} compare to the neighborhood?`,
         answer: `Compared to other buildings in the ${building.zip_code} zip code: ${comparisons.join("; ")}.`,
       });
@@ -178,12 +184,12 @@ export function generateBuildingFAQ({
     const unitInfo = building.stabilized_units
       ? ` with ${building.stabilized_units} stabilized units`
       : "";
-    items.push({
+    push({
       question: `Is ${addr} rent stabilized?`,
       answer: `Yes, ${addr} is ${type}${unitInfo}. Rent-stabilized tenants have protections limiting annual rent increases and providing lease renewal rights.`,
     });
   } else {
-    items.push({
+    push({
       question: `Is ${addr} rent stabilized?`,
       answer: `Based on available records, ${addr} is not currently registered as rent stabilized. Rents at this building are likely set at market rate.`,
     });
@@ -199,7 +205,7 @@ export function generateBuildingFAQ({
     const covidNote = rentHistory.covidLow
       ? ` During COVID, rents dipped to ${fmt(rentHistory.covidLow.rent)} in ${rentHistory.covidLow.month} before recovering.`
       : "";
-    items.push({
+    push({
       question: `How much has rent changed at ${addr}?`,
       answer: `Rent at ${addr} has ${direction} by ${Math.abs(Math.round(cumChange))}% since ${rentHistory.earliest.month}, going from ${fmt(rentHistory.earliest.rent)} to ${fmt(rentHistory.latest.rent)} as of ${rentHistory.latest.month}.${covidNote}`,
     });
@@ -217,7 +223,7 @@ export function generateBuildingFAQ({
         : diff < -3
           ? `${absDiff}% below the neighborhood median of ${fmt(valueData.neighborhoodMedian)}`
           : `in line with the neighborhood median of ${fmt(valueData.neighborhoodMedian)}`;
-    items.push({
+    push({
       question: `Is ${addr} overpriced compared to the neighborhood?`,
       answer: `The median rent at ${addr} is ${fmt(valueData.buildingMedian)}, which is ${comparison}. Lucid Rents assigns this building a value grade of ${valueData.valueGrade}, which reflects how rent compares to the area average after adjusting for building quality and amenities.`,
     });
@@ -231,7 +237,7 @@ export function generateBuildingFAQ({
         : sqftData.percentile <= 25
           ? "in the bottom quartile (more affordable per sqft)"
           : "near the middle of the range";
-    items.push({
+    push({
       question: `What is the price per square foot at ${addr}?`,
       answer: `The estimated price per square foot at ${addr} is $${sqftData.pricePerSqft.toFixed(2)}/sqft. This places it at the ${sqftData.percentile}th percentile in the neighborhood, ${percentileLabel} compared to nearby buildings.`,
     });
@@ -245,16 +251,17 @@ export function generateBuildingFAQ({
     ];
     const cheapest = monthNames[seasonalData.cheapestMonth - 1] || `month ${seasonalData.cheapestMonth}`;
     const expensive = monthNames[seasonalData.expensiveMonth - 1] || `month ${seasonalData.expensiveMonth}`;
-    items.push({
+    push({
       question: `When is the cheapest time to rent at ${addr}?`,
       answer: `Based on historical listing data, ${cheapest} tends to be the most affordable month to sign a lease at ${addr}, while ${expensive} is typically the most expensive. Timing your move to ${cheapest} could save approximately ${seasonalData.savingsPercent}% compared to peak pricing.`,
     });
   }
 
   // --- Landlord & Ownership ---
+  group("Landlord");
 
   if (building.owner_name) {
-    items.push({
+    push({
       question: `Who is the landlord of ${addr}?`,
       answer: `The registered owner of ${addr} is ${building.owner_name}. You can view their full portfolio of buildings on Lucid Rents.`,
     });
@@ -268,7 +275,7 @@ export function generateBuildingFAQ({
       const reviewNote = building.review_count > 0
         ? ` Tenants have left ${building.review_count} review${building.review_count !== 1 ? "s" : ""}.`
         : "";
-      items.push({
+      push({
         question: `Is the landlord of ${addr} a good landlord?`,
         answer: `${addr}, owned by ${building.owner_name}, has an overall grade of ${grade} (${normalizeScore(building.overall_score).toFixed(1)}/5) on Lucid Rents.${violationNote}${reviewNote} Check tenant reviews for firsthand experiences.`,
       });
@@ -276,11 +283,12 @@ export function generateBuildingFAQ({
   }
 
   // --- Building Quality & Safety ---
+  group("Safety");
 
   // Building rating
   if (building.overall_score !== null) {
     const grade = getLetterGrade(building.overall_score);
-    items.push({
+    push({
       question: `What is the building rating for ${addr}?`,
       answer: `${addr} has an overall grade of ${grade} with a score of ${normalizeScore(building.overall_score).toFixed(1)} out of 5 on Lucid Rents. This score is based on violations, complaints, and tenant reviews.`,
     });
@@ -295,7 +303,7 @@ export function generateBuildingFAQ({
     if (building.complaint_count > 0) {
       parts.push(`${building.complaint_count.toLocaleString()} complaint${building.complaint_count !== 1 ? "s" : ""}`);
     }
-    items.push({
+    push({
       question: `Are there violations or complaints at ${addr}?`,
       answer: `Yes, ${addr} has ${parts.join(" and ")} on record. Visit the building page on Lucid Rents to see the full history, including violation classes and complaint types.`,
     });
@@ -307,7 +315,7 @@ export function generateBuildingFAQ({
       ? new Date(evictions[0].executed_date).toLocaleDateString("en-US", { month: "long", year: "numeric" })
       : null;
     const dateNote = recentDate ? ` The most recent was in ${recentDate}.` : "";
-    items.push({
+    push({
       question: `Are there eviction filings at ${addr}?`,
       answer: `Yes, there are ${evictions.length} eviction record${evictions.length !== 1 ? "s" : ""} on file for ${addr}.${dateNote} Eviction records are public information sourced from city marshal data.`,
     });
@@ -319,7 +327,7 @@ export function generateBuildingFAQ({
   if (building.fire_risk_zone) hazards.push(`in a ${building.fire_risk_zone} fire risk zone`);
   if (building.is_soft_story) hazards.push(`identified as a soft-story building${building.soft_story_status ? ` (${building.soft_story_status})` : ""}`);
   if (hazards.length > 0) {
-    items.push({
+    push({
       question: `Is ${addr} in a flood zone or fire risk area?`,
       answer: `${addr} is ${hazards.join(", and ")}. Prospective tenants should consider these factors when evaluating the building.`,
     });
@@ -329,7 +337,7 @@ export function generateBuildingFAQ({
   if (permits.length > 0) {
     const types = [...new Set(permits.map((p) => p.work_type).filter(Boolean))].slice(0, 3);
     const typeNote = types.length > 0 ? ` Recent permit types include: ${types.join(", ")}.` : "";
-    items.push({
+    push({
       question: `Are there any open building permits at ${addr}?`,
       answer: `${addr} has ${permits.length} building permit${permits.length !== 1 ? "s" : ""} on record.${typeNote} Building permits can indicate ongoing construction or renovation work.`,
     });
@@ -338,7 +346,7 @@ export function generateBuildingFAQ({
   // DOB violations
   if (dobViolations.length > 0) {
     const total = building.dob_violation_count || dobViolations.length;
-    items.push({
+    push({
       question: `Has ${addr} had any Department of Buildings violations?`,
       answer: `Yes, ${addr} has ${total.toLocaleString()} Department of Buildings violation${total !== 1 ? "s" : ""} on record. These can include issues related to construction safety, building codes, and structural concerns.`,
     });
@@ -349,13 +357,14 @@ export function generateBuildingFAQ({
     const total = building.litigation_count || litigations.length;
     const caseTypes = [...new Set(litigations.map((l) => l.case_type).filter(Boolean))].slice(0, 3);
     const caseNote = caseTypes.length > 0 ? ` Case types include: ${caseTypes.join(", ")}.` : "";
-    items.push({
+    push({
       question: `Are there any lawsuits against ${addr}?`,
       answer: `${addr} has ${total.toLocaleString()} litigation${total !== 1 ? "s" : ""} on record with the housing agency.${caseNote}`,
     });
   }
 
   // --- Amenities & Living ---
+  group("Amenities");
 
   if (amenities.length > 0) {
     const byCategory = new Map<string, string[]>();
@@ -366,7 +375,7 @@ export function generateBuildingFAQ({
       byCategory.set(cat, arr);
     }
     const highlights = amenities.slice(0, 8).map((a) => a.amenity);
-    items.push({
+    push({
       question: `What amenities does ${addr} have?`,
       answer: `${addr} offers ${amenities.length} amenities including ${highlights.join(", ")}${amenities.length > 8 ? ", and more" : ""}. View the full amenity list on the building page.`,
     });
@@ -385,7 +394,7 @@ export function generateBuildingFAQ({
     if (petReviews.length > 0) {
       details.push(`${petReviews.length} tenant review${petReviews.length !== 1 ? "s" : ""} confirmed it as pet friendly`);
     }
-    items.push({
+    push({
       question: `Does ${addr} allow pets?`,
       answer: `${addr} ${details.join(" and ")}. Contact the building management to confirm current pet policies and any breed or size restrictions.`,
     });
@@ -397,7 +406,7 @@ export function generateBuildingFAQ({
   );
   if (laundryAmenities.length > 0) {
     const names = laundryAmenities.map((a) => a.amenity).join(", ");
-    items.push({
+    push({
       question: `Does ${addr} have laundry facilities?`,
       answer: `Yes, ${addr} offers laundry amenities: ${names}.`,
     });
@@ -413,13 +422,14 @@ export function generateBuildingFAQ({
   );
   if (securityAmenities.length > 0) {
     const names = securityAmenities.map((a) => a.amenity).join(", ");
-    items.push({
+    push({
       question: `Does ${addr} have a doorman or concierge?`,
       answer: `${addr} offers the following security and access amenities: ${names}.`,
     });
   }
 
   // --- Neighborhood & Location ---
+  group("Location");
 
   // Schools — use real data
   const allSchools = Object.entries(nearbySchools).flatMap(([type, schools]) =>
@@ -437,7 +447,7 @@ export function generateBuildingFAQ({
         return `${schools.length} ${label}${schools.length !== 1 ? "s" : ""}`;
       })
       .join(", ");
-    items.push({
+    push({
       question: `What schools are near ${addr}?`,
       answer: `There are ${allSchools.length} schools near ${addr}, including ${typeSummary}. Nearby schools include ${schoolNames.join(", ")}${allSchools.length > 5 ? ", and more" : ""}.`,
     });
@@ -456,7 +466,7 @@ export function generateBuildingFAQ({
       const routeNote = closest.routes.length > 0 ? ` (${closest.routes.slice(0, 4).join(", ")})` : "";
       transitParts.push(`${label}: ${closest.name}${routeNote}, ${closest.distance} away`);
     }
-    items.push({
+    push({
       question: `What public transit is near ${addr}?`,
       answer: `${addr} has ${allTransit.length} transit options nearby. The closest include: ${transitParts.join("; ")}.`,
     });
@@ -464,18 +474,19 @@ export function generateBuildingFAQ({
 
   // Crime / safety — use real summary data
   if (crimeSummary && crimeSummary.total > 0) {
-    items.push({
+    push({
       question: `Is ${addr} safe? What is the crime rate nearby?`,
       answer: `The ${building.zip_code} zip code where ${addr} is located had ${crimeSummary.total.toLocaleString()} crime incidents in the past 2 years, including ${crimeSummary.violent.toLocaleString()} violent crimes, ${crimeSummary.property.toLocaleString()} property crimes, and ${crimeSummary.quality_of_life.toLocaleString()} quality-of-life incidents. Check the neighborhood report card for ${building.zip_code} for full details.`,
     });
   } else if (building.crime_count > 0) {
-    items.push({
+    push({
       question: `Is ${addr} safe? What is the crime rate nearby?`,
       answer: `The ${building.zip_code} zip code where ${addr} is located has ${building.crime_count.toLocaleString()} crime incidents on record. Check the neighborhood report card for ${building.zip_code} for a full breakdown by crime type.`,
     });
   }
 
   // --- Building Details ---
+  group("Building");
 
   // Year built / units
   const buildingDetails: string[] = [];
@@ -486,7 +497,7 @@ export function generateBuildingFAQ({
     buildingDetails.push(`${building.residential_units} of which are residential`);
   }
   if (buildingDetails.length > 0) {
-    items.push({
+    push({
       question: `When was ${addr} built and how many units does it have?`,
       answer: `${addr} ${buildingDetails.join(", ")}.`,
     });
@@ -497,7 +508,7 @@ export function generateBuildingFAQ({
     const parts: string[] = [];
     if (energy.energy_star_score) parts.push(`an ENERGY STAR score of ${energy.energy_star_score} out of 100`);
     if (energy.site_eui) parts.push(`a site energy use intensity (EUI) of ${energy.site_eui.toFixed(1)} kBtu/ft²`);
-    items.push({
+    push({
       question: `How energy efficient is ${addr}?`,
       answer: `${addr} has ${parts.join(" and ")} (${energy.report_year} data). ${energy.energy_star_score && energy.energy_star_score >= 75 ? "This is considered an above-average efficiency rating." : energy.energy_star_score && energy.energy_star_score < 50 ? "This suggests there is room for energy efficiency improvement." : ""}`,
     });
@@ -511,7 +522,7 @@ export function generateBuildingFAQ({
     const topCons = getTopTags(reviews.flatMap((r) => r.con_tags));
     const prosNote = topPros.length > 0 ? ` Common positives mentioned: ${topPros.join(", ")}.` : "";
     const consNote = topCons.length > 0 ? ` Common concerns: ${topCons.join(", ")}.` : "";
-    items.push({
+    push({
       question: `What do tenants say about living at ${addr}?`,
       answer: `${addr} has ${reviews.length} tenant review${reviews.length !== 1 ? "s" : ""} with an average rating of ${avgRating.toFixed(1)} out of 5. ${recommendCount} out of ${reviews.length} reviewers would recommend this building.${prosNote}${consNote}`,
     });
