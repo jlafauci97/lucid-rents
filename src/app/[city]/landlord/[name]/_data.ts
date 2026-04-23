@@ -521,7 +521,72 @@ export const loadLandlordTrend = cache(
 
 export const loadLandlordCaseFile = cache(
   async (slug: string, city: City): Promise<LandlordV2Data["caseFile"]> => {
-    return null;
+    // Phase 1 ships NYC OATH only. LA/CHI/MIA/HOU return null and the
+    // section stays hidden until the per-city enforcement source lands.
+    if (city !== "nyc") return null;
+    const ownerName = await resolveOwnerName(slug, city);
+    if (!ownerName) return null;
+
+    const supabase = await createClient();
+    const [summaryResult, recentResult] = await Promise.all([
+      supabase.rpc("get_landlord_oath_summary", { landlord_owner_name: ownerName }).maybeSingle(),
+      supabase.rpc("get_landlord_oath_recent", { landlord_owner_name: ownerName, row_limit: 12 }),
+    ]);
+
+    const summary = summaryResult.data as {
+      building_count: number;
+      total_hearings: number;
+      unpaid_hearings: number;
+      total_unpaid_balance: number;
+      total_penalty_imposed: number;
+      total_paid: number;
+      default_judgments: number;
+      latest_violation_date: string | null;
+    } | null;
+
+    if (!summary || summary.total_hearings === 0) return null;
+
+    type RawCase = {
+      ticket_number: string;
+      bbl: string;
+      violation_date: string | null;
+      issuing_agency: string | null;
+      violation_description: string | null;
+      hearing_status: string | null;
+      hearing_result: string | null;
+      penalty_imposed: number | null;
+      balance_due: number | null;
+      house_number: string | null;
+      street_name: string | null;
+      borough: string | null;
+    };
+    const rawRecent = (recentResult.data as RawCase[] | null) ?? [];
+    const defaultRate = summary.total_hearings > 0
+      ? Math.round((summary.default_judgments / summary.total_hearings) * 100)
+      : 0;
+
+    return {
+      source: "oath",
+      summary: {
+        buildingCount: summary.building_count,
+        totalCases: summary.total_hearings,
+        unpaidCases: summary.unpaid_hearings,
+        unpaidBalance: summary.total_unpaid_balance,
+        defaultRate,
+        latestDate: summary.latest_violation_date,
+      },
+      recent: rawRecent.map((c) => ({
+        id: c.ticket_number,
+        date: c.violation_date,
+        description: c.violation_description,
+        agency: c.issuing_agency,
+        status: c.hearing_status,
+        result: c.hearing_result,
+        penaltyImposed: c.penalty_imposed,
+        balanceDue: c.balance_due,
+        addressLine: [c.house_number, c.street_name].filter(Boolean).join(" ") || null,
+      })),
+    };
   }
 );
 
