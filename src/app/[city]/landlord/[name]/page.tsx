@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { permanentRedirect, redirect } from "next/navigation";
 import { Crumbs } from "@/components/landlord/v2/Crumbs";
+import { HeroV2Streamed } from "@/components/landlord/v2/streaming/HeroV2Streamed";
 import { V2Zoom } from "@/components/building/v2/V2Zoom";
 import { JsonLd } from "@/components/seo/JsonLd";
 import {
@@ -145,27 +146,12 @@ export default async function LandlordDetailPage({
         <Crumbs city={city} displayName={displayName} />
 
         {/* ────────── Above-the-fold ────────── */}
-        {/* Hero — Task 1.2 */}
-        <section
-          className="hero"
-          aria-label="Landlord overview"
-          style={{ minHeight: 360 }}
-        >
-          <div className="hero-left">
-            <h1>{displayName}</h1>
-            <div className="hero-address">
-              <span>{CITY_META[city].fullName}</span>
-            </div>
-            <div className="hero-meta">
-              <span>{cachedStats.buildingCount.toLocaleString()} buildings tracked</span>
-            </div>
-          </div>
-          <aside
-            className="verdict"
-            aria-hidden="true"
-            style={{ minHeight: 320 }}
-          />
-        </section>
+        <HeroV2Streamed
+          slug={correctSlug}
+          city={city}
+          displayName={displayName}
+          fullCity={CITY_META[city].fullName}
+        />
 
         {/* Record strip — Task 1.3 */}
         <section className="record" aria-label="Portfolio record" style={{ minHeight: 90 }} />

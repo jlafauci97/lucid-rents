@@ -1,5 +1,6 @@
 import { cache } from "react";
 import type { City } from "@/lib/cities";
+import { createClient } from "@/lib/supabase/server";
 
 // ──────────────────────────────────────────────────────────────
 // LandlordV2Data — full type shape for landlord page v2
@@ -89,6 +90,16 @@ export type LandlordV2Data = {
     registrationStatus: string | null;
     businessAddress: string | null;
     yearsActive: number | null;
+    // Summary numbers the hero needs for the verdict card + summary callout.
+    // These are cheap aggregates (already denormalized on landlord_stats or
+    // computed by a single reducer over the portfolio) so it's fine to bundle
+    // them with the identity payload.
+    totalViolations: number;
+    totalComplaints: number;
+    violations100Plus: number;
+    totalReviews: number;
+    avgRating: number;
+    cityAvgScore: number;
   };
   portfolio: {
     gradeDist: { A: number; B: number; C: number; D: number; F: number };
@@ -183,22 +194,138 @@ export type LandlordRecordAggregate = {
 };
 
 // ──────────────────────────────────────────────────────────────
+// Shared helpers — cached so every section loader reuses the same query results
+// ──────────────────────────────────────────────────────────────
+
+/**
+ * Resolve the canonical owner_name for a slug in a given metro.
+ * Cached for the request lifetime so all loaders share one query.
+ */
+export const resolveOwnerName = cache(
+  async (slug: string, city: City): Promise<string | null> => {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("landlord_stats")
+      .select("name")
+      .eq("slug", slug)
+      .eq("metro", city)
+      .limit(1)
+      .maybeSingle();
+    return data?.name ?? null;
+  }
+);
+
+// ──────────────────────────────────────────────────────────────
 // Individual loaders — one per section, all wrapped in cache()
 // ──────────────────────────────────────────────────────────────
 
 export const loadLandlordHero = cache(
   async (slug: string, city: City): Promise<LandlordV2Data["landlord"]> => {
+    const supabase = await createClient();
+
+    const [statsResult, ownerName] = await Promise.all([
+      supabase
+        .from("landlord_stats")
+        .select("name, slug, building_count, total_violations, total_dob_violations, total_complaints, avg_score")
+        .eq("slug", slug)
+        .eq("metro", city)
+        .limit(1)
+        .maybeSingle(),
+      resolveOwnerName(slug, city),
+    ]);
+
+    const stats = statsResult.data;
+    if (!stats || !ownerName) {
+      // The page redirects to /landlords before ever rendering when this
+      // happens, but return a safe default so the loader stays well-typed.
+      return {
+        name: "",
+        slug,
+        metro: city,
+        avgScore: null,
+        buildingCount: 0,
+        unitCount: 0,
+        headOfficer: null,
+        registrationStatus: null,
+        businessAddress: null,
+        yearsActive: null,
+        totalViolations: 0,
+        totalComplaints: 0,
+        violations100Plus: 0,
+        totalReviews: 0,
+        avgRating: 0,
+        cityAvgScore: 0,
+      };
+    }
+
+    // Step 2 — fan out the aggregation queries in parallel.
+    // Building list returns id + total_units + violation_count for unit sum
+    // and 100+ violation count in one query.
+    const [buildingsResult, cityAvgResult] = await Promise.all([
+      supabase
+        .from("buildings")
+        .select("id, total_units, violation_count, dob_violation_count")
+        .eq("owner_name", ownerName)
+        .eq("metro", city),
+      supabase.rpc("city_avg_score", { p_metro: city }),
+    ]);
+
+    const buildings = (buildingsResult.data ?? []) as Array<{
+      id: string;
+      total_units: number | null;
+      violation_count: number | null;
+      dob_violation_count: number | null;
+    }>;
+
+    // NYC + LA surface HPD violations; other metros use DOB violations as
+    // the primary "violation" number (mirrors getLandlordStats' dispatch).
+    const isAltMetro = city === "chicago" || city === "miami" || city === "houston";
+    const unitCount = buildings.reduce((sum, b) => sum + (b.total_units ?? 0), 0);
+    const violations100Plus = buildings.filter((b) => {
+      const n = isAltMetro ? (b.dob_violation_count ?? 0) : (b.violation_count ?? 0);
+      return n >= 100;
+    }).length;
+
+    // Reviews aggregation: batch by building id.
+    const buildingIds = buildings.map((b) => b.id);
+    let totalReviews = 0;
+    let avgRating = 0;
+    if (buildingIds.length > 0) {
+      const { data: reviewsData } = await supabase
+        .from("reviews")
+        .select("overall_rating")
+        .in("building_id", buildingIds)
+        .eq("status", "published");
+      const ratings = (reviewsData ?? [])
+        .map((r) => (r as { overall_rating: number | null }).overall_rating)
+        .filter((n): n is number => typeof n === "number");
+      totalReviews = ratings.length;
+      avgRating = totalReviews > 0
+        ? ratings.reduce((a, b) => a + b, 0) / totalReviews
+        : 0;
+    }
+
+    const totalViolations = (isAltMetro
+      ? stats.total_dob_violations
+      : stats.total_violations) ?? 0;
+
     return {
-      name: "",
+      name: stats.name,
       slug,
       metro: city,
-      avgScore: null,
-      buildingCount: 0,
-      unitCount: 0,
-      headOfficer: null,
-      registrationStatus: null,
-      businessAddress: null,
-      yearsActive: null,
+      avgScore: stats.avg_score,
+      buildingCount: stats.building_count ?? buildings.length,
+      unitCount,
+      headOfficer: null,        // filled in by S05 Ownership loader
+      registrationStatus: null, // filled in by S05 Ownership loader
+      businessAddress: null,    // filled in by S05 Ownership loader
+      yearsActive: null,        // Phase 2
+      totalViolations,
+      totalComplaints: stats.total_complaints ?? 0,
+      violations100Plus,
+      totalReviews,
+      avgRating,
+      cityAvgScore: typeof cityAvgResult.data === "number" ? cityAvgResult.data : 0,
     };
   }
 );
