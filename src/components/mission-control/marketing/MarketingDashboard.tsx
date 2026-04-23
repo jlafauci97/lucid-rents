@@ -1,20 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { Megaphone, MessageSquare, BarChart3, PenLine } from "lucide-react";
+import { Megaphone, BarChart3, PenLine } from "lucide-react";
 import { ContentQueue } from "./ContentQueue";
 import { CreatePost } from "./CreatePost";
-import { RedditTab } from "./RedditTab";
 import { AnalyticsTab } from "./AnalyticsTab";
 import { ActivitySidebar } from "./ActivitySidebar";
 
-const tabs = ["Create Post", "Content Queue", "Reddit", "Analytics"] as const;
+const tabs = ["Create Post", "Content Queue", "Analytics"] as const;
 type Tab = (typeof tabs)[number];
 
 const TAB_ICONS: Record<Tab, React.ReactNode> = {
   "Create Post": <PenLine className="h-4 w-4" />,
   "Content Queue": <Megaphone className="h-4 w-4" />,
-  Reddit: <MessageSquare className="h-4 w-4" />,
   Analytics: <BarChart3 className="h-4 w-4" />,
 };
 
@@ -78,7 +76,6 @@ export function MarketingDashboard() {
         <div className="flex-1 min-w-0">
           {activeTab === "Create Post" && <CreatePost />}
           {activeTab === "Content Queue" && <ContentQueue />}
-          {activeTab === "Reddit" && <RedditTab />}
           {activeTab === "Analytics" && <AnalyticsTab />}
         </div>
         {showActivity && (
