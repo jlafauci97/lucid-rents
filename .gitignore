@@ -18,3 +18,5 @@ coverage/
 
 # Scrape progress files (machine-local)
 scripts/progress/*.json
+scripts/.backfill-nyc-311-historical.progress.json
+scripts/.relink-311-nyc-normalized.progress.json

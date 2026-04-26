@@ -39,17 +39,52 @@ const MAX_PAGES = 10; // Safety limit: max API pages per sync (Pro plan: 300s ti
 const SYNC_TIME_BUDGET_MS = 220_000; // Stop fetching new pages after 220s to leave time for linking + response
 const STALE_SYNC_MINUTES = 20; // Mark "running" syncs older than this as "failed"
 
+// Canonical uppercase labels. The 311 filter uses `upper(complaint_type) IN (...)`
+// so both "NOISE - RESIDENTIAL" and "Noise - Residential" records match. Prior
+// to April 2026 this list matched exact-case and silently dropped the Mixed
+// Case variants, which meant ~2.9M records over 7 years never landed —
+// dominated by "Noise - Residential" (2.4M) and "General Construction/Plumbing"
+// (229K, which was also using the wrong canonical name).
 const COMPLAINT_TYPES = [
+  // Housing conditions
   "HEAT/HOT WATER",
   "PLUMBING",
   "PAINT/PLASTER",
   "WATER LEAK",
-  "GENERAL CONSTRUCTION",
+  "GENERAL CONSTRUCTION/PLUMBING",
   "ELEVATOR",
   "ELECTRIC",
-  "NOISE - RESIDENTIAL",
   "RODENT",
   "UNSANITARY CONDITION",
+  "DOOR/WINDOW",
+  "FLOORING/STAIRS",
+  "APPLIANCE",
+  "OUTSIDE BUILDING",
+  "SAFETY",
+  "MOLD",
+  "LEAD",
+  "HPD LITIGATION",
+  "WATER SYSTEM",
+  "SEWER",
+  // Noise (residential + nearby sources)
+  "NOISE",
+  "NOISE - RESIDENTIAL",
+  "NOISE - STREET/SIDEWALK",
+  "NOISE - COMMERCIAL",
+  "NOISE - VEHICLE",
+  "NOISE - HOUSE OF WORSHIP",
+  "NOISE - PARK",
+  // Quality of life at the address
+  "DIRTY CONDITION",
+  "MISSED COLLECTION",
+  "ILLEGAL DUMPING",
+  "ILLEGAL PARKING",
+  "BLOCKED DRIVEWAY",
+  "DERELICT VEHICLES",
+  "ABANDONED VEHICLE",
+  "REQUEST LARGE BULKY ITEM COLLECTION",
+  "ILLEGAL FIREWORKS",
+  "GRAFFITI",
 ];
 
 // ---------------------------------------------------------------------------
@@ -939,6 +974,9 @@ async function sync311Complaints(supabase: ReturnType<typeof getSupabaseAdmin>):
     let hasMore = true;
     let pagesFetched = 0;
 
+    // Case-insensitive match: SODA's `IN` is case-sensitive and the 311
+    // dataset uses mixed casings across complaint types (some upper, some
+    // Title Case). Wrapping the column in `upper()` makes both casings land.
     const typesIn = COMPLAINT_TYPES.map((t) => `'${t}'`).join(",");
 
     // Collect address → unique_keys mapping in memory during fetch
@@ -948,7 +986,7 @@ async function sync311Complaints(supabase: ReturnType<typeof getSupabaseAdmin>):
     while (hasMore) {
       const url = buildSodaUrl(
         "erm2-nwe9",
-        `created_date > '${lastSync}' AND complaint_type IN (${typesIn})`,
+        `created_date > '${lastSync}' AND upper(complaint_type) IN (${typesIn})`,
         COMPLAINTS_PAGE_SIZE,
         offset,
         "created_date ASC"
