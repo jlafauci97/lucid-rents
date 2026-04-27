@@ -217,7 +217,7 @@ type SnapshotCounts = {
 type RentPoint = { date: string; avg_rent: number };
 type LandlordRow = { name: string; metro: string; building_count: number; total_violations: number };
 type ActivityItem = { type: string; description: string; date: string; buildingAddress: string; borough?: string; metro?: string; buildingSlug?: string; buildingId?: string };
-type ReviewRow = { id: string; title: string | null; overall_rating: number | null; created_at: string; metro: string; buildings: { full_address: string | null; borough: string | null } | null };
+type ReviewRow = { id: string; title: string | null; body: string | null; overall_rating: number | null; created_at: string; metro: string; buildings: { full_address: string | null; borough: string | null } | null };
 
 type LiveHomeData = {
   cityBuildings: Partial<Record<City, number>>;
@@ -333,7 +333,7 @@ async function fetchHomeData(): Promise<LiveHomeData | null> {
     ),
     getActivity(),
     pgSelect<ReviewRow[]>(
-      "reviews?select=id,title,overall_rating,created_at,metro,buildings(full_address,borough)&status=eq.published&order=created_at.desc&limit=12"
+      "reviews?select=id,title,body,overall_rating,created_at,metro,buildings(full_address,borough)&status=eq.published&order=created_at.desc&limit=40"
     ),
   ]);
 
@@ -360,49 +360,89 @@ async function fetchHomeData(): Promise<LiveHomeData | null> {
     };
   });
 
-  // Top 6 worst landlords across all metros — drop placeholder/redacted
-  // entries from the source data (NYC HPD uses these strings when an
-  // owner is unknown or withheld; they're not real landlords).
+  /* Round-robin across metros so all 5 cities are represented in each
+     stream — total_violations would otherwise put NYC in every slot
+     since NYC has 4M+ violations vs 76K in Miami. We sort within each
+     metro by the source's existing order, then interleave. */
+  function balanceAcrossMetros<T extends { metro?: string | null }>(
+    items: T[],
+    take: number
+  ): T[] {
+    const buckets = new Map<string, T[]>();
+    for (const item of items) {
+      const m = item.metro ?? "unknown";
+      if (!buckets.has(m)) buckets.set(m, []);
+      buckets.get(m)!.push(item);
+    }
+    const result: T[] = [];
+    let exhausted = false;
+    while (result.length < take && !exhausted) {
+      exhausted = true;
+      for (const list of buckets.values()) {
+        if (list.length === 0) continue;
+        result.push(list.shift()!);
+        exhausted = false;
+        if (result.length >= take) break;
+      }
+    }
+    return result;
+  }
+
+  // Top 6 worst landlords — drop placeholder/redacted names, then
+  // round-robin across metros for city diversity.
   const garbageNamePattern = /^(AVAILABLE FROM DATA SOURCE|NAME NOT ON FILE|NOT AVAILABLE|UNKNOWN|N\/?A)$/i;
   const worstLandlordsLive = landlords
-    ? landlords
-        .filter((l) => l.name && !garbageNamePattern.test(l.name.trim()))
-        .slice(0, 6)
-        .map((l, i) => ({
-          rank: i + 1,
-          name: l.name,
-          city: metroToShort(l.metro),
-          buildings: l.building_count,
-          violations: l.total_violations,
-        }))
+    ? balanceAcrossMetros(
+        landlords.filter((l) => l.name && !garbageNamePattern.test(l.name.trim())),
+        6
+      ).map((l, i) => ({
+        rank: i + 1,
+        name: l.name,
+        city: metroToShort(l.metro),
+        buildings: l.building_count,
+        violations: l.total_violations,
+      }))
     : null;
 
-  // Flagged today: filter activity to enforcement-style events
+  // Flagged today: filter activity to enforcement-style events,
+  // then round-robin across metros.
   const flaggedTypes = new Set(["violation", "complaint", "dob_violation", "enforcement", "litigation", "rlto_violation"]);
   const flaggedLive = activity?.items
-    ? activity.items
-        .filter((a) => flaggedTypes.has(a.type))
-        .slice(0, 6)
-        .map((a) => ({
-          addr: a.buildingAddress,
-          city: metroToShort(a.metro),
-          note: a.description,
-          ts: relativeTime(a.date),
-        }))
+    ? balanceAcrossMetros(
+        activity.items.filter((a) => flaggedTypes.has(a.type)),
+        6
+      ).map((a) => ({
+        addr: a.buildingAddress,
+        city: metroToShort(a.metro),
+        note: a.description,
+        ts: relativeTime(a.date),
+      }))
     : null;
 
-  // Newest reviews
-  const reviewsLive = reviews
-    ? reviews
-        .filter((r) => r.buildings?.full_address)
-        .slice(0, 6)
-        .map((r) => ({
-          addr: r.buildings!.full_address!,
-          city: metroToShort(r.metro),
-          quote: r.title?.slice(0, 110) ?? "",
-          stars: Math.max(1, Math.min(5, Math.round(r.overall_rating ?? 3))),
-        }))
-    : null;
+  // Newest reviews: dedupe by building so a single building can't take
+  // multiple slots, then round-robin across metros, then format quotes
+  // (prefer title, fall back to body — source data has many null titles).
+  const reviewsLive = (() => {
+    if (!reviews) return null;
+    const seenBuildings = new Set<string>();
+    const deduped = reviews
+      .filter((r) => r.buildings?.full_address)
+      .filter((r) => {
+        const key = r.buildings!.full_address!;
+        if (seenBuildings.has(key)) return false;
+        seenBuildings.add(key);
+        return true;
+      });
+    return balanceAcrossMetros(deduped, 6).map((r) => {
+      const raw = (r.title ?? r.body ?? "").trim().replace(/\s+/g, " ");
+      return {
+        addr: r.buildings!.full_address!,
+        city: metroToShort(r.metro),
+        quote: raw.length > 110 ? raw.slice(0, 107) + "…" : raw,
+        stars: Math.max(1, Math.min(5, Math.round(r.overall_rating ?? 3))),
+      };
+    });
+  })();
 
   return {
     cityBuildings,
