@@ -5,25 +5,13 @@ import { Suspense } from "react";
 import { headers } from "next/headers";
 import { Trophy, Flame, MessageSquare, Star, ArrowRight, ArrowUpRight, ArrowDownRight, Building2, Shield, MapPin, Calculator, Scale, FileCheck, Compass, Wrench, Newspaper } from "lucide-react";
 import { CITY_META, type City } from "@/lib/cities";
-import { cityPath, canonicalUrl } from "@/lib/seo";
-import { JsonLd } from "@/components/seo/JsonLd";
+import { cityPath } from "@/lib/seo";
 import { ViolationTickerServer } from "@/components/home/ViolationTickerServer";
 import { BrandShield } from "@/components/brand/BrandShield";
 
 export const metadata: Metadata = {
-  title: "Lucid Rents — Apartment Building Intelligence",
-  description:
-    "Search any building in NYC, LA, Chicago, Miami, or Houston. Violations, complaints, crime data, tenant reviews, and rent history — combined into one record per building.",
-  alternates: { canonical: canonicalUrl("/") },
-  openGraph: {
-    title: "Lucid Rents — Apartment Building Intelligence",
-    description:
-      "Per-city directory of building records, worst landlords, live activity, and rent data across NYC, LA, Chicago, Miami, and Houston.",
-    url: canonicalUrl("/"),
-    siteName: "Lucid Rents",
-    type: "website",
-    locale: "en_US",
-  },
+  title: "Mockup · Panorama Hero (v2)",
+  robots: { index: false, follow: false },
 };
 
 const CITY_TAGS: Record<string, { bg: string; fg: string }> = {
@@ -679,7 +667,7 @@ function compactCount(n: number): string {
   return n.toLocaleString();
 }
 
-export default async function Home() {
+export default async function MockHeroPano() {
   const live = await fetchHomeData();
 
   // Live overrides for the 3 stream columns — fall back to static defaults.
@@ -722,16 +710,9 @@ export default async function Home() {
         }
       `}</style>
 
-      <JsonLd
-        data={{
-          "@context": "https://schema.org",
-          "@type": "WebSite",
-          name: "Lucid Rents",
-          url: canonicalUrl("/"),
-          description:
-            "Per-city directory of building records, worst landlords, live activity, and rent data across NYC, LA, Chicago, Miami, and Houston.",
-        }}
-      />
+      <div className="bg-amber-300 text-[#0F1D2E] text-center text-xs sm:text-sm font-semibold py-1.5 tracking-wide">
+        MOCKUP — Panorama Hero — not the real homepage
+      </div>
 
       {/* Panorama hero — mobile: text above + horizontal city scroll. Desktop: text overlaid on full-bleed 5-panel grid. */}
       <section className="relative bg-[#0F1D2E] sm:h-[62vh] sm:min-h-[544px] sm:max-h-[704px]">
