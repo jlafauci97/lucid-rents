@@ -31,8 +31,8 @@ function CityTag({ city }: { city: string }) {
   );
 }
 
-const panels: { key: City; stats: { label: string; value: string }[] }[] = [
-  { key: "nyc", stats: [
+const panels: { key: City; image?: string; stats: { label: string; value: string }[] }[] = [
+  { key: "nyc", image: "/nyc-empire-skyline.jpg", stats: [
     { label: "Buildings", value: "954K" },
     { label: "Open viol.", value: "4.4M" },
     { label: "Landlords", value: "18.3K" },
@@ -173,7 +173,7 @@ export default function MockHeroPano() {
 
         {/* 5-panel layer — in-flow with fixed height on mobile, absolute fill grid on desktop */}
         <div className="relative h-[440px] sm:h-auto sm:absolute sm:inset-0 flex sm:grid sm:grid-cols-5 overflow-x-auto sm:overflow-visible snap-x snap-mandatory sm:snap-none">
-          {panels.map(({ key, stats }) => {
+          {panels.map(({ key, image, stats }) => {
             const meta = CITY_META[key];
             return (
               <article
@@ -181,7 +181,7 @@ export default function MockHeroPano() {
                 className="city-panel snap-start shrink-0 w-[80vw] sm:w-auto relative h-full border-r border-white/5 last:border-r-0 will-change-transform"
               >
                 <Image
-                  src={meta.heroImage}
+                  src={image ?? meta.heroImage}
                   alt={`${meta.fullName} skyline`}
                   fill
                   className="object-cover"
