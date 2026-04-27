@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { Trophy, Flame, MessageSquare, Star, ArrowRight, Building2, Shield, MapPin, Calculator, Scale, FileCheck, Compass, Wrench, Newspaper } from "lucide-react";
+import { Trophy, Flame, MessageSquare, Star, ArrowRight, ArrowUpRight, ArrowDownRight, Building2, Shield, MapPin, Calculator, Scale, FileCheck, Compass, Wrench, Newspaper } from "lucide-react";
 import { CITY_META, type City } from "@/lib/cities";
 import { cityPath } from "@/lib/seo";
 import { ViolationTickerServer } from "@/components/home/ViolationTickerServer";
@@ -174,6 +174,27 @@ const cityDirectories: CityDirectory[] = [
 ];
 
 const cityOrder: City[] = ["nyc", "los-angeles", "chicago", "miami", "houston"];
+
+/* ─── Per-city rent snapshot ───────────────────────────────────────
+   Median 1BR + YoY change shown as a horizontal row above the
+   coverage matrix. Each cell deep-links to /[city]/rent-data. */
+type CityRent = { key: City; median: number; deltaPct: number; trackedZips: number };
+const cityRents: CityRent[] = [
+  { key: "nyc",         median: 3750, deltaPct:  2.1, trackedZips: 178 },
+  { key: "los-angeles", median: 2580, deltaPct:  0.8, trackedZips: 312 },
+  { key: "chicago",     median: 1920, deltaPct:  3.4, trackedZips:  86 },
+  { key: "miami",       median: 2640, deltaPct: -1.2, trackedZips:  41 },
+  { key: "houston",     median: 1480, deltaPct:  1.6, trackedZips:  67 },
+];
+
+/* Per-city stripe color, drawn from the existing CITY_TAGS palette. */
+const cityStripe: Record<City, string> = {
+  nyc:           "bg-blue-500",
+  "los-angeles": "bg-orange-500",
+  chicago:       "bg-red-500",
+  miami:         "bg-teal-500",
+  houston:       "bg-purple-500",
+};
 
 /* Color per icon — semantic, so the same icon means the same thing
    across cities. All written as static class strings so Tailwind's
@@ -697,6 +718,76 @@ export default function MockHeroPano() {
                 See all reviews →
               </Link>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─────────────────────────────────────────────────────────────
+          2.5 Rent snapshot — horizontal row, one cell per city.
+              Each cell deep-links to /[city]/rent-data.
+         ───────────────────────────────────────────────────────────── */}
+      <section className="bg-white border-b border-[#e2e8f0]">
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-16">
+          <div className="flex items-baseline justify-between gap-4 mb-6">
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-[#3B82F6] font-bold mb-1.5">
+                Rent across the network
+              </p>
+              <h2 className="text-2xl sm:text-3xl font-bold text-[#0F1D2E] tracking-tight">
+                What renters are actually paying.
+              </h2>
+            </div>
+            <p className="hidden sm:block text-xs text-[#64748b] max-w-xs text-right">
+              Median 1-bedroom, last 30 days. Click a city for the full breakdown by neighborhood.
+            </p>
+          </div>
+
+          <div className="flex sm:grid sm:grid-cols-5 gap-3 sm:gap-4 overflow-x-auto sm:overflow-visible snap-x snap-mandatory sm:snap-none -mx-4 sm:mx-0 px-4 sm:px-0 pb-2 sm:pb-0">
+            {cityRents.map((c) => {
+              const meta = CITY_META[c.key];
+              const rentUp = c.deltaPct >= 0;
+              return (
+                <Link
+                  key={c.key}
+                  href={cityPath("/rent-data", c.key)}
+                  className="group snap-start shrink-0 w-[78vw] sm:w-auto bg-white border border-[#e2e8f0] rounded-xl overflow-hidden hover:border-[#3B82F6]/50 hover:shadow-[0_8px_24px_-12px_rgba(59,130,246,0.25)] transition-all flex flex-col"
+                >
+                  <div className={`h-1 ${cityStripe[c.key]}`} />
+                  <div className="p-4 flex-1">
+                    <div className="flex items-baseline justify-between mb-3">
+                      <span className="text-base font-bold text-[#0F1D2E] tracking-tight">{meta.fullName}</span>
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-[#94a3b8]">{meta.stateCode}</span>
+                    </div>
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-3xl font-bold text-[#0F1D2E] tabular-nums tracking-tight">
+                        ${c.median.toLocaleString()}
+                      </span>
+                      <span className="text-xs text-[#64748b] font-medium">/mo</span>
+                    </div>
+                    <p className="text-[11px] text-[#64748b] mt-0.5">Median 1BR · last 30 days</p>
+                    <div
+                      className={`mt-3 inline-flex items-center gap-1 text-xs font-bold ${
+                        rentUp ? "text-rose-600" : "text-emerald-600"
+                      }`}
+                      title={rentUp ? "Rent went up — bad for renters" : "Rent went down — good for renters"}
+                    >
+                      {rentUp ? (
+                        <ArrowUpRight className="w-3.5 h-3.5" strokeWidth={2.5} />
+                      ) : (
+                        <ArrowDownRight className="w-3.5 h-3.5" strokeWidth={2.5} />
+                      )}
+                      {Math.abs(c.deltaPct).toFixed(1)}% YoY
+                    </div>
+                    <p className="text-[10px] text-[#94a3b8] mt-3 tabular-nums">
+                      {c.trackedZips} zip codes tracked
+                    </p>
+                  </div>
+                  <div className="px-4 py-2.5 bg-[#f8fafc] border-t border-[#e2e8f0] text-[10px] font-bold uppercase tracking-widest text-[#3B82F6] group-hover:bg-[#3B82F6] group-hover:text-white transition-colors">
+                    See {meta.name} rent data →
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </div>
       </section>
