@@ -80,6 +80,29 @@ export function WayfinderRail({ grade, displayName, city, slug }: Props) {
     };
   }, []);
 
+  // Mobile: keep the active section's chip visible inside the horizontal
+  // bottom-nav scroll container as the user scrolls the page. The nav lives
+  // off-viewport at <=900px (position: fixed bottom), and its waylist is
+  // overflow-x: auto. Without this, the active highlight could be pinned
+  // off-screen — looking like the bar isn't tracking at all.
+  useEffect(() => {
+    if (!activeId) return;
+    const list = document.querySelector<HTMLElement>(".v2 .wayfinder .waylist");
+    if (!list) return;
+    const item = list.querySelector<HTMLElement>(`li.active`);
+    if (!item) return;
+    const listRect = list.getBoundingClientRect();
+    const itemRect = item.getBoundingClientRect();
+    // If the active chip isn't fully visible in the horizontal scroller,
+    // scroll it to the centre. Avoids using scrollIntoView({inline:"center"})
+    // because it would also scroll the page vertically on some browsers.
+    if (itemRect.left < listRect.left || itemRect.right > listRect.right) {
+      const target =
+        item.offsetLeft - list.clientWidth / 2 + item.clientWidth / 2;
+      list.scrollTo({ left: Math.max(0, target), behavior: "smooth" });
+    }
+  }, [activeId]);
+
   // Split the name into two lines at the space closest to the middle.
   const spaceIdx = (() => {
     if (!displayName.includes(" ")) return -1;
