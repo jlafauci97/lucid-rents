@@ -45,7 +45,6 @@ interface NavLink {
 }
 
 const primaryLinks: NavLink[] = [
-  { path: "/search", icon: Search, label: "Search" },
   { path: "/worst-rated-buildings", icon: BarChart3, label: "Building Rankings" },
   { path: "/landlords", icon: Users, label: "Landlords" },
   { path: "/neighborhoods", icon: MapPin, label: "Neighborhoods" },

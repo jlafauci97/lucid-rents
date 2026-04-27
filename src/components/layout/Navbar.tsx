@@ -15,7 +15,7 @@ import { createClient } from "@/lib/supabase/server";
 import { CITY_META, DEFAULT_CITY, VALID_CITIES, type City } from "@/lib/cities";
 import { cityPath } from "@/lib/seo";
 import { NavCityPicker } from "@/components/building/v2/NavCityPicker";
-import { NavSearch } from "@/components/building/v2/NavSearch";
+import { SearchTrigger } from "@/components/search/SearchTrigger";
 import { NavLinksRow } from "./NavLinksRow";
 import { MobileMenu } from "./MobileMenu";
 import { BrandShield } from "@/components/brand/BrandShield";
@@ -75,7 +75,7 @@ export async function Navbar() {
           LucidRents
         </Link>
         <NavCityPicker currentCity={city} />
-        <NavSearch city={city} />
+        <SearchTrigger city={city} />
         <NavLinksRow city={city} />
         <Suspense fallback={<AuthFallback />}>
           <AuthSection />
