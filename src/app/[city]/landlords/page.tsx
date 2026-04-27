@@ -68,17 +68,31 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
   const sortCol = sortOption.col;
   const supabase = await createClient();
 
+  // Filter out HPD/jurisdictional placeholders that appear in landlord_stats
+  // when an owner is unknown or withheld — these are not real landlords.
+  const GARBAGE_NAMES = [
+    "AVAILABLE FROM DATA SOURCE",
+    "NAME NOT ON FILE",
+    "NOT AVAILABLE",
+    "UNKNOWN",
+    "N/A",
+    "NA",
+  ];
+  const garbageInClause = `(${GARBAGE_NAMES.map((n) => `"${n}"`).join(",")})`;
+
   // Count + page in parallel.
   let countQuery = supabase
     .from("landlord_stats")
     .select("id", { count: "exact", head: true })
-    .eq("metro", city);
+    .eq("metro", city)
+    .not("name", "in", garbageInClause);
   let dataQuery = supabase
     .from("landlord_stats")
     .select(
       "name,slug,building_count,total_violations,total_complaints,total_litigations,total_dob_violations,avg_score,worst_building_address,worst_building_violations"
     )
     .eq("metro", city)
+    .not("name", "in", garbageInClause)
     .order(sortCol, { ascending: false })
     .range(offset, offset + limit - 1);
   if (search) {
