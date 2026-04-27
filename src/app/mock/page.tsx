@@ -9,6 +9,12 @@ export const metadata: Metadata = {
 
 const options = [
   {
+    href: "/mock/combined",
+    label: "Latest",
+    title: "Combined",
+    blurb: "Live Wall → 5-City Panorama → What we track → Tenant quotes → Add-your-building CTA. Pulls the parts you liked from each variant into one page.",
+  },
+  {
     href: "/mock/wall",
     label: "Option 1",
     title: "Live Wall",
