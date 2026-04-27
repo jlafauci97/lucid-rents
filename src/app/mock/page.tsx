@@ -9,10 +9,16 @@ export const metadata: Metadata = {
 
 const options = [
   {
-    href: "/mock/combined",
+    href: "/mock/hero-pano",
     label: "Latest",
+    title: "Panorama Hero",
+    blurb: "Replaces the hero with a full-bleed 5-city panorama (all visible at once on desktop, swipe on mobile). Brand + headline overlay on top. On mobile, brand text sits above the cities.",
+  },
+  {
+    href: "/mock/combined",
+    label: "Earlier",
     title: "Combined",
-    blurb: "Live Wall → 5-City Panorama → What we track → Tenant quotes → Add-your-building CTA. Pulls the parts you liked from each variant into one page.",
+    blurb: "Original portrait-card hero kept. Live Wall → 5-City Panorama → What we track → Tenant quotes → Add-your-building CTA.",
   },
   {
     href: "/mock/wall",
