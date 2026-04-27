@@ -37,22 +37,22 @@ const panels: { key: City; image?: string; stats: { label: string; value: string
     { label: "Open viol.", value: "4.4M" },
     { label: "Landlords", value: "18.3K" },
   ] },
-  { key: "los-angeles", stats: [
+  { key: "los-angeles", image: "/la-hero-skyline.jpg", stats: [
     { label: "Buildings", value: "479K" },
     { label: "Complaints", value: "412K" },
     { label: "Landlords", value: "14.1K" },
   ] },
-  { key: "chicago", stats: [
+  { key: "chicago", image: "/chicago-hero-skyline.jpg", stats: [
     { label: "Buildings", value: "319K" },
     { label: "Open viol.", value: "198K" },
     { label: "Landlords", value: "8.2K" },
   ] },
-  { key: "miami", stats: [
+  { key: "miami", image: "/miami-hero-skyline.avif", stats: [
     { label: "Buildings", value: "94.7K" },
     { label: "Complaints", value: "76K" },
     { label: "Landlords", value: "3.4K" },
   ] },
-  { key: "houston", stats: [
+  { key: "houston", image: "/houston-hero-skyline.png", stats: [
     { label: "Buildings", value: "411K" },
     { label: "311 calls", value: "132K" },
     { label: "Landlords", value: "6.8K" },
