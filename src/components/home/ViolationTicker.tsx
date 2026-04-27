@@ -2,62 +2,59 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { AlertTriangle, Shield, MessageSquare, Star, Scale, HardHat, Siren, Bug, DoorOpen, DollarSign, FileCheck, ShieldAlert } from 'lucide-react';
+import {
+  AlertTriangle,
+  Shield,
+  MessageSquare,
+  Star,
+  Gavel,
+  HardHat,
+  Siren,
+  Bug,
+  DoorOpen,
+  DollarSign,
+  FileCheck,
+  ShieldAlert,
+  OctagonAlert,
+  FlaskConical,
+  type LucideIcon,
+} from 'lucide-react';
 import { buildingUrl, cityPath } from '@/lib/seo';
 import { isValidCity, DEFAULT_CITY, type City } from '@/lib/cities';
 import type { ActivityItem } from '@/app/api/activity/route';
 
-/** Icon color on the blue ticker background — lighter variants for readability */
-const typeIconColors: Record<ActivityItem['type'], string> = {
-  violation: 'text-red-200',
-  complaint: 'text-amber-200',
-  review: 'text-white',
-  litigation: 'text-purple-200',
-  dob_violation: 'text-sky-200',
-  crime: 'text-red-300',
-  bedbug: 'text-purple-300',
-  eviction: 'text-pink-200',
-  la_eviction: 'text-pink-200',
-  tenant_buyout: 'text-orange-200',
-  permit: 'text-teal-200',
-  enforcement: 'text-indigo-200',
-  rlto_violation: 'text-orange-200',
-  lead_inspection: 'text-lime-200',
+/**
+ * Each event type renders as a saturated color chip with a white icon
+ * on top — gives the ticker visible weight against the blue background
+ * and makes event types instantly distinguishable.
+ */
+const typeStyles: Record<ActivityItem['type'], { bg: string; Icon: LucideIcon }> = {
+  violation:      { bg: 'bg-red-600',     Icon: Shield },
+  complaint:      { bg: 'bg-amber-500',   Icon: MessageSquare },
+  review:         { bg: 'bg-yellow-500',  Icon: Star },
+  litigation:     { bg: 'bg-purple-600',  Icon: Gavel },
+  dob_violation:  { bg: 'bg-sky-500',     Icon: HardHat },
+  crime:          { bg: 'bg-red-700',     Icon: Siren },
+  bedbug:         { bg: 'bg-purple-700',  Icon: Bug },
+  eviction:       { bg: 'bg-pink-600',    Icon: DoorOpen },
+  la_eviction:    { bg: 'bg-pink-600',    Icon: DoorOpen },
+  tenant_buyout:  { bg: 'bg-orange-500',  Icon: DollarSign },
+  permit:         { bg: 'bg-teal-500',    Icon: FileCheck },
+  enforcement:    { bg: 'bg-indigo-600',  Icon: ShieldAlert },
+  rlto_violation: { bg: 'bg-orange-600',  Icon: OctagonAlert },
+  lead_inspection:{ bg: 'bg-lime-600',    Icon: FlaskConical },
 };
 
 function TypeIcon({ type }: { type: ActivityItem['type'] }) {
-  const color = typeIconColors[type] || 'text-white/70';
-  const cls = `w-10 h-10 flex-shrink-0 ${color}`;
-
-  switch (type) {
-    case 'violation':
-      return <Shield className={cls} />;
-    case 'complaint':
-      return <MessageSquare className={cls} />;
-    case 'review':
-      return <Star className={cls} />;
-    case 'litigation':
-      return <Scale className={cls} />;
-    case 'dob_violation':
-      return <HardHat className={cls} />;
-    case 'crime':
-      return <Siren className={cls} />;
-    case 'bedbug':
-      return <Bug className={cls} />;
-    case 'eviction':
-    case 'la_eviction':
-      return <DoorOpen className={cls} />;
-    case 'tenant_buyout':
-      return <DollarSign className={cls} />;
-    case 'permit':
-      return <FileCheck className={cls} />;
-    case 'enforcement':
-      return <ShieldAlert className={cls} />;
-    case 'rlto_violation':
-      return <Shield className={cls} />;
-    case 'lead_inspection':
-      return <AlertTriangle className={cls} />;
-  }
+  const style = typeStyles[type] ?? { bg: 'bg-white/30', Icon: AlertTriangle };
+  const Icon = style.Icon;
+  return (
+    <span
+      className={`inline-flex items-center justify-center w-8 h-8 rounded-lg flex-shrink-0 ring-1 ring-white/25 shadow-sm ${style.bg}`}
+    >
+      <Icon className="w-4 h-4 text-white" strokeWidth={2.5} />
+    </span>
+  );
 }
 
 const typeLabels: Record<ActivityItem['type'], string> = {
@@ -99,17 +96,17 @@ function buildItemUrl(item: ActivityItem): string | null {
 function TickerItem({ item }: { item: ActivityItem }) {
   const url = buildItemUrl(item);
   const content = (
-    <span className="inline-flex items-center gap-2 whitespace-nowrap">
+    <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
       <TypeIcon type={item.type} />
-      <span className="text-white/50 text-xs font-medium uppercase tracking-wide">
+      <span className="text-white/55 text-[10px] font-semibold uppercase tracking-wide">
         {typeLabels[item.type]}
       </span>
       <span className="font-medium text-white/90">
         {item.buildingAddress}{item.borough ? `, ${item.borough}` : ''}
       </span>
-      <span className="text-white/50 mx-1">&mdash;</span>
+      <span className="text-white/45 mx-0.5">&mdash;</span>
       <span className="text-white/70">{item.description}</span>
-      <span className="text-white/40 text-xs">{formatDate(item.date)}</span>
+      <span className="text-white/40 text-[10px]">{formatDate(item.date)}</span>
     </span>
   );
 
@@ -133,7 +130,6 @@ export function ViolationTicker({ metro, initialItems }: ViolationTickerProps = 
   const [loading, setLoading] = useState(!initialItems || initialItems.length === 0);
 
   useEffect(() => {
-    // Skip initial fetch if server provided data
     if (initialItems && initialItems.length > 0) return;
 
     const params = new URLSearchParams({ limit: "30" });
@@ -157,15 +153,15 @@ export function ViolationTicker({ metro, initialItems }: ViolationTickerProps = 
 
   if (loading) {
     return (
-      <div className="bg-[#3B82F6] border-y border-blue-400/30 py-3 overflow-hidden">
-        <div className="flex items-center gap-3 px-4">
-          <span className="flex items-center gap-1.5 text-xs font-bold text-white uppercase tracking-wider flex-shrink-0 bg-red-600 px-3 py-1 rounded">
-            <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+      <div className="bg-[#3B82F6] border-y border-blue-400/30 py-2.5 overflow-hidden">
+        <div className="flex items-center gap-2.5 px-4">
+          <span className="flex items-center gap-1 text-[10px] font-bold text-white uppercase tracking-wider flex-shrink-0 bg-red-600 px-2 py-0.5 rounded">
+            <span className="w-1 h-1 bg-white rounded-full animate-pulse" />
             Live
           </span>
-          <div className="flex gap-8">
+          <div className="flex gap-6">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-4 bg-white/20 rounded animate-pulse" style={{ width: `${200 + i * 40}px` }} />
+              <div key={i} className="h-3 bg-white/20 rounded animate-pulse" style={{ width: `${160 + i * 32}px` }} />
             ))}
           </div>
         </div>
@@ -175,21 +171,20 @@ export function ViolationTicker({ metro, initialItems }: ViolationTickerProps = 
 
   if (items.length === 0) return null;
 
-  // Scale animation duration by item count for consistent speed
   const duration = items.length * 18;
 
   return (
-    <div className="bg-[#3B82F6] border-y border-blue-400/30 py-3 overflow-hidden group/ticker">
+    <div className="bg-[#3B82F6] border-y border-blue-400/30 py-2.5 overflow-hidden group/ticker">
       <div className="flex items-center">
-        <div className="flex items-center flex-shrink-0 pl-3 pr-4 z-10 bg-[#3B82F6]">
-          <span className="flex items-center gap-1.5 text-xs font-bold text-white uppercase tracking-wider bg-red-600 px-3 py-1 rounded">
-            <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+        <div className="flex items-center flex-shrink-0 pl-3 pr-3 z-10 bg-[#3B82F6]">
+          <span className="flex items-center gap-1 text-[10px] font-bold text-white uppercase tracking-wider bg-red-600 px-2 py-0.5 rounded">
+            <span className="w-1 h-1 bg-white rounded-full animate-pulse" />
             Live
           </span>
         </div>
         <div className="overflow-hidden flex-1">
           <div
-            className="flex gap-8 text-sm text-white group-hover/ticker:[animation-play-state:paused]"
+            className="flex gap-6 text-[11px] text-white group-hover/ticker:[animation-play-state:paused]"
             style={{
               animation: `ticker ${duration}s linear infinite`,
               width: 'max-content',
