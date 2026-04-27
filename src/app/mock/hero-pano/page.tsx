@@ -6,6 +6,7 @@ import { Trophy, Flame, MessageSquare, Star, ArrowRight, Quote } from "lucide-re
 import { CITY_META, type City } from "@/lib/cities";
 import { cityPath } from "@/lib/seo";
 import { LiveStats } from "@/components/home/LiveStats";
+import { ViolationTickerServer } from "@/components/home/ViolationTickerServer";
 import { BrandShield } from "@/components/brand/BrandShield";
 
 export const metadata: Metadata = {
@@ -226,6 +227,11 @@ export default function MockHeroPano() {
           ← Swipe between cities →
         </p>
       </section>
+
+      {/* Violation ticker */}
+      <Suspense fallback={<div className="bg-[#3B82F6] border-y border-blue-400/30 py-3 h-[52px]" />}>
+        <ViolationTickerServer />
+      </Suspense>
 
       {/* Stats card (existing) */}
       <section className="border-b border-[#e2e8f0] bg-white">
