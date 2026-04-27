@@ -152,7 +152,7 @@ export default function MockHeroPano() {
       </div>
 
       {/* Panorama hero — mobile: text above + horizontal city scroll. Desktop: text overlaid on full-bleed 5-panel grid. */}
-      <section className="relative bg-[#0F1D2E] sm:h-[78vh] sm:min-h-[680px] sm:max-h-[880px]">
+      <section className="relative bg-[#0F1D2E] sm:h-[62vh] sm:min-h-[544px] sm:max-h-[704px]">
         {/* Brand block — in-flow above on mobile, absolute overlay on desktop */}
         <div className="relative z-10 sm:absolute sm:inset-x-0 sm:top-0 sm:pointer-events-none">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-6 sm:pt-8 lg:pt-10 sm:pb-0 text-center">
@@ -172,7 +172,7 @@ export default function MockHeroPano() {
         </div>
 
         {/* 5-panel layer — in-flow with fixed height on mobile, absolute fill grid on desktop */}
-        <div className="relative h-[440px] sm:h-auto sm:absolute sm:inset-0 flex sm:grid sm:grid-cols-5 overflow-x-auto sm:overflow-visible snap-x snap-mandatory sm:snap-none">
+        <div className="relative h-[352px] sm:h-auto sm:absolute sm:inset-0 flex sm:grid sm:grid-cols-5 overflow-x-auto sm:overflow-visible snap-x snap-mandatory sm:snap-none">
           {panels.map(({ key, image, stats }) => {
             const meta = CITY_META[key];
             return (
