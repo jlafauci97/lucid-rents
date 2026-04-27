@@ -1,9 +1,41 @@
+export const runtime = "edge";
+
+import { unstable_cache } from "next/cache";
 import { isValidCity } from "@/lib/cities";
 import { normalizeAddressQuery } from "@/lib/address-normalization";
 import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { searchSchema } from "@/lib/validators";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { NextRequest, NextResponse } from "next/server";
+
+const cachedRankedSearch = unstable_cache(
+  async (
+    abbreviated: string,
+    expanded: string | null,
+    cityFilter: string | null,
+    boroughFilter: string | null,
+    zipFilter: string | null,
+    sortBy: string,
+    pageOffset: number,
+    pageLimit: number
+  ) => {
+    const supabase = createCacheClient();
+    const { data, error } = await supabase.rpc("search_buildings_ranked", {
+      search_query: abbreviated,
+      search_query_alt: expanded,
+      city_filter: cityFilter,
+      borough_filter: boroughFilter,
+      zip_filter: zipFilter,
+      sort_by: sortBy,
+      page_offset: pageOffset,
+      page_limit: pageLimit,
+    });
+    return { data: data ?? null, error: error?.message ?? null };
+  },
+  ["search-buildings-ranked"],
+  { revalidate: 300, tags: ["search"] }
+);
 
 function applySortOrder(
   query: ReturnType<ReturnType<Awaited<ReturnType<typeof createClient>>["from"]>["select"]>,
@@ -51,19 +83,19 @@ export async function GET(req: NextRequest) {
   // Use ranked search function for text queries to get proper relevance ordering
   if (q) {
     const { abbreviated, expanded } = normalizeAddressQuery(q);
-    const { data, error } = await supabase.rpc("search_buildings_ranked", {
-      search_query: abbreviated,
-      search_query_alt: abbreviated !== expanded ? expanded : null,
-      city_filter: cityParam || null,
-      borough_filter: borough || null,
-      zip_filter: zip || null,
-      sort_by: sort || "relevance",
-      page_offset: offset,
-      page_limit: limit,
-    });
+    const { data, error } = await cachedRankedSearch(
+      abbreviated,
+      abbreviated !== expanded ? expanded : null,
+      cityParam || null,
+      borough || null,
+      zip || null,
+      sort || "relevance",
+      offset,
+      limit
+    );
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error }, { status: 500 });
     }
 
     const buildings = (data || []).map((row: Record<string, unknown>) => {

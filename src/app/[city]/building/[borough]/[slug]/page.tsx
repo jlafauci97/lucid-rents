@@ -1,3 +1,4 @@
+import "@/styles/v2-tokens.css";
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";

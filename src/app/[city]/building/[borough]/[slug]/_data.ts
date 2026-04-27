@@ -1,4 +1,5 @@
-import { createClient } from "@/lib/supabase/server";
+import { unstable_cache } from "next/cache";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import type { Building, EnergyBenchmark } from "@/types";
 import { normalizeTimelineEvents, type TimelineEvent } from "@/lib/timeline";
 import { normalizeScore } from "@/lib/constants";
@@ -232,7 +233,7 @@ async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
 // ──────────────────────────────────────────────────────────────
 
 export async function loadBuildingV2Data(building: Building): Promise<BuildingV2Data> {
-  const supabase = await createClient();
+  const supabase = createCacheClient();
   const buildingId = building.id;
   const isLA = building.metro === "los-angeles";
   const isChicago = building.metro === "chicago";
@@ -1101,7 +1102,7 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
 // ──────────────────────────────────────────────────────────────
 
 // S01 — Rental Intelligence: current/historic/neighborhood rents + seasonal.
-export async function loadRentsData(
+const _loadRentsData = async (
   buildingId: string,
   metro: string,
   zipCode: string | null,
@@ -1110,8 +1111,8 @@ export async function loadRentsData(
   historic: BuildingV2Data["rents"]["historic"];
   neighborhood: BuildingV2Data["rents"]["neighborhood"];
   seasonalIndex: BuildingV2Data["seasonalIndex"];
-}> {
-  const supabase = await createClient();
+}> => {
+  const supabase = createCacheClient();
   const [current, historic, neighborhood, seasonalIndex] = await Promise.all([
     safe(async () => {
       const { data } = await supabase
@@ -1158,13 +1159,18 @@ export async function loadRentsData(
     }, [] as BuildingV2Data["seasonalIndex"]),
   ]);
   return { current, historic, neighborhood, seasonalIndex };
-}
+};
+export const loadRentsData = unstable_cache(
+  _loadRentsData,
+  ["load-rents-data"],
+  { revalidate: 3600, tags: ["building-data"] }
+);
 
 // S02 — Issues: HPD top, 311 top, recent violations, unit-level HPD, monthly trends.
-export async function loadIssuesData(
+const _loadIssuesData = async (
   buildingId: string,
-): Promise<BuildingV2Data["issues"]> {
-  const supabase = await createClient();
+): Promise<BuildingV2Data["issues"]> => {
+  const supabase = createCacheClient();
   const [hpdTop, complaintsTop, recentViolations, hpdViolations, trends] = await Promise.all([
     safe(async () => {
       const { data } = await supabase
@@ -1330,13 +1336,18 @@ export async function loadIssuesData(
     }, [] as BuildingV2Data["issues"]["trends"]),
   ]);
   return { hpdTop, complaintsTop, recentViolations, hpdViolations, trends };
-}
+};
+export const loadIssuesData = unstable_cache(
+  _loadIssuesData,
+  ["load-issues-data"],
+  { revalidate: 3600, tags: ["building-data"] }
+);
 
 // S03 — Tenant Reviews: counts + distribution + top 3 pull quotes.
-export async function loadReviewsData(
+const _loadReviewsData = async (
   buildingId: string,
-): Promise<BuildingV2Data["reviews"]> {
-  const supabase = await createClient();
+): Promise<BuildingV2Data["reviews"]> => {
+  const supabase = createCacheClient();
   const [aggregate, pullQuotes] = await Promise.all([
     safe(async () => {
       const { data } = await supabase
@@ -1394,18 +1405,23 @@ export async function loadReviewsData(
     distribution: aggregate.distribution,
     pullQuotes,
   };
-}
+};
+export const loadReviewsData = unstable_cache(
+  _loadReviewsData,
+  ["load-reviews-data"],
+  { revalidate: 1800, tags: ["building-data"] }
+);
 
 // S04 — Amenities + amenity premiums.
-export async function loadAmenitiesData(
+const _loadAmenitiesData = async (
   buildingId: string,
   zipCode: string | null,
   metro: string,
 ): Promise<{
   amenities: BuildingV2Data["amenities"];
   amenityPremiums: BuildingV2Data["amenityPremiums"];
-}> {
-  const supabase = await createClient();
+}> => {
+  const supabase = createCacheClient();
   const [amenities, amenityPremiums] = await Promise.all([
     safe(async () => {
       const { data } = await supabase
@@ -1427,13 +1443,18 @@ export async function loadAmenitiesData(
     }, [] as BuildingV2Data["amenityPremiums"]),
   ]);
   return { amenities, amenityPremiums };
-}
+};
+export const loadAmenitiesData = unstable_cache(
+  _loadAmenitiesData,
+  ["load-amenities-data"],
+  { revalidate: 3600, tags: ["building-data"] }
+);
 
 // S05 — Landlord: owner portfolio buildings + portfolio stats.
-export async function loadLandlordData(
+const _loadLandlordData = async (
   building: Building,
-): Promise<BuildingV2Data["landlord"]> {
-  const supabase = await createClient();
+): Promise<BuildingV2Data["landlord"]> => {
+  const supabase = createCacheClient();
   const isNYC = building.metro === "nyc";
 
   // HPD Registration data (NYC only). Used both to enrich display
@@ -1511,17 +1532,22 @@ export async function loadLandlordData(
     businessAddress: businessAddress && businessAddress.length > 0 ? businessAddress : null,
     registrationEndDate: hpdOwner?.registration_end_date ?? null,
   };
-}
+};
+export const loadLandlordData = unstable_cache(
+  _loadLandlordData,
+  ["load-landlord-data"],
+  { revalidate: 3600, tags: ["building-data"] }
+);
 
 // S06 — Location: nearby transit/schools, crime, neighborhood stats, demographics, vibe.
-export async function loadLocationData(building: Building): Promise<{
+const _loadLocationData = async (building: Building): Promise<{
   nearby: BuildingV2Data["nearby"];
   crime: BuildingV2Data["crime"];
   neighborhoodStats: BuildingV2Data["neighborhoodStats"];
   demographics: BuildingV2Data["demographics"];
   vibe: BuildingV2Data["vibe"];
-}> {
-  const supabase = await createClient();
+}> => {
+  const supabase = createCacheClient();
   const zipCode = building.zip_code ?? null;
   const [nearbyTransit, nearbySchools, crime, neighborhoodStats, demographics] = await Promise.all([
     safe(async () => {
@@ -1663,14 +1689,19 @@ export async function loadLocationData(building: Building): Promise<{
     demographics,
     vibe: { description: vibeData?.description ?? null, tags: vibeData?.vibeTags ?? [] },
   };
-}
+};
+export const loadLocationData = unstable_cache(
+  _loadLocationData,
+  ["load-location-data"],
+  { revalidate: 3600, tags: ["building-data"] }
+);
 
 // S07 — History: building timeline + latest energy benchmark (energy row shared with SideRail).
-export async function loadHistoryData(building: Building): Promise<{
+const _loadHistoryData = async (building: Building): Promise<{
   timeline: TimelineEvent[];
   energy: EnergyBenchmark | null;
-}> {
-  const supabase = await createClient();
+}> => {
+  const supabase = createCacheClient();
   const buildingId = building.id;
   const [timeline, energy] = await Promise.all([
     safe(async () => {
@@ -1718,14 +1749,19 @@ export async function loadHistoryData(building: Building): Promise<{
     }, null as EnergyBenchmark | null),
   ]);
   return { timeline, energy };
-}
+};
+export const loadHistoryData = unstable_cache(
+  _loadHistoryData,
+  ["load-history-data"],
+  { revalidate: 3600, tags: ["building-data"] }
+);
 
 // S08 — Similar buildings nearby (same zip, up to 6).
-export async function loadSimilarData(
+const _loadSimilarData = async (
   buildingId: string,
   zipCode: string | null,
-): Promise<BuildingV2Data["similar"]> {
-  const supabase = await createClient();
+): Promise<BuildingV2Data["similar"]> => {
+  const supabase = createCacheClient();
   return safe(async () => {
     if (!zipCode) return [];
     const { data } = await supabase
@@ -1736,13 +1772,18 @@ export async function loadSimilarData(
       .limit(6);
     return data ?? [];
   }, [] as BuildingV2Data["similar"]);
-}
+};
+export const loadSimilarData = unstable_cache(
+  _loadSimilarData,
+  ["load-similar-data"],
+  { revalidate: 3600, tags: ["building-data"] }
+);
 
 // S10 LA — buyouts, SCEP, earthquake retrofit.
-export async function loadLAData(
+const _loadLAData = async (
   buildingId: string,
-): Promise<BuildingV2Data["laData"]> {
-  const supabase = await createClient();
+): Promise<BuildingV2Data["laData"]> => {
+  const supabase = createCacheClient();
   const [buyouts, scepInspections, retrofit] = await Promise.all([
     safe(async () => {
       const { data } = await supabase
@@ -1772,13 +1813,18 @@ export async function loadLAData(
     }, [] as Array<NonNullable<BuildingV2Data["laData"]["earthquakeRetrofit"]>>),
   ]);
   return { buyouts, scepInspections, earthquakeRetrofit: retrofit?.[0] ?? null };
-}
+};
+export const loadLAData = unstable_cache(
+  _loadLAData,
+  ["load-la-data"],
+  { revalidate: 3600, tags: ["building-data"] }
+);
 
 // S10 Chicago — RLTO, demolitions, lead inspections, affordable units, energy rating.
-export async function loadChicagoData(
+const _loadChicagoData = async (
   buildingId: string,
-): Promise<BuildingV2Data["chicagoData"]> {
-  const supabase = await createClient();
+): Promise<BuildingV2Data["chicagoData"]> => {
+  const supabase = createCacheClient();
   const [rltoViolations, demolitions, leadInspections, affordableUnits, energy] = await Promise.all([
     safe(async () => {
       const { data } = await supabase
@@ -1832,13 +1878,18 @@ export async function loadChicagoData(
     affordableUnits,
     energyRating: energy?.[0] ?? null,
   };
-}
+};
+export const loadChicagoData = unstable_cache(
+  _loadChicagoData,
+  ["load-chicago-data"],
+  { revalidate: 3600, tags: ["building-data"] }
+);
 
 // S10 Miami — 40-year recerts, unsafe structures, storm damage, flood claims.
-export async function loadMiamiData(
+const _loadMiamiData = async (
   buildingId: string,
-): Promise<BuildingV2Data["miamiData"]> {
-  const supabase = await createClient();
+): Promise<BuildingV2Data["miamiData"]> => {
+  const supabase = createCacheClient();
   const [recerts, unsafeStructures, stormDamage, floodClaims] = await Promise.all([
     safe(async () => {
       const { data } = await supabase
@@ -1878,13 +1929,18 @@ export async function loadMiamiData(
     }, [] as BuildingV2Data["miamiData"]["floodClaims"]),
   ]);
   return { recerts, unsafeStructures, stormDamage, floodClaims };
-}
+};
+export const loadMiamiData = unstable_cache(
+  _loadMiamiData,
+  ["load-miami-data"],
+  { revalidate: 3600, tags: ["building-data"] }
+);
 
 // S10 Houston — dangerous buildings, industrial proximity, tax protests, affordable housing.
-export async function loadHoustonData(
+const _loadHoustonData = async (
   buildingId: string,
-): Promise<BuildingV2Data["houstonData"]> {
-  const supabase = await createClient();
+): Promise<BuildingV2Data["houstonData"]> => {
+  const supabase = createCacheClient();
   const [dangerousBuildings, industrialProximity, taxProtests, affordableHousing] = await Promise.all([
     safe(async () => {
       const { data } = await supabase
@@ -1923,4 +1979,9 @@ export async function loadHoustonData(
     }, [] as BuildingV2Data["houstonData"]["affordableHousing"]),
   ]);
   return { dangerousBuildings, industrialProximity, taxProtests, affordableHousing };
-}
+};
+export const loadHoustonData = unstable_cache(
+  _loadHoustonData,
+  ["load-houston-data"],
+  { revalidate: 3600, tags: ["building-data"] }
+);

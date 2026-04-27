@@ -1,18 +1,21 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  ReferenceLine,
-  Legend,
-} from "recharts";
+import dynamic from "next/dynamic";
 import { TrendingUp, TrendingDown, Tag } from "lucide-react";
+
+const SubmarketTrendsCanvas = dynamic(
+  () => import("./SubmarketTrendsCanvas"),
+  {
+    ssr: false,
+    loading: () => (
+      <div
+        style={{ height: 320, width: "100%" }}
+        className="bg-[#f8fafc] rounded-lg animate-pulse"
+      />
+    ),
+  }
+);
 
 export interface SubmarketRentRow {
   quarter: string;
@@ -147,7 +150,6 @@ export function SubmarketTrendsChart({
     return { chartData, latest, yoyPct, concessionGapPct, tenYearPct };
   }, [rows, beds]);
 
-  const isForecastQuarter = (q: string) => q === latestQuarter;
   const forecastLabel = quarterLabelLong(latestQuarter);
 
   return (
@@ -270,142 +272,14 @@ export function SubmarketTrendsChart({
         </div>
       )}
 
-      <div style={{ height: 320, width: "100%" }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartData} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
-            <CartesianGrid stroke="#f1f5f9" strokeDasharray="3 3" />
-            <XAxis
-              dataKey="label"
-              tick={{ fontSize: 11, fill: "#64748b" }}
-              tickMargin={6}
-              interval="preserveStartEnd"
-              minTickGap={24}
-            />
-            <YAxis
-              tick={{ fontSize: 11, fill: "#64748b" }}
-              tickFormatter={(v: number) => `$${Math.round(v / 1000)}k`}
-              width={48}
-              domain={["dataMin - 100", "dataMax + 100"]}
-            />
-            <Tooltip
-              contentStyle={{
-                borderRadius: 8,
-                border: "1px solid #e2e8f0",
-                fontSize: 12,
-              }}
-              formatter={(v: number, name: string) => [fmtDollar(v), name]}
-              labelFormatter={(l, payload) => {
-                const q = payload?.[0]?.payload?.quarter;
-                return q ? quarterLabelLong(q) : l;
-              }}
-            />
-            <Legend iconType="line" wrapperStyle={{ fontSize: 12 }} />
-            {chartData.some((d) => isForecastQuarter(d.quarter)) && (
-              <ReferenceLine
-                x={chartData.find((d) => isForecastQuarter(d.quarter))?.label}
-                stroke="#94a3b8"
-                strokeDasharray="4 4"
-                label={{
-                  value: "forecast",
-                  position: "insideTopRight",
-                  fontSize: 10,
-                  fill: "#64748b",
-                }}
-              />
-            )}
-            {buildingCurrentRent != null && buildingCurrentRent > 0 && (
-              <ReferenceLine
-                y={buildingCurrentRent}
-                stroke="#0891b2"
-                strokeDasharray="3 3"
-                label={{
-                  value: `This building ${fmtDollar(buildingCurrentRent)}`,
-                  position: "insideBottomRight",
-                  fontSize: 11,
-                  fill: "#0e7490",
-                }}
-              />
-            )}
-            {beds === "all" && (
-              <Line
-                key="studio"
-                type="monotone"
-                dataKey="studio"
-                name="Studio"
-                stroke="#8b5cf6"
-                strokeWidth={2}
-                dot={false}
-                activeDot={{ r: 4 }}
-                connectNulls
-              />
-            )}
-            {beds === "all" && (
-              <Line
-                key="br1"
-                type="monotone"
-                dataKey="br1"
-                name="1 BR"
-                stroke="#0ea5e9"
-                strokeWidth={2}
-                dot={false}
-                activeDot={{ r: 4 }}
-                connectNulls
-              />
-            )}
-            {beds === "all" && (
-              <Line
-                key="br2"
-                type="monotone"
-                dataKey="br2"
-                name="2 BR"
-                stroke="#10b981"
-                strokeWidth={2}
-                dot={false}
-                activeDot={{ r: 4 }}
-                connectNulls
-              />
-            )}
-            {beds === "all" && (
-              <Line
-                key="br3"
-                type="monotone"
-                dataKey="br3"
-                name="3 BR"
-                stroke="#f59e0b"
-                strokeWidth={2}
-                dot={false}
-                activeDot={{ r: 4 }}
-                connectNulls
-              />
-            )}
-            {beds !== "all" && (
-              <Line
-                key="asking"
-                type="monotone"
-                dataKey="asking"
-                name="Asking"
-                stroke="#0f172a"
-                strokeWidth={2}
-                dot={false}
-                activeDot={{ r: 4 }}
-              />
-            )}
-            {beds !== "all" && (
-              <Line
-                key="effective"
-                type="monotone"
-                dataKey="effective"
-                name="Effective (paid)"
-                stroke="#14b8a6"
-                strokeWidth={2}
-                strokeDasharray="5 3"
-                dot={false}
-                activeDot={{ r: 4 }}
-              />
-            )}
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
+      <SubmarketTrendsCanvas
+        chartData={chartData}
+        beds={beds}
+        latestQuarter={latestQuarter}
+        forecastLabel={forecastLabel}
+        buildingCurrentRent={buildingCurrentRent}
+      />
+
 
       <p style={{ fontSize: 11, color: "#64748b", marginTop: 12 }}>
         {beds === "all"

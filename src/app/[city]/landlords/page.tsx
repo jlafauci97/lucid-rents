@@ -1,4 +1,5 @@
-import { createClient } from "@/lib/supabase/server";
+import { unstable_cache } from "next/cache";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { Users, Building2, Search, ChevronLeft, ChevronRight, AlertTriangle, MessageSquare, ArrowRight, Scale, HardHat, ShieldAlert } from "lucide-react";
 import { LetterGrade } from "@/components/ui/LetterGrade";
 import Link from "next/link";
@@ -6,6 +7,45 @@ import { landlordUrl, canonicalUrl, cityPath } from "@/lib/seo";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import type { Metadata } from "next";
+
+const SORT_COLUMNS: Record<string, string> = {
+  violations: "total_violations",
+  complaints: "total_complaints",
+  litigations: "total_litigations",
+  dob: "total_dob_violations",
+  buildings: "building_count",
+};
+
+const fetchLandlordsPage = unstable_cache(
+  async (city: string, search: string, sortBy: string, page: number, limit: number) => {
+    const supabase = createCacheClient();
+    const sortCol = SORT_COLUMNS[sortBy] || "total_violations";
+    const offset = (page - 1) * limit;
+    const cols =
+      "name,slug,building_count,total_violations,total_complaints,total_litigations,total_dob_violations,avg_score,worst_building_id,worst_building_address,worst_building_violations";
+
+    let countQuery = supabase
+      .from("landlord_stats")
+      .select("id", { count: "exact", head: true })
+      .eq("metro", city);
+    let dataQuery = supabase
+      .from("landlord_stats")
+      .select(cols)
+      .eq("metro", city)
+      .order(sortCol, { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (search) {
+      countQuery = countQuery.ilike("name", `%${search}%`);
+      dataQuery = dataQuery.ilike("name", `%${search}%`);
+    }
+
+    const [{ count }, { data }] = await Promise.all([countQuery, dataQuery]);
+    return { total: count ?? 0, landlords: data ?? [] };
+  },
+  ["landlords-directory"],
+  { revalidate: 600, tags: ["landlord-stats"] }
+);
 
 export async function generateMetadata({ params, searchParams }: { params: Promise<{ city: string }>; searchParams: Promise<{ search?: string; sort?: string; page?: string }> }): Promise<Metadata> {
   const { city } = await params;
@@ -45,39 +85,9 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
   const page = parseInt(params.page || "1", 10);
   const limit = 25;
 
-  const supabase = await createClient();
-
-  // Determine sort column
-  const sortColumns: Record<string, string> = {
-    violations: "total_violations",
-    complaints: "total_complaints",
-    litigations: "total_litigations",
-    dob: "total_dob_violations",
-    buildings: "building_count",
-  };
-  const sortCol = sortColumns[sortBy] || "total_violations";
-
-  // Run count + paginated data in parallel
   const offset = (page - 1) * limit;
-
-  let countQuery = supabase
-    .from("landlord_stats")
-    .select("id", { count: "exact", head: true })
-    .eq("metro", cityParam);
-  let dataQuery = supabase
-    .from("landlord_stats")
-    .select("name,slug,building_count,total_violations,total_complaints,total_litigations,total_dob_violations,avg_score,worst_building_id,worst_building_address,worst_building_violations")
-    .eq("metro", cityParam)
-    .order(sortCol, { ascending: false })
-    .range(offset, offset + limit - 1);
-
-  if (search) {
-    countQuery = countQuery.ilike("name", `%${search}%`);
-    dataQuery = dataQuery.ilike("name", `%${search}%`);
-  }
-
-  const [{ count: total }, { data: landlords }] = await Promise.all([countQuery, dataQuery]);
-  const totalPages = Math.ceil((total || 0) / limit);
+  const { total, landlords } = await fetchLandlordsPage(cityParam, search, sortBy, page, limit);
+  const totalPages = Math.ceil(total / limit);
 
   // Pagination rel links for SEO
   const basePath = cityPath("/landlords", cityParam as City);

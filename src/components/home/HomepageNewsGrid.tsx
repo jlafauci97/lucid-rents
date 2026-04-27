@@ -94,9 +94,13 @@ function NewsCard({
     >
       <div className={`relative ${lead ? "aspect-[16/10] md:aspect-auto md:h-[55%]" : "aspect-[16/10]"} bg-[#f1f5f9] overflow-hidden`}>
         {article.image_url && (
-          <div
-            className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
-            style={{ backgroundImage: `url(${article.image_url})` }}
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={article.image_url}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         )}
         <div

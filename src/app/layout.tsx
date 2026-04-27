@@ -14,22 +14,26 @@ const ADSENSE_CLIENT_ID = "ca-pub-2908534121884582";
 const sora = Sora({
   variable: "--font-sora",
   subsets: ["latin"],
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  display: "swap",
 });
 
 const youngSerif = Young_Serif({
   variable: "--font-young-serif",
   subsets: ["latin"],
   weight: "400",
+  display: "swap",
 });
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -76,6 +80,14 @@ export const metadata: Metadata = {
   },
 };
 
+const SUPABASE_ORIGIN = (() => {
+  try {
+    return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "https://supabase.co").origin;
+  } catch {
+    return "https://supabase.co";
+  }
+})();
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -83,11 +95,19 @@ export default async function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        {/* Preconnect to origins we hit on the critical path so TLS+DNS happen
+            in parallel with HTML parsing. */}
+        <link rel="preconnect" href={SUPABASE_ORIGIN} crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href={SUPABASE_ORIGIN} />
+        <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://images.unsplash.com" />
+      </head>
       <Script
         src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
-        strategy="afterInteractive"
+        strategy="lazyOnload"
       />
-      <Script id="google-analytics" strategy="afterInteractive">
+      <Script id="google-analytics" strategy="lazyOnload">
         {`
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}

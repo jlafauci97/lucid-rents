@@ -30,7 +30,7 @@ console.log("Scanning buildings...");
 while (true) {
   let query = sb
     .from("buildings")
-    .select("id,owner_name,full_address,metro,violation_count,complaint_count,litigation_count,dob_violation_count,overall_score")
+    .select("id,owner_name,full_address,metro,violation_count,complaint_count,litigation_count,dob_violation_count,overall_score,total_units")
     .not("owner_name", "is", null)
     .order("id", { ascending: true })
     .limit(BATCH);
@@ -60,6 +60,7 @@ while (true) {
       existing.total_complaints += b.complaint_count || 0;
       existing.total_litigations += b.litigation_count || 0;
       existing.total_dob_violations += b.dob_violation_count || 0;
+      existing.total_units += b.total_units || 0;
       if (b.overall_score !== null) {
         existing._scores.push(b.overall_score);
       }
@@ -77,6 +78,7 @@ while (true) {
         total_complaints: b.complaint_count || 0,
         total_litigations: b.litigation_count || 0,
         total_dob_violations: b.dob_violation_count || 0,
+        total_units: b.total_units || 0,
         worst_building_id: b.id,
         worst_building_address: b.full_address,
         worst_building_violations: b.violation_count || 0,
@@ -115,6 +117,7 @@ for (const [, l] of landlordMap) {
     total_complaints: l.total_complaints,
     total_litigations: l.total_litigations,
     total_dob_violations: l.total_dob_violations,
+    total_units: l.total_units,
     avg_score: avgScore,
     worst_building_id: l.worst_building_id,
     worst_building_address: l.worst_building_address,

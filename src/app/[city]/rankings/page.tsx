@@ -1,4 +1,5 @@
-import { createClient } from "@/lib/supabase/server";
+import { unstable_cache } from "next/cache";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { AlertTriangle, Building2, MapPin, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { buildingUrl, canonicalUrl } from "@/lib/seo";
@@ -6,6 +7,43 @@ import { AdSidebar } from "@/components/ui/AdSidebar";
 import { getRegions, getRegionLabel } from "@/lib/constants";
 import { CITY_META, type City } from "@/lib/cities";
 import type { Metadata } from "next";
+
+const fetchRankingsPage = unstable_cache(
+  async (city: string, borough: string, sortBy: string, page: number, limit: number) => {
+    const supabase = createCacheClient();
+    const offset = (page - 1) * limit;
+
+    let query = supabase
+      .from("buildings")
+      .select(
+        "id, full_address, borough, zip_code, slug, year_built, total_units, num_floors, owner_name, overall_score, review_count, violation_count, complaint_count"
+      )
+      .eq("metro", city);
+
+    if (borough !== "all") {
+      query = query.eq("borough", borough);
+    }
+
+    if (sortBy === "violations") {
+      query = query.gt("violation_count", 0).order("violation_count", { ascending: false });
+    } else if (sortBy === "complaints") {
+      query = query.gt("complaint_count", 0).order("complaint_count", { ascending: false });
+    } else {
+      query = query
+        .or("violation_count.gt.0,complaint_count.gt.0")
+        .order("violation_count", { ascending: false });
+    }
+
+    query = query.range(offset, offset + limit);
+
+    const { data: rawBuildings } = await query;
+    const hasNextPage = (rawBuildings?.length || 0) > limit;
+    const buildings = rawBuildings?.slice(0, limit) || [];
+    return { buildings, hasNextPage };
+  },
+  ["rankings-page"],
+  { revalidate: 600, tags: ["rankings"] }
+);
 
 export async function generateMetadata({ params }: RankingsPageProps): Promise<Metadata> {
   const { city: cityParam } = await params;
@@ -45,35 +83,7 @@ export default async function RankingsPage({ params: routeParams, searchParams }
   const limit = 25;
   const offset = (page - 1) * limit;
 
-  const supabase = await createClient();
-
-  let query = supabase
-    .from("buildings")
-    .select(
-      "id, full_address, borough, zip_code, slug, year_built, total_units, num_floors, owner_name, overall_score, review_count, violation_count, complaint_count"
-    )
-    .eq("metro", city);
-
-  if (borough !== "all") {
-    query = query.eq("borough", borough);
-  }
-
-  if (sortBy === "violations") {
-    query = query.gt("violation_count", 0).order("violation_count", { ascending: false });
-  } else if (sortBy === "complaints") {
-    query = query.gt("complaint_count", 0).order("complaint_count", { ascending: false });
-  } else {
-    query = query
-      .or("violation_count.gt.0,complaint_count.gt.0")
-      .order("violation_count", { ascending: false });
-  }
-
-  // Fetch one extra to detect if there's a next page
-  query = query.range(offset, offset + limit);
-
-  const { data: rawBuildings } = await query;
-  const hasNextPage = (rawBuildings?.length || 0) > limit;
-  const buildings = rawBuildings?.slice(0, limit) || [];
+  const { buildings, hasNextPage } = await fetchRankingsPage(city, borough, sortBy, page, limit);
 
   function buildUrl(overrides: Record<string, string>) {
     const base: Record<string, string> = { borough, sort: sortBy, page: String(page) };

@@ -18,6 +18,8 @@ export const metadata: Metadata = {
   alternates: { canonical: canonicalUrl("/") },
 };
 
+export const revalidate = 300;
+
 const features = [
   {
     icon: FileSearch,
