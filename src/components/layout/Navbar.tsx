@@ -113,10 +113,10 @@ export async function Navbar() {
           <Image
             src="/lucid-rents-wordmark.png"
             alt="LucidRents"
-            width={1536}
-            height={1024}
+            width={930}
+            height={261}
             priority
-            className="h-14 lg:h-20 w-auto"
+            className="h-9 lg:h-11 w-auto"
           />
         </Link>
         <NavCityPicker currentCity={city} />
