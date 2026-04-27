@@ -106,6 +106,55 @@ export async function GET(request: Request) {
     };
   }
 
+  // Miami uses miami_crime_aggregates (annual zip-level rollups, not incident-level).
+  // Refresh by re-running the same INSERT/upsert the migration uses.
+  const miamiStart = Date.now();
+  const { error: miamiErr } = await supabase.rpc("exec_sql", {
+    sql: `
+      INSERT INTO crime_by_zip_cache (
+        metro, zip_code, borough,
+        total, violent, property, quality_of_life,
+        current_year_total, prior_year_total,
+        current_violent, prior_violent,
+        current_property, prior_property,
+        refreshed_at
+      )
+      SELECT
+        'miami', ma.zip::varchar, NULL,
+        ma.total_incidents, ma.violent_count, ma.property_count, ma.qol_count,
+        ma.total_incidents, COALESCE(prev.total_incidents, 0),
+        ma.violent_count, COALESCE(prev.violent_count, 0),
+        ma.property_count, COALESCE(prev.property_count, 0),
+        now()
+      FROM miami_crime_aggregates ma
+      LEFT JOIN miami_crime_aggregates prev
+        ON prev.zip = ma.zip AND prev.year = ma.year - 1
+      WHERE ma.year = (SELECT MAX(year) FROM miami_crime_aggregates)
+      ON CONFLICT (metro, zip_code) DO UPDATE SET
+        total = EXCLUDED.total,
+        violent = EXCLUDED.violent,
+        property = EXCLUDED.property,
+        quality_of_life = EXCLUDED.quality_of_life,
+        current_year_total = EXCLUDED.current_year_total,
+        prior_year_total = EXCLUDED.prior_year_total,
+        current_violent = EXCLUDED.current_violent,
+        prior_violent = EXCLUDED.prior_violent,
+        current_property = EXCLUDED.current_property,
+        prior_property = EXCLUDED.prior_property,
+        refreshed_at = EXCLUDED.refreshed_at;
+    `,
+  });
+
+  const { count: miamiCount } = await supabase
+    .from("crime_by_zip_cache")
+    .select("*", { count: "exact", head: true })
+    .eq("metro", "miami");
+
+  results.miami = {
+    zips: miamiErr ? 0 : (miamiCount || 0),
+    elapsed: Math.round((Date.now() - miamiStart) / 1000),
+  };
+
   return NextResponse.json({
     success: true,
     results,
