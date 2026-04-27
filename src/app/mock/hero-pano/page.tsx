@@ -127,20 +127,26 @@ export default function MockHeroPano() {
     <div>
       <style>{`
         @media (prefers-reduced-motion: no-preference) {
-          @supports (animation-timeline: view()) {
-            .pop-in {
-              animation: pop-in linear both;
-              animation-timeline: view();
-              animation-range: entry 0% cover 35%;
+          @supports (animation-timeline: scroll()) {
+            .city-panel {
+              animation: city-pop linear both;
+              animation-timeline: scroll(root);
             }
-            @keyframes pop-in {
-              from {
-                opacity: 0;
-                transform: translateY(60px) scale(0.97);
+            .city-panel:nth-child(1) { animation-range: 40px 320px; }
+            .city-panel:nth-child(2) { animation-range: 100px 380px; }
+            .city-panel:nth-child(3) { animation-range: 160px 440px; }
+            .city-panel:nth-child(4) { animation-range: 220px 500px; }
+            .city-panel:nth-child(5) { animation-range: 280px 560px; }
+            @keyframes city-pop {
+              0%, 100% {
+                transform: translateY(0);
+                filter: brightness(1);
+                z-index: 1;
               }
-              to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
+              50% {
+                transform: translateY(-16px);
+                filter: brightness(1.15);
+                z-index: 5;
               }
             }
           }
@@ -178,7 +184,7 @@ export default function MockHeroPano() {
             return (
               <article
                 key={key}
-                className="snap-start shrink-0 w-[80vw] sm:w-auto relative h-full border-r border-white/5 last:border-r-0"
+                className="city-panel snap-start shrink-0 w-[80vw] sm:w-auto relative h-full border-r border-white/5 last:border-r-0 will-change-transform"
               >
                 <Image
                   src={meta.heroImage}
@@ -229,7 +235,7 @@ export default function MockHeroPano() {
       </section>
 
       {/* Stats card (existing) */}
-      <section className="pop-in border-b border-[#e2e8f0] bg-white">
+      <section className="border-b border-[#e2e8f0] bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <Suspense
             fallback={
@@ -250,7 +256,7 @@ export default function MockHeroPano() {
       </section>
 
       {/* Live Wall */}
-      <section className="pop-in bg-[#f8fafc] border-y border-[#e2e8f0]">
+      <section className="bg-[#f8fafc] border-y border-[#e2e8f0]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
           <div className="max-w-3xl mb-10">
             <p className="text-xs uppercase tracking-[0.2em] text-[#3B82F6] font-bold mb-2">
@@ -345,7 +351,7 @@ export default function MockHeroPano() {
       </section>
 
       {/* What we track */}
-      <section className="pop-in bg-white">
+      <section className="bg-white">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
           <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-10 lg:gap-16 items-start">
             <div className="lg:sticky lg:top-24">
@@ -377,7 +383,7 @@ export default function MockHeroPano() {
       </section>
 
       {/* Quote wall */}
-      <section className="pop-in bg-[#f8fafc] border-y border-[#e2e8f0]">
+      <section className="bg-[#f8fafc] border-y border-[#e2e8f0]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
           <div className="max-w-3xl mb-12">
             <p className="text-xs uppercase tracking-[0.2em] text-[#3B82F6] font-bold mb-2">
@@ -405,7 +411,7 @@ export default function MockHeroPano() {
       </section>
 
       {/* CTA */}
-      <section className="pop-in bg-[#0F1D2E] text-white">
+      <section className="bg-[#0F1D2E] text-white">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
           <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-3">
             Add your building.
