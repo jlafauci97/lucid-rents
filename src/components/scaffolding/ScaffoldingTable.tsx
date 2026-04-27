@@ -40,11 +40,15 @@ function formatDuration(days: number): string {
   return `${days}d`;
 }
 
+const INITIAL_LIMIT = 50;
+const PAGE_SIZE = 50;
+
 export function ScaffoldingTable({ data }: { data: ShedRow[] }) {
   const city = useCity();
   const [borough, setBorough] = useState("");
   const [sortBy, setSortBy] = useState<"total_days" | "permit_count" | "first_issued">("total_days");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [limit, setLimit] = useState(INITIAL_LIMIT);
 
   const filtered = useMemo(() => {
     let rows = borough
@@ -73,7 +77,11 @@ export function ScaffoldingTable({ data }: { data: ShedRow[] }) {
       setSortBy(col);
       setSortDir("desc");
     }
+    setLimit(INITIAL_LIMIT);
   }
+
+  const visible = filtered.slice(0, limit);
+  const hasMore = filtered.length > visible.length;
 
   if (data.length === 0) {
     return (
@@ -88,7 +96,10 @@ export function ScaffoldingTable({ data }: { data: ShedRow[] }) {
       {/* Borough filter pills */}
       <div className="flex flex-wrap gap-2 mb-4">
         <button
-          onClick={() => setBorough("")}
+          onClick={() => {
+            setBorough("");
+            setLimit(INITIAL_LIMIT);
+          }}
           className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
             !borough
               ? "bg-[#0F1D2E] text-white"
@@ -100,7 +111,10 @@ export function ScaffoldingTable({ data }: { data: ShedRow[] }) {
         {getRegions(city).map((b) => (
           <button
             key={b}
-            onClick={() => setBorough(b)}
+            onClick={() => {
+              setBorough(b);
+              setLimit(INITIAL_LIMIT);
+            }}
             className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
               borough === b
                 ? "bg-[#0F1D2E] text-white"
@@ -153,7 +167,7 @@ export function ScaffoldingTable({ data }: { data: ShedRow[] }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-[#e2e8f0]">
-            {filtered.map((row, i) => (
+            {visible.map((row, i) => (
               <tr key={`${row.house_no}-${row.street_name}-${row.borough}-${i}`} className="hover:bg-[#f8fafc] transition-colors">
                 <td className="px-4 py-3 text-sm font-semibold text-[#0F1D2E]">
                   {row.house_no} {row.street_name}
@@ -187,8 +201,19 @@ export function ScaffoldingTable({ data }: { data: ShedRow[] }) {
         </table>
       </div>
 
-      <p className="text-xs text-[#94a3b8] mt-3">
-        {filtered.length} addresses shown. Renewals = total permits issued at address. Data: NYC DOB Permits.
+      {hasMore ? (
+        <div className="mt-4 flex items-center justify-center">
+          <button
+            onClick={() => setLimit((l) => l + PAGE_SIZE)}
+            className="px-5 py-2.5 rounded-lg bg-[#0F1D2E] text-white text-sm font-semibold hover:bg-[#1a2940] transition-colors"
+          >
+            Show {Math.min(PAGE_SIZE, filtered.length - visible.length)} more
+          </button>
+        </div>
+      ) : null}
+
+      <p className="text-xs text-[#94a3b8] mt-3 text-center">
+        Showing {visible.length.toLocaleString()} of {filtered.length.toLocaleString()} addresses. Renewals = total permits issued at address. Data: NYC DOB Permits.
       </p>
     </div>
   );

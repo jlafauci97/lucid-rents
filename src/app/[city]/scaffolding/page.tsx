@@ -1,18 +1,34 @@
 import type { Metadata } from "next";
-import { Construction } from "lucide-react";
 import { canonicalUrl, cityPath, cityBreadcrumbs } from "@/lib/seo";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { ScaffoldingMap } from "@/components/scaffolding/ScaffoldingMap";
 import { ScaffoldingTable } from "@/components/scaffolding/ScaffoldingTable";
+import { ScaffoldingHero } from "@/components/scaffolding/ScaffoldingHero";
+import { HallOfShame } from "@/components/scaffolding/HallOfShame";
 import dynamic from "next/dynamic";
 
-const BoroughBreakdown = dynamic(() => import("@/components/scaffolding/BoroughBreakdown").then(m => m.BoroughBreakdown), {
-  loading: () => <div className="bg-white rounded-xl border border-[#e2e8f0] p-6"><div className="h-6 w-48 bg-[#e2e8f0] rounded animate-pulse mb-4" /><div className="h-[300px] bg-[#f8fafc] rounded-lg animate-pulse" /></div>,
-});
+const BoroughBreakdown = dynamic(
+  () =>
+    import("@/components/scaffolding/BoroughBreakdown").then(
+      (m) => m.BoroughBreakdown
+    ),
+  {
+    loading: () => (
+      <div className="bg-white rounded-xl border border-[#e2e8f0] p-6">
+        <div className="h-6 w-48 bg-[#e2e8f0] rounded animate-pulse mb-4" />
+        <div className="h-[300px] bg-[#f8fafc] rounded-lg animate-pulse" />
+      </div>
+    ),
+  }
+);
 
-export async function generateMetadata({ params }: { params: Promise<{ city: string }> }): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ city: string }>;
+}): Promise<Metadata> {
   const { city } = await params;
   if (!isValidCity(city)) return {};
   const meta = CITY_META[city];
@@ -65,25 +81,22 @@ export default async function ScaffoldingPage() {
   const overallAvgDays =
     boroughStats.length > 0
       ? Math.round(
-          boroughStats.reduce((s, b) => s + b.avg_days_up * b.active_count, 0) /
-            totalActive
+          boroughStats.reduce(
+            (s, b) => s + b.avg_days_up * b.active_count,
+            0
+          ) / totalActive
         )
       : 0;
-  const topBorough =
-    boroughStats.length > 0 ? boroughStats[0].borough : "—";
 
-  const BOROUGH_NAME: Record<string, string> = {
-    MANHATTAN: "Manhattan",
-    BROOKLYN: "Brooklyn",
-    QUEENS: "Queens",
-    BRONX: "Bronx",
-    "STATEN ISLAND": "Staten Island",
-  };
+  const oldestDays =
+    longestSheds.length > 0
+      ? Math.max(...longestSheds.map((s: { total_days: number }) => s.total_days || 0))
+      : 0;
+  const oldestYears = Math.floor(oldestDays / 365);
 
   return (
     <AdSidebar>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* JSON-LD */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -92,8 +105,8 @@ export default async function ScaffoldingPage() {
               "@type": "Dataset",
               name: "NYC Scaffolding & Sidewalk Sheds Tracker",
               description:
-                "Active sidewalk shed permits across New York City, sourced from NYC DOB permit data.",
-              url: "https://lucidrents.com/scaffolding",
+                "Active sidewalk shed permits across New York City, sourced from NYC DOB permit data going back to 1989.",
+              url: "https://lucidrents.com/nyc/scaffolding",
               creator: {
                 "@type": "Organization",
                 name: "Lucid Rents",
@@ -103,45 +116,36 @@ export default async function ScaffoldingPage() {
           }}
         />
 
-        <Breadcrumbs items={cityBreadcrumbs("nyc" as City, { label: "Scaffolding", href: cityPath("/scaffolding", "nyc" as City) })} />
+        <Breadcrumbs
+          items={cityBreadcrumbs("nyc" as City, {
+            label: "Scaffolding",
+            href: cityPath("/scaffolding", "nyc" as City),
+          })}
+        />
 
-        {/* Header */}
-        <div className="mb-8 mt-4">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-amber-50 rounded-lg">
-              <Construction className="w-6 h-6 text-[#F59E0B]" />
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#0F1D2E]">
-              NYC Scaffolding Tracker
-            </h1>
-          </div>
-          <p className="text-[#64748b] text-sm sm:text-base max-w-3xl">
-            Track active sidewalk sheds and scaffolding across NYC. See how long
-            they&apos;ve been up, which neighborhoods have the most, and when
-            permits expire. Data from NYC DOB permits.
-          </p>
-          <p className="text-[#94a3b8] text-xs mt-2 max-w-3xl">
-            Sidewalk shed permits must be renewed every 3 months. Sheds that
-            remain up for years reflect repeated renewals — not a single
-            long-term permit.
-          </p>
+        <div className="mt-4">
+          <ScaffoldingHero
+            totalActive={totalActive}
+            oldestYears={oldestYears}
+            longestSheds={longestSheds || []}
+            zipData={zipData || []}
+          />
         </div>
 
-        {/* Summary stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
-          <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
-            <p className="text-xs text-[#64748b] font-medium uppercase tracking-wide">
+        <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-8">
+          <div className="bg-white border border-[#e2e8f0] rounded-xl px-4 py-3 sm:px-5 sm:py-4">
+            <p className="text-[10px] sm:text-xs text-[#64748b] font-semibold uppercase tracking-wider">
               Active Sheds
             </p>
-            <p className="text-2xl font-bold text-[#0F1D2E] mt-1">
+            <p className="text-xl sm:text-2xl font-bold text-[#0F1D2E] mt-1 tabular-nums">
               {totalActive > 0 ? totalActive.toLocaleString() : "—"}
             </p>
           </div>
-          <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
-            <p className="text-xs text-[#64748b] font-medium uppercase tracking-wide">
+          <div className="bg-white border border-[#e2e8f0] rounded-xl px-4 py-3 sm:px-5 sm:py-4">
+            <p className="text-[10px] sm:text-xs text-[#64748b] font-semibold uppercase tracking-wider">
               Avg Duration
             </p>
-            <p className="text-2xl font-bold text-[#0F1D2E] mt-1">
+            <p className="text-xl sm:text-2xl font-bold text-[#0F1D2E] mt-1 tabular-nums">
               {overallAvgDays > 0
                 ? overallAvgDays > 365
                   ? `${Math.floor(overallAvgDays / 365)}y ${Math.floor((overallAvgDays % 365) / 30)}mo`
@@ -149,55 +153,60 @@ export default async function ScaffoldingPage() {
                 : "—"}
             </p>
           </div>
-          <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
-            <p className="text-xs text-[#64748b] font-medium uppercase tracking-wide">
-              Most Sheds
+          <div className="bg-white border border-[#e2e8f0] rounded-xl px-4 py-3 sm:px-5 sm:py-4">
+            <p className="text-[10px] sm:text-xs text-[#64748b] font-semibold uppercase tracking-wider">
+              Oldest
             </p>
-            <p className="text-sm font-semibold text-[#0F1D2E] mt-2">
-              {BOROUGH_NAME[topBorough?.toUpperCase()] || topBorough}
+            <p className="text-xl sm:text-2xl font-bold text-red-600 mt-1 tabular-nums">
+              {oldestYears > 0 ? `${oldestYears}y` : "—"}
             </p>
           </div>
         </div>
 
-        {/* Section 1: Map */}
+        <HallOfShame data={longestSheds || []} />
+
         <section className="bg-white border border-[#e2e8f0] rounded-xl p-5 sm:p-6 mb-6">
-          <h2 className="text-lg font-bold text-[#0F1D2E] mb-1">
-            Scaffolding Density Map
-          </h2>
-          <p className="text-sm text-[#64748b] mb-4">
-            Active sidewalk sheds by zip code. Darker areas have more active
-            scaffolding.
-          </p>
+          <div className="flex items-baseline justify-between gap-4 mb-4">
+            <div>
+              <h2 className="text-lg font-bold text-[#0F1D2E]">
+                Density by Zip Code
+              </h2>
+              <p className="text-sm text-[#64748b] mt-0.5">
+                Darker areas have more active scaffolding.
+              </p>
+            </div>
+          </div>
           <ScaffoldingMap data={zipData || []} />
         </section>
 
-        {/* Section 2: Longest-standing sheds */}
         <section className="bg-white border border-[#e2e8f0] rounded-xl p-5 sm:p-6 mb-6">
-          <h2 className="text-lg font-bold text-[#0F1D2E] mb-1">
-            Longest-Standing Sidewalk Sheds
-          </h2>
-          <p className="text-sm text-[#64748b] mb-4">
-            Active sidewalk shed permits sorted by how long they&apos;ve been
-            up. Sheds over a year are highlighted.
-          </p>
-          <ScaffoldingTable data={longestSheds || []} />
-        </section>
-
-        {/* Section 3: Borough Breakdown */}
-        <section className="bg-white border border-[#e2e8f0] rounded-xl p-5 sm:p-6 mb-6">
-          <h2 className="text-lg font-bold text-[#0F1D2E] mb-1">
-            Borough Breakdown
-          </h2>
-          <p className="text-sm text-[#64748b] mb-4">
-            Active sidewalk shed count and average duration by borough.
-          </p>
+          <div className="mb-4">
+            <h2 className="text-lg font-bold text-[#0F1D2E]">
+              Borough Breakdown
+            </h2>
+            <p className="text-sm text-[#64748b] mt-0.5">
+              Active count and average duration by borough.
+            </p>
+          </div>
           <BoroughBreakdown data={boroughStats} />
         </section>
 
-        {/* Editorial content */}
-        <section className="mt-8 space-y-4 text-sm leading-relaxed text-[#334155]">
-          <h2 className="text-lg font-bold text-[#0F1D2E]">
-            Understanding NYC Sidewalk Sheds
+        <section className="bg-white border border-[#e2e8f0] rounded-xl p-5 sm:p-6 mb-8">
+          <div className="mb-4">
+            <h2 className="text-lg font-bold text-[#0F1D2E]">
+              All Long-Standing Sheds
+            </h2>
+            <p className="text-sm text-[#64748b] mt-0.5">
+              The 500 longest-running active sheds in NYC. Sort by duration,
+              renewals, or first permit date.
+            </p>
+          </div>
+          <ScaffoldingTable data={longestSheds || []} />
+        </section>
+
+        <section className="rounded-xl border border-[#e2e8f0] bg-[#f8fafc] p-5 sm:p-6 mt-2 space-y-4 text-sm leading-relaxed text-[#334155]">
+          <h2 className="text-base font-bold text-[#0F1D2E]">
+            About this tracker
           </h2>
           <p>
             Sidewalk sheds (commonly called scaffolding) are temporary overhead
@@ -213,17 +222,16 @@ export default async function ScaffoldingPage() {
             remain in place for years &mdash; sometimes decades. The NYC
             Department of Buildings issues sidewalk shed permits that must be
             renewed every three months, but there is no hard limit on how many
-            times a permit can be renewed. This has led to thousands of
-            semi-permanent structures blocking sunlight, reducing foot traffic
+            times a permit can be renewed. The result: thousands of
+            semi-permanent structures blocking sunlight, hurting foot traffic
             for local businesses, and creating safety concerns of their own.
           </p>
           <p>
-            This tracker uses official NYC DOB permit data to show every active
-            sidewalk shed in the city. You can see how long each shed has been
-            up, which neighborhoods have the highest concentration, and when
-            permits are set to expire. If you live near a long-standing
-            sidewalk shed, you can contact your local Community Board or file
-            a 311 complaint requesting an update on the construction timeline.
+            This tracker uses official NYC DOB permit data (DOB BIS legacy
+            permits going back to 1989, plus DOB NOW permits from 2017 onward).
+            If you live near a long-standing sidewalk shed, you can contact
+            your local Community Board or file a 311 complaint requesting an
+            update on the construction timeline.
           </p>
         </section>
       </div>

@@ -7,6 +7,13 @@
       "runtimeArgs": ["run", "dev"],
       "port": 3000,
       "autoPort": true
+    },
+    {
+      "name": "dev-webpack",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["./node_modules/.bin/next", "dev", "--webpack"],
+      "port": 3000,
+      "autoPort": true
     }
   ]
 }
