@@ -50,11 +50,14 @@ const getBuilding = cache(async (boroughSlug: string, slug: string, metro: strin
   const city = (metro || "nyc") as City;
   const borough = regionFromSlug(boroughSlug, city);
   const supabase = await createClient();
+  // ilike is case-insensitive: ~26K buildings (Miami/LA/Houston suburbs) have
+  // borough stored UPPERCASE in DB. Without this, the page can't find them →
+  // redirect()-to-self via meta refresh → Google flags as "Redirect error".
   const { data } = await supabase
     .from("buildings")
     .select("*")
     .eq("slug", slug)
-    .eq("borough", borough)
+    .ilike("borough", borough)
     .eq("metro", metro)
     .limit(1);
   return (data?.[0] as Building) ?? null;

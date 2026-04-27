@@ -18,7 +18,7 @@ const getBuilding = cache(async (boroughSlug: string, slug: string, metro?: stri
   const city = (metro || "nyc") as City;
   const borough = regionFromSlug(boroughSlug, city);
   const supabase = await createClient();
-  let query = supabase.from("buildings").select("*").eq("slug", slug).eq("borough", borough);
+  let query = supabase.from("buildings").select("*").eq("slug", slug).ilike("borough", borough);
   if (metro) query = query.eq("metro", metro);
   const { data } = await query.limit(1);
   if (!data || data.length === 0) return null;
