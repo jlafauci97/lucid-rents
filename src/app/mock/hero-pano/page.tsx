@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { headers } from "next/headers";
 import { Trophy, Flame, MessageSquare, Star, ArrowRight, ArrowUpRight, ArrowDownRight, Building2, Shield, MapPin, Calculator, Scale, FileCheck, Compass, Wrench, Newspaper } from "lucide-react";
 import { CITY_META, type City } from "@/lib/cities";
 import { cityPath } from "@/lib/seo";
@@ -58,7 +59,8 @@ const panels: { key: City; image?: string; stats: { label: string; value: string
   ] },
 ];
 
-const worstLandlords = [
+/* Static fallbacks — used when the live queries fail or env is missing. */
+const defaultWorstLandlords = [
   { rank: 1, name: "Pangea Properties", city: "Chicago", buildings: 89, violations: 2114 },
   { rank: 2, name: "Bronstein Properties", city: "NYC", buildings: 47, violations: 1243 },
   { rank: 3, name: "Kaufman Equities", city: "LA", buildings: 23, violations: 891 },
@@ -67,16 +69,16 @@ const worstLandlords = [
   { rank: 6, name: "Wexford Property Group", city: "NYC", buildings: 26, violations: 487 },
 ];
 
-const buildingsFlagged = [
-  { addr: "234 W 28th St", city: "NYC", note: "3 new HPD violations" },
-  { addr: "5621 Hollywood Blvd", city: "LA", note: "DBS code violation" },
-  { addr: "812 N Wells St", city: "Chicago", note: "Building court referral" },
-  { addr: "1010 Brickell Ave", city: "Miami", note: "Code enforcement notice" },
-  { addr: "4400 Westheimer Rd", city: "Houston", note: "311 noise complaint cluster" },
-  { addr: "1247 Bedford Ave", city: "NYC", note: "Heat / hot water complaint" },
+const defaultFlagged = [
+  { addr: "234 W 28th St", city: "NYC", note: "3 new HPD violations", ts: "12m" },
+  { addr: "5621 Hollywood Blvd", city: "LA", note: "DBS code violation", ts: "47m" },
+  { addr: "812 N Wells St", city: "Chicago", note: "Building court referral", ts: "1h" },
+  { addr: "1010 Brickell Ave", city: "Miami", note: "Code enforcement notice", ts: "2h" },
+  { addr: "4400 Westheimer Rd", city: "Houston", note: "311 noise complaint cluster", ts: "3h" },
+  { addr: "1247 Bedford Ave", city: "NYC", note: "Heat / hot water complaint", ts: "4h" },
 ];
 
-const newestReviews = [
+const defaultReviews = [
   { addr: "1234 Lake Shore Dr", city: "Chicago", quote: "Roaches every summer. Manager won't return calls.", stars: 2 },
   { addr: "456 Sunset Blvd", city: "LA", quote: "Great location, terrible walls — you hear everything.", stars: 3 },
   { addr: "999 Brickell Bay", city: "Miami", quote: "Pool is gorgeous. AC has been broken since June.", stars: 3 },
@@ -195,6 +197,196 @@ const cityStripe: Record<City, string> = {
   miami:         "bg-teal-500",
   houston:       "bg-purple-500",
 };
+
+/* ─── Live data fetching ───────────────────────────────────────────
+   Pulls per-city counts (data_snapshot_counts), rent trends
+   (rent_trend_citywide), worst landlords (landlord_stats), recent
+   activity (/api/activity), and recent reviews (reviews table).
+   Every fetch is wrapped in a try-catch with a null fallback so the
+   page can never crash on a bad query — the JSX falls back to the
+   static defaults below when a stream is missing. */
+const ALL_CITIES: City[] = ["nyc", "los-angeles", "chicago", "miami", "houston"];
+
+type SnapshotCounts = {
+  buildings_count: number;
+  hpd_violations_count: number;
+  complaints_311_count: number;
+  hpd_litigations_count: number;
+  dob_violations_count: number;
+};
+type RentPoint = { date: string; avg_rent: number };
+type LandlordRow = { name: string; metro: string; building_count: number; total_violations: number };
+type ActivityItem = { type: string; description: string; date: string; buildingAddress: string; borough?: string; metro?: string; buildingSlug?: string; buildingId?: string };
+type ReviewRow = { id: string; title: string | null; overall_rating: number | null; created_at: string; metro: string; buildings: { full_address: string | null; borough: string | null } | null };
+
+type LiveHomeData = {
+  cityBuildings: Partial<Record<City, number>>;
+  cityRent: Partial<Record<City, { median: number; deltaPct: number }>>;
+  worstLandlords: Array<{ rank: number; name: string; city: string; buildings: number; violations: number }> | null;
+  flagged: Array<{ addr: string; city: string; note: string; ts: string }> | null;
+  reviews: Array<{ addr: string; city: string; quote: string; stars: number }> | null;
+};
+
+function metroToShort(m?: string): string {
+  if (!m) return "NYC";
+  if (m === "nyc") return "NYC";
+  if (m === "los-angeles") return "LA";
+  if (m === "chicago") return "Chicago";
+  if (m === "miami") return "Miami";
+  if (m === "houston") return "Houston";
+  return "NYC";
+}
+
+function relativeTime(iso: string): string {
+  const then = new Date(iso).getTime();
+  if (!Number.isFinite(then)) return "";
+  const mins = Math.max(1, Math.round((Date.now() - then) / 60000));
+  if (mins < 60) return `${mins}m`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `${hrs}h`;
+  const days = Math.round(hrs / 24);
+  return `${days}d`;
+}
+
+async function fetchHomeData(): Promise<LiveHomeData | null> {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const apiKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !apiKey) return null;
+
+  const baseHeaders = { apikey: apiKey, Authorization: `Bearer ${apiKey}` };
+
+  async function rpc<T>(name: string, params: Record<string, unknown>): Promise<T | null> {
+    try {
+      const res = await fetch(`${supabaseUrl}/rest/v1/rpc/${name}`, {
+        method: "POST",
+        headers: { ...baseHeaders, "Content-Type": "application/json" },
+        body: JSON.stringify(params),
+        next: { revalidate: 300 },
+      });
+      if (!res.ok) return null;
+      return (await res.json()) as T;
+    } catch { return null; }
+  }
+
+  async function pgSelect<T>(path: string): Promise<T | null> {
+    try {
+      const res = await fetch(`${supabaseUrl}/rest/v1/${path}`, {
+        headers: baseHeaders,
+        next: { revalidate: 300 },
+      });
+      if (!res.ok) return null;
+      return (await res.json()) as T;
+    } catch { return null; }
+  }
+
+  async function getActivity(): Promise<{ items?: ActivityItem[] } | null> {
+    try {
+      const hdrs = await headers();
+      const host = hdrs.get("host");
+      if (!host) return null;
+      const protocol = host.startsWith("localhost") ? "http" : "https";
+      const res = await fetch(`${protocol}://${host}/api/activity?limit=30`, {
+        next: { revalidate: 60 },
+      });
+      if (!res.ok) return null;
+      return (await res.json()) as { items?: ActivityItem[] };
+    } catch { return null; }
+  }
+
+  // data_snapshot_counts is sometimes returned as a single object,
+  // sometimes as an array of one — handle both shapes.
+  function unwrapCounts(raw: unknown): SnapshotCounts | null {
+    if (!raw) return null;
+    if (Array.isArray(raw)) return (raw[0] ?? null) as SnapshotCounts | null;
+    return raw as SnapshotCounts;
+  }
+
+  const [countsArr, rentsArr, landlords, activity, reviews] = await Promise.all([
+    Promise.all(ALL_CITIES.map((c) => rpc<unknown>("data_snapshot_counts", { p_metro: c }))),
+    Promise.all(ALL_CITIES.map((c) => rpc<RentPoint[]>("rent_trend_citywide", { p_metro: c }))),
+    pgSelect<LandlordRow[]>(
+      "landlord_stats?select=name,metro,building_count,total_violations&order=total_violations.desc&limit=12"
+    ),
+    getActivity(),
+    pgSelect<ReviewRow[]>(
+      "reviews?select=id,title,overall_rating,created_at,metro,buildings(full_address,borough)&status=eq.published&order=created_at.desc&limit=12"
+    ),
+  ]);
+
+  // Per-city building counts
+  const cityBuildings: Partial<Record<City, number>> = {};
+  ALL_CITIES.forEach((c, i) => {
+    const counts = unwrapCounts(countsArr[i]);
+    if (counts && typeof counts.buildings_count === "number") {
+      cityBuildings[c] = counts.buildings_count;
+    }
+  });
+
+  // Per-city rent: median + YoY (from oldest vs newest in 13-month window)
+  const cityRent: Partial<Record<City, { median: number; deltaPct: number }>> = {};
+  ALL_CITIES.forEach((c, i) => {
+    const points = rentsArr[i];
+    if (!points || points.length < 2) return;
+    const sorted = [...points].sort((a, b) => a.date.localeCompare(b.date));
+    const current = sorted[sorted.length - 1].avg_rent;
+    const yearAgoIdx = Math.max(0, sorted.length - 13);
+    const yearAgo = sorted[yearAgoIdx].avg_rent;
+    if (!current || !yearAgo) return;
+    cityRent[c] = {
+      median: Math.round(current),
+      deltaPct: ((current - yearAgo) / yearAgo) * 100,
+    };
+  });
+
+  // Top 6 worst landlords across all metros
+  const worstLandlordsLive = landlords
+    ? landlords.slice(0, 6).map((l, i) => ({
+        rank: i + 1,
+        name: l.name,
+        city: metroToShort(l.metro),
+        buildings: l.building_count,
+        violations: l.total_violations,
+      }))
+    : null;
+
+  // Flagged today: filter activity to enforcement-style events
+  const flaggedTypes = new Set(["violation", "complaint", "dob_violation", "enforcement", "litigation", "rlto_violation"]);
+  const flaggedLive = activity?.items
+    ? activity.items
+        .filter((a) => flaggedTypes.has(a.type))
+        .slice(0, 6)
+        .map((a) => ({
+          addr: a.buildingAddress,
+          city: metroToShort(a.metro),
+          note: a.description,
+          ts: relativeTime(a.date),
+        }))
+    : null;
+
+  // Newest reviews
+  const reviewsLive = reviews
+    ? reviews
+        .filter((r) => r.buildings?.full_address)
+        .slice(0, 6)
+        .map((r) => ({
+          addr: r.buildings!.full_address!,
+          city: metroToShort(r.metro),
+          quote: r.title?.slice(0, 110) ?? "",
+          stars: Math.max(1, Math.min(5, Math.round(r.overall_rating ?? 3))),
+        }))
+    : null;
+
+  return {
+    cityBuildings,
+    cityRent,
+    worstLandlords: worstLandlordsLive && worstLandlordsLive.length ? worstLandlordsLive : null,
+    flagged: flaggedLive && flaggedLive.length ? flaggedLive : null,
+    reviews: reviewsLive && reviewsLive.length ? reviewsLive : null,
+  };
+}
+
+/* Cache the homepage data render across requests for 5 minutes. */
+export const revalidate = 300;
 
 /* Color per icon — semantic, so the same icon means the same thing
    across cities. All written as static class strings so Tailwind's
@@ -385,7 +577,36 @@ function ColumnHeader({ icon: Icon, title }: { icon: ChipIcon; title: string }) 
   );
 }
 
-export default function MockHeroPano() {
+/* Format a raw building count (e.g. 953812) as a friendly chip label
+   ("954K", "479K", "94.7K"). */
+function compactCount(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 100_000)   return `${Math.round(n / 1_000)}K`;
+  if (n >= 10_000)    return `${(n / 1_000).toFixed(1)}K`;
+  if (n >= 1_000)     return `${(n / 1_000).toFixed(1)}K`;
+  return n.toLocaleString();
+}
+
+export default async function MockHeroPano() {
+  const live = await fetchHomeData();
+
+  // Live overrides for the 3 stream columns — fall back to static defaults.
+  const worstLandlords = live?.worstLandlords ?? defaultWorstLandlords;
+  const buildingsFlagged = live?.flagged ?? defaultFlagged;
+  const newestReviews = live?.reviews ?? defaultReviews;
+
+  // Merge live per-city building counts into the directory tile stats.
+  const cityDirectoriesLive = cityDirectories.map((c) => {
+    const liveCount = live?.cityBuildings?.[c.key];
+    return liveCount ? { ...c, stat: compactCount(liveCount) } : c;
+  });
+
+  // Merge live rent medians + YoY into the rent row.
+  const cityRentsLive = cityRents.map((c) => {
+    const r = live?.cityRent?.[c.key];
+    return r ? { ...c, median: r.median, deltaPct: Number(r.deltaPct.toFixed(1)) } : c;
+  });
+
   return (
     <div>
       <style>{`
@@ -517,7 +738,7 @@ export default function MockHeroPano() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
-            {cityDirectories.map((c) => {
+            {cityDirectoriesLive.map((c) => {
               const meta = CITY_META[c.key];
               return (
                 <article
@@ -657,7 +878,7 @@ export default function MockHeroPano() {
                       className="group flex items-baseline gap-3 px-2 py-2 rounded-md hover:bg-[#f8fafc] transition-colors"
                     >
                       <span className="text-xs font-mono text-[#94a3b8] tabular-nums w-10">
-                        {(["12m", "47m", "1h", "2h", "3h", "4h"] as const)[i]}
+                        {b.ts}
                       </span>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
@@ -743,7 +964,7 @@ export default function MockHeroPano() {
           </div>
 
           <div className="flex sm:grid sm:grid-cols-5 gap-3 sm:gap-4 overflow-x-auto sm:overflow-visible snap-x snap-mandatory sm:snap-none -mx-4 sm:mx-0 px-4 sm:px-0 pb-2 sm:pb-0">
-            {cityRents.map((c) => {
+            {cityRentsLive.map((c) => {
               const meta = CITY_META[c.key];
               const rentUp = c.deltaPct >= 0;
               return (
