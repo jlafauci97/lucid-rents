@@ -143,26 +143,27 @@ export default function HomePage() {
                 <Link
                   key={c.key}
                   href={cityPath("/", c.key)}
-                  className="group flex flex-col items-center transition-transform hover:-translate-y-1.5"
+                  aria-label={`Explore ${meta.fullName}`}
+                  className="group relative block w-[120px] h-[160px] sm:w-[160px] sm:h-[210px] rounded-3xl overflow-hidden border border-white/15 shadow-[0_8px_24px_-12px_rgba(0,0,0,0.5)] transition-all duration-300 hover:-translate-y-1.5 hover:border-blue-400/60 hover:shadow-[0_0_40px_rgba(59,130,246,0.3)]"
                 >
-                  <div className="w-[110px] h-[110px] sm:w-[150px] sm:h-[150px] rounded-full overflow-hidden border-[3px] border-white/15 group-hover:border-blue-500/60 group-hover:shadow-[0_0_30px_rgba(59,130,246,0.2)] transition-all relative">
-                    <Image
-                      src={meta.heroImage}
-                      alt={`${meta.fullName} skyline`}
-                      width={400}
-                      height={400}
-                      className="w-full h-full object-cover"
-                      sizes="(max-width: 640px) 110px, 150px"
-                    />
-                    <div className="absolute inset-0 bg-[radial-gradient(circle,transparent_40%,rgba(0,0,0,0.3)_100%)] rounded-full" />
+                  <Image
+                    src={meta.heroImage}
+                    alt={`${meta.fullName} skyline`}
+                    width={400}
+                    height={520}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    sizes="(max-width: 640px) 120px, 160px"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+                  <div className="absolute inset-x-0 bottom-0 px-3.5 pb-3 pt-8">
+                    <h2 className="text-[15px] sm:text-base font-bold leading-tight text-white drop-shadow-sm">
+                      {meta.fullName}
+                    </h2>
+                    <span className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-medium text-white/70 group-hover:text-blue-300 transition-colors">
+                      Explore
+                      <ArrowRight className="w-3 h-3" />
+                    </span>
                   </div>
-                  <h2 className="mt-4 text-lg font-bold">
-                    {meta.fullName}
-                  </h2>
-                  <span className="mt-1 inline-flex items-center gap-1 text-[13px] font-medium text-[#3B82F6] group-hover:text-white transition-colors">
-                    Explore {meta.name}
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </span>
                 </Link>
               );
             })}
