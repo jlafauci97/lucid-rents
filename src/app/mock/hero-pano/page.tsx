@@ -343,9 +343,17 @@ const tools = [
   { label: "Tenant Tools",             href: cityPath("/tenant-tools", "nyc"),      icon: Wrench,      blurb: "Notices, repair requests" },
 ];
 
+/* Accent bg per stream column — semantic, derived from the icon. */
+function accentBg(Icon: ChipIcon): string {
+  if (Icon === Trophy)        return "bg-amber-500";
+  if (Icon === Flame)         return "bg-orange-500";
+  if (Icon === MessageSquare) return "bg-sky-500";
+  return "bg-[#3B82F6]";
+}
+
 function ColumnHeader({ icon: Icon, title }: { icon: ChipIcon; title: string }) {
   return (
-    <div className="flex items-center gap-2 px-4 py-3 bg-[#3B82F6] text-white">
+    <div className={`flex items-center gap-2 px-4 py-3 text-white ${accentBg(Icon)}`}>
       <Icon className="w-4 h-4 text-white" strokeWidth={2.25} />
       <h3 className="text-sm font-bold uppercase tracking-[0.12em]">{title}</h3>
       <span className="ml-auto inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-white/85">
@@ -611,7 +619,7 @@ export default function MockHeroPano() {
               </ul>
               <Link
                 href="/landlords"
-                className="block text-center text-[10px] font-bold uppercase tracking-widest text-white bg-[#3B82F6] hover:bg-[#2563EB] py-3 transition-colors"
+                className="block text-center text-[10px] font-bold uppercase tracking-widest text-white bg-amber-500 hover:bg-amber-600 py-3 transition-colors"
               >
                 See full ranking →
               </Link>
@@ -645,7 +653,7 @@ export default function MockHeroPano() {
               </ul>
               <Link
                 href="/feed"
-                className="block text-center text-[10px] font-bold uppercase tracking-widest text-white bg-[#3B82F6] hover:bg-[#2563EB] py-3 transition-colors"
+                className="block text-center text-[10px] font-bold uppercase tracking-widest text-white bg-orange-500 hover:bg-orange-600 py-3 transition-colors"
               >
                 Open the feed →
               </Link>
@@ -684,7 +692,7 @@ export default function MockHeroPano() {
               </ul>
               <Link
                 href="/feed"
-                className="block text-center text-[10px] font-bold uppercase tracking-widest text-white bg-[#3B82F6] hover:bg-[#2563EB] py-3 transition-colors"
+                className="block text-center text-[10px] font-bold uppercase tracking-widest text-white bg-sky-500 hover:bg-sky-600 py-3 transition-colors"
               >
                 See all reviews →
               </Link>
