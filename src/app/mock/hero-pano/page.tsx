@@ -10,7 +10,7 @@ import { ViolationTickerServer } from "@/components/home/ViolationTickerServer";
 import { BrandShield } from "@/components/brand/BrandShield";
 
 export const metadata: Metadata = {
-  title: "Mockup · Panorama Hero",
+  title: "Mockup · Panorama Hero (v2)",
   robots: { index: false, follow: false },
 };
 
