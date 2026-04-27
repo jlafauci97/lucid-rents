@@ -28,7 +28,7 @@
 .nav-inner {
   max-width: 1440px; margin: 0 auto;
   display: flex; align-items: center; gap: 20px;
-  padding: 12px 24px;
+  padding: 4px 24px;
 }
 .brand {
   font-family: var(--nav-sans);
