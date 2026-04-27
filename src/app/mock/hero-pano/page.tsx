@@ -125,25 +125,47 @@ function ColumnHeader({ icon: Icon, title }: { icon: typeof Trophy; title: strin
 export default function MockHeroPano() {
   return (
     <div>
+      <style>{`
+        @media (prefers-reduced-motion: no-preference) {
+          @supports (animation-timeline: view()) {
+            .pop-in {
+              animation: pop-in linear both;
+              animation-timeline: view();
+              animation-range: entry 0% cover 35%;
+            }
+            @keyframes pop-in {
+              from {
+                opacity: 0;
+                transform: translateY(60px) scale(0.97);
+              }
+              to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+              }
+            }
+          }
+        }
+      `}</style>
+
       <div className="bg-amber-300 text-[#0F1D2E] text-center text-xs sm:text-sm font-semibold py-1.5 tracking-wide">
         MOCKUP — Panorama Hero — not the real homepage
       </div>
 
       {/* Panorama hero — mobile: text above + horizontal city scroll. Desktop: text overlaid on full-bleed 5-panel grid. */}
-      <section className="relative bg-[#0F1D2E] sm:h-[88vh] sm:min-h-[760px] sm:overflow-hidden">
+      <section className="relative bg-[#0F1D2E] sm:h-[64vh] sm:min-h-[560px] sm:max-h-[720px] sm:overflow-hidden">
         {/* Brand block — in-flow above on mobile, absolute overlay on desktop */}
         <div className="relative z-10 sm:absolute sm:inset-x-0 sm:top-0 sm:pointer-events-none">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-6 sm:pt-16 lg:pt-20 sm:pb-0 text-center">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-6 sm:pt-8 lg:pt-10 sm:pb-0 text-center">
             <div className="inline-block drop-shadow-[0_6px_24px_rgba(0,0,0,0.45)]">
-              <BrandShield width="auto" height="auto" className="h-[90px] sm:h-[120px] lg:h-[140px] w-auto" />
+              <BrandShield width="auto" height="auto" className="h-[80px] sm:h-[96px] lg:h-[110px] w-auto" />
             </div>
-            <p className="mt-3 text-[11px] sm:text-sm uppercase tracking-[0.22em] text-white/85 font-semibold drop-shadow">
+            <p className="mt-2 text-[11px] sm:text-xs uppercase tracking-[0.22em] text-white/85 font-semibold drop-shadow">
               A Rental Intelligence Platform
             </p>
-            <h1 className="mt-2 text-3xl sm:text-5xl lg:text-6xl font-bold text-white tracking-tight drop-shadow-[0_2px_14px_rgba(0,0,0,0.55)]">
+            <h1 className="mt-2 text-3xl sm:text-4xl lg:text-5xl font-bold text-white tracking-tight drop-shadow-[0_2px_14px_rgba(0,0,0,0.55)]">
               Check Your Apartment Building
             </h1>
-            <p className="mt-3 text-sm sm:text-base lg:text-lg text-white/90 max-w-2xl mx-auto drop-shadow">
+            <p className="mt-2 text-sm sm:text-sm lg:text-base text-white/90 max-w-2xl mx-auto drop-shadow">
               See the truth about any building before you sign. Violations, complaints, tenant reviews, and crime data — all in one place.
             </p>
           </div>
@@ -207,7 +229,7 @@ export default function MockHeroPano() {
       </section>
 
       {/* Stats card (existing) */}
-      <section className="border-b border-[#e2e8f0] bg-white">
+      <section className="pop-in border-b border-[#e2e8f0] bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <Suspense
             fallback={
@@ -228,7 +250,7 @@ export default function MockHeroPano() {
       </section>
 
       {/* Live Wall */}
-      <section className="bg-[#f8fafc] border-y border-[#e2e8f0]">
+      <section className="pop-in bg-[#f8fafc] border-y border-[#e2e8f0]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
           <div className="max-w-3xl mb-10">
             <p className="text-xs uppercase tracking-[0.2em] text-[#3B82F6] font-bold mb-2">
@@ -323,7 +345,7 @@ export default function MockHeroPano() {
       </section>
 
       {/* What we track */}
-      <section className="bg-white">
+      <section className="pop-in bg-white">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
           <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-10 lg:gap-16 items-start">
             <div className="lg:sticky lg:top-24">
@@ -355,7 +377,7 @@ export default function MockHeroPano() {
       </section>
 
       {/* Quote wall */}
-      <section className="bg-[#f8fafc] border-y border-[#e2e8f0]">
+      <section className="pop-in bg-[#f8fafc] border-y border-[#e2e8f0]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
           <div className="max-w-3xl mb-12">
             <p className="text-xs uppercase tracking-[0.2em] text-[#3B82F6] font-bold mb-2">
@@ -383,7 +405,7 @@ export default function MockHeroPano() {
       </section>
 
       {/* CTA */}
-      <section className="bg-[#0F1D2E] text-white">
+      <section className="pop-in bg-[#0F1D2E] text-white">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
           <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-3">
             Add your building.
