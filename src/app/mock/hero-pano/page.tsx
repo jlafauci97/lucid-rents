@@ -345,11 +345,11 @@ const tools = [
 
 function ColumnHeader({ icon: Icon, title }: { icon: ChipIcon; title: string }) {
   return (
-    <div className="flex items-center gap-2 px-4 pt-4 pb-3 border-b border-[#e2e8f0]">
-      <Icon className={`w-4 h-4 ${iconColorClass(Icon)}`} strokeWidth={2.25} />
-      <h3 className="text-sm font-bold uppercase tracking-[0.12em] text-[#0F1D2E]">{title}</h3>
-      <span className="ml-auto inline-flex items-center gap-1 text-[10px] font-medium text-[#64748b]">
-        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+    <div className="flex items-center gap-2 px-4 py-3 bg-[#3B82F6] text-white">
+      <Icon className="w-4 h-4 text-white" strokeWidth={2.25} />
+      <h3 className="text-sm font-bold uppercase tracking-[0.12em]">{title}</h3>
+      <span className="ml-auto inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-white/85">
+        <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
         Live
       </span>
     </div>
@@ -611,7 +611,7 @@ export default function MockHeroPano() {
               </ul>
               <Link
                 href="/landlords"
-                className="block text-center text-[10px] font-bold uppercase tracking-widest text-[#3B82F6] border-t border-[#e2e8f0] py-2.5 hover:bg-[#3B82F6] hover:text-white transition-colors"
+                className="block text-center text-[10px] font-bold uppercase tracking-widest text-white bg-[#3B82F6] hover:bg-[#2563EB] py-3 transition-colors"
               >
                 See full ranking →
               </Link>
@@ -645,7 +645,7 @@ export default function MockHeroPano() {
               </ul>
               <Link
                 href="/feed"
-                className="block text-center text-[10px] font-bold uppercase tracking-widest text-[#3B82F6] border-t border-[#e2e8f0] py-2.5 hover:bg-[#3B82F6] hover:text-white transition-colors"
+                className="block text-center text-[10px] font-bold uppercase tracking-widest text-white bg-[#3B82F6] hover:bg-[#2563EB] py-3 transition-colors"
               >
                 Open the feed →
               </Link>
@@ -684,7 +684,7 @@ export default function MockHeroPano() {
               </ul>
               <Link
                 href="/feed"
-                className="block text-center text-[10px] font-bold uppercase tracking-widest text-[#3B82F6] border-t border-[#e2e8f0] py-2.5 hover:bg-[#3B82F6] hover:text-white transition-colors"
+                className="block text-center text-[10px] font-bold uppercase tracking-widest text-white bg-[#3B82F6] hover:bg-[#2563EB] py-3 transition-colors"
               >
                 See all reviews →
               </Link>
