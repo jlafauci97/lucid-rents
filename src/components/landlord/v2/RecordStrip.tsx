@@ -15,7 +15,9 @@ export function RecordStrip({ record, city }: Props) {
     <section
       className="record"
       aria-label="Portfolio record"
-      style={{ gridTemplateColumns: `repeat(${slots.length}, minmax(0, 1fr))` }}
+      // CSS owns the responsive collapse via @media; we just hand off the slot
+      // count so the desktop grid sizes itself correctly.
+      style={{ "--record-cols": slots.length } as React.CSSProperties}
     >
       {slots.map((slot) => (
         <div

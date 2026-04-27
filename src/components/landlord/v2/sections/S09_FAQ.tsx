@@ -21,28 +21,11 @@ export function S09_FAQ({ items }: Props) {
         </div>
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(2, 1fr)",
-          gap: 12,
-          marginTop: "var(--s-5)",
-        }}
-      >
+      <div className="ll-faq-grid">
         {items.map((item) => (
-          <div
-            key={item.q}
-            style={{
-              background: "var(--paper)",
-              border: "1px solid var(--border)",
-              borderRadius: 12,
-              padding: "16px 18px",
-            }}
-          >
-            <h4 style={{ margin: "0 0 6px", fontSize: 14, fontWeight: 700, color: "var(--ink)", letterSpacing: "-0.005em" }}>
-              {item.q}
-            </h4>
-            <p style={{ margin: 0, fontSize: 13, color: "var(--ink-soft)", lineHeight: 1.55 }}>{item.a}</p>
+          <div key={item.q} className="ll-faq-card">
+            <h4>{item.q}</h4>
+            <p>{item.a}</p>
           </div>
         ))}
       </div>

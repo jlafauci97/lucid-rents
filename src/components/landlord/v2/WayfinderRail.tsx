@@ -25,26 +25,59 @@ const SECTIONS = [
 ];
 
 export function WayfinderRail({ grade, displayName, city, slug }: Props) {
-  const [activeId, setActiveId] = useState("glance");
+  // Initialise to null so the server renders no active item; the client
+  // computes the active section in useEffect after mount. This avoids any
+  // hydration mismatch on the `active` className that would otherwise abort
+  // hydration and orphan the scroll listener.
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
+  // Scroll-based tracking instead of IntersectionObserver. The streamed
+  // section components swap their DOM nodes when Suspense resolves, which
+  // would orphan IO observation targets. Re-querying #ids on each scroll
+  // tick handles the swap transparently and also dodges layout-coordinate
+  // issues from V2Zoom's `zoom: 0.9` on desktop.
   useEffect(() => {
-    const els = SECTIONS.map((s) => document.getElementById(s.id)).filter(Boolean) as HTMLElement[];
-    if (els.length === 0) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries.filter((e) => e.isIntersecting);
-        if (visible.length > 0) {
-          visible.sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-          setActiveId(visible[0].target.id);
+    const update = () => {
+      const trigger = window.innerHeight * 0.3;
+      let bestId = SECTIONS[0].id;
+      let bestTop = -Infinity;
+      for (const s of SECTIONS) {
+        const el = document.getElementById(s.id);
+        if (!el) continue;
+        const top = el.getBoundingClientRect().top;
+        if (top <= trigger && top > bestTop) {
+          bestTop = top;
+          bestId = s.id;
         }
-      },
-      { rootMargin: "-10% 0px -60% 0px", threshold: 0 }
-    );
+      }
+      setActiveId((prev: string | null) => (prev === bestId ? prev : bestId));
+    };
 
-    for (const el of els) observer.observe(el);
-    return () => observer.disconnect();
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        update();
+        ticking = false;
+      });
+    };
+
+    update();
+    // Sections stream in via Suspense, so the initial update() may run before
+    // their DOM nodes exist. Re-run update() as the page settles so the
+    // active highlight resolves to a real section.
+    const settleTimers = [120, 400, 1200, 3000].map((ms) =>
+      window.setTimeout(update, ms)
+    );
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      for (const t of settleTimers) window.clearTimeout(t);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
   }, []);
 
   // Split the name into two lines at the space closest to the middle.
