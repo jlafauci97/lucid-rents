@@ -7,6 +7,7 @@
  * .brand, .city-picker, .nav-search, .nav-links, .nav-login, .nav-auth).
  */
 
+import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
 import { headers } from "next/headers";
@@ -18,7 +19,6 @@ import { NavCityPicker } from "@/components/building/v2/NavCityPicker";
 import { SearchTrigger } from "@/components/search/SearchTrigger";
 import { NavLinksRow } from "./NavLinksRow";
 import { MobileMenu } from "./MobileMenu";
-import { BrandShield } from "@/components/brand/BrandShield";
 
 // Read the current city from the middleware-set x-city header.
 // Falls back to DEFAULT_CITY when the route isn't city-scoped.
@@ -109,9 +109,15 @@ export async function Navbar() {
   return (
     <nav className="nav">
       <div className="nav-inner">
-        <Link href="/" className="brand">
-          <BrandShield />
-          LucidRents
+        <Link href="/" className="brand" aria-label="LucidRents home">
+          <Image
+            src="/lucid-rents-wordmark.png"
+            alt="LucidRents"
+            width={1536}
+            height={1024}
+            priority
+            className="h-9 w-auto"
+          />
         </Link>
         <NavCityPicker currentCity={city} />
         <SearchTrigger city={city} />
