@@ -30,7 +30,7 @@ const getBuilding = cache(async (boroughSlug: string, slug: string, metro?: stri
     .from("buildings")
     .select("*")
     .eq("slug", slug)
-    .eq("borough", borough);
+    .ilike("borough", borough);
 
   if (metro) {
     query = query.eq("metro", metro);
