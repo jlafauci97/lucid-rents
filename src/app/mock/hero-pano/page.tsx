@@ -303,17 +303,29 @@ async function fetchHomeData(): Promise<LiveHomeData | null> {
     } catch { return null; }
   }
 
-  async function getActivity(): Promise<{ items?: ActivityItem[] } | null> {
+  async function getActivityForCity(host: string, protocol: string, city: City): Promise<ActivityItem[]> {
+    try {
+      const res = await fetch(`${protocol}://${host}/api/activity?limit=12&city=${city}`, {
+        next: { revalidate: 60 },
+      });
+      if (!res.ok) return [];
+      const data = (await res.json()) as { items?: ActivityItem[] };
+      // Backfill metro on each item so the round-robin balancer can group them
+      return (data.items ?? []).map((it) => ({ ...it, metro: it.metro ?? city }));
+    } catch { return []; }
+  }
+
+  async function getActivity(): Promise<{ items: ActivityItem[] } | null> {
     try {
       const hdrs = await headers();
       const host = hdrs.get("host");
       if (!host) return null;
       const protocol = host.startsWith("localhost") ? "http" : "https";
-      const res = await fetch(`${protocol}://${host}/api/activity?limit=30`, {
-        next: { revalidate: 60 },
-      });
-      if (!res.ok) return null;
-      return (await res.json()) as { items?: ActivityItem[] };
+      const perCity = await Promise.all(
+        ALL_CITIES.map((c) => getActivityForCity(host, protocol, c))
+      );
+      const all = perCity.flat();
+      return { items: all };
     } catch { return null; }
   }
 
@@ -333,7 +345,7 @@ async function fetchHomeData(): Promise<LiveHomeData | null> {
     ),
     getActivity(),
     pgSelect<ReviewRow[]>(
-      "reviews?select=id,title,body,overall_rating,created_at,metro,buildings(full_address,borough)&status=eq.published&order=created_at.desc&limit=40"
+      "reviews?select=id,title,body,overall_rating,created_at,metro,buildings(full_address,borough)&status=eq.published&order=created_at.desc&limit=200"
     ),
   ]);
 
