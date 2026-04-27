@@ -227,11 +227,15 @@ export default async function ScaffoldingPage() {
             for local businesses, and creating safety concerns of their own.
           </p>
           <p>
-            This tracker uses official NYC DOB permit data (DOB BIS legacy
-            permits going back to 1989, plus DOB NOW permits from 2017 onward).
-            If you live near a long-standing sidewalk shed, you can contact
-            your local Community Board or file a 311 complaint requesting an
-            update on the construction timeline.
+            This tracker uses official NYC DOB NOW permit data (2017 onward).
+            A long &ldquo;first permit&rdquo; date at an address means there
+            has been at least one shed there since that year, with renewals
+            since &mdash; not necessarily that the same shed has been up
+            continuously. Sheds often come down and go back up across separate
+            construction projects on the same building. If you live near a
+            long-standing sidewalk shed, you can contact your local Community
+            Board or file a 311 complaint requesting an update on the
+            construction timeline.
           </p>
         </section>
       </div>

@@ -84,8 +84,9 @@ export function ScaffoldingHero({
               <span className="font-semibold text-white">
                 {totalActive.toLocaleString()}
               </span>{" "}
-              active sidewalk sheds across NYC right now. The oldest has been up
-              for over <span className="font-semibold text-amber-300">{oldestYears} years</span>.
+              active sidewalk sheds across NYC right now. Some addresses have
+              had shed permits for{" "}
+              <span className="font-semibold text-amber-300">{oldestYears}+ years</span>.
             </>
           ) : (
             "Tracking active sidewalk shed permits across NYC."

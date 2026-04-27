@@ -32,7 +32,8 @@ export function HallOfShame({ data }: { data: ShedRow[] }) {
             Hall of Shame
           </h2>
           <p className="text-sm text-[#64748b] mt-1">
-            The longest-standing active sidewalk sheds in NYC.
+            Buildings with the longest sidewalk shed permit history that still
+            have an active permit on file.
           </p>
         </div>
       </div>
@@ -94,8 +95,13 @@ export function HallOfShame({ data }: { data: ShedRow[] }) {
                   </span>
                 </div>
                 <div className="text-[11px] font-semibold uppercase tracking-wider text-[#64748b] mt-1.5">
-                  Continuously up since{" "}
+                  First permit{" "}
                   {new Date(s.first_issued).toLocaleDateString("en-US", {
+                    month: "short",
+                    year: "numeric",
+                  })}
+                  {" · "}most recent{" "}
+                  {new Date(s.latest_issued).toLocaleDateString("en-US", {
                     month: "short",
                     year: "numeric",
                   })}
