@@ -175,6 +175,25 @@ const cityDirectories: CityDirectory[] = [
 
 const cityOrder: City[] = ["nyc", "los-angeles", "chicago", "miami", "houston"];
 
+/* Color per icon — semantic, so the same icon means the same thing
+   across cities. All written as static class strings so Tailwind's
+   JIT scanner picks them up. */
+function iconColorClass(Icon: ChipIcon): string {
+  if (Icon === Building2)  return "text-blue-500";
+  if (Icon === Trophy)     return "text-amber-500";
+  if (Icon === MapPin)     return "text-rose-500";
+  if (Icon === Shield)     return "text-emerald-500";
+  if (Icon === Scale)      return "text-violet-500";
+  if (Icon === Flame)      return "text-orange-500";
+  if (Icon === FileCheck)  return "text-teal-500";
+  if (Icon === Newspaper)  return "text-sky-500";
+  if (Icon === Compass)    return "text-indigo-500";
+  if (Icon === Calculator) return "text-cyan-500";
+  if (Icon === Wrench)     return "text-slate-500";
+  if (Icon === MessageSquare) return "text-sky-500";
+  return "text-[#94a3b8]";
+}
+
 /* Map the short city tags used in the demo data ("NYC", "LA", "Chicago",
    "Miami", "Houston") to canonical City keys for cityPath(). */
 function cityKeyFromShort(short: string): City {
@@ -324,10 +343,10 @@ const tools = [
   { label: "Tenant Tools",             href: cityPath("/tenant-tools", "nyc"),      icon: Wrench,      blurb: "Notices, repair requests" },
 ];
 
-function ColumnHeader({ icon: Icon, title }: { icon: typeof Trophy; title: string }) {
+function ColumnHeader({ icon: Icon, title }: { icon: ChipIcon; title: string }) {
   return (
-    <div className="flex items-center gap-2 mb-5 pb-3 border-b border-[#e2e8f0]">
-      <Icon className="w-4 h-4 text-[#3B82F6]" />
+    <div className="flex items-center gap-2 px-4 pt-4 pb-3 border-b border-[#e2e8f0]">
+      <Icon className={`w-4 h-4 ${iconColorClass(Icon)}`} strokeWidth={2.25} />
       <h3 className="text-sm font-bold uppercase tracking-[0.12em] text-[#0F1D2E]">{title}</h3>
       <span className="ml-auto inline-flex items-center gap-1 text-[10px] font-medium text-[#64748b]">
         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -517,7 +536,7 @@ export default function MockHeroPano() {
                           href={cityPath(chip.path, c.key)}
                           className="flex items-center gap-2 px-2 py-1.5 rounded-md text-[12px] text-[#334155] hover:bg-[#3B82F6]/8 hover:text-[#3B82F6] transition-colors"
                         >
-                          <chip.icon className="w-3.5 h-3.5 text-[#94a3b8] group-hover:text-[#3B82F6] flex-shrink-0" strokeWidth={2} />
+                          <chip.icon className={`w-4 h-4 ${iconColorClass(chip.icon)} flex-shrink-0`} strokeWidth={2.25} />
                           <span className="truncate">{chip.label}</span>
                           {chip.count && (
                             <span className="ml-auto text-[10px] tabular-nums text-[#94a3b8] font-semibold">
