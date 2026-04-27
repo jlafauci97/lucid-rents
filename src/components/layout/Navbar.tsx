@@ -116,7 +116,7 @@ export async function Navbar() {
             width={1536}
             height={1024}
             priority
-            className="h-9 w-auto"
+            className="h-14 lg:h-20 w-auto"
           />
         </Link>
         <NavCityPicker currentCity={city} />

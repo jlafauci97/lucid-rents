@@ -155,17 +155,17 @@ export default function MockHeroPano() {
       <section className="relative bg-[#0F1D2E] sm:h-[62vh] sm:min-h-[544px] sm:max-h-[704px]">
         {/* Brand block — in-flow above on mobile, absolute overlay on desktop */}
         <div className="relative z-10 sm:absolute sm:inset-x-0 sm:top-0 sm:pointer-events-none">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-6 sm:pt-8 lg:pt-10 sm:pb-0 text-center">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-5 sm:pt-7 lg:pt-8 sm:pb-0 text-center">
             <div className="inline-block drop-shadow-[0_6px_24px_rgba(0,0,0,0.45)]">
-              <BrandShield width="auto" height="auto" className="h-[80px] sm:h-[96px] lg:h-[110px] w-auto" />
+              <BrandShield width="auto" height="auto" className="h-16 sm:h-[77px] lg:h-[88px] w-auto" />
             </div>
-            <p className="mt-2 text-[11px] sm:text-xs uppercase tracking-[0.22em] text-white/85 font-semibold drop-shadow">
+            <p className="mt-1.5 text-[9px] sm:text-[10px] uppercase tracking-[0.22em] text-white/85 font-semibold drop-shadow">
               A Rental Intelligence Platform
             </p>
-            <h1 className="mt-2 text-3xl sm:text-4xl lg:text-5xl font-bold text-white tracking-tight drop-shadow-[0_2px_14px_rgba(0,0,0,0.55)]">
+            <h1 className="mt-1.5 text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight drop-shadow-[0_2px_14px_rgba(0,0,0,0.55)]">
               Check Your Apartment Building
             </h1>
-            <p className="mt-2 text-sm sm:text-sm lg:text-base text-white/90 max-w-2xl mx-auto drop-shadow">
+            <p className="mt-2 text-xs sm:text-xs lg:text-sm text-white/90 max-w-2xl mx-auto drop-shadow">
               See the truth about any building before you sign. Violations, complaints, tenant reviews, and crime data — all in one place.
             </p>
           </div>
@@ -190,20 +190,20 @@ export default function MockHeroPano() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0F1D2E]/90 via-[#0F1D2E]/10 to-[#0F1D2E]/35" />
 
-                <div className="absolute inset-x-0 bottom-0 p-6 sm:p-6 lg:p-9 text-white">
-                  <p className="text-xs uppercase tracking-[0.2em] text-amber-300 font-bold mb-1.5">
+                <div className="absolute inset-x-0 bottom-0 p-5 sm:p-5 lg:p-7 text-white">
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-amber-300 font-bold mb-1">
                     {meta.stateCode}
                   </p>
-                  <h3 className="text-3xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold tracking-tight mb-5 leading-[1.05]">
+                  <h3 className="text-2xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold tracking-tight mb-4 leading-[1.05]">
                     {meta.fullName}
                   </h3>
-                  <dl className="grid grid-cols-3 gap-3 mb-5">
+                  <dl className="grid grid-cols-3 gap-2.5 mb-4">
                     {stats.map((s) => (
                       <div key={s.label}>
-                        <dd className="text-base sm:text-lg lg:text-xl font-bold tabular-nums leading-none">
+                        <dd className="text-sm sm:text-base lg:text-lg font-bold tabular-nums leading-none">
                           {s.value}
                         </dd>
-                        <dt className="text-[11px] uppercase tracking-wider text-white/70 mt-1 leading-tight">
+                        <dt className="text-[9px] uppercase tracking-wider text-white/70 mt-1 leading-tight">
                           {s.label}
                         </dt>
                       </div>
@@ -211,10 +211,10 @@ export default function MockHeroPano() {
                   </dl>
                   <Link
                     href={cityPath("/", key)}
-                    className="inline-flex items-center gap-1.5 text-sm sm:text-base font-semibold text-amber-300 hover:text-white transition-colors"
+                    className="inline-flex items-center gap-1 text-xs sm:text-sm font-semibold text-amber-300 hover:text-white transition-colors"
                   >
                     Explore {meta.name}
-                    <ArrowRight className="w-4 h-4" />
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>
               </article>
