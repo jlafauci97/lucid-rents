@@ -446,106 +446,125 @@ export function tenantResourcesForCity(city: City): TenantResource[] {
 // faqBankForCity
 // ──────────────────────────────────────────────────────────────
 
-const FAQ_Q1: FaqItem = {
-  q: "Is {landlord} the biggest landlord in {city}?",
+// SEO-optimized FAQ bank. Questions intentionally include the landlord name
+// and city so they show up in long-tail searches like
+// "is [landlord] a good landlord", "how many buildings does [landlord] own".
+
+const FAQ_PORTFOLIO_SIZE: FaqItem = {
+  q: "How many buildings does {{landlord}} own in {{city}}?",
   aTemplate:
-    "They rank {{portfolioRank}} by building count among tracked landlords in {{city}}.",
+    "{{landlord}} owns or operates {{buildingCount}} buildings in {{city}}, totaling {{unitCount}} units.",
 };
 
-const FAQ_Q3: FaqItem = {
-  q: "Have they been sued recently?",
+const FAQ_IS_GOOD: FaqItem = {
+  q: "Is {{landlord}} a good landlord?",
   aTemplate:
-    "{{activeLitigations}} active housing-court litigations are on file across their buildings.",
+    "Across the {{buildingCount}}-building portfolio, the average compliance score is {{avgScore}} out of 5. {{violationsTotal}} violations and {{complaintsTotal}} tenant complaints are on file — review The Record above for the full breakdown.",
 };
 
-const FAQ_Q4: FaqItem = {
-  q: "Which buildings should I avoid?",
+const FAQ_VIOLATIONS: FaqItem = {
+  q: "How many violations does {{landlord}} have?",
   aTemplate:
-    "The worst-rated buildings are {{worstBuilding1}}, {{worstBuilding2}}, and {{worstBuilding3}}.",
+    "{{violationsTotal}} HPD/code violations and {{dobViolations}} DOB violations are recorded across {{landlord}}'s buildings in {{city}}.",
 };
 
-const FAQ_Q5: FaqItem = {
-  q: "Are complaints getting worse?",
+const FAQ_LITIGATIONS: FaqItem = {
+  q: "Has {{landlord}} been sued by tenants?",
   aTemplate:
-    "Violations are {{trendDirection24mo}} {{trendDeltaPct}}% over the last 24 months.",
+    "{{activeLitigations}} active housing-court cases are on file across {{landlord}}'s buildings.",
 };
 
-const FAQ_Q6: FaqItem = {
-  q: "Who operates this portfolio?",
+const FAQ_AVOID: FaqItem = {
+  q: "What buildings should I avoid renting from {{landlord}}?",
   aTemplate:
-    "{{headOfficer}} runs the portfolio since {{founderYear}}, registered with the local housing authority.",
+    "The lowest-rated buildings in {{landlord}}'s portfolio are {{worstBuilding1}}, {{worstBuilding2}}, and {{worstBuilding3}}.",
+};
+
+const FAQ_COMPLAIN: FaqItem = {
+  q: "How do I file a complaint against {{landlord}}?",
+  aTemplate:
+    "{{complaintAction}} Document repair requests in writing and keep dated copies for housing court.",
+};
+
+const FAQ_NYC_STAB: FaqItem = {
+  q: "Are {{landlord}}'s units rent-stabilized?",
+  aTemplate:
+    "{{rentStabShare}}% of {{landlord}}'s units in {{city}} are registered as rent-stabilized with HPD.",
+};
+
+const FAQ_CHI_RLTO: FaqItem = {
+  q: "Is {{landlord}} on Chicago's scofflaw list?",
+  aTemplate:
+    "{{rltoStatus}}. Chicago's Residential Landlord and Tenant Ordinance (RLTO) applies to all units.",
+};
+
+const FAQ_MIA_RECERT: FaqItem = {
+  q: "How many of {{landlord}}'s buildings need 40-year recertification?",
+  aTemplate:
+    "{{recertsPending}} buildings in {{landlord}}'s portfolio have pending 40-year recerts in Miami-Dade.",
+};
+
+const FAQ_HOU_DANGER: FaqItem = {
+  q: "Are any of {{landlord}}'s buildings flagged dangerous in Houston?",
+  aTemplate:
+    "{{dangerousCount}} buildings in {{landlord}}'s portfolio carry an active dangerous-building flag.",
 };
 
 export function faqBankForCity(city: City): FaqItem[] {
   switch (city) {
     case "nyc":
       return [
-        FAQ_Q1,
-        {
-          q: "What share is rent-stabilized?",
-          aTemplate:
-            "{{rentStabShare}}% of their units are registered as rent-stabilized with the housing authority.",
-        },
-        FAQ_Q3,
-        FAQ_Q4,
-        FAQ_Q5,
-        FAQ_Q6,
+        FAQ_PORTFOLIO_SIZE,
+        FAQ_IS_GOOD,
+        FAQ_VIOLATIONS,
+        FAQ_LITIGATIONS,
+        FAQ_AVOID,
+        FAQ_NYC_STAB,
+        FAQ_COMPLAIN,
       ];
 
     case "los-angeles":
       return [
-        FAQ_Q1,
-        {
-          q: "What share is rent-stabilized?",
-          aTemplate:
-            "{{rentStabShare}}% of their units are registered as rent-stabilized with the housing authority.",
-        },
-        FAQ_Q3,
-        FAQ_Q4,
-        FAQ_Q5,
-        FAQ_Q6,
+        FAQ_PORTFOLIO_SIZE,
+        FAQ_IS_GOOD,
+        FAQ_VIOLATIONS,
+        FAQ_LITIGATIONS,
+        FAQ_AVOID,
+        FAQ_NYC_STAB,
+        FAQ_COMPLAIN,
       ];
 
     case "chicago":
       return [
-        FAQ_Q1,
-        {
-          q: "Are they RLTO-compliant?",
-          aTemplate:
-            "{{rltoStatus}} — Chicago's Residential Landlord and Tenant Ordinance applies.",
-        },
-        FAQ_Q3,
-        FAQ_Q4,
-        FAQ_Q5,
-        FAQ_Q6,
+        FAQ_PORTFOLIO_SIZE,
+        FAQ_IS_GOOD,
+        FAQ_CHI_RLTO,
+        FAQ_VIOLATIONS,
+        FAQ_LITIGATIONS,
+        FAQ_AVOID,
+        FAQ_COMPLAIN,
       ];
 
     case "miami":
       return [
-        FAQ_Q1,
-        {
-          q: "How many buildings need 40-year recertification?",
-          aTemplate:
-            "{{recertsPending}} buildings currently have pending 40-year recerts.",
-        },
-        FAQ_Q3,
-        FAQ_Q4,
-        FAQ_Q5,
-        FAQ_Q6,
+        FAQ_PORTFOLIO_SIZE,
+        FAQ_IS_GOOD,
+        FAQ_MIA_RECERT,
+        FAQ_VIOLATIONS,
+        FAQ_LITIGATIONS,
+        FAQ_AVOID,
+        FAQ_COMPLAIN,
       ];
 
     case "houston":
       return [
-        FAQ_Q1,
-        {
-          q: "Are any buildings flagged dangerous?",
-          aTemplate:
-            "{{dangerousCount}} buildings carry an active dangerous-building flag.",
-        },
-        FAQ_Q3,
-        FAQ_Q4,
-        FAQ_Q5,
-        FAQ_Q6,
+        FAQ_PORTFOLIO_SIZE,
+        FAQ_IS_GOOD,
+        FAQ_HOU_DANGER,
+        FAQ_VIOLATIONS,
+        FAQ_LITIGATIONS,
+        FAQ_AVOID,
+        FAQ_COMPLAIN,
       ];
   }
 }

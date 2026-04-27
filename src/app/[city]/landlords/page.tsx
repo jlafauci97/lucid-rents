@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { Users, Building2, Search, ChevronLeft, ChevronRight, AlertTriangle, MessageSquare, ArrowRight, Scale, HardHat, ShieldAlert } from "lucide-react";
+import { Users, Building2, Search, ChevronLeft, ChevronRight, AlertTriangle, ArrowRight, ShieldAlert } from "lucide-react";
 import { LetterGrade } from "@/components/ui/LetterGrade";
 import Link from "next/link";
 import { landlordUrl, canonicalUrl, cityPath } from "@/lib/seo";
@@ -108,14 +108,18 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
       {paginationPrevUrl && <link rel="prev" href={paginationPrevUrl} />}
       {paginationNextUrl && <link rel="next" href={paginationNextUrl} />}
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-[#0F1D2E]">
-          <Users className="inline w-8 h-8 text-[#3B82F6] mr-2 -mt-1" />
-          Landlord Directory
-        </h1>
-        <p className="text-[#64748b] mt-2">
-          Search {CITY_META[cityParam as City]?.fullName || "NYC"} landlords by name and explore their building portfolios, violations, and complaint histories.
-        </p>
+      <div className="mb-8 flex items-start gap-4">
+        <div className="flex-shrink-0 mt-1 h-10 w-10 rounded-lg bg-slate-100 flex items-center justify-center">
+          <Users className="w-5 h-5 text-slate-700" />
+        </div>
+        <div>
+          <h1 className="text-3xl font-bold text-[#0F1D2E] leading-tight">
+            Landlord Directory
+          </h1>
+          <p className="text-[#64748b] mt-1.5 max-w-2xl">
+            Search {CITY_META[cityParam as City]?.fullName || "NYC"} landlords by name and explore their building portfolios, violations, and complaint histories.
+          </p>
+        </div>
       </div>
 
       {/* Search bar */}
@@ -150,33 +154,36 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
       </div>
 
       {/* Sort options */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-6">
         <p className="text-sm text-[#64748b]">
           {(total || 0) > 0
             ? `${(total || 0).toLocaleString()} landlord${(total || 0) !== 1 ? "s" : ""} found`
             : "No landlords found"}
           {search && ` matching "${search}"`}
         </p>
-        <div className="flex gap-2">
-          {[
-            { key: "violations", label: "Most Violations" },
-            { key: "complaints", label: "Most Complaints" },
-            { key: "litigations", label: "Most Litigations" },
-            { key: "dob", label: "Most DOB Violations" },
-            { key: "buildings", label: "Most Buildings" },
-          ].map((opt) => (
-            <Link
-              key={opt.key}
-              href={buildUrl({ sort: opt.key, page: "1" })}
-              className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${
-                sortBy === opt.key
-                  ? "bg-[#3B82F6] text-white border-[#3B82F6] font-medium"
-                  : "bg-white text-[#64748b] border-[#e2e8f0] hover:border-[#94a3b8]"
-              }`}
-            >
-              {opt.label}
-            </Link>
-          ))}
+        <div className="flex items-center gap-1 flex-wrap">
+          <span className="text-xs uppercase tracking-wider text-[#94a3b8] mr-2 hidden sm:inline">Sort by</span>
+          <div className="inline-flex bg-slate-100 rounded-lg p-1 flex-wrap gap-0.5">
+            {[
+              { key: "violations", label: "Violations" },
+              { key: "complaints", label: "Complaints" },
+              { key: "litigations", label: "Litigations" },
+              { key: "dob", label: "DOB" },
+              { key: "buildings", label: "Buildings" },
+            ].map((opt) => (
+              <Link
+                key={opt.key}
+                href={buildUrl({ sort: opt.key, page: "1" })}
+                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                  sortBy === opt.key
+                    ? "bg-white text-[#0F1D2E] shadow-sm font-semibold"
+                    : "text-[#64748b] hover:text-[#0F1D2E]"
+                }`}
+              >
+                {opt.label}
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -186,129 +193,81 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="bg-[#EFF6FF] border-b border-[#e2e8f0]">
+                <tr className="bg-slate-50 border-b border-[#e2e8f0]">
                   <th className="text-left text-xs font-semibold text-[#64748b] uppercase tracking-wider px-4 py-3 w-12">
                     #
                   </th>
                   <th className="text-left text-xs font-semibold text-[#64748b] uppercase tracking-wider px-4 py-3">
                     Landlord
                   </th>
-                  <th className="text-center text-xs font-semibold text-[#64748b] uppercase tracking-wider px-4 py-3">
+                  <th className="text-right text-xs font-semibold text-[#64748b] uppercase tracking-wider px-4 py-3 w-24">
                     Buildings
                   </th>
-                  <th className="text-center text-xs font-semibold text-[#64748b] uppercase tracking-wider px-4 py-3">
+                  <th className={`text-right text-xs font-semibold uppercase tracking-wider px-4 py-3 w-24 ${sortBy === "violations" ? "text-[#0F1D2E]" : "text-[#64748b]"}`}>
                     Violations
                   </th>
-                  <th className="text-center text-xs font-semibold text-[#64748b] uppercase tracking-wider px-4 py-3 hidden sm:table-cell">
+                  <th className={`text-right text-xs font-semibold uppercase tracking-wider px-4 py-3 w-24 hidden sm:table-cell ${sortBy === "complaints" ? "text-[#0F1D2E]" : "text-[#64748b]"}`}>
                     Complaints
                   </th>
-                  <th className="text-center text-xs font-semibold text-[#64748b] uppercase tracking-wider px-4 py-3 hidden md:table-cell">
+                  <th className={`text-right text-xs font-semibold uppercase tracking-wider px-4 py-3 w-24 hidden md:table-cell ${sortBy === "litigations" ? "text-[#0F1D2E]" : "text-[#64748b]"}`}>
                     Litigations
                   </th>
-                  <th className="text-center text-xs font-semibold text-[#64748b] uppercase tracking-wider px-4 py-3 hidden md:table-cell">
-                    DOB Violations
+                  <th className={`text-right text-xs font-semibold uppercase tracking-wider px-4 py-3 w-28 hidden md:table-cell ${sortBy === "dob" ? "text-[#0F1D2E]" : "text-[#64748b]"}`}>
+                    DOB
                   </th>
-                  <th className="text-center text-xs font-semibold text-[#64748b] uppercase tracking-wider px-4 py-3 hidden lg:table-cell">
-                    Avg Score
+                  <th className="text-center text-xs font-semibold text-[#64748b] uppercase tracking-wider px-4 py-3 w-20 hidden lg:table-cell">
+                    Grade
                   </th>
-                  <th className="text-right text-xs font-semibold text-[#64748b] uppercase tracking-wider px-4 py-3 hidden lg:table-cell">
-                    {/* Action */}
+                  <th className="px-4 py-3 w-12 hidden lg:table-cell">
+                    <span className="sr-only">Action</span>
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#e2e8f0]">
                 {(landlords || []).map((landlord, idx) => {
                   const rank = offset + idx + 1;
+                  const cellBase = "px-4 py-3 text-right text-sm tabular-nums";
                   return (
                     <tr
                       key={landlord.name}
-                      className="hover:bg-[#EFF6FF] transition-colors"
+                      className="hover:bg-slate-50/60 transition-colors"
                     >
                       <td className="px-4 py-3">
-                        <span
-                          className={`text-sm font-bold ${
-                            rank <= 3 ? "text-[#EF4444]" : "text-[#94a3b8]"
-                          }`}
-                        >
+                        <span className="text-sm font-medium text-[#94a3b8] tabular-nums">
                           {rank}
                         </span>
                       </td>
                       <td className="px-4 py-3">
                         <Link
                           href={landlordUrl(landlord.name, cityParam as City)}
-                          className="group"
+                          className="group block"
                         >
                           <p className="text-sm font-medium text-[#0F1D2E] group-hover:text-[#3B82F6] transition-colors">
                             {landlord.name}
                           </p>
-                          <p className="text-xs text-[#94a3b8] mt-0.5">
-                            Worst: {landlord.worst_building_address}
-                          </p>
+                          {landlord.worst_building_address && (
+                            <p className="text-xs text-[#94a3b8] mt-0.5 truncate max-w-md">
+                              Worst: {landlord.worst_building_address}
+                            </p>
+                          )}
                         </Link>
                       </td>
-                      <td className="px-4 py-3 text-center">
-                        <span className="inline-flex items-center gap-1 text-sm text-[#64748b]">
-                          <Building2 className="w-3.5 h-3.5" />
-                          {landlord.building_count.toLocaleString()}
-                        </span>
+                      <td className={`${cellBase} text-[#64748b]`}>
+                        {landlord.building_count.toLocaleString()}
                       </td>
-                      <td className="px-4 py-3 text-center">
-                        <span
-                          className={`inline-flex items-center gap-1 text-sm font-semibold ${
-                            landlord.total_violations > 100
-                              ? "text-[#EF4444]"
-                              : landlord.total_violations > 20
-                              ? "text-[#F59E0B]"
-                              : "text-[#64748b]"
-                          }`}
-                        >
-                          <AlertTriangle className="w-3.5 h-3.5" />
-                          {landlord.total_violations.toLocaleString()}
-                        </span>
+                      <td className={`${cellBase} ${sortBy === "violations" ? "text-[#0F1D2E] font-semibold" : "text-[#64748b]"}`}>
+                        {landlord.total_violations.toLocaleString()}
                       </td>
-                      <td className="px-4 py-3 text-center hidden sm:table-cell">
-                        <span
-                          className={`inline-flex items-center gap-1 text-sm font-semibold ${
-                            landlord.total_complaints > 100
-                              ? "text-[#EF4444]"
-                              : landlord.total_complaints > 20
-                              ? "text-[#F59E0B]"
-                              : "text-[#64748b]"
-                          }`}
-                        >
-                          <MessageSquare className="w-3.5 h-3.5" />
-                          {landlord.total_complaints.toLocaleString()}
-                        </span>
+                      <td className={`${cellBase} hidden sm:table-cell ${sortBy === "complaints" ? "text-[#0F1D2E] font-semibold" : "text-[#64748b]"}`}>
+                        {landlord.total_complaints.toLocaleString()}
                       </td>
-                      <td className="px-4 py-3 text-center hidden md:table-cell">
-                        <span
-                          className={`inline-flex items-center gap-1 text-sm font-semibold ${
-                            landlord.total_litigations > 10
-                              ? "text-[#8B5CF6]"
-                              : landlord.total_litigations > 0
-                              ? "text-[#8B5CF6]"
-                              : "text-[#64748b]"
-                          }`}
-                        >
-                          <Scale className="w-3.5 h-3.5" />
-                          {landlord.total_litigations.toLocaleString()}
-                        </span>
+                      <td className={`${cellBase} hidden md:table-cell ${sortBy === "litigations" ? "text-[#0F1D2E] font-semibold" : "text-[#64748b]"}`}>
+                        {landlord.total_litigations.toLocaleString()}
                       </td>
-                      <td className="px-4 py-3 text-center hidden md:table-cell">
-                        <span
-                          className={`inline-flex items-center gap-1 text-sm font-semibold ${
-                            landlord.total_dob_violations > 50
-                              ? "text-[#EF4444]"
-                              : landlord.total_dob_violations > 10
-                              ? "text-[#3B82F6]"
-                              : "text-[#64748b]"
-                          }`}
-                        >
-                          <HardHat className="w-3.5 h-3.5" />
-                          {landlord.total_dob_violations.toLocaleString()}
-                        </span>
+                      <td className={`${cellBase} hidden md:table-cell ${sortBy === "dob" ? "text-[#0F1D2E] font-semibold" : "text-[#64748b]"}`}>
+                        {landlord.total_dob_violations.toLocaleString()}
                       </td>
-                      <td className="px-4 py-3 text-center hidden lg:table-cell">
+                      <td className="px-4 py-3 hidden lg:table-cell">
                         <div className="flex justify-center">
                           <LetterGrade score={landlord.avg_score} size="sm" />
                         </div>
@@ -316,10 +275,10 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
                       <td className="px-4 py-3 text-right hidden lg:table-cell">
                         <Link
                           href={landlordUrl(landlord.name, cityParam as City)}
-                          className="inline-flex items-center gap-1 text-sm text-[#3B82F6] hover:text-[#2563EB] font-medium transition-colors"
+                          className="inline-flex items-center text-[#3B82F6] hover:text-[#2563EB] transition-colors"
+                          aria-label={`View ${landlord.name} portfolio`}
                         >
-                          View Portfolio
-                          <ArrowRight className="w-3.5 h-3.5" />
+                          <ArrowRight className="w-4 h-4" />
                         </Link>
                       </td>
                     </tr>
@@ -331,7 +290,7 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t border-[#e2e8f0] bg-[#EFF6FF]">
+            <div className="flex items-center justify-between px-4 py-3 border-t border-[#e2e8f0] bg-slate-50">
               <p className="text-sm text-[#64748b]">
                 Page {page} of {totalPages}
               </p>
@@ -382,27 +341,27 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
 
       {/* Cross-links */}
       <section className="mt-10">
-        <h2 className="text-lg font-bold text-[#0F1D2E] mb-4">Related</h2>
-        <div className="flex flex-wrap gap-3">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-[#64748b] mb-3">Related</h2>
+        <div className="flex flex-wrap gap-2">
           <Link
             href={cityPath("/worst-rated-buildings", cityParam as City)}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-red-50 text-[#ef4444] border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
+            className="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-medium bg-white text-[#0F1D2E] border border-[#e2e8f0] rounded-lg hover:border-[#3B82F6] hover:text-[#3B82F6] transition-colors"
           >
-            <AlertTriangle className="w-4 h-4" />
+            <AlertTriangle className="w-4 h-4 text-[#94a3b8]" />
             Worst Rated Buildings
           </Link>
           <Link
             href={cityPath("/buildings", cityParam as City)}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-blue-50 text-[#3B82F6] border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+            className="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-medium bg-white text-[#0F1D2E] border border-[#e2e8f0] rounded-lg hover:border-[#3B82F6] hover:text-[#3B82F6] transition-colors"
           >
-            <Building2 className="w-4 h-4" />
+            <Building2 className="w-4 h-4 text-[#94a3b8]" />
             Buildings Directory
           </Link>
           <Link
             href={cityPath("/crime", cityParam as City)}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-amber-50 text-[#d97706] border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors"
+            className="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-medium bg-white text-[#0F1D2E] border border-[#e2e8f0] rounded-lg hover:border-[#3B82F6] hover:text-[#3B82F6] transition-colors"
           >
-            <ShieldAlert className="w-4 h-4" />
+            <ShieldAlert className="w-4 h-4 text-[#94a3b8]" />
             Crime by Zip Code
           </Link>
         </div>

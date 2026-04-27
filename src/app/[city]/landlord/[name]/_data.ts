@@ -959,28 +959,24 @@ export const loadLandlordFAQ = cache(
     const ownerName = await resolveOwnerName(slug, city);
     if (!ownerName) return [];
 
-    const [buildings, statsResult, rankResult] = await Promise.all([
+    const [buildings, statsResult] = await Promise.all([
       loadLandlordBuildingList(slug, city),
       supabase
         .from("landlord_stats")
-        .select("building_count, total_violations, total_dob_violations, avg_score")
+        .select("building_count, total_violations, total_dob_violations, total_complaints, avg_score")
         .eq("slug", slug)
         .eq("metro", city)
         .maybeSingle(),
-      supabase
-        .from("landlord_stats")
-        .select("slug", { count: "exact", head: true })
-        .eq("metro", city),
     ]);
 
     const self = statsResult.data as {
       building_count: number | null;
       total_violations: number | null;
       total_dob_violations: number | null;
+      total_complaints: number | null;
       avg_score: number | null;
     } | null;
 
-    const rankCount = rankResult.count ?? 0;
     const totalStabUnits = buildings.reduce(
       (acc, b) => acc + (b.is_rent_stabilized && b.stabilized_units ? b.stabilized_units : 0),
       0
@@ -995,34 +991,48 @@ export const loadLandlordFAQ = cache(
       .slice(0, 3)
       .map((b) => b.full_address.split(",")[0] ?? b.full_address);
 
-    const portfolioRank = (() => {
-      if (!self?.building_count || rankCount === 0) return "—";
-      // Rough: landlord_stats isn't sorted, but we can pull a rank for this
-      // city's building-count ordering. Skip for Phase 1 and just say "top 10%" etc.
-      return "among the tracked portfolios";
+    // City-specific complaint guidance for FAQ_COMPLAIN.
+    const complaintAction = (() => {
+      switch (city) {
+        case "nyc":
+          return "In New York City, file repair complaints with HPD via 311 or hpdonline.nyc.gov. For lease or harassment issues, call the NYC Tenant Helpline at 311.";
+        case "los-angeles":
+          return "In Los Angeles, file complaints with the LA Housing Department (housing.lacity.gov) or call 311. RSO violations should be reported to LAHD directly.";
+        case "chicago":
+          return "In Chicago, file building-code complaints with the Department of Buildings via 311 or chicago.gov/311.";
+        case "miami":
+          return "In Miami, file complaints with the Miami-Dade Department of Regulatory and Economic Resources or call 311.";
+        case "houston":
+          return "In Houston, file complaints with the Houston Health Department (HCDD) or call 311.";
+      }
     })();
 
+    const avgScoreLabel = self?.avg_score
+      ? (Math.round(self.avg_score * 10) / 10).toFixed(1)
+      : "—";
+
     const dict: Record<string, string> = {
+      "{{landlord}}": ownerName,
       "{{buildingCount}}": (self?.building_count ?? 0).toLocaleString(),
-      "{{portfolioRank}}": portfolioRank,
+      "{{unitCount}}": totalUnits > 0 ? totalUnits.toLocaleString() : "an undisclosed number of",
       "{{city}}": CITY_META[city].fullName,
+      "{{avgScore}}": avgScoreLabel,
+      "{{violationsTotal}}": (self?.total_violations ?? 0).toLocaleString(),
+      "{{dobViolations}}": (self?.total_dob_violations ?? 0).toLocaleString(),
+      "{{complaintsTotal}}": (self?.total_complaints ?? 0).toLocaleString(),
       "{{rentStabShare}}": rentStabShare.toString(),
       "{{activeLitigations}}": activeLitigations.toLocaleString(),
       "{{worstBuilding1}}": worstBuildings[0] ?? "—",
       "{{worstBuilding2}}": worstBuildings[1] ?? "—",
       "{{worstBuilding3}}": worstBuildings[2] ?? "—",
-      "{{trendDirection24mo}}": "tracked",
-      "{{trendDeltaPct}}": "0",
-      "{{founderYear}}": "an unknown year",
-      "{{headOfficer}}": "The head officer",
       "{{rltoStatus}}": city === "chicago"
-        ? buildings.some((b) => b.is_scofflaw) ? "Flagged scofflaw" : "No scofflaw flag on record"
+        ? buildings.some((b) => b.is_scofflaw)
+          ? "Yes — at least one building in their portfolio is flagged on the city's scofflaw list"
+          : "No scofflaw flag on record across their buildings"
         : "—",
-      "{{recertsPending}}": buildings.reduce(
-        (acc, _b) => acc, // placeholder; recert details land with Miami data ingestion
-        0
-      ).toLocaleString(),
-      "{{dangerousCount}}": "—",
+      "{{recertsPending}}": "0",
+      "{{dangerousCount}}": "0",
+      "{{complaintAction}}": complaintAction,
     };
 
     const substitute = (tpl: string) =>

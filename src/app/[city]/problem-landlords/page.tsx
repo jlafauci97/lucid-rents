@@ -166,21 +166,21 @@ export default async function ProblemLandlordsPage({
         />
 
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-red-50 rounded-lg">
-              <UserX className="w-6 h-6 text-[#DC2626]" />
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#0F1D2E]">
+        <div className="mb-8 flex items-start gap-4">
+          <div className="flex-shrink-0 mt-1 h-10 w-10 rounded-lg bg-slate-100 flex items-center justify-center">
+            <UserX className="w-5 h-5 text-slate-700" />
+          </div>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#0F1D2E] leading-tight">
               Problem Landlords — Building Code Scofflaws
             </h1>
+            <p className="text-[#64748b] text-sm sm:text-base mt-1.5 max-w-3xl">
+              Chicago&apos;s official Building Code Scofflaw List identifies
+              property owners with the most egregious records of unpaid fines
+              and building code violations. These landlords have repeatedly
+              failed to address safety issues in their buildings.
+            </p>
           </div>
-          <p className="text-[#64748b] text-sm sm:text-base max-w-3xl">
-            Chicago&apos;s official Building Code Scofflaw List identifies
-            property owners with the most egregious records of unpaid fines and
-            building code violations. These landlords have repeatedly failed to
-            address safety issues in their buildings.
-          </p>
         </div>
 
         {/* Summary stats */}
@@ -189,15 +189,15 @@ export default async function ProblemLandlordsPage({
             <p className="text-xs text-[#64748b] font-medium uppercase tracking-wide">
               Total Scofflaws
             </p>
-            <p className="text-2xl font-bold text-[#0F1D2E] mt-1">
+            <p className="text-2xl font-bold text-[#0F1D2E] mt-1 tabular-nums">
               {totalCount > 0 ? totalCount.toLocaleString() : "\u2014"}
             </p>
           </div>
           <div className="bg-white border border-[#e2e8f0] rounded-xl p-4">
-            <p className="text-xs text-[#EF4444] font-medium uppercase tracking-wide">
+            <p className="text-xs text-[#64748b] font-medium uppercase tracking-wide">
               Total Unpaid Fines
             </p>
-            <p className="text-2xl font-bold text-[#0F1D2E] mt-1">
+            <p className={`text-2xl font-bold mt-1 tabular-nums ${totalUnpaidFines > 0 ? "text-[#DC2626]" : "text-[#0F1D2E]"}`}>
               {totalUnpaidFines > 0
                 ? formatCurrency(totalUnpaidFines)
                 : "\u2014"}
@@ -207,7 +207,7 @@ export default async function ProblemLandlordsPage({
             <p className="text-xs text-[#64748b] font-medium uppercase tracking-wide">
               Avg Violations / Scofflaw
             </p>
-            <p className="text-2xl font-bold text-[#0F1D2E] mt-1">
+            <p className="text-2xl font-bold text-[#0F1D2E] mt-1 tabular-nums">
               {avgViolations > 0 ? avgViolations : "\u2014"}
             </p>
           </div>
