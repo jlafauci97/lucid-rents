@@ -9,6 +9,18 @@ export const metadata: Metadata = {
 
 const options = [
   {
+    href: "/mock/rest-terminal",
+    label: "New · Below-fold",
+    title: "Rest of page · Terminal",
+    blurb: "Bloomberg-style data intelligence. Mono font, dashboard panels with sparklines, coverage matrix grid (cities × public-record sources), terminal CTA. Pairs with the existing Panorama hero.",
+  },
+  {
+    href: "/mock/rest-wheatpaste",
+    label: "New · Below-fold",
+    title: "Rest of page · Wheatpaste",
+    blurb: "Wall-of-Shame poster aesthetic. Yellow bg, slab type, red stamps, torn paper cards, brutalist CTA. Built for screenshots and shareability. Pairs with the existing Panorama hero.",
+  },
+  {
     href: "/mock/hero-pano",
     label: "Latest",
     title: "Panorama Hero",
