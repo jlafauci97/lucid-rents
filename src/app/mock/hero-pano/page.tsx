@@ -284,6 +284,25 @@ async function fetchHomeData(): Promise<LiveHomeData | null> {
     } catch { return null; }
   }
 
+  /* Count buildings by metro using PostgREST's exact-count header
+     (cheap query — same pattern LiveStats uses for per-city counts;
+     the data_snapshot_counts RPC times out under the anon role). */
+  async function countBuildings(city: City): Promise<number | null> {
+    try {
+      const res = await fetch(
+        `${supabaseUrl}/rest/v1/buildings?select=id&metro=eq.${encodeURIComponent(city)}`,
+        {
+          headers: { ...baseHeaders, Prefer: "count=exact", Range: "0-0" },
+          next: { revalidate: 3600 },
+        }
+      );
+      if (!res.ok) return null;
+      const range = res.headers.get("content-range") || "";
+      const match = range.match(/\/(\d+)/);
+      return match ? parseInt(match[1], 10) : null;
+    } catch { return null; }
+  }
+
   async function getActivity(): Promise<{ items?: ActivityItem[] } | null> {
     try {
       const hdrs = await headers();
@@ -306,8 +325,8 @@ async function fetchHomeData(): Promise<LiveHomeData | null> {
     return raw as SnapshotCounts;
   }
 
-  const [countsArr, rentsArr, landlords, activity, reviews] = await Promise.all([
-    Promise.all(ALL_CITIES.map((c) => rpc<unknown>("data_snapshot_counts", { p_metro: c }))),
+  const [buildingsCountArr, rentsArr, landlords, activity, reviews] = await Promise.all([
+    Promise.all(ALL_CITIES.map((c) => countBuildings(c))),
     Promise.all(ALL_CITIES.map((c) => rpc<RentPoint[]>("rent_trend_citywide", { p_metro: c }))),
     pgSelect<LandlordRow[]>(
       "landlord_stats?select=name,metro,building_count,total_violations&order=total_violations.desc&limit=30"
@@ -318,13 +337,11 @@ async function fetchHomeData(): Promise<LiveHomeData | null> {
     ),
   ]);
 
-  // Per-city building counts
+  // Per-city building counts (from countBuildings)
   const cityBuildings: Partial<Record<City, number>> = {};
   ALL_CITIES.forEach((c, i) => {
-    const counts = unwrapCounts(countsArr[i]);
-    if (counts && typeof counts.buildings_count === "number") {
-      cityBuildings[c] = counts.buildings_count;
-    }
+    const n = buildingsCountArr[i];
+    if (typeof n === "number" && n > 0) cityBuildings[c] = n;
   });
 
   // Per-city rent: median + YoY (from oldest vs newest in 13-month window)
