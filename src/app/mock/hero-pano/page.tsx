@@ -250,7 +250,12 @@ function relativeTime(iso: string): string {
 
 async function fetchHomeData(): Promise<LiveHomeData | null> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const apiKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  // Service-role key is required for queries against large tables — the
+  // anon role has a 3s statement timeout and silently fails on the
+  // multi-million-row tables data_snapshot_counts touches.
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const apiKey = serviceKey ?? anonKey;
   if (!supabaseUrl || !apiKey) return null;
 
   const baseHeaders = { apikey: apiKey, Authorization: `Bearer ${apiKey}` };
@@ -305,7 +310,7 @@ async function fetchHomeData(): Promise<LiveHomeData | null> {
     Promise.all(ALL_CITIES.map((c) => rpc<unknown>("data_snapshot_counts", { p_metro: c }))),
     Promise.all(ALL_CITIES.map((c) => rpc<RentPoint[]>("rent_trend_citywide", { p_metro: c }))),
     pgSelect<LandlordRow[]>(
-      "landlord_stats?select=name,metro,building_count,total_violations&order=total_violations.desc&limit=12"
+      "landlord_stats?select=name,metro,building_count,total_violations&order=total_violations.desc&limit=30"
     ),
     getActivity(),
     pgSelect<ReviewRow[]>(
@@ -338,15 +343,21 @@ async function fetchHomeData(): Promise<LiveHomeData | null> {
     };
   });
 
-  // Top 6 worst landlords across all metros
+  // Top 6 worst landlords across all metros — drop placeholder/redacted
+  // entries from the source data (NYC HPD uses these strings when an
+  // owner is unknown or withheld; they're not real landlords).
+  const garbageNamePattern = /^(AVAILABLE FROM DATA SOURCE|NAME NOT ON FILE|NOT AVAILABLE|UNKNOWN|N\/?A)$/i;
   const worstLandlordsLive = landlords
-    ? landlords.slice(0, 6).map((l, i) => ({
-        rank: i + 1,
-        name: l.name,
-        city: metroToShort(l.metro),
-        buildings: l.building_count,
-        violations: l.total_violations,
-      }))
+    ? landlords
+        .filter((l) => l.name && !garbageNamePattern.test(l.name.trim()))
+        .slice(0, 6)
+        .map((l, i) => ({
+          rank: i + 1,
+          name: l.name,
+          city: metroToShort(l.metro),
+          buildings: l.building_count,
+          violations: l.total_violations,
+        }))
     : null;
 
   // Flagged today: filter activity to enforcement-style events
