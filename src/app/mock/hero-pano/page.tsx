@@ -126,29 +126,22 @@ export default function MockHeroPano() {
   return (
     <div>
       <style>{`
-        @media (prefers-reduced-motion: no-preference) {
-          @supports (animation-timeline: scroll()) {
-            .city-panel {
-              animation: city-pop linear both;
-              animation-timeline: scroll(root);
-            }
-            .city-panel:nth-child(1) { animation-range: 40px 320px; }
-            .city-panel:nth-child(2) { animation-range: 100px 380px; }
-            .city-panel:nth-child(3) { animation-range: 160px 440px; }
-            .city-panel:nth-child(4) { animation-range: 220px 500px; }
-            .city-panel:nth-child(5) { animation-range: 280px 560px; }
-            @keyframes city-pop {
-              0%, 100% {
-                transform: translateY(0);
-                filter: brightness(1);
-                z-index: 1;
-              }
-              50% {
-                transform: translateY(-16px);
-                filter: brightness(1.15);
-                z-index: 5;
-              }
-            }
+        .city-panel {
+          transition: transform 400ms cubic-bezier(0.2, 0.8, 0.2, 1),
+                      filter 300ms ease,
+                      box-shadow 400ms ease,
+                      z-index 0s 400ms;
+        }
+        @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+          .city-panel:hover {
+            transform: scale(1.05);
+            filter: brightness(1.18) saturate(1.05);
+            box-shadow: 0 24px 60px -12px rgba(0,0,0,0.55);
+            z-index: 5;
+            transition: transform 400ms cubic-bezier(0.2, 0.8, 0.2, 1),
+                        filter 300ms ease,
+                        box-shadow 400ms ease,
+                        z-index 0s 0s;
           }
         }
       `}</style>
@@ -158,7 +151,7 @@ export default function MockHeroPano() {
       </div>
 
       {/* Panorama hero — mobile: text above + horizontal city scroll. Desktop: text overlaid on full-bleed 5-panel grid. */}
-      <section className="relative bg-[#0F1D2E] sm:h-[64vh] sm:min-h-[560px] sm:max-h-[720px] sm:overflow-hidden">
+      <section className="relative bg-[#0F1D2E] sm:h-[78vh] sm:min-h-[680px] sm:max-h-[880px]">
         {/* Brand block — in-flow above on mobile, absolute overlay on desktop */}
         <div className="relative z-10 sm:absolute sm:inset-x-0 sm:top-0 sm:pointer-events-none">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-6 sm:pt-8 lg:pt-10 sm:pb-0 text-center">
@@ -194,22 +187,22 @@ export default function MockHeroPano() {
                   sizes="(max-width: 640px) 80vw, 20vw"
                   priority={key === "nyc"}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0F1D2E] via-[#0F1D2E]/30 to-[#0F1D2E]/55" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0F1D2E]/90 via-[#0F1D2E]/10 to-[#0F1D2E]/35" />
 
-                <div className="absolute inset-x-0 bottom-0 p-5 sm:p-5 lg:p-7 text-white">
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-amber-300 font-bold mb-1">
+                <div className="absolute inset-x-0 bottom-0 p-6 sm:p-6 lg:p-9 text-white">
+                  <p className="text-xs uppercase tracking-[0.2em] text-amber-300 font-bold mb-1.5">
                     {meta.stateCode}
                   </p>
-                  <h3 className="text-2xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold tracking-tight mb-4 leading-[1.05]">
+                  <h3 className="text-3xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold tracking-tight mb-5 leading-[1.05]">
                     {meta.fullName}
                   </h3>
-                  <dl className="grid grid-cols-3 gap-2 mb-4">
+                  <dl className="grid grid-cols-3 gap-3 mb-5">
                     {stats.map((s) => (
                       <div key={s.label}>
-                        <dd className="text-sm sm:text-base lg:text-lg font-bold tabular-nums leading-none">
+                        <dd className="text-base sm:text-lg lg:text-xl font-bold tabular-nums leading-none">
                           {s.value}
                         </dd>
-                        <dt className="text-[9px] uppercase tracking-wider text-white/60 mt-1 leading-tight">
+                        <dt className="text-[11px] uppercase tracking-wider text-white/70 mt-1 leading-tight">
                           {s.label}
                         </dt>
                       </div>
@@ -217,10 +210,10 @@ export default function MockHeroPano() {
                   </dl>
                   <Link
                     href={cityPath("/", key)}
-                    className="inline-flex items-center gap-1 text-xs sm:text-sm font-semibold text-amber-300 hover:text-white transition-colors"
+                    className="inline-flex items-center gap-1.5 text-sm sm:text-base font-semibold text-amber-300 hover:text-white transition-colors"
                   >
                     Explore {meta.name}
-                    <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                    <ArrowRight className="w-4 h-4" />
                   </Link>
                 </div>
               </article>
