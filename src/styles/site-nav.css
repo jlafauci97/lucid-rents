@@ -482,8 +482,40 @@
 .nav-auth a:hover, .nav-auth button:hover { color: rgba(255,255,255,0.8); }
 .nav-auth svg { width: 14px; height: 14px; }
 
+/* Social icons (Instagram / X / TikTok) on far right */
+.nav-social {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 6px;
+  padding-left: 10px;
+  border-left: 1px solid rgba(255,255,255,0.12);
+}
+.nav-social a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  color: #fff;
+  opacity: 0.85;
+  transition: opacity 0.15s ease, background 0.15s ease, transform 0.15s ease;
+}
+.nav-social a:hover {
+  opacity: 1;
+  background: rgba(255,255,255,0.08);
+}
+.nav-social a:active { transform: scale(0.94); }
+.nav-social svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
 @media (max-width: 1024px) {
   .nav-links { display: none; }
+  .nav-social { display: none; }
 }
 @media (max-width: 640px) {
   .nav-inner { gap: 8px; padding: 10px 12px; }
