@@ -20,8 +20,9 @@
 | Landlord ↔ buildings join column? | `buildings.owner_name` (string). Resolved from `landlord_stats.slug` via `resolveOwnerName(slug, city)` at [src/app/[city]/landlord/[name]/_data.ts:253](src/app/%5Bcity%5D/landlord/%5Bname%5D/_data.ts:253). Pattern: `supabase.from("buildings").select(...).eq("owner_name", ownerName).eq("metro", city)` |
 | Duplicate compare routes — both functional? | ✅ Both `/[city]/neighborhood/compare/page.tsx` and `/[city]/neighborhoods/compare/page.tsx` exist with full implementations. Sitemap both for now; consolidation is a separate cleanup task |
 | Breadcrumb audit — which subpages already have it? | All "unverified" rows actually **do** have `Breadcrumbs` already. Only **2 files need adding**: `landlord/[name]/reviews` and `landlord/[name]/buildings`. Saves ~5 audit tasks |
-| `TOPIC_RELATED_TOOLS` coverage scope | Ship a **starter mapping for 5 NYC topics** (security-deposits, eviction-protections, repairs-and-maintenance, rent-stabilization-rights, harassment) + 3 LA topics (rso-rent-stabilization, just-cause-eviction, ellis-act). Other cities/topics fall through with no "Related tools" section. Full coverage is a follow-up task |
-| Ellis Act LA-only gating | Hard-coded URL `/los-angeles/Ellis-act` (not multiplied across `VALID_CITIES`) |
+| `TOPIC_RELATED_TOOLS` coverage scope | Ship a **starter mapping for 6 NYC topics** (security-deposits, eviction-protections, repairs-and-maintenance, rent-stabilization-rights, harassment) + 3 LA topics (rso-rent-stabilization, just-cause-eviction, repairs-and-habitability). Other cities/topics fall through with no "Related tools" section. Full coverage is a follow-up task |
+| Ellis Act LA-only gating | Route is `src/app/[city]/ellis-act/page.tsx` (lowercase). Use `cityPath("/ellis-act", "los-angeles")` → `/CA/Los-Angeles/ellis-act`. Not multiplied across `VALID_CITIES` |
+| Tenant-rights cities with topic data | Only `nyc`, `los-angeles`, `chicago`. Miami and Houston **omitted** from `TENANT_RIGHTS_TOPICS` — the route calls `notFound()` for those cities, so emitting URLs would produce 404s |
 
 ---
 
@@ -83,13 +84,15 @@ const TEMPLATE_SLUGS = [
 ];
 
 // Mirror src/lib/tenant-rights-data.ts per-city `topics[].slug`
+// Only nyc, los-angeles, and chicago have topic configs. Miami and Houston
+// are intentionally omitted — the [city]/tenant-rights/[topic] route calls
+// notFound() for cities without a config, so any URL we'd emit would 404.
 // Manual sync — these change rarely.
 const TENANT_RIGHTS_TOPICS = {
   nyc: ["rent-stabilization-rights", "repairs-and-maintenance", "eviction-protections", "security-deposits", "lease-renewals", "harassment", "heat-and-hot-water", "bed-bugs-and-pests", "illegal-apartments", "retaliation"],
   "los-angeles": ["rso-rent-stabilization", "just-cause-eviction", "repairs-and-habitability", "relocation-assistance", "ellis-act", "security-deposits", "earthquake-retrofit", "harassment-and-retaliation"],
-  chicago: ["rlto-protections", "repairs-and-maintenance", "just-cause-eviction", "security-deposits", "lease-renewals"],
-  miami: ["repairs-and-maintenance", "security-deposits", "lease-renewals", "eviction-protections"],
-  houston: ["repairs-and-maintenance", "security-deposits", "lease-renewals", "eviction-protections"],
+  chicago: ["rlto-protections", "repairs-and-maintenance", "just-cause-eviction", "security-deposits", "lease-renewals", "harassment", "heat-requirements", "lead-paint", "bed-bugs-and-pests", "retaliation"],
+  // miami and houston intentionally omitted — no topic config exists
 };
 
 // Mirror src/lib/building-list/chips.ts → CHIPS keys
@@ -100,10 +103,15 @@ const CHIP_SLUGS = ["top-rated", "rent-stabilized", "most-reviewed", "no-violati
 const CALCULATOR_PATHS = ["/rent-affordability-calculator", "/rent-timing-calculator", "/fair-rent-engine"];
 ```
 
-- [ ] **Step 1.3: Verify miami/houston topic slugs match real data**
+- [ ] **Step 1.3: Spot-check inlined slugs against the source-of-truth**
 
-Run: `grep -A 5 "miami:\|houston:" src/lib/tenant-rights-data.ts | head -40`
-Expected: confirm the slug values match what's in step 1.2. If they differ, update the inlined arrays in step 1.2 to match the real data.
+Run:
+```bash
+grep -E "^\s*slug:" src/lib/tenant-rights-data.ts | sort -u
+```
+Expected: every slug in the `nyc`, `los-angeles`, and `chicago` arrays of `TENANT_RIGHTS_TOPICS` (Step 1.2) appears in the output. If any slug is missing or extra, update the inlined arrays to match.
+
+**Do NOT add miami or houston** — they have no topic config; the route calls `notFound()` for those cities.
 
 - [ ] **Step 1.4: Commit (checkpoint)**
 
@@ -177,8 +185,9 @@ async function generateHubsSitemap() {
     console.warn(`  ⚠ Skipping rents-by-neighborhood in hubs sitemap: ${e.message}`);
   }
 
-  // Ellis Act tracker — LA only
-  entries.push({ url: `${BASE_URL}/CA/Los-Angeles/Ellis-act`, lastmod: now, changefreq: "weekly", priority: 0.5 });
+  // Ellis Act tracker — LA only. Route is /[city]/ellis-act (lowercase).
+  // cityPath("/ellis-act", "los-angeles") yields /CA/Los-Angeles/ellis-act
+  entries.push({ url: `${BASE_URL}${cityPath("/ellis-act", "los-angeles")}`, lastmod: now, changefreq: "weekly", priority: 0.5 });
 
   // Building list hubs (5) + chip pages (25)
   for (const city of VALID_CITIES) {
@@ -330,7 +339,7 @@ for url in \
   "https://lucidrents.com/nyc/tenant-tools" \
   "https://lucidrents.com/nyc/tenant-tools/templates/security-deposit-demand" \
   "https://lucidrents.com/nyc/tenant-rights/eviction-protections" \
-  "https://lucidrents.com/CA/Los-Angeles/Ellis-act" \
+  "https://lucidrents.com/CA/Los-Angeles/ellis-act" \
   "https://lucidrents.com/rent-affordability-calculator"; do
   echo "$url $(curl -s -o /dev/null -w '%{http_code}' "$url")"
 done
@@ -383,7 +392,7 @@ export function CityToolsGrid({ city }: Props) {
   ];
 
   if (city === "los-angeles") {
-    tools.push({ href: "/CA/Los-Angeles/Ellis-act", title: "Ellis Act tracker", description: "Track Ellis Act evictions and protected units in Los Angeles.", Icon: FileWarning });
+    tools.push({ href: cityPath("/ellis-act", "los-angeles"), title: "Ellis Act tracker", description: "Track Ellis Act evictions and protected units in Los Angeles.", Icon: FileWarning });
   }
 
   return (
@@ -830,6 +839,11 @@ export const TOPIC_RELATED_TOOLS: Record<string, { templates: string[]; calculat
     templates: ["repair-maintenance-request"],
     calculators: [],
   },
+  "repairs-and-habitability": {
+    // LA-equivalent of NYC's repairs-and-maintenance
+    templates: ["repair-maintenance-request"],
+    calculators: [],
+  },
   "rent-stabilization-rights": {
     templates: [],
     calculators: ["fair-rent-engine"],
@@ -845,10 +859,6 @@ export const TOPIC_RELATED_TOOLS: Record<string, { templates: string[]; calculat
   },
   "just-cause-eviction": {
     templates: ["illegal-eviction-response"],
-    calculators: [],
-  },
-  "ellis-act": {
-    templates: [],
     calculators: [],
   },
 };
@@ -1229,7 +1239,7 @@ for url in \
   "https://lucidrents.com/nyc/tenant-tools" \
   "https://lucidrents.com/nyc/tenant-rights/security-deposits" \
   "https://lucidrents.com/nyc/rents/east-village-10009" \
-  "https://lucidrents.com/CA/Los-Angeles/Ellis-act" \
+  "https://lucidrents.com/CA/Los-Angeles/ellis-act" \
   "https://lucidrents.com/rent-affordability-calculator"; do
   echo "$url $(curl -s -o /dev/null -w '%{http_code}' "$url")"
 done
