@@ -42,9 +42,9 @@ export default function MockLandlordsMagazine() {
     <main style={{ background: PAPER, color: INK, fontFamily: SANS, minHeight: "100vh" }}>
       <div className="bg-amber-300 text-[#0F1D2E] text-center text-xs sm:text-sm font-semibold py-1.5">
         MOCKUP · Landlord directory · MAGAZINE style.{" "}
-        <Link href="/mock/landlords-dossier" className="underline">Dossier version →</Link>{" "}
+        <Link href="/mock/landlords-bento" className="underline">Bento version →</Link>{" "}
         <span className="opacity-50">|</span>{" "}
-        <Link href="/mock/landlords-terminal" className="underline">Terminal version →</Link>
+        <Link href="/mock/landlords-aurora" className="underline">Aurora version →</Link>
       </div>
 
       {/* Hero — massive bold display */}
@@ -54,7 +54,7 @@ export default function MockLandlordsMagazine() {
             <span style={{ background: PINK, color: "#fff", padding: "3px 8px", marginRight: 10 }}>VOL 01</span>
             New York City · Landlord Index
           </div>
-          <h1 style={{ fontFamily: SANS, fontSize: "clamp(72px, 14vw, 200px)", lineHeight: 0.85, letterSpacing: "-0.045em", margin: 0, fontWeight: 900, color: INK }}>
+          <h1 style={{ fontFamily: SANS, fontSize: "clamp(56px, 9vw, 132px)", lineHeight: 0.9, letterSpacing: "-0.04em", margin: 0, fontWeight: 900, color: INK }}>
             EVERY<br/>LANDLORD.
           </h1>
 
@@ -122,7 +122,7 @@ export default function MockLandlordsMagazine() {
             return (
               <Link key={l.name} href="#" className="group block transition-transform hover:-translate-y-1" style={{ background: c.bg, color: c.fg, padding: "28px 28px 24px", textDecoration: "none" }}>
                 <div className="flex items-baseline justify-between mb-4">
-                  <span style={{ fontFamily: SANS, fontSize: 80, fontWeight: 900, lineHeight: 0.85, letterSpacing: "-0.05em", opacity: 0.95 }}>
+                  <span style={{ fontFamily: SANS, fontSize: 56, fontWeight: 900, lineHeight: 0.85, letterSpacing: "-0.05em", opacity: 0.95 }}>
                     {String(l.rank).padStart(2, "0")}
                   </span>
                   <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: "0.16em", textTransform: "uppercase", fontWeight: 700, opacity: 0.7 }}>
