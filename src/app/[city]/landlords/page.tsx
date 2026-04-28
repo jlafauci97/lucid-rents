@@ -310,13 +310,17 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
               <div style={{ width: 6, height: 6, borderRadius: "50%", background: ACCENT.rose }} />
               <MonoLabel>{meta.fullName} · Landlord Index · {total.toLocaleString()} indexed</MonoLabel>
             </div>
-            <h1 style={{ fontFamily: SANS, fontSize: "clamp(48px, 7vw, 84px)", lineHeight: 1.0, letterSpacing: "-0.035em", margin: 0, fontWeight: 700, color: INK }}>
+            {/* Hero title: lower min so longer city names ("Los Angeles") don't
+                wrap to 4 lines on iPhone-class widths. 36px reads as a real
+                hero on mobile while letting "Every landlord in {city}." fit
+                on 2 lines on a 360-414px viewport. */}
+            <h1 style={{ fontFamily: SANS, fontSize: "clamp(36px, 7vw, 84px)", lineHeight: 1.05, letterSpacing: "-0.035em", margin: 0, fontWeight: 700, color: INK }}>
               Every landlord in{" "}
               <span style={{ background: "linear-gradient(135deg, #ec4899, #7c3aed 60%, #3b82f6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
                 {meta.fullName}.
               </span>
             </h1>
-            <p style={{ fontSize: "clamp(17px, 1.5vw, 21px)", lineHeight: 1.5, color: INK_SOFT, maxWidth: 720, margin: "20px 0 0", fontWeight: 400 }}>
+            <p style={{ fontSize: "clamp(15px, 1.5vw, 21px)", lineHeight: 1.45, color: INK_SOFT, maxWidth: 720, margin: "16px 0 0", fontWeight: 400 }}>
               Look up any one of {total.toLocaleString()} indexed owners.
               Click through to the full portfolio, violation history, and the worst building in their book.
             </p>
@@ -472,7 +476,10 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
                           NO. {String(idx + 3).padStart(2, "0")}
                         </span>
                       </div>
-                      <h3 style={{ fontSize: 15, lineHeight: 1.2, letterSpacing: "-0.005em", margin: 0, fontWeight: 700, color: INK, minHeight: "2.4em", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                      {/* Allow 3 lines on small cards so long names like
+                          "NEIGHBORHOOD RENEWAL HOUSING DEVELOPMENT FUND CORP"
+                          don't get truncated mid-word ("…FUN…") at 2-line clamp. */}
+                      <h3 style={{ fontSize: 15, lineHeight: 1.2, letterSpacing: "-0.005em", margin: 0, fontWeight: 700, color: INK, minHeight: "2.4em", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "break-word" }}>
                         {l.name}
                       </h3>
                       <div style={{ marginTop: "auto", paddingTop: 14 }}>
@@ -554,7 +561,10 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
                               <div style={{ fontFamily: MONO, fontSize: 11, color: INK_MUTE, marginTop: 2, fontVariantNumeric: "tabular-nums" }}>
                                 <span style={{ color: INK, fontWeight: 700 }}>{value.toLocaleString()}</span>
                                 <span style={{ textTransform: "lowercase" }}> {strip.unit}</span>
-                                <span style={{ opacity: 0.55 }}> · {l.building_count} bldg</span>
+                                {/* Don't repeat "X bldg" when the metric IS building count */}
+                                {metricKey !== "building_count" && (
+                                  <span style={{ opacity: 0.55 }}> · {l.building_count.toLocaleString()} bldg</span>
+                                )}
                               </div>
                             </Link>
                             <ArrowUpRight size={16} style={{ color: INK_MUTE, flexShrink: 0 }} />
