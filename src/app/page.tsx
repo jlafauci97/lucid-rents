@@ -152,9 +152,9 @@ const cityDirectories: CityDirectory[] = [
     chips: [
       { label: "All buildings",     path: "/buildings",       icon: Building2,  count: "319K" },
       { label: "Worst landlords",   path: "/landlords",       icon: Trophy,     count: "8.2K" },
-      { label: "Heating tracker",   path: "/heating-tracker",    icon: Flame                     },
-      { label: "Crime by district", path: "/crime",              icon: MapPin                    },
-      { label: "Affordable housing", path: "/affordable-housing", icon: Calculator                },
+      { label: "Heating tracker",   path: "/heating-tracker", icon: Flame                     },
+      { label: "Crime by district", path: "/crime",           icon: MapPin                    },
+      { label: "Permits",           path: "/permits",         icon: FileCheck                 },
     ],
   },
   {
@@ -167,7 +167,7 @@ const cityDirectories: CityDirectory[] = [
       { label: "All buildings",         path: "/buildings",              icon: Building2,    count: "94.7K" },
       { label: "Crime by neighborhood", path: "/crime",                  icon: MapPin                       },
       { label: "Worst-rated buildings", path: "/worst-rated-buildings",  icon: TrendingDown                 },
-      { label: "Neighborhoods",         path: "/neighborhoods",          icon: Compass                      },
+      { label: "Permits",               path: "/permits",                icon: FileCheck                    },
       { label: "Worst landlords",       path: "/landlords",              icon: Trophy,       count: "3.4K"  },
     ],
   },
