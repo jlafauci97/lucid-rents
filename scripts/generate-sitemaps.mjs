@@ -417,6 +417,12 @@ async function fullGenerate() {
   writeFileSync(`${OUT_DIR}/0.xml`, buildSitemapXml(staticEntries));
   console.log(`  [0.xml] ${staticEntries.length} URLs`);
 
+  // Hubs sitemap
+  console.log("  [hubs.xml] hub pages...");
+  const hubsEntries = await generateHubsSitemap();
+  writeFileSync(`${OUT_DIR}/hubs.xml`, buildSitemapXml(hubsEntries));
+  console.log(`  [hubs.xml] ${hubsEntries.length} URLs`);
+
   // Landlord sitemaps
   console.log(`  Generating landlord sitemaps...`);
   let landlordUrls = 0;
@@ -544,6 +550,12 @@ async function incrementalGenerate() {
   console.log("  [0.xml] refreshing static pages...");
   const staticEntries = await generateStaticSitemap();
   writeFileSync(`${OUT_DIR}/0.xml`, buildSitemapXml(staticEntries));
+
+  // Hubs sitemap
+  console.log("  [hubs.xml] hub pages...");
+  const hubsEntries = await generateHubsSitemap();
+  writeFileSync(`${OUT_DIR}/hubs.xml`, buildSitemapXml(hubsEntries));
+  console.log(`  [hubs.xml] ${hubsEntries.length} URLs`);
 
   // Append new buildings (created after last run) to new sitemap files
   const PAGE_SIZE = 1000;
