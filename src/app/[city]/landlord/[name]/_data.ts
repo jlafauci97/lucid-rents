@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { computeGradeDistribution, aggregateRegions } from "@/lib/landlord-v2-helpers";
 import { faqBankForCity } from "@/lib/landlord-city-adapters";
 import { CITY_META } from "@/lib/cities";
+import { getNeighborhoodNameByCity, neighborhoodPageSlugByCity } from "@/lib/neighborhoods";
 
 // ──────────────────────────────────────────────────────────────
 // LandlordV2Data — full type shape for landlord page v2
@@ -1041,3 +1042,45 @@ export const loadLandlordFAQ = cache(
     return bank.map((item) => ({ q: substitute(item.q), a: substitute(item.aTemplate) }));
   }
 );
+
+export const loadLandlordNeighborhoods = cache(
+  async (slug: string, city: City): Promise<Array<{ slug: string; name: string; buildingCount: number }>> => {
+    const ownerName = await resolveOwnerName(slug, city);
+    if (!ownerName) return [];
+
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("buildings")
+      .select("zip_code")
+      .eq("owner_name", ownerName)
+      .eq("metro", city)
+      .not("zip_code", "is", null);
+
+    if (!data?.length) return [];
+
+    // Aggregate buildings per neighborhood (mapped from ZIP)
+    const counts = new Map<string, { name: string; count: number; sampleZip: string }>();
+    for (const row of data) {
+      const zip = row.zip_code as string;
+      const name = getNeighborhoodNameByCity(zip, city);
+      if (!name) continue;
+      const existing = counts.get(name);
+      if (existing) {
+        existing.count++;
+      } else {
+        counts.set(name, { name, count: 1, sampleZip: zip });
+      }
+    }
+
+    // neighborhoodPageSlug = slugify(name) + "-" + zip (via neighborhoodPageSlugByCity)
+    return Array.from(counts.values())
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10)
+      .map((n) => ({
+        slug: neighborhoodPageSlugByCity(n.sampleZip, city),
+        name: n.name,
+        buildingCount: n.count,
+      }));
+  }
+);
+
