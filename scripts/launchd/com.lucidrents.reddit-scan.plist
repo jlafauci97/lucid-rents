@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+launchd job for the Reddit scanner. Reddit blocks Vercel + GitHub Actions
+egress IPs, so the scan has to run from a residential IP. This LaunchAgent
+runs every 6 hours under the user's session.
+
+Install:
+  cp scripts/launchd/com.lucidrents.reddit-scan.plist ~/Library/LaunchAgents/
+  launchctl bootstrap "gui/$(id -u)" ~/Library/LaunchAgents/com.lucidrents.reddit-scan.plist
+
+Trigger an immediate run:
+  launchctl kickstart -k "gui/$(id -u)/com.lucidrents.reddit-scan"
+
+Tail logs:
+  tail -f ~/Library/Logs/lucidrents-reddit-scan.log
+
+Uninstall:
+  launchctl bootout "gui/$(id -u)/com.lucidrents.reddit-scan"
+  rm ~/Library/LaunchAgents/com.lucidrents.reddit-scan.plist
+
+GOTCHA — Full Disk Access:
+  If the repo lives under ~/Desktop, ~/Documents, or ~/Downloads, macOS TCC
+  blocks launchd-spawned bash from reading it. Symptom in the log:
+    /bin/bash: .../reddit-scan-local.sh: Operation not permitted
+  Fix: System Settings → Privacy & Security → Full Disk Access → click "+"
+  → press Cmd+Shift+G in the picker → enter /bin/bash → Open → toggle on.
+  Then `launchctl kickstart -k "gui/$(id -u)/com.lucidrents.reddit-scan"`
+  to verify.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.lucidrents.reddit-scan</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/jesselafauci/Desktop/lucid-rents/scripts/reddit-scan-local.sh</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/jesselafauci/Desktop/lucid-rents</string>
+
+    <!-- Run every 6 hours (21600 seconds). -->
+    <key>StartInterval</key>
+    <integer>21600</integer>
+
+    <!-- Don't fire on load — avoids spam during installs/restarts. -->
+    <key>RunAtLoad</key>
+    <false/>
+
+    <key>StandardOutPath</key>
+    <string>/Users/jesselafauci/Library/Logs/lucidrents-reddit-scan.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/jesselafauci/Library/Logs/lucidrents-reddit-scan.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/bin:/bin</string>
+    </dict>
+</dict>
+</plist>
