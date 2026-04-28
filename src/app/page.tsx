@@ -3,9 +3,9 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { headers } from "next/headers";
-import { Trophy, Flame, MessageSquare, Star, ArrowRight, ArrowUpRight, ArrowDownRight, Building2, Shield, MapPin, Calculator, Scale, FileCheck, Compass, Wrench, Newspaper } from "lucide-react";
+import { Trophy, Flame, MessageSquare, Star, ArrowRight, ArrowUpRight, ArrowDownRight, Building2, Shield, MapPin, Calculator, Scale, FileCheck, Compass, Wrench, Newspaper, TrendingDown } from "lucide-react";
 import { CITY_META, type City } from "@/lib/cities";
-import { cityPath, canonicalUrl } from "@/lib/seo";
+import { cityPath, canonicalUrl, landlordUrl } from "@/lib/seo";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { ViolationTickerServer } from "@/components/home/ViolationTickerServer";
 import { BrandShield } from "@/components/brand/BrandShield";
@@ -126,7 +126,7 @@ const cityDirectories: CityDirectory[] = [
       { label: "Worst landlords",    path: "/landlords",          icon: Trophy,     count: "18K"  },
       { label: "Crime by zip",       path: "/crime",              icon: MapPin                    },
       { label: "Rent stabilization", path: "/rent-stabilization", icon: Shield,     count: "712K" },
-      { label: "Ellis Act",          path: "/ellis-act",          icon: Scale                     },
+      { label: "Scaffolding",        path: "/scaffolding",        icon: Wrench                    },
     ],
   },
   {
@@ -139,7 +139,7 @@ const cityDirectories: CityDirectory[] = [
       { label: "All buildings",       path: "/buildings",            icon: Building2,  count: "479K" },
       { label: "Worst landlords",     path: "/landlords",            icon: Trophy,     count: "14K"  },
       { label: "Soft-story risk",     path: "/seismic-fire-safety",  icon: Flame,      count: "13K"  },
-      { label: "Affordable housing",  path: "/affordable-housing",   icon: Shield                    },
+      { label: "Tenant rights",       path: "/tenant-rights",        icon: Scale                     },
       { label: "Crime by division",   path: "/crime",                icon: MapPin                    },
     ],
   },
@@ -152,9 +152,9 @@ const cityDirectories: CityDirectory[] = [
     chips: [
       { label: "All buildings",     path: "/buildings",       icon: Building2,  count: "319K" },
       { label: "Worst landlords",   path: "/landlords",       icon: Trophy,     count: "8.2K" },
-      { label: "Heating tracker",   path: "/heating-tracker", icon: Flame                     },
-      { label: "Crime by district", path: "/crime",           icon: MapPin                    },
-      { label: "Permits",           path: "/permits",         icon: FileCheck                 },
+      { label: "Heating tracker",   path: "/heating-tracker",    icon: Flame                     },
+      { label: "Crime by district", path: "/crime",              icon: MapPin                    },
+      { label: "Affordable housing", path: "/affordable-housing", icon: Calculator                },
     ],
   },
   {
@@ -164,11 +164,11 @@ const cityDirectories: CityDirectory[] = [
     statLabel: "buildings",
     signature: "37 neighborhoods · 40-Yr + FEMA",
     chips: [
-      { label: "All buildings",         path: "/buildings",   icon: Building2,  count: "94.7K" },
-      { label: "Crime by neighborhood", path: "/crime",       icon: MapPin                    },
-      { label: "Encampments",           path: "/encampments", icon: Flame                     },
-      { label: "Permits",               path: "/permits",     icon: FileCheck                 },
-      { label: "Worst landlords",       path: "/landlords",   icon: Trophy,     count: "3.4K" },
+      { label: "All buildings",         path: "/buildings",              icon: Building2,    count: "94.7K" },
+      { label: "Crime by neighborhood", path: "/crime",                  icon: MapPin                       },
+      { label: "Worst-rated buildings", path: "/worst-rated-buildings",  icon: TrendingDown                 },
+      { label: "Neighborhoods",         path: "/neighborhoods",          icon: Compass                      },
+      { label: "Worst landlords",       path: "/landlords",              icon: Trophy,       count: "3.4K"  },
     ],
   },
   {
@@ -178,11 +178,11 @@ const cityDirectories: CityDirectory[] = [
     statLabel: "buildings",
     signature: "41 neighborhoods · HCAD + FEMA",
     chips: [
-      { label: "All buildings",     path: "/buildings", icon: Building2,  count: "411K" },
-      { label: "Worst landlords",   path: "/landlords", icon: Trophy,     count: "6.8K" },
-      { label: "Permits",           path: "/permits",   icon: FileCheck                 },
-      { label: "Crime by district", path: "/crime",     icon: MapPin                    },
-      { label: "Live activity",     path: "/feed",      icon: Newspaper                 },
+      { label: "All buildings",         path: "/buildings",             icon: Building2,    count: "411K" },
+      { label: "Worst landlords",       path: "/landlords",             icon: Trophy,       count: "6.8K" },
+      { label: "Neighborhoods",         path: "/neighborhoods",         icon: Compass                    },
+      { label: "Crime by district",     path: "/crime",                 icon: MapPin                    },
+      { label: "Worst-rated buildings", path: "/worst-rated-buildings", icon: TrendingDown               },
     ],
   },
 ];
@@ -496,6 +496,7 @@ function iconColorClass(Icon: ChipIcon): string {
   if (Icon === Calculator) return "text-cyan-500";
   if (Icon === Wrench)     return "text-slate-500";
   if (Icon === MessageSquare) return "text-sky-500";
+  if (Icon === TrendingDown) return "text-rose-500";
   return "text-[#94a3b8]";
 }
 
@@ -937,7 +938,7 @@ export default async function Home() {
                 {worstLandlords.map((l) => (
                   <li key={l.rank}>
                     <Link
-                      href={cityPath("/landlords", cityKeyFromShort(l.city))}
+                      href={landlordUrl(l.name, cityKeyFromShort(l.city))}
                       className="group flex items-baseline gap-3 px-2 py-2 rounded-md hover:bg-[#f8fafc] transition-colors"
                     >
                       <span className="text-xs font-mono text-[#94a3b8] tabular-nums w-5">
