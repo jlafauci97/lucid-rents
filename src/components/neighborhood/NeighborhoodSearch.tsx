@@ -16,6 +16,7 @@ export interface NeighborhoodIndexEntry {
   crimeTotal: number | null;
   safetyGrade: string | null;
   href: string;
+  rentsHref?: string;
 }
 
 type SortKey = "name" | "grade" | "buildings" | "safety";
@@ -135,6 +136,17 @@ export function NeighborhoodSearch({
                   </span>
                 )}
               </div>
+              {n.rentsHref && (
+                <div className="mt-2">
+                  <Link
+                    href={n.rentsHref}
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-sm text-[#3B82F6] hover:underline"
+                  >
+                    Rent data →
+                  </Link>
+                </div>
+              )}
             </Link>
           ))}
         </div>

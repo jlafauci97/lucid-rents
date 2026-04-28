@@ -4,7 +4,7 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { FAQSection } from "@/components/seo/FAQSection";
 import { NeighborhoodSearch, type NeighborhoodIndexEntry } from "@/components/neighborhood/NeighborhoodSearch";
-import { getAllNeighborhoodsByCity } from "@/lib/neighborhoods";
+import { getAllNeighborhoodsByCity, neighborhoodPageSlugByCity } from "@/lib/neighborhoods";
 import { neighborhoodUrl, canonicalUrl, cityPath, neighborhoodsUrl, breadcrumbJsonLd } from "@/lib/seo";
 import { CITY_META, type City } from "@/lib/cities";
 import { getLetterGrade } from "@/lib/constants";
@@ -142,6 +142,7 @@ export default async function NeighborhoodsPage({
         crimeTotal: crime ? Number(crime.total) : null,
         safetyGrade: computeSafetyGrade(n.zipCode, crimeMap, statsMap, allViolentRates),
         href: neighborhoodUrl(n.zipCode, city),
+        rentsHref: cityPath(`/rents/${neighborhoodPageSlugByCity(n.zipCode, city)}`, city),
       };
     })
     .filter((n) => n.buildingCount > 0);
