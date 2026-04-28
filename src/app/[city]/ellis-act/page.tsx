@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { Ban, Search, ExternalLink, AlertTriangle } from "lucide-react";
 import { CITY_META, type City } from "@/lib/cities";
 import { canonicalUrl, cityPath, buildingUrl } from "@/lib/seo";
@@ -8,6 +9,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function generateMetadata({ params }: { params: Promise<{ city: string }> }): Promise<Metadata> {
   const { city } = await params;
+  if (city !== "los-angeles") return {};
   const meta = CITY_META[city as City];
   const cityName = meta?.fullName ?? "Los Angeles";
   const canonical = canonicalUrl(cityPath("/ellis-act", city as City));
@@ -20,6 +22,8 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
 
 export default async function EllisActPage({ params }: { params: Promise<{ city: string }> }) {
   const { city: cityParam } = await params;
+  // Ellis Act is California state law — only meaningful for Los Angeles.
+  if (cityParam !== "los-angeles") notFound();
   const city = cityParam as City;
   const meta = CITY_META[city];
   const cityName = meta?.fullName ?? "Los Angeles";

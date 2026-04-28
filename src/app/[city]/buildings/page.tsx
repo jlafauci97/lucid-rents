@@ -66,7 +66,13 @@ async function getBoroughStats(city: City): Promise<BoroughStats[]> {
 export default async function BuildingsIndexPage({ params }: { params: Promise<{ city: string }> }) {
   const { city } = await params;
   const meta = CITY_META[city as City] || CITY_META.nyc;
-  const stats = await getBoroughStats(city as City);
+  const allStats = await getBoroughStats(city as City);
+
+  // Restrict to canonical regions for this city — buildings table contains
+  // metro-wide rows (e.g. NYC includes Long Island, NJ, Westchester) so we
+  // filter to the 5 boroughs / official neighborhoods here.
+  const validRegions = new Set<string>(meta.regions);
+  const stats = allStats.filter((s) => validRegions.has(s.borough));
 
   const jsonLd = {
     "@context": "https://schema.org",

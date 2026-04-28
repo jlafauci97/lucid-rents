@@ -1,8 +1,7 @@
 import { Metadata } from "next";
-import Link from "next/link";
-import { ShieldCheck, ArrowUpDown, ExternalLink } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import { SearchBar } from "@/components/search/SearchBar";
-import { canonicalUrl, buildingUrl, cityPath, cityBreadcrumbs } from "@/lib/seo";
+import { canonicalUrl, cityPath, cityBreadcrumbs } from "@/lib/seo";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { FAQSection } from "@/components/seo/FAQSection";
 import { AdSidebar } from "@/components/ui/AdSidebar";
@@ -145,7 +144,7 @@ export async function generateMetadata({
   };
 }
 
-export const revalidate = 86400;
+export const revalidate = 3600;
 
 /* ---------------------------------------------------------------------------
  * Data fetching
@@ -160,20 +159,7 @@ async function getBoroughStats(metro: string) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ p_metro: metro }),
-    next: { revalidate: 86400 },
-  });
-  if (!res.ok) return [];
-  return res.json();
-}
-
-async function getStabilizedBuildings(metro: string, borough?: string) {
-  let url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/buildings?is_rent_stabilized=eq.true&metro=eq.${encodeURIComponent(metro)}&select=full_address,borough,slug,stabilized_units,residential_units,stabilized_year,owner_name,year_built&order=stabilized_units.desc.nullslast&limit=200`;
-  if (borough) {
-    url += `&borough=eq.${encodeURIComponent(borough)}`;
-  }
-  const res = await fetch(url, {
-    headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! },
-    next: { revalidate: 86400 },
+    next: { revalidate: 3600 },
   });
   if (!res.ok) return [];
   return res.json();
@@ -190,46 +176,25 @@ interface BoroughStat {
   total_stabilized_units: number;
 }
 
-interface StabilizedBuilding {
-  full_address: string;
-  borough: string;
-  slug: string;
-  stabilized_units: number | null;
-  residential_units: number | null;
-  stabilized_year: number | null;
-  owner_name: string | null;
-  year_built: number | null;
-}
-
 /* ---------------------------------------------------------------------------
  * Page
  * -------------------------------------------------------------------------*/
 
 export default async function RentStabilizationPage({
   params: routeParams,
-  searchParams,
 }: {
   params: Promise<{ city: string }>;
-  searchParams: Promise<{ borough?: string; sort?: string; order?: string }>;
 }) {
   const { city: cityParam } = await routeParams;
   const city: City = isValidCity(cityParam) ? cityParam : "nyc";
   const cfg = RENT_STAB_CONFIG[city];
   const meta = CITY_META[city];
 
-  const sp = await searchParams;
-  const borough = sp.borough || "";
-  const sortBy = sp.sort || "stabilized_units";
-  const order = sp.order || "desc";
-
   const isLA = city === "los-angeles";
   const isChicago = city === "chicago";
   const metro = isLA ? "los-angeles" : isChicago ? "chicago" : "nyc";
-  const [stats, buildings] = await Promise.all([
-    getBoroughStats(metro),
-    getStabilizedBuildings(metro, borough || undefined),
-  ]);
 
+  const stats = await getBoroughStats(metro);
   const boroughStats: BoroughStat[] = (stats || []).map((s: BoroughStat) => ({
     ...s,
     total_buildings: Number(s.total_buildings),
@@ -237,34 +202,11 @@ export default async function RentStabilizationPage({
     total_stabilized_units: Number(s.total_stabilized_units),
   }));
 
-  let rows: StabilizedBuilding[] = buildings || [];
-
-  // Sort
-  if (sortBy === "full_address") {
-    rows.sort((a, b) =>
-      order === "asc"
-        ? a.full_address.localeCompare(b.full_address)
-        : b.full_address.localeCompare(a.full_address)
-    );
-  } else if (sortBy === "stabilized_units") {
-    rows.sort((a, b) =>
-      order === "asc"
-        ? (a.stabilized_units ?? 0) - (b.stabilized_units ?? 0)
-        : (b.stabilized_units ?? 0) - (a.stabilized_units ?? 0)
-    );
-  }
-
   const regions = meta.regions;
   const regionLabel = meta.regionLabel;
 
   const totalStabilized = boroughStats.reduce((s, b) => s + b.stabilized_buildings, 0);
   const totalUnits = boroughStats.reduce((s, b) => s + b.total_stabilized_units, 0);
-
-  function sortUrl(col: string) {
-    const newOrder = sortBy === col && order === "desc" ? "asc" : "desc";
-    const base = cityPath(`/rent-stabilization?sort=${col}&order=${newOrder}`, city);
-    return borough ? `${base}&borough=${encodeURIComponent(borough)}` : base;
-  }
 
   return (
     <AdSidebar>
@@ -344,176 +286,24 @@ export default async function RentStabilizationPage({
           </div>
         </div>
 
-        {/* Region breakdown */}
+        {/* Region breakdown — informational only, not clickable */}
         {boroughStats.length > 0 && (
-          <div className={`grid grid-cols-1 sm:grid-cols-${Math.min(boroughStats.length, 5)} gap-3 mb-6`}>
+          <div className={`grid grid-cols-1 sm:grid-cols-${Math.min(boroughStats.length, 5)} gap-3 mb-8`}>
             {boroughStats.map((b) => (
-              <Link
+              <div
                 key={b.borough}
-                href={cityPath(`/rent-stabilization?borough=${encodeURIComponent(b.borough)}`, city)}
-                className={`bg-white border rounded-xl p-4 hover:border-[#3B82F6] transition-colors ${
-                  borough === b.borough
-                    ? "border-[#3B82F6] ring-1 ring-[#3B82F6]"
-                    : "border-[#e2e8f0]"
-                }`}
+                className="bg-white border border-[#e2e8f0] rounded-xl p-4"
               >
-                <p className="text-sm font-semibold text-[#0F1D2E]">
-                  {b.borough}
-                </p>
+                <p className="text-sm font-semibold text-[#0F1D2E]">{b.borough}</p>
                 <p className="text-xs text-[#64748b] mt-1">
                   {b.stabilized_buildings.toLocaleString()} buildings
                 </p>
                 <p className="text-xs text-[#10b981]">
                   {b.total_stabilized_units.toLocaleString()} units
                 </p>
-              </Link>
+              </div>
             ))}
           </div>
-        )}
-
-        {/* Region filter chips */}
-        <div className="flex flex-wrap gap-2 mb-6">
-          <Link
-            href={cityPath("/rent-stabilization", city)}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-              !borough
-                ? "bg-[#0F1D2E] text-white"
-                : "bg-[#f1f5f9] text-[#64748b] hover:bg-[#e2e8f0]"
-            }`}
-          >
-            All {regionLabel}s
-          </Link>
-          {(regions as readonly string[]).map((b) => (
-            <Link
-              key={b}
-              href={cityPath(`/rent-stabilization?borough=${encodeURIComponent(b)}${sortBy !== "stabilized_units" ? `&sort=${sortBy}&order=${order}` : ""}`, city)}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                borough === b
-                  ? "bg-[#0F1D2E] text-white"
-                  : "bg-[#f1f5f9] text-[#64748b] hover:bg-[#e2e8f0]"
-              }`}
-            >
-              {b}
-            </Link>
-          ))}
-        </div>
-
-        {/* Results table */}
-        {rows.length === 0 ? (
-          <div className="text-center py-16 bg-white border border-[#e2e8f0] rounded-xl">
-            <ShieldCheck className="w-12 h-12 text-[#cbd5e1] mx-auto mb-3" />
-            <p className="text-[#64748b] max-w-md mx-auto">
-              {borough
-                ? `No rent stabilized buildings found in ${borough}. Try selecting a different ${regionLabel.toLowerCase()} or searching for a specific address.`
-                : city === "los-angeles"
-                  ? "Search for a specific address above to check its RSO status, or browse buildings by area."
-                  : "No rent stabilized buildings found. Try searching for a specific address above."}
-            </p>
-            {city === "los-angeles" && (
-              <div className="mt-4 flex flex-col items-center gap-2">
-                <a
-                  href="https://housing.lacity.gov/rental-property-owners/rso-property-search"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-sm text-[#3B82F6] hover:text-[#2563EB] font-medium transition-colors"
-                >
-                  LAHD RSO Property Search <ExternalLink className="w-3.5 h-3.5" />
-                </a>
-              </div>
-            )}
-          </div>
-        ) : (
-          <>
-            {isLA && (
-              <div className="mb-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
-                <strong>Note:</strong> RSO status is estimated based on LA County Assessor records.
-                Buildings with 2+ units built before October 1978 are generally covered by the RSO.
-                Verify your building&apos;s status through the{" "}
-                <a
-                  href="https://housing.lacity.gov/rental-property-owners/rso-property-search"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-amber-900 underline font-medium"
-                >
-                  LAHD RSO Property Search
-                </a>.
-              </div>
-            )}
-            <div className="bg-white border border-[#e2e8f0] rounded-xl overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide">
-                        <Link
-                          href={sortUrl("full_address")}
-                          className="inline-flex items-center gap-1 hover:text-[#0F1D2E]"
-                        >
-                          Address <ArrowUpDown className="w-3 h-3" />
-                        </Link>
-                      </th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide hidden sm:table-cell">
-                        {regionLabel}
-                      </th>
-                      <th className="text-right px-4 py-3 text-xs font-semibold text-[#10b981] uppercase tracking-wide">
-                        <Link
-                          href={sortUrl("stabilized_units")}
-                          className="inline-flex items-center gap-1 hover:text-[#0F1D2E] ml-auto"
-                        >
-                          {isLA ? "RSO Units" : "Stabilized"} <ArrowUpDown className="w-3 h-3" />
-                        </Link>
-                      </th>
-                      <th className="text-right px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide hidden md:table-cell">
-                        Total Units
-                      </th>
-                      {isLA && (
-                        <th className="text-right px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide hidden md:table-cell">
-                          Year Built
-                        </th>
-                      )}
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-[#64748b] uppercase tracking-wide hidden lg:table-cell">
-                        Owner
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#e2e8f0]">
-                    {rows.map((row, i) => (
-                      <tr
-                        key={`${row.slug}-${i}`}
-                        className="hover:bg-[#f8fafc] transition-colors"
-                      >
-                        <td className="px-4 py-3">
-                          <Link
-                            href={buildingUrl(row, city)}
-                            className="text-sm font-semibold text-[#2563EB] hover:text-[#1d4ed8] hover:underline"
-                          >
-                            {row.full_address}
-                          </Link>
-                        </td>
-                        <td className="px-4 py-3 text-sm text-[#334155] hidden sm:table-cell">
-                          {row.borough}
-                        </td>
-                        <td className="px-4 py-3 text-sm font-semibold text-[#10b981] text-right">
-                          {row.stabilized_units?.toLocaleString() ?? "—"}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-[#334155] text-right hidden md:table-cell">
-                          {row.residential_units?.toLocaleString() ?? "—"}
-                        </td>
-                        {isLA && (
-                          <td className="px-4 py-3 text-sm text-[#334155] text-right hidden md:table-cell">
-                            {row.year_built ?? "—"}
-                          </td>
-                        )}
-                        <td className="px-4 py-3 text-sm text-[#64748b] truncate max-w-[200px] hidden lg:table-cell">
-                          {row.owner_name || "—"}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </>
         )}
 
         {/* Editorial content */}
