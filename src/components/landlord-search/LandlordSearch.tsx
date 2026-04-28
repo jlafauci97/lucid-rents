@@ -130,14 +130,17 @@ export function LandlordSearch({ city, cityName }: Props) {
           onFocus={() => setOpen(true)}
           onKeyDown={onKeyDown}
           placeholder={`Search ${cityName} landlords by name…`}
-          className="w-full pl-14 pr-32 py-4 sm:py-5 text-base sm:text-lg bg-white border border-[#e2e8f0] rounded-xl text-[#0F1D2E] placeholder-[#94a3b8] focus:outline-none focus:border-[#0F1D2E] focus:shadow-[0_0_0_3px_rgba(15,29,46,0.08)] transition-all"
+          className="w-full pl-12 sm:pl-14 pr-14 sm:pr-32 py-4 sm:py-5 text-base sm:text-lg bg-white border border-[#e2e8f0] rounded-xl text-[#0F1D2E] placeholder-[#94a3b8] focus:outline-none focus:border-[#0F1D2E] focus:shadow-[0_0_0_3px_rgba(15,29,46,0.08)] transition-all"
           style={{ fontFamily: 'var(--sans)' }}
         />
+        {/* On mobile, collapse the "Search" label to just the arrow icon to
+            stop covering the input placeholder. The full label returns at sm. */}
         <button
           type="submit"
-          className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-2.5 text-sm font-semibold bg-[#0F1D2E] text-white rounded-lg hover:bg-[#1e293b] transition-colors flex items-center gap-1.5"
+          aria-label="Search"
+          className="absolute right-2 top-1/2 -translate-y-1/2 px-3 sm:px-4 py-2.5 text-sm font-semibold bg-[#0F1D2E] text-white rounded-lg hover:bg-[#1e293b] transition-colors flex items-center gap-1.5"
         >
-          Search
+          <span className="hidden sm:inline">Search</span>
           <ArrowRight className="w-4 h-4" />
         </button>
       </form>
