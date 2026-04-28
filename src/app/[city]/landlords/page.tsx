@@ -302,7 +302,9 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
         {prevHref && <link rel="prev" href={prevHref} />}
         {nextHref && <link rel="next" href={nextHref} />}
 
-        <div className="max-w-[1320px] mx-auto px-6 sm:px-10 py-12 sm:py-16">
+        {/* Tighter horizontal padding on smallest phones — 16px gives bento cards
+            and the hero search bar more breathing room at 360-414px widths. */}
+        <div className="max-w-[1320px] mx-auto px-4 sm:px-6 lg:px-10 py-10 sm:py-12 lg:py-16">
 
           {/* Hero */}
           <header className="mb-10 sm:mb-14">

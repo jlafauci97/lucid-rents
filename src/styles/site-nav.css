@@ -517,6 +517,14 @@
   .nav-links { display: none; }
   .nav-social { display: none; }
 }
+/* At md and below the hamburger MobileMenu takes over, and its drawer
+   already contains Profile / Sign Out / Log in. Hide the inline desktop
+   variants so they don't overlap the hamburger or get clipped on phones
+   (was: "Sign Out" overflowing off the right edge at 360-500px). */
+@media (max-width: 767px) {
+  .nav-auth { display: none; }
+  .nav-login { display: none; }
+}
 @media (max-width: 640px) {
   .nav-inner { gap: 8px; padding: 10px 12px; }
   .nav-search { display: none; }
