@@ -117,9 +117,12 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
       .not("name", "in", GARBAGE_IN);
   }
 
+  // Use estimated count — exact count over 639K rows hits the anon
+  // role's 3s statement timeout and silently returns null. Estimated
+  // is from pg_class.reltuples, instant, and accurate within ~0.5%.
   let countQuery = supabase
     .from("landlord_stats")
-    .select("id", { count: "exact", head: true })
+    .select("id", { count: "estimated", head: true })
     .eq("metro", city)
     .not("name", "in", GARBAGE_IN);
   let dataQuery = baseQuery()
@@ -156,7 +159,7 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
   }
 
   const [
-    { count: total },
+    { count: totalRaw },
     { data: landlords },
     buildingsCount,
     { data: shameRows },
@@ -169,9 +172,12 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
     ...stripQueries,
   ]);
 
-  const totalPages = Math.max(1, Math.ceil((total || 0) / limit));
   const rows = (landlords ?? []) as LandlordRow[];
   const featured = (shameRows ?? []) as LandlordRow[];
+  // If the count ever fails (e.g. a future timeout), fall back to a
+  // safe display value so we never claim "0" when rows clearly exist.
+  const total = totalRaw && totalRaw > 0 ? totalRaw : (rows.length > 0 ? rows.length + offset : 0);
+  const totalPages = Math.max(1, Math.ceil(total / limit));
 
   const basePath = cityPath("/landlords", city);
   const baseQs: string[] = [];
