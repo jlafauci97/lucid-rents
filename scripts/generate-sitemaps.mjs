@@ -61,6 +61,39 @@ const HOUSTON_ZIPS = {"77002":"Downtown","77003":"East End","77004":"Third Ward"
 
 const ZIP_MAPS = { nyc: NYC_ZIPS, "los-angeles": LA_ZIPS, chicago: CHICAGO_ZIPS, miami: MIAMI_ZIPS, houston: HOUSTON_ZIPS };
 
+// ─── Hub sitemap slug arrays ────────────────────────────────────
+// Mirror src/lib/tenant-templates-data.ts → TEMPLATES[].slug
+// Manual sync — these change rarely.
+const TEMPLATE_SLUGS = [
+  "repair-maintenance-request",
+  "rent-reduction-request",
+  "security-deposit-demand",
+  "lease-negotiation",
+  "harassment-complaint",
+  "heat-hot-water-complaint",
+  "pest-complaint",
+  "illegal-eviction-response",
+];
+
+// Mirror src/lib/tenant-rights-data.ts per-city `topics[].slug`
+// Only nyc, los-angeles, and chicago have topic configs. Miami and Houston
+// are intentionally omitted — the [city]/tenant-rights/[topic] route calls
+// notFound() for cities without a config, so any URL we'd emit would 404.
+// Manual sync — these change rarely.
+const TENANT_RIGHTS_TOPICS = {
+  nyc: ["rent-stabilization-rights", "repairs-and-maintenance", "eviction-protections", "security-deposits", "lease-renewals", "harassment", "heat-and-hot-water", "bed-bugs-and-pests", "illegal-apartments", "retaliation"],
+  "los-angeles": ["rso-rent-stabilization", "just-cause-eviction", "repairs-and-habitability", "relocation-assistance", "ellis-act", "security-deposits", "earthquake-retrofit", "harassment-and-retaliation"],
+  chicago: ["rlto-protections", "repairs-and-maintenance", "just-cause-eviction", "security-deposits", "lease-renewals", "harassment", "heat-requirements", "lead-paint", "bed-bugs-and-pests", "retaliation"],
+  // miami and houston intentionally omitted — no topic config exists
+};
+
+// Mirror src/lib/building-list/chips.ts → CHIPS keys
+// Manual sync — these change rarely.
+const CHIP_SLUGS = ["top-rated", "rent-stabilized", "most-reviewed", "no-violations", "large-buildings"];
+
+// Global calculator paths
+const CALCULATOR_PATHS = ["/rent-affordability-calculator", "/rent-timing-calculator", "/fair-rent-engine"];
+
 // ─── URL helpers (inlined from src/lib/seo.ts) ──────────────────
 
 function slugify(s) {
