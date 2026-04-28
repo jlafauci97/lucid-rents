@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { canonicalUrl } from "@/lib/seo";
 import { AffordabilityDisclaimer } from "@/components/rent-calculator/AffordabilityDisclaimer";
 import { AffordabilityWizardLoader } from "@/components/rent-calculator/AffordabilityWizardLoader";
+import { RelatedGuides } from "@/components/calculators/RelatedGuides";
 
 export const metadata: Metadata = {
   title: "Rent Affordability Calculator — How Much Can You Pay?",
@@ -88,6 +89,9 @@ export default function RentCalculatorPage() {
 
         {/* Disclaimer */}
         <AffordabilityDisclaimer />
+
+        {/* Related guides */}
+        <RelatedGuides calculatorSlug="rent-affordability-calculator" />
       </div>
     </div>
   );

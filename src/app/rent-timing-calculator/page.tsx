@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import { Suspense } from "react";
 import { canonicalUrl } from "@/lib/seo";
 import { SeasonalCalculator } from "@/components/rent-calculator/SeasonalCalculator";
+import { RelatedGuides } from "@/components/calculators/RelatedGuides";
 
 export const metadata: Metadata = {
   title: "Best Time to Rent — Seasonal Rent Calculator",
@@ -111,6 +112,9 @@ export default function RentTimingCalculatorPage() {
             </div>
           </div>
         </div>
+
+        {/* Related guides */}
+        <RelatedGuides calculatorSlug="rent-timing-calculator" />
       </div>
     </div>
   );
