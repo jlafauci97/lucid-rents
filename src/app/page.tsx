@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { headers } from "next/headers";
-import { Trophy, Flame, MessageSquare, Star, ArrowRight, ArrowUpRight, ArrowDownRight, Building2, Shield, MapPin, Calculator, Scale, FileCheck, Compass, Wrench, Newspaper, TrendingDown } from "lucide-react";
+import { Trophy, Flame, MessageSquare, Star, ArrowRight, ArrowUpRight, ArrowDownRight, Building2, Shield, MapPin, Calculator, Scale, FileCheck, Compass, Wrench, Newspaper, TrendingDown, Tent } from "lucide-react";
 import { CITY_META, type City } from "@/lib/cities";
 import { cityPath, canonicalUrl, landlordUrl } from "@/lib/seo";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -139,7 +139,7 @@ const cityDirectories: CityDirectory[] = [
       { label: "All buildings",       path: "/buildings",            icon: Building2,  count: "479K" },
       { label: "Worst landlords",     path: "/landlords",            icon: Trophy,     count: "14K"  },
       { label: "Soft-story risk",     path: "/seismic-fire-safety",  icon: Flame,      count: "13K"  },
-      { label: "Tenant rights",       path: "/tenant-rights",        icon: Scale                     },
+      { label: "Homeless encampments", path: "/encampments",         icon: Tent,       count: "26K"  },
       { label: "Crime by division",   path: "/crime",                icon: MapPin                    },
     ],
   },
@@ -152,9 +152,9 @@ const cityDirectories: CityDirectory[] = [
     chips: [
       { label: "All buildings",     path: "/buildings",       icon: Building2,  count: "319K" },
       { label: "Worst landlords",   path: "/landlords",       icon: Trophy,     count: "8.2K" },
-      { label: "Heating tracker",   path: "/heating-tracker", icon: Flame                     },
-      { label: "Crime by district", path: "/crime",           icon: MapPin                    },
-      { label: "Permits",           path: "/permits",         icon: FileCheck                 },
+      { label: "Heating tracker",     path: "/heating-tracker",    icon: Flame                     },
+      { label: "Crime by district",   path: "/crime",              icon: MapPin                    },
+      { label: "Affordable housing",  path: "/affordable-housing", icon: Calculator                },
     ],
   },
   {
@@ -167,7 +167,7 @@ const cityDirectories: CityDirectory[] = [
       { label: "All buildings",         path: "/buildings",              icon: Building2,    count: "94.7K" },
       { label: "Crime by neighborhood", path: "/crime",                  icon: MapPin                       },
       { label: "Worst-rated buildings", path: "/worst-rated-buildings",  icon: TrendingDown                 },
-      { label: "Permits",               path: "/permits",                icon: FileCheck                    },
+      { label: "Tenant rights",         path: "/tenant-rights",          icon: Scale                        },
       { label: "Worst landlords",       path: "/landlords",              icon: Trophy,       count: "3.4K"  },
     ],
   },
@@ -497,6 +497,7 @@ function iconColorClass(Icon: ChipIcon): string {
   if (Icon === Wrench)     return "text-slate-500";
   if (Icon === MessageSquare) return "text-sky-500";
   if (Icon === TrendingDown) return "text-rose-500";
+  if (Icon === Tent)         return "text-orange-500";
   return "text-[#94a3b8]";
 }
 
