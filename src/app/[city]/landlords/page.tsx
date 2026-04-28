@@ -189,10 +189,16 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
     total_penalty: number;
     total_balance: number;
   };
-  const oathQuery: Promise<{ data: OathRow[] | null }> =
-    city === "nyc"
-      ? supabase.rpc("get_top_landlords_by_oath", { p_limit: 3 })
-      : Promise.resolve({ data: [] });
+  async function getOathTop(): Promise<OathRow[]> {
+    if (city !== "nyc") return [];
+    try {
+      const res = await supabase.rpc("get_top_landlords_by_oath", { p_limit: 3 });
+      const rows = (res?.data ?? []) as unknown as OathRow[];
+      return Array.isArray(rows) ? rows : [];
+    } catch {
+      return [];
+    }
+  }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const apiKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -219,17 +225,16 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
     { data: landlords },
     buildingsCount,
     { data: shameRows },
-    { data: oathRows },
+    oathTop,
     ...stripResults
   ] = await Promise.all([
     countQuery,
     dataQuery,
     getBuildingsCount(),
     shameQuery,
-    oathQuery,
+    getOathTop(),
     ...stripQueries,
   ]);
-  const oathTop = (oathRows ?? []) as OathRow[];
 
   const rows = (landlords ?? []) as LandlordRow[];
   const featured = (shameRows ?? []) as LandlordRow[];
