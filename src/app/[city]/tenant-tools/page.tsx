@@ -74,18 +74,6 @@ const TOOL_CARDS = [
     cta: "Check a Building",
   },
   {
-    href: "/fair-rent-engine",
-    icon: DollarSign,
-    label: "Fair Rent Engine",
-    description:
-      "Paste a StreetEasy listing and get fair market pricing, building quality scores, rent stabilization status, and neighborhood safety — powered by NYC public data.",
-    badge: "NYC Only",
-    badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    cta: "Analyze a Listing",
-    global: true,
-    nycOnly: true,
-  },
-  {
     href: "/rent-affordability-calculator",
     icon: Calculator,
     label: "Rent Affordability Calculator",

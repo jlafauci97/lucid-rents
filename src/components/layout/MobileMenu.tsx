@@ -64,7 +64,6 @@ const secondaryLinks: NavLink[] = [
   { path: "/tenant-tools/templates", icon: FileText, label: "Letter Templates" },
   { path: "/tenant-tools/checklist", icon: ClipboardList, label: "Pre-Move-In Checklist" },
   { path: "/tenant-rights", icon: Scale, label: "Tenant Rights" },
-  { path: "/permits", icon: ClipboardList, label: "Permits" },
   { path: "/energy", icon: Zap, label: "Energy Scores" },
   { path: "/scaffolding", icon: Construction, label: "Scaffolding", cities: ["nyc"] },
 ];

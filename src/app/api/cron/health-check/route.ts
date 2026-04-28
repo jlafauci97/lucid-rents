@@ -25,7 +25,6 @@ const ROUTES_TO_CHECK = [
   "/nyc/news",
   "/nyc/news/tenant-rights",
   "/nyc/energy",
-  "/nyc/permits",
   "/nyc/scaffolding",
   "/nyc/rent-stabilization",
   "/nyc/rent-data",

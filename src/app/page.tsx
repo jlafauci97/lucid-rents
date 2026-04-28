@@ -517,7 +517,7 @@ function cityKeyFromShort(short: string): City {
 /* ─── Coverage matrix ──────────────────────────────────────────────
    Rows = data sources. Columns = cities. Each cell is a clickable
    deep-link to the page that uses that source for that city. */
-type CoverageCell = { path: string; count?: string };
+type CoverageCell = { path?: string; count?: string; label?: string };
 type CoverageRow = {
   source: string;
   note?: string;
@@ -534,17 +534,6 @@ const coverageRows: CoverageRow[] = [
       chicago:       { path: "/landlords", count: "198K" },
       miami:         { path: "/landlords", count: "76K"  },
       houston:       { path: "/landlords", count: "132K" },
-    },
-  },
-  {
-    source: "Building permits",
-    note: "DOB / LADBS / new + alteration",
-    cells: {
-      nyc:           { path: "/permits", count: "89K" },
-      "los-angeles": { path: "/permits", count: "67K" },
-      chicago:       { path: "/permits", count: "41K" },
-      miami:         { path: "/permits", count: "12K" },
-      houston:       { path: "/permits", count: "23K" },
     },
   },
   {
@@ -603,7 +592,6 @@ const coverageRows: CoverageRow[] = [
     source: "Evictions / buyouts",
     note: "Court filings + buyout registry",
     cells: {
-      nyc:           { path: "/ellis-act" },
       "los-angeles": { path: "/ellis-act" },
     },
   },
@@ -625,15 +613,15 @@ const coverageRows: CoverageRow[] = [
     source: "40-year recertification",
     note: "Structural + electrical reports",
     cells: {
-      miami:         { path: "/permits" },
+      miami:         { label: "Tracked" },
     },
   },
   {
     source: "FEMA flood zones",
     note: "Hazard map overlays",
     cells: {
-      miami:         { path: "/buildings" },
-      houston:       { path: "/buildings" },
+      miami:         { label: "Tracked" },
+      houston:       { label: "Tracked" },
     },
   },
 ];
@@ -642,7 +630,6 @@ const coverageRows: CoverageRow[] = [
    Calculators and global utilities. NYC is the default city for
    per-city tools since it has the deepest data coverage. */
 const tools = [
-  { label: "Fair Rent Engine",         href: "/fair-rent-engine",                    icon: Calculator,  blurb: "What you should be paying" },
   { label: "Rent Affordability",       href: "/rent-affordability-calculator",       icon: Calculator,  blurb: "What rent fits your income" },
   { label: "Rent Timing",              href: "/rent-timing-calculator",              icon: Calculator,  blurb: "Best month to renew" },
   { label: "Compare Buildings",        href: cityPath("/compare", "nyc"),            icon: Compass,     blurb: "Side-by-side records" },
@@ -1162,6 +1149,16 @@ export default async function Home() {
                       if (!cell) {
                         return (
                           <td key={key} className="px-4 py-3 text-[#cbd5e1] text-xs">—</td>
+                        );
+                      }
+                      if (!cell.path) {
+                        return (
+                          <td key={key} className="px-4 py-3">
+                            <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#64748b]">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#cbd5e1]" />
+                              {cell.label ?? cell.count ?? "Tracked"}
+                            </span>
+                          </td>
                         );
                       }
                       return (
