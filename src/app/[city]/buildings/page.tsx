@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Building2, AlertTriangle, MessageSquare, Users, ShieldAlert, MapPin, TrendingDown } from "lucide-react";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
+import { SearchBar } from "@/components/search/SearchBar";
 import { BOROUGH_SLUGS, regionSlug, canonicalUrl, cityPath } from "@/lib/seo";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
 import type { Metadata } from "next";
@@ -95,10 +96,21 @@ export default async function BuildingsIndexPage({ params }: { params: Promise<{
       <h1 className="text-3xl font-bold text-[#0F1D2E] mt-6 mb-2">
         {meta.fullName} Buildings Directory
       </h1>
-      <p className="text-[#64748b] mb-8">
-        Browse apartment buildings across {meta.fullName}. View violations, complaints, and tenant reviews.
+      <p className="text-[#64748b] mb-6">
+        Search any building in {meta.fullName} by address, neighborhood, or zip — or browse by {meta.fullName === "New York City" ? "borough" : "area"} below.
       </p>
 
+      {/* Address search — instant autocomplete + jump to building, neighborhood, or full results */}
+      <div className="mb-10">
+        <SearchBar
+          size="hero"
+          placeholder={`Search ${meta.fullName} buildings by address, neighborhood, or zip…`}
+        />
+      </div>
+
+      <h2 className="text-sm font-semibold uppercase tracking-wider text-[#64748b] mb-4">
+        Browse by {meta.fullName === "New York City" ? "borough" : "area"}
+      </h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {stats.map((s) => (
           <Link key={s.borough} href={cityPath(`/buildings/${regionSlug(s.borough)}`, city as City)}>

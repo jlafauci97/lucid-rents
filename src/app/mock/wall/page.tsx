@@ -69,7 +69,7 @@ const tools = [
   { href: "/rankings", title: "Rankings", desc: "Buildings ranked by violations, reviews, and risk.", Icon: BarChart3 },
   { href: "/landlords", title: "Landlords", desc: "Look up owner portfolios across all 5 cities.", Icon: Users },
   { href: "/neighborhoods", title: "Neighborhoods", desc: "Compare neighborhoods on noise, crime, and rent.", Icon: MapPin },
-  { href: "/tenant-tools", title: "Tenant Tools", desc: "Templates, checklists, and the fair-rent engine.", Icon: Wrench },
+  { href: "/tenant-tools", title: "Tenant Tools", desc: "Templates, checklists, and pre-move-in due diligence.", Icon: Wrench },
 ];
 
 export default function MockWall() {

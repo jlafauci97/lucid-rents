@@ -5,7 +5,6 @@ import {
   Siren,
   TrainFront,
   BarChart3,
-  ClipboardList,
 } from "lucide-react";
 import type { City } from "@/lib/cities";
 import { CITY_META } from "@/lib/cities";
@@ -16,7 +15,6 @@ const TILES = [
   { icon: Siren,         label: "Crime Data", desc: "Zip-level incidents, 12 months.",      path: "/crime",       count: "UPDATED DAILY" },
   { icon: TrainFront,    label: "Transit",    desc: "Walk to every station.",                path: "/transit",     count: "" },
   { icon: BarChart3,     label: "Rent Data",  desc: "12+ years of registered rents.",        path: "/rent-data",   count: "" },
-  { icon: ClipboardList, label: "Permits",    desc: "Construction, alterations, filings.",   path: "/permits",     count: "" },
 ];
 
 export function ExploreDataGrid({ city }: { city: City }) {
