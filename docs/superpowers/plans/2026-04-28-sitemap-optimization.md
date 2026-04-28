@@ -398,18 +398,18 @@ export function CityToolsGrid({ city }: Props) {
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-12">
-      <h2 className="text-2xl font-semibold text-[#0f172a] mb-6">Tools & Resources</h2>
+      <h2 className="text-2xl font-semibold text-[#0F1D2E] mb-6">Tools & Resources</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {tools.map(({ href, title, description, Icon }) => (
           <Link
             key={href}
             href={href}
-            className="group rounded-lg border border-[#e2e8f0] bg-white p-5 transition hover:border-[#0d9488] hover:shadow-sm"
+            className="group rounded-lg border border-[#e2e8f0] bg-white p-5 transition hover:border-[#3B82F6] hover:shadow-sm"
           >
             <div className="flex items-start gap-3">
-              <Icon className="w-5 h-5 text-[#0d9488] mt-0.5" />
+              <Icon className="w-5 h-5 text-[#3B82F6] mt-0.5" />
               <div>
-                <h3 className="font-medium text-[#0f172a] group-hover:text-[#0d9488]">{title}</h3>
+                <h3 className="font-medium text-[#0F1D2E] group-hover:text-[#3B82F6]">{title}</h3>
                 <p className="text-sm text-[#64748b] mt-1">{description}</p>
               </div>
             </div>
@@ -539,7 +539,7 @@ For each rendered neighborhood, add a secondary link:
 ```tsx
 <Link
   href={cityPath(`/rents/${slug}`, city)}
-  className="text-sm text-[#0d9488] hover:underline"
+  className="text-sm text-[#3B82F6] hover:underline"
 >
   Rent data →
 </Link>
@@ -645,8 +645,8 @@ export function LandlordNeighborhoods({ city, neighborhoods }: Props) {
   return (
     <section className="rounded-lg border border-[#e2e8f0] bg-white p-5 my-6">
       <div className="flex items-center gap-2 mb-3">
-        <MapPin className="w-4 h-4 text-[#0d9488]" />
-        <h3 className="font-medium text-[#0f172a]">Neighborhoods we operate in</h3>
+        <MapPin className="w-4 h-4 text-[#3B82F6]" />
+        <h3 className="font-medium text-[#0F1D2E]">Neighborhoods we operate in</h3>
       </div>
       <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {neighborhoods.map((n) => (
@@ -655,7 +655,7 @@ export function LandlordNeighborhoods({ city, neighborhoods }: Props) {
               href={cityPath(`/neighborhood/${n.slug}`, city)}
               className="flex items-center justify-between rounded px-2 py-1.5 hover:bg-[#f1f5f9]"
             >
-              <span className="text-sm text-[#0f172a]">{n.name}</span>
+              <span className="text-sm text-[#0F1D2E]">{n.name}</span>
               <span className="text-xs text-[#64748b]">{n.buildingCount} {n.buildingCount === 1 ? "building" : "buildings"}</span>
             </Link>
           </li>
@@ -770,8 +770,8 @@ export function NeighborhoodTopLandlords({ city, landlords, neighborhoodName }: 
   return (
     <section className="rounded-lg border border-[#e2e8f0] bg-white p-5 my-6">
       <div className="flex items-center gap-2 mb-3">
-        <Briefcase className="w-4 h-4 text-[#0d9488]" />
-        <h3 className="font-medium text-[#0f172a]">Top landlords in {neighborhoodName}</h3>
+        <Briefcase className="w-4 h-4 text-[#3B82F6]" />
+        <h3 className="font-medium text-[#0F1D2E]">Top landlords in {neighborhoodName}</h3>
       </div>
       <ul className="space-y-1.5">
         {landlords.map((l) => (
@@ -780,7 +780,7 @@ export function NeighborhoodTopLandlords({ city, landlords, neighborhoodName }: 
               href={cityPath(`/landlord/${l.slug}`, city)}
               className="flex items-center justify-between rounded px-2 py-1.5 hover:bg-[#f1f5f9]"
             >
-              <span className="text-sm text-[#0f172a] truncate">{l.name}</span>
+              <span className="text-sm text-[#0F1D2E] truncate">{l.name}</span>
               <span className="text-xs text-[#64748b] ml-3 shrink-0">{l.buildingCount} {l.buildingCount === 1 ? "building" : "buildings"}</span>
             </Link>
           </li>
@@ -897,26 +897,26 @@ export function RelatedTools({ city, topicSlug }: Props) {
 
   return (
     <section className="rounded-lg border border-[#e2e8f0] bg-white p-5 my-6">
-      <h3 className="font-medium text-[#0f172a] mb-3">Related tools</h3>
+      <h3 className="font-medium text-[#0F1D2E] mb-3">Related tools</h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {map.templates.map((slug) => (
           <Link
             key={slug}
             href={cityPath(`/tenant-tools/templates/${slug}`, city)}
-            className="flex items-start gap-2 rounded border border-[#e2e8f0] px-3 py-2 hover:border-[#0d9488]"
+            className="flex items-start gap-2 rounded border border-[#e2e8f0] px-3 py-2 hover:border-[#3B82F6]"
           >
-            <Wrench className="w-4 h-4 text-[#0d9488] mt-0.5 shrink-0" />
-            <span className="text-sm text-[#0f172a]">{templateLabels.get(slug) ?? slug}</span>
+            <Wrench className="w-4 h-4 text-[#3B82F6] mt-0.5 shrink-0" />
+            <span className="text-sm text-[#0F1D2E]">{templateLabels.get(slug) ?? slug}</span>
           </Link>
         ))}
         {map.calculators.map((slug) => (
           <Link
             key={slug}
             href={`/${slug}`}
-            className="flex items-start gap-2 rounded border border-[#e2e8f0] px-3 py-2 hover:border-[#0d9488]"
+            className="flex items-start gap-2 rounded border border-[#e2e8f0] px-3 py-2 hover:border-[#3B82F6]"
           >
-            <Calculator className="w-4 h-4 text-[#0d9488] mt-0.5 shrink-0" />
-            <span className="text-sm text-[#0f172a]">{CALCULATOR_LABELS[slug] ?? slug}</span>
+            <Calculator className="w-4 h-4 text-[#3B82F6] mt-0.5 shrink-0" />
+            <span className="text-sm text-[#0F1D2E]">{CALCULATOR_LABELS[slug] ?? slug}</span>
           </Link>
         ))}
       </div>
@@ -1004,15 +1004,15 @@ export function RelatedGuides({ calculatorSlug }: Props) {
 
   return (
     <section className="mx-auto max-w-3xl px-4 py-8 border-t border-[#e2e8f0] mt-12">
-      <h3 className="font-medium text-[#0f172a] mb-3">Related guides</h3>
+      <h3 className="font-medium text-[#0F1D2E] mb-3">Related guides</h3>
       <ul className="space-y-2">
         {topics.map((t) => (
           <li key={`${t.city}/${t.slug}`}>
             <Link
               href={cityPath(`/tenant-rights/${t.slug}`, t.city as City)}
-              className="flex items-center gap-2 text-sm text-[#0f172a] hover:text-[#0d9488]"
+              className="flex items-center gap-2 text-sm text-[#0F1D2E] hover:text-[#3B82F6]"
             >
-              <ScrollText className="w-4 h-4 text-[#0d9488]" />
+              <ScrollText className="w-4 h-4 text-[#3B82F6]" />
               <span>{t.label}</span>
             </Link>
           </li>
@@ -1078,7 +1078,7 @@ export function PeerChips({ city, currentChip }: Props) {
           <Link
             key={c.id}
             href={cityPath(`/building-list/${c.slug}`, city)}
-            className="inline-flex items-center rounded-full border border-[#e2e8f0] px-3 py-1.5 text-sm text-[#0f172a] hover:border-[#0d9488] hover:text-[#0d9488]"
+            className="inline-flex items-center rounded-full border border-[#e2e8f0] px-3 py-1.5 text-sm text-[#0F1D2E] hover:border-[#3B82F6] hover:text-[#3B82F6]"
           >
             {c.label ?? c.id}
           </Link>
@@ -1159,7 +1159,7 @@ In the JSX, replace the existing `← Back to {displayName}` link with:
 <Breadcrumbs items={breadcrumbs} />
 <Link
   href={cityPath(`/landlord/${slug}`, city)}
-  className="inline-flex items-center gap-1 text-sm text-[#64748b] hover:text-[#0f172a] mt-2"
+  className="inline-flex items-center gap-1 text-sm text-[#64748b] hover:text-[#0F1D2E] mt-2"
 >
   <ArrowLeft className="w-4 h-4" />
   Back to {displayName}
