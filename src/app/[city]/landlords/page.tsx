@@ -205,6 +205,25 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
     }
   }
 
+  // 311 ranking — sourced from landlord_311_summary, refreshed nightly so it
+  // reflects current 311 imports rather than the stale landlord_stats column.
+  // Falls back to landlord_stats if the matview hasn't been built for this metro.
+  type TopBy311Row = {
+    name: string;
+    building_count: number;
+    complaint_count: number;
+    slug: string | null;
+  };
+  async function getTopBy311(): Promise<TopBy311Row[]> {
+    try {
+      const res = await supabase.rpc("get_top_landlords_by_311", { p_limit: 3, p_metro: city });
+      const rows = (res?.data ?? []) as unknown as TopBy311Row[];
+      return Array.isArray(rows) ? rows : [];
+    } catch {
+      return [];
+    }
+  }
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const apiKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
   async function getBuildingsCount(): Promise<number | null> {
@@ -231,6 +250,7 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
     buildingsCount,
     { data: shameRows },
     oathTop,
+    top311,
     ...stripResults
   ] = await Promise.all([
     countQuery,
@@ -238,6 +258,7 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
     getBuildingsCount(),
     shameQuery,
     getOathTop(),
+    getTopBy311(),
     ...stripQueries,
   ]);
 
@@ -477,12 +498,26 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {RANKING_STRIPS.map((strip, idx) => {
-                const stripData = (stripResults[idx]?.data ?? []) as LandlordRow[];
-                if (stripData.length === 0) return null;
                 const palette = [G.rose, G.iris, G.sky, G.mint, G.amber, G.peach][idx];
                 const accent = [ACCENT.rose, ACCENT.iris, ACCENT.sky, ACCENT.mint, ACCENT.amber, ACCENT.peach][idx];
                 const Icon = [Trophy, Flame, Scale, FileWarning, Building2, Gavel][idx];
                 const metricKey = strip.col;
+                // The 311-complaints strip uses the freshly-aggregated
+                // landlord_311_summary RPC instead of the stale
+                // landlord_stats.total_complaints column. Falls back to
+                // landlord_stats if the matview hasn't been populated for
+                // this metro yet.
+                const useLive311 = strip.id === "by-complaints" && top311.length > 0;
+                const stripData = useLive311
+                  ? top311.map((r) => ({
+                      name: r.name,
+                      building_count: r.building_count,
+                      total_violations: 0, total_complaints: r.complaint_count,
+                      total_litigations: 0, total_dob_violations: 0,
+                      avg_score: null, slug: r.slug, worst_building_address: null, worst_building_violations: null,
+                    } satisfies LandlordRow))
+                  : ((stripResults[idx]?.data ?? []) as LandlordRow[]);
+                if (stripData.length === 0) return null;
                 return (
                   <div key={strip.id} id={strip.id} className="p-5 sm:p-6" style={{ background: "#fff", borderRadius: 20, border: `1px solid ${BORDER}`, boxShadow: SHADOW }}>
                     <div className="flex items-center justify-between mb-4">
