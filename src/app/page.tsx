@@ -2,7 +2,6 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { headers } from "next/headers";
 import { Trophy, Flame, MessageSquare, Star, ArrowRight, ArrowUpRight, ArrowDownRight, Building2, Shield, MapPin, Calculator, Scale, FileCheck, Compass, Wrench, Newspaper, TrendingDown, Tent } from "lucide-react";
 import { CITY_META, type City } from "@/lib/cities";
 import { cityPath, canonicalUrl, landlordUrl } from "@/lib/seo";
@@ -219,20 +218,18 @@ const cityStripe: Record<City, string> = {
    static defaults below when a stream is missing. */
 const ALL_CITIES: City[] = ["nyc", "los-angeles", "chicago", "miami", "houston"];
 
-type SnapshotCounts = {
-  buildings_count: number;
-  hpd_violations_count: number;
-  complaints_311_count: number;
-  hpd_litigations_count: number;
-  dob_violations_count: number;
-};
 type RentPoint = { date: string; avg_rent: number };
 type LandlordRow = { name: string; metro: string; building_count: number; total_violations: number };
-type ActivityItem = { type: string; description: string; date: string; buildingAddress: string; borough?: string; metro?: string; buildingSlug?: string; buildingId?: string };
+type FlaggedRow = {
+  id: string | number;
+  nov_description: string | null;
+  inspection_date: string;
+  metro: string;
+  buildings: { full_address: string | null; borough: string | null } | null;
+};
 type ReviewRow = { id: string; title: string | null; body: string | null; overall_rating: number | null; created_at: string; metro: string; buildings: { full_address: string | null; borough: string | null } | null };
 
 type LiveHomeData = {
-  cityBuildings: Partial<Record<City, number>>;
   cityRent: Partial<Record<City, { median: number; deltaPct: number }>>;
   worstLandlords: Array<{ rank: number; name: string; city: string; buildings: number; violations: number }> | null;
   flagged: Array<{ addr: string; city: string; note: string; ts: string }> | null;
@@ -265,7 +262,7 @@ async function fetchHomeData(): Promise<LiveHomeData | null> {
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   // Service-role key is required for queries against large tables — the
   // anon role has a 3s statement timeout and silently fails on the
-  // multi-million-row tables data_snapshot_counts touches.
+  // multi-million-row tables we read here.
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const apiKey = serviceKey ?? anonKey;
   if (!supabaseUrl || !apiKey) return null;
@@ -278,7 +275,7 @@ async function fetchHomeData(): Promise<LiveHomeData | null> {
         method: "POST",
         headers: { ...baseHeaders, "Content-Type": "application/json" },
         body: JSON.stringify(params),
-        next: { revalidate: 300 },
+        next: { revalidate: 3600 },
       });
       if (!res.ok) return null;
       return (await res.json()) as T;
@@ -289,84 +286,38 @@ async function fetchHomeData(): Promise<LiveHomeData | null> {
     try {
       const res = await fetch(`${supabaseUrl}/rest/v1/${path}`, {
         headers: baseHeaders,
-        next: { revalidate: 300 },
+        next: { revalidate: 3600 },
       });
       if (!res.ok) return null;
       return (await res.json()) as T;
     } catch { return null; }
   }
 
-  /* Count buildings by metro using PostgREST's exact-count header
-     (cheap query — same pattern LiveStats uses for per-city counts;
-     the data_snapshot_counts RPC times out under the anon role). */
-  async function countBuildings(city: City): Promise<number | null> {
-    try {
-      const res = await fetch(
-        `${supabaseUrl}/rest/v1/buildings?select=id&metro=eq.${encodeURIComponent(city)}`,
-        {
-          headers: { ...baseHeaders, Prefer: "count=exact", Range: "0-0" },
-          next: { revalidate: 3600 },
-        }
-      );
-      if (!res.ok) return null;
-      const range = res.headers.get("content-range") || "";
-      const match = range.match(/\/(\d+)/);
-      return match ? parseInt(match[1], 10) : null;
-    } catch { return null; }
+  // Recent enforcement events per metro — one tiny indexed query per
+  // city. Replaces a 60-query fanout through /api/activity that was the
+  // homepage's worst bottleneck (each /api/activity call ran ~12 parallel
+  // queries across multi-million-row tables, just to populate 6 rows here).
+  const flaggedFloor = new Date();
+  flaggedFloor.setDate(flaggedFloor.getDate() - 90);
+  const flaggedFloorDate = flaggedFloor.toISOString().slice(0, 10);
+  async function flaggedForMetro(metro: City): Promise<FlaggedRow[]> {
+    const path =
+      `hpd_violations?select=id,nov_description,inspection_date,metro,buildings(full_address,borough)` +
+      `&metro=eq.${metro}&building_id=not.is.null&inspection_date=gte.${flaggedFloorDate}` +
+      `&order=inspection_date.desc&limit=3`;
+    return (await pgSelect<FlaggedRow[]>(path)) ?? [];
   }
 
-  async function getActivityForCity(host: string, protocol: string, city: City): Promise<ActivityItem[]> {
-    try {
-      const res = await fetch(`${protocol}://${host}/api/activity?limit=12&city=${city}`, {
-        next: { revalidate: 60 },
-      });
-      if (!res.ok) return [];
-      const data = (await res.json()) as { items?: ActivityItem[] };
-      // Backfill metro on each item so the round-robin balancer can group them
-      return (data.items ?? []).map((it) => ({ ...it, metro: it.metro ?? city }));
-    } catch { return []; }
-  }
-
-  async function getActivity(): Promise<{ items: ActivityItem[] } | null> {
-    try {
-      const hdrs = await headers();
-      const host = hdrs.get("host");
-      if (!host) return null;
-      const protocol = host.startsWith("localhost") ? "http" : "https";
-      const perCity = await Promise.all(
-        ALL_CITIES.map((c) => getActivityForCity(host, protocol, c))
-      );
-      const all = perCity.flat();
-      return { items: all };
-    } catch { return null; }
-  }
-
-  // data_snapshot_counts is sometimes returned as a single object,
-  // sometimes as an array of one — handle both shapes.
-  function unwrapCounts(raw: unknown): SnapshotCounts | null {
-    if (!raw) return null;
-    if (Array.isArray(raw)) return (raw[0] ?? null) as SnapshotCounts | null;
-    return raw as SnapshotCounts;
-  }
-
-  const [buildingsCountArr, rentsArr, landlords, activity, reviews] = await Promise.all([
-    Promise.all(ALL_CITIES.map((c) => countBuildings(c))),
+  const [rentsArr, landlords, flaggedArr, reviews] = await Promise.all([
     Promise.all(ALL_CITIES.map((c) => rpc<RentPoint[]>("rent_trend_citywide", { p_metro: c }))),
     pgSelect<LandlordRow[]>(
       "landlord_stats?select=name,metro,building_count,total_violations&order=total_violations.desc&limit=30"
     ),
-    getActivity(),
+    Promise.all(ALL_CITIES.map((c) => flaggedForMetro(c))),
     pgSelect<ReviewRow[]>(
-      "reviews?select=id,title,body,overall_rating,created_at,metro,buildings(full_address,borough)&status=eq.published&order=created_at.desc&limit=200"
+      "reviews?select=id,title,body,overall_rating,created_at,metro,buildings(full_address,borough)&status=eq.published&order=created_at.desc&limit=30"
     ),
   ]);
-
-  // Per-city building counts (from countBuildings)
-  const cityBuildings: Partial<Record<City, number>> = {};
-  ALL_CITIES.forEach((c, i) => {
-    const n = buildingsCountArr[i];
-    if (typeof n === "number" && n > 0) cityBuildings[c] = n;
-  });
 
   // Per-city rent: median + YoY (from oldest vs newest in 13-month window)
   const cityRent: Partial<Record<City, { median: number; deltaPct: number }>> = {};
@@ -428,19 +379,21 @@ async function fetchHomeData(): Promise<LiveHomeData | null> {
       }))
     : null;
 
-  // Flagged today: filter activity to enforcement-style events,
-  // then round-robin across metros.
-  const flaggedTypes = new Set(["violation", "complaint", "dob_violation", "enforcement", "litigation", "rlto_violation"]);
-  const flaggedLive = activity?.items
-    ? balanceAcrossMetros(
-        activity.items.filter((a) => flaggedTypes.has(a.type)),
-        6
-      ).map((a) => ({
-        addr: a.buildingAddress,
-        city: metroToShort(a.metro),
-        note: a.description,
-        ts: relativeTime(a.date),
-      }))
+  // Flagged today: recent hpd_violations rows from the per-metro fanout,
+  // round-robin across metros so every city gets a slot.
+  const flaggedFlat = flaggedArr.flat().filter((f) => f.buildings?.full_address);
+  const flaggedLive = flaggedFlat.length
+    ? balanceAcrossMetros(flaggedFlat, 6).map((f) => {
+        const desc = f.nov_description
+          ? `HPD violation: ${f.nov_description}`
+          : "HPD violation recorded";
+        return {
+          addr: f.buildings!.full_address!,
+          city: metroToShort(f.metro),
+          note: desc.length > 80 ? desc.slice(0, 77) + "…" : desc,
+          ts: relativeTime(f.inspection_date),
+        };
+      })
     : null;
 
   // Newest reviews: dedupe by building so a single building can't take
@@ -469,7 +422,6 @@ async function fetchHomeData(): Promise<LiveHomeData | null> {
   })();
 
   return {
-    cityBuildings,
     cityRent,
     worstLandlords: worstLandlordsLive && worstLandlordsLive.length ? worstLandlordsLive : null,
     flagged: flaggedLive && flaggedLive.length ? flaggedLive : null,
@@ -477,8 +429,8 @@ async function fetchHomeData(): Promise<LiveHomeData | null> {
   };
 }
 
-/* Cache the homepage data render across requests for 5 minutes. */
-export const revalidate = 300;
+/* Cache the homepage data render across requests for 1 hour. */
+export const revalidate = 3600;
 
 /* Color per icon — semantic, so the same icon means the same thing
    across cities. All written as static class strings so Tailwind's
@@ -658,16 +610,6 @@ function ColumnHeader({ icon: Icon, title }: { icon: ChipIcon; title: string }) 
   );
 }
 
-/* Format a raw building count (e.g. 953812) as a friendly chip label
-   ("954K", "479K", "94.7K"). */
-function compactCount(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 100_000)   return `${Math.round(n / 1_000)}K`;
-  if (n >= 10_000)    return `${(n / 1_000).toFixed(1)}K`;
-  if (n >= 1_000)     return `${(n / 1_000).toFixed(1)}K`;
-  return n.toLocaleString();
-}
-
 export default async function Home() {
   const live = await fetchHomeData();
 
@@ -675,12 +617,6 @@ export default async function Home() {
   const worstLandlords = live?.worstLandlords ?? defaultWorstLandlords;
   const buildingsFlagged = live?.flagged ?? defaultFlagged;
   const newestReviews = live?.reviews ?? defaultReviews;
-
-  // Merge live per-city building counts into the directory tile stats.
-  const cityDirectoriesLive = cityDirectories.map((c) => {
-    const liveCount = live?.cityBuildings?.[c.key];
-    return liveCount ? { ...c, stat: compactCount(liveCount) } : c;
-  });
 
   // Merge live rent medians + YoY into the rent row.
   const cityRentsLive = cityRents.map((c) => {
@@ -826,7 +762,7 @@ export default async function Home() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
-            {cityDirectoriesLive.map((c) => {
+            {cityDirectories.map((c) => {
               const meta = CITY_META[c.key];
               return (
                 <article
