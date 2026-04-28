@@ -153,19 +153,25 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
   const sortOption = SORT_OPTIONS.find((o) => o.key === sortBy) ?? SORT_OPTIONS[0];
   const supabase = await createClient();
 
+  // Read from the canonical rollup so identical legal entities stored as
+  // multiple near-duplicate rows in landlord_stats ("SENIOR LIVING OPTIONS,
+  // INC." + "SENIOR LIVING OPTIONS INC" + "SENIOR LIVING OPTIONS, INC")
+  // surface as a single deduped row with summed metrics. Refreshed nightly
+  // via refresh_landlord_stats_canonical_for_metro.
   const baseSelect =
     "name,slug,building_count,total_violations,total_complaints,total_litigations,total_dob_violations,avg_score,worst_building_address,worst_building_violations";
 
   const baseQuery = () =>
     supabase
-      .from("landlord_stats")
+      .from("landlord_stats_canonical")
       .select(baseSelect)
       .eq("metro", city)
       .not("name", "in", GARBAGE_IN);
 
+  // landlord_stats_canonical has no id; slug is the PK, count via slug.
   let countQuery = supabase
-    .from("landlord_stats")
-    .select("id", { count: "estimated", head: true })
+    .from("landlord_stats_canonical")
+    .select("slug", { count: "estimated", head: true })
     .eq("metro", city)
     .not("name", "in", GARBAGE_IN);
 
