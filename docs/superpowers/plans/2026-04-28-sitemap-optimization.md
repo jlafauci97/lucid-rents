@@ -46,7 +46,7 @@
 | `src/components/calculators/RelatedGuides.tsx` | Create | "Related guides" footer (cross-link 4.4) |
 | `src/app/rent-affordability-calculator/page.tsx` | Modify | Mount `<RelatedGuides />` |
 | `src/app/rent-timing-calculator/page.tsx` | Modify | Mount `<RelatedGuides />` |
-| `src/app/fair-rent-engine/page.tsx` | Modify | Mount `<RelatedGuides />` |
+| ~~`src/app/fair-rent-engine/page.tsx`~~ | ~~Modify~~ | **Removed in main (PR #153). Skip — page no longer exists.** |
 | `src/components/building-list/PeerChips.tsx` | Create | "Browse by other criteria" strip (cross-link 4.5) |
 | `src/app/[city]/building-list/[chip]/page.tsx` | Modify | Mount `<PeerChips />` |
 | `src/app/[city]/landlord/[name]/reviews/page.tsx` | Modify | Replace text "← Back" with `Breadcrumbs + ArrowLeft` standard |
@@ -100,7 +100,8 @@ const TENANT_RIGHTS_TOPICS = {
 const CHIP_SLUGS = ["top-rated", "rent-stabilized", "most-reviewed", "no-violations", "large-buildings"];
 
 // Global calculator paths
-const CALCULATOR_PATHS = ["/rent-affordability-calculator", "/rent-timing-calculator", "/fair-rent-engine"];
+// /fair-rent-engine was removed in main (PR #153)
+const CALCULATOR_PATHS = ["/rent-affordability-calculator", "/rent-timing-calculator"];
 ```
 
 - [ ] **Step 1.3: Spot-check inlined slugs against the source-of-truth**
@@ -488,11 +489,6 @@ Insert a new `<div>` column with the same structure as existing columns. Pattern
       </Link>
     </li>
     <li>
-      <Link href="/fair-rent-engine" className="hover:text-white transition-colors">
-        Fair rent engine
-      </Link>
-    </li>
-    <li>
       <Link href={cityPath("/tenant-tools", city)} className="hover:text-white transition-colors">
         Tenant tools
       </Link>
@@ -851,7 +847,7 @@ export const TOPIC_RELATED_TOOLS: Record<string, { templates: string[]; calculat
   },
   "rent-stabilization-rights": {
     templates: [],
-    calculators: ["fair-rent-engine"],
+    calculators: ["rent-affordability-calculator"],
   },
   "harassment": {
     templates: ["harassment-complaint"],
@@ -860,7 +856,7 @@ export const TOPIC_RELATED_TOOLS: Record<string, { templates: string[]; calculat
   // LA topics
   "rso-rent-stabilization": {
     templates: [],
-    calculators: ["fair-rent-engine"],
+    calculators: ["rent-affordability-calculator"],
   },
   "just-cause-eviction": {
     templates: ["illegal-eviction-response"],
@@ -885,7 +881,6 @@ import type { City } from "@/lib/cities";
 const CALCULATOR_LABELS: Record<string, string> = {
   "rent-affordability-calculator": "Rent affordability calculator",
   "rent-timing-calculator": "Rent timing calculator",
-  "fair-rent-engine": "Fair rent engine",
 };
 
 interface Props {
@@ -967,7 +962,8 @@ git commit -m "feat(seo): cross-link tenant-rights topics to related templates a
 - Create: `src/components/calculators/RelatedGuides.tsx`
 - Modify: `src/app/rent-affordability-calculator/page.tsx`
 - Modify: `src/app/rent-timing-calculator/page.tsx`
-- Modify: `src/app/fair-rent-engine/page.tsx`
+
+(Note: `src/app/fair-rent-engine/page.tsx` was removed in main via PR #153 and is no longer part of this plan.)
 
 - [ ] **Step 12.1: Create the inverse mapping**
 
@@ -984,11 +980,6 @@ export const CALCULATOR_RELATED_TOPICS: Record<string, Array<{ city: string; slu
   "rent-timing-calculator": [
     { city: "nyc", slug: "lease-renewals", label: "Lease renewals" },
     { city: "nyc", slug: "eviction-protections", label: "Eviction protections" },
-  ],
-  "fair-rent-engine": [
-    { city: "nyc", slug: "rent-stabilization-rights", label: "Rent stabilization in NYC" },
-    { city: "los-angeles", slug: "rso-rent-stabilization", label: "Rent stabilization in LA" },
-    { city: "nyc", slug: "harassment", label: "Tenant harassment" },
   ],
 };
 ```
@@ -1034,22 +1025,22 @@ export function RelatedGuides({ calculatorSlug }: Props) {
 
 - [ ] **Step 12.3: Mount on each calculator page**
 
-In each of the three calculator pages, add (near the bottom, before any global footer):
+In each of the two remaining calculator pages, add (near the bottom, before any global footer):
 
 ```tsx
 import { RelatedGuides } from "@/components/calculators/RelatedGuides";
 // ...
-<RelatedGuides calculatorSlug="rent-affordability-calculator" /> {/* or the matching slug per file */}
+<RelatedGuides calculatorSlug="rent-affordability-calculator" /> {/* or "rent-timing-calculator" */}
 ```
 
 - [ ] **Step 12.4: Build + visual verify**
 
-Run: `npm run build`. Open `/rent-affordability-calculator`. Confirm "Related guides" section renders 3 links.
+Run: `npm run build`. Open `/rent-affordability-calculator`. Confirm "Related guides" section renders 3 links. Open `/rent-timing-calculator`. Confirm 2 links.
 
 - [ ] **Step 12.5: Commit**
 
 ```bash
-git add src/lib/calculator-related-topics.ts src/components/calculators/RelatedGuides.tsx src/app/rent-affordability-calculator/page.tsx src/app/rent-timing-calculator/page.tsx src/app/fair-rent-engine/page.tsx
+git add src/lib/calculator-related-topics.ts src/components/calculators/RelatedGuides.tsx src/app/rent-affordability-calculator/page.tsx src/app/rent-timing-calculator/page.tsx
 git commit -m "feat(seo): add Related guides cross-links from calculators to tenant-rights topics"
 ```
 

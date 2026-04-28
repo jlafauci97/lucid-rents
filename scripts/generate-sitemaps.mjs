@@ -91,8 +91,14 @@ const TENANT_RIGHTS_TOPICS = {
 // Manual sync — these change rarely.
 const CHIP_SLUGS = ["top-rated", "rent-stabilized", "most-reviewed", "no-violations", "large-buildings"];
 
-// Global calculator paths
-const CALCULATOR_PATHS = ["/rent-affordability-calculator", "/rent-timing-calculator", "/fair-rent-engine"];
+// Mirror src/lib/building-list/chips.ts → chipsForCity() filter logic.
+// Chips not listed here are available in all VALID_CITIES.
+const CHIP_CITY_GATES = {
+  "rent-stabilized": ["nyc", "los-angeles"],
+};
+
+// Global calculator paths. /fair-rent-engine was removed in main (PR #153).
+const CALCULATOR_PATHS = ["/rent-affordability-calculator", "/rent-timing-calculator"];
 
 // ─── URL helpers (inlined from src/lib/seo.ts) ──────────────────
 
@@ -349,10 +355,12 @@ async function generateHubsSitemap() {
   // cityPath("/ellis-act", "los-angeles") yields /CA/Los-Angeles/ellis-act
   entries.push({ url: `${BASE_URL}${cityPath("/ellis-act", "los-angeles")}`, lastmod: now, changefreq: "weekly", priority: 0.5 });
 
-  // Building list hubs (5) + chip pages (25)
+  // Building list hubs (5) + chip pages (~22, gated per chip availability)
   for (const city of VALID_CITIES) {
     entries.push({ url: `${BASE_URL}${cityPath("/building-list", city)}`, lastmod: now, changefreq: "weekly", priority: 0.5 });
     for (const slug of CHIP_SLUGS) {
+      const gate = CHIP_CITY_GATES[slug];
+      if (gate && !gate.includes(city)) continue;
       entries.push({ url: `${BASE_URL}${cityPath(`/building-list/${slug}`, city)}`, lastmod: now, changefreq: "weekly", priority: 0.4 });
     }
   }
