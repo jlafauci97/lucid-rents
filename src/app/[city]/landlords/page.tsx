@@ -65,10 +65,15 @@ const GARBAGE_NAMES = [
   "AVAILABLE FROM DATA SOURCE",
   "NAME NOT ON FILE",
   "NOT AVAILABLE",
+  "NOT AVAILABLE FROM THE DATA",
+  "NOT AVAILABLE FROM THE DATA SOURCE",
   "UNKNOWN",
+  "UNKNOWN OWNER",
   "N/A",
   "NA",
+  "UNAVAILABLE",
   "UNAVAILABLE OWNER",
+  "Taxpayer Unknown",
 ];
 const GARBAGE_IN = `(${GARBAGE_NAMES.map((n) => `"${n}"`).join(",")})`;
 
