@@ -9,7 +9,7 @@ interface Tool {
   href: string;
   title: string;
   description: string;
-  Icon: React.ComponentType<{ className?: string }>;
+  Icon: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
 }
 
 export function CityToolsGrid({ city }: Props) {
@@ -26,19 +26,26 @@ export function CityToolsGrid({ city }: Props) {
   }
 
   return (
-    <section className="mx-auto max-w-7xl px-4 py-12">
-      <h2 className="text-2xl font-semibold text-[#0f172a] mb-6">Tools & Resources</h2>
+    <section className="mx-auto max-w-7xl px-4 py-20">
+      <header className="mb-8 max-w-2xl">
+        <p className="text-xs uppercase tracking-[0.18em] text-[#3B82F6] font-medium">
+          Resources
+        </p>
+        <h2 className="font-serif text-4xl sm:text-5xl text-[#0F1D2E] mt-2 tracking-tight leading-[1.02]">
+          Stay informed and protected.
+        </h2>
+      </header>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {tools.map(({ href, title, description, Icon }) => (
           <Link
             key={href}
             href={href}
-            className="group rounded-lg border border-[#e2e8f0] bg-white p-5 transition hover:border-[#0d9488] hover:shadow-sm"
+            className="group rounded-lg border border-[#e2e8f0] bg-white p-5 transition hover:border-[#3B82F6] hover:shadow-sm"
           >
             <div className="flex items-start gap-3">
-              <Icon className="w-5 h-5 text-[#0d9488] mt-0.5" />
+              <Icon aria-hidden={true} className="w-5 h-5 text-[#3B82F6] mt-0.5" />
               <div>
-                <h3 className="font-medium text-[#0f172a] group-hover:text-[#0d9488]">{title}</h3>
+                <h3 className="font-medium text-[#0F1D2E] group-hover:text-[#3B82F6]">{title}</h3>
                 <p className="text-sm text-[#64748b] mt-1">{description}</p>
               </div>
             </div>
