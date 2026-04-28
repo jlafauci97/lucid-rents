@@ -13,6 +13,7 @@ import { CITY_META, CITY_SHORT_NAME, type City } from "@/lib/cities";
 import { FAQSection } from "@/components/seo/FAQSection";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { cityBreadcrumbs, canonicalUrl, cityPath } from "@/lib/seo";
+import { RelatedTools } from "@/components/tenant-rights/RelatedTools";
 
 export async function generateMetadata({
   params,
@@ -200,6 +201,9 @@ export default async function TopicPage({
             <FAQSection items={topic.faq} />
           </section>
         )}
+
+        {/* Related Tools */}
+        <RelatedTools city={city as City} topicSlug={slug} />
 
         {/* Disclaimer */}
         <section className="bg-amber-50 border border-amber-200 rounded-xl p-6">

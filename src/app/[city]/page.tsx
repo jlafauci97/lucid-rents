@@ -17,6 +17,7 @@ import { CityHomeCta } from "@/components/home/CityHomeCta";
 import { BrandShield } from "@/components/layout/BrandShield";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { JsonLd } from "@/components/seo/JsonLd";
+import { CityToolsGrid } from "@/components/seo/CityToolsGrid";
 import { canonicalUrl, cityPath } from "@/lib/seo";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
 
@@ -140,6 +141,9 @@ export default async function CityHomePage({
 
         {/* NEW — Explore grid (moved up to follow listicles) */}
         <ExploreDataGrid city={city} />
+
+        {/* NEW — Tools & Resources card grid (SEO internal linking) */}
+        <CityToolsGrid city={city} />
 
         {/* NEW — per-city news from news_articles (moved up to follow explore) */}
         <Suspense fallback={null}>

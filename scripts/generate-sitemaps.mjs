@@ -61,6 +61,45 @@ const HOUSTON_ZIPS = {"77002":"Downtown","77003":"East End","77004":"Third Ward"
 
 const ZIP_MAPS = { nyc: NYC_ZIPS, "los-angeles": LA_ZIPS, chicago: CHICAGO_ZIPS, miami: MIAMI_ZIPS, houston: HOUSTON_ZIPS };
 
+// ─── Hub sitemap slug arrays ────────────────────────────────────
+// Mirror src/lib/tenant-templates-data.ts → TEMPLATES[].slug
+// Manual sync — these change rarely.
+const TEMPLATE_SLUGS = [
+  "repair-maintenance-request",
+  "rent-reduction-request",
+  "security-deposit-demand",
+  "lease-negotiation",
+  "harassment-complaint",
+  "heat-hot-water-complaint",
+  "pest-complaint",
+  "illegal-eviction-response",
+];
+
+// Mirror src/lib/tenant-rights-data.ts per-city `topics[].slug`
+// Only nyc, los-angeles, and chicago have topic configs. Miami and Houston
+// are intentionally omitted — the [city]/tenant-rights/[topic] route calls
+// notFound() for cities without a config, so any URL we'd emit would 404.
+// Manual sync — these change rarely.
+const TENANT_RIGHTS_TOPICS = {
+  nyc: ["rent-stabilization-rights", "repairs-and-maintenance", "eviction-protections", "security-deposits", "lease-renewals", "harassment", "heat-and-hot-water", "bed-bugs-and-pests", "illegal-apartments", "retaliation"],
+  "los-angeles": ["rso-rent-stabilization", "just-cause-eviction", "repairs-and-habitability", "relocation-assistance", "ellis-act", "security-deposits", "earthquake-retrofit", "harassment-and-retaliation"],
+  chicago: ["rlto-protections", "repairs-and-maintenance", "just-cause-eviction", "security-deposits", "lease-renewals", "harassment", "heat-requirements", "lead-paint", "bed-bugs-and-pests", "retaliation"],
+  // miami and houston intentionally omitted — no topic config exists
+};
+
+// Mirror src/lib/building-list/chips.ts → CHIPS keys
+// Manual sync — these change rarely.
+const CHIP_SLUGS = ["top-rated", "rent-stabilized", "most-reviewed", "no-violations", "large-buildings"];
+
+// Mirror src/lib/building-list/chips.ts → chipsForCity() filter logic.
+// Chips not listed here are available in all VALID_CITIES.
+const CHIP_CITY_GATES = {
+  "rent-stabilized": ["nyc", "los-angeles"],
+};
+
+// Global calculator paths. /fair-rent-engine was removed in main (PR #153).
+const CALCULATOR_PATHS = ["/rent-affordability-calculator", "/rent-timing-calculator"];
+
 // ─── URL helpers (inlined from src/lib/seo.ts) ──────────────────
 
 function slugify(s) {
@@ -258,6 +297,82 @@ async function generateStaticSitemap() {
   return entries;
 }
 
+// ─── Hubs sitemap (hubs.xml) ───────────────────────────────────
+
+async function generateHubsSitemap() {
+  const entries = [];
+  const now = new Date().toISOString();
+
+  // Tenant tools hubs (5)
+  for (const city of VALID_CITIES) {
+    entries.push({ url: `${BASE_URL}${cityPath("/tenant-tools", city)}`, lastmod: now, changefreq: "monthly", priority: 0.5 });
+  }
+
+  // Tenant tool templates (8 × 5 = 40)
+  for (const city of VALID_CITIES) {
+    for (const slug of TEMPLATE_SLUGS) {
+      entries.push({ url: `${BASE_URL}${cityPath(`/tenant-tools/templates/${slug}`, city)}`, lastmod: now, changefreq: "monthly", priority: 0.4 });
+    }
+  }
+
+  // Tenant rights topics (per-city ~5-10)
+  for (const city of VALID_CITIES) {
+    const topics = TENANT_RIGHTS_TOPICS[city] || [];
+    for (const slug of topics) {
+      entries.push({ url: `${BASE_URL}${cityPath(`/tenant-rights/${slug}`, city)}`, lastmod: now, changefreq: "monthly", priority: 0.5 });
+    }
+  }
+
+  // Neighborhoods hub (5) + both compare variants (10)
+  for (const city of VALID_CITIES) {
+    entries.push({ url: `${BASE_URL}${cityPath("/neighborhoods", city)}`, lastmod: now, changefreq: "weekly", priority: 0.6 });
+    entries.push({ url: `${BASE_URL}${cityPath("/neighborhoods/compare", city)}`, lastmod: now, changefreq: "monthly", priority: 0.4 });
+    entries.push({ url: `${BASE_URL}${cityPath("/neighborhood/compare", city)}`, lastmod: now, changefreq: "monthly", priority: 0.4 });
+  }
+
+  // Rents by neighborhood — reuse ZIP enumeration (~310 unique combos)
+  try {
+    const zipData = await supabaseFetch("buildings?select=zip_code,metro,updated_at&zip_code=not.is.null&limit=10000");
+    const zipCityLastMod = new Map();
+    for (const b of zipData) {
+      if (!b.zip_code) continue;
+      const city = metroToCity(b.metro);
+      const key = `${city}:${b.zip_code}`;
+      const d = b.updated_at || now;
+      const existing = zipCityLastMod.get(key);
+      if (!existing || d > existing) zipCityLastMod.set(key, d);
+    }
+    for (const [key, lastmod] of zipCityLastMod) {
+      const [city, zip] = key.split(":");
+      const slug = neighborhoodPageSlug(zip, city);
+      entries.push({ url: `${BASE_URL}${cityPath(`/rents/${slug}`, city)}`, lastmod, changefreq: "weekly", priority: 0.5 });
+    }
+  } catch (e) {
+    console.warn(`  ⚠ Skipping rents-by-neighborhood in hubs sitemap: ${e.message}`);
+  }
+
+  // Ellis Act tracker — LA only. Route is /[city]/ellis-act (lowercase).
+  // cityPath("/ellis-act", "los-angeles") yields /CA/Los-Angeles/ellis-act
+  entries.push({ url: `${BASE_URL}${cityPath("/ellis-act", "los-angeles")}`, lastmod: now, changefreq: "weekly", priority: 0.5 });
+
+  // Building list hubs (5) + chip pages (~22, gated per chip availability)
+  for (const city of VALID_CITIES) {
+    entries.push({ url: `${BASE_URL}${cityPath("/building-list", city)}`, lastmod: now, changefreq: "weekly", priority: 0.5 });
+    for (const slug of CHIP_SLUGS) {
+      const gate = CHIP_CITY_GATES[slug];
+      if (gate && !gate.includes(city)) continue;
+      entries.push({ url: `${BASE_URL}${cityPath(`/building-list/${slug}`, city)}`, lastmod: now, changefreq: "weekly", priority: 0.4 });
+    }
+  }
+
+  // Global calculators (3)
+  for (const path of CALCULATOR_PATHS) {
+    entries.push({ url: `${BASE_URL}${path}`, lastmod: now, changefreq: "monthly", priority: 0.6 });
+  }
+
+  return entries;
+}
+
 // ─── Main ───────────────────────────────────────────────────────
 
 const SITEMAP_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes max for entire sitemap generation
@@ -281,9 +396,12 @@ function rebuildIndex() {
   const indexEntries = files.map(f => ({ name: f, lastmod: now }));
   indexEntries.sort((a, b) => {
     const order = (n) => {
-      if (n === "0.xml") return "0-0";
+      // Crawl priority: buildings first, then landlords, then static, hubs last.
+      // Google weakly honors index.xml order; this is the only "priority signal" available.
+      if (n.startsWith("b-")) return `0-${n.slice(2).replace(".xml", "").padStart(6, "0")}`;
       if (n.startsWith("l-")) return `1-${n.slice(2).replace(".xml", "").padStart(6, "0")}`;
-      if (n.startsWith("b-")) return `2-${n.slice(2).replace(".xml", "").padStart(6, "0")}`;
+      if (n === "0.xml")     return "2-0";
+      if (n === "hubs.xml")  return "3-0";
       return n;
     };
     return order(a.name).localeCompare(order(b.name));
@@ -309,6 +427,12 @@ async function fullGenerate() {
   const staticEntries = await generateStaticSitemap();
   writeFileSync(`${OUT_DIR}/0.xml`, buildSitemapXml(staticEntries));
   console.log(`  [0.xml] ${staticEntries.length} URLs`);
+
+  // Hubs sitemap
+  console.log("  [hubs.xml] hub pages...");
+  const hubsEntries = await generateHubsSitemap();
+  writeFileSync(`${OUT_DIR}/hubs.xml`, buildSitemapXml(hubsEntries));
+  console.log(`  [hubs.xml] ${hubsEntries.length} URLs`);
 
   // Landlord sitemaps
   console.log(`  Generating landlord sitemaps...`);
@@ -437,6 +561,12 @@ async function incrementalGenerate() {
   console.log("  [0.xml] refreshing static pages...");
   const staticEntries = await generateStaticSitemap();
   writeFileSync(`${OUT_DIR}/0.xml`, buildSitemapXml(staticEntries));
+
+  // Hubs sitemap
+  console.log("  [hubs.xml] hub pages...");
+  const hubsEntries = await generateHubsSitemap();
+  writeFileSync(`${OUT_DIR}/hubs.xml`, buildSitemapXml(hubsEntries));
+  console.log(`  [hubs.xml] ${hubsEntries.length} URLs`);
 
   // Append new buildings (created after last run) to new sitemap files
   const PAGE_SIZE = 1000;

@@ -33,6 +33,8 @@ import {
   buildLandlordDescription,
 } from "@/lib/seo-metadata";
 import { getLandlordStats } from "@/lib/landlord-stats";
+import { loadLandlordNeighborhoods } from "./_data";
+import { LandlordNeighborhoods } from "@/components/landlord/LandlordNeighborhoods";
 
 export const revalidate = 86400; // 24h ISR — matches building v2
 
@@ -133,9 +135,10 @@ export default async function LandlordDetailPage({
   const city = (cityParam || "nyc") as City;
   const supabase = await createClient();
 
-  const [ownerName, cachedStats] = await Promise.all([
+  const [ownerName, cachedStats, neighborhoods] = await Promise.all([
     resolveOwnerName(supabase, name, city),
     getLandlordStats(name, city),
+    loadLandlordNeighborhoods(name, city),
   ]);
 
   // No matching landlord — send to the directory with a real 307 so crawlers
@@ -227,6 +230,7 @@ export default async function LandlordDetailPage({
               city={city}
               buildingCount={cachedStats.buildingCount}
             />
+            <LandlordNeighborhoods city={city} neighborhoods={neighborhoods} />
             <S08CompareStreamed
               slug={correctSlug}
               city={city}

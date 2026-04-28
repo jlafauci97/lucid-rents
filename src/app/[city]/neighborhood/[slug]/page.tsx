@@ -25,6 +25,7 @@ import { generateNeighborhoodFAQ } from "@/lib/faq/area-faq";
 import { VibeCheck } from "@/components/neighborhood/VibeCheck";
 import { NeighborhoodSectionNav } from "@/components/neighborhood/NeighborhoodSectionNav";
 import { getNeighborhoodVibe } from "@/lib/neighborhood-vibes";
+import { NeighborhoodTopLandlords } from "@/components/neighborhood/NeighborhoodTopLandlords";
 
 export const revalidate = 3600;
 
@@ -140,6 +141,51 @@ async function getBestApartments(zipCode: string, city: City) {
   return res.json();
 }
 
+async function getTopLandlords(zipCode: string, city: City): Promise<Array<{ slug: string; name: string; buildingCount: number }>> {
+  // Fetch owner_name counts for buildings in this ZIP
+  const buildingsUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/buildings?zip_code=eq.${zipCode}&metro=eq.${city}&select=owner_name&not.owner_name=is.null`;
+  const buildingsRes = await fetch(buildingsUrl, {
+    headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! },
+    next: { revalidate: 3600 },
+  });
+  if (!buildingsRes.ok) return [];
+  const buildingRows: Array<{ owner_name: string }> = await buildingsRes.json();
+
+  // Count buildings per owner
+  const counts = new Map<string, number>();
+  for (const r of buildingRows) {
+    const name = r.owner_name;
+    counts.set(name, (counts.get(name) ?? 0) + 1);
+  }
+
+  const topOwnerNames = Array.from(counts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([name]) => name);
+
+  if (topOwnerNames.length === 0) return [];
+
+  // Look up slugs from landlord_stats
+  const inFilter = topOwnerNames.map((n) => `"${n}"`).join(",");
+  const statsUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/landlord_stats?select=name,slug&metro=eq.${city}&name=in.(${encodeURIComponent(inFilter)})`;
+  const statsRes = await fetch(statsUrl, {
+    headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! },
+    next: { revalidate: 3600 },
+  });
+  if (!statsRes.ok) return [];
+  const statsRows: Array<{ name: string; slug: string | null }> = await statsRes.json();
+
+  return statsRows
+    .filter((l) => l.slug)
+    .map((l) => ({
+      name: l.name,
+      slug: l.slug as string,
+      buildingCount: counts.get(l.name) ?? 0,
+    }))
+    .sort((a, b) => b.buildingCount - a.buildingCount)
+    .slice(0, 10);
+}
+
 function getSubGrade(value: number, thresholds: [number, number, number, number]): number {
   if (value <= thresholds[0]) return 4.5;
   if (value <= thresholds[1]) return 3.5;
@@ -158,12 +204,13 @@ export default async function NeighborhoodPage({
   const zipCode = parseNeighborhoodSlug(slug);
   const neighborhoodName = getNeighborhoodNameByCity(zipCode, city);
 
-  const [stats, crime, buildings, rents, bestBuildings] = await Promise.all([
+  const [stats, crime, buildings, rents, bestBuildings, topLandlords] = await Promise.all([
     getNeighborhoodStats(zipCode),
     getCrimeData(zipCode),
     getTopBuildings(zipCode),
     getNeighborhoodRents(zipCode),
     getBestApartments(zipCode, city),
+    getTopLandlords(zipCode, city),
   ]);
 
   if (!stats || stats.building_count === 0) {
@@ -364,6 +411,13 @@ export default async function NeighborhoodPage({
           <NeighborhoodRentChart rents={rents} />
         </div>
       )}
+
+      {/* Top Landlords */}
+      <NeighborhoodTopLandlords
+        city={city}
+        landlords={topLandlords}
+        neighborhoodName={neighborhoodName || zipCode}
+      />
 
       {/* Best Apartments by Price Tier */}
       {(() => {

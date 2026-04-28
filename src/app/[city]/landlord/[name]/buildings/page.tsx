@@ -1,14 +1,15 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
+import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { cityPath, landlordSlug, landlordUrl, canonicalUrl, buildingUrl } from "@/lib/seo";
+import { cityPath, cityBreadcrumbs, landlordSlug, landlordUrl, canonicalUrl, buildingUrl } from "@/lib/seo";
 import { CITY_META } from "@/lib/cities";
 import type { City } from "@/lib/cities";
 import { getLandlordStats } from "@/lib/landlord-stats";
 import { loadLandlordBuildingList } from "@/app/[city]/landlord/[name]/_data";
 import { normalizeScore } from "@/lib/constants";
-import { Crumbs } from "@/components/landlord/v2/Crumbs";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { V2Zoom } from "@/components/building/v2/V2Zoom";
 
 export const revalidate = 86400;
@@ -91,23 +92,26 @@ export default async function LandlordBuildingsPage({ params }: Props) {
   );
   const displayName = cachedStats.name;
 
+  const breadcrumbs = cityBreadcrumbs(
+    city,
+    { label: "Landlords", href: cityPath("/landlords", city) },
+    { label: displayName, href: cityPath(`/landlord/${correctSlug}`, city) },
+    { label: "Buildings", href: cityPath(`/landlord/${correctSlug}/buildings`, city) },
+  );
+
   return (
     <div className="v2">
       <V2Zoom />
       <div className="container">
-        <Crumbs city={city} displayName={displayName} />
+        <Breadcrumbs items={breadcrumbs} />
 
         <div style={{ padding: "var(--s-5) 0 var(--s-3)" }}>
           <Link
             href={landlordUrl(displayName, city)}
-            style={{
-              fontFamily: "var(--mono)",
-              fontSize: "var(--f-12)",
-              color: "var(--navy-hi)",
-              letterSpacing: "0.04em",
-            }}
+            className="inline-flex items-center gap-1 text-sm text-[#64748b] hover:text-[#0F1D2E] mt-2"
           >
-            ← Back to {displayName}
+            <ArrowLeft className="w-4 h-4" />
+            Back to {displayName}
           </Link>
           <h1
             style={{

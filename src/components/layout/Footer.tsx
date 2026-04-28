@@ -45,7 +45,7 @@ export function Footer({ city = "nyc" as City }: { city?: City }) {
   return (
     <footer className="bg-[#0F1D2E] text-gray-400 mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
           <div>
             <h3 className="text-white font-bold text-lg mb-3">
               <span className="text-[#3B82F6]">Lucid</span> Rents
@@ -115,6 +115,33 @@ export function Footer({ city = "nyc" as City }: { city?: City }) {
               <li>
                 <Link href="/terms" className="hover:text-white transition-colors">
                   Terms of Service
+                </Link>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="text-white font-semibold text-sm mb-3">
+              Resources
+            </h4>
+            <ul className="space-y-2 text-sm">
+              <li>
+                <Link href="/rent-affordability-calculator" className="hover:text-white transition-colors">
+                  Rent affordability calculator
+                </Link>
+              </li>
+              <li>
+                <Link href="/rent-timing-calculator" className="hover:text-white transition-colors">
+                  Rent timing calculator
+                </Link>
+              </li>
+              <li>
+                <Link href={cityPath("/tenant-tools", city)} className="hover:text-white transition-colors">
+                  Tenant tools
+                </Link>
+              </li>
+              <li>
+                <Link href={cityPath("/tenant-rights", city)} className="hover:text-white transition-colors">
+                  Know your rights
                 </Link>
               </li>
             </ul>
