@@ -1,6 +1,9 @@
 @import "tailwindcss";
-@import "../styles/v2-tokens.css";
 @import "../styles/site-nav.css";
+
+/* v2-tokens.css is imported on the building & landlord detail routes (the only
+   places that use the .v2 design tokens) so its ~119KB stays off every other
+   page's CSS bundle. */
 
 html {
   overflow-x: hidden;

@@ -1,3 +1,4 @@
+import "@/styles/v2-tokens.css";
 import { createClient } from "@/lib/supabase/server";
 import { permanentRedirect, redirect } from "next/navigation";
 import { Crumbs } from "@/components/landlord/v2/Crumbs";

@@ -1,3 +1,5 @@
+export const runtime = "edge";
+
 import { isValidCity } from "@/lib/cities";
 import { normalizeAddressQuery } from "@/lib/address-normalization";
 import { createClient } from "@/lib/supabase/server";
