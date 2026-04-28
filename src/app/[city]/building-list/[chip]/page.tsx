@@ -17,6 +17,7 @@ import { BuildingCard } from "@/components/search/BuildingCard";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { JsonLd } from "@/components/seo/JsonLd";
+import { PeerChips } from "@/components/building-list/PeerChips";
 
 const PER_PAGE = 30;
 
@@ -265,6 +266,8 @@ export default async function CategoryPage({
             </div>
           </section>
         )}
+
+        <PeerChips city={city} currentChip={chip.id} />
       </div>
     </AdSidebar>
   );
