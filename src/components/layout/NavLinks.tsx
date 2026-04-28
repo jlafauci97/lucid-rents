@@ -19,7 +19,7 @@ export function NavLinks() {
         Search
       </Link>
       <Link
-        href={cityPath("/worst-rated-buildings", city)}
+        href={cityPath("/building-rankings", city)}
         className="flex items-center gap-1.5 text-sm font-semibold text-white hover:text-white/80 transition-colors whitespace-nowrap"
       >
         <BarChart3 className="w-3.5 h-3.5" />

@@ -40,7 +40,7 @@ export function Crumbs({
     <nav className="crumbs">
       <Link href="/">home</Link><span className="sep">/</span>
       <Link href={`/${prefix}`}>{prefix}</Link><span className="sep">/</span>
-      <Link href={`/${prefix}/worst-rated-buildings`}>{boroughLower}</Link><span className="sep">/</span>
+      <Link href={`/${prefix}/building-rankings`}>{boroughLower}</Link><span className="sep">/</span>
       {neighborhoodSlug && neighborhoodName ? (
         <>
           <Link href={`/${prefix}/neighborhood/${neighborhoodSlug}`}>{nbhLower}</Link><span className="sep">/</span>

@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
   try {
     revalidatePath("/[city]", "page");
     revalidatePath("/[city]/buildings/[borough]", "page");
-    revalidatePath("/[city]/worst-rated-buildings", "page");
+    revalidatePath("/[city]/building-rankings", "page");
     revalidatePath("/[city]/problem-landlords", "page");
   } catch {
     // revalidation is best-effort

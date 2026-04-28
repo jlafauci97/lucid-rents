@@ -16,6 +16,7 @@ const CITY_ROUTES = new Set([
   "landlord",
   "search",
   "worst-rated-buildings",
+  "building-rankings",
   "crime",
   "map",
   "feed",
@@ -171,10 +172,10 @@ export async function proxy(request: NextRequest) {
 
   // 1b. Path already starts with a valid single-segment city (e.g. "nyc")
   if (VALID_CITIES.includes(firstSegment as (typeof VALID_CITIES)[number])) {
-    // Redirect old /rankings URL to /worst-rated-buildings
-    if (segments[2] === "rankings") {
+    // Redirect old /rankings or /worst-rated-buildings URL to /building-rankings
+    if (segments[2] === "rankings" || segments[2] === "worst-rated-buildings") {
       const url = request.nextUrl.clone();
-      url.pathname = `/${firstSegment}/worst-rated-buildings${segments.slice(3).length ? "/" + segments.slice(3).join("/") : ""}`;
+      url.pathname = `/${firstSegment}/building-rankings${segments.slice(3).length ? "/" + segments.slice(3).join("/") : ""}`;
       return NextResponse.redirect(url, 301);
     }
     // Redirect old-format neighborhood URLs: /nyc/neighborhood/10001 -> /nyc/neighborhood/chelsea-10001
@@ -221,10 +222,10 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url, 301);
   }
 
-  // 3. Redirect bare /rankings to /nyc/worst-rated-buildings
-  if (firstSegment === "rankings") {
+  // 3. Redirect bare /rankings or /worst-rated-buildings to /nyc/building-rankings
+  if (firstSegment === "rankings" || firstSegment === "worst-rated-buildings") {
     const url = request.nextUrl.clone();
-    url.pathname = `/nyc/worst-rated-buildings`;
+    url.pathname = `/nyc/building-rankings`;
     return NextResponse.redirect(url, 301);
   }
 

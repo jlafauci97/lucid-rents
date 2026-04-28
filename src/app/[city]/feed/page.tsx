@@ -112,7 +112,7 @@ async function TrendingBuildings({ city }: { city: import("@/lib/cities").City }
         ))}
       </div>
       <Link
-        href={cityPath("/worst-rated-buildings", city as City)}
+        href={cityPath("/building-rankings", city as City)}
         className="block px-4 py-3 text-sm text-[#3B82F6] hover:bg-[#EFF6FF] transition-colors font-medium border-t border-[#f1f5f9]"
       >
         View full rankings
