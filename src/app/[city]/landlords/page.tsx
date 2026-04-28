@@ -1,4 +1,3 @@
-import "@/styles/landlord-list-v2.css";
 import { createClient } from "@/lib/supabase/server";
 import { ChevronLeft, ChevronRight, ArrowRight, AlertTriangle, Building2, ShieldAlert, Trophy, Flame, Scale, FileWarning, BarChart3 } from "lucide-react";
 import { LetterGrade } from "@/components/ui/LetterGrade";
