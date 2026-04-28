@@ -3,13 +3,21 @@
 <!--
 launchd job for the Reddit scanner. Reddit blocks Vercel + GitHub Actions
 egress IPs, so the scan has to run from a residential IP. This LaunchAgent
-runs every 6 hours under the user's session.
+runs every 6 hours under the user's GUI session.
 
-Install:
-  cp scripts/launchd/com.lucidrents.reddit-scan.plist ~/Library/LaunchAgents/
-  launchctl bootstrap "gui/$(id -u)" ~/Library/LaunchAgents/com.lucidrents.reddit-scan.plist
+DO NOT install this template directly. The CRON_SECRET is empty and the
+script path needs to be in a non-TCC location (~/.lucidrents/, not
+~/Desktop). Run the installer instead:
 
-Trigger an immediate run:
+    bash scripts/launchd/install-reddit-scan.sh
+
+That script:
+  1. Copies scripts/scan-and-draft-reddit.mjs to ~/.lucidrents/
+  2. Reads CRON_SECRET from .env.local
+  3. Generates the real plist at ~/Library/LaunchAgents/...
+  4. Bootstraps the LaunchAgent and kickstarts a verification run
+
+Trigger an immediate run after install:
   launchctl kickstart -k "gui/$(id -u)/com.lucidrents.reddit-scan"
 
 Tail logs:
@@ -18,15 +26,15 @@ Tail logs:
 Uninstall:
   launchctl bootout "gui/$(id -u)/com.lucidrents.reddit-scan"
   rm ~/Library/LaunchAgents/com.lucidrents.reddit-scan.plist
+  rm -rf ~/.lucidrents
 
-GOTCHA — Full Disk Access:
-  If the repo lives under ~/Desktop, ~/Documents, or ~/Downloads, macOS TCC
-  blocks launchd-spawned bash from reading it. Symptom in the log:
-    /bin/bash: .../reddit-scan-local.sh: Operation not permitted
-  Fix: System Settings → Privacy & Security → Full Disk Access → click "+"
-  → press Cmd+Shift+G in the picker → enter /bin/bash → Open → toggle on.
-  Then `launchctl kickstart -k "gui/$(id -u)/com.lucidrents.reddit-scan"`
-  to verify.
+WHY ~/.lucidrents/ INSTEAD OF THE REPO PATH:
+  launchd-spawned processes can't read files under ~/Desktop, ~/Documents,
+  or ~/Downloads without granting Full Disk Access (System Settings →
+  Privacy & Security → Full Disk Access) to /bin/bash, /opt/homebrew/bin/node,
+  or whatever the plist invokes. Copying scan-and-draft-reddit.mjs into
+  ~/.lucidrents/ bypasses TCC entirely. Re-run the installer after pulling
+  main if the script changes.
 -->
 <plist version="1.0">
 <dict>
@@ -35,12 +43,12 @@ GOTCHA — Full Disk Access:
 
     <key>ProgramArguments</key>
     <array>
-        <string>/bin/bash</string>
-        <string>/Users/jesselafauci/Desktop/lucid-rents/scripts/reddit-scan-local.sh</string>
+        <string>/opt/homebrew/bin/node</string>
+        <string>/Users/REPLACE_ME/.lucidrents/scan-and-draft-reddit.mjs</string>
     </array>
 
     <key>WorkingDirectory</key>
-    <string>/Users/jesselafauci/Desktop/lucid-rents</string>
+    <string>/Users/REPLACE_ME/.lucidrents</string>
 
     <!-- Run every 6 hours (21600 seconds). -->
     <key>StartInterval</key>
@@ -51,15 +59,21 @@ GOTCHA — Full Disk Access:
     <false/>
 
     <key>StandardOutPath</key>
-    <string>/Users/jesselafauci/Library/Logs/lucidrents-reddit-scan.log</string>
+    <string>/Users/REPLACE_ME/Library/Logs/lucidrents-reddit-scan.log</string>
 
     <key>StandardErrorPath</key>
-    <string>/Users/jesselafauci/Library/Logs/lucidrents-reddit-scan.log</string>
+    <string>/Users/REPLACE_ME/Library/Logs/lucidrents-reddit-scan.log</string>
 
     <key>EnvironmentVariables</key>
     <dict>
         <key>PATH</key>
         <string>/opt/homebrew/bin:/usr/bin:/bin</string>
+        <key>BASE_URL</key>
+        <string>https://lucidrents.com</string>
+        <key>CRON_SECRET</key>
+        <string>REPLACE_ME</string>
+        <key>REDDIT_LOOKBACK_HOURS</key>
+        <string>6</string>
     </dict>
 </dict>
 </plist>

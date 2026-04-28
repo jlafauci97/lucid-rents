@@ -13,6 +13,16 @@ Run the scanner from the user's machine, since Reddit's residential IP isn't blo
 - After /reddit-check shows "All clear — no pending Reddit replies."
 - The launchd job (com.lucidrents.reddit-scan) is normally the source of fresh drafts every 6h. Use this skill for ad-hoc runs in between, or if launchd is paused/disabled.
 
+## First-time setup (launchd)
+
+Once per machine, install the LaunchAgent so scans run automatically every 6h:
+
+```bash
+bash scripts/launchd/install-reddit-scan.sh
+```
+
+The installer copies the scanner to `~/.lucidrents/` (a non-TCC path), reads `CRON_SECRET` from `.env.local`, writes the plist, and kickstarts one verification run. Re-run the installer after pulling main if `scan-and-draft-reddit.mjs` changes.
+
 ## Workflow
 
 1. Run the wrapper script from the repo root. It sources `.env.local`, sets `BASE_URL`, and invokes `scripts/scan-and-draft-reddit.mjs`:
