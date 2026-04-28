@@ -291,6 +291,80 @@ async function generateStaticSitemap() {
   return entries;
 }
 
+// ─── Hubs sitemap (hubs.xml) ───────────────────────────────────
+
+async function generateHubsSitemap() {
+  const entries = [];
+  const now = new Date().toISOString();
+
+  // Tenant tools hubs (5)
+  for (const city of VALID_CITIES) {
+    entries.push({ url: `${BASE_URL}${cityPath("/tenant-tools", city)}`, lastmod: now, changefreq: "monthly", priority: 0.5 });
+  }
+
+  // Tenant tool templates (8 × 5 = 40)
+  for (const city of VALID_CITIES) {
+    for (const slug of TEMPLATE_SLUGS) {
+      entries.push({ url: `${BASE_URL}${cityPath(`/tenant-tools/templates/${slug}`, city)}`, lastmod: now, changefreq: "monthly", priority: 0.4 });
+    }
+  }
+
+  // Tenant rights topics (per-city ~5-10)
+  for (const city of VALID_CITIES) {
+    const topics = TENANT_RIGHTS_TOPICS[city] || [];
+    for (const slug of topics) {
+      entries.push({ url: `${BASE_URL}${cityPath(`/tenant-rights/${slug}`, city)}`, lastmod: now, changefreq: "monthly", priority: 0.5 });
+    }
+  }
+
+  // Neighborhoods hub (5) + both compare variants (10)
+  for (const city of VALID_CITIES) {
+    entries.push({ url: `${BASE_URL}${cityPath("/neighborhoods", city)}`, lastmod: now, changefreq: "weekly", priority: 0.6 });
+    entries.push({ url: `${BASE_URL}${cityPath("/neighborhoods/compare", city)}`, lastmod: now, changefreq: "monthly", priority: 0.4 });
+    entries.push({ url: `${BASE_URL}${cityPath("/neighborhood/compare", city)}`, lastmod: now, changefreq: "monthly", priority: 0.4 });
+  }
+
+  // Rents by neighborhood — reuse ZIP enumeration (~310 unique combos)
+  try {
+    const zipData = await supabaseFetch("buildings?select=zip_code,metro,updated_at&zip_code=not.is.null&limit=10000");
+    const zipCityLastMod = new Map();
+    for (const b of zipData) {
+      if (!b.zip_code) continue;
+      const city = metroToCity(b.metro);
+      const key = `${city}:${b.zip_code}`;
+      const d = b.updated_at || now;
+      const existing = zipCityLastMod.get(key);
+      if (!existing || d > existing) zipCityLastMod.set(key, d);
+    }
+    for (const [key, lastmod] of zipCityLastMod) {
+      const [city, zip] = key.split(":");
+      const slug = neighborhoodPageSlug(zip, city);
+      entries.push({ url: `${BASE_URL}${cityPath(`/rents/${slug}`, city)}`, lastmod, changefreq: "weekly", priority: 0.5 });
+    }
+  } catch (e) {
+    console.warn(`  ⚠ Skipping rents-by-neighborhood in hubs sitemap: ${e.message}`);
+  }
+
+  // Ellis Act tracker — LA only. Route is /[city]/ellis-act (lowercase).
+  // cityPath("/ellis-act", "los-angeles") yields /CA/Los-Angeles/ellis-act
+  entries.push({ url: `${BASE_URL}${cityPath("/ellis-act", "los-angeles")}`, lastmod: now, changefreq: "weekly", priority: 0.5 });
+
+  // Building list hubs (5) + chip pages (25)
+  for (const city of VALID_CITIES) {
+    entries.push({ url: `${BASE_URL}${cityPath("/building-list", city)}`, lastmod: now, changefreq: "weekly", priority: 0.5 });
+    for (const slug of CHIP_SLUGS) {
+      entries.push({ url: `${BASE_URL}${cityPath(`/building-list/${slug}`, city)}`, lastmod: now, changefreq: "weekly", priority: 0.4 });
+    }
+  }
+
+  // Global calculators (3)
+  for (const path of CALCULATOR_PATHS) {
+    entries.push({ url: `${BASE_URL}${path}`, lastmod: now, changefreq: "monthly", priority: 0.6 });
+  }
+
+  return entries;
+}
+
 // ─── Main ───────────────────────────────────────────────────────
 
 const SITEMAP_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes max for entire sitemap generation
