@@ -119,35 +119,33 @@ export function NeighborhoodSearch({
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((n) => (
-            <Link key={n.zipCode} href={n.href} className="bg-white rounded-xl border border-[#e2e8f0] p-4 hover:border-[#3B82F6] hover:shadow-sm transition-all group">
-              <div className="flex items-start gap-3">
-                <LetterGrade score={n.avgScore} size="sm" />
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-[#0F1D2E] group-hover:text-[#3B82F6] transition-colors truncate">{n.name}</p>
-                  <p className="text-xs text-[#94a3b8] mt-0.5">{n.zipCode}{n.region ? ` · ${n.region}` : ""}</p>
+            <div key={n.zipCode} className="bg-white rounded-xl border border-[#e2e8f0] p-4 hover:border-[#3B82F6] hover:shadow-sm transition-all group">
+              <Link href={n.href}>
+                <div className="flex items-start gap-3">
+                  <LetterGrade score={n.avgScore} size="sm" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-[#0F1D2E] group-hover:text-[#3B82F6] transition-colors truncate">{n.name}</p>
+                    <p className="text-xs text-[#94a3b8] mt-0.5">{n.zipCode}{n.region ? ` · ${n.region}` : ""}</p>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-4 mt-3 text-xs text-[#64748b]">
-                <span>{n.buildingCount.toLocaleString()} buildings</span>
-                <span>{n.totalViolations.toLocaleString()} violations</span>
-                {n.safetyGrade && (
-                  <span className="flex items-center gap-1">
-                    Safety: <span className="font-bold" style={{ color: getGradeColor(n.safetyGrade as LetterGradeType) }}>{n.safetyGrade}</span>
-                  </span>
-                )}
-              </div>
+                <div className="flex items-center gap-4 mt-3 text-xs text-[#64748b]">
+                  <span>{n.buildingCount.toLocaleString()} buildings</span>
+                  <span>{n.totalViolations.toLocaleString()} violations</span>
+                  {n.safetyGrade && (
+                    <span className="flex items-center gap-1">
+                      Safety: <span className="font-bold" style={{ color: getGradeColor(n.safetyGrade as LetterGradeType) }}>{n.safetyGrade}</span>
+                    </span>
+                  )}
+                </div>
+              </Link>
               {n.rentsHref && (
                 <div className="mt-2">
-                  <Link
-                    href={n.rentsHref}
-                    onClick={(e) => e.stopPropagation()}
-                    className="text-sm text-[#3B82F6] hover:underline"
-                  >
+                  <Link href={n.rentsHref} className="text-sm text-[#3B82F6] hover:underline">
                     Rent data →
                   </Link>
                 </div>
               )}
-            </Link>
+            </div>
           ))}
         </div>
       )}
