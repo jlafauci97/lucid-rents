@@ -2214,6 +2214,48 @@ const chicagoConfig: CityTenantRightsConfig = {
 };
 
 /* ---------------------------------------------------------------------------
+ * Related Tools Map
+ * -------------------------------------------------------------------------*/
+
+export const TOPIC_RELATED_TOOLS: Record<string, { templates: string[]; calculators: string[] }> = {
+  // NYC topics
+  "security-deposits": {
+    templates: ["security-deposit-demand"],
+    calculators: ["rent-affordability-calculator"],
+  },
+  "eviction-protections": {
+    templates: ["illegal-eviction-response"],
+    calculators: [],
+  },
+  "repairs-and-maintenance": {
+    templates: ["repair-maintenance-request"],
+    calculators: [],
+  },
+  "repairs-and-habitability": {
+    // LA-equivalent of NYC's repairs-and-maintenance
+    templates: ["repair-maintenance-request"],
+    calculators: [],
+  },
+  "rent-stabilization-rights": {
+    templates: [],
+    calculators: ["rent-affordability-calculator"],
+  },
+  "harassment": {
+    templates: ["harassment-complaint"],
+    calculators: [],
+  },
+  // LA topics
+  "rso-rent-stabilization": {
+    templates: [],
+    calculators: ["rent-affordability-calculator"],
+  },
+  "just-cause-eviction": {
+    templates: ["illegal-eviction-response"],
+    calculators: [],
+  },
+};
+
+/* ---------------------------------------------------------------------------
  * Export
  * -------------------------------------------------------------------------*/
 
