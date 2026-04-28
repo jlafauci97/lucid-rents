@@ -1,12 +1,24 @@
+import { unstable_cache } from "next/cache";
+import { createClient as createSbClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { ArrowRight, ArrowUpRight, Building2, Trophy, Flame, Scale, FileWarning, ChevronLeft, ChevronRight, AlertTriangle, ShieldAlert, Gavel } from "lucide-react";
 import { LetterGrade } from "@/components/ui/LetterGrade";
 import Link from "next/link";
 import { landlordUrl, canonicalUrl, cityPath } from "@/lib/seo";
-import { isValidCity, CITY_META, type City } from "@/lib/cities";
+import { isValidCity, VALID_CITIES, CITY_META, type City } from "@/lib/cities";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { LandlordSearch } from "@/components/landlord-search/LandlordSearch";
 import type { Metadata } from "next";
+
+// Cookie-free anonymous client for use inside unstable_cache (Next.js
+// forbids cookies() inside a cache scope, and this data is fully public).
+function createAnonClient() {
+  return createSbClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { auth: { persistSession: false } }
+  );
+}
 
 export async function generateMetadata({
   params,
@@ -37,6 +49,13 @@ export async function generateMetadata({
 }
 
 export const revalidate = 3600;
+
+// Pre-render all 5 cities at build time so end users never hit a cold
+// cache. Sort/page/search variants still server-render on demand but they
+// share the cached data layer below, so each variant is sub-second.
+export async function generateStaticParams() {
+  return VALID_CITIES.map((city) => ({ city }));
+}
 
 const SORT_OPTIONS = [
   { key: "violations",  label: "Violations",  col: "total_violations" },
@@ -184,14 +203,12 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
     dataQuery = dataQuery.ilike("name", `%${search}%`);
   }
 
-  const shameQuery = baseQuery().order("total_violations", { ascending: false }).limit(6);
-  const stripQueries = RANKING_STRIPS.map((s) =>
-    baseQuery().order(s.col, { ascending: false }).limit(3)
-  );
-
-  // NYC-only: top landlords by OATH hearing count. Pre-aggregated in
-  // get_top_landlords_by_oath() (1.4M-row table — must run server-side).
-  // Inner-joins to landlord_stats so every result has a clickable page.
+  // ─── ALL non-search/sort/page-dependent data wrapped in unstable_cache ──
+  // Previously every request fanned out: shame + 5 strip queries + 2 RPCs +
+  // buildings count = 9 round-trips per request. We now cache the entire
+  // shared layer per-city for 3600s, so EVERY sort/page/search variant of
+  // the page reuses the same data — only the paginated countQuery and
+  // dataQuery (which depend on search/sort/page) hit the DB per request.
   type OathRow = {
     name: string;
     slug: string;
@@ -200,76 +217,96 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
     total_penalty: number;
     total_balance: number;
   };
-  async function getOathTop(): Promise<OathRow[]> {
-    if (city !== "nyc") return [];
-    try {
-      const res = await supabase.rpc("get_top_landlords_by_oath", { p_limit: 3 });
-      const rows = (res?.data ?? []) as unknown as OathRow[];
-      return Array.isArray(rows) ? rows : [];
-    } catch {
-      return [];
-    }
-  }
-
-  // 311 ranking — sourced from landlord_311_summary, refreshed nightly so it
-  // reflects current 311 imports rather than the stale landlord_stats column.
-  // Falls back to landlord_stats if the matview hasn't been built for this metro.
   type TopBy311Row = {
     name: string;
     building_count: number;
     complaint_count: number;
     slug: string | null;
   };
-  async function getTopBy311(): Promise<TopBy311Row[]> {
-    try {
-      const res = await supabase.rpc("get_top_landlords_by_311", { p_limit: 3, p_metro: city });
-      const rows = (res?.data ?? []) as unknown as TopBy311Row[];
-      return Array.isArray(rows) ? rows : [];
-    } catch {
-      return [];
-    }
-  }
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const apiKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-  async function getBuildingsCount(): Promise<number | null> {
-    try {
-      const res = await fetch(
-        `${supabaseUrl}/rest/v1/buildings?select=id&metro=eq.${encodeURIComponent(city)}`,
-        {
-          headers: { apikey: apiKey, Authorization: `Bearer ${apiKey}`, Prefer: "count=estimated", Range: "0-0" },
-          next: { revalidate: 3600 },
-        }
+  const fetchSharedLandlordData = unstable_cache(
+    async (cityKey: City) => {
+      const supa = createAnonClient();
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+      const apiKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+      const baseQ = () =>
+        supa
+          .from("landlord_stats")
+          .select(baseSelect)
+          .eq("metro", cityKey)
+          .not("name", "in", GARBAGE_IN);
+
+      const shameQ = baseQ().order("total_violations", { ascending: false }).limit(6);
+      const stripQs = RANKING_STRIPS.map((s) =>
+        baseQ().order(s.col, { ascending: false }).limit(3)
       );
-      if (!res.ok) return null;
-      const range = res.headers.get("content-range") || "";
-      const m = range.match(/\/(\d+)/);
-      return m ? parseInt(m[1], 10) : null;
-    } catch {
-      return null;
-    }
-  }
+
+      const oathQ = cityKey === "nyc"
+        ? supa.rpc("get_top_landlords_by_oath", { p_limit: 3 }).then(
+            (r) => (Array.isArray(r?.data) ? (r.data as unknown as OathRow[]) : []),
+            () => [] as OathRow[]
+          )
+        : Promise.resolve([] as OathRow[]);
+
+      const top311Q = supa.rpc("get_top_landlords_by_311", { p_limit: 3, p_metro: cityKey }).then(
+        (r) => (Array.isArray(r?.data) ? (r.data as unknown as TopBy311Row[]) : []),
+        () => [] as TopBy311Row[]
+      );
+
+      const buildingsCountQ = (async (): Promise<number | null> => {
+        try {
+          const res = await fetch(
+            `${supabaseUrl}/rest/v1/buildings?select=id&metro=eq.${encodeURIComponent(cityKey)}`,
+            {
+              headers: { apikey: apiKey, Authorization: `Bearer ${apiKey}`, Prefer: "count=estimated", Range: "0-0" },
+            }
+          );
+          if (!res.ok) return null;
+          const range = res.headers.get("content-range") || "";
+          const m = range.match(/\/(\d+)/);
+          return m ? parseInt(m[1], 10) : null;
+        } catch {
+          return null;
+        }
+      })();
+
+      const [shameRes, oath, t311, bcount, ...stripRes] = await Promise.all([
+        shameQ,
+        oathQ,
+        top311Q,
+        buildingsCountQ,
+        ...stripQs,
+      ]);
+
+      return {
+        shameRows: (shameRes?.data ?? []) as LandlordRow[],
+        oathTop: oath,
+        top311: t311,
+        buildingsCount: bcount,
+        stripResults: stripRes.map((r) => ((r?.data ?? []) as LandlordRow[])),
+      };
+    },
+    ["landlords-shared-v1", city],
+    { revalidate: 3600, tags: [`landlords:${city}`] }
+  );
 
   const [
     { count: totalRaw },
     { data: landlords },
-    buildingsCount,
-    { data: shameRows },
-    oathTop,
-    top311,
-    ...stripResults
+    shared,
   ] = await Promise.all([
     countQuery,
     dataQuery,
-    getBuildingsCount(),
-    shameQuery,
-    getOathTop(),
-    getTopBy311(),
-    ...stripQueries,
+    fetchSharedLandlordData(city),
   ]);
 
   const rows = (landlords ?? []) as LandlordRow[];
-  const featured = (shameRows ?? []) as LandlordRow[];
+  const featured = shared.shameRows;
+  const buildingsCount = shared.buildingsCount;
+  const oathTop = shared.oathTop;
+  const top311 = shared.top311;
+  const stripResults = shared.stripResults;
   const total = totalRaw && totalRaw > 0 ? totalRaw : (rows.length > 0 ? rows.length + offset : 0);
   const totalPages = Math.max(1, Math.ceil(total / limit));
 
@@ -531,7 +568,7 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
                       total_litigations: 0, total_dob_violations: 0,
                       avg_score: null, slug: r.slug, worst_building_address: null, worst_building_violations: null,
                     } satisfies LandlordRow))
-                  : ((stripResults[idx]?.data ?? []) as LandlordRow[]);
+                  : (stripResults[idx] ?? []);
                 if (stripData.length === 0) return null;
                 return (
                   <div key={strip.id} id={strip.id} className="p-5 sm:p-6" style={{ background: "#fff", borderRadius: 20, border: `1px solid ${BORDER}`, boxShadow: SHADOW }}>
