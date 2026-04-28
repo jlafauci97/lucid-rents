@@ -256,16 +256,28 @@ export default async function BuildingRankingsPage({ params: routeParams, search
   // pool (top 200 by violations) and re-sort/paginate in app code. That caps
   // those views at 200 results but they're already "worst-violator" buildings.
   const useDbForDirectory = sortBy === "violations" || sortBy === "per-unit";
-  let dirQuery: ReturnType<typeof supabase.from> | null = null;
-  if (useDbForDirectory) {
-    let q = supabase.from("buildings").select(baseSelect).eq("metro", metro);
-    if (borough !== "all") q = q.eq("borough", borough);
-    if (sortBy === "per-unit") {
-      q = q.gt("violation_count", 0).gt("total_units", 0).order("violation_count", { ascending: false });
-    } else {
-      q = q.gt("violation_count", 0).order("violation_count", { ascending: false });
-    }
-    dirQuery = q.range(offset, offset + limit);
+
+  // Wrap the chained Supabase query in an async helper so the call site
+  // gets a Promise (parallelisable with the shared cache fetch) and we
+  // sidestep TS friction between PostgrestQueryBuilder vs FilterBuilder.
+  async function fetchDirectory(): Promise<{ data: BuildingRow[] | null }> {
+    if (!useDbForDirectory) return { data: null };
+    const base = supabase
+      .from("buildings")
+      .select(baseSelect)
+      .eq("metro", metro);
+    const filtered = borough !== "all" ? base.eq("borough", borough) : base;
+    const sorted =
+      sortBy === "per-unit"
+        ? filtered
+            .gt("violation_count", 0)
+            .gt("total_units", 0)
+            .order("violation_count", { ascending: false })
+        : filtered
+            .gt("violation_count", 0)
+            .order("violation_count", { ascending: false });
+    const { data } = await sorted.range(offset, offset + limit);
+    return { data: (data ?? []) as BuildingRow[] };
   }
 
   // ─── parallel: shared cached data + (optional) small directory query ─
@@ -274,7 +286,7 @@ export default async function BuildingRankingsPage({ params: routeParams, search
   // re-sorts the cached pool in app for the slow-column sorts.
   const [shared, dirRes] = await Promise.all([
     fetchSharedData(city),
-    dirQuery ?? Promise.resolve({ data: null }),
+    fetchDirectory(),
   ]);
 
   // Hardcoded floor per city — count: 'estimated' is unreliable for this
