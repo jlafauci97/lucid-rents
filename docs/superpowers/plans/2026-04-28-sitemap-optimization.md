@@ -619,10 +619,15 @@ export const loadLandlordNeighborhoods = cache(
 );
 ```
 
-Add the imports `getNeighborhoodNameByCity` and `slugify` near the top of the file (use the existing patterns; `slugify` may live in `@/lib/seo` or be a local helper — grep for it first).
+Add the import `getNeighborhoodNameByCity` from `@/lib/neighborhoods` near the top of the file.
 
-Run: `grep -rn "export function slugify\|export const slugify" src/lib | head -3`
-Expected: location of slugify export. Import from there.
+There is no exported `slugify` in `src/lib`. Add this local helper at the top of `_data.ts` (mirrors the `landlordSlug` pattern at [src/lib/seo.ts:50](src/lib/seo.ts:50)):
+
+```ts
+function slugify(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-+|-+$)/g, "");
+}
+```
 
 - [ ] **Step 9.2: Create the component**
 
@@ -864,7 +869,7 @@ export const TOPIC_RELATED_TOOLS: Record<string, { templates: string[]; calculat
 };
 ```
 
-Note: empty arrays mean "no items in that category"; the component will still render the section if the OTHER category has items. If both arrays are empty (like `ellis-act` here), the component returns null.
+Note: empty arrays mean "no items in that category"; the component will still render the section if the OTHER category has items. Topics not present in `TOPIC_RELATED_TOOLS` at all (most chicago/miami topics, plus a few NYC/LA) cause the component to return null via `if (!map) return null;` — no section rendered.
 
 - [ ] **Step 11.2: Create the component**
 
@@ -1134,7 +1139,7 @@ Expected: only a `← Back to {displayName}` text link, no Breadcrumbs.
 - [ ] **Step 14.2: Reference the gold-standard pattern**
 
 Look at `src/app/[city]/building/[borough]/[slug]/reviews/page.tsx` lines 142–158 for the canonical pattern:
-- Build a `breadcrumbs` array using `cityBreadcrumbs(city, ...)` from `@/lib/seo`
+- Build a `breadcrumbs` array using `cityBreadcrumbs(city, ...trail)` from `@/lib/seo`
 - Render `<Breadcrumbs items={breadcrumbs} />` (already includes JSON-LD)
 - Render an `ArrowLeft` link below pointing to the parent page
 
@@ -1144,20 +1149,19 @@ Add imports at the top:
 ```tsx
 import { ArrowLeft } from "lucide-react";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
-import { cityBreadcrumbs } from "@/lib/seo";
+import { cityBreadcrumbs, cityPath } from "@/lib/seo";
 ```
 
-Build the breadcrumbs array (adapt city/landlord context):
+`cityBreadcrumbs` signature is `(city: City, ...trail: { label: string; href: string }[])` — it prepends Home and the city's name automatically. Build the breadcrumbs array:
+
 ```tsx
-const breadcrumbs = [
-  ...cityBreadcrumbs(city, { includeLandlords: true }), // adjust per cityBreadcrumbs signature
+const breadcrumbs = cityBreadcrumbs(
+  city,
+  { label: "Landlords", href: cityPath("/landlords", city) },
   { label: displayName, href: cityPath(`/landlord/${slug}`, city) },
   { label: "Reviews", href: cityPath(`/landlord/${slug}/reviews`, city) },
-];
+);
 ```
-
-Confirm the `cityBreadcrumbs` signature first:
-Run: `grep -A 20 "export function cityBreadcrumbs" src/lib/seo.ts`
 
 In the JSX, replace the existing `← Back to {displayName}` link with:
 ```tsx
