@@ -6005,7 +6005,7 @@ export async function GET(req: NextRequest) {
     try {
       revalidatePath("/[city]", "page");
       revalidatePath("/[city]/building/[borough]/[slug]", "page");
-      revalidatePath("/[city]/worst-rated-buildings", "page");
+      revalidatePath("/[city]/building-rankings", "page");
       revalidatePath("/[city]/buildings/[borough]", "page");
     } catch {
       // revalidation is best-effort; don't fail the sync

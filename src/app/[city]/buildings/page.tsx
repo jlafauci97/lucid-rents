@@ -144,7 +144,7 @@ export default async function BuildingsIndexPage({ params }: { params: Promise<{
         <h2 className="text-xl font-bold text-[#0F1D2E] mb-4">Explore More</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Link
-            href={cityPath("/worst-rated-buildings", city as City)}
+            href={cityPath("/building-rankings", city as City)}
             className="group flex items-center gap-3 p-4 bg-white border border-[#e2e8f0] rounded-xl hover:shadow-md hover:border-red-300 transition-all"
           >
             <div className="p-2 rounded-lg bg-red-50">

@@ -746,7 +746,7 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
             </div>
             <div className="flex flex-wrap gap-2">
               {[
-                { href: cityPath("/worst-rated-buildings", city), label: "Worst-rated buildings", icon: AlertTriangle },
+                { href: cityPath("/building-rankings", city), label: "Worst-rated buildings", icon: AlertTriangle },
                 { href: cityPath("/buildings", city),               label: "Buildings directory",  icon: Building2 },
                 { href: cityPath("/crime", city),                   label: "Crime by zip code",    icon: ShieldAlert },
               ].map((r) => (

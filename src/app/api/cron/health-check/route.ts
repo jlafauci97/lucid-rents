@@ -18,7 +18,7 @@ const ROUTES_TO_CHECK = [
   "/nyc/buildings/queens",
   "/nyc/buildings/bronx",
   "/nyc/buildings/staten-island",
-  "/nyc/worst-rated-buildings",
+  "/nyc/building-rankings",
   "/nyc/landlords",
   "/nyc/crime",
   "/nyc/feed",
@@ -38,14 +38,14 @@ const ROUTES_TO_CHECK = [
   // LA routes
   "/CA/Los-Angeles/search",
   "/CA/Los-Angeles/buildings",
-  "/CA/Los-Angeles/worst-rated-buildings",
+  "/CA/Los-Angeles/building-rankings",
   "/CA/Los-Angeles/landlords",
   "/CA/Los-Angeles/building/lincoln-heights/2312-n-griffin-ave-los-angeles-ca-90031",
   "/CA/Los-Angeles/building/downtown/100-n-santa-fe-ave-los-angeles-ca-90012",
   // Chicago
   "/IL/Chicago/search",
   "/IL/Chicago/buildings",
-  "/IL/Chicago/worst-rated-buildings",
+  "/IL/Chicago/building-rankings",
   "/IL/Chicago/landlords",
 ];
 
