@@ -388,9 +388,12 @@ function rebuildIndex() {
   const indexEntries = files.map(f => ({ name: f, lastmod: now }));
   indexEntries.sort((a, b) => {
     const order = (n) => {
-      if (n === "0.xml") return "0-0";
+      // Crawl priority: buildings first, then landlords, then static, hubs last.
+      // Google weakly honors index.xml order; this is the only "priority signal" available.
+      if (n.startsWith("b-")) return `0-${n.slice(2).replace(".xml", "").padStart(6, "0")}`;
       if (n.startsWith("l-")) return `1-${n.slice(2).replace(".xml", "").padStart(6, "0")}`;
-      if (n.startsWith("b-")) return `2-${n.slice(2).replace(".xml", "").padStart(6, "0")}`;
+      if (n === "0.xml")     return "2-0";
+      if (n === "hubs.xml")  return "3-0";
       return n;
     };
     return order(a.name).localeCompare(order(b.name));
