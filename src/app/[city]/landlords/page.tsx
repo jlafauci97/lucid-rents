@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { ArrowRight, ArrowUpRight, Building2, Trophy, Flame, Scale, FileWarning, ChevronLeft, ChevronRight, AlertTriangle, ShieldAlert } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Building2, Trophy, Flame, Scale, FileWarning, ChevronLeft, ChevronRight, AlertTriangle, ShieldAlert, Gavel } from "lucide-react";
 import { LetterGrade } from "@/components/ui/LetterGrade";
 import Link from "next/link";
 import { landlordUrl, canonicalUrl, cityPath } from "@/lib/seo";
@@ -178,6 +178,22 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
     baseQuery().order(s.col, { ascending: false }).limit(3)
   );
 
+  // NYC-only: top landlords by OATH hearing count. Pre-aggregated in
+  // get_top_landlords_by_oath() (1.4M-row table — must run server-side).
+  // Inner-joins to landlord_stats so every result has a clickable page.
+  type OathRow = {
+    name: string;
+    slug: string;
+    building_count: number;
+    hearing_count: number;
+    total_penalty: number;
+    total_balance: number;
+  };
+  const oathQuery: Promise<{ data: OathRow[] | null }> =
+    city === "nyc"
+      ? supabase.rpc("get_top_landlords_by_oath", { p_limit: 3 })
+      : Promise.resolve({ data: [] });
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const apiKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
   async function getBuildingsCount(): Promise<number | null> {
@@ -203,14 +219,17 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
     { data: landlords },
     buildingsCount,
     { data: shameRows },
+    { data: oathRows },
     ...stripResults
   ] = await Promise.all([
     countQuery,
     dataQuery,
     getBuildingsCount(),
     shameQuery,
+    oathQuery,
     ...stripQueries,
   ]);
+  const oathTop = (oathRows ?? []) as OathRow[];
 
   const rows = (landlords ?? []) as LandlordRow[];
   const featured = (shameRows ?? []) as LandlordRow[];
@@ -450,9 +469,9 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
               {RANKING_STRIPS.map((strip, idx) => {
                 const stripData = (stripResults[idx]?.data ?? []) as LandlordRow[];
                 if (stripData.length === 0) return null;
-                const palette = [G.rose, G.iris, G.sky, G.mint, G.amber][idx];
-                const accent = [ACCENT.rose, ACCENT.iris, ACCENT.sky, ACCENT.mint, ACCENT.amber][idx];
-                const Icon = [Trophy, Flame, Scale, FileWarning, Building2][idx];
+                const palette = [G.rose, G.iris, G.sky, G.mint, G.amber, G.peach][idx];
+                const accent = [ACCENT.rose, ACCENT.iris, ACCENT.sky, ACCENT.mint, ACCENT.amber, ACCENT.peach][idx];
+                const Icon = [Trophy, Flame, Scale, FileWarning, Building2, Gavel][idx];
                 const metricKey = strip.col;
                 return (
                   <div key={strip.id} id={strip.id} className="p-5 sm:p-6" style={{ background: "#fff", borderRadius: 20, border: `1px solid ${BORDER}`, boxShadow: SHADOW }}>
@@ -495,6 +514,51 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
                   </div>
                 );
               })}
+
+              {/* NYC-only: top landlords by OATH adjudicated hearings */}
+              {city === "nyc" && oathTop.length > 0 && (
+                <div id="by-oath" className="p-5 sm:p-6" style={{ background: "#fff", borderRadius: 20, border: `1px solid ${BORDER}`, boxShadow: SHADOW }}>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <span style={{ width: 36, height: 36, borderRadius: 12, background: G.peach, color: ACCENT.peach, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                        <Gavel size={16} strokeWidth={2.25} />
+                      </span>
+                      <div>
+                        <h3 style={{ fontSize: 15, fontWeight: 700, margin: 0, color: INK, lineHeight: 1.2 }}>Most OATH adjudications</h3>
+                        <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: ACCENT.peach, fontWeight: 700 }}>
+                          NYC only · DOB hearings
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <ol className="m-0 p-0 list-none">
+                    {oathTop.slice(0, 3).map((l, i) => (
+                      <li key={l.name} className="flex items-center gap-3 py-3" style={{ borderTop: i > 0 ? `1px solid ${BORDER}` : "none" }}>
+                        <span style={{ width: 24, height: 24, borderRadius: 8, background: G.peach, color: ACCENT.peach, fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
+                          {i + 1}
+                        </span>
+                        <Link href={landlordUrl(l.name, city)} className="flex-1 min-w-0 group" style={{ textDecoration: "none", color: "inherit" }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: INK, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {l.name}
+                          </div>
+                          <div style={{ fontFamily: MONO, fontSize: 11, color: INK_MUTE, marginTop: 2, fontVariantNumeric: "tabular-nums" }}>
+                            <span style={{ color: INK, fontWeight: 700 }}>{l.hearing_count.toLocaleString()}</span>
+                            <span style={{ textTransform: "lowercase" }}> hearings</span>
+                            {l.total_penalty > 0 && (
+                              <span style={{ opacity: 0.55 }}>
+                                {" · "}
+                                <span style={{ color: ACCENT.peach, fontWeight: 700 }}>${compact(Number(l.total_penalty))}</span> imposed
+                              </span>
+                            )}
+                            <span style={{ opacity: 0.55 }}> · {l.building_count} bldg</span>
+                          </div>
+                        </Link>
+                        <ArrowUpRight size={16} style={{ color: INK_MUTE, flexShrink: 0 }} />
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              )}
             </div>
           </section>
 
