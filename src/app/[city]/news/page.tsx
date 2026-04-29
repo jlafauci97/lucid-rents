@@ -1,19 +1,17 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import type { Metadata } from "next";
-import { createClient } from "@/lib/supabase/server";
 import { canonicalUrl, breadcrumbJsonLd, cityPath, cityBreadcrumbs } from "@/lib/seo";
 import { newsCollectionJsonLd } from "@/lib/seo";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { type City, CITY_META } from "@/lib/cities";
 import { NEWS_CATEGORIES, type NewsCategory } from "@/lib/news-sources";
-import { NewsList } from "@/components/news/NewsList";
 import { CategoryIcon } from "@/components/news/CategoryIcon";
 import { AdSidebar } from "@/components/ui/AdSidebar";
-import type { NewsArticle } from "@/types";
+import { NewsListSection } from "./NewsListSection";
+import { NewsListSkeleton } from "./NewsListSkeleton";
 
 export const revalidate = 1800; // 30 minutes
-
-const PER_PAGE = 20;
 
 export async function generateMetadata({ params }: { params: Promise<{ city: string }> }): Promise<Metadata> {
   const { city } = await params;
@@ -47,22 +45,6 @@ export default async function NewsPage({
   const cityName = isValid(cityParam) ? cityMeta[cityParam].fullName : "NYC";
   const params = await searchParams;
   const page = Math.max(1, parseInt(params.page || "1", 10));
-  const offset = (page - 1) * PER_PAGE;
-
-  const supabase = await createClient();
-
-  const metro = cityParam;
-  const { count } = await supabase
-    .from("news_articles")
-    .select("id", { count: "exact", head: true })
-    .eq("metro", metro);
-
-  const { data: articles } = await supabase
-    .from("news_articles")
-    .select("*")
-    .eq("metro", metro)
-    .order("published_at", { ascending: false })
-    .range(offset, offset + PER_PAGE - 1);
 
   const categories = Object.entries(NEWS_CATEGORIES) as [
     NewsCategory,
@@ -123,15 +105,11 @@ export default async function NewsPage({
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
-          {/* Main content */}
+          {/* Main content — streamed via Suspense so the page shell paints first. */}
           <div className="min-w-0">
-            <NewsList
-              articles={(articles as NewsArticle[]) || []}
-              page={page}
-              totalCount={count || 0}
-              perPage={PER_PAGE}
-              basePath="/news"
-            />
+            <Suspense fallback={<NewsListSkeleton />}>
+              <NewsListSection city={cityParam} page={page} />
+            </Suspense>
           </div>
 
           {/* Sidebar */}
