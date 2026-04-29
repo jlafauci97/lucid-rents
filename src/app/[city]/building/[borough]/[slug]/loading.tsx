@@ -1,3 +1,5 @@
+import "@/styles/v2-tokens.css";
+
 export default function Loading() {
   return (
     <div className="v2" style={{ minHeight: "100vh", background: "var(--v2-paper)" }}>
