@@ -43,27 +43,27 @@ function CityTag({ city }: { city: string }) {
 }
 
 const panels: { key: City; image?: string; stats: { label: string; value: string }[] }[] = [
-  { key: "nyc", image: "/nyc-empire-skyline.jpg", stats: [
+  { key: "nyc", image: "/nyc-empire-skyline.webp", stats: [
     { label: "Buildings", value: "954K" },
     { label: "Open viol.", value: "4.4M" },
     { label: "Landlords", value: "18.3K" },
   ] },
-  { key: "los-angeles", image: "/la-hero-skyline.jpg", stats: [
+  { key: "los-angeles", image: "/la-hero-skyline.webp", stats: [
     { label: "Buildings", value: "479K" },
     { label: "Complaints", value: "412K" },
     { label: "Landlords", value: "14.1K" },
   ] },
-  { key: "chicago", image: "/chicago-hero-skyline.jpg", stats: [
+  { key: "chicago", image: "/chicago-hero-skyline.webp", stats: [
     { label: "Buildings", value: "319K" },
     { label: "Open viol.", value: "198K" },
     { label: "Landlords", value: "8.2K" },
   ] },
-  { key: "miami", image: "/miami-hero-skyline.avif", stats: [
+  { key: "miami", image: "/miami-hero-skyline.webp", stats: [
     { label: "Buildings", value: "94.7K" },
     { label: "Complaints", value: "76K" },
     { label: "Landlords", value: "3.4K" },
   ] },
-  { key: "houston", image: "/houston-hero-skyline.png", stats: [
+  { key: "houston", image: "/houston-hero-skyline.webp", stats: [
     { label: "Buildings", value: "411K" },
     { label: "311 calls", value: "132K" },
     { label: "Landlords", value: "6.8K" },
@@ -116,7 +116,7 @@ type CityDirectory = {
 const cityDirectories: CityDirectory[] = [
   {
     key: "nyc",
-    image: "/nyc-empire-skyline.jpg",
+    image: "/nyc-empire-skyline.webp",
     stat: "954K",
     statLabel: "buildings",
     signature: "5 boroughs · HPD + DOB",
@@ -130,7 +130,7 @@ const cityDirectories: CityDirectory[] = [
   },
   {
     key: "los-angeles",
-    image: "/la-hero-skyline.jpg",
+    image: "/la-hero-skyline.webp",
     stat: "479K",
     statLabel: "buildings",
     signature: "51 neighborhoods · LAHD + LADBS",
@@ -144,7 +144,7 @@ const cityDirectories: CityDirectory[] = [
   },
   {
     key: "chicago",
-    image: "/chicago-hero-skyline.jpg",
+    image: "/chicago-hero-skyline.webp",
     stat: "319K",
     statLabel: "buildings",
     signature: "41 neighborhoods · RLTO + Energy",
@@ -158,7 +158,7 @@ const cityDirectories: CityDirectory[] = [
   },
   {
     key: "miami",
-    image: "/miami-hero-skyline.avif",
+    image: "/miami-hero-skyline.webp",
     stat: "94.7K",
     statLabel: "buildings",
     signature: "37 neighborhoods · 40-Yr + FEMA",
@@ -172,7 +172,7 @@ const cityDirectories: CityDirectory[] = [
   },
   {
     key: "houston",
-    image: "/houston-hero-skyline.png",
+    image: "/houston-hero-skyline.webp",
     stat: "411K",
     statLabel: "buildings",
     signature: "41 neighborhoods · HCAD + FEMA",
@@ -693,7 +693,8 @@ export default async function Home() {
                   fill
                   className="object-cover"
                   sizes="(max-width: 640px) 80vw, 20vw"
-                  priority={key === "nyc"}
+                  priority
+                  fetchPriority={key === "nyc" ? "high" : "auto"}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0F1D2E]/90 via-[#0F1D2E]/10 to-[#0F1D2E]/35" />
 
