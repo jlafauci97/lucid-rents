@@ -1,13 +1,15 @@
 import { unstable_cache } from "next/cache";
 import { createClient as createSbClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
-import { ArrowRight, ArrowUpRight, Building2, Trophy, Flame, Scale, FileWarning, ChevronLeft, ChevronRight, AlertTriangle, ShieldAlert, Gavel } from "lucide-react";
-import { LetterGrade } from "@/components/ui/LetterGrade";
+import { ArrowRight, ArrowUpRight, Building2, Trophy, Flame, Scale, FileWarning, AlertTriangle, ShieldAlert, Gavel } from "lucide-react";
 import Link from "next/link";
+import { Suspense } from "react";
 import { landlordUrl, canonicalUrl, cityPath } from "@/lib/seo";
 import { isValidCity, VALID_CITIES, CITY_META, type City } from "@/lib/cities";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { LandlordSearch } from "@/components/landlord-search/LandlordSearch";
+import { DirectorySection } from "./DirectorySection";
+import { DirectorySkeleton } from "./DirectorySkeleton";
 import type { Metadata } from "next";
 
 // Cookie-free anonymous client for use inside unstable_cache (Next.js
@@ -183,27 +185,19 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
   const baseSelect =
     "name,slug,building_count,total_violations,total_complaints,total_litigations,total_dob_violations,avg_score,worst_building_address,worst_building_violations";
 
-  const baseQuery = () =>
-    supabase
-      .from("landlord_stats_canonical")
-      .select(baseSelect)
-      .eq("metro", city)
-      .not("name", "in", GARBAGE_IN);
-
   // landlord_stats_canonical has no id; slug is the PK, count via slug.
+  // The paginated dataQuery (rows ordered + ranged) has been moved into
+  // <DirectorySection> so it can stream behind <Suspense>. The cheap HEAD
+  // count stays here so the hero/stats/skeleton can render the total
+  // immediately without waiting on the slow row fetch.
   let countQuery = supabase
     .from("landlord_stats_canonical")
     .select("slug", { count: "estimated", head: true })
     .eq("metro", city)
     .not("name", "in", GARBAGE_IN);
 
-  let dataQuery = baseQuery()
-    .order(sortOption.col, { ascending: false })
-    .range(offset, offset + limit - 1);
-
   if (search) {
     countQuery = countQuery.ilike("name", `%${search}%`);
-    dataQuery = dataQuery.ilike("name", `%${search}%`);
   }
 
   // ─── ALL non-search/sort/page-dependent data wrapped in unstable_cache ──
@@ -296,21 +290,18 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
 
   const [
     { count: totalRaw },
-    { data: landlords },
     shared,
   ] = await Promise.all([
     countQuery,
-    dataQuery,
     fetchSharedLandlordData(city),
   ]);
 
-  const rows = (landlords ?? []) as LandlordRow[];
   const featured = shared.shameRows;
   const buildingsCount = shared.buildingsCount;
   const oathTop = shared.oathTop;
   const top311 = shared.top311;
   const stripResults = shared.stripResults;
-  const total = totalRaw && totalRaw > 0 ? totalRaw : (rows.length > 0 ? rows.length + offset : 0);
+  const total = totalRaw && totalRaw > 0 ? totalRaw : 0;
   const totalPages = Math.max(1, Math.ceil(total / limit));
 
   const basePath = cityPath("/landlords", city);
@@ -665,134 +656,27 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
             </div>
           </section>
 
-          {/* Browse the directory */}
-          <section className="mb-10 sm:mb-14">
-            <div className="flex items-baseline justify-between mb-6 flex-wrap gap-3">
-              <div>
-                <MonoLabel color={ACCENT.sky}>Section 03</MonoLabel>
-                <h2 style={{ fontSize: "clamp(28px, 3.5vw, 44px)", lineHeight: 1.05, letterSpacing: "-0.025em", margin: "6px 0 0", fontWeight: 700, color: INK }}>
-                  Browse the directory
-                </h2>
-              </div>
-              <MonoLabel>{total.toLocaleString()} total · sorted by {sortOption.label.toLowerCase()}</MonoLabel>
-            </div>
-
-            <div className="flex flex-wrap gap-2 mb-5">
-              {SORT_OPTIONS.map((opt) => {
-                const active = sortBy === opt.key;
-                return (
-                  <Link
-                    key={opt.key}
-                    href={url({ sort: opt.key, page: "1" })}
-                    className="px-4 py-2 text-sm font-semibold transition-colors"
-                    style={{
-                      background: active ? INK : "#fff",
-                      color: active ? "#fff" : INK_SOFT,
-                      borderRadius: 999,
-                      border: `1px solid ${active ? INK : BORDER}`,
-                      fontFamily: SANS,
-                      textDecoration: "none",
-                    }}
-                  >
-                    {opt.label}
-                  </Link>
-                );
-              })}
-              {search && (
-                <Link href={basePath} className="px-4 py-2 text-sm font-semibold" style={{ background: "#fef2f2", color: "#dc2626", borderRadius: 999, border: "1px solid #fecaca", textDecoration: "none" }}>
-                  Clear &ldquo;{search}&rdquo; ×
-                </Link>
-              )}
-            </div>
-
-            <p style={{ fontFamily: MONO, fontSize: 11, letterSpacing: "0.06em", color: INK_MUTE, marginBottom: 12, textTransform: "uppercase" }}>
-              {rows.length > 0
-                ? `Showing ${(offset + 1).toLocaleString()}–${Math.min(offset + rows.length, total).toLocaleString()} of ${total.toLocaleString()}${search ? ` matching "${search}"` : ""}`
-                : "No landlords found"}
-            </p>
-
-            {rows.length > 0 ? (
-              <div style={{ background: "#fff", borderRadius: 20, border: `1px solid ${BORDER}`, boxShadow: SHADOW, overflow: "hidden" }}>
-                <ol className="m-0 p-0 list-none">
-                  {rows.map((l, idx) => {
-                    const rank = offset + idx + 1;
-                    return (
-                      <li key={l.name} style={{ borderTop: idx > 0 ? `1px solid ${BORDER}` : "none" }}>
-                        <Link href={landlordUrl(l.name, city)} className="group flex items-center gap-4 sm:gap-6 px-5 sm:px-7 py-4 sm:py-5 transition-colors hover:bg-[#fafbfd]" style={{ textDecoration: "none", color: "inherit" }}>
-                          <span style={{ minWidth: 40, fontFamily: MONO, fontSize: 18, fontWeight: 700, color: INK_MUTE, fontVariantNumeric: "tabular-nums" }}>
-                            {String(rank).padStart(2, "0")}
-                          </span>
-                          <div className="flex-1 min-w-0">
-                            <h3 style={{ fontSize: "clamp(15px, 1.4vw, 18px)", fontWeight: 700, margin: "0 0 6px", color: INK, letterSpacing: "-0.005em" }}>
-                              {l.name}
-                            </h3>
-                            <div className="flex flex-wrap gap-x-5 gap-y-1" style={{ fontFamily: MONO, fontSize: 11, color: INK_MUTE, fontVariantNumeric: "tabular-nums" }}>
-                              <span><span style={{ color: ACCENT.rose, fontWeight: 700 }}>{l.total_violations.toLocaleString()}</span> viol</span>
-                              <span><span style={{ color: ACCENT.amber, fontWeight: 700 }}>{l.total_complaints.toLocaleString()}</span> calls</span>
-                              <span><span style={{ color: ACCENT.iris, fontWeight: 700 }}>{l.total_litigations.toLocaleString()}</span> cases</span>
-                              <span><span style={{ color: INK, fontWeight: 700 }}>{l.building_count.toLocaleString()}</span> bldg</span>
-                              {l.worst_building_address && (
-                                <span style={{ color: INK_MUTE, opacity: 0.85 }}>
-                                  worst: <span style={{ color: INK_SOFT }}>{l.worst_building_address.split(",")[0]}</span>
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <div className="hidden sm:flex items-center gap-3">
-                            <LetterGrade score={l.avg_score} size="sm" />
-                            <span className="inline-flex items-center justify-center" style={{ width: 32, height: 32, borderRadius: 10, background: PAPER, color: INK_MUTE }}>
-                              <ArrowUpRight size={16} className="group-hover:scale-110 transition-transform" />
-                            </span>
-                          </div>
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ol>
-              </div>
-            ) : (
-              <div className="p-12 text-center" style={{ background: "#fff", borderRadius: 20, border: `1px solid ${BORDER}`, boxShadow: SHADOW }}>
-                <Trophy size={32} style={{ color: INK_MUTE, margin: "0 auto 10px" }} />
-                <h3 style={{ fontSize: 18, fontWeight: 700, margin: "0 0 6px" }}>No landlords found</h3>
-                <p style={{ fontSize: 14, color: INK_SOFT, margin: 0 }}>
-                  {search ? `No landlords match "${search}". Try a different search term.` : "Landlord data is still being processed for this metro."}
-                </p>
-                {search && (
-                  <Link href={basePath} className="inline-flex items-center gap-1.5 mt-4 text-sm font-semibold" style={{ color: ACCENT.rose }}>
-                    Clear search and view all
-                  </Link>
-                )}
-              </div>
-            )}
-
-            {totalPages > 1 && (
-              <div className="mt-5 flex items-center justify-between gap-3">
-                <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: "0.06em", color: INK_MUTE, textTransform: "uppercase" }}>
-                  Page {page} of {totalPages.toLocaleString()}
-                </span>
-                <div className="flex gap-2">
-                  {page > 1 ? (
-                    <Link href={url({ page: String(page - 1) })} className="inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold" style={{ background: "#fff", color: INK_SOFT, borderRadius: 12, border: `1px solid ${BORDER}`, textDecoration: "none" }}>
-                      <ChevronLeft size={14} /> Previous
-                    </Link>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold" style={{ color: "#cbd5e1", borderRadius: 12, border: `1px solid ${BORDER}` }}>
-                      <ChevronLeft size={14} /> Previous
-                    </span>
-                  )}
-                  {page < totalPages ? (
-                    <Link href={url({ page: String(page + 1) })} className="inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold" style={{ background: "#fff", color: INK_SOFT, borderRadius: 12, border: `1px solid ${BORDER}`, textDecoration: "none" }}>
-                      Next <ChevronRight size={14} />
-                    </Link>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold" style={{ color: "#cbd5e1", borderRadius: 12, border: `1px solid ${BORDER}` }}>
-                      Next <ChevronRight size={14} />
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
-          </section>
+          {/* Browse the directory — streamed via Suspense so the static
+              shell paints first while the paginated landlord rows fetch. */}
+          <Suspense
+            fallback={
+              <DirectorySkeleton
+                total={total}
+                sortOptionLabel={sortOption.label}
+              />
+            }
+          >
+            <DirectorySection
+              city={city}
+              search={search}
+              sortBy={sortBy}
+              page={page}
+              basePath={basePath}
+              sortOptionLabel={sortOption.label}
+              total={total}
+              totalPages={totalPages}
+            />
+          </Suspense>
 
           {/* Related */}
           <section className="mb-10 sm:mb-14">

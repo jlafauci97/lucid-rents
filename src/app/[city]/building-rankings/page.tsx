@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { Suspense } from "react";
 import {
   Search, ArrowRight, ArrowUpRight, Building2, Trophy, Flame, Scale, FileWarning,
   Snowflake, Sparkles, AlertTriangle, TrendingUp, TrendingDown, MapPin, Calendar, Layers, Quote,
@@ -8,7 +9,8 @@ import {
 } from "lucide-react";
 import { unstable_cache } from "next/cache";
 import { createClient as createSbClient } from "@supabase/supabase-js";
-import { createClient } from "@/lib/supabase/server";
+import { DirectorySection } from "./DirectorySection";
+import { DirectorySkeleton } from "./DirectorySkeleton";
 
 // Non-cookie anonymous client safe to use inside unstable_cache. The data
 // fetched here is fully public (counts and rankings on a public buildings
@@ -166,12 +168,8 @@ export default async function BuildingRankingsPage({ params: routeParams, search
   const borough = params.borough || "all";
   const sortBy = params.sort || "violations";
   const pageNum = Math.max(1, parseInt(params.page || "1", 10) || 1);
-  const limit = 25;
-  const offset = (pageNum - 1) * limit;
 
   const sortOption = SORT_OPTIONS.find((o) => o.key === sortBy) ?? SORT_OPTIONS[0];
-  const supabase = await createClient();
-  const metro = city; // metro column on every relevant table mirrors the city slug
 
   const baseSelect =
     "id, full_address, borough, zip_code, slug, year_built, total_units, owner_name, violation_count, complaint_count, eviction_count, litigation_count, bedbug_report_count, overall_score, review_count";
@@ -253,50 +251,11 @@ export default async function BuildingRankingsPage({ params: routeParams, search
     { revalidate: 3600, tags: [`building-rankings:${city}`] }
   );
 
-  // ─── directory (paginated) ────────────────────────────────────────────
-  // With the partial composite indexes from
-  // 20260428300000_buildings_landlord_perf_indexes.sql in place, every
-  // sortable column (violations / complaints / evictions / litigations /
-  // bedbug) is fast to ORDER BY DESC under filter. The page no longer has
-  // to fall back to re-sorting a top-200 cached pool in app code — this
-  // removes the 8-page cap on non-violations sorts.
-  async function fetchDirectory(): Promise<{ data: BuildingRow[] | null }> {
-    const base = supabase
-      .from("buildings")
-      .select(baseSelect)
-      .eq("metro", metro);
-    const filtered = borough !== "all" ? base.eq("borough", borough) : base;
-
-    // Map sort key → indexed column. Per-unit still uses violation_count
-    // as a rough DB ordering proxy; we refine to true viol/unit in app
-    // within the fetched window below.
-    const sortColumn =
-      sortBy === "per-unit" ? "violation_count" :
-      sortBy === "complaints" ? "complaint_count" :
-      sortBy === "evictions" ? "eviction_count" :
-      sortBy === "lawsuits" ? "litigation_count" :
-      sortBy === "bedbug" ? "bedbug_report_count" :
-      "violation_count";
-
-    const withFilter =
-      sortBy === "per-unit"
-        ? filtered.gt("violation_count", 0).gt("total_units", 0)
-        : filtered.gt(sortColumn, 0);
-
-    const { data } = await withFilter
-      .order(sortColumn, { ascending: false })
-      .range(offset, offset + limit);
-    return { data: (data ?? []) as BuildingRow[] };
-  }
-
-  // ─── parallel: shared cached data + (optional) small directory query ─
-  // Shared data is wrapped in unstable_cache (60-min TTL, per-city tag).
-  // The directory either uses an indexed-fast DB query (violations sort) or
-  // re-sorts the cached pool in app for the slow-column sorts.
-  const [shared, dirRes] = await Promise.all([
-    fetchSharedData(city),
-    fetchDirectory(),
-  ]);
+  // ─── shared cached data only ──────────────────────────────────────────
+  // The directory query is now extracted to <DirectorySection> below and
+  // wrapped in <Suspense> so the static shell streams immediately and the
+  // DB-bound directory rows arrive moments later.
+  const shared = await fetchSharedData(city);
 
   // Hardcoded floor per city — count: 'estimated' is unreliable for this
   // table (planner can return 0 when stats are stale). These floors are
@@ -344,21 +303,6 @@ export default async function BuildingRankingsPage({ params: routeParams, search
     .map((b) => ({ b, ratio: b.violation_count / (b.total_units || 1) }))
     .sort((a, b) => b.ratio - a.ratio)
     .slice(0, 3);
-
-  // With the new partial composite indexes (see migration
-  // 20260428300000_buildings_landlord_perf_indexes.sql), every sort
-  // column hits a fast indexed range scan. Just use the DB result.
-  // Per-unit still gets a final in-app refinement to true viol/unit
-  // within the fetched window.
-  const dirRowsRaw = (dirRes.data ?? []) as BuildingRow[];
-  let hasNextPage = dirRowsRaw.length > limit;
-  let directoryRows = dirRowsRaw.slice(0, limit);
-  if (sortBy === "per-unit") {
-    directoryRows = [...directoryRows].sort(
-      (a, b) =>
-        b.violation_count / (b.total_units || 1) - a.violation_count / (a.total_units || 1)
-    );
-  }
 
   // Estimated total complaint count for the heading badge — falls back to building count
   const totalComplaintsEstimate = mostComplaints.reduce((s, b) => s + (b.complaint_count ?? 0), 0);
@@ -1315,178 +1259,20 @@ export default async function BuildingRankingsPage({ params: routeParams, search
           </section>
         )}
 
-        {/* Directory */}
-        <section id="directory" className="mb-14 scroll-mt-24">
-          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2 mb-6">
-            <div>
-              <MonoLabel color={ACCENT.sky}>Section 10</MonoLabel>
-              <h2 style={{ fontSize: "clamp(28px, 3.5vw, 44px)", lineHeight: 1.05, letterSpacing: "-0.025em", margin: "6px 0 0", fontWeight: 700, color: INK }}>
-                Browse the directory
-              </h2>
-            </div>
-            <MonoLabel>{compact(totalBuildings)} total · sorted by {sortOption.label.toLowerCase()}</MonoLabel>
-          </div>
-
-          {/* Sort pills */}
-          <div className="flex flex-wrap gap-2 mb-3">
-            {SORT_OPTIONS.map((opt) => {
-              const active = sortBy === opt.key;
-              return (
-                <Link
-                  key={opt.key}
-                  href={buildHref({ sort: opt.key, page: "1" })}
-                  className="px-4 py-2 text-sm font-semibold transition-colors"
-                  style={{
-                    background: active ? INK : "#fff",
-                    color: active ? "#fff" : INK_SOFT,
-                    borderRadius: 999,
-                    border: `1px solid ${active ? INK : BORDER}`,
-                    fontFamily: SANS,
-                    textDecoration: "none",
-                  }}
-                >
-                  {opt.label}
-                </Link>
-              );
-            })}
-          </div>
-
-          {/* Borough filter pills */}
-          <div className="flex flex-wrap gap-2 mb-5">
-            <Link
-              href={buildHref({ borough: "all", page: "1" })}
-              className="px-3 py-1.5 text-sm transition-colors"
-              style={{
-                background: borough === "all" ? INK : "#fff",
-                color: borough === "all" ? "#fff" : INK_SOFT,
-                borderRadius: 8,
-                border: `1px solid ${borough === "all" ? INK : BORDER}`,
-                fontFamily: SANS,
-                textDecoration: "none",
-                fontWeight: 500,
-              }}
-            >
-              All {meta.regionLabel.toLowerCase()}s
-            </Link>
-            {cityRegions.slice(0, 12).map((r) => {
-              const active = borough === r;
-              return (
-                <Link
-                  key={r}
-                  href={buildHref({ borough: r, page: "1" })}
-                  className="px-3 py-1.5 text-sm transition-colors"
-                  style={{
-                    background: active ? INK : "#fff",
-                    color: active ? "#fff" : INK_SOFT,
-                    borderRadius: 8,
-                    border: `1px solid ${active ? INK : BORDER}`,
-                    fontFamily: SANS,
-                    textDecoration: "none",
-                    fontWeight: 500,
-                  }}
-                >
-                  {r}
-                </Link>
-              );
-            })}
-          </div>
-
-          {directoryRows.length > 0 ? (
-            <div style={{ background: "#fff", borderRadius: 20, border: `1px solid ${BORDER}`, boxShadow: SHADOW, overflow: "hidden" }}>
-              <ol className="m-0 p-0 list-none">
-                {directoryRows.map((b, idx) => {
-                  const rank = offset + idx + 1;
-                  const perUnitVal = b.total_units ? b.violation_count / b.total_units : 0;
-                  return (
-                    <li key={b.id} className="relative group transition-colors hover:bg-[#fafbfd]" style={{ borderTop: idx > 0 ? `1px solid ${BORDER}` : "none" }}>
-                      <Link
-                        href={buildingUrl(b, city)}
-                        aria-label={`Open ${b.full_address.split(",")[0]}`}
-                        className="absolute inset-0 z-0"
-                        style={{ textDecoration: "none" }}
-                      />
-                      <div className="relative z-10 flex items-center gap-4 sm:gap-6 px-5 sm:px-7 py-4 sm:py-5 pointer-events-none">
-                        <span style={{ minWidth: 40, fontFamily: MONO, fontSize: 18, fontWeight: 700, color: INK_MUTE, fontVariantNumeric: "tabular-nums" }}>
-                          {String(rank).padStart(2, "0")}
-                        </span>
-                        <div className="flex-1 min-w-0">
-                          <h3 style={{ fontSize: "clamp(15px, 1.4vw, 18px)", fontWeight: 700, margin: "0 0 2px", color: INK, letterSpacing: "-0.005em" }}>
-                            {b.full_address.split(",")[0]}
-                          </h3>
-                          <div style={{ fontSize: 12, color: INK_MUTE, marginBottom: 6 }}>
-                            {b.borough}
-                            {b.zip_code ? ` · ${b.zip_code}` : ""}
-                            {b.total_units ? ` · ${b.total_units.toLocaleString()} units` : ""}
-                            {b.owner_name ? (
-                              <>
-                                {" · "}
-                                <Link
-                                  href={landlordUrl(b.owner_name, city)}
-                                  className="pointer-events-auto"
-                                  style={{ color: INK_SOFT, textDecoration: "underline", textDecorationColor: BORDER }}
-                                >
-                                  {b.owner_name}
-                                </Link>
-                              </>
-                            ) : null}
-                          </div>
-                          <div className="flex flex-wrap gap-x-5 gap-y-1" style={{ fontFamily: MONO, fontSize: 11, color: INK_MUTE, fontVariantNumeric: "tabular-nums" }}>
-                            <span><span style={{ color: ACCENT.rose, fontWeight: 700 }}>{b.violation_count.toLocaleString()}</span> viol</span>
-                            <span><span style={{ color: ACCENT.amber, fontWeight: 700 }}>{b.complaint_count.toLocaleString()}</span> calls</span>
-                            <span><span style={{ color: ACCENT.iris, fontWeight: 700 }}>{b.eviction_count}</span> evict</span>
-                            <span><span style={{ color: ACCENT.peach, fontWeight: 700 }}>{b.litigation_count}</span> cases</span>
-                            {sortBy === "per-unit" && (
-                              <span><span style={{ color: INK, fontWeight: 700 }}>{perUnitVal.toFixed(2)}</span> /unit</span>
-                            )}
-                          </div>
-                        </div>
-                        <span className="hidden sm:inline-flex items-center justify-center" style={{ width: 32, height: 32, borderRadius: 10, background: PAPER, color: INK_MUTE }}>
-                          <ArrowUpRight size={16} />
-                        </span>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ol>
-            </div>
-          ) : (
-            <div className="p-12 text-center" style={{ background: "#fff", borderRadius: 20, border: `1px solid ${BORDER}`, boxShadow: SHADOW }}>
-              <Building2 size={32} style={{ color: INK_MUTE, margin: "0 auto 10px" }} />
-              <h3 style={{ fontSize: 18, fontWeight: 700, margin: "0 0 6px" }}>No buildings found</h3>
-              <p style={{ fontSize: 14, color: INK_SOFT, margin: 0 }}>
-                Try a different sort or {meta.regionLabel.toLowerCase()} filter.
-              </p>
-            </div>
-          )}
-
-          {(pageNum > 1 || hasNextPage) && (
-            <div className="mt-5 flex items-center justify-between gap-3">
-              <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: "0.06em", color: INK_MUTE, textTransform: "uppercase" }}>
-                Page {pageNum}
-              </span>
-              <div className="flex gap-2">
-                {pageNum > 1 ? (
-                  <Link href={buildHref({ page: String(pageNum - 1) })} className="inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold" style={{ background: "#fff", color: INK_SOFT, borderRadius: 12, border: `1px solid ${BORDER}`, textDecoration: "none" }}>
-                    <ChevronLeft size={14} /> Previous
-                  </Link>
-                ) : (
-                  <span className="inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold" style={{ color: "#cbd5e1", borderRadius: 12, border: `1px solid ${BORDER}` }}>
-                    <ChevronLeft size={14} /> Previous
-                  </span>
-                )}
-                {hasNextPage ? (
-                  <Link href={buildHref({ page: String(pageNum + 1) })} className="inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold" style={{ background: "#fff", color: INK_SOFT, borderRadius: 12, border: `1px solid ${BORDER}`, textDecoration: "none" }}>
-                    Next <ChevronRight size={14} />
-                  </Link>
-                ) : (
-                  <span className="inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold" style={{ color: "#cbd5e1", borderRadius: 12, border: `1px solid ${BORDER}` }}>
-                    Next <ChevronRight size={14} />
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
-        </section>
+        {/* Directory — streamed via Suspense so the static shell paints first */}
+        <Suspense fallback={<DirectorySkeleton regionLabel={meta.regionLabel} />}>
+          <DirectorySection
+            city={city}
+            sortBy={sortBy}
+            borough={borough}
+            pageNum={pageNum}
+            basePath={basePath}
+            sortOptionLabel={sortOption.label}
+            regionLabel={meta.regionLabel}
+            cityRegions={cityRegions}
+            totalBuildings={totalBuildings}
+          />
+        </Suspense>
 
         {/* CTA */}
         <section className="p-8 sm:p-12 text-center" style={{ background: G.graphite, borderRadius: 28, color: "#fff" }}>
