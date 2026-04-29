@@ -1177,8 +1177,7 @@ const _loadIssuesData = async (
         .from("hpd_violations")
         .select("nov_description")
         .eq("building_id", buildingId)
-        .order("inspection_date", { ascending: false, nullsFirst: false })
-        .limit(1000);
+        .limit(5000);
       if (!data) return [];
       const counts = new Map<string, number>();
       let uncategorized = 0;
@@ -1339,7 +1338,7 @@ const _loadIssuesData = async (
 };
 export const loadIssuesData = unstable_cache(
   _loadIssuesData,
-  ["load-issues-data"],
+  ["load-issues-data-v2"],
   { revalidate: 3600, tags: ["building-data"] }
 );
 
