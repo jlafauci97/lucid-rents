@@ -48,7 +48,10 @@ export async function generateMetadata({
   };
 }
 
-export const revalidate = 3600;
+// Landlord stats roll up nightly via build-landlord-stats.mjs — bumped
+// from 3600s (1hr) to 86400s (24hr). The shared data cache (see below)
+// has its own 3600s TTL so this just cuts ISR background work.
+export const revalidate = 86400;
 
 // Pre-render all 5 cities at build time so end users never hit a cold
 // cache. Sort/page/search variants still server-render on demand but they

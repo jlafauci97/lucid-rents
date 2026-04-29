@@ -54,7 +54,10 @@ export async function generateMetadata({
   };
 }
 
-export const revalidate = 3600;
+// Building violation/ranking data updates daily at most — bumped from
+// 3600s (1hr) to 86400s (24hr) to cut background revalidation work by 24x
+// without any user-visible staleness.
+export const revalidate = 86400;
 
 // Pre-render all 5 cities at build time so end users never hit a cold cache.
 // Pages with searchParams (sort/page/borough variants) still server-render
@@ -251,32 +254,38 @@ export default async function BuildingRankingsPage({ params: routeParams, search
   );
 
   // ─── directory (paginated) ────────────────────────────────────────────
-  // Only `violation_count` has a fast index — sorting by complaints/evictions/
-  // lawsuits/bedbug directly takes 8s+. For those sorts we re-use the shared
-  // pool (top 200 by violations) and re-sort/paginate in app code. That caps
-  // those views at 200 results but they're already "worst-violator" buildings.
-  const useDbForDirectory = sortBy === "violations" || sortBy === "per-unit";
-
-  // Wrap the chained Supabase query in an async helper so the call site
-  // gets a Promise (parallelisable with the shared cache fetch) and we
-  // sidestep TS friction between PostgrestQueryBuilder vs FilterBuilder.
+  // With the partial composite indexes from
+  // 20260428300000_buildings_landlord_perf_indexes.sql in place, every
+  // sortable column (violations / complaints / evictions / litigations /
+  // bedbug) is fast to ORDER BY DESC under filter. The page no longer has
+  // to fall back to re-sorting a top-200 cached pool in app code — this
+  // removes the 8-page cap on non-violations sorts.
   async function fetchDirectory(): Promise<{ data: BuildingRow[] | null }> {
-    if (!useDbForDirectory) return { data: null };
     const base = supabase
       .from("buildings")
       .select(baseSelect)
       .eq("metro", metro);
     const filtered = borough !== "all" ? base.eq("borough", borough) : base;
-    const sorted =
+
+    // Map sort key → indexed column. Per-unit still uses violation_count
+    // as a rough DB ordering proxy; we refine to true viol/unit in app
+    // within the fetched window below.
+    const sortColumn =
+      sortBy === "per-unit" ? "violation_count" :
+      sortBy === "complaints" ? "complaint_count" :
+      sortBy === "evictions" ? "eviction_count" :
+      sortBy === "lawsuits" ? "litigation_count" :
+      sortBy === "bedbug" ? "bedbug_report_count" :
+      "violation_count";
+
+    const withFilter =
       sortBy === "per-unit"
-        ? filtered
-            .gt("violation_count", 0)
-            .gt("total_units", 0)
-            .order("violation_count", { ascending: false })
-        : filtered
-            .gt("violation_count", 0)
-            .order("violation_count", { ascending: false });
-    const { data } = await sorted.range(offset, offset + limit);
+        ? filtered.gt("violation_count", 0).gt("total_units", 0)
+        : filtered.gt(sortColumn, 0);
+
+    const { data } = await withFilter
+      .order(sortColumn, { ascending: false })
+      .range(offset, offset + limit);
     return { data: (data ?? []) as BuildingRow[] };
   }
 
@@ -336,34 +345,19 @@ export default async function BuildingRankingsPage({ params: routeParams, search
     .sort((a, b) => b.ratio - a.ratio)
     .slice(0, 3);
 
-  // Build the directory rows. For violations/per-unit, use the DB result
-  // (full table sorted by indexed column). For other sorts, slice from the
-  // shared pool re-sorted in app code (capped at top-200 violators).
-  let directoryRows: BuildingRow[];
-  let hasNextPage: boolean;
-  if (useDbForDirectory) {
-    const dirRowsRaw = (dirRes.data ?? []) as BuildingRow[];
-    hasNextPage = dirRowsRaw.length > limit;
-    directoryRows = dirRowsRaw.slice(0, limit);
-    if (sortBy === "per-unit") {
-      directoryRows = [...directoryRows].sort(
-        (a, b) =>
-          b.violation_count / (b.total_units || 1) - a.violation_count / (a.total_units || 1)
-      );
-    }
-  } else {
-    // Re-sort the cached pool by the requested column in app code.
-    const sortColumn: keyof BuildingRow =
-      sortBy === "complaints" ? "complaint_count" :
-      sortBy === "evictions"  ? "eviction_count"  :
-      sortBy === "lawsuits"   ? "litigation_count" :
-      sortBy === "bedbug"     ? "bedbug_report_count" :
-                                "complaint_count";
-    let filtered = complaintsPool.filter((b) => Number(b[sortColumn] ?? 0) > 0);
-    if (borough !== "all") filtered = filtered.filter((b) => b.borough === borough);
-    filtered.sort((a, b) => Number(b[sortColumn] ?? 0) - Number(a[sortColumn] ?? 0));
-    hasNextPage = filtered.length > offset + limit;
-    directoryRows = filtered.slice(offset, offset + limit);
+  // With the new partial composite indexes (see migration
+  // 20260428300000_buildings_landlord_perf_indexes.sql), every sort
+  // column hits a fast indexed range scan. Just use the DB result.
+  // Per-unit still gets a final in-app refinement to true viol/unit
+  // within the fetched window.
+  const dirRowsRaw = (dirRes.data ?? []) as BuildingRow[];
+  let hasNextPage = dirRowsRaw.length > limit;
+  let directoryRows = dirRowsRaw.slice(0, limit);
+  if (sortBy === "per-unit") {
+    directoryRows = [...directoryRows].sort(
+      (a, b) =>
+        b.violation_count / (b.total_units || 1) - a.violation_count / (a.total_units || 1)
+    );
   }
 
   // Estimated total complaint count for the heading badge — falls back to building count

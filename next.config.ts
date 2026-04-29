@@ -16,6 +16,12 @@ const nextConfig: NextConfig = {
       "framer-motion",
       "date-fns",
     ],
+    // Partial Prerendering: ship a static shell from the CDN immediately,
+    // then stream in dynamic per-request bits. "incremental" mode is opt-in
+    // per-route via `export const experimental_ppr = true` so existing
+    // pages aren't affected. Used by /[city]/building-rankings and
+    // /[city]/landlords for instant LCP.
+    ppr: "incremental",
   },
   redirects: async () => [
     {
