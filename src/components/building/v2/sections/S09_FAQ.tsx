@@ -104,6 +104,69 @@ export function S09_FAQ({ building, data }: Props) {
       quality_of_life: data.crime.qualityOfLife,
     };
 
+    // rentHistory: aggregate historic median rents into a single building-wide
+    // value per month (weighted by listing_count when present). Earliest /
+    // latest feed the rent-trend FAQ; covidLow adds the dip-and-recovery note.
+    const monthAgg = new Map<string, { weighted: number; weight: number }>();
+    for (const row of data.rents.historic) {
+      if (row.median_rent == null || row.median_rent <= 0) continue;
+      const key = row.month.slice(0, 7);
+      const cur = monthAgg.get(key) ?? { weighted: 0, weight: 0 };
+      const w = row.listing_count > 0 ? row.listing_count : 1;
+      monthAgg.set(key, { weighted: cur.weighted + row.median_rent * w, weight: cur.weight + w });
+    }
+    const monthly = Array.from(monthAgg.entries())
+      .map(([month, agg]) => ({ month, rent: Math.round(agg.weighted / agg.weight) }))
+      .sort((a, b) => a.month.localeCompare(b.month));
+    const covidWindow = monthly.filter((m) => m.month >= "2020-04" && m.month <= "2021-06");
+    const covidLow =
+      covidWindow.length > 0
+        ? covidWindow.reduce((min, m) => (m.rent < min.rent ? m : min))
+        : undefined;
+    const rentHistory =
+      monthly.length >= 2
+        ? { earliest: monthly[0], latest: monthly[monthly.length - 1], covidLow }
+        : undefined;
+
+    // seasonalData: average rent_index across bedroom types per month_of_year.
+    // Cheapest vs most-expensive month + percent savings powers the
+    // "when's the cheapest time to rent" FAQ.
+    const seasonalAgg = new Map<number, { sum: number; n: number }>();
+    for (const row of data.seasonalIndex) {
+      const cur = seasonalAgg.get(row.month_of_year) ?? { sum: 0, n: 0 };
+      seasonalAgg.set(row.month_of_year, { sum: cur.sum + row.rent_index, n: cur.n + 1 });
+    }
+    const seasonalMonths = Array.from(seasonalAgg.entries()).map(([m, agg]) => ({
+      m,
+      idx: agg.sum / agg.n,
+    }));
+    const seasonalData =
+      seasonalMonths.length >= 2 && seasonalMonths.some((s) => s.idx > 0)
+        ? (() => {
+            const cheapest = seasonalMonths.reduce((a, b) => (a.idx < b.idx ? a : b));
+            const expensive = seasonalMonths.reduce((a, b) => (a.idx > b.idx ? a : b));
+            return expensive.idx > 0
+              ? {
+                  cheapestMonth: cheapest.m,
+                  expensiveMonth: expensive.m,
+                  savingsPercent: Math.round(((expensive.idx - cheapest.idx) / expensive.idx) * 100),
+                }
+              : undefined;
+          })()
+        : undefined;
+
+    // evictions: the generator only reads `.length` and `executed_date` of the
+    // first record. building.eviction_count is the source of truth for the
+    // total; the timeline gives us the most recent date.
+    const evictionCount = building.eviction_count ?? 0;
+    const recentEvictionDate = data.timeline.find((e) => e.type === "eviction")?.date ?? null;
+    const evictions =
+      evictionCount > 0
+        ? Array.from({ length: evictionCount }, (_, i) => ({
+            executed_date: i === 0 ? recentEvictionDate : null,
+          }))
+        : [];
+
     faqs = generateBuildingFAQ({
       building,
       rents: data.rents.current,
@@ -111,7 +174,7 @@ export function S09_FAQ({ building, data }: Props) {
       hpdViolations,
       complaints311,
       dobViolations,
-      evictions: [],
+      evictions,
       permits: [],
       amenities: data.amenities.map((a) => ({ amenity: a.amenity, category: a.category, source: "public-records" })),
       energy: data.energy,
@@ -119,6 +182,8 @@ export function S09_FAQ({ building, data }: Props) {
       nearbySchools,
       nearbyTransit,
       crimeSummary,
+      rentHistory,
+      seasonalData,
       violations: hpdViolations,
       complaints: complaints311,
       litigations: [],
@@ -151,6 +216,11 @@ export function S09_FAQ({ building, data }: Props) {
       },
     ];
   }
+
+  // Drop any entries that didn't produce a real answer — an empty string
+  // serialises as `acceptedAnswer.text: ""` and trips Search Console's
+  // "Missing field text" warning on the FAQPage schema.
+  faqs = faqs.filter((f) => f.question.trim() !== "" && f.answer.trim() !== "");
 
   const jsonLd = {
     "@context": "https://schema.org",

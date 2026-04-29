@@ -10,12 +10,18 @@ export function FAQSection({
   items: FAQItem[];
   title?: string;
 }) {
-  if (items.length === 0) return null;
+  // Drop entries with empty question/answer so JSON-LD never emits an empty
+  // `acceptedAnswer.text` (Search Console flags it as "Missing field text").
+  const validItems = items.filter(
+    (item) => item.question.trim() !== "" && item.answer.trim() !== "",
+  );
+
+  if (validItems.length === 0) return null;
 
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    mainEntity: items.map((item) => ({
+    mainEntity: validItems.map((item) => ({
       "@type": "Question",
       name: item.question,
       acceptedAnswer: {
@@ -37,14 +43,14 @@ export function FAQSection({
           <div>
             <h2 className="text-base font-bold text-[#0F1D2E]">{title}</h2>
             <p className="text-xs text-[#94a3b8] mt-0.5">
-              {items.length} question{items.length !== 1 ? "s" : ""} answered
+              {validItems.length} question{validItems.length !== 1 ? "s" : ""} answered
             </p>
           </div>
         </div>
 
         {/* Questions */}
         <div className="px-2 py-1">
-          {items.map((item, i) => (
+          {validItems.map((item, i) => (
             <FAQAccordionItem
               key={i}
               question={item.question}
