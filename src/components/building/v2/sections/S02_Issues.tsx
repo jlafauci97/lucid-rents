@@ -176,8 +176,8 @@ export function S02_Issues({ issues, hpdViolations, buildingId, hpdCount, dobCou
             ))}
             {!issues.hpdTop.length && (
               <li>
-                <div className="k">{hpdCount > 0 ? "Category breakdown loading" : "No violations"}</div>
-                <div className="bar"><span style={{ width: "0%" }}></span></div>
+                <div className="k">{hpdCount > 0 ? "All HPD violations" : "No violations"}</div>
+                <div className="bar"><span style={{ width: hpdCount > 0 ? "100%" : "0%" }}></span></div>
                 <div className="n">{hpdCount > 0 ? hpdCount.toLocaleString() : 0}</div>
               </li>
             )}
@@ -200,8 +200,8 @@ export function S02_Issues({ issues, hpdViolations, buildingId, hpdCount, dobCou
             ))}
             {!issues.complaintsTop.length && (
               <li>
-                <div className="k">{complaintsCount > 0 ? "Category breakdown loading" : "No complaints"}</div>
-                <div className="bar"><span style={{ width: "0%" }}></span></div>
+                <div className="k">{complaintsCount > 0 ? "All 311 complaints" : "No complaints"}</div>
+                <div className="bar"><span style={{ width: complaintsCount > 0 ? "100%" : "0%" }}></span></div>
                 <div className="n">{complaintsCount > 0 ? complaintsCount.toLocaleString() : 0}</div>
               </li>
             )}
