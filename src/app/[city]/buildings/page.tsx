@@ -1,12 +1,13 @@
+import { Suspense } from "react";
 import Link from "next/link";
-import { Card, CardContent } from "@/components/ui/Card";
-import { Building2, AlertTriangle, MessageSquare, Users, ShieldAlert, MapPin, TrendingDown } from "lucide-react";
+import { Users, ShieldAlert, MapPin, TrendingDown } from "lucide-react";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
-import { JsonLd } from "@/components/seo/JsonLd";
 import { SearchBar } from "@/components/search/SearchBar";
-import { BOROUGH_SLUGS, regionSlug, canonicalUrl, cityPath } from "@/lib/seo";
+import { canonicalUrl, cityPath } from "@/lib/seo";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
 import type { Metadata } from "next";
+import { BoroughGrid } from "./BoroughGrid";
+import { BoroughGridSkeleton } from "./BoroughGridSkeleton";
 
 export const revalidate = 3600;
 
@@ -28,69 +29,12 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
   };
 }
 
-interface BoroughStats {
-  borough: string;
-  count: number;
-  total_violations: number;
-  total_complaints: number;
-}
-
-async function getBoroughStats(city: City): Promise<BoroughStats[]> {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-  // Single RPC call replaces N sequential fetches of 50K+ rows each
-  const res = await fetch(
-    `${supabaseUrl}/rest/v1/rpc/borough_stats_by_city`,
-    {
-      method: "POST",
-      headers: {
-        apikey: supabaseKey,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ target_metro: city }),
-      next: { revalidate: 3600 },
-    }
-  );
-
-  if (!res.ok) return [];
-  const data = await res.json();
-
-  return (data || []).map((row: { borough: string; building_count: number; total_violations: number; total_complaints: number }) => ({
-    borough: row.borough,
-    count: Number(row.building_count),
-    total_violations: Number(row.total_violations),
-    total_complaints: Number(row.total_complaints),
-  }));
-}
-
 export default async function BuildingsIndexPage({ params }: { params: Promise<{ city: string }> }) {
   const { city } = await params;
   const meta = CITY_META[city as City] || CITY_META.nyc;
-  const allStats = await getBoroughStats(city as City);
-
-  // Restrict to canonical regions for this city — buildings table contains
-  // metro-wide rows (e.g. NYC includes Long Island, NJ, Westchester) so we
-  // filter to the 5 boroughs / official neighborhoods here.
-  const validRegions = new Set<string>(meta.regions);
-  const stats = allStats.filter((s) => validRegions.has(s.borough));
-
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "ItemList",
-    name: `${meta.fullName} Building Directories`,
-    numberOfItems: stats.length,
-    itemListElement: stats.map((s, i) => ({
-      "@type": "ListItem",
-      position: i + 1,
-      name: `${s.borough} Buildings`,
-      url: canonicalUrl(cityPath(`/buildings/${regionSlug(s.borough)}`, city as City)),
-    })),
-  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <JsonLd data={jsonLd} />
       <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Buildings", href: cityPath("/buildings", city as City) }]} />
 
       <h1 className="text-3xl font-bold text-[#0F1D2E] mt-6 mb-2">
@@ -111,33 +55,10 @@ export default async function BuildingsIndexPage({ params }: { params: Promise<{
       <h2 className="text-sm font-semibold uppercase tracking-wider text-[#64748b] mb-4">
         Browse by {meta.fullName === "New York City" ? "borough" : "area"}
       </h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {stats.map((s) => (
-          <Link key={s.borough} href={cityPath(`/buildings/${regionSlug(s.borough)}`, city as City)}>
-            <Card hover>
-              <CardContent className="p-6">
-                <h2 className="text-xl font-bold text-[#0F1D2E] mb-4">
-                  {s.borough}
-                </h2>
-                <div className="space-y-2 text-sm text-[#64748b]">
-                  <div className="flex items-center gap-2">
-                    <Building2 className="w-4 h-4" />
-                    <span>{s.count.toLocaleString()} buildings</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4 text-red-500" />
-                    <span>{s.total_violations.toLocaleString()} violations</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MessageSquare className="w-4 h-4 text-amber-500" />
-                    <span>{s.total_complaints.toLocaleString()} complaints</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
-      </div>
+      {/* Borough grid — streamed via Suspense so the search bar + cross-links paint first. */}
+      <Suspense fallback={<BoroughGridSkeleton />}>
+        <BoroughGrid city={city as City} />
+      </Suspense>
 
       {/* Cross-links to related sections */}
       <section className="mt-12">
