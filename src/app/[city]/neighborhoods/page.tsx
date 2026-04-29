@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { Suspense } from "react";
 import { MapPin } from "lucide-react";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -8,6 +9,7 @@ import { getAllNeighborhoodsByCity, neighborhoodPageSlugByCity } from "@/lib/nei
 import { neighborhoodUrl, canonicalUrl, cityPath, neighborhoodsUrl, breadcrumbJsonLd } from "@/lib/seo";
 import { CITY_META, type City } from "@/lib/cities";
 import { getLetterGrade } from "@/lib/constants";
+import { REGIONS_BY_CITY } from "@/lib/city-home/regions";
 
 export const revalidate = 3600;
 
@@ -232,11 +234,20 @@ export default async function NeighborhoodsPage({
       </div>
 
       {/* Search & Filter */}
-      <NeighborhoodSearch
-        neighborhoods={neighborhoods}
-        regions={regions}
-        regionLabel={meta.regionLabel}
-      />
+      <Suspense fallback={null}>
+        <NeighborhoodSearch
+          neighborhoods={neighborhoods}
+          regions={regions}
+          regionLabel={meta.regionLabel}
+          regionTiles={(REGIONS_BY_CITY[city] ?? []).map((r) => ({
+            slug: r.slug,
+            name: r.name,
+            zips: r.zips,
+            regionMatch: r.regionMatch,
+          }))}
+          cityHref={cityPath("/neighborhoods", city)}
+        />
+      </Suspense>
 
       {/* FAQ */}
       <FAQSection items={faqItems} title={`${meta.name} Neighborhoods FAQ`} />

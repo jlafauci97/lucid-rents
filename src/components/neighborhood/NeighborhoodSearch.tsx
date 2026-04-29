@@ -2,7 +2,8 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { Search } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { Search, X } from "lucide-react";
 import { LetterGrade } from "@/components/ui/LetterGrade";
 import { getLetterGrade, getGradeColor, type LetterGrade as LetterGradeType } from "@/lib/constants";
 
@@ -19,6 +20,13 @@ export interface NeighborhoodIndexEntry {
   rentsHref?: string;
 }
 
+export interface RegionTile {
+  slug: string;
+  name: string;
+  zips?: string[];
+  regionMatch?: string[];
+}
+
 type SortKey = "name" | "grade" | "buildings" | "safety";
 
 const GRADE_ORDER: Record<string, number> = { A: 1, B: 2, C: 3, D: 4, F: 5 };
@@ -27,11 +35,19 @@ export function NeighborhoodSearch({
   neighborhoods,
   regions,
   regionLabel,
+  regionTiles,
+  cityHref,
 }: {
   neighborhoods: NeighborhoodIndexEntry[];
   regions: string[];
   regionLabel: string;
+  regionTiles?: RegionTile[];
+  cityHref?: string;
 }) {
+  const searchParams = useSearchParams();
+  const regionParam = searchParams.get("region");
+  const activeTile = regionTiles?.find((t) => t.slug === regionParam) ?? null;
+
   const [query, setQuery] = useState("");
   const [selectedRegion, setSelectedRegion] = useState<string>("all");
   const [selectedGrade, setSelectedGrade] = useState<string>("all");
@@ -39,6 +55,18 @@ export function NeighborhoodSearch({
 
   const filtered = useMemo(() => {
     let result = neighborhoods;
+
+    if (activeTile) {
+      const zipSet = activeTile.zips ? new Set(activeTile.zips) : null;
+      const regionSet = activeTile.regionMatch ? new Set(activeTile.regionMatch) : null;
+      if (zipSet || regionSet) {
+        result = result.filter(
+          (n) =>
+            (zipSet?.has(n.zipCode) ?? false) ||
+            (regionSet?.has(n.region) ?? false)
+        );
+      }
+    }
 
     if (query.trim()) {
       const q = query.toLowerCase().trim();
@@ -81,10 +109,27 @@ export function NeighborhoodSearch({
     });
 
     return result;
-  }, [neighborhoods, query, selectedRegion, selectedGrade, sortBy]);
+  }, [neighborhoods, query, selectedRegion, selectedGrade, sortBy, activeTile]);
 
   return (
     <div>
+      {activeTile && (
+        <div className="flex items-center justify-between gap-3 mb-4 rounded-lg border border-[#3B82F6]/30 bg-[#EFF6FF] px-4 py-3">
+          <div className="text-sm text-[#0F1D2E]">
+            <span className="font-semibold">{activeTile.name}</span>
+            <span className="text-[#64748b]"> · {filtered.length} neighborhood{filtered.length !== 1 ? "s" : ""}</span>
+          </div>
+          {cityHref && (
+            <Link
+              href={cityHref}
+              className="inline-flex items-center gap-1 text-xs font-medium text-[#3B82F6] hover:underline"
+            >
+              <X className="w-3.5 h-3.5" />
+              Clear
+            </Link>
+          )}
+        </div>
+      )}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94a3b8]" />
