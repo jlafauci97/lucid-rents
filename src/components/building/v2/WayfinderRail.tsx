@@ -52,6 +52,17 @@ export function WayfinderRail({ grade, buildingName, city, buildingPath, buildin
     return () => observer.disconnect();
   }, []);
 
+  // On mobile the wayfinder is a horizontal scroll strip pinned to the bottom.
+  // Keep the active tab centered so users can see what's next as they scroll.
+  useEffect(() => {
+    if (typeof window === "undefined" || window.innerWidth > 900) return;
+    const activeEl = document.querySelector(".v2 .waylist li.active") as HTMLElement | null;
+    const parent = activeEl?.closest(".waylist") as HTMLElement | null;
+    if (!activeEl || !parent) return;
+    const targetLeft = activeEl.offsetLeft - parent.clientWidth / 2 + activeEl.clientWidth / 2;
+    parent.scrollTo({ left: targetLeft, behavior: "smooth" });
+  }, [activeId]);
+
   // Split the name into two lines
   const spaceIdx = (() => {
     if (!buildingName.includes(" ")) return -1;
