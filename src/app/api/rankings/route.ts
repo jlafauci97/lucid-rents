@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
   let query = supabase
     .from("buildings")
     .select(
-      "id, full_address, borough, zip_code, year_built, total_units, num_floors, owner_name, overall_score, review_count, violation_count, complaint_count"
+      "id, slug, full_address, borough, zip_code, year_built, total_units, num_floors, owner_name, overall_score, review_count, violation_count, complaint_count"
     )
     .gt(sortColumn, 0)
     .order(sortColumn, { ascending: false });
