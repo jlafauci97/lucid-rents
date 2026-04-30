@@ -14,7 +14,7 @@ interface Props {
 export function S02_Trend({ trend, record, buildingCount, slug, city }: Props) {
   const { summary24mo } = trend;
   const showRecordLink =
-    city === "nyc" && (record.hpdViolations > 0 || record.comp311 > 0 || record.litigations > 0);
+    record.hpdViolations > 0 || record.comp311 > 0 || record.litigations > 0;
   return (
     <section className="section" id="record">
       <div className="section-head">
