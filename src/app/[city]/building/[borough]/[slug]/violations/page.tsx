@@ -199,7 +199,12 @@ export default async function BuildingViolationsPage({ params }: ViolationsPageP
           buildingId={building.id}
           housingAgency={city === "los-angeles" ? "LAHD" : city === "chicago" ? "CDBS" : city === "miami" ? "RER" : "HPD"}
         />
-        <CommonIssues topViolations={topViolations} topComplaints={topComplaints} />
+        <CommonIssues
+          topViolations={topViolations}
+          topComplaints={topComplaints}
+          totalViolations={totalCounts.violations}
+          totalComplaints={totalCounts.complaints}
+        />
 
         <IssuesTabs
           violations={violations}
