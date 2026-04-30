@@ -36,10 +36,13 @@ export async function generateMetadata({
 
 export default async function NeighborhoodsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ city: string }>;
+  searchParams: Promise<{ region?: string }>;
 }) {
   const { city: cityParam } = await params;
+  const { region: regionSlug } = await searchParams;
   const city = cityParam as City;
   const meta = CITY_META[city];
   if (!meta) return null;
@@ -76,7 +79,7 @@ export default async function NeighborhoodsPage({
 
       {/* Data-bound body — streamed via Suspense so the breadcrumbs + header paint first. */}
       <Suspense fallback={<NeighborhoodsBodySkeleton />}>
-        <NeighborhoodsBody city={city} />
+        <NeighborhoodsBody city={city} initialRegionSlug={regionSlug} />
       </Suspense>
     </div>
   );
