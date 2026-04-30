@@ -13,7 +13,8 @@ interface Props {
 
 export function S02_Trend({ trend, record, buildingCount, slug, city }: Props) {
   const { summary24mo } = trend;
-  const isNYC = city === "nyc";
+  const showRecordLink =
+    city === "nyc" && (record.hpdViolations > 0 || record.comp311 > 0 || record.litigations > 0);
   return (
     <section className="section" id="record">
       <div className="section-head">
@@ -46,7 +47,6 @@ export function S02_Trend({ trend, record, buildingCount, slug, city }: Props) {
           label="HPD violations"
           sub={`across ${buildingCount.toLocaleString()} building${buildingCount === 1 ? "" : "s"}`}
           tone={record.hpdViolations > 0 ? "warn" : "neutral"}
-          href={isNYC && record.hpdViolations > 0 ? cityPath(`/landlord/${slug}/violations`, city) : null}
         />
         <SummaryCard
           n={record.comp311}
@@ -57,7 +57,6 @@ export function S02_Trend({ trend, record, buildingCount, slug, city }: Props) {
               : "submitted by tenants"
           }
           tone="neutral"
-          href={record.comp311 > 0 ? cityPath(`/landlord/${slug}/complaints`, city) : null}
         />
         <SummaryCard
           n={record.litigations}
@@ -68,9 +67,33 @@ export function S02_Trend({ trend, record, buildingCount, slug, city }: Props) {
               : "no active court cases"
           }
           tone={record.litigations > 0 ? "warn" : "neutral"}
-          href={isNYC && record.litigations > 0 ? cityPath(`/landlord/${slug}/litigations`, city) : null}
         />
       </div>
+
+      {showRecordLink ? (
+        <div style={{ marginTop: "var(--s-4)", textAlign: "center" }}>
+          <Link
+            href={cityPath(`/landlord/${slug}/record`, city)}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "12px 22px",
+              borderRadius: 999,
+              background: "var(--ink)",
+              color: "white",
+              fontFamily: "var(--mono)",
+              fontSize: 12,
+              fontWeight: 700,
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              textDecoration: "none",
+            }}
+          >
+            See the full record by building →
+          </Link>
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -80,13 +103,11 @@ function SummaryCard({
   label,
   sub,
   tone,
-  href,
 }: {
   n: number;
   label: string;
   sub: string;
   tone: "warn" | "neutral";
-  href: string | null;
 }) {
   return (
     <div
@@ -95,8 +116,6 @@ function SummaryCard({
         border: "1px solid var(--border)",
         borderRadius: 14,
         padding: "22px 24px",
-        display: "flex",
-        flexDirection: "column",
       }}
     >
       <div
@@ -122,23 +141,6 @@ function SummaryCard({
         {n.toLocaleString()}
       </div>
       <div style={{ fontSize: 13, color: "var(--ink-soft)" }}>{sub}</div>
-      {href ? (
-        <Link
-          href={href}
-          style={{
-            marginTop: 12,
-            fontFamily: "var(--mono)",
-            fontSize: 11,
-            fontWeight: 700,
-            letterSpacing: "0.04em",
-            color: "var(--navy-hi)",
-            textDecoration: "none",
-            textTransform: "uppercase",
-          }}
-        >
-          See all by building →
-        </Link>
-      ) : null}
     </div>
   );
 }
