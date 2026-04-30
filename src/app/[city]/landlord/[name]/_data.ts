@@ -1084,3 +1084,158 @@ export const loadLandlordNeighborhoods = cache(
   }
 );
 
+// ──────────────────────────────────────────────────────────────
+// Per-incident drill-downs grouped by building.
+// Powers /landlord/[slug]/violations|complaints|litigations.
+// One bulk query per category over the portfolio's building IDs;
+// records are grouped in memory and capped per-building so a
+// landlord with 1000s of records doesn't blow up the page.
+// ──────────────────────────────────────────────────────────────
+
+export type LandlordIncidentBuilding<T> = {
+  id: string;
+  full_address: string;
+  borough: string | null;
+  slug: string | null;
+  total_units: number | null;
+  totalCount: number;
+  records: T[];
+};
+
+export type LandlordIncidentGroups<T> = {
+  buildings: Array<LandlordIncidentBuilding<T>>;
+  totalRecords: number;
+  buildingsWithRecords: number;
+  totalBuildings: number;
+};
+
+const PER_BUILDING_PREVIEW = 8;
+const PORTFOLIO_RECORD_CAP = 5000;
+
+function groupByBuilding<T extends { building_id: string | null }>(
+  buildings: LandlordBuildingRow[],
+  records: T[]
+): LandlordIncidentGroups<T> {
+  const byId = new Map<string, LandlordIncidentBuilding<T>>();
+  for (const b of buildings) {
+    byId.set(b.id, {
+      id: b.id,
+      full_address: b.full_address,
+      borough: b.borough,
+      slug: b.slug,
+      total_units: b.total_units,
+      totalCount: 0,
+      records: [],
+    });
+  }
+  for (const r of records) {
+    if (!r.building_id) continue;
+    const group = byId.get(r.building_id);
+    if (!group) continue;
+    group.totalCount++;
+    if (group.records.length < PER_BUILDING_PREVIEW) {
+      group.records.push(r);
+    }
+  }
+  const populated = Array.from(byId.values())
+    .filter((g) => g.totalCount > 0)
+    .sort((a, b) => b.totalCount - a.totalCount);
+  return {
+    buildings: populated,
+    totalRecords: records.length,
+    buildingsWithRecords: populated.length,
+    totalBuildings: buildings.length,
+  };
+}
+
+export type LandlordHpdViolationRow = {
+  id: string;
+  building_id: string | null;
+  violation_id: string;
+  class: "A" | "B" | "C" | "I" | null;
+  inspection_date: string | null;
+  nov_description: string | null;
+  status: string | null;
+  apartment: string | null;
+};
+
+export const loadLandlordViolationsByBuilding = cache(
+  async (slug: string, city: City): Promise<LandlordIncidentGroups<LandlordHpdViolationRow>> => {
+    const buildings = await loadLandlordBuildingList(slug, city);
+    if (buildings.length === 0 || city !== "nyc") {
+      return { buildings: [], totalRecords: 0, buildingsWithRecords: 0, totalBuildings: buildings.length };
+    }
+    const supabase = await createClient();
+    const buildingIds = buildings.map((b) => b.id);
+    const { data } = await supabase
+      .from("hpd_violations")
+      .select("id, building_id, violation_id, class, inspection_date, nov_description, status, apartment")
+      .in("building_id", buildingIds)
+      .order("inspection_date", { ascending: false })
+      .limit(PORTFOLIO_RECORD_CAP);
+    const records = (data ?? []) as LandlordHpdViolationRow[];
+    return groupByBuilding(buildings, records);
+  }
+);
+
+export type LandlordComplaintRow = {
+  id: string;
+  building_id: string | null;
+  complaint_type: string | null;
+  descriptor: string | null;
+  agency: string | null;
+  status: string | null;
+  created_date: string | null;
+  closed_date: string | null;
+};
+
+export const loadLandlordComplaintsByBuilding = cache(
+  async (slug: string, city: City): Promise<LandlordIncidentGroups<LandlordComplaintRow>> => {
+    const buildings = await loadLandlordBuildingList(slug, city);
+    if (buildings.length === 0) {
+      return { buildings: [], totalRecords: 0, buildingsWithRecords: 0, totalBuildings: buildings.length };
+    }
+    const supabase = await createClient();
+    const buildingIds = buildings.map((b) => b.id);
+    const { data } = await supabase
+      .from("complaints_311")
+      .select("id, building_id, complaint_type, descriptor, agency, status, created_date, closed_date")
+      .in("building_id", buildingIds)
+      .order("created_date", { ascending: false })
+      .limit(PORTFOLIO_RECORD_CAP);
+    const records = (data ?? []) as LandlordComplaintRow[];
+    return groupByBuilding(buildings, records);
+  }
+);
+
+export type LandlordLitigationRow = {
+  id: string;
+  building_id: string | null;
+  litigation_id: string;
+  case_type: string | null;
+  case_status: string | null;
+  case_open_date: string | null;
+  case_close_date: string | null;
+  case_judgment: string | null;
+  penalty: string | null;
+  respondent: string | null;
+};
+
+export const loadLandlordLitigationsByBuilding = cache(
+  async (slug: string, city: City): Promise<LandlordIncidentGroups<LandlordLitigationRow>> => {
+    const buildings = await loadLandlordBuildingList(slug, city);
+    if (buildings.length === 0 || city !== "nyc") {
+      return { buildings: [], totalRecords: 0, buildingsWithRecords: 0, totalBuildings: buildings.length };
+    }
+    const supabase = await createClient();
+    const buildingIds = buildings.map((b) => b.id);
+    const { data } = await supabase
+      .from("hpd_litigations")
+      .select("id, building_id, litigation_id, case_type, case_status, case_open_date, case_close_date, case_judgment, penalty, respondent")
+      .in("building_id", buildingIds)
+      .order("case_open_date", { ascending: false })
+      .limit(PORTFOLIO_RECORD_CAP);
+    const records = (data ?? []) as LandlordLitigationRow[];
+    return groupByBuilding(buildings, records);
+  }
+);
