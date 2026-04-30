@@ -7,6 +7,7 @@ import Script from "next/script";
 import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+import { ScrollToTopOnNav } from "@/components/layout/ScrollToTopOnNav";
 
 const GA_MEASUREMENT_ID = "G-FS7Q3PF982";
 const ADSENSE_CLIENT_ID = "ca-pub-2908534121884582";
@@ -126,6 +127,7 @@ export default async function RootLayout({
         className={`${sora.variable} ${geistMono.variable} ${geistSans.variable} ${youngSerif.variable} antialiased`}
         style={{ fontFamily: "var(--font-sora), system-ui, sans-serif" }}
       >
+        <ScrollToTopOnNav />
         <Navbar />
         <main className="min-h-[calc(100vh-64px-200px)]">{children}</main>
         <Footer />
