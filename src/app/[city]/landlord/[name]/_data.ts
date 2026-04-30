@@ -1110,7 +1110,10 @@ export type LandlordIncidentGroups<T> = {
 };
 
 const PER_BUILDING_PREVIEW = 8;
-const PORTFOLIO_RECORD_CAP = 5000;
+// Records are previews ordered by date desc — buildings.*_count gives the
+// canonical totals. Lower cap keeps the page snappy for portfolios with
+// thousands of records on file.
+const PORTFOLIO_RECORD_CAP = 1500;
 
 function groupByBuilding<T extends { building_id: string | null }>(
   buildings: LandlordBuildingRow[],
@@ -1192,7 +1195,10 @@ export type LandlordComplaintRow = {
 export const loadLandlordComplaintsByBuilding = cache(
   async (slug: string, city: City): Promise<LandlordIncidentGroups<LandlordComplaintRow>> => {
     const buildings = await loadLandlordBuildingList(slug, city);
-    if (buildings.length === 0) {
+    // complaints_311 is overwhelmingly NYC + a chicago heating subset.
+    // Skip the query for metros that don't have meaningful per-incident data
+    // — the page falls back to the buildings.complaint_count aggregate.
+    if (buildings.length === 0 || (city !== "nyc" && city !== "chicago")) {
       return { buildings: [], totalRecords: 0, buildingsWithRecords: 0, totalBuildings: buildings.length };
     }
     const supabase = await createClient();
