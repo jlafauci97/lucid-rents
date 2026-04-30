@@ -65,27 +65,24 @@ function rollup(
       litigationsTotal: b.litigation_count ?? 0,
     });
   }
-  // Layer per-incident records on top where we have them (NYC for now).
-  // The totalCount from the incident loader takes precedence over the
-  // buildings table aggregate so the page numbers always match the
-  // record list exactly.
+  // Layer the per-incident record previews on top where we have them
+  // (NYC for now). We keep the totalCount from the buildings table so
+  // pages with thousands of records show the true total — the records
+  // array is a preview of the most recent.
   for (const g of violations.buildings) {
     const r = byId.get(g.id);
     if (!r) continue;
     r.violations = g.records;
-    r.violationsTotal = g.totalCount;
   }
   for (const g of complaints.buildings) {
     const r = byId.get(g.id);
     if (!r) continue;
     r.complaints = g.records;
-    r.complaintsTotal = g.totalCount;
   }
   for (const g of litigations.buildings) {
     const r = byId.get(g.id);
     if (!r) continue;
     r.litigations = g.records;
-    r.litigationsTotal = g.totalCount;
   }
   return Array.from(byId.values())
     .filter((r) => r.violationsTotal + r.complaintsTotal + r.litigationsTotal > 0)
