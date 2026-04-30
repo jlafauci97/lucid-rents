@@ -14,6 +14,8 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+export const dynamic = "force-dynamic";
+
 const CITY_TAGS: Record<string, { bg: string; fg: string }> = {
   NYC: { bg: "bg-blue-500/10", fg: "text-blue-700" },
   LA: { bg: "bg-orange-500/10", fg: "text-orange-700" },
