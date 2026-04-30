@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, MessageSquare, Scale, HardHat, Bug, DoorOpen, ClipboardList, ChevronRight } from "lucide-react";
+import { AlertTriangle, MessageSquare, Scale, HardHat, Bug, DoorOpen, ClipboardList, ChevronRight, ChevronLeft } from "lucide-react";
 import { ViolationTimeline } from "./ViolationTimeline";
 import { ViolationSummaryTable } from "./ViolationSummaryTable";
 import { ComplaintTimeline } from "./ComplaintTimeline";
@@ -72,9 +72,17 @@ function getTabs(city: City) {
   return enabledKeys.map(k => allTabs[k]);
 }
 
+const PAGE_SIZE = 10;
+
 export function IssuesTabs({ violations, complaints, litigations, dobViolations, bedbugs, evictions, permits, lahdViolationSummary = [], city = DEFAULT_CITY, totalCounts, buildingHref }: IssuesTabsProps) {
   const enabledTabs = CITY_TABS[city] || CITY_TABS.nyc;
   const [activeTab, setActiveTab] = useState<TabKey>(enabledTabs[0]);
+  const [page, setPage] = useState(1);
+
+  // Reset pagination when switching tabs.
+  useEffect(() => {
+    setPage(1);
+  }, [activeTab]);
 
   // Prefer stored totals from the buildings row (accurate even when we only
   // fetched the first N rows for the timeline). Fall back to loaded length.
@@ -91,6 +99,52 @@ export function IssuesTabs({ violations, complaints, litigations, dobViolations,
     bedbugs: pick(totalCounts?.bedbugs, bedbugs.length),
     evictions: pick(totalCounts?.evictions, evictions.length),
     permits: pick(totalCounts?.permits, permits.length),
+  };
+
+  // On the standalone /violations page (no buildingHref), paginate the
+  // active tab's records 10 at a time. On the building summary page,
+  // we still cap at 5 with a "see all" link.
+  const paginated = !buildingHref;
+  const sliceForPage = <T,>(arr: T[]): T[] => {
+    if (!paginated) return arr;
+    const start = (page - 1) * PAGE_SIZE;
+    return arr.slice(start, start + PAGE_SIZE);
+  };
+  const renderPager = (loadedLength: number) => {
+    if (!paginated || loadedLength <= PAGE_SIZE) return null;
+    const totalPages = Math.ceil(loadedLength / PAGE_SIZE);
+    const start = (page - 1) * PAGE_SIZE + 1;
+    const end = Math.min(page * PAGE_SIZE, loadedLength);
+    return (
+      <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-4 text-sm">
+        <span className="text-[#64748b] font-mono text-xs">
+          {start.toLocaleString()}–{end.toLocaleString()} of {loadedLength.toLocaleString()}
+        </span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md border border-gray-200 text-[#1E293B] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Prev
+          </button>
+          <span className="text-[#64748b] font-mono text-xs px-1">
+            page {page} / {totalPages}
+          </span>
+          <button
+            type="button"
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md border border-gray-200 text-[#1E293B] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50"
+          >
+            Next
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -130,51 +184,60 @@ export function IssuesTabs({ violations, complaints, litigations, dobViolations,
               </Link>
             </div>
           ) : null;
+        const visible = <T,>(arr: T[]): T[] =>
+          limit ? arr.slice(0, limit) : sliceForPage(arr);
         return (
           <>
             {activeTab === "violations" && (
               <>
                 {city === "los-angeles"
-                  ? <ViolationSummaryTable violations={limit ? lahdViolationSummary.slice(0, limit) : lahdViolationSummary} agencyLabel={agencies.housing} />
-                  : <ViolationTimeline violations={limit ? violations.slice(0, limit) : violations} agencyLabel={agencies.housing} total={totalCounts?.violations} />
+                  ? <ViolationSummaryTable violations={visible(lahdViolationSummary)} agencyLabel={agencies.housing} />
+                  : <ViolationTimeline violations={visible(violations)} agencyLabel={agencies.housing} total={totalCounts?.violations} />
                 }
                 {seeAll(counts.violations, "violations")}
+                {renderPager(city === "los-angeles" ? lahdViolationSummary.length : violations.length)}
               </>
             )}
             {activeTab === "complaints" && (
               <>
-                <ComplaintTimeline complaints={limit ? complaints.slice(0, limit) : complaints} total={totalCounts?.complaints} />
+                <ComplaintTimeline complaints={visible(complaints)} total={totalCounts?.complaints} />
                 {seeAll(counts.complaints, "complaints")}
+                {renderPager(complaints.length)}
               </>
             )}
             {activeTab === "litigations" && (
               <>
-                <LitigationTimeline litigations={limit ? litigations.slice(0, limit) : litigations} agencyLabel={agencies.housing} total={totalCounts?.litigations} />
+                <LitigationTimeline litigations={visible(litigations)} agencyLabel={agencies.housing} total={totalCounts?.litigations} />
                 {seeAll(counts.litigations, "litigations")}
+                {renderPager(litigations.length)}
               </>
             )}
             {activeTab === "dob" && (
               <>
-                <DobViolationTimeline violations={limit ? dobViolations.slice(0, limit) : dobViolations} agencyLabel={agencies.building} total={totalCounts?.dob} />
+                <DobViolationTimeline violations={visible(dobViolations)} agencyLabel={agencies.building} total={totalCounts?.dob} />
                 {seeAll(counts.dob, "violations")}
+                {renderPager(dobViolations.length)}
               </>
             )}
             {activeTab === "bedbugs" && (
               <>
-                <BedBugTimeline reports={limit ? bedbugs.slice(0, limit) : bedbugs} total={totalCounts?.bedbugs} />
+                <BedBugTimeline reports={visible(bedbugs)} total={totalCounts?.bedbugs} />
                 {seeAll(counts.bedbugs, "bedbug reports")}
+                {renderPager(bedbugs.length)}
               </>
             )}
             {activeTab === "evictions" && (
               <>
-                <EvictionTimeline evictions={limit ? evictions.slice(0, limit) : evictions} total={totalCounts?.evictions} />
+                <EvictionTimeline evictions={visible(evictions)} total={totalCounts?.evictions} />
                 {seeAll(counts.evictions, "evictions")}
+                {renderPager(evictions.length)}
               </>
             )}
             {activeTab === "permits" && (
               <>
-                <PermitTimeline permits={limit ? permits.slice(0, limit) : permits} agencyLabel={agencies.building} total={totalCounts?.permits} />
+                <PermitTimeline permits={visible(permits)} agencyLabel={agencies.building} total={totalCounts?.permits} />
                 {seeAll(counts.permits, "permits")}
+                {renderPager(permits.length)}
               </>
             )}
           </>
