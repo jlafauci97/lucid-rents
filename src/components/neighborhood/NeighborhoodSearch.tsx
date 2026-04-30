@@ -23,17 +23,27 @@ type SortKey = "name" | "grade" | "buildings" | "safety";
 
 const GRADE_ORDER: Record<string, number> = { A: 1, B: 2, C: 3, D: 4, F: 5 };
 
+function slugify(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-+|-+$)/g, "");
+}
+
 export function NeighborhoodSearch({
   neighborhoods,
   regions,
   regionLabel,
+  initialRegionSlug,
 }: {
   neighborhoods: NeighborhoodIndexEntry[];
   regions: string[];
   regionLabel: string;
+  initialRegionSlug?: string;
 }) {
   const [query, setQuery] = useState("");
-  const [selectedRegion, setSelectedRegion] = useState<string>("all");
+  const [selectedRegion, setSelectedRegion] = useState<string>(() => {
+    if (!initialRegionSlug) return "all";
+    const target = slugify(initialRegionSlug);
+    return regions.find((r) => slugify(r) === target) ?? "all";
+  });
   const [selectedGrade, setSelectedGrade] = useState<string>("all");
   const [sortBy, setSortBy] = useState<SortKey>("name");
 

@@ -71,7 +71,13 @@ function computeSafetyGrade(
   return "F";
 }
 
-export async function NeighborhoodsBody({ city }: { city: City }) {
+export async function NeighborhoodsBody({
+  city,
+  initialRegionSlug,
+}: {
+  city: City;
+  initialRegionSlug?: string;
+}) {
   const meta = CITY_META[city];
 
   const allNeighborhoods = getAllNeighborhoodsByCity(city);
@@ -173,6 +179,7 @@ export async function NeighborhoodsBody({ city }: { city: City }) {
         neighborhoods={neighborhoods}
         regions={regions}
         regionLabel={meta.regionLabel}
+        initialRegionSlug={initialRegionSlug}
       />
 
       {/* FAQ */}
