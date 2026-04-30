@@ -9,7 +9,7 @@ async function Inner({ slug, city, buildingCount }: { slug: string; city: City; 
     loadLandlordTrend(slug, city),
     loadLandlordRecord(slug, city),
   ]);
-  return <S02_Trend trend={trend} record={record} buildingCount={buildingCount} />;
+  return <S02_Trend trend={trend} record={record} buildingCount={buildingCount} slug={slug} city={city} />;
 }
 
 export function S02TrendStreamed({ slug, city, buildingCount }: { slug: string; city: City; buildingCount: number }) {
