@@ -76,9 +76,24 @@ export function LandlordIncidentBreakdown<T>({
         <div style={{ padding: "var(--s-5) 0 var(--s-3)" }}>
           <Link
             href={landlordUrl(landlordName, city)}
-            className="inline-flex items-center gap-1 text-sm text-[#64748b] hover:text-[#0F1D2E] mt-2"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "8px 14px",
+              borderRadius: 999,
+              border: "1px solid var(--border)",
+              background: "var(--paper)",
+              fontFamily: "var(--mono)",
+              fontSize: 12,
+              fontWeight: 700,
+              letterSpacing: "0.04em",
+              textTransform: "uppercase",
+              color: "var(--ink)",
+              textDecoration: "none",
+            }}
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft style={{ width: 14, height: 14 }} />
             Back to {landlordName}
           </Link>
           <h1
@@ -170,6 +185,78 @@ function BuildingGroup<T>({
   const shortAddress = building.full_address.split(",")[0] ?? building.full_address;
   const hidden = building.totalCount - building.records.length;
 
+  const headerStyle: React.CSSProperties = {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    padding: "16px 20px",
+    background: "var(--paper-2)",
+    borderBottom: "1px solid var(--border)",
+    color: "inherit",
+    textDecoration: "none",
+  };
+
+  const headerInner = (
+    <>
+      <div style={{ minWidth: 0 }}>
+        <div
+          style={{
+            fontFamily: "var(--sans)",
+            fontSize: 15,
+            fontWeight: 700,
+            color: "var(--ink)",
+            letterSpacing: "-0.005em",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+          }}
+        >
+          {shortAddress}
+          {buildingHref ? <span style={{ color: "var(--ink-mute)", fontWeight: 400 }}>›</span> : null}
+        </div>
+        <div
+          style={{
+            fontFamily: "var(--mono)",
+            fontSize: 11,
+            color: "var(--ink-mute)",
+            letterSpacing: "0.02em",
+            marginTop: 2,
+          }}
+        >
+          {building.borough ?? "—"}
+          {building.total_units ? ` · ${building.total_units} units` : ""}
+          {buildingHref ? " · view building" : ""}
+        </div>
+      </div>
+      <div style={{ textAlign: "right", flexShrink: 0 }}>
+        <div
+          style={{
+            fontFamily: "var(--serif)",
+            fontSize: 24,
+            letterSpacing: "-0.02em",
+            color: building.totalCount > 0 ? "var(--bad)" : "var(--ink)",
+            lineHeight: 1,
+          }}
+        >
+          {building.totalCount.toLocaleString()}
+        </div>
+        <div
+          style={{
+            fontFamily: "var(--mono)",
+            fontSize: 10,
+            color: "var(--ink-mute)",
+            letterSpacing: "0.06em",
+            textTransform: "uppercase",
+            marginTop: 2,
+          }}
+        >
+          {recordLabel}
+        </div>
+      </div>
+    </>
+  );
+
   return (
     <div
       style={{
@@ -179,84 +266,13 @@ function BuildingGroup<T>({
         overflow: "hidden",
       }}
     >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 12,
-          padding: "16px 20px",
-          background: "var(--paper-2)",
-          borderBottom: "1px solid var(--border)",
-        }}
-      >
-        <div style={{ minWidth: 0 }}>
-          {buildingHref ? (
-            <Link
-              href={buildingHref}
-              style={{
-                fontFamily: "var(--sans)",
-                fontSize: 15,
-                fontWeight: 700,
-                color: "var(--ink)",
-                letterSpacing: "-0.005em",
-                textDecoration: "none",
-              }}
-            >
-              {shortAddress}
-            </Link>
-          ) : (
-            <span
-              style={{
-                fontFamily: "var(--sans)",
-                fontSize: 15,
-                fontWeight: 700,
-                color: "var(--ink)",
-                letterSpacing: "-0.005em",
-              }}
-            >
-              {shortAddress}
-            </span>
-          )}
-          <div
-            style={{
-              fontFamily: "var(--mono)",
-              fontSize: 11,
-              color: "var(--ink-mute)",
-              letterSpacing: "0.02em",
-              marginTop: 2,
-            }}
-          >
-            {building.borough ?? "—"}
-            {building.total_units ? ` · ${building.total_units} units` : ""}
-          </div>
-        </div>
-        <div style={{ textAlign: "right", flexShrink: 0 }}>
-          <div
-            style={{
-              fontFamily: "var(--serif)",
-              fontSize: 24,
-              letterSpacing: "-0.02em",
-              color: building.totalCount > 0 ? "var(--bad)" : "var(--ink)",
-              lineHeight: 1,
-            }}
-          >
-            {building.totalCount.toLocaleString()}
-          </div>
-          <div
-            style={{
-              fontFamily: "var(--mono)",
-              fontSize: 10,
-              color: "var(--ink-mute)",
-              letterSpacing: "0.06em",
-              textTransform: "uppercase",
-              marginTop: 2,
-            }}
-          >
-            {recordLabel}
-          </div>
-        </div>
-      </div>
+      {buildingHref ? (
+        <Link href={buildingHref} style={headerStyle}>
+          {headerInner}
+        </Link>
+      ) : (
+        <div style={headerStyle}>{headerInner}</div>
+      )}
 
       <div
         style={{
