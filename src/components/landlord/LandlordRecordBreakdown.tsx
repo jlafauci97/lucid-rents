@@ -5,6 +5,7 @@ import { buildingUrl, cityBreadcrumbs, cityPath, landlordUrl } from "@/lib/seo";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { V2Zoom } from "@/components/building/v2/V2Zoom";
 import type {
+  LandlordBuildingRow,
   LandlordIncidentGroups,
   LandlordHpdViolationRow,
   LandlordComplaintRow,
@@ -15,6 +16,7 @@ interface Props {
   city: City;
   landlordName: string;
   landlordSlug: string;
+  buildings: LandlordBuildingRow[];
   violations: LandlordIncidentGroups<LandlordHpdViolationRow>;
   complaints: LandlordIncidentGroups<LandlordComplaintRow>;
   litigations: LandlordIncidentGroups<LandlordLitigationRow>;
@@ -35,63 +37,78 @@ type BuildingRollup = {
 };
 
 function rollup(
+  city: City,
+  buildings: LandlordBuildingRow[],
   violations: LandlordIncidentGroups<LandlordHpdViolationRow>,
   complaints: LandlordIncidentGroups<LandlordComplaintRow>,
   litigations: LandlordIncidentGroups<LandlordLitigationRow>
 ): BuildingRollup[] {
+  const isAltMetro = city === "chicago" || city === "miami" || city === "houston";
+  const violationCountFor = (b: LandlordBuildingRow) =>
+    (isAltMetro ? b.dob_violation_count : b.violation_count) ?? 0;
+
+  // Seed every building with the aggregate counts on the buildings table.
+  // These exist for every metro (HPD/LADBS/CDBS rolled into violation_count).
   const byId = new Map<string, BuildingRollup>();
-  const seed = (b: { id: string; full_address: string; borough: string | null; slug: string | null; total_units: number | null }) => {
-    if (byId.has(b.id)) return byId.get(b.id)!;
-    const row: BuildingRollup = {
+  for (const b of buildings) {
+    byId.set(b.id, {
       id: b.id,
       full_address: b.full_address,
       borough: b.borough,
       slug: b.slug,
       total_units: b.total_units,
       violations: [],
-      violationsTotal: 0,
+      violationsTotal: violationCountFor(b),
       complaints: [],
-      complaintsTotal: 0,
+      complaintsTotal: b.complaint_count ?? 0,
       litigations: [],
-      litigationsTotal: 0,
-    };
-    byId.set(b.id, row);
-    return row;
-  };
+      litigationsTotal: b.litigation_count ?? 0,
+    });
+  }
+  // Layer per-incident records on top where we have them (NYC for now).
+  // The totalCount from the incident loader takes precedence over the
+  // buildings table aggregate so the page numbers always match the
+  // record list exactly.
   for (const g of violations.buildings) {
-    const r = seed(g);
+    const r = byId.get(g.id);
+    if (!r) continue;
     r.violations = g.records;
     r.violationsTotal = g.totalCount;
   }
   for (const g of complaints.buildings) {
-    const r = seed(g);
+    const r = byId.get(g.id);
+    if (!r) continue;
     r.complaints = g.records;
     r.complaintsTotal = g.totalCount;
   }
   for (const g of litigations.buildings) {
-    const r = seed(g);
+    const r = byId.get(g.id);
+    if (!r) continue;
     r.litigations = g.records;
     r.litigationsTotal = g.totalCount;
   }
-  return Array.from(byId.values()).sort((a, b) => {
-    const aTotal = a.violationsTotal + a.complaintsTotal + a.litigationsTotal;
-    const bTotal = b.violationsTotal + b.complaintsTotal + b.litigationsTotal;
-    return bTotal - aTotal;
-  });
+  return Array.from(byId.values())
+    .filter((r) => r.violationsTotal + r.complaintsTotal + r.litigationsTotal > 0)
+    .sort((a, b) => {
+      const aTotal = a.violationsTotal + a.complaintsTotal + a.litigationsTotal;
+      const bTotal = b.violationsTotal + b.complaintsTotal + b.litigationsTotal;
+      return bTotal - aTotal;
+    });
 }
 
 export function LandlordRecordBreakdown({
   city,
   landlordName,
   landlordSlug,
+  buildings,
   violations,
   complaints,
   litigations,
 }: Props) {
-  const rolled = rollup(violations, complaints, litigations);
-  const totalViolations = violations.totalRecords;
-  const totalComplaints = complaints.totalRecords;
-  const totalLitigations = litigations.totalRecords;
+  const rolled = rollup(city, buildings, violations, complaints, litigations);
+  const totalViolations = rolled.reduce((acc, r) => acc + r.violationsTotal, 0);
+  const totalComplaints = rolled.reduce((acc, r) => acc + r.complaintsTotal, 0);
+  const totalLitigations = rolled.reduce((acc, r) => acc + r.litigationsTotal, 0);
   const totalIssues = totalViolations + totalComplaints + totalLitigations;
   const buildingsWithIssues = rolled.length;
 
@@ -194,6 +211,8 @@ function BuildingBlock({ building, city }: { building: BuildingRollup; city: Cit
   const buildingViolationsHref = buildingHref ? `${buildingHref}/violations` : null;
   const shortAddress = building.full_address.split(",")[0] ?? building.full_address;
   const totalForBuilding = building.violationsTotal + building.complaintsTotal + building.litigationsTotal;
+  const hasAnyRecords =
+    building.violations.length > 0 || building.complaints.length > 0 || building.litigations.length > 0;
 
   const headerStyle: React.CSSProperties = {
     display: "flex",
@@ -278,6 +297,18 @@ function BuildingBlock({ building, city }: { building: BuildingRollup; city: Cit
           }}
         >
           No records on file for this building.
+        </div>
+      ) : !hasAnyRecords ? (
+        <div
+          style={{
+            padding: "14px 20px",
+            fontFamily: "var(--sans)",
+            fontSize: 13,
+            color: "var(--ink-soft)",
+            background: "var(--paper)",
+          }}
+        >
+          Record-level details available on each building&apos;s page.
         </div>
       ) : (
         <>

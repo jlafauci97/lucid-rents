@@ -5,6 +5,7 @@ import type { City } from "@/lib/cities";
 import { CITY_META } from "@/lib/cities";
 import { getLandlordStats } from "@/lib/landlord-stats";
 import {
+  loadLandlordBuildingList,
   loadLandlordViolationsByBuilding,
   loadLandlordComplaintsByBuilding,
   loadLandlordLitigationsByBuilding,
@@ -12,8 +13,6 @@ import {
 import { LandlordRecordBreakdown } from "@/components/landlord/LandlordRecordBreakdown";
 
 export const revalidate = 86400;
-
-const CITIES_WITH_RECORD_DATA: ReadonlySet<City> = new Set(["nyc"]);
 
 interface Props {
   params: Promise<{ city: string; name: string }>;
@@ -37,10 +36,6 @@ export default async function LandlordRecordPage({ params }: Props) {
   const { city: cityParam, name } = await params;
   const city = (cityParam || "nyc") as City;
 
-  if (!CITIES_WITH_RECORD_DATA.has(city)) {
-    redirect(cityPath(`/landlord/${name}`, city));
-  }
-
   const cachedStats = await getLandlordStats(name, city);
   if (!cachedStats) {
     redirect(cityPath("/landlords", city));
@@ -51,13 +46,14 @@ export default async function LandlordRecordPage({ params }: Props) {
     redirect(cityPath(`/landlord/${correctSlug}/record`, city));
   }
 
-  const [violations, complaints, litigations] = await Promise.all([
+  const [buildings, violations, complaints, litigations] = await Promise.all([
+    loadLandlordBuildingList(correctSlug, city),
     loadLandlordViolationsByBuilding(correctSlug, city),
     loadLandlordComplaintsByBuilding(correctSlug, city),
     loadLandlordLitigationsByBuilding(correctSlug, city),
   ]);
 
-  if (violations.totalBuildings === 0) {
+  if (buildings.length === 0) {
     notFound();
   }
 
@@ -66,6 +62,7 @@ export default async function LandlordRecordPage({ params }: Props) {
       city={city}
       landlordName={cachedStats.name}
       landlordSlug={correctSlug}
+      buildings={buildings}
       violations={violations}
       complaints={complaints}
       litigations={litigations}
