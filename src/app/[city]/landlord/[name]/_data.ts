@@ -1,10 +1,22 @@
-import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import type { City } from "@/lib/cities";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { computeGradeDistribution, aggregateRegions } from "@/lib/landlord-v2-helpers";
 import { faqBankForCity } from "@/lib/landlord-city-adapters";
 import { CITY_META } from "@/lib/cities";
 import { getNeighborhoodNameByCity, neighborhoodPageSlugByCity } from "@/lib/neighborhoods";
+
+// Cross-request cache for landlord page loaders. Matches the page's 24h ISR
+// window so a revalidating page reuses cached query results instead of
+// re-querying Postgres for every loader on every revalidation.
+const cached = <Args extends unknown[], Result>(
+  name: string,
+  fn: (...args: Args) => Promise<Result>,
+): ((...args: Args) => Promise<Result>) =>
+  unstable_cache(fn, [name], {
+    revalidate: 86400,
+    tags: ["landlord-data"],
+  });
 
 // ──────────────────────────────────────────────────────────────
 // LandlordV2Data — full type shape for landlord page v2
@@ -205,9 +217,10 @@ export type LandlordRecordAggregate = {
  * Resolve the canonical owner_name for a slug in a given metro.
  * Cached for the request lifetime so all loaders share one query.
  */
-export const resolveOwnerName = cache(
+export const resolveOwnerName = cached(
+  "resolve-owner-name",
   async (slug: string, city: City): Promise<string | null> => {
-    const supabase = await createClient();
+    const supabase = createCacheClient();
     const { data } = await supabase
       .from("landlord_stats")
       .select("name")
@@ -249,11 +262,12 @@ export type LandlordBuildingRow = {
 const BUILDING_LIST_COLUMNS =
   "id, full_address, borough, zip_code, slug, year_built, total_units, overall_score, violation_count, dob_violation_count, complaint_count, litigation_count, eviction_count, is_rent_stabilized, stabilized_units, is_rso, is_scofflaw, latitude, longitude";
 
-export const loadLandlordBuildingList = cache(
+export const loadLandlordBuildingList = cached(
+  "landlord-building-list",
   async (slug: string, city: City): Promise<LandlordBuildingRow[]> => {
     const ownerName = await resolveOwnerName(slug, city);
     if (!ownerName) return [];
-    const supabase = await createClient();
+    const supabase = createCacheClient();
     const { data } = await supabase
       .from("buildings")
       .select(BUILDING_LIST_COLUMNS)
@@ -267,9 +281,10 @@ export const loadLandlordBuildingList = cache(
 // Individual loaders — one per section, all wrapped in cache()
 // ──────────────────────────────────────────────────────────────
 
-export const loadLandlordHero = cache(
+export const loadLandlordHero = cached(
+  "landlord-hero",
   async (slug: string, city: City): Promise<LandlordV2Data["landlord"]> => {
-    const supabase = await createClient();
+    const supabase = createCacheClient();
 
     const [statsResult, ownerName] = await Promise.all([
       supabase
@@ -378,7 +393,8 @@ export const loadLandlordHero = cache(
   }
 );
 
-export const loadLandlordRecord = cache(
+export const loadLandlordRecord = cached(
+  "landlord-record",
   async (slug: string, city: City): Promise<LandlordRecordAggregate> => {
     const ownerName = await resolveOwnerName(slug, city);
     const empty: LandlordRecordAggregate = {
@@ -397,7 +413,7 @@ export const loadLandlordRecord = cache(
     };
     if (!ownerName) return empty;
 
-    const supabase = await createClient();
+    const supabase = createCacheClient();
 
     // Single aggregate pull — every per-city record slot is derivable from
     // these building-level counts plus (for NYC) the OATH summary RPC.
@@ -463,9 +479,10 @@ export const loadLandlordRecord = cache(
   }
 );
 
-export const loadLandlordGlance = cache(
+export const loadLandlordGlance = cached(
+  "landlord-glance",
   async (slug: string, city: City): Promise<LandlordV2Data["portfolio"]> => {
-    const supabase = await createClient();
+    const supabase = createCacheClient();
     const [buildings, cityAvgResult] = await Promise.all([
       loadLandlordBuildingList(slug, city),
       supabase.rpc("city_avg_score", { p_metro: city }),
@@ -491,7 +508,8 @@ export const loadLandlordGlance = cache(
   }
 );
 
-export const loadLandlordTrend = cache(
+export const loadLandlordTrend = cached(
+  "landlord-trend",
   async (slug: string, city: City): Promise<LandlordV2Data["trend"]> => {
     const buildings = await loadLandlordBuildingList(slug, city);
     if (buildings.length === 0) {
@@ -522,7 +540,8 @@ export const loadLandlordTrend = cache(
   }
 );
 
-export const loadLandlordCaseFile = cache(
+export const loadLandlordCaseFile = cached(
+  "landlord-case-file",
   async (slug: string, city: City): Promise<LandlordV2Data["caseFile"]> => {
     // Phase 1 ships NYC OATH only. LA/CHI/MIA/HOU return null and the
     // section stays hidden until the per-city enforcement source lands.
@@ -530,7 +549,7 @@ export const loadLandlordCaseFile = cache(
     const ownerName = await resolveOwnerName(slug, city);
     if (!ownerName) return null;
 
-    const supabase = await createClient();
+    const supabase = createCacheClient();
     const [summaryResult, recentResult] = await Promise.all([
       supabase.rpc("get_landlord_oath_summary", { landlord_owner_name: ownerName }).maybeSingle(),
       supabase.rpc("get_landlord_oath_recent", { landlord_owner_name: ownerName, row_limit: 12 }),
@@ -593,7 +612,8 @@ export const loadLandlordCaseFile = cache(
   }
 );
 
-export const loadLandlordBuildings = cache(
+export const loadLandlordBuildings = cached(
+  "landlord-buildings",
   async (slug: string, city: City): Promise<LandlordV2Data["buildings"]> => {
     const buildings = await loadLandlordBuildingList(slug, city);
     if (buildings.length === 0) {
@@ -649,7 +669,8 @@ export const loadLandlordBuildings = cache(
   }
 );
 
-export const loadLandlordOwnership = cache(
+export const loadLandlordOwnership = cached(
+  "landlord-ownership",
   async (slug: string, city: City): Promise<LandlordV2Data["ownership"]> => {
     const ownerName = await resolveOwnerName(slug, city);
     if (!ownerName) {
@@ -659,7 +680,7 @@ export const loadLandlordOwnership = cache(
       };
     }
 
-    const supabase = await createClient();
+    const supabase = createCacheClient();
     // Mode(management_company) across the portfolio. Using a simple top-1
     // by count query; more precise entity mapping lands with the ACRIS work.
     const { data } = await supabase
@@ -706,13 +727,14 @@ export const loadLandlordOwnership = cache(
   }
 );
 
-export const loadLandlordTenantVoice = cache(
+export const loadLandlordTenantVoice = cached(
+  "landlord-tenant-voice",
   async (slug: string, city: City): Promise<LandlordV2Data["tenantVoice"]> => {
     const buildings = await loadLandlordBuildingList(slug, city);
     if (buildings.length === 0) {
       return { avgRating: 0, totalReviews: 0, distribution: [0, 0, 0, 0, 0], excerpts: [] };
     }
-    const supabase = await createClient();
+    const supabase = createCacheClient();
     const buildingIds = buildings.map((b) => b.id);
 
     const { data } = await supabase
@@ -789,7 +811,8 @@ export const loadLandlordTenantVoice = cache(
   }
 );
 
-export const loadLandlordWhere = cache(
+export const loadLandlordWhere = cached(
+  "landlord-where",
   async (slug: string, city: City): Promise<LandlordV2Data["where"]> => {
     const buildings = await loadLandlordBuildingList(slug, city);
     if (buildings.length === 0) return { regions: [] };
@@ -825,9 +848,10 @@ export const loadLandlordWhere = cache(
   }
 );
 
-export const loadLandlordPeers = cache(
+export const loadLandlordPeers = cached(
+  "landlord-peers",
   async (slug: string, city: City): Promise<LandlordV2Data["peers"]> => {
-    const supabase = await createClient();
+    const supabase = createCacheClient();
     const { data: self } = await supabase
       .from("landlord_stats")
       .select("building_count, avg_score")
@@ -878,7 +902,8 @@ export const loadLandlordPeers = cache(
   }
 );
 
-export const loadLandlordCityInsights = cache(
+export const loadLandlordCityInsights = cached(
+  "landlord-city-insights",
   async (slug: string, city: City): Promise<LandlordV2Data["cityInsights"]> => {
     const buildings = await loadLandlordBuildingList(slug, city);
     if (buildings.length === 0) return null;
@@ -918,11 +943,12 @@ export type LandlordReviewRow = {
  * newest-first. Used by `/landlord/[slug]/reviews` — S06 only needs 3
  * excerpts and uses `loadLandlordTenantVoice` instead.
  */
-export const loadLandlordAllReviews = cache(
+export const loadLandlordAllReviews = cached(
+  "landlord-all-reviews",
   async (slug: string, city: City): Promise<LandlordReviewRow[]> => {
     const buildings = await loadLandlordBuildingList(slug, city);
     if (buildings.length === 0) return [];
-    const supabase = await createClient();
+    const supabase = createCacheClient();
     const byId = new Map(buildings.map((b) => [b.id, b]));
     const { data } = await supabase
       .from("reviews")
@@ -951,10 +977,11 @@ export const loadLandlordAllReviews = cache(
 
 export type LandlordFAQItem = { q: string; a: string };
 
-export const loadLandlordFAQ = cache(
+export const loadLandlordFAQ = cached(
+  "landlord-faq",
   async (slug: string, city: City): Promise<LandlordFAQItem[]> => {
     const bank = faqBankForCity(city);
-    const supabase = await createClient();
+    const supabase = createCacheClient();
 
     // Fetch everything we need to fill in the templates.
     const ownerName = await resolveOwnerName(slug, city);
@@ -1043,12 +1070,13 @@ export const loadLandlordFAQ = cache(
   }
 );
 
-export const loadLandlordNeighborhoods = cache(
+export const loadLandlordNeighborhoods = cached(
+  "landlord-neighborhoods",
   async (slug: string, city: City): Promise<Array<{ slug: string; name: string; buildingCount: number }>> => {
     const ownerName = await resolveOwnerName(slug, city);
     if (!ownerName) return [];
 
-    const supabase = await createClient();
+    const supabase = createCacheClient();
     const { data } = await supabase
       .from("buildings")
       .select("zip_code")
@@ -1160,13 +1188,14 @@ export type LandlordHpdViolationRow = {
   apartment: string | null;
 };
 
-export const loadLandlordViolationsByBuilding = cache(
+export const loadLandlordViolationsByBuilding = cached(
+  "landlord-violations-by-building",
   async (slug: string, city: City): Promise<LandlordIncidentGroups<LandlordHpdViolationRow>> => {
     const buildings = await loadLandlordBuildingList(slug, city);
     if (buildings.length === 0 || city !== "nyc") {
       return { buildings: [], totalRecords: 0, buildingsWithRecords: 0, totalBuildings: buildings.length };
     }
-    const supabase = await createClient();
+    const supabase = createCacheClient();
     const buildingIds = buildings.map((b) => b.id);
     const { data } = await supabase.rpc("landlord_violations_preview", {
       p_building_ids: buildingIds,
@@ -1188,7 +1217,8 @@ export type LandlordComplaintRow = {
   closed_date: string | null;
 };
 
-export const loadLandlordComplaintsByBuilding = cache(
+export const loadLandlordComplaintsByBuilding = cached(
+  "landlord-complaints-by-building",
   async (slug: string, city: City): Promise<LandlordIncidentGroups<LandlordComplaintRow>> => {
     const buildings = await loadLandlordBuildingList(slug, city);
     // The RPC reads from complaints_311_nyc directly, so this is NYC-only.
@@ -1196,7 +1226,7 @@ export const loadLandlordComplaintsByBuilding = cache(
     if (buildings.length === 0 || city !== "nyc") {
       return { buildings: [], totalRecords: 0, buildingsWithRecords: 0, totalBuildings: buildings.length };
     }
-    const supabase = await createClient();
+    const supabase = createCacheClient();
     const buildingIds = buildings.map((b) => b.id);
     const { data } = await supabase.rpc("landlord_complaints_preview", {
       p_building_ids: buildingIds,
@@ -1220,13 +1250,14 @@ export type LandlordLitigationRow = {
   respondent: string | null;
 };
 
-export const loadLandlordLitigationsByBuilding = cache(
+export const loadLandlordLitigationsByBuilding = cached(
+  "landlord-litigations-by-building",
   async (slug: string, city: City): Promise<LandlordIncidentGroups<LandlordLitigationRow>> => {
     const buildings = await loadLandlordBuildingList(slug, city);
     if (buildings.length === 0 || city !== "nyc") {
       return { buildings: [], totalRecords: 0, buildingsWithRecords: 0, totalBuildings: buildings.length };
     }
-    const supabase = await createClient();
+    const supabase = createCacheClient();
     const buildingIds = buildings.map((b) => b.id);
     const { data } = await supabase.rpc("landlord_litigations_preview", {
       p_building_ids: buildingIds,
