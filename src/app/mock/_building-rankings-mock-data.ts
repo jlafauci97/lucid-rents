@@ -560,6 +560,8 @@ export type EraEntry = {
   topUnits: number;
   topYear: number;
   topViolations: number;
+  /** Real DB slug — only resolves on /nyc/, used to deep-link the card */
+  topSlug: string;
 };
 
 export const BY_ERA: EraEntry[] = [
@@ -572,6 +574,7 @@ export const BY_ERA: EraEntry[] = [
     topUnits: 188,
     topYear: 1929,
     topViolations: 1419,
+    topSlug: "2344-davidson-avenue-bronx-ny-10468",
   },
   {
     era: "Mid-century",
@@ -582,6 +585,7 @@ export const BY_ERA: EraEntry[] = [
     topUnits: 1525,
     topYear: 1973,
     topViolations: 14374,
+    topSlug: "765-lincoln-avenue-brooklyn-ny-11208",
   },
   {
     era: "Modern",
@@ -592,6 +596,7 @@ export const BY_ERA: EraEntry[] = [
     topUnits: 412,
     topYear: 1981,
     topViolations: 913,
+    topSlug: "150-18-72-drive-queens-ny-11367",
   },
   {
     era: "Luxury",
@@ -602,6 +607,7 @@ export const BY_ERA: EraEntry[] = [
     topUnits: 392,
     topYear: 2014,
     topViolations: 14,
+    topSlug: "525-west-52-street-manhattan-ny-10019",
   },
 ];
 
@@ -615,6 +621,8 @@ export type SizeEntry = {
   topUnits: number;
   topViolations: number;
   topPerUnit: number;
+  /** Real DB slug — only resolves on /nyc/, used to deep-link the card */
+  topSlug: string;
 };
 
 export const BY_SIZE: SizeEntry[] = [
@@ -622,11 +630,12 @@ export const BY_SIZE: SizeEntry[] = [
     size: "Micro",
     range: "<20 units",
     buildings: 412_000,
-    topAddress: "287 BROADWAY",
+    topAddress: "1055 BERGEN STREET",
     topBorough: "Brooklyn",
-    topUnits: 12,
-    topViolations: 184,
-    topPerUnit: 15.33,
+    topUnits: 16,
+    topViolations: 1366,
+    topPerUnit: 85.38,
+    topSlug: "1055-bergen-street-brooklyn-ny-11216",
   },
   {
     size: "Mid",
@@ -637,6 +646,7 @@ export const BY_SIZE: SizeEntry[] = [
     topUnits: 188,
     topViolations: 1419,
     topPerUnit: 7.55,
+    topSlug: "2344-davidson-avenue-bronx-ny-10468",
   },
   {
     size: "Tower",
@@ -647,6 +657,7 @@ export const BY_SIZE: SizeEntry[] = [
     topUnits: 1525,
     topViolations: 14374,
     topPerUnit: 9.43,
+    topSlug: "765-lincoln-avenue-brooklyn-ny-11208",
   },
 ];
 
