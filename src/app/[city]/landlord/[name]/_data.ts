@@ -1085,11 +1085,13 @@ export const loadLandlordNeighborhoods = cache(
 );
 
 // ──────────────────────────────────────────────────────────────
-// Per-incident drill-downs grouped by building.
-// Powers /landlord/[slug]/violations|complaints|litigations.
-// One bulk query per category over the portfolio's building IDs;
-// records are grouped in memory and capped per-building so a
-// landlord with 1000s of records doesn't blow up the page.
+// Per-incident previews grouped by building. Powers
+// /landlord/[slug]/record. Calls the landlord_*_preview RPCs
+// which use LATERAL joins against composite (building_id, date DESC)
+// indexes — for a 2-building portfolio with 16k violations on file
+// the equivalent .in().limit() query was ~12s, the RPC is ~50ms.
+// The buildings.*_count aggregates are the canonical totals; this
+// only fetches the most recent N records per building for preview.
 // ──────────────────────────────────────────────────────────────
 
 export type LandlordIncidentBuilding<T> = {
@@ -1110,10 +1112,6 @@ export type LandlordIncidentGroups<T> = {
 };
 
 const PER_BUILDING_PREVIEW = 8;
-// Records are previews ordered by date desc — buildings.*_count gives the
-// canonical totals. Lower cap keeps the page snappy for portfolios with
-// thousands of records on file.
-const PORTFOLIO_RECORD_CAP = 1500;
 
 function groupByBuilding<T extends { building_id: string | null }>(
   buildings: LandlordBuildingRow[],
@@ -1170,12 +1168,10 @@ export const loadLandlordViolationsByBuilding = cache(
     }
     const supabase = await createClient();
     const buildingIds = buildings.map((b) => b.id);
-    const { data } = await supabase
-      .from("hpd_violations")
-      .select("id, building_id, violation_id, class, inspection_date, nov_description, status, apartment")
-      .in("building_id", buildingIds)
-      .order("inspection_date", { ascending: false })
-      .limit(PORTFOLIO_RECORD_CAP);
+    const { data } = await supabase.rpc("landlord_violations_preview", {
+      p_building_ids: buildingIds,
+      p_per_building: PER_BUILDING_PREVIEW,
+    });
     const records = (data ?? []) as LandlordHpdViolationRow[];
     return groupByBuilding(buildings, records);
   }
@@ -1195,20 +1191,17 @@ export type LandlordComplaintRow = {
 export const loadLandlordComplaintsByBuilding = cache(
   async (slug: string, city: City): Promise<LandlordIncidentGroups<LandlordComplaintRow>> => {
     const buildings = await loadLandlordBuildingList(slug, city);
-    // complaints_311 is overwhelmingly NYC + a chicago heating subset.
-    // Skip the query for metros that don't have meaningful per-incident data
-    // — the page falls back to the buildings.complaint_count aggregate.
-    if (buildings.length === 0 || (city !== "nyc" && city !== "chicago")) {
+    // The RPC reads from complaints_311_nyc directly, so this is NYC-only.
+    // Other metros fall back to the buildings.complaint_count aggregate.
+    if (buildings.length === 0 || city !== "nyc") {
       return { buildings: [], totalRecords: 0, buildingsWithRecords: 0, totalBuildings: buildings.length };
     }
     const supabase = await createClient();
     const buildingIds = buildings.map((b) => b.id);
-    const { data } = await supabase
-      .from("complaints_311")
-      .select("id, building_id, complaint_type, descriptor, agency, status, created_date, closed_date")
-      .in("building_id", buildingIds)
-      .order("created_date", { ascending: false })
-      .limit(PORTFOLIO_RECORD_CAP);
+    const { data } = await supabase.rpc("landlord_complaints_preview", {
+      p_building_ids: buildingIds,
+      p_per_building: PER_BUILDING_PREVIEW,
+    });
     const records = (data ?? []) as LandlordComplaintRow[];
     return groupByBuilding(buildings, records);
   }
@@ -1235,12 +1228,10 @@ export const loadLandlordLitigationsByBuilding = cache(
     }
     const supabase = await createClient();
     const buildingIds = buildings.map((b) => b.id);
-    const { data } = await supabase
-      .from("hpd_litigations")
-      .select("id, building_id, litigation_id, case_type, case_status, case_open_date, case_close_date, case_judgment, penalty, respondent")
-      .in("building_id", buildingIds)
-      .order("case_open_date", { ascending: false })
-      .limit(PORTFOLIO_RECORD_CAP);
+    const { data } = await supabase.rpc("landlord_litigations_preview", {
+      p_building_ids: buildingIds,
+      p_per_building: PER_BUILDING_PREVIEW,
+    });
     const records = (data ?? []) as LandlordLitigationRow[];
     return groupByBuilding(buildings, records);
   }
