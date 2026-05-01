@@ -10,6 +10,8 @@ import { CITY_META, type City } from "@/lib/cities";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { cityBreadcrumbs, canonicalUrl, cityPath } from "@/lib/seo";
 
+export const revalidate = 86400; // 24h ISR — static content
+
 export async function generateMetadata({
   params,
 }: {

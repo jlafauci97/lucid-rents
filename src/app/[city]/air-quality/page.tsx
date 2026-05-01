@@ -6,6 +6,8 @@ import { canonicalUrl, cityPath } from "@/lib/seo";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { createClient } from "@/lib/supabase/server";
 
+export const revalidate = 86400; // 24h ISR
+
 export async function generateMetadata({ params }: { params: Promise<{ city: string }> }): Promise<Metadata> {
   const { city } = await params;
   const meta = CITY_META[city as City];

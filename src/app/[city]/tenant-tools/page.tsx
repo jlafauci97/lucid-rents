@@ -19,6 +19,8 @@ import { canonicalUrl, cityPath } from "@/lib/seo";
 import { TEMPLATES } from "@/lib/tenant-templates-data";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 
+export const revalidate = 86400; // 24h ISR
+
 export async function generateMetadata({
   params,
 }: {

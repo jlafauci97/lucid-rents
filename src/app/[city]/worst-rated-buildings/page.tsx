@@ -1,5 +1,7 @@
 import { permanentRedirect } from "next/navigation";
 
+export const revalidate = 86400; // 24h ISR — permanent redirect, safe to cache
+
 // The /worst-rated-buildings route was renamed to /building-rankings on
 // 2026-04-28. The proxy.ts rule handles single-segment city URLs (e.g.
 // /nyc/worst-rated-buildings), but multi-segment forms like

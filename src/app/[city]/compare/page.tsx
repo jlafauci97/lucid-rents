@@ -11,6 +11,8 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import type { Metadata } from "next";
 import type { Building } from "@/types";
 
+export const revalidate = 300; // 5min ISR — compare shell
+
 interface ComparePageProps {
   params: Promise<{ city: string }>;
   searchParams: Promise<{ ids?: string }>;

@@ -11,6 +11,8 @@ import type { Metadata } from "next";
 import { buildingUrl } from "@/lib/seo";
 import { CITY_META, type City } from "@/lib/cities";
 
+export const revalidate = 86400; // 24h ISR
+
 interface UnitPageProps {
   params: Promise<{ city: string; borough: string; unitId: string }>;
 }
