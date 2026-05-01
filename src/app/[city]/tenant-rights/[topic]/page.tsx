@@ -15,6 +15,8 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { cityBreadcrumbs, canonicalUrl, cityPath } from "@/lib/seo";
 import { RelatedTools } from "@/components/tenant-rights/RelatedTools";
 
+export const revalidate = 86400; // 24h ISR — static content
+
 export async function generateMetadata({
   params,
 }: {

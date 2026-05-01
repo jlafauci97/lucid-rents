@@ -12,7 +12,7 @@ import { cache } from "react";
 import type { Building, ReviewWithDetails } from "@/types";
 import type { Metadata } from "next";
 
-export const revalidate = 0; // dynamic — no ISR cache
+export const revalidate = 3600; // 1h ISR — review pages are SEO-traffic dominated
 
 const PAGE_SIZE = 10;
 

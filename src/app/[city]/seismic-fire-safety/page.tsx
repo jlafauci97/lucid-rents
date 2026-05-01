@@ -15,6 +15,8 @@ import {
 import { CITY_META, type City } from "@/lib/cities";
 import { HazardMap } from "@/components/hazards/HazardMap";
 
+export const revalidate = 86400; // 24h ISR
+
 export async function generateMetadata({
   params,
 }: {

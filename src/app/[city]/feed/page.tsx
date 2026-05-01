@@ -7,6 +7,8 @@ import { isValidCity, CITY_META, type City } from "@/lib/cities";
 import { FeedStats, TrendingBuildings } from "./FeedSidebar";
 import { FeedStatsSkeleton, TrendingBuildingsSkeleton } from "./FeedSidebarSkeletons";
 
+export const revalidate = 300; // 5min ISR — live feed shell
+
 export async function generateMetadata({ params }: { params: Promise<{ city: string }> }): Promise<Metadata> {
   const { city } = await params;
   if (!isValidCity(city)) return {};

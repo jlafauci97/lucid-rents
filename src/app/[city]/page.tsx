@@ -21,6 +21,8 @@ import { CityToolsGrid } from "@/components/seo/CityToolsGrid";
 import { canonicalUrl, cityPath } from "@/lib/seo";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
 
+export const revalidate = 3600; // 1h ISR — city home
+
 export async function generateMetadata({
   params,
 }: {

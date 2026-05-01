@@ -15,6 +15,8 @@ import type { Metadata } from "next";
 
 import { CITY_META, type City } from "@/lib/cities";
 
+export const revalidate = 300; // 5min ISR — search shell
+
 type SortOption = "relevance" | "score-desc" | "score-asc" | "violations-desc" | "reviews-desc";
 
 interface SearchPageProps {

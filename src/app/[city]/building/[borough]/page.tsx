@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { buildingUrl } from "@/lib/seo";
 import type { City } from "@/lib/cities";
 
+export const revalidate = 86400; // 24h ISR — slug→canonical redirects rarely change
+
 interface BuildingPageProps {
   params: Promise<{ city: string; borough: string }>;
 }

@@ -6,6 +6,8 @@ import { TEMPLATES, TEMPLATE_CATEGORIES, CATEGORY_COLORS } from "@/lib/tenant-te
 import { TemplateCard } from "@/components/tenant-tools/TemplateCard";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 
+export const revalidate = 86400; // 24h ISR
+
 export async function generateMetadata({
   params,
 }: {
