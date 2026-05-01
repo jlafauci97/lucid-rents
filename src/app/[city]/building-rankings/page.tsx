@@ -22,7 +22,7 @@ function createAnonClient() {
     { auth: { persistSession: false } }
   );
 }
-import { buildingUrl, landlordUrl, canonicalUrl, cityPath } from "@/lib/seo";
+import { buildingUrl, landlordUrl, canonicalUrl, cityPath, neighborhoodUrl } from "@/lib/seo";
 import { isValidCity, CITY_META, VALID_CITIES, type City } from "@/lib/cities";
 import { getRegions, normalizeScore } from "@/lib/constants";
 import {
@@ -685,7 +685,7 @@ export default async function BuildingRankingsPage({ params: routeParams, search
               const sigColor = w.signal === "critical" ? ACCENT.red : w.signal === "high" ? ACCENT.ember : ACCENT.amber;
               const sigBg = w.signal === "critical" ? G.ember : w.signal === "high" ? G.peach : G.amber;
               return (
-                <div key={w.address} className="p-6 flex flex-col" style={{ background: "#fff", border: `1px solid ${BORDER}`, borderRadius: 20, boxShadow: SHADOW, color: "inherit", minHeight: 240, position: "relative", overflow: "hidden" }}>
+                <Link key={w.address} href={`${buildHref({ sort: "violations", page: "1" })}#directory`} className="p-6 flex flex-col" style={{ background: "#fff", border: `1px solid ${BORDER}`, borderRadius: 20, boxShadow: SHADOW, color: "inherit", minHeight: 240, position: "relative", overflow: "hidden", textDecoration: "none" }}>
                   <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, background: sigColor }} />
                   <div className="flex items-start justify-between mb-4 mt-1">
                     <span style={{ fontSize: 11, padding: "3px 9px", borderRadius: 999, background: sigBg, color: sigColor, fontWeight: 700, fontFamily: MONO, letterSpacing: "0.06em", textTransform: "uppercase" }}>
@@ -724,7 +724,7 @@ export default async function BuildingRankingsPage({ params: routeParams, search
                       <div style={{ fontSize: 18, fontWeight: 700, color: INK, marginTop: 2, fontVariantNumeric: "tabular-nums" }}>{w.daysOnWatch}d</div>
                     </div>
                   </div>
-                </div>
+                </Link>
               );
             })}
           </div>
@@ -821,25 +821,27 @@ export default async function BuildingRankingsPage({ params: routeParams, search
               </div>
               <ol className="m-0 p-0 list-none">
                 {MOVERS.improved.map((m, i) => (
-                  <li key={m.address} className="flex items-center gap-3 py-3.5" style={{ borderTop: i > 0 ? `1px solid rgba(10,14,26,0.08)` : "none" }}>
-                    <span style={{ width: 28, height: 28, borderRadius: 8, background: "rgba(255,255,255,0.7)", color: ACCENT.mint, fontSize: 13, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
-                      {i + 1}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <div style={{ fontSize: 14, fontWeight: 700, color: INK }}>{m.address}</div>
-                      <div style={{ fontFamily: MONO, fontSize: 11, color: INK_SOFT, marginTop: 2, letterSpacing: "0.04em" }}>
-                        {m.borough} · {m.units} units · {m.current.toLocaleString()} violations
+                  <li key={m.address} style={{ borderTop: i > 0 ? `1px solid rgba(10,14,26,0.08)` : "none" }}>
+                    <Link href={`${buildHref({ sort: "violations", page: "1" })}#directory`} className="flex items-center gap-3 py-3.5" style={{ textDecoration: "none", color: "inherit" }}>
+                      <span style={{ width: 28, height: 28, borderRadius: 8, background: "rgba(255,255,255,0.7)", color: ACCENT.mint, fontSize: 13, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
+                        {i + 1}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div style={{ fontSize: 14, fontWeight: 700, color: INK }}>{m.address}</div>
+                        <div style={{ fontFamily: MONO, fontSize: 11, color: INK_SOFT, marginTop: 2, letterSpacing: "0.04em" }}>
+                          {m.borough} · {m.units} units · {m.current.toLocaleString()} violations
+                        </div>
                       </div>
-                    </div>
-                    <div style={{ textAlign: "right", flexShrink: 0 }}>
-                      <div style={{ fontSize: 18, fontWeight: 800, color: ACCENT.mint, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.02em", display: "inline-flex", alignItems: "center", gap: 2 }}>
-                        <TrendingDown size={14} strokeWidth={2.5} />
-                        {m.pct.toFixed(0)}%
+                      <div style={{ textAlign: "right", flexShrink: 0 }}>
+                        <div style={{ fontSize: 18, fontWeight: 800, color: ACCENT.mint, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.02em", display: "inline-flex", alignItems: "center", gap: 2 }}>
+                          <TrendingDown size={14} strokeWidth={2.5} />
+                          {m.pct.toFixed(0)}%
+                        </div>
+                        <div style={{ fontFamily: MONO, fontSize: 10, color: INK_SOFT, letterSpacing: "0.06em" }}>
+                          {m.delta.toLocaleString()} viol
+                        </div>
                       </div>
-                      <div style={{ fontFamily: MONO, fontSize: 10, color: INK_SOFT, letterSpacing: "0.06em" }}>
-                        {m.delta.toLocaleString()} viol
-                      </div>
-                    </div>
+                    </Link>
                   </li>
                 ))}
               </ol>
@@ -857,25 +859,27 @@ export default async function BuildingRankingsPage({ params: routeParams, search
               </div>
               <ol className="m-0 p-0 list-none">
                 {MOVERS.deteriorated.map((m, i) => (
-                  <li key={m.address} className="flex items-center gap-3 py-3.5" style={{ borderTop: i > 0 ? `1px solid rgba(10,14,26,0.08)` : "none" }}>
-                    <span style={{ width: 28, height: 28, borderRadius: 8, background: "rgba(255,255,255,0.7)", color: ACCENT.red, fontSize: 13, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
-                      {i + 1}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <div style={{ fontSize: 14, fontWeight: 700, color: INK }}>{m.address}</div>
-                      <div style={{ fontFamily: MONO, fontSize: 11, color: INK_SOFT, marginTop: 2, letterSpacing: "0.04em" }}>
-                        {m.borough} · {m.units} units · {m.current.toLocaleString()} violations
+                  <li key={m.address} style={{ borderTop: i > 0 ? `1px solid rgba(10,14,26,0.08)` : "none" }}>
+                    <Link href={`${buildHref({ sort: "violations", page: "1" })}#directory`} className="flex items-center gap-3 py-3.5" style={{ textDecoration: "none", color: "inherit" }}>
+                      <span style={{ width: 28, height: 28, borderRadius: 8, background: "rgba(255,255,255,0.7)", color: ACCENT.red, fontSize: 13, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
+                        {i + 1}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div style={{ fontSize: 14, fontWeight: 700, color: INK }}>{m.address}</div>
+                        <div style={{ fontFamily: MONO, fontSize: 11, color: INK_SOFT, marginTop: 2, letterSpacing: "0.04em" }}>
+                          {m.borough} · {m.units} units · {m.current.toLocaleString()} violations
+                        </div>
                       </div>
-                    </div>
-                    <div style={{ textAlign: "right", flexShrink: 0 }}>
-                      <div style={{ fontSize: 18, fontWeight: 800, color: ACCENT.red, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.02em", display: "inline-flex", alignItems: "center", gap: 2 }}>
-                        <TrendingUp size={14} strokeWidth={2.5} />
-                        +{m.pct.toFixed(0)}%
+                      <div style={{ textAlign: "right", flexShrink: 0 }}>
+                        <div style={{ fontSize: 18, fontWeight: 800, color: ACCENT.red, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.02em", display: "inline-flex", alignItems: "center", gap: 2 }}>
+                          <TrendingUp size={14} strokeWidth={2.5} />
+                          +{m.pct.toFixed(0)}%
+                        </div>
+                        <div style={{ fontFamily: MONO, fontSize: 10, color: INK_SOFT, letterSpacing: "0.06em" }}>
+                          +{m.delta.toLocaleString()} viol
+                        </div>
                       </div>
-                      <div style={{ fontFamily: MONO, fontSize: 10, color: INK_SOFT, letterSpacing: "0.06em" }}>
-                        +{m.delta.toLocaleString()} viol
-                      </div>
-                    </div>
+                    </Link>
                   </li>
                 ))}
               </ol>
@@ -908,7 +912,7 @@ export default async function BuildingRankingsPage({ params: routeParams, search
               const palette = [G.peach, G.amber, G.sky, G.mint][idx];
               const accent = [ACCENT.peach, ACCENT.amber, ACCENT.sky, ACCENT.mint][idx];
               return (
-                <div key={e.era} className="p-5 flex flex-col" style={{ background: palette, borderRadius: 18, color: "inherit", minHeight: 200 }}>
+                <Link key={e.era} href={city === "nyc" ? buildingUrl({ borough: e.topBorough, slug: e.topSlug }, city) : `${buildHref({ sort: "violations", page: "1" })}#directory`} className="p-5 flex flex-col" style={{ background: palette, borderRadius: 18, color: "inherit", minHeight: 200, textDecoration: "none" }}>
                   <div className="flex items-center justify-between mb-3">
                     <Calendar size={16} style={{ color: accent }} strokeWidth={2.25} />
                     <MonoLabel color={accent}>{compact(e.buildings)} bldg</MonoLabel>
@@ -928,7 +932,7 @@ export default async function BuildingRankingsPage({ params: routeParams, search
                       {e.topViolations.toLocaleString()} VIOL · {e.topYear}
                     </div>
                   </div>
-                </div>
+                </Link>
               );
             })}
           </div>
@@ -944,7 +948,7 @@ export default async function BuildingRankingsPage({ params: routeParams, search
               const inkSoft = idx === 2 ? "rgba(255,255,255,0.7)" : INK_SOFT;
               const borderC = idx === 2 ? "rgba(255,255,255,0.15)" : "rgba(10,14,26,0.08)";
               return (
-                <div key={s.size} className="p-6 flex flex-col" style={{ background: palette, borderRadius: 20, color: ink, minHeight: 200 }}>
+                <Link key={s.size} href={city === "nyc" ? buildingUrl({ borough: s.topBorough, slug: s.topSlug }, city) : `${buildHref({ sort: "per-unit", page: "1" })}#directory`} className="p-6 flex flex-col" style={{ background: palette, borderRadius: 20, color: ink, minHeight: 200, textDecoration: "none" }}>
                   <div className="flex items-center justify-between mb-3">
                     <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
                       <Layers size={16} style={{ color: accent }} strokeWidth={2.25} />
@@ -979,7 +983,7 @@ export default async function BuildingRankingsPage({ params: routeParams, search
                       </div>
                     </div>
                   </div>
-                </div>
+                </Link>
               );
             })}
           </div>
@@ -1080,9 +1084,10 @@ export default async function BuildingRankingsPage({ params: routeParams, search
                 const heatBg = z.perKUnit > 130 ? G.ember : z.perKUnit > 110 ? G.peach : z.perKUnit > 95 ? G.amber : G.amber;
                 return (
                   <li key={z.zip} style={{ borderTop: idx > 0 ? `1px solid ${BORDER}` : "none" }}>
-                    <div
+                    <Link
+                      href={neighborhoodUrl(z.zip, city)}
                       className="zip-row"
-                      style={{ display: "grid", alignItems: "center", gap: 16, padding: "16px 24px", color: "inherit" }}
+                      style={{ display: "grid", alignItems: "center", gap: 16, padding: "16px 24px", color: "inherit", textDecoration: "none" }}
                     >
                       <span style={{ fontFamily: MONO, fontSize: 18, fontWeight: 700, color: idx < 3 ? ACCENT.rose : INK_MUTE, fontVariantNumeric: "tabular-nums" }}>
                         {String(z.rank).padStart(2, "0")}
@@ -1109,7 +1114,7 @@ export default async function BuildingRankingsPage({ params: routeParams, search
                           {z.perKUnit}
                         </span>
                       </span>
-                    </div>
+                    </Link>
                   </li>
                 );
               })}
@@ -1186,14 +1191,16 @@ export default async function BuildingRankingsPage({ params: routeParams, search
                 c.size === "sm" ? "20px" : "16px";
 
               return (
-                <div
+                <Link
                   key={c.category}
+                  href={`${buildHref({ sort: "complaints", page: "1" })}#directory`}
                   className={`${span} flex flex-col justify-between`}
                   style={{
                     background: palette,
                     borderRadius: c.size === "xl" || c.size === "lg" ? 22 : 16,
                     padding: c.size === "xl" ? "28px" : c.size === "lg" ? "22px" : c.size === "md" ? "18px" : "14px",
                     color: "inherit",
+                    textDecoration: "none",
                   }}
                 >
                   <div>
@@ -1210,7 +1217,7 @@ export default async function BuildingRankingsPage({ params: routeParams, search
                       <ArrowUpRight size={20} style={{ color: accent }} />
                     )}
                   </div>
-                </div>
+                </Link>
               );
             })}
           </div>
