@@ -9,6 +9,17 @@ export function regionSlug(name: string): string {
   return name.toLowerCase().replace(/\s+/g, "-");
 }
 
+/**
+ * Build an ILIKE pattern that treats spaces and hyphens as interchangeable.
+ * Borough lookups must accept both "Mid City" and "Mid-City" because the DB
+ * has both forms — `regionFromSlug("mid-city")` returns "Mid City" (space)
+ * but the row may store "Mid-City" (hyphen). `_` is the LIKE single-char
+ * wildcard, so "Mid_City" matches both.
+ */
+export function boroughIlikePattern(name: string): string {
+  return name.replace(/[\s-]/g, "_");
+}
+
 /** Reverse-lookup: slug → display name. Works for any city's regions. */
 export function regionFromSlug(slug: string, city: City = DEFAULT_CITY): string {
   const regions = CITY_META[city].regions;

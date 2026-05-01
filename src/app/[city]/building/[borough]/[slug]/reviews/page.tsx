@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { ReviewSection } from "@/components/review/ReviewSection";
 import { SaveButton } from "@/components/building/SaveButton";
 import { ShareButton } from "@/components/building/ShareButton";
-import { regionFromSlug, buildingUrl, canonicalUrl } from "@/lib/seo";
+import { regionFromSlug, boroughIlikePattern, buildingUrl, canonicalUrl } from "@/lib/seo";
 import { CITY_META, VALID_CITIES, type City } from "@/lib/cities";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { cache } from "react";
@@ -30,7 +30,7 @@ const getBuilding = cache(async (boroughSlug: string, slug: string, metro?: stri
     .from("buildings")
     .select("*")
     .eq("slug", slug)
-    .ilike("borough", borough);
+    .ilike("borough", boroughIlikePattern(borough));
 
   if (metro) {
     query = query.eq("metro", metro);

@@ -2,7 +2,7 @@ import "@/styles/v2-tokens.css";
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
-import { regionFromSlug, buildingUrl, canonicalUrl, buildingJsonLd, breadcrumbJsonLd, cityPath } from "@/lib/seo";
+import { regionFromSlug, regionSlug, boroughIlikePattern, buildingUrl, canonicalUrl, buildingJsonLd, breadcrumbJsonLd, cityPath } from "@/lib/seo";
 import { VALID_CITIES, CITY_META, type City } from "@/lib/cities";
 import { cache } from "react";
 import { normalizeScore } from "@/lib/constants";
@@ -51,14 +51,16 @@ const getBuilding = cache(async (boroughSlug: string, slug: string, metro: strin
   const city = (metro || "nyc") as City;
   const borough = regionFromSlug(boroughSlug, city);
   const supabase = await createClient();
-  // ilike is case-insensitive: ~26K buildings (Miami/LA/Houston suburbs) have
-  // borough stored UPPERCASE in DB. Without this, the page can't find them →
-  // redirect()-to-self via meta refresh → Google flags as "Redirect error".
+  // boroughIlikePattern handles BOTH case ("KATY" vs "Katy") and separator
+  // ("Mid-City" vs "Mid City"). ~9K Mid-City rows in LA store the borough with
+  // a hyphen, but `regionFromSlug` falls back to title-case-with-spaces for
+  // slugs not in the regions list. Plain ilike("Mid City") never matched →
+  // redirect-to-self via Next 16 streaming → Google "Redirect error".
   const { data } = await supabase
     .from("buildings")
     .select("*")
     .eq("slug", slug)
-    .ilike("borough", borough)
+    .ilike("borough", boroughIlikePattern(borough))
     .eq("metro", metro)
     .limit(1);
   return (data?.[0] as Building) ?? null;
@@ -114,7 +116,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!building) {
     const match = await findBuildingAnywhere(slug);
-    if (match) {
+    // Guard against redirect-to-self: if the canonical URL we'd redirect to
+    // equals the current URL, returning that as the canonical creates a meta
+    // refresh loop in Next 16 streaming SSR (Google flags as "Redirect error").
+    if (match && !(metroToCity(match.metro) === (cityParam as City) && regionSlug(match.borough) === borough)) {
       const correctCity = metroToCity(match.metro);
       const url = canonicalUrl(buildingUrl(match, correctCity));
       return { title: "Redirecting\u2026", alternates: { canonical: url } };
@@ -185,7 +190,9 @@ export default async function BuildingPage({ params }: Props) {
 
   if (!building) {
     const match = await findBuildingAnywhere(slug);
-    if (match) {
+    // Same redirect-to-self guard as in generateMetadata. Without it, a
+    // borough lookup miss for a URL that's already canonical would loop.
+    if (match && !(metroToCity(match.metro) === typedCity && regionSlug(match.borough) === borough)) {
       const correctCity = metroToCity(match.metro);
       redirect(buildingUrl(match, correctCity));
     }
