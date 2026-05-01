@@ -683,9 +683,11 @@ export default async function Home() {
           {panels.map(({ key, image, stats }) => {
             const meta = CITY_META[key];
             return (
-              <article
+              <Link
                 key={key}
-                className="city-panel snap-start shrink-0 w-[80vw] sm:w-auto relative h-full border-r border-white/5 last:border-r-0 will-change-transform"
+                href={cityPath("/", key)}
+                aria-label={`Explore ${meta.fullName}`}
+                className="city-panel group snap-start shrink-0 w-[80vw] sm:w-auto relative h-full border-r border-white/5 last:border-r-0 will-change-transform block focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-inset"
               >
                 <Image
                   src={image ?? meta.heroImage}
@@ -717,15 +719,12 @@ export default async function Home() {
                       </div>
                     ))}
                   </dl>
-                  <Link
-                    href={cityPath("/", key)}
-                    className="inline-flex items-center gap-1 text-xs sm:text-sm font-semibold text-amber-300 hover:text-white transition-colors"
-                  >
+                  <span className="inline-flex items-center gap-1 text-xs sm:text-sm font-semibold text-amber-300 group-hover:text-white transition-colors">
                     Explore {meta.name}
                     <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
+                  </span>
                 </div>
-              </article>
+              </Link>
             );
           })}
         </div>
