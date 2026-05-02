@@ -303,7 +303,7 @@ export function S01_RentalIntelligence({ rents, neighborhoodName, isRentStabiliz
         <footer className="ri-foot">Based on listing data at this building.</footer>
       </div>
 
-      {/* Row 3: Neighborhood Rent Range (N1 — range bars with median pin) */}
+      {/* Row 3: Neighborhood Rent Range (N1 — gradient bar with inline median chip) */}
       <div className="ri-card ri-mt">
         <header className="ri-head">
           <span className="ri-icon good">
@@ -311,41 +311,89 @@ export function S01_RentalIntelligence({ rents, neighborhoodName, isRentStabiliz
           </span>
           <h3>Neighborhood Rent Range <span className="ri-pill">{neighborhoodName}</span></h3>
         </header>
-        <div className="rr-list">
-          {rangeBands.map((beds) => {
-            const r = rangeRow(beds);
-            if (!r) return null;
-            // Render the range bar: scale min-max across the full track width.
-            // Use $30k as the "high" cap since luxury markets go there.
-            const HIGH = 30000;
-            const leftPct = Math.max(1, Math.round((r.lo / HIGH) * 100));
-            const rightPct = Math.max(1, 100 - Math.round((r.hi / HIGH) * 100));
-            const medianPct = Math.round((r.median / HIGH) * 100);
-            const bedLabelShort = beds === 0 ? "Studio" : beds === 6 ? "6+ Bed" : beds >= 4 ? `${beds} Bed` : `${beds} Bed`;
-            return (
-              <div key={beds} className="rr-row">
-                <div className="rr-k"><b>{bedLabelShort}</b><small>{r.listings} listing{r.listings === 1 ? "" : "s"}</small></div>
-                <div className="rr-track">
-                  <div className="rr-range" style={{ left: `${leftPct}%`, right: `${rightPct}%` }}></div>
-                  <div className="rr-cap" style={{ left: `${leftPct}%` }}></div>
-                  <div className="rr-cap" style={{ left: `${100 - rightPct}%` }}></div>
-                  <div className="rr-median" style={{ left: `${medianPct}%` }} data-label={`Median ${money(r.median)}`}></div>
-                </div>
-                <div className="rr-val"><b>{money(r.lo)} – {money(r.hi)}</b><small>median {money(r.median)}</small></div>
+        {(() => {
+          const validRows = rangeBands
+            .map((beds) => ({ beds, r: rangeRow(beds) }))
+            .filter((x): x is { beds: number; r: NonNullable<ReturnType<typeof rangeRow>> } => x.r !== null);
+
+          if (validRows.length === 0) {
+            return <div className="rr-empty">No neighborhood rent data available.</div>;
+          }
+
+          const dataMax = Math.max(...validRows.map((x) => x.r.hi));
+          const dataMin = Math.min(...validRows.map((x) => x.r.lo));
+          const span = dataMax - dataMin;
+          const padAmount = Math.max(span * 0.12, 250);
+          const chartMax = Math.ceil((dataMax + padAmount) / 250) * 250;
+          const chartMin = Math.max(0, Math.floor((dataMin - padAmount) / 250) * 250);
+          const chartRange = chartMax - chartMin || 1;
+          const moneyShort = (n: number): string => {
+            if (n >= 1000) {
+              const k = n / 1000;
+              return `$${k % 1 === 0 ? k : k.toFixed(1)}k`;
+            }
+            return `$${n}`;
+          };
+          const hasSynthetic = validRows.some((x) => x.r.isSynthetic);
+          const axisMid = Math.round(((chartMin + chartMax) / 2) / 100) * 100;
+
+          return (
+            <>
+              <div className="rr-list">
+                {validRows.map(({ beds, r }) => {
+                  const leftPct = ((r.lo - chartMin) / chartRange) * 100;
+                  const rightPct = 100 - ((r.hi - chartMin) / chartRange) * 100;
+                  const medianPct = ((r.median - chartMin) / chartRange) * 100;
+                  const bedLabelShort = beds === 0 ? "Studio" : beds === 6 ? "6+ Bed" : `${beds} Bed`;
+                  const collapsed = r.lo === r.hi;
+                  return (
+                    <div key={beds} className="rr-row">
+                      <div className="rr-k">
+                        <b>{bedLabelShort}</b>
+                        {r.listings > 0 ? (
+                          <small>{r.listings} listing{r.listings === 1 ? "" : "s"}</small>
+                        ) : null}
+                      </div>
+                      <div className="rr-track">
+                        {collapsed ? (
+                          <div className="rr-chip" style={{ left: `${leftPct}%` }}>{money(r.lo)}</div>
+                        ) : (
+                          <>
+                            <div className="rr-range" style={{ left: `${leftPct}%`, right: `${rightPct}%` }}></div>
+                            <div className="rr-chip" style={{ left: `${medianPct}%` }}>{money(r.median)}</div>
+                          </>
+                        )}
+                      </div>
+                      <div className="rr-val">
+                        <b>{collapsed ? money(r.lo) : `${money(r.lo)} – ${money(r.hi)}`}</b>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            );
-          })}
-        </div>
-        <div className="rr-legend">
-          <span><span className="rr-dot range"></span>Range (min → max)</span>
-          <span><span className="rr-dot median"></span>Median rent</span>
-          <span style={{ marginLeft: "auto" }}>Based on recent listings in {neighborhoodName}</span>
-        </div>
-        {rangeBands.some((beds) => { const r = rangeRow(beds); return r?.isSynthetic; }) && (
-          <div className="rr-legend" style={{ fontSize: 11, opacity: 0.6, marginTop: 4 }}>
-            * Range estimated from median where min/max data unavailable
-          </div>
-        )}
+
+              <div className="rr-axis" aria-hidden="true">
+                <div></div>
+                <div className="rr-axis-scale">
+                  <span>{moneyShort(chartMin)}</span>
+                  <span>{moneyShort(axisMid)}</span>
+                  <span>{moneyShort(chartMax)}</span>
+                </div>
+                <div></div>
+              </div>
+
+              <div className="rr-legend">
+                <span><span className="rr-dot range"></span>Range (P25 – P75)</span>
+                <span><span className="rr-dot median"></span>Median</span>
+                <span style={{ marginLeft: "auto" }}>Based on recent listings in {neighborhoodName}</span>
+              </div>
+
+              {hasSynthetic ? (
+                <div className="rr-note">* Range estimated from median where min/max data is unavailable.</div>
+              ) : null}
+            </>
+          );
+        })()}
       </div>
     </section>
   );
