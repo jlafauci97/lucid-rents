@@ -2,15 +2,21 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Search, MapPin, Loader2, Clock } from "lucide-react";
+import { Search, MapPin, Loader2, Clock, Users } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useRecentBuildings } from "@/hooks/useRecentBuildings";
 import { LetterGrade } from "@/components/ui/LetterGrade";
 import { deriveScore } from "@/lib/constants";
-import { buildingUrl, cityPath, neighborhoodUrl } from "@/lib/seo";
+import { buildingUrl, cityPath, landlordUrl, neighborhoodUrl } from "@/lib/seo";
 import { searchNeighborhoodsByCity, type NeighborhoodResult } from "@/lib/neighborhoods";
 import { useCity } from "@/lib/city-context";
 import type { Building } from "@/types";
+
+interface LandlordSuggestion {
+  name: string;
+  building_count: number | null;
+  total_violations: number | null;
+}
 
 interface SearchBarProps {
   size?: "default" | "hero";
@@ -19,9 +25,10 @@ interface SearchBarProps {
 }
 
 interface FlatItem {
-  type: "neighborhood" | "building" | "recent" | "view-all";
+  type: "neighborhood" | "building" | "landlord" | "recent" | "view-all";
   neighborhood?: NeighborhoodResult;
   building?: Building;
+  landlord?: LandlordSuggestion;
   recent?: { id: string; full_address: string; borough: string; slug: string; overall_score: number | null };
 }
 
@@ -35,6 +42,7 @@ export function SearchBar({
   const [query, setQuery] = useState(initialQuery);
   const [results, setResults] = useState<Building[]>([]);
   const [neighborhoodResults, setNeighborhoodResults] = useState<NeighborhoodResult[]>([]);
+  const [landlordResults, setLandlordResults] = useState<LandlordSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [highlightIndex, setHighlightIndex] = useState(-1);
@@ -47,7 +55,8 @@ export function SearchBar({
   const flatItems: FlatItem[] = [];
 
   const showingRecent = query.trim().length === 0 && recent.length > 0;
-  const hasSearchResults = neighborhoodResults.length > 0 || results.length > 0;
+  const hasSearchResults =
+    neighborhoodResults.length > 0 || results.length > 0 || landlordResults.length > 0;
 
   if (showingRecent) {
     for (const r of recent) {
@@ -59,6 +68,9 @@ export function SearchBar({
     }
     for (const b of results) {
       flatItems.push({ type: "building", building: b });
+    }
+    for (const l of landlordResults) {
+      flatItems.push({ type: "landlord", landlord: l });
     }
     if (hasSearchResults) {
       flatItems.push({ type: "view-all" });
@@ -76,6 +88,9 @@ export function SearchBar({
         case "building":
           if (item.building) router.push(buildingUrl(item.building, city));
           break;
+        case "landlord":
+          if (item.landlord) router.push(landlordUrl(item.landlord.name, city));
+          break;
         case "recent":
           if (item.recent) router.push(buildingUrl(item.recent, city));
           break;
@@ -91,6 +106,7 @@ export function SearchBar({
     if (debouncedQuery.length < 2) {
       setResults([]);
       setNeighborhoodResults([]);
+      setLandlordResults([]);
       if (debouncedQuery.length === 0 && recent.length > 0) {
         // Keep open if focused and have recent items — don't close
       } else {
@@ -104,27 +120,60 @@ export function SearchBar({
     setNeighborhoodResults(neighborhoods);
     if (neighborhoods.length > 0) setOpen(true);
 
-    // API building search
+    // API building + landlord search in parallel
     setLoading(true);
-    const url =
+    const buildingApi =
       neighborhoods.length > 0
         ? `/api/search?zip=${neighborhoods[0].zipCode}&city=${city}&limit=5`
         : `/api/search?q=${encodeURIComponent(debouncedQuery)}&city=${city}&limit=5`;
+    const landlordApi = `/api/landlords?search=${encodeURIComponent(debouncedQuery)}&city=${city}&page=1`;
 
-    fetch(url)
-      .then((res) => res.json())
-      .then((data) => {
-        setResults(data.buildings || []);
-        setOpen(true);
+    const controller = new AbortController();
+    const isAbort = (err: unknown) => (err as { name?: string })?.name === "AbortError";
+
+    Promise.all([
+      fetch(buildingApi, { signal: controller.signal })
+        .then((res) => res.json())
+        .then((data) => setResults(data.buildings || []))
+        .catch((err) => {
+          if (!isAbort(err)) setResults([]);
+        }),
+      fetch(landlordApi, { signal: controller.signal })
+        .then((res) => res.json())
+        .then((data) => {
+          const rows: LandlordSuggestion[] = (data.landlords ?? [])
+            .slice(0, 3)
+            .map(
+              (l: {
+                name: string;
+                buildingCount?: number | null;
+                totalViolations?: number | null;
+              }) => ({
+                name: l.name,
+                building_count: l.buildingCount ?? null,
+                total_violations: l.totalViolations ?? null,
+              }),
+            );
+          setLandlordResults(rows);
+        })
+        .catch((err) => {
+          if (!isAbort(err)) setLandlordResults([]);
+        }),
+    ])
+      .then(() => {
+        if (!controller.signal.aborted) setOpen(true);
       })
-      .catch(() => setResults([]))
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+
+    return () => controller.abort();
   }, [debouncedQuery, city, recent.length]);
 
   // Reset highlight when items change
   useEffect(() => {
     setHighlightIndex(-1);
-  }, [debouncedQuery, neighborhoodResults.length, results.length]);
+  }, [debouncedQuery, neighborhoodResults.length, results.length, landlordResults.length]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -342,6 +391,51 @@ export function SearchBar({
                     </div>
                     <div className="ml-auto shrink-0">
                       <LetterGrade score={building.overall_score ?? deriveScore(building.violation_count || 0, building.complaint_count || 0)} size="sm" />
+                    </div>
+                  </button>
+                );
+              })}
+            </>
+          )}
+          {/* Landlord results */}
+          {!showingRecent && landlordResults.length > 0 && (
+            <>
+              <div className="px-4 py-1.5 bg-[#f8fafc] border-b border-[#e2e8f0]">
+                <span className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
+                  Landlords
+                </span>
+              </div>
+              {landlordResults.map((landlord) => {
+                const idx = currentFlatIndex++;
+                const meta = [
+                  typeof landlord.building_count === "number" && landlord.building_count > 0
+                    ? `${landlord.building_count} building${landlord.building_count !== 1 ? "s" : ""}`
+                    : null,
+                  typeof landlord.total_violations === "number" && landlord.total_violations > 0
+                    ? `${landlord.total_violations.toLocaleString()} violation${landlord.total_violations !== 1 ? "s" : ""}`
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ");
+                return (
+                  <button
+                    key={landlord.name}
+                    id={`search-item-${idx}`}
+                    type="button"
+                    role="option"
+                    aria-selected={highlightIndex === idx}
+                    onClick={() => navigateToItem({ type: "landlord", landlord })}
+                    onMouseEnter={() => setHighlightIndex(idx)}
+                    className={`w-full flex items-start gap-3 px-4 py-3 transition-colors text-left ${highlightIndex === idx ? "bg-[#EFF6FF]" : "hover:bg-gray-50"}`}
+                  >
+                    <Users className="w-5 h-5 text-[#94a3b8] mt-0.5 shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-[#0F1D2E] truncate">
+                        {landlord.name}
+                      </p>
+                      {meta && (
+                        <p className="text-xs text-[#64748b]">{meta}</p>
+                      )}
                     </div>
                   </button>
                 );
