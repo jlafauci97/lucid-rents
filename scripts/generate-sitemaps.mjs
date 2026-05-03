@@ -410,7 +410,12 @@ function rebuildIndex() {
     };
     return order(a.name).localeCompare(order(b.name));
   });
-  writeFileSync(`${OUT_DIR}/index.xml`, buildSitemapIndex(indexEntries));
+  const indexXml = buildSitemapIndex(indexEntries);
+  writeFileSync(`${OUT_DIR}/index.xml`, indexXml);
+  // Also write the canonical /sitemap.xml that robots.txt points at — it
+  // was getting stuck stale because nothing kept it in sync with the chunk
+  // files. Now it's always a mirror of the freshly-built index.
+  writeFileSync(`public/sitemap.xml`, indexXml);
   return indexEntries.length;
 }
 
