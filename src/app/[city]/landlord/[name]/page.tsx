@@ -102,8 +102,11 @@ export async function generateMetadata({
     loadLandlordTenantVoice(name, city),
   ]);
 
-  if (!stats) {
-    return { title: "Landlord Not Found" };
+  // Treat zero-building stats rows the same as missing — these are junk
+  // rows and we redirect the page render below; the metadata must agree
+  // so we don't end up with HTTP 200 + "Not Found" title (soft-404).
+  if (!stats || stats.buildingCount === 0) {
+    return { title: "Landlord Not Found", robots: { index: false, follow: false } };
   }
 
   // Title cascade — picks the strongest defensible template based on data.
@@ -152,9 +155,13 @@ export default async function LandlordDetailPage({
       loadLandlordFAQ(name, city),
     ]);
 
-  // No matching landlord — send to the directory with a real 307 so crawlers
-  // and health checks see a status code (page-level `notFound()` returns 200).
-  if (!ownerName || !cachedStats) {
+  // No matching landlord, or a junk stats row with no buildings to render —
+  // send to the directory with a real 307 so crawlers and health checks see
+  // a status code (page-level `notFound()` returns 200, which Google treats
+  // as a soft-404 — known AdSense "low value content" rejection trigger).
+  // The buildingCount === 0 guard catches stale sitemap slugs and cross-metro
+  // mismatches (e.g. an LA landlord slug requested under /nyc/).
+  if (!ownerName || !cachedStats || cachedStats.buildingCount === 0) {
     redirect(cityPath("/landlords", city));
   }
 
