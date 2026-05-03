@@ -41,16 +41,7 @@ import {
 } from "./_data";
 import { LandlordNeighborhoods } from "@/components/landlord/LandlordNeighborhoods";
 
-// Force dynamic rendering. The previous `revalidate = 86400` setting caused
-// Vercel's ISR layer to cache redirect()-throwing renders as empty HTTP 200
-// responses instead of returning real 307s — meaning every "missing landlord"
-// URL (cross-metro, deleted-by-dedup, typos) served a blank page.
-//
-// Per-section caching is unaffected: every loader in `_data.ts` is wrapped in
-// `unstable_cache` with `revalidate: 86400`, so real landlord pages still
-// hit a hot data cache. Force-dynamic only disables the *page-level* cache,
-// not the underlying queries.
-export const dynamic = "force-dynamic";
+export const revalidate = 86400; // 24h ISR — matches building v2
 
 // Coarse landlord letter grade used by the wayfinder rail. Full scoring
 // and grade breakdown live in HeroV2.
@@ -165,10 +156,13 @@ export default async function LandlordDetailPage({
     ]);
 
   // No matching landlord, or a junk stats row with no buildings to render —
-  // surface the not-found UI from src/app/not-found.tsx so users see a real
-  // "Page not found" page instead of a blank one. The buildingCount === 0
-  // guard catches stale sitemap slugs and cross-metro mismatches (e.g. an
-  // LA landlord slug requested under /nyc/).
+  // surface the not-found UI from src/app/not-found.tsx. We tried `redirect()`
+  // here originally but Next 16 / Vercel silently swallow the redirect signal
+  // for streamed pages with revalidate set, returning HTTP 200 + an empty
+  // body. notFound() also returns HTTP 200 in Next 16 (soft-404) but at least
+  // renders meaningful content for users instead of a blank page.
+  // The buildingCount === 0 guard catches stale sitemap slugs and cross-metro
+  // mismatches (e.g. an LA landlord slug requested under /nyc/).
   if (!ownerName || !cachedStats || cachedStats.buildingCount === 0) {
     notFound();
   }
