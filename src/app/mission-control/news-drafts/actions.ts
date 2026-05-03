@@ -15,6 +15,17 @@ function adminDb() {
   );
 }
 
+function parseEntityLink(
+  raw: unknown
+): { label: string; url: string } | null {
+  if (!raw || typeof raw !== "object") return null;
+  const o = raw as Record<string, unknown>;
+  const label = typeof o.label === "string" ? o.label : null;
+  const url = typeof o.url === "string" ? o.url : null;
+  if (!label || !url) return null;
+  return { label, url };
+}
+
 export async function approveDraft(id: string) {
   await requireMissionControl();
   const db = adminDb();
@@ -43,10 +54,13 @@ export async function approveDraft(id: string) {
 
     // Fire Post Bridge after the response is sent — avoids blocking the UI.
     const link = `https://lucidrents.com/${prefix}/news/${draft.slug}`;
-    const meta = draft.signal_metadata as { hashtags?: unknown } | null;
+    const meta = draft.signal_metadata as
+      | { hashtags?: unknown; primary_entity_link?: unknown }
+      | null;
     const hashtags = Array.isArray(meta?.hashtags)
       ? (meta!.hashtags as unknown[]).filter((t): t is string => typeof t === "string")
       : [];
+    const entityLink = parseEntityLink(meta?.primary_entity_link);
     after(async () => {
       const result = await crossPostArticle({
         title: draft.title,
@@ -54,6 +68,7 @@ export async function approveDraft(id: string) {
         link,
         imageUrl: draft.image_url,
         hashtags,
+        entityLink,
       });
       if (!result.ok && result.reason === "api_error") {
         console.error("[post-bridge] cross-post failed:", result.detail);
@@ -132,18 +147,22 @@ export async function approveDrafts(
       if (!draft.metro || !isValidCity(draft.metro)) continue;
       const prefix = CITY_META[draft.metro as City].urlPrefix;
       const link = `https://lucidrents.com/${prefix}/news/${draft.slug}`;
-      const meta = draft.signal_metadata as { hashtags?: unknown } | null;
+      const meta = draft.signal_metadata as
+        | { hashtags?: unknown; primary_entity_link?: unknown }
+        | null;
       const hashtags = Array.isArray(meta?.hashtags)
         ? (meta!.hashtags as unknown[]).filter(
             (t): t is string => typeof t === "string"
           )
         : [];
+      const entityLink = parseEntityLink(meta?.primary_entity_link);
       const result = await crossPostArticle({
         title: draft.title,
         excerpt: draft.excerpt,
         link,
         imageUrl: draft.image_url,
         hashtags,
+        entityLink,
       });
       if (!result.ok && result.reason === "api_error") {
         console.error("[post-bridge] cross-post failed:", result.detail);

@@ -7,6 +7,7 @@ import { TEMPLATES } from "@/lib/news/templates";
 import type { SignalCandidate } from "@/lib/news/templates/types";
 import { draftArticle } from "@/lib/news/drafter";
 import { imageUrlForQuery } from "@/lib/news/image-search";
+import { entityLinksForSignal, primaryEntityLink } from "@/lib/news/entity-links";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -84,23 +85,80 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  // 2. Sort candidates by score, then pick the highest-scored one whose
-  //    signal_type hasn't been used for this city in the last 24h. This lets
-  //    the twice-daily cron produce a *different* story for the second run
-  //    instead of bailing as `recent_duplicate`.
+  // 2. Pick a winner that doesn't repeat what we just published.
+  //    Two layers of recency:
+  //      - signal_type within the last 7 days (avoid running the same kind
+  //        of story week-after-week)
+  //      - the specific entity (landlord / neighborhood / building) within
+  //        the last 14 days (avoid the same person/place twice in a row)
+  //    Then weighted-sample the top 3 remaining candidates instead of always
+  //    taking #1 — keeps the highest-scoring story most likely while still
+  //    rotating in fresh angles.
   const sorted = candidates.sort((a, b) => b.score - a.score);
 
-  const sinceIso = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-  const { data: recent } = await supabase
-    .from("news_articles")
-    .select("signal_type")
-    .eq("metro", city)
-    .gte("created_at", sinceIso);
-  const usedTypes = new Set((recent ?? []).map((r) => r.signal_type));
+  const typeSinceIso = new Date(
+    Date.now() - 7 * 24 * 60 * 60 * 1000
+  ).toISOString();
+  const entitySinceIso = new Date(
+    Date.now() - 14 * 24 * 60 * 60 * 1000
+  ).toISOString();
 
-  const winner = sorted.find((c) => !usedTypes.has(c.type));
+  const [{ data: recentTypes }, { data: recentEntities }] = await Promise.all([
+    supabase
+      .from("news_articles")
+      .select("signal_type")
+      .eq("metro", city)
+      .gte("created_at", typeSinceIso),
+    supabase
+      .from("news_articles")
+      .select("signal_metadata")
+      .eq("metro", city)
+      .gte("created_at", entitySinceIso),
+  ]);
 
-  if (!winner) {
+  const usedTypes = new Set((recentTypes ?? []).map((r) => r.signal_type));
+  const usedEntityKeys = new Set<string>();
+  for (const row of recentEntities ?? []) {
+    const meta = (row as { signal_metadata: Record<string, unknown> | null })
+      .signal_metadata;
+    if (!meta) continue;
+    for (const k of ["landlord", "neighborhood", "sample_building_id"]) {
+      const v = meta[k];
+      if (typeof v === "string" && v.length > 0) {
+        usedEntityKeys.add(`${k}:${v.toLowerCase()}`);
+      }
+    }
+  }
+
+  function entityKeysFor(c: SignalCandidate): string[] {
+    const keys: string[] = [];
+    const m = c.metadata as Record<string, unknown>;
+    for (const k of ["landlord", "neighborhood", "sample_building_id"]) {
+      const v = m[k];
+      if (typeof v === "string" && v.length > 0) {
+        keys.push(`${k}:${v.toLowerCase()}`);
+      }
+    }
+    return keys;
+  }
+
+  const fresh = sorted.filter(
+    (c) =>
+      !usedTypes.has(c.type) &&
+      !entityKeysFor(c).some((k) => usedEntityKeys.has(k))
+  );
+
+  // Fall back gracefully: if entity-dedup eliminates everything, relax to
+  // type-only; if that's also empty, use everything (the first run for a city
+  // legitimately has no history).
+  const pool =
+    fresh.length > 0
+      ? fresh
+      : sorted.filter((c) => !usedTypes.has(c.type)).length > 0
+        ? sorted.filter((c) => !usedTypes.has(c.type))
+        : sorted;
+
+  if (pool.length === 0) {
     return NextResponse.json(
       {
         city,
@@ -114,10 +172,30 @@ export async function GET(req: NextRequest) {
     );
   }
 
+  // Weighted random over the top 3: weights 3, 2, 1 (or fewer if pool < 3).
+  const top = pool.slice(0, 3);
+  const weights = top.map((_, i) => top.length - i);
+  const total = weights.reduce((a, b) => a + b, 0);
+  let r = Math.random() * total;
+  let winner = top[0];
+  for (let i = 0; i < top.length; i += 1) {
+    r -= weights[i];
+    if (r <= 0) {
+      winner = top[i];
+      break;
+    }
+  }
+
+  // 3. Build entity backlinks from the signal metadata. These are canonical
+  //    URLs to other pages on lucidrents.com (landlord, neighborhood,
+  //    building) so the drafter can weave them in as markdown anchors and
+  //    so the cross-poster can include the primary one in the tweet.
+  const entityLinks = entityLinksForSignal(winner, city);
+
   // 4. Draft with Claude.
   let drafted;
   try {
-    drafted = await draftArticle({ city, cfg, signal: winner });
+    drafted = await draftArticle({ city, cfg, signal: winner, entityLinks });
   } catch (e) {
     return NextResponse.json(
       {
@@ -157,7 +235,10 @@ export async function GET(req: NextRequest) {
       source_slug: "lucid-rents",
       source_type: "lucid-rents",
       category: drafted.category,
-      image_url: await imageUrlForQuery(drafted.image_query),
+      image_url: await imageUrlForQuery(drafted.image_query, {
+        metro: city,
+        salt: slug,
+      }),
       author: "Lucid Rents Newsroom",
       published_at: publishedAt,
       metro: city,
@@ -167,6 +248,8 @@ export async function GET(req: NextRequest) {
         ...winner.metadata,
         score: winner.score,
         hashtags: drafted.hashtags,
+        entity_links: entityLinks,
+        primary_entity_link: primaryEntityLink(entityLinks),
       },
       auto_generated: true,
     })

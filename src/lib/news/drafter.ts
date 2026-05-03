@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import type { City } from "@/lib/cities";
 import type { CityNewsConfig } from "@/lib/news/cities-news";
 import type { SignalCandidate } from "./templates/types";
+import type { EntityLink } from "./entity-links";
 
 export interface DraftedArticle {
   title: string;
@@ -33,6 +34,7 @@ Structure:
 - Title: ≤70 characters. Evocative and falsifiable — a reader should be able to tell if it's true. Not clickbait.
 - Excerpt: ≤160 characters. One sentence. Should make the reader curious, not summarize the whole article.
 - Body: 280–500 words in markdown. Open with a hook (scene, observation, surprising contrast). Land the data by paragraph 2. Give context in the middle (what this means for rent, risk, neighborhood trajectory). Close with a line that feels earned — a "so what" that respects the reader's time.
+- Internal links: when an <internal-links> block is provided, weave the relevant ones into the body as natural markdown anchors — aim for 2 if 2+ are available, otherwise 1 (e.g. "[Stellar Management](https://lucidrents.com/nyc/landlord/stellar-management)"). Place them on the first natural mention of that entity — never at the end as a bare list, never as "click here". The link text must be the entity name as it appears in the prose. Don't invent or rewrite URLs. If a link doesn't fit the story naturally, skip it rather than force it.
 - Category must be exactly one of: "Rental Market", "Tenant Rights", "Data", "Guide".
 - image_query: 2–4 words for a stock photo search. Favor evocative ("rainy brooklyn stoop") over literal ("rent chart"). No proper nouns unless needed.
 - hashtags: exactly 10 hashtags tuned to get this story in front of the right readers on X/Twitter. Rules:
@@ -48,10 +50,12 @@ export async function draftArticle({
   city,
   cfg,
   signal,
+  entityLinks = [],
 }: {
   city: City;
   cfg: CityNewsConfig;
   signal: SignalCandidate;
+  entityLinks?: EntityLink[];
 }): Promise<DraftedArticle> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not set");
@@ -65,12 +69,21 @@ Local agencies (cite by correct name): ${cfg.agencies.join(", ")}
 Landmark neighborhoods: ${cfg.landmark_neighborhoods.join(", ")}
 Never reference another city.`;
 
+  const linksBlock =
+    entityLinks.length > 0
+      ? `\n<internal-links>
+The following lucidrents.com pages are relevant to this story. Weave the
+relevant ones into the body as natural markdown anchors (e.g. "[Greenpoint](https://lucidrents.com/nyc/neighborhood/greenpoint-11222)") — aim for 2 if 2+ are listed, otherwise use the 1 that fits.
+${entityLinks.map((l) => `- "${l.label}" → ${l.url}`).join("\n")}
+</internal-links>\n`
+      : "";
+
   const userPrompt = `<signal type="${signal.type}">
 Headline seed: ${signal.headline_seed}
 Data to cite:
 ${JSON.stringify(signal.metadata, null, 2)}
 </signal>
-
+${linksBlock}
 Write the article as JSON now. No prose outside the JSON.`;
 
   const response = await anthropic.messages.create({
