@@ -41,7 +41,16 @@ import {
 } from "./_data";
 import { LandlordNeighborhoods } from "@/components/landlord/LandlordNeighborhoods";
 
-export const revalidate = 86400; // 24h ISR — matches building v2
+// Force dynamic rendering. The previous `revalidate = 86400` setting caused
+// Vercel's ISR layer to cache redirect()-throwing renders as empty HTTP 200
+// responses instead of returning real 307s — meaning every "missing landlord"
+// URL (cross-metro, deleted-by-dedup, typos) served a blank page.
+//
+// Per-section caching is unaffected: every loader in `_data.ts` is wrapped in
+// `unstable_cache` with `revalidate: 86400`, so real landlord pages still
+// hit a hot data cache. Force-dynamic only disables the *page-level* cache,
+// not the underlying queries.
+export const dynamic = "force-dynamic";
 
 // Coarse landlord letter grade used by the wayfinder rail. Full scoring
 // and grade breakdown live in HeroV2.
