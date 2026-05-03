@@ -1,6 +1,6 @@
 import "@/styles/v2-tokens.css";
 import { createClient } from "@/lib/supabase/server";
-import { permanentRedirect, redirect } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { Crumbs } from "@/components/landlord/v2/Crumbs";
 import { HeroV2Streamed } from "@/components/landlord/v2/streaming/HeroV2Streamed";
 import { RecordStripStreamed } from "@/components/landlord/v2/streaming/RecordStripStreamed";
@@ -156,13 +156,12 @@ export default async function LandlordDetailPage({
     ]);
 
   // No matching landlord, or a junk stats row with no buildings to render —
-  // send to the directory with a real 307 so crawlers and health checks see
-  // a status code (page-level `notFound()` returns 200, which Google treats
-  // as a soft-404 — known AdSense "low value content" rejection trigger).
-  // The buildingCount === 0 guard catches stale sitemap slugs and cross-metro
-  // mismatches (e.g. an LA landlord slug requested under /nyc/).
+  // surface the not-found UI from src/app/not-found.tsx so users see a real
+  // "Page not found" page instead of a blank one. The buildingCount === 0
+  // guard catches stale sitemap slugs and cross-metro mismatches (e.g. an
+  // LA landlord slug requested under /nyc/).
   if (!ownerName || !cachedStats || cachedStats.buildingCount === 0) {
-    redirect(cityPath("/landlords", city));
+    notFound();
   }
 
   // Canonicalise to the slug URL when the caller used a decoded owner name.
