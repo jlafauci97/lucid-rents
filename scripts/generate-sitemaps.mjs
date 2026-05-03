@@ -118,6 +118,10 @@ function buildingUrl(b, city = "nyc") {
   return `/${CITY_META[city].urlPrefix}/building/${regionSlug(b.borough)}/${b.slug}`;
 }
 
+function landlordUrl(slug, city = "nyc") {
+  return `/${CITY_META[city].urlPrefix}/landlord/${slug}`;
+}
+
 function neighborhoodPageSlug(zip, city) {
   const map = ZIP_MAPS[city];
   const name = map ? map[zip] : null;
@@ -406,7 +410,12 @@ function rebuildIndex() {
     };
     return order(a.name).localeCompare(order(b.name));
   });
-  writeFileSync(`${OUT_DIR}/index.xml`, buildSitemapIndex(indexEntries));
+  const indexXml = buildSitemapIndex(indexEntries);
+  writeFileSync(`${OUT_DIR}/index.xml`, indexXml);
+  // Also write the canonical /sitemap.xml that robots.txt points at — it
+  // was getting stuck stale because nothing kept it in sync with the chunk
+  // files. Now it's always a mirror of the freshly-built index.
+  writeFileSync(`public/sitemap.xml`, indexXml);
   return indexEntries.length;
 }
 
@@ -438,22 +447,27 @@ async function fullGenerate() {
   console.log(`  Generating landlord sitemaps...`);
   let landlordUrls = 0;
   let landlordBatchIndex = 0;
-  let landlordCursor = "";
+  // Paginate by `id` (PRIMARY KEY) — name-based pagination silently dropped
+  // ~454K rows on the April 2 run because the unique key is (name, metro),
+  // so `name=gt.X` skipped duplicate-name landlords across metros.
+  let landlordIdCursor = "00000000-0000-0000-0000-000000000000";
   let landlordEntries = [];
 
   while (true) {
     if (isTimedOut()) { console.warn(`  ⚠ Timeout — stopping landlord pagination early`); break; }
-    const filter = landlordCursor
-      ? `landlord_stats?select=name,slug,updated_at&name=gt.${encodeURIComponent(landlordCursor)}&order=name.asc&limit=1000`
-      : `landlord_stats?select=name,slug,updated_at&order=name.asc&limit=1000`;
+    // Filter: building_count > 0 drops junk rows that have no buildings to render.
+    // metro is fetched so URLs go to the right city — a landlord in los-angeles
+    // must NOT be emitted as /nyc/landlord/<slug> (causes soft-404s).
+    const filter = `landlord_stats?select=id,name,slug,metro,updated_at&building_count=gt.0&id=gt.${landlordIdCursor}&order=id.asc&limit=1000`;
 
     let rows;
     try { rows = await supabaseFetch(filter); } catch (err) { console.error(`    Landlord page failed: ${err.message}`); break; }
     if (!rows || rows.length === 0) break;
 
     for (const l of rows) {
-      if (l.slug) {
-        landlordEntries.push({ url: `${BASE_URL}/nyc/landlord/${l.slug}`, lastmod: l.updated_at ? new Date(l.updated_at).toISOString() : undefined, changefreq: "monthly", priority: 0.5 });
+      if (l.slug && l.metro) {
+        const city = metroToCity(l.metro);
+        landlordEntries.push({ url: `${BASE_URL}${landlordUrl(l.slug, city)}`, lastmod: l.updated_at ? new Date(l.updated_at).toISOString() : undefined, changefreq: "monthly", priority: 0.5 });
       }
       if (landlordEntries.length >= 10000) {
         writeFileSync(`${OUT_DIR}/l-${landlordBatchIndex}.xml`, buildSitemapXml(landlordEntries));
@@ -463,7 +477,7 @@ async function fullGenerate() {
         landlordEntries = [];
       }
     }
-    landlordCursor = rows[rows.length - 1].name || rows[rows.length - 1].slug;
+    landlordIdCursor = rows[rows.length - 1].id;
     if (rows.length < 1000) break;
   }
 
@@ -535,7 +549,7 @@ async function fullGenerate() {
   const totalUrls = staticEntries.length + landlordUrls + buildingUrls;
   const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
 
-  saveProgress({ lastRun: now, buildingCursor: cursor, landlordCursor, buildingBatchIndex: batchIndex, landlordBatchIndex });
+  saveProgress({ lastRun: now, buildingCursor: cursor, landlordIdCursor, buildingBatchIndex: batchIndex, landlordBatchIndex });
   console.log(`\nDone in ${elapsed}s — ${fileCount} sitemap files, ${totalUrls.toLocaleString()} total URLs`);
 }
 
@@ -612,51 +626,52 @@ async function incrementalGenerate() {
     batchIndex++;
   }
 
-  // Append new landlords
+  // Append new landlords. Paginate by `id` (PRIMARY KEY) — name-based
+  // cursors silently dropped ~454K rows because (name, metro) is the unique
+  // key, so name=gt.X skipped duplicate-name landlords across metros.
   let landlordBatchIndex = progress.landlordBatchIndex || 0;
-  let landlordCursor = progress.landlordCursor || "";
+  let landlordIdCursor = progress.landlordIdCursor || "00000000-0000-0000-0000-000000000000";
   let landlordEntries = [];
 
-  if (landlordCursor) {
-    console.log(`  Checking for new landlords (cursor: ${landlordCursor.slice(0, 20)}...)...`);
-    let landlordDone = false;
-    while (!landlordDone) {
-      let rows;
-      try {
-        rows = await supabaseFetch(`landlord_stats?select=name,slug,updated_at&name=gt.${encodeURIComponent(landlordCursor)}&order=name.asc&limit=1000`);
-      } catch (err) {
-        console.warn(`    Landlord fetch failed: ${err.message}`);
-        break;
-      }
-      if (!rows || rows.length === 0) { landlordDone = true; break; }
-
-      for (const l of rows) {
-        if (l.slug) {
-          landlordEntries.push({ url: `${BASE_URL}/nyc/landlord/${l.slug}`, lastmod: l.updated_at ? new Date(l.updated_at).toISOString() : undefined, changefreq: "monthly", priority: 0.5 });
-        }
-        if (landlordEntries.length >= 10000) {
-          writeFileSync(`${OUT_DIR}/l-${landlordBatchIndex}.xml`, buildSitemapXml(landlordEntries));
-          newUrls += landlordEntries.length;
-          console.log(`    l-${landlordBatchIndex}.xml ✓ (${landlordEntries.length} new URLs)`);
-          landlordBatchIndex++;
-          landlordEntries = [];
-        }
-      }
-      landlordCursor = rows[rows.length - 1].name || rows[rows.length - 1].slug;
-      if (rows.length < 1000) landlordDone = true;
+  console.log(`  Checking for new landlords (id cursor: ${landlordIdCursor.slice(0, 8)}...)...`);
+  let landlordDone = false;
+  while (!landlordDone) {
+    let rows;
+    try {
+      rows = await supabaseFetch(`landlord_stats?select=id,name,slug,metro,updated_at&building_count=gt.0&id=gt.${landlordIdCursor}&order=id.asc&limit=1000`);
+    } catch (err) {
+      console.warn(`    Landlord fetch failed: ${err.message}`);
+      break;
     }
+    if (!rows || rows.length === 0) { landlordDone = true; break; }
 
-    if (landlordEntries.length > 0) {
-      writeFileSync(`${OUT_DIR}/l-${landlordBatchIndex}.xml`, buildSitemapXml(landlordEntries));
-      newUrls += landlordEntries.length;
-      landlordBatchIndex++;
+    for (const l of rows) {
+      if (l.slug && l.metro) {
+        const city = metroToCity(l.metro);
+        landlordEntries.push({ url: `${BASE_URL}${landlordUrl(l.slug, city)}`, lastmod: l.updated_at ? new Date(l.updated_at).toISOString() : undefined, changefreq: "monthly", priority: 0.5 });
+      }
+      if (landlordEntries.length >= 10000) {
+        writeFileSync(`${OUT_DIR}/l-${landlordBatchIndex}.xml`, buildSitemapXml(landlordEntries));
+        newUrls += landlordEntries.length;
+        console.log(`    l-${landlordBatchIndex}.xml ✓ (${landlordEntries.length} new URLs)`);
+        landlordBatchIndex++;
+        landlordEntries = [];
+      }
     }
+    landlordIdCursor = rows[rows.length - 1].id;
+    if (rows.length < 1000) landlordDone = true;
+  }
+
+  if (landlordEntries.length > 0) {
+    writeFileSync(`${OUT_DIR}/l-${landlordBatchIndex}.xml`, buildSitemapXml(landlordEntries));
+    newUrls += landlordEntries.length;
+    landlordBatchIndex++;
   }
 
   const fileCount = rebuildIndex();
   const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
 
-  saveProgress({ lastRun: now, buildingCursor: cursor, landlordCursor, buildingBatchIndex: batchIndex, landlordBatchIndex });
+  saveProgress({ lastRun: now, buildingCursor: cursor, landlordIdCursor, buildingBatchIndex: batchIndex, landlordBatchIndex });
   console.log(`\nDone in ${elapsed}s — ${newUrls} new URLs added, ${fileCount} total sitemap files`);
 }
 

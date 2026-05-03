@@ -1,6 +1,6 @@
 import "@/styles/v2-tokens.css";
 import { createClient } from "@/lib/supabase/server";
-import { permanentRedirect, redirect } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { Crumbs } from "@/components/landlord/v2/Crumbs";
 import { HeroV2Streamed } from "@/components/landlord/v2/streaming/HeroV2Streamed";
 import { RecordStripStreamed } from "@/components/landlord/v2/streaming/RecordStripStreamed";
@@ -102,8 +102,11 @@ export async function generateMetadata({
     loadLandlordTenantVoice(name, city),
   ]);
 
-  if (!stats) {
-    return { title: "Landlord Not Found" };
+  // Treat zero-building stats rows the same as missing — these are junk
+  // rows and we redirect the page render below; the metadata must agree
+  // so we don't end up with HTTP 200 + "Not Found" title (soft-404).
+  if (!stats || stats.buildingCount === 0) {
+    return { title: "Landlord Not Found", robots: { index: false, follow: false } };
   }
 
   // Title cascade — picks the strongest defensible template based on data.
@@ -152,10 +155,16 @@ export default async function LandlordDetailPage({
       loadLandlordFAQ(name, city),
     ]);
 
-  // No matching landlord — send to the directory with a real 307 so crawlers
-  // and health checks see a status code (page-level `notFound()` returns 200).
-  if (!ownerName || !cachedStats) {
-    redirect(cityPath("/landlords", city));
+  // No matching landlord, or a junk stats row with no buildings to render —
+  // surface the not-found UI from src/app/not-found.tsx. We tried `redirect()`
+  // here originally but Next 16 / Vercel silently swallow the redirect signal
+  // for streamed pages with revalidate set, returning HTTP 200 + an empty
+  // body. notFound() also returns HTTP 200 in Next 16 (soft-404) but at least
+  // renders meaningful content for users instead of a blank page.
+  // The buildingCount === 0 guard catches stale sitemap slugs and cross-metro
+  // mismatches (e.g. an LA landlord slug requested under /nyc/).
+  if (!ownerName || !cachedStats || cachedStats.buildingCount === 0) {
+    notFound();
   }
 
   // Canonicalise to the slug URL when the caller used a decoded owner name.
