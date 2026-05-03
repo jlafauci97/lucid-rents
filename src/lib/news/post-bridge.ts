@@ -23,6 +23,13 @@ export interface PostBridgeInput {
   link: string;
   imageUrl: string | null;
   hashtags?: string[];
+  /**
+   * Optional secondary link back to the primary entity page on lucidrents.com
+   * (landlord / neighborhood / building) referenced by the article. Included
+   * in the tweet caption when there's room so readers can click straight
+   * through to the entity, not just the article.
+   */
+  entityLink?: { label: string; url: string } | null;
 }
 
 function formatHashtags(raw: string[] | undefined): string {
@@ -40,12 +47,40 @@ function formatHashtags(raw: string[] | undefined): string {
   return out.join(" ");
 }
 
-function buildCaption({ title, excerpt, link, hashtags }: PostBridgeInput): string {
+function buildCaption({
+  title,
+  excerpt,
+  link,
+  hashtags,
+  entityLink,
+}: PostBridgeInput): string {
   const teaser = excerpt?.trim() || title.trim();
   const tagLine = formatHashtags(hashtags);
-  return tagLine
-    ? `${teaser}\n\n${link}\n\n${tagLine}`
-    : `${teaser}\n\n${link}`;
+
+  // Twitter counts every URL as 23 chars regardless of length, so two links
+  // cost 46 chars. Skip the entity link if it would push the caption over
+  // ~270 chars (gives a safety margin under X's 280 limit).
+  const entityLine =
+    entityLink && entityLink.url !== link
+      ? `${entityLink.label}: ${entityLink.url}`
+      : "";
+
+  const parts = [teaser, link];
+  if (entityLine) parts.push(entityLine);
+  if (tagLine) parts.push(tagLine);
+
+  // Estimate length using the URL-as-23 rule.
+  const approxLen = parts
+    .join("\n\n")
+    .replace(/https?:\/\/\S+/g, "x".repeat(23)).length;
+
+  if (approxLen > 270 && entityLine) {
+    return tagLine
+      ? `${teaser}\n\n${link}\n\n${tagLine}`
+      : `${teaser}\n\n${link}`;
+  }
+
+  return parts.join("\n\n");
 }
 
 function parseAccountId(raw: string | undefined): number | null {
