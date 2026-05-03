@@ -22,6 +22,7 @@ import {
   landlordSlug,
   landlordUrl,
   landlordJsonLd,
+  faqJsonLd,
   breadcrumbJsonLd,
   canonicalUrl,
   cityPath,
@@ -34,7 +35,11 @@ import {
   buildLandlordDescription,
 } from "@/lib/seo-metadata";
 import { getLandlordStats } from "@/lib/landlord-stats";
-import { loadLandlordNeighborhoods } from "./_data";
+import {
+  loadLandlordNeighborhoods,
+  loadLandlordTenantVoice,
+  loadLandlordFAQ,
+} from "./_data";
 import { LandlordNeighborhoods } from "@/components/landlord/LandlordNeighborhoods";
 
 export const revalidate = 86400; // 24h ISR — matches building v2
@@ -136,11 +141,14 @@ export default async function LandlordDetailPage({
   const city = (cityParam || "nyc") as City;
   const supabase = await createClient();
 
-  const [ownerName, cachedStats, neighborhoods] = await Promise.all([
-    resolveOwnerName(supabase, name, city),
-    getLandlordStats(name, city),
-    loadLandlordNeighborhoods(name, city),
-  ]);
+  const [ownerName, cachedStats, neighborhoods, tenantVoice, faqItems] =
+    await Promise.all([
+      resolveOwnerName(supabase, name, city),
+      getLandlordStats(name, city),
+      loadLandlordNeighborhoods(name, city),
+      loadLandlordTenantVoice(name, city),
+      loadLandlordFAQ(name, city),
+    ]);
 
   // No matching landlord — send to the directory with a real 307 so crawlers
   // and health checks see a status code (page-level `notFound()` returns 200).
@@ -157,6 +165,15 @@ export default async function LandlordDetailPage({
   const displayName = cachedStats.name;
   const grade = letterGrade(cachedStats.avgScore);
 
+  const ratingForJsonLd =
+    cachedStats.avgScore != null && tenantVoice.totalReviews > 0
+      ? {
+          lucidIqScore: cachedStats.avgScore,
+          reviewCount: tenantVoice.totalReviews,
+          excerpts: tenantVoice.excerpts,
+        }
+      : null;
+
   return (
     <div className="v2">
       <V2Zoom />
@@ -166,7 +183,8 @@ export default async function LandlordDetailPage({
           cachedStats.buildingCount,
           city,
           undefined,
-          cachedStats.totalIssues
+          cachedStats.totalIssues,
+          ratingForJsonLd
         )}
       />
       <JsonLd
@@ -176,6 +194,9 @@ export default async function LandlordDetailPage({
           { name: displayName, url: landlordUrl(displayName, city) },
         ])}
       />
+      {faqItems.length > 0 ? (
+        <JsonLd data={faqJsonLd(faqItems)} />
+      ) : null}
 
       <div className="container">
         <Crumbs city={city} displayName={displayName} />

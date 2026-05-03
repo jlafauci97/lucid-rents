@@ -158,12 +158,30 @@ export function buildingJsonLd(
   return schema;
 }
 
+export interface LandlordReviewExcerpt {
+  rating: number;
+  text: string;
+  building_address: string;
+  region: string;
+  created_at: string;
+}
+
+export interface LandlordRatingInput {
+  /** Portfolio LucidIQ score (0-5). */
+  lucidIqScore: number;
+  /** Total published tenant reviews across the portfolio. */
+  reviewCount: number;
+  /** Up to ~3 representative review excerpts for review-snippet eligibility. */
+  excerpts?: LandlordReviewExcerpt[];
+}
+
 export function landlordJsonLd(
   name: string,
   buildingCount: number,
   city: City = DEFAULT_CITY,
   updatedAt?: string,
-  totalIssues?: number
+  totalIssues?: number,
+  rating?: LandlordRatingInput | null
 ) {
   const meta = CITY_META[city];
   const issueClause =
@@ -180,7 +198,58 @@ export function landlordJsonLd(
   if (updatedAt) {
     ld.dateModified = updatedAt;
   }
+  if (rating && rating.reviewCount > 0 && Number.isFinite(rating.lucidIqScore)) {
+    // LucidIQ is a 0–5 composite; clamp to [1, 5] for Google's expected scale
+    // (matches the convention used by buildingJsonLd above).
+    const ratingValue = Math.max(1, Math.min(5, rating.lucidIqScore));
+    ld.aggregateRating = {
+      "@type": "AggregateRating",
+      ratingValue: Number(ratingValue.toFixed(1)),
+      bestRating: 5,
+      worstRating: 1,
+      reviewCount: rating.reviewCount,
+    };
+    if (rating.excerpts && rating.excerpts.length > 0) {
+      ld.review = rating.excerpts.map((r) => ({
+        "@type": "Review",
+        reviewRating: {
+          "@type": "Rating",
+          ratingValue: Number(Math.max(1, Math.min(5, r.rating)).toFixed(1)),
+          bestRating: 5,
+          worstRating: 1,
+        },
+        author: { "@type": "Person", name: "Verified Tenant" },
+        reviewBody: r.text,
+        datePublished: r.created_at,
+        itemReviewed: {
+          "@type": "ApartmentComplex",
+          name: r.building_address,
+          address: {
+            "@type": "PostalAddress",
+            addressLocality: r.region,
+            addressRegion: meta.stateCode,
+            addressCountry: "US",
+          },
+        },
+      }));
+    }
+  }
   return ld;
+}
+
+export function faqJsonLd(items: { q: string; a: string }[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: items.map((item) => ({
+      "@type": "Question",
+      name: item.q,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: item.a,
+      },
+    })),
+  };
 }
 
 export function newsCollectionJsonLd(city: City = DEFAULT_CITY) {
