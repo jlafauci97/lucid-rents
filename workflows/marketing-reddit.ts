@@ -32,7 +32,47 @@ import {
   getSubredditTone,
   TARGET_SUBREDDITS,
   REDDIT_KEYWORDS,
+  GENERAL_SUBREDDITS,
+  SUPPORTED_GEO_TOKENS,
+  UNSUPPORTED_STATE_CODES,
 } from "@/lib/marketing/brand-voice";
+
+// Minimum weighted relevance score required to keep a candidate.
+// 0.5 was too permissive — it let lease-takeover ads, job posts, and
+// out-of-state rants through. 0.7 is roughly "this is clearly about a
+// renter problem in one of our markets and we can add real value."
+const MIN_RELEVANCE_SCORE = 0.7;
+
+/**
+ * Reject a post if its title or body is tagged with a US state code we don't
+ * cover (e.g. "[MI] my LL ..." or "[CA] [SK] LL gave notice"). Returns true
+ * when the post should be DROPPED.
+ */
+function hasUnsupportedStateTag(title: string, body: string): boolean {
+  const text = `${title} ${body}`;
+  // Match bracketed two-letter codes like [MI], [PA], [GA].
+  const matches = text.match(/\[([A-Z]{2})\]/g);
+  if (!matches) return false;
+  for (const m of matches) {
+    const code = m.slice(1, 3);
+    if (UNSUPPORTED_STATE_CODES.has(code)) return true;
+  }
+  return false;
+}
+
+/**
+ * For posts from general (national) subs, require the title or body to
+ * explicitly mention one of our metros. Without this, we drown in posts
+ * from random states.
+ */
+function mentionsSupportedMetro(title: string, body: string): boolean {
+  const text = `${title} ${body}`.toLowerCase();
+  return SUPPORTED_GEO_TOKENS.some((tok) => {
+    // Match as a whole word so "ca" doesn't trigger on "scary".
+    const re = new RegExp(`\\b${tok.replace(/\./g, "\\.")}\\b`, "i");
+    return re.test(text);
+  });
+}
 
 // ---------------------------------------------------------------------------
 // Types local to this workflow
@@ -104,6 +144,8 @@ async function scanSubreddits(): Promise<RedditCandidate[]> {
     ...TARGET_SUBREDDITS.nyc,
     ...TARGET_SUBREDDITS["los-angeles"],
     ...TARGET_SUBREDDITS.chicago,
+    ...TARGET_SUBREDDITS.miami,
+    ...TARGET_SUBREDDITS.houston,
     ...TARGET_SUBREDDITS.general,
   ];
 
@@ -141,19 +183,34 @@ async function scanSubreddits(): Promise<RedditCandidate[]> {
         const d = post.data;
         if (!d || d.created_utc < twoHoursAgo) continue;
 
-        const titleLower = (d.title ?? "").toLowerCase();
-        const selftextLower = (d.selftext ?? "").toLowerCase();
+        const titleRaw = d.title ?? "";
+        const selftextRaw = d.selftext ?? "";
+        const titleLower = titleRaw.toLowerCase();
+        const selftextLower = selftextRaw.toLowerCase();
         const combined = titleLower + " " + selftextLower;
 
         const matched = keywordsLower.some((kw) => combined.includes(kw));
         if (!matched) continue;
 
+        // Hard reject: explicit out-of-state tag like "[MI]" or "[OR]".
+        if (hasUnsupportedStateTag(titleRaw, selftextRaw)) continue;
+
+        // Posts from national subs (r/renters, r/Tenant, r/realestate, etc.)
+        // must explicitly mention one of our metros, otherwise we drown in
+        // out-of-state content.
+        if (
+          GENERAL_SUBREDDITS.has(subreddit) &&
+          !mentionsSupportedMetro(titleRaw, selftextRaw)
+        ) {
+          continue;
+        }
+
         candidates.push({
           threadId: d.name ?? d.id, // fullname e.g. t3_abc123
           subreddit,
-          title: d.title ?? "",
+          title: titleRaw,
           url: `https://www.reddit.com${d.permalink ?? ""}`,
-          selftext: (d.selftext ?? "").slice(0, 2000), // cap for prompt size
+          selftext: selftextRaw.slice(0, 2000), // cap for prompt size
           score: d.score ?? 0,
           numComments: d.num_comments ?? 0,
         });
@@ -276,21 +333,28 @@ async function scoreRelevance(
     try {
       const result = await generateText({
         model: "anthropic/claude-sonnet-4.6" as never,
-        system: `You are a relevance scorer for LucidRents, a rental intelligence platform. Score how relevant a Reddit thread is for a helpful, non-promotional reply that could mention lucidrents.com.
+        system: `You are a relevance scorer for LucidRents, a rental intelligence platform that ONLY covers 5 metros: NYC, Los Angeles, Chicago, Miami, and Houston. Score how relevant a Reddit thread is for a helpful, non-promotional reply that could mention lucidrents.com.
 
 Return ONLY a JSON object with this structure:
 {
+  "geoMatch": 0.0-1.0,
   "directRelevance": 0.0-1.0,
   "valueOpportunity": 0.0-1.0,
-  "threadActivity": 0.0-1.0,
   "naturalFit": 0.0-1.0
 }
 
-Scoring criteria:
-- directRelevance (0.3 weight): Does this directly relate to rental data, landlords, building violations, tenant rights, or apartment searching?
-- valueOpportunity (0.3 weight): Can we add genuine value with real data (violation records, building info, tenant rights)?
-- threadActivity (0.2 weight): Is this thread getting engagement? (score > 5, or num_comments > 3 = higher)
-- naturalFit (0.2 weight): Can we mention lucidrents.com without feeling forced or spammy?`,
+HARD RULES — give 0.0 on geoMatch (which kills the post) when:
+- The post is explicitly about a state or city we don't cover (Denver, San Diego, Seattle, Atlanta, Detroit, anywhere outside NYC/LA/Chicago/Miami/Houston).
+- The post is about home buying / mortgages / selling a house — we serve renters, not buyers.
+- The post is an apartment listing, sublease ad, lease takeover, or roommate-search ad — these are ads, not problems we can help with.
+- The post is unrelated to housing entirely (jobs, jury duty, event tickets, dating, car leases).
+- The post is from a national sub (renters / Tenant / realestate / personalfinance) WITHOUT explicitly mentioning NYC/LA/Chicago/Miami/Houston by name.
+
+Scoring criteria (only matters if geoMatch > 0):
+- geoMatch (0.4 weight): Is the post about a renter problem in NYC, LA, Chicago, Miami, or Houston? 1.0 = clearly one of our metros. 0.0 = elsewhere or no city mentioned.
+- directRelevance (0.3 weight): Renter problem we have data for — landlord violations, building conditions, tenant rights, rent stabilization, eviction, habitability.
+- valueOpportunity (0.2 weight): Can we add genuine value by referencing specific data (HPD/LAHD/RLTO records, building violation history, rent law)?
+- naturalFit (0.1 weight): Can we mention lucidrents.com without feeling forced?`,
         prompt: `Subreddit: r/${candidate.subreddit}
 Title: ${candidate.title}
 Body: ${candidate.selftext.slice(0, 1000)}
@@ -299,9 +363,9 @@ Score: ${candidate.score} | Comments: ${candidate.numComments}`,
       });
 
       let parsed: {
+        geoMatch: number;
         directRelevance: number;
         valueOpportunity: number;
-        threadActivity: number;
         naturalFit: number;
       };
       try {
@@ -321,13 +385,28 @@ Score: ${candidate.score} | Comments: ${candidate.numComments}`,
         continue;
       }
 
-      const weightedScore =
-        parsed.directRelevance * 0.3 +
-        parsed.valueOpportunity * 0.3 +
-        parsed.threadActivity * 0.2 +
-        parsed.naturalFit * 0.2;
+      // Hard kill: if the LLM gave geoMatch < 0.5, the post is about a
+      // metro we don't cover (or no metro at all). Skip immediately so a
+      // strong directRelevance score can't drag a Denver post over the line.
+      if (parsed.geoMatch < 0.5) {
+        console.log(
+          JSON.stringify({
+            step: "scoreRelevance",
+            event: "geo_mismatch",
+            threadId: candidate.threadId,
+            geoMatch: parsed.geoMatch,
+          })
+        );
+        continue;
+      }
 
-      if (weightedScore < 0.5) {
+      const weightedScore =
+        parsed.geoMatch * 0.4 +
+        parsed.directRelevance * 0.3 +
+        parsed.valueOpportunity * 0.2 +
+        parsed.naturalFit * 0.1;
+
+      if (weightedScore < MIN_RELEVANCE_SCORE) {
         console.log(
           JSON.stringify({
             step: "scoreRelevance",
