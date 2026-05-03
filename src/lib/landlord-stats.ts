@@ -12,6 +12,10 @@ export interface LandlordStats {
   /** Portfolio-level LucidIQ average (0-5). Null when the landlord has no
    *  scoreable buildings yet. Used by the wayfinder rail's grade badge. */
   avgScore: number | null;
+  /** Most-cited building in the portfolio (landlord_stats column).
+   *  Used by the SEO title cascade to fire the "Most-Cited Building?" template. */
+  worstBuildingAddress: string | null;
+  worstBuildingViolations: number | null;
 }
 
 /**
@@ -29,10 +33,13 @@ export const getLandlordStats = cache(async (
 ): Promise<LandlordStats | null> => {
   const supabase = await createClient();
 
+  const SELECT_COLS =
+    "name, slug, building_count, total_violations, total_dob_violations, total_complaints, avg_score, worst_building_address, worst_building_violations";
+
   // Primary: match by slug
   const bySlug = await supabase
     .from("landlord_stats")
-    .select("name, slug, building_count, total_violations, total_dob_violations, total_complaints, avg_score")
+    .select(SELECT_COLS)
     .eq("slug", slugOrName)
     .eq("metro", city)
     .limit(1)
@@ -45,7 +52,7 @@ export const getLandlordStats = cache(async (
     const decoded = decodeURIComponent(slugOrName);
     const byName = await supabase
       .from("landlord_stats")
-      .select("name, slug, building_count, total_violations, total_dob_violations, total_complaints, avg_score")
+      .select(SELECT_COLS)
       .ilike("name", decoded)
       .eq("metro", city)
       .limit(1)
@@ -67,5 +74,9 @@ export const getLandlordStats = cache(async (
     totalViolations,
     totalComplaints,
     avgScore: typeof row.avg_score === "number" ? row.avg_score : null,
+    worstBuildingAddress:
+      typeof row.worst_building_address === "string" ? row.worst_building_address : null,
+    worstBuildingViolations:
+      typeof row.worst_building_violations === "number" ? row.worst_building_violations : null,
   };
 });

@@ -30,10 +30,9 @@ import {
 import type { Metadata } from "next";
 import { CITY_META } from "@/lib/cities";
 import type { City } from "@/lib/cities";
-import {
-  buildLandlordTitle,
-  buildLandlordDescription,
-} from "@/lib/seo-metadata";
+import { buildLandlordDescription } from "@/lib/seo-metadata";
+import { pickLandlordTitle } from "@/lib/seo-titles";
+import { getLandlordTitleData } from "@/lib/seo-title-data";
 import { getLandlordStats } from "@/lib/landlord-stats";
 import {
   loadLandlordNeighborhoods,
@@ -98,18 +97,21 @@ export async function generateMetadata({
 }: LandlordPageProps): Promise<Metadata> {
   const { city: cityParam, name } = await params;
   const city = (cityParam || "nyc") as City;
-  const stats = await getLandlordStats(name, city);
+  const [stats, tenantVoice] = await Promise.all([
+    getLandlordStats(name, city),
+    loadLandlordTenantVoice(name, city),
+  ]);
 
   if (!stats) {
     return { title: "Landlord Not Found" };
   }
 
-  const title = buildLandlordTitle({
-    name: stats.name,
-    buildingCount: stats.buildingCount,
-    totalIssues: stats.totalIssues,
-    city,
+  // Title cascade — picks the strongest defensible template based on data.
+  const titleData = await getLandlordTitleData(stats, city, {
+    avgRating: tenantVoice?.avgRating ?? 0,
+    totalReviews: tenantVoice?.totalReviews ?? 0,
   });
+  const { title } = pickLandlordTitle(titleData);
 
   const description = buildLandlordDescription({
     name: stats.name,

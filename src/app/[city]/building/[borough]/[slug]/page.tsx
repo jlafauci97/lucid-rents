@@ -6,7 +6,9 @@ import { regionFromSlug, buildingUrl, canonicalUrl, buildingJsonLd, breadcrumbJs
 import { VALID_CITIES, CITY_META, type City } from "@/lib/cities";
 import { cache } from "react";
 import { normalizeScore } from "@/lib/constants";
-import { buildBuildingTitle, buildBuildingDescription } from "@/lib/seo-metadata";
+import { buildBuildingDescription } from "@/lib/seo-metadata";
+import { pickBuildingTitle } from "@/lib/seo-titles";
+import { getBuildingTitleData } from "@/lib/seo-title-data";
 import { buildingNeighborhood } from "@/lib/neighborhoods";
 import { BuildingLeadParagraph } from "@/components/building/BuildingLeadParagraph";
 import type { Building } from "@/types";
@@ -136,11 +138,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     : (building.violation_count || 0);
   const issuesFiled = metaViolationCount + (building.complaint_count || 0);
 
-  const title = buildBuildingTitle({
-    shortAddress,
-    neighborhood: neighborhoodName,
-    city: cityParam as City,
-  });
+  // Title cascade — picks the strongest defensible template based on data.
+  const titleData = await getBuildingTitleData(building, cityParam as City);
+  const { title } = pickBuildingTitle(titleData);
 
   const description = buildBuildingDescription({
     shortAddress,
