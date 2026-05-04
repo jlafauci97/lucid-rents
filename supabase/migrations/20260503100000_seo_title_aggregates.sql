@@ -158,7 +158,7 @@ AS $$
   FROM cat_counts t, total
   WHERE t.label IS NOT NULL
   ORDER BY t.cnt DESC
-  LIMIT 1;
+  LIMIT 5;  -- top N so the TS layer can apply display filters (e.g. skip "Paint")
 $$;
 
 GRANT EXECUTE ON FUNCTION landlord_top_category(text, text) TO anon, authenticated;

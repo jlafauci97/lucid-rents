@@ -36,6 +36,24 @@ function shortAddress(b: { full_address: string }): string {
   return smartCaseName(street);
 }
 
+/**
+ * Categories we don't want to surface in SERP titles, even though they're real.
+ *
+ * "Paint" dominates NYC HPD data (peeling paint is by far the most-cited
+ * violation type), which would make almost every landlord/building title read
+ * "...Paint Filings..." or "Paint, Pests, Mold...". Filtering it at the
+ * display boundary keeps the underlying counts intact while letting more
+ * visceral categories (Pests, Mold, Heat, Lead Paint, Leaks) surface.
+ *
+ * Lead Paint is intentionally NOT filtered — it's a real health-and-safety
+ * signal that renters genuinely want to see.
+ */
+const TITLE_CATEGORY_BLOCKLIST = new Set<string>(["Paint"]);
+
+function filterDisplayCategories(labels: string[]): string[] {
+  return labels.filter((label) => !TITLE_CATEGORY_BLOCKLIST.has(label));
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 // Building title data
 // ────────────────────────────────────────────────────────────────────────────
@@ -84,14 +102,20 @@ export async function getBuildingTitleData(
         total_count: number;
         recent_count: number;
       }>;
-      topCategories = rows
-        .filter((r) => r.total_count > 0)
-        .slice(0, 5)
-        .map((r) => r.category_label);
+      topCategories = filterDisplayCategories(
+        rows
+          .filter((r) => r.total_count > 0)
+          .map((r) => r.category_label)
+      ).slice(0, 5);
       const recentRows = rows
         .filter((r) => r.recent_count > 0)
         .sort((a, b) => b.recent_count - a.recent_count);
-      recentTopCategories = recentRows.slice(0, 3).map((r) => r.category_label);
+      recentTopCategories = filterDisplayCategories(
+        recentRows.map((r) => r.category_label)
+      ).slice(0, 3);
+      // recentIssueCount tracks the SUM across all categories (including ones
+      // we don't surface in the title) — so the "& N more issues" number stays
+      // honest about how many recent issues are on file.
       recentIssueCount = recentRows.reduce((sum, r) => sum + r.recent_count, 0);
     }
   } catch {
@@ -133,17 +157,23 @@ export async function getLandlordTitleData(
       _metro: city,
     });
     if (!error && Array.isArray(data) && data.length > 0) {
-      const row = data[0] as {
+      // RPC returns top 5 categories ordered by count; pick the first one
+      // that isn't in our display blocklist (so we skip "Paint" and surface
+      // the next-most-common category instead).
+      const rows = data as Array<{
         category_label: string;
         category_count: number;
         total_violations: number;
         share: number | string;
-      };
-      topCategory = {
-        label: row.category_label,
-        count: Number(row.category_count) || 0,
-        share: Number(row.share) || 0,
-      };
+      }>;
+      const row = rows.find((r) => !TITLE_CATEGORY_BLOCKLIST.has(r.category_label));
+      if (row) {
+        topCategory = {
+          label: row.category_label,
+          count: Number(row.category_count) || 0,
+          share: Number(row.share) || 0,
+        };
+      }
     }
   } catch {
     // RPC not deployed — cascade will skip L2.
