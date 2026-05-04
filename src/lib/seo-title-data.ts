@@ -39,16 +39,21 @@ function shortAddress(b: { full_address: string }): string {
 /**
  * Categories we don't want to surface in SERP titles, even though they're real.
  *
- * "Paint" dominates NYC HPD data (peeling paint is by far the most-cited
- * violation type), which would make almost every landlord/building title read
- * "...Paint Filings..." or "Paint, Pests, Mold...". Filtering it at the
- * display boundary keeps the underlying counts intact while letting more
- * visceral categories (Pests, Mold, Heat, Lead Paint, Leaks) surface.
+ *   "Paint"  — peeling paint is by far the most-cited HPD violation type, so
+ *              every title would read "Paint, Pests, Mold...". (Lead Paint,
+ *              the actual health-risk category, is *not* filtered.)
+ *   "Doors"  — usually broken doorknobs / lockboxes; HPD writes a separate
+ *              violation per defective door, so it dominates top-3 lists
+ *              without scaring any renter.
+ *   "Windows" — usually peeling window paint or missing window guards; same
+ *              pattern as Doors — administrative volume, not a visceral
+ *              signal renters click on.
  *
- * Lead Paint is intentionally NOT filtered — it's a real health-and-safety
- * signal that renters genuinely want to see.
+ * Filtering at the display boundary keeps the underlying counts intact while
+ * letting more visceral categories (Pests, Mold, Heat, Lead Paint, Leaks)
+ * surface in titles.
  */
-const TITLE_CATEGORY_BLOCKLIST = new Set<string>(["Paint"]);
+const TITLE_CATEGORY_BLOCKLIST = new Set<string>(["Paint", "Doors", "Windows"]);
 
 function filterDisplayCategories(labels: string[]): string[] {
   return labels.filter((label) => !TITLE_CATEGORY_BLOCKLIST.has(label));
