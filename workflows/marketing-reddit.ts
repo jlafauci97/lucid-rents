@@ -345,12 +345,18 @@ Return ONLY a JSON object with this structure:
 
 HARD RULES — give 0.0 on geoMatch (which kills the post) when:
 - The post is explicitly about a state or city we don't cover (Denver, San Diego, Seattle, Atlanta, Detroit, anywhere outside NYC/LA/Chicago/Miami/Houston).
-- The post is about home buying / mortgages / selling a house — we serve renters, not buyers.
-- The post is an apartment listing, sublease ad, lease takeover, or roommate-search ad — these are ads, not problems we can help with.
-- The post is unrelated to housing entirely (jobs, jury duty, event tickets, dating, car leases).
 - The post is from a national sub (renters / Tenant / realestate / personalfinance) WITHOUT explicitly mentioning NYC/LA/Chicago/Miami/Houston by name.
 
-Scoring criteria (only matters if geoMatch > 0):
+HARD RULES — give 0.0 on directRelevance (also kills the post) when the post is anything other than a renter / tenant / landlord / lease / rent-law / building-condition / habitability problem. The post mentioning a city we cover is NOT enough. Specifically zero out directRelevance when the post is:
+- Personal finance, investing, retirement, "how to make quick money", side hustles.
+- Transit, getting around, "is it realistic to live without a car".
+- Restaurants, events, concerts, movie theaters, dating, shopping.
+- Neighbor disputes that do NOT involve a landlord or building (light spillover from a neighbor's home, noise from an individual neighbor, etc.).
+- Home buying / mortgages / selling a house. We serve renters, not buyers.
+- Apartment listings, sublease ads, lease takeover ads, roommate-search ads. These are ads, not problems.
+- Job posts, jury duty, car leases.
+
+Scoring criteria (only matters if both geoMatch and directRelevance are non-zero):
 - geoMatch (0.4 weight): Is the post about a renter problem in NYC, LA, Chicago, Miami, or Houston? 1.0 = clearly one of our metros. 0.0 = elsewhere or no city mentioned.
 - directRelevance (0.3 weight): Renter problem we have data for — landlord violations, building conditions, tenant rights, rent stabilization, eviction, habitability.
 - valueOpportunity (0.2 weight): Can we add genuine value by referencing specific data (HPD/LAHD/RLTO records, building violation history, rent law)?
@@ -395,6 +401,22 @@ Score: ${candidate.score} | Comments: ${candidate.numComments}`,
             event: "geo_mismatch",
             threadId: candidate.threadId,
             geoMatch: parsed.geoMatch,
+          })
+        );
+        continue;
+      }
+
+      // Hard kill: a post that mentions one of our metros but isn't actually
+      // a renter problem (personal finance, transit, neighbor light disputes,
+      // movie incidents, concert announcements) keeps slipping through with
+      // a high geoMatch. Drop them outright if directRelevance is weak.
+      if (parsed.directRelevance < 0.4) {
+        console.log(
+          JSON.stringify({
+            step: "scoreRelevance",
+            event: "low_direct_relevance",
+            threadId: candidate.threadId,
+            directRelevance: parsed.directRelevance,
           })
         );
         continue;
