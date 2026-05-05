@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { IssuesTabs } from "@/components/building/IssuesTabs";
 import { ViolationTrend } from "@/components/building/ViolationTrend";
 import { CommonIssues } from "@/components/building/CommonIssues";
-import { regionFromSlug, buildingUrl, canonicalUrl } from "@/lib/seo";
+import { regionFromSlug, boroughIlikePattern, buildingUrl, canonicalUrl } from "@/lib/seo";
 import { CITY_META, VALID_CITIES, type City } from "@/lib/cities";
 import { VIOLATION_AGENCIES } from "@/lib/constants";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
@@ -28,7 +28,7 @@ const getBuilding = cache(async (boroughSlug: string, slug: string, metro?: stri
     .from("buildings")
     .select("*")
     .eq("slug", slug)
-    .ilike("borough", borough);
+    .ilike("borough", boroughIlikePattern(borough));
 
   if (metro) {
     query = query.eq("metro", metro);
