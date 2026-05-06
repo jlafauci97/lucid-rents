@@ -91,13 +91,49 @@ const GARBAGE_NAMES = [
   "NOT AVAILABLE",
   "NOT AVAILABLE FROM THE DATA",
   "NOT AVAILABLE FROM THE DATA SOURCE",
+  "FROM THE DATA SOURCE NOT",
   "UNKNOWN",
   "UNKNOWN OWNER",
+  "CURRENT OWNER",
   "N/A",
   "NA",
   "UNAVAILABLE",
   "UNAVAILABLE OWNER",
   "Taxpayer Unknown",
+  // Generic "Taxpayer Of" placeholders — Cook County uses this when
+  // the actual taxpayer name is suppressed.
+  "Taxpayer Of",
+  "TAXPAYER OF",
+  // Government / public agency owners — they own real parcels but
+  // aren't "landlords" in the consumer sense.
+  "COUNTY OF COOK",
+  "COOK COUNTY",
+  "COOK COUNTY FOREST PRE",
+  "COOK COUNTY LAND BANK AUTHORITY",
+  "CITY OF CHICAGO",
+  "CHICAGO CITY OF",
+  "CHICAGO CITY (IL)",
+  "CHICAGO HEIGHTS CITY",
+  "CHICAGO HSING AUTHORTI",
+  "CHICAGO BOARD OF ED",
+  "CHICAGO PARK DISTRICT",
+  "CHICAGO TRANSIT AUTHOR",
+  "IL DEPT TRANSPORTATION",
+  "IL ST TOLL HWY AUTH",
+  "METRO WATER RECLM DIST",
+  "ROBBINS VILLAGE",
+  // Title-holding land trust companies — they hold legal title for
+  // beneficiaries but are not the operating landlord.
+  "CHICAGO TITLE LAND TRUST COMPANY",
+  "CHICAGO TITLE LAND TRUST CO",
+  "CHICAGO TITLE LAND TRUST",
+  "CHICAGO TITLE LAND TRU",
+  "CHICAGO TITLE LAND TRU TRUST",
+  "LASALLE BANK NA TRUSTEE",
+  "PARKWAY BK AND TRUST COMPANY TR",
+  "PARKWAY BANK AND TRUST COMPANY",
+  // Generic placeholders that aren't entities.
+  "RAILROAD",
 ];
 const GARBAGE_IN = `(${GARBAGE_NAMES.map((n) => `"${n}"`).join(",")})`;
 
