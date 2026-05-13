@@ -37,7 +37,9 @@ export async function POST(req: NextRequest) {
         typeof t === "string" &&
         ALLOWED_TAG_PATTERNS.some((re) => re.test(t))
     );
-    for (const tag of valid) revalidateTag(tag);
+    // Next.js 16: revalidateTag requires a cacheLife profile as the 2nd arg.
+    // "max" = stale-while-revalidate (recommended for webhook-style invalidation).
+    for (const tag of valid) revalidateTag(tag, "max");
     revalidatedTags = valid.length;
   }
 
