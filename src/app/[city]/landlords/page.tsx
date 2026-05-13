@@ -185,26 +185,27 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
   const baseSelect =
     "name,slug,building_count,total_violations,total_complaints,total_litigations,total_dob_violations,avg_score,worst_building_address,worst_building_violations";
 
-  // landlord_stats_canonical has no id; slug is the PK, count via slug.
-  // The paginated dataQuery (rows ordered + ranged) has been moved into
-  // <DirectorySection> so it can stream behind <Suspense>. The cheap HEAD
-  // count stays here so the hero/stats/skeleton can render the total
-  // immediately without waiting on the slow row fetch.
-  let countQuery = supabase
-    .from("landlord_stats_canonical")
-    .select("slug", { count: "estimated", head: true })
-    .eq("metro", city)
-    .not("name", "in", GARBAGE_IN);
-
-  if (search) {
-    countQuery = countQuery.ilike("name", `%${search}%`);
-  }
+  // The unfiltered metro-wide count is hoisted into the shared cache below
+  // (count: "planned" so PostgREST returns the planner estimate in O(1)
+  // instead of falling back to an exact COUNT(*) that times out at 8s on
+  // the anon role's statement_timeout). Only the search-filtered count
+  // still runs per request — that filter narrows enough rows that exact
+  // counting stays fast.
+  const searchCountQuery = search
+    ? supabase
+        .from("landlord_stats_canonical")
+        .select("slug", { count: "planned", head: true })
+        .eq("metro", city)
+        .not("name", "in", GARBAGE_IN)
+        .ilike("name", `%${search}%`)
+    : null;
 
   // ─── ALL non-search/sort/page-dependent data wrapped in unstable_cache ──
   // Previously every request fanned out: shame + 5 strip queries + 2 RPCs +
-  // buildings count = 9 round-trips per request. We now cache the entire
-  // shared layer per-city for 3600s, so EVERY sort/page/search variant of
-  // the page reuses the same data — only the paginated countQuery and
+  // buildings count + landlord count = 10 round-trips per request. We now
+  // cache the entire shared layer per-city for 86400s (24h, matching the
+  // page-level revalidate), so EVERY non-search variant of the page reuses
+  // the same data. Only the search-filtered count and the paginated
   // dataQuery (which depend on search/sort/page) hit the DB per request.
   type OathRow = {
     name: string;
@@ -268,11 +269,24 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
         }
       })();
 
-      const [shameRes, oath, t311, bcount, ...stripRes] = await Promise.all([
+      // PostgREST count=estimated/planned both end up running the underlying
+      // SELECT against landlord_stats_canonical, which exact-counts in 11s+
+      // for nyc and trips the anon role's 8s statement_timeout. The RPC
+      // below reads the planner's row estimate via EXPLAIN (FORMAT JSON) in
+      // ~100ms and dodges the timeout entirely.
+      const landlordCountQ = supa
+        .rpc("get_landlord_directory_count", { p_metro: cityKey })
+        .then(
+          (r) => (typeof r?.data === "number" ? r.data : 0),
+          () => 0
+        );
+
+      const [shameRes, oath, t311, bcount, lcount, ...stripRes] = await Promise.all([
         shameQ,
         oathQ,
         top311Q,
         buildingsCountQ,
+        landlordCountQ,
         ...stripQs,
       ]);
 
@@ -281,20 +295,25 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
         oathTop: oath,
         top311: t311,
         buildingsCount: bcount,
+        landlordCount: lcount,
         stripResults: stripRes.map((r) => ((r?.data ?? []) as LandlordRow[])),
       };
     },
-    ["landlords-shared-v1", city],
-    { revalidate: 3600, tags: [`landlords:${city}`] }
+    ["landlords-shared-v2", city],
+    { revalidate: 86400, tags: [`landlords:${city}`] }
   );
 
   const [
-    { count: totalRaw },
-    shared,
+    sharedData,
+    searchCountRes,
   ] = await Promise.all([
-    countQuery,
     fetchSharedLandlordData(city),
+    searchCountQuery ?? Promise.resolve(null),
   ]);
+  const shared = sharedData;
+  const totalRaw = search
+    ? (searchCountRes?.count ?? null)
+    : sharedData.landlordCount;
 
   const featured = shared.shameRows;
   const buildingsCount = shared.buildingsCount;
