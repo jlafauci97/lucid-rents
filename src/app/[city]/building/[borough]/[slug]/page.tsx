@@ -126,7 +126,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       const url = canonicalUrl(buildingUrl(match, correctCity));
       return { title: "Redirecting\u2026", alternates: { canonical: url } };
     }
-    return { title: "Building Not Found" };
+    // Match the page's notFound() so Next renders the 404 boundary instead
+    // of streaming the stale "Building Not Found" metadata alongside it.
+    notFound();
   }
 
   const addressFirstLine = building.full_address.split(",")[0]?.trim() ?? building.full_address;
@@ -196,10 +198,14 @@ export default async function BuildingPage({ params }: Props) {
       const correctCity = metroToCity(match.metro);
       redirect(buildingUrl(match, correctCity));
     }
-    // Next 16 page-level notFound() returns HTTP 200 (soft-404). Redirect
-    // to the city's buildings directory so the response code is a real 307
-    // that crawlers + monitoring treat as a real miss.
-    redirect(cityPath("/buildings", typedCity));
+    // No match anywhere — the building was deleted (e.g. during dedup) but
+    // its URL is still in the cached sitemap. Previously we redirected to
+    // /<city>/buildings, but Next 16 streaming SSR emits that as a
+    // `<meta http-equiv="refresh">` inside an HTTP 200 body, which Google
+    // Search Console flags as "Page with redirect" (~18K such URLs as of
+    // 2026-05-13). `notFound()` renders the root not-found boundary instead,
+    // which Google deindexes naturally without the redirect flag.
+    notFound();
   }
 
   // Redirect to correct city if metro doesn't match URL
