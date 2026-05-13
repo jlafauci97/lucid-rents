@@ -1,0 +1,22 @@
+#!/usr/bin/env sh
+
+# Run TypeScript before pushing. Vercel's `next build` runs the same check
+# and fails the deploy if it errors — catching it locally takes ~20s and
+# saves a 2+ minute red CI build.
+#
+# Emergency bypass: git push --no-verify
+
+# Skip on branch deletion (refs being deleted have all-zero sha)
+while read local_ref local_sha remote_ref remote_sha; do
+  case "$local_sha" in
+    0000000000000000000000000000000000000000) exit 0 ;;
+  esac
+done
+
+echo "→ Running TypeScript (npm run typecheck)..."
+if ! npm run --silent typecheck; then
+  echo ""
+  echo "❌ TypeScript errors above. Fix or bypass with: git push --no-verify"
+  echo ""
+  exit 1
+fi

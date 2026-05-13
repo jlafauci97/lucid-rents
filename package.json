@@ -8,6 +8,7 @@
     "generate-sitemaps": "node scripts/generate-sitemaps.mjs",
     "start": "next start",
     "lint": "next lint",
+    "typecheck": "tsc --noEmit",
     "remotion:studio": "remotion studio remotion/index.ts",
     "remotion:render": "remotion render remotion/index.ts",
     "prepare": "husky",
