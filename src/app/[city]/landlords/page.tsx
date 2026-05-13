@@ -221,20 +221,32 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
   const baseSelect =
     "name,slug,building_count,total_violations,total_complaints,total_litigations,total_dob_violations,avg_score,worst_building_address,worst_building_violations";
 
-  // The unfiltered metro-wide count is hoisted into the shared cache below
-  // (count: "planned" so PostgREST returns the planner estimate in O(1)
-  // instead of falling back to an exact COUNT(*) that times out at 8s on
-  // the anon role's statement_timeout). Only the search-filtered count
-  // still runs per request — that filter narrows enough rows that exact
-  // counting stays fast.
-  const searchCountQuery = search
+  // The unfiltered metro-wide count is hoisted into the shared cache below.
+  // For search variants we call the same get_landlord_directory_count RPC
+  // with the search term — it runs EXPLAIN (FORMAT JSON) and returns the
+  // planner's row estimate in ~100ms. The trigram GIN index on
+  // landlord_stats_canonical.name (idx_landlord_stats_canonical_name_trgm)
+  // gives Postgres accurate selectivity for ilike '%term%' lookups, so the
+  // estimate is close to reality without ever executing the count.
+  //
+  // Previously this used PostgREST count="planned" against the table directly,
+  // which still triggered a full row fetch for broad terms and took 6-11s.
+  // supabase-js may return a Postgres bigint as either a JS number or a
+  // string depending on its size and serialization config — coerce both.
+  const parseCount = (v: unknown): number | null => {
+    if (typeof v === "number" && Number.isFinite(v)) return v;
+    if (typeof v === "string") {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : null;
+    }
+    return null;
+  };
+
+  const searchCountPromise: Promise<number | null> = search
     ? supabase
-        .from("landlord_stats_canonical")
-        .select("slug", { count: "planned", head: true })
-        .eq("metro", city)
-        .not("name", "in", GARBAGE_IN)
-        .ilike("name", `%${search}%`)
-    : null;
+        .rpc("get_landlord_directory_count", { p_metro: city, p_search: search })
+        .then((r) => parseCount(r?.data), () => null)
+    : Promise.resolve(null);
 
   // ─── ALL non-search/sort/page-dependent data wrapped in unstable_cache ──
   // Previously every request fanned out: shame + 5 strip queries + 2 RPCs +
@@ -339,17 +351,12 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
     { revalidate: 86400, tags: [`landlords:${city}`] }
   );
 
-  const [
-    sharedData,
-    searchCountRes,
-  ] = await Promise.all([
+  const [sharedData, searchCount] = await Promise.all([
     fetchSharedLandlordData(city),
-    searchCountQuery ?? Promise.resolve(null),
+    searchCountPromise,
   ]);
   const shared = sharedData;
-  const totalRaw = search
-    ? (searchCountRes?.count ?? null)
-    : sharedData.landlordCount;
+  const totalRaw = search ? searchCount : sharedData.landlordCount;
 
   const featured = shared.shameRows;
   const buildingsCount = shared.buildingsCount;
