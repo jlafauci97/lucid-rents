@@ -242,10 +242,21 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
     return null;
   };
 
+  // supabase-js's query builder is PromiseLike, not Promise — wrap in an
+  // async IIFE so the type matches Promise<number | null> for the
+  // Promise.all below.
   const searchCountPromise: Promise<number | null> = search
-    ? supabase
-        .rpc("get_landlord_directory_count", { p_metro: city, p_search: search })
-        .then((r) => parseCount(r?.data), () => null)
+    ? (async () => {
+        try {
+          const r = await supabase.rpc("get_landlord_directory_count", {
+            p_metro: city,
+            p_search: search,
+          });
+          return parseCount(r?.data);
+        } catch {
+          return null;
+        }
+      })()
     : Promise.resolve(null);
 
   // ─── ALL non-search/sort/page-dependent data wrapped in unstable_cache ──
