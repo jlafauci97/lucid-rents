@@ -364,10 +364,10 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
             </div>
             {/* Hero title: lower min so longer city names ("Los Angeles") don't
                 wrap to 4 lines on iPhone-class widths. 36px reads as a real
-                hero on mobile while letting "Every landlord in {city}." fit
+                hero on mobile while letting "Landlord Intelligence for {city}." fit
                 on 2 lines on a 360-414px viewport. */}
             <h1 style={{ fontFamily: SANS, fontSize: "clamp(36px, 7vw, 84px)", lineHeight: 1.05, letterSpacing: "-0.035em", margin: 0, fontWeight: 700, color: INK }}>
-              Every landlord in{" "}
+              Landlord Intelligence for{" "}
               <span style={{ background: "linear-gradient(135deg, #ec4899, #7c3aed 60%, #3b82f6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
                 {meta.fullName}.
               </span>
