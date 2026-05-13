@@ -347,7 +347,7 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
         stripResults: stripRes.map((r) => ((r?.data ?? []) as LandlordRow[])),
       };
     },
-    ["landlords-shared-v2", city],
+    ["landlords-shared-v3", city],
     { revalidate: 86400, tags: [`landlords:${city}`] }
   );
 
