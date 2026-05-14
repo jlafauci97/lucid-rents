@@ -7,7 +7,7 @@
  * Usage:  node scripts/generate-sitemaps.mjs
  */
 
-import { writeFileSync, mkdirSync, rmSync, readFileSync, existsSync, readdirSync } from "node:fs";
+import { writeFileSync, mkdirSync, rmSync, readFileSync, existsSync, readdirSync, renameSync } from "node:fs";
 
 const BASE_URL = "https://lucidrents.com";
 const OUT_DIR = "public/sitemap";
@@ -394,8 +394,8 @@ function saveProgress(data) {
   writeFileSync(PROGRESS_FILE, JSON.stringify(data, null, 2));
 }
 
-function rebuildIndex() {
-  const files = readdirSync(OUT_DIR).filter(f => f.endsWith(".xml") && f !== "index.xml");
+function rebuildIndex(dir = OUT_DIR, { writePublicMirror = true } = {}) {
+  const files = readdirSync(dir).filter(f => f.endsWith(".xml") && f !== "index.xml");
   const now = new Date().toISOString();
   const indexEntries = files.map(f => ({ name: f, lastmod: now }));
   indexEntries.sort((a, b) => {
@@ -411,11 +411,11 @@ function rebuildIndex() {
     return order(a.name).localeCompare(order(b.name));
   });
   const indexXml = buildSitemapIndex(indexEntries);
-  writeFileSync(`${OUT_DIR}/index.xml`, indexXml);
-  // Also write the canonical /sitemap.xml that robots.txt points at — it
-  // was getting stuck stale because nothing kept it in sync with the chunk
-  // files. Now it's always a mirror of the freshly-built index.
-  writeFileSync(`public/sitemap.xml`, indexXml);
+  writeFileSync(`${dir}/index.xml`, indexXml);
+  // public/sitemap.xml is the canonical URL robots.txt advertises — keep it
+  // in sync with the freshly-built index. Skip during fullGenerate's staging
+  // phase so the deployed mirror only flips after the atomic swap.
+  if (writePublicMirror) writeFileSync(`public/sitemap.xml`, indexXml);
   return indexEntries.length;
 }
 
@@ -426,21 +426,26 @@ async function fullGenerate() {
   const isTimedOut = () => Date.now() - t0 > SITEMAP_TIMEOUT_MS;
   console.log("Full sitemap generation...");
 
-  rmSync(OUT_DIR, { recursive: true, force: true });
-  mkdirSync(OUT_DIR, { recursive: true });
+  // Stage into a sibling dir so a timeout or crash never wipes the deployed
+  // sitemaps. On full success we atomic-rename STAGING_DIR → OUT_DIR. This
+  // is the lesson from c4d2bdd: the previous wipe-then-write left 148 of
+  // 201 chunks missing after a 30-min timeout, restored from pre-dedup main.
+  const STAGING_DIR = `${OUT_DIR}.next`;
+  rmSync(STAGING_DIR, { recursive: true, force: true });
+  mkdirSync(STAGING_DIR, { recursive: true });
 
   const now = new Date().toISOString();
 
   // Static sitemap
   console.log("  [0.xml] static pages...");
   const staticEntries = await generateStaticSitemap();
-  writeFileSync(`${OUT_DIR}/0.xml`, buildSitemapXml(staticEntries));
+  writeFileSync(`${STAGING_DIR}/0.xml`, buildSitemapXml(staticEntries));
   console.log(`  [0.xml] ${staticEntries.length} URLs`);
 
   // Hubs sitemap
   console.log("  [hubs.xml] hub pages...");
   const hubsEntries = await generateHubsSitemap();
-  writeFileSync(`${OUT_DIR}/hubs.xml`, buildSitemapXml(hubsEntries));
+  writeFileSync(`${STAGING_DIR}/hubs.xml`, buildSitemapXml(hubsEntries));
   console.log(`  [hubs.xml] ${hubsEntries.length} URLs`);
 
   // Landlord sitemaps
@@ -470,7 +475,7 @@ async function fullGenerate() {
         landlordEntries.push({ url: `${BASE_URL}${landlordUrl(l.slug, city)}`, lastmod: l.updated_at ? new Date(l.updated_at).toISOString() : undefined, changefreq: "monthly", priority: 0.5 });
       }
       if (landlordEntries.length >= 10000) {
-        writeFileSync(`${OUT_DIR}/l-${landlordBatchIndex}.xml`, buildSitemapXml(landlordEntries));
+        writeFileSync(`${STAGING_DIR}/l-${landlordBatchIndex}.xml`, buildSitemapXml(landlordEntries));
         landlordUrls += landlordEntries.length;
         if (landlordBatchIndex % 20 === 0) console.log(`    l-${landlordBatchIndex}.xml (${landlordUrls.toLocaleString()} total)`);
         landlordBatchIndex++;
@@ -482,7 +487,7 @@ async function fullGenerate() {
   }
 
   if (landlordEntries.length > 0) {
-    writeFileSync(`${OUT_DIR}/l-${landlordBatchIndex}.xml`, buildSitemapXml(landlordEntries));
+    writeFileSync(`${STAGING_DIR}/l-${landlordBatchIndex}.xml`, buildSitemapXml(landlordEntries));
     landlordUrls += landlordEntries.length;
     landlordBatchIndex++;
   }
@@ -526,7 +531,7 @@ async function fullGenerate() {
           currentEntries.push({ url: `${BASE_URL}${buildingUrl(b, metroToCity(b.metro))}`, lastmod: b.updated_at ? new Date(b.updated_at).toISOString() : undefined, changefreq: "weekly", priority: 0.6 });
         }
         if (currentEntries.length >= URLS_PER_FILE) {
-          writeFileSync(`${OUT_DIR}/b-${batchIndex}.xml`, buildSitemapXml(currentEntries));
+          writeFileSync(`${STAGING_DIR}/b-${batchIndex}.xml`, buildSitemapXml(currentEntries));
           buildingUrls += currentEntries.length;
           if (batchIndex % 50 === 0) console.log(`    b-${batchIndex}.xml ✓ (${buildingUrls.toLocaleString()} total)`);
           batchIndex++;
@@ -539,13 +544,30 @@ async function fullGenerate() {
   }
 
   if (currentEntries.length > 0) {
-    writeFileSync(`${OUT_DIR}/b-${batchIndex}.xml`, buildSitemapXml(currentEntries));
+    writeFileSync(`${STAGING_DIR}/b-${batchIndex}.xml`, buildSitemapXml(currentEntries));
     buildingUrls += currentEntries.length;
     batchIndex++;
   }
   console.log(`  Buildings: ${buildingUrls.toLocaleString()} URLs across ${batchIndex} files`);
 
-  const fileCount = rebuildIndex();
+  // Write index.xml inside staging too, but skip the public/sitemap.xml
+  // mirror — that one moves only after the swap so robots.txt's target
+  // can't briefly reference chunks that don't exist yet.
+  const fileCount = rebuildIndex(STAGING_DIR, { writePublicMirror: false });
+
+  // Atomic-ish swap. POSIX `rename` is atomic per-path, so the two-step
+  // (OUT_DIR → BACKUP_DIR, STAGING_DIR → OUT_DIR) has a sub-ms window where
+  // OUT_DIR doesn't exist; readers during that window will 404 once and
+  // succeed on retry. This only runs at build time, never at request time.
+  const BACKUP_DIR = `${OUT_DIR}.prev`;
+  rmSync(BACKUP_DIR, { recursive: true, force: true });
+  if (existsSync(OUT_DIR)) renameSync(OUT_DIR, BACKUP_DIR);
+  renameSync(STAGING_DIR, OUT_DIR);
+  rmSync(BACKUP_DIR, { recursive: true, force: true });
+
+  // Now safe to publish the root-level mirror that robots.txt points at.
+  writeFileSync(`public/sitemap.xml`, readFileSync(`${OUT_DIR}/index.xml`, "utf8"));
+
   const totalUrls = staticEntries.length + landlordUrls + buildingUrls;
   const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
 
