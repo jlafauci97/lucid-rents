@@ -605,6 +605,22 @@ export async function regenerateAllToBlob(): Promise<RegenerateResult> {
   let landlordChunkCount = 0;
   let buildingChunkCount = 0;
 
+  // Rewrite index.xml referencing whatever's in `written` so far. Called at
+  // phase boundaries and every 10 chunks during streaming, so that even if
+  // the function is killed by maxDuration we never lose the index entirely —
+  // it always reflects the most recent successful checkpoint.
+  async function checkpointIndex(): Promise<void> {
+    try {
+      const indexEntries: IndexEntry[] = written.map((name) => ({ name, lastmod: now }));
+      indexEntries.sort((a, b) => order(a.name).localeCompare(order(b.name)));
+      await writeChunkToBlob("index.xml", buildSitemapIndex(indexEntries));
+    } catch (e) {
+      // Swallow — checkpoint failures shouldn't kill the cron. The final
+      // write at the end of this function will retry with the full set.
+      console.warn(`[regenerate-sitemaps] checkpoint index failed: ${(e as Error).message}`);
+    }
+  }
+
   // 0.xml
   try {
     const staticEntries = await generateStaticSitemap();
@@ -624,11 +640,12 @@ export async function regenerateAllToBlob(): Promise<RegenerateResult> {
   } catch (e) {
     errors.push(`hubs.xml: ${(e as Error).message}`);
   }
+  await checkpointIndex();
 
   // Landlord chunks — stream each chunk straight to Blob as it's generated.
   // Bounded memory (one chunk at a time) + partial-recovery: if the function
-  // dies mid-stream, every l-N.xml written before the failure stays in `written`
-  // and the index.xml below will reference it.
+  // dies mid-stream, every l-N.xml written before the failure stays in
+  // `written` and the most recent checkpoint index.xml references it.
   try {
     let i = 0;
     for await (const chunk of generateLandlordChunks()) {
@@ -637,15 +654,20 @@ export async function regenerateAllToBlob(): Promise<RegenerateResult> {
       written.push(name);
       console.log(`[regenerate-sitemaps] wrote ${name} (${chunk.length} bytes)`);
       i++;
+      if (i % 10 === 0) await checkpointIndex();
     }
     landlordChunkCount = i;
   } catch (e) {
     errors.push(`landlord chunks: ${(e as Error).message}`);
   }
+  await checkpointIndex();
 
-  // Building chunks — same streaming pattern. This is the one that timed out
-  // in the previous accumulate-then-write implementation: ~60 chunks of ~3MB
-  // each held in memory while ~600 sequential paginations ran.
+  // Building chunks — same streaming pattern. This is the phase that the
+  // accumulate-then-write implementation timed out in: ~60 chunks of ~3MB
+  // each held in memory while ~600 sequential paginations ran. Even with
+  // streaming the buildings phase can exceed maxDuration on the cron tier,
+  // so we re-checkpoint index every 10 chunks to ensure a usable index.xml
+  // always exists after a partial run.
   try {
     let i = 0;
     for await (const chunk of generateBuildingChunks()) {
@@ -654,15 +676,15 @@ export async function regenerateAllToBlob(): Promise<RegenerateResult> {
       written.push(name);
       console.log(`[regenerate-sitemaps] wrote ${name} (${chunk.length} bytes)`);
       i++;
+      if (i % 10 === 0) await checkpointIndex();
     }
     buildingChunkCount = i;
   } catch (e) {
     errors.push(`building chunks: ${(e as Error).message}`);
   }
 
-  // index.xml — must be written last so it only ever references chunks we
-  // actually managed to upload this run. Same crawl-priority sort as the
-  // legacy rebuildIndex() helper in scripts/generate-sitemaps.mjs.
+  // Final index write — covers any partial chunks since the last checkpoint
+  // boundary and ensures the index is consistent with the full `written` set.
   try {
     const indexEntries: IndexEntry[] = written.map((name) => ({ name, lastmod: now }));
     indexEntries.sort((a, b) => order(a.name).localeCompare(order(b.name)));
