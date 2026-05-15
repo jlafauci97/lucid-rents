@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { isValidCity } from "@/lib/cities";
 
 export async function GET(request: Request) {
@@ -15,7 +15,9 @@ export async function GET(request: Request) {
     sinceDate.setMonth(sinceDate.getMonth() - months);
     const sinceDateStr = sinceDate.toISOString().split("T")[0];
 
-    const supabase = await createClient();
+    // Non-cookies client so next.config.ts Cache-Control headers apply.
+    // crime_by_zip is a public RPC on aggregated data.
+    const supabase = createCacheClient();
 
     const rpcParams: Record<string, string> = { since_date: sinceDateStr };
     if (cityParam) rpcParams.metro = cityParam;

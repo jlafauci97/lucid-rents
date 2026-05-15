@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { NextRequest, NextResponse } from "next/server";
 
 interface RouteContext {
@@ -11,7 +11,9 @@ export async function GET(req: NextRequest, context: RouteContext) {
   const type = searchParams.get("type") || "hpd";
   const limit = parseInt(searchParams.get("limit") || "50", 10);
 
-  const supabase = await createClient();
+  // Non-cookies client so next.config.ts Cache-Control headers apply.
+  // Violations data is public.
+  const supabase = createCacheClient();
 
   if (type === "dob") {
     const { data, error } = await supabase

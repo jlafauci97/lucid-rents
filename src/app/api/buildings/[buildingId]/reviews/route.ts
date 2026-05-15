@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { NextRequest, NextResponse } from "next/server";
 
 interface RouteContext {
@@ -13,7 +13,9 @@ export async function GET(req: NextRequest, context: RouteContext) {
   const limit = 10;
   const offset = (page - 1) * limit;
 
-  const supabase = await createClient();
+  // Non-cookies client so next.config.ts Cache-Control headers apply.
+  // Reviews are public (filtered by status=published) — no auth context needed.
+  const supabase = createCacheClient();
 
   let query = supabase
     .from("reviews")

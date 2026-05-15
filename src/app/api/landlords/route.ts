@@ -1,5 +1,5 @@
 import { isValidCity } from "@/lib/cities";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
@@ -14,7 +14,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: `Invalid city: ${cityParam}` }, { status: 400 });
   }
 
-  const supabase = await createClient();
+  // Non-cookies client so next.config.ts Cache-Control headers apply.
+  // Landlord directory is fully public data.
+  const supabase = createCacheClient();
 
   // Determine sort column
   const sortColumns: Record<string, string> = {
