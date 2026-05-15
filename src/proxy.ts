@@ -14,7 +14,11 @@ const CITY_ROUTES = new Set([
   "building-list",
   "landlords",
   "landlord",
-  "search",
+  // "search" intentionally NOT here — `/search` is a top-level cross-city
+  // route added in #214 (referenced by the homepage WebSite SearchAction
+  // JSON-LD). The city-scoped equivalent lives at `/[city]/search` and
+  // doesn't pass through this redirect because the path already begins
+  // with a valid city segment.
   "worst-rated-buildings",
   "building-rankings",
   "crime",
