@@ -494,11 +494,13 @@ interface BuildingRow {
 }
 
 export async function* generateBuildingChunks(): AsyncGenerator<string> {
-  // 5000 rows per Supabase pagination — empirically ~2-3x faster than 1000
-  // since the per-request TLS + HTTP framing + Vercel↔Supabase round-trip
-  // dominates query time on the indexed `id > cursor` cursor scan. Keeping
-  // the cursor pattern, so the Postgres planner stays on the index.
-  const PAGE_SIZE = 5000;
+  // 10K rows per Supabase pagination. The buildings table is ~1.8M rows (200
+  // chunks of ~9K URLs each), so PAGE_SIZE=5000 needed ~360 sequential
+  // round-trips — pushing us past the 800s cron maxDuration even with the
+  // streaming + checkpoint patterns. 10K halves the round-trips. Service-role
+  // key bypasses PostgREST's default `db.max_rows` so larger LIMITs are safe.
+  // Cursor pattern preserved (Postgres planner stays on the index at LIMIT 10000).
+  const PAGE_SIZE = 10000;
   const URLS_PER_FILE = 10000;
   let pending: UrlEntry[] = [];
   let cursor = "00000000-0000-0000-0000-000000000000";
