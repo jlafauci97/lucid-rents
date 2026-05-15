@@ -238,6 +238,7 @@ async function generateStaticSitemap() {
     { path: "/contact", freq: "monthly", priority: 0.5 },
     { path: "/privacy", freq: "monthly", priority: 0.3 },
     { path: "/terms", freq: "monthly", priority: 0.3 },
+    { path: "/search", freq: "weekly", priority: 0.7 },
     { path: "/guides/nyc-tenant-rights", freq: "monthly", priority: 0.7 },
     { path: "/guides/la-tenant-rights", freq: "monthly", priority: 0.7 },
   ]) {

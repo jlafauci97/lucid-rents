@@ -133,6 +133,45 @@ const nextConfig: NextConfig = {
         { key: "Cache-Control", value: "public, s-maxage=300, stale-while-revalidate=1800" },
       ],
     },
+    // Cache building reviews, violations, nearby lookups
+    {
+      source: "/api/buildings/:buildingId/reviews",
+      headers: [
+        { key: "Cache-Control", value: "public, s-maxage=600, stale-while-revalidate=3600" },
+      ],
+    },
+    {
+      source: "/api/buildings/:buildingId/violations",
+      headers: [
+        { key: "Cache-Control", value: "public, s-maxage=1800, stale-while-revalidate=7200" },
+      ],
+    },
+    {
+      source: "/api/buildings/nearby",
+      headers: [
+        { key: "Cache-Control", value: "public, s-maxage=1800, stale-while-revalidate=7200" },
+      ],
+    },
+    // Crime by zip — slow-moving, daily refresh window
+    {
+      source: "/api/crime/by-zip",
+      headers: [
+        { key: "Cache-Control", value: "public, s-maxage=3600, stale-while-revalidate=86400" },
+      ],
+    },
+    // Landlord directory + per-landlord trends
+    {
+      source: "/api/landlords",
+      headers: [
+        { key: "Cache-Control", value: "public, s-maxage=600, stale-while-revalidate=1800" },
+      ],
+    },
+    {
+      source: "/api/landlords/:name/trends",
+      headers: [
+        { key: "Cache-Control", value: "public, s-maxage=1800, stale-while-revalidate=7200" },
+      ],
+    },
   ],
 };
 

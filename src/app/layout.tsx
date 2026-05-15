@@ -8,6 +8,7 @@ import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { ScrollToTopOnNav } from "@/components/layout/ScrollToTopOnNav";
+import { JsonLd } from "@/components/seo/JsonLd";
 
 const GA_MEASUREMENT_ID = "G-FS7Q3PF982";
 const ADSENSE_CLIENT_ID = "ca-pub-2908534121884582";
@@ -44,6 +45,23 @@ const SUPABASE_ORIGIN = (() => {
     return "https://supabase.co";
   }
 })();
+
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://lucidrents.com";
+
+const organizationSchema = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "Lucid Rents",
+  url: SITE_URL,
+  logo: `${SITE_URL}/lucid-rents-logo.png`,
+  description:
+    "Rental intelligence platform combining violations, complaints, crime data, and tenant reviews into one record per building across NYC, LA, Chicago, Miami, and Houston.",
+  sameAs: [
+    "https://www.instagram.com/lucid_rents/",
+    "https://x.com/LucidRents",
+    "https://www.tiktok.com/@lucid_rents",
+  ],
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://lucidrents.com"),
@@ -128,6 +146,7 @@ export default async function RootLayout({
         style={{ fontFamily: "var(--font-sora), system-ui, sans-serif" }}
       >
         <ScrollToTopOnNav />
+        <JsonLd data={organizationSchema} />
         <Navbar />
         <main className="min-h-[calc(100vh-64px-200px)]">{children}</main>
         <Footer />

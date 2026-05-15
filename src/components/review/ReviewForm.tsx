@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
@@ -8,12 +8,66 @@ import { Input } from "@/components/ui/Input";
 import { StarRating } from "@/components/ui/StarRating";
 import { Select } from "@/components/ui/Select";
 import { REVIEW_CATEGORIES, LEASE_TYPES } from "@/lib/constants";
-import { ChevronLeft, ChevronRight, Check, Search, MapPin, Loader2 } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Check,
+  Search,
+  MapPin,
+  Loader2,
+  AlertCircle,
+  SearchX,
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import type { Building } from "@/types";
 import { useDebounce } from "@/hooks/useDebounce";
-import { useEffect, useRef } from "react";
 import { buildingUrl } from "@/lib/seo";
 import { useCity } from "@/lib/city-context";
+
+const BODY_MIN = 10;
+const BODY_MAX = 5000;
+const BODY_NEAR_LIMIT = 4800;
+
+type BodyState = "empty" | "tooShort" | "valid" | "nearLimit" | "atLimit";
+
+function getBodyState(length: number): BodyState {
+  if (length === 0) return "empty";
+  if (length < BODY_MIN) return "tooShort";
+  if (length >= BODY_MAX) return "atLimit";
+  if (length >= BODY_NEAR_LIMIT) return "nearLimit";
+  return "valid";
+}
+
+function getBodyCounterMessage(length: number): string {
+  const state = getBodyState(length);
+  switch (state) {
+    case "empty":
+      return `0/${BODY_MAX} characters (minimum ${BODY_MIN})`;
+    case "tooShort":
+      return `${length}/${BODY_MAX} characters — ${BODY_MIN - length} more needed`;
+    case "atLimit":
+      return `${BODY_MAX}/${BODY_MAX} characters — limit reached`;
+    case "nearLimit":
+      return `${length}/${BODY_MAX} characters — approaching limit`;
+    default:
+      return `${length}/${BODY_MAX} characters`;
+  }
+}
+
+function getBodyCounterClass(state: BodyState): string {
+  switch (state) {
+    case "tooShort":
+      return "text-rose-600";
+    case "atLimit":
+      return "text-rose-600";
+    case "nearLimit":
+      return "text-amber-600";
+    case "valid":
+      return "text-emerald-600";
+    default:
+      return "text-[#94a3b8]";
+  }
+}
 
 interface CategoryRating {
   category_slug: string;
@@ -41,7 +95,9 @@ export function ReviewForm({ preselectedBuildingId, categories }: ReviewFormProp
   const [buildingResults, setBuildingResults] = useState<Building[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
   const [selectedBuilding, setSelectedBuilding] = useState<Building | null>(null);
+  const [justSelectedBuilding, setJustSelectedBuilding] = useState(false);
   const [unitNumber, setUnitNumber] = useState("");
   const [isCurrentResident, setIsCurrentResident] = useState(true);
   const searchRef = useRef<HTMLDivElement>(null);
@@ -71,6 +127,7 @@ export function ReviewForm({ preselectedBuildingId, categories }: ReviewFormProp
     if (debouncedSearch.length < 2) {
       setBuildingResults([]);
       setSearchOpen(false);
+      setHasSearched(false);
       return;
     }
     setSearchLoading(true);
@@ -79,8 +136,12 @@ export function ReviewForm({ preselectedBuildingId, categories }: ReviewFormProp
       .then((data) => {
         setBuildingResults(data.buildings || []);
         setSearchOpen(true);
+        setHasSearched(true);
       })
-      .catch(() => setBuildingResults([]))
+      .catch(() => {
+        setBuildingResults([]);
+        setHasSearched(true);
+      })
       .finally(() => setSearchLoading(false));
   }, [debouncedSearch]);
 
@@ -109,6 +170,31 @@ export function ReviewForm({ preselectedBuildingId, categories }: ReviewFormProp
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
+
+  // Auto-clear submit error when user edits any field after a failed submit
+  useEffect(() => {
+    if (error) setError("");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    selectedBuilding?.id,
+    unitNumber,
+    isCurrentResident,
+    overallRating,
+    title,
+    body,
+    rentAmount,
+    moveInDate,
+    moveOutDate,
+    leaseType,
+    categoryRatings,
+  ]);
+
+  // Reset one-time building selection highlight after it plays
+  useEffect(() => {
+    if (!justSelectedBuilding) return;
+    const t = setTimeout(() => setJustSelectedBuilding(false), 1600);
+    return () => clearTimeout(t);
+  }, [justSelectedBuilding]);
 
   function updateCategoryRating(slug: string, rating: number) {
     setCategoryRatings((prev) =>
@@ -218,6 +304,40 @@ export function ReviewForm({ preselectedBuildingId, categories }: ReviewFormProp
         ))}
       </div>
 
+      {/* Submit / validation error banner */}
+      <AnimatePresence>
+        {error && (
+          <motion.div
+            key="review-form-error"
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            role="alert"
+            aria-live="assertive"
+            className="sticky top-2 z-20 mb-6 flex items-start gap-3 rounded-lg border-2 border-rose-300 bg-rose-50 px-4 py-3 shadow-md"
+          >
+            <AlertCircle className="w-5 h-5 text-rose-600 mt-0.5 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-rose-900">
+                We couldn&apos;t submit your review
+              </p>
+              <p className="text-sm text-rose-800 mt-0.5 break-words">
+                {error}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setError("")}
+              aria-label="Dismiss error"
+              className="text-rose-600 hover:text-rose-900 text-lg leading-none px-1"
+            >
+              &times;
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Step 0: Building Selection */}
       {step === 0 && (
         <div className="space-y-6">
@@ -226,7 +346,16 @@ export function ReviewForm({ preselectedBuildingId, categories }: ReviewFormProp
           </h2>
 
           {selectedBuilding ? (
-            <div className="bg-white rounded-xl border border-[#e2e8f0] p-4 flex items-center justify-between">
+            <motion.div
+              initial={
+                justSelectedBuilding
+                  ? { boxShadow: "0 0 0 4px rgba(59, 130, 246, 0.45)" }
+                  : false
+              }
+              animate={{ boxShadow: "0 0 0 0px rgba(59, 130, 246, 0)" }}
+              transition={{ duration: 1.2, ease: "easeOut" }}
+              className="bg-white rounded-xl border border-[#e2e8f0] p-4 flex items-center justify-between"
+            >
               <div className="flex items-center gap-3">
                 <MapPin className="w-5 h-5 text-[#3B82F6]" />
                 <div>
@@ -245,7 +374,7 @@ export function ReviewForm({ preselectedBuildingId, categories }: ReviewFormProp
               >
                 Change
               </button>
-            </div>
+            </motion.div>
           ) : (
             <div ref={searchRef} className="relative">
               <div className="relative">
@@ -254,8 +383,11 @@ export function ReviewForm({ preselectedBuildingId, categories }: ReviewFormProp
                   type="text"
                   value={buildingSearch}
                   onChange={(e) => setBuildingSearch(e.target.value)}
-                  onFocus={() => buildingResults.length > 0 && setSearchOpen(true)}
+                  onFocus={() =>
+                    (buildingResults.length > 0 || hasSearched) && setSearchOpen(true)
+                  }
                   placeholder="Search for your building address..."
+                  aria-label="Search for your building address"
                   className="w-full pl-10 pr-4 py-3 rounded-lg border border-[#e2e8f0] bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
                 />
                 {searchLoading && (
@@ -270,8 +402,10 @@ export function ReviewForm({ preselectedBuildingId, categories }: ReviewFormProp
                       type="button"
                       onClick={() => {
                         setSelectedBuilding(b);
+                        setJustSelectedBuilding(true);
                         setSearchOpen(false);
                         setBuildingSearch("");
+                        setHasSearched(false);
                       }}
                       className="w-full text-left px-4 py-3 hover:bg-gray-50 text-sm"
                     >
@@ -281,6 +415,36 @@ export function ReviewForm({ preselectedBuildingId, categories }: ReviewFormProp
                   ))}
                 </div>
               )}
+              {searchOpen &&
+                !searchLoading &&
+                hasSearched &&
+                buildingResults.length === 0 &&
+                debouncedSearch.length >= 2 && (
+                  <div
+                    role="status"
+                    className="absolute z-10 w-full mt-1 bg-white rounded-lg border border-[#e2e8f0] shadow-lg p-5"
+                  >
+                    <div className="flex items-start gap-3">
+                      <SearchX className="w-5 h-5 text-[#94a3b8] mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-semibold text-[#0F1D2E]">
+                          No buildings found
+                        </p>
+                        <p className="text-xs text-[#64748b] mt-1 leading-relaxed">
+                          Try a different address or check spelling. Buildings
+                          are available in NYC, LA, Chicago, Miami, and Houston.
+                        </p>
+                        <p className="text-xs text-[#94a3b8] mt-2">
+                          Tip: include the street number, e.g.{" "}
+                          <span className="font-mono text-[#0F1D2E]">
+                            123 Main St
+                          </span>
+                          .
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
             </div>
           )}
 
@@ -417,20 +581,47 @@ export function ReviewForm({ preselectedBuildingId, categories }: ReviewFormProp
           />
 
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-[#0F1D2E]">
+            <label
+              htmlFor="review-body"
+              className="block text-sm font-medium text-[#0F1D2E]"
+            >
               Your Review *
             </label>
-            <textarea
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              placeholder="Tell future renters what it's really like living here. Be specific about what you liked and didn't like..."
-              rows={6}
-              className="w-full rounded-lg border border-[#e2e8f0] bg-white px-3 py-2 text-sm text-[#0F1D2E] placeholder:text-[#94a3b8] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
-              required
-            />
-            <p className="text-xs text-[#94a3b8]">
-              {body.length}/5000 characters (minimum 10)
-            </p>
+            {(() => {
+              const bodyState = getBodyState(body.length);
+              const showError = bodyState === "tooShort";
+              const showAtLimit = bodyState === "atLimit";
+              const borderClass = showError
+                ? "border-rose-400 focus:ring-rose-500"
+                : showAtLimit
+                ? "border-rose-300 focus:ring-rose-500"
+                : "border-[#e2e8f0] focus:ring-[#3B82F6]";
+              return (
+                <>
+                  <textarea
+                    id="review-body"
+                    value={body}
+                    onChange={(e) =>
+                      setBody(e.target.value.slice(0, BODY_MAX))
+                    }
+                    placeholder="Tell future renters what it's really like living here. Be specific about what you liked and didn't like..."
+                    rows={6}
+                    maxLength={BODY_MAX}
+                    aria-invalid={showError || undefined}
+                    aria-describedby="review-body-counter"
+                    className={`w-full rounded-lg border ${borderClass} bg-white px-3 py-2 text-sm text-[#0F1D2E] placeholder:text-[#94a3b8] focus:outline-none focus:ring-2 transition-colors`}
+                    required
+                  />
+                  <p
+                    id="review-body-counter"
+                    aria-live="polite"
+                    className={`text-xs tabular-nums ${getBodyCounterClass(bodyState)}`}
+                  >
+                    {getBodyCounterMessage(body.length)}
+                  </p>
+                </>
+              );
+            })()}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -544,13 +735,6 @@ export function ReviewForm({ preselectedBuildingId, categories }: ReviewFormProp
               </div>
             )}
           </div>
-        </div>
-      )}
-
-      {/* Error */}
-      {error && (
-        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-[#ef4444]">
-          {error}
         </div>
       )}
 
