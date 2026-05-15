@@ -494,7 +494,11 @@ interface BuildingRow {
 }
 
 export async function* generateBuildingChunks(): AsyncGenerator<string> {
-  const PAGE_SIZE = 1000;
+  // 5000 rows per Supabase pagination — empirically ~2-3x faster than 1000
+  // since the per-request TLS + HTTP framing + Vercel↔Supabase round-trip
+  // dominates query time on the indexed `id > cursor` cursor scan. Keeping
+  // the cursor pattern, so the Postgres planner stays on the index.
+  const PAGE_SIZE = 5000;
   const URLS_PER_FILE = 10000;
   let pending: UrlEntry[] = [];
   let cursor = "00000000-0000-0000-0000-000000000000";
