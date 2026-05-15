@@ -449,9 +449,8 @@ interface LandlordRow {
   updated_at: string | null;
 }
 
-export async function generateLandlordChunks(): Promise<string[]> {
+export async function* generateLandlordChunks(): AsyncGenerator<string> {
   const URLS_PER_FILE = 10000;
-  const chunks: string[] = [];
   let pending: UrlEntry[] = [];
   let cursor = "00000000-0000-0000-0000-000000000000";
 
@@ -472,7 +471,7 @@ export async function generateLandlordChunks(): Promise<string[]> {
         });
       }
       if (pending.length >= URLS_PER_FILE) {
-        chunks.push(buildSitemapXml(pending));
+        yield buildSitemapXml(pending);
         pending = [];
       }
     }
@@ -480,9 +479,8 @@ export async function generateLandlordChunks(): Promise<string[]> {
     if (rows.length < 1000) break;
   }
   if (pending.length > 0) {
-    chunks.push(buildSitemapXml(pending));
+    yield buildSitemapXml(pending);
   }
-  return chunks;
 }
 
 // ─── Building chunks (b-N.xml) ─────────────────────────────────
@@ -495,10 +493,9 @@ interface BuildingRow {
   updated_at: string | null;
 }
 
-export async function generateBuildingChunks(): Promise<string[]> {
+export async function* generateBuildingChunks(): AsyncGenerator<string> {
   const PAGE_SIZE = 1000;
   const URLS_PER_FILE = 10000;
-  const chunks: string[] = [];
   let pending: UrlEntry[] = [];
   let cursor = "00000000-0000-0000-0000-000000000000";
   let done = false;
@@ -521,7 +518,7 @@ export async function generateBuildingChunks(): Promise<string[]> {
         });
       }
       if (pending.length >= URLS_PER_FILE) {
-        chunks.push(buildSitemapXml(pending));
+        yield buildSitemapXml(pending);
         pending = [];
       }
     }
@@ -529,9 +526,8 @@ export async function generateBuildingChunks(): Promise<string[]> {
     if (rows.length < PAGE_SIZE) done = true;
   }
   if (pending.length > 0) {
-    chunks.push(buildSitemapXml(pending));
+    yield buildSitemapXml(pending);
   }
-  return chunks;
 }
 
 // ─── Single-chunk generator (for verify script) ────────────────
@@ -550,17 +546,23 @@ export async function generateChunk(name: string): Promise<string> {
   }
   const b = name.match(/^b-(\d+)\.xml$/);
   if (b) {
-    const chunks = await generateBuildingChunks();
     const idx = Number(b[1]);
-    if (idx >= chunks.length) throw new Error(`Chunk ${name} out of range (have ${chunks.length})`);
-    return chunks[idx];
+    let i = 0;
+    for await (const chunk of generateBuildingChunks()) {
+      if (i === idx) return chunk;
+      i++;
+    }
+    throw new Error(`Chunk ${name} out of range (have ${i})`);
   }
   const l = name.match(/^l-(\d+)\.xml$/);
   if (l) {
-    const chunks = await generateLandlordChunks();
     const idx = Number(l[1]);
-    if (idx >= chunks.length) throw new Error(`Chunk ${name} out of range (have ${chunks.length})`);
-    return chunks[idx];
+    let i = 0;
+    for await (const chunk of generateLandlordChunks()) {
+      if (i === idx) return chunk;
+      i++;
+    }
+    throw new Error(`Chunk ${name} out of range (have ${i})`);
   }
   throw new Error(`Unknown chunk: ${name}`);
 }
@@ -623,28 +625,37 @@ export async function regenerateAllToBlob(): Promise<RegenerateResult> {
     errors.push(`hubs.xml: ${(e as Error).message}`);
   }
 
-  // landlord chunks
+  // Landlord chunks — stream each chunk straight to Blob as it's generated.
+  // Bounded memory (one chunk at a time) + partial-recovery: if the function
+  // dies mid-stream, every l-N.xml written before the failure stays in `written`
+  // and the index.xml below will reference it.
   try {
-    const lChunks = await generateLandlordChunks();
-    landlordChunkCount = lChunks.length;
-    for (let i = 0; i < lChunks.length; i++) {
+    let i = 0;
+    for await (const chunk of generateLandlordChunks()) {
       const name = `l-${i}.xml`;
-      await writeChunkToBlob(name, lChunks[i]);
+      await writeChunkToBlob(name, chunk);
       written.push(name);
+      console.log(`[regenerate-sitemaps] wrote ${name} (${chunk.length} bytes)`);
+      i++;
     }
+    landlordChunkCount = i;
   } catch (e) {
     errors.push(`landlord chunks: ${(e as Error).message}`);
   }
 
-  // building chunks
+  // Building chunks — same streaming pattern. This is the one that timed out
+  // in the previous accumulate-then-write implementation: ~60 chunks of ~3MB
+  // each held in memory while ~600 sequential paginations ran.
   try {
-    const bChunks = await generateBuildingChunks();
-    buildingChunkCount = bChunks.length;
-    for (let i = 0; i < bChunks.length; i++) {
+    let i = 0;
+    for await (const chunk of generateBuildingChunks()) {
       const name = `b-${i}.xml`;
-      await writeChunkToBlob(name, bChunks[i]);
+      await writeChunkToBlob(name, chunk);
       written.push(name);
+      console.log(`[regenerate-sitemaps] wrote ${name} (${chunk.length} bytes)`);
+      i++;
     }
+    buildingChunkCount = i;
   } catch (e) {
     errors.push(`building chunks: ${(e as Error).message}`);
   }
