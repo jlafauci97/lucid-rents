@@ -4,10 +4,17 @@ import { head } from "@vercel/blob";
 import { BLOB_PREFIX, isValidChunkName } from "@/lib/sitemap/generator";
 
 export const runtime = "nodejs";
-export const dynamic = "force-static";
-export const revalidate = 86400;
+// Dynamic so each chunk request reads the current Blob version. The cron
+// regenerates chunks (and the index) daily, and checkpointIndex() can rewrite
+// index.xml multiple times during a single run — caching the route response
+// for 24h would hide those mid-run updates and stale state on partial runs.
+// We rely on the Cache-Control below for edge caching with a much shorter
+// freshness window than the Blob's own cache.
+export const dynamic = "force-dynamic";
 
-const CACHE_CONTROL = "public, s-maxage=86400, stale-while-revalidate=604800";
+// 1h fresh + 24h SWR. Worst-case staleness after a nightly cron run: 1h.
+// Crawlers (Google) still get instant responses thanks to the SWR window.
+const CACHE_CONTROL = "public, s-maxage=3600, stale-while-revalidate=86400";
 
 export async function GET(
   _req: Request,
