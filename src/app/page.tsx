@@ -655,6 +655,14 @@ export default async function Home() {
           url: canonicalUrl("/"),
           description:
             "Per-city directory of building records, worst landlords, live activity, and rent data across NYC, LA, Chicago, Miami, and Houston.",
+          potentialAction: {
+            "@type": "SearchAction",
+            target: {
+              "@type": "EntryPoint",
+              urlTemplate: canonicalUrl("/search?q={search_term_string}"),
+            },
+            "query-input": "required name=search_term_string",
+          },
         }}
       />
 

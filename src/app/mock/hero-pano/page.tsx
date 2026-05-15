@@ -49,12 +49,12 @@ const panels: { key: City; image?: string; stats: { label: string; value: string
     { label: "Open viol.", value: "198K" },
     { label: "Landlords", value: "8.2K" },
   ] },
-  { key: "miami", image: "/miami-hero-skyline.avif", stats: [
+  { key: "miami", image: "/miami-hero-skyline.webp", stats: [
     { label: "Buildings", value: "94.7K" },
     { label: "Complaints", value: "76K" },
     { label: "Landlords", value: "3.4K" },
   ] },
-  { key: "houston", image: "/houston-hero-skyline.png", stats: [
+  { key: "houston", image: "/houston-hero-skyline.webp", stats: [
     { label: "Buildings", value: "411K" },
     { label: "311 calls", value: "132K" },
     { label: "Landlords", value: "6.8K" },
@@ -149,7 +149,7 @@ const cityDirectories: CityDirectory[] = [
   },
   {
     key: "miami",
-    image: "/miami-hero-skyline.avif",
+    image: "/miami-hero-skyline.webp",
     stat: "94.7K",
     statLabel: "buildings",
     signature: "37 neighborhoods · 40-Yr + FEMA",
@@ -163,7 +163,7 @@ const cityDirectories: CityDirectory[] = [
   },
   {
     key: "houston",
-    image: "/houston-hero-skyline.png",
+    image: "/houston-hero-skyline.webp",
     stat: "411K",
     statLabel: "buildings",
     signature: "41 neighborhoods · HCAD + FEMA",

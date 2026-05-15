@@ -84,6 +84,7 @@ export function NavCityPicker({ currentCity }: Props) {
                 href={`/${meta.urlPrefix}`}
                 role="option"
                 aria-selected={isActive}
+                aria-current={isActive ? "true" : undefined}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -98,6 +99,19 @@ export function NavCityPicker({ currentCity }: Props) {
                 }}
                 onClick={() => setOpen(false)}
               >
+                <span
+                  aria-hidden={!isActive}
+                  style={{
+                    width: 12,
+                    display: "inline-flex",
+                    justifyContent: "center",
+                    color: "#60a5fa",
+                    fontSize: 12,
+                    fontWeight: 700,
+                  }}
+                >
+                  {isActive ? "✓" : ""}
+                </span>
                 <span style={{ flex: 1 }}>{meta.fullName}</span>
                 <span style={{ opacity: 0.55, fontFamily: "var(--mono)", fontSize: 11 }}>{meta.stateCode}</span>
               </Link>
