@@ -46,27 +46,27 @@ const panels: { key: City; image?: string; stats: { label: string; value: string
   { key: "nyc", image: "/nyc-empire-skyline.webp", stats: [
     { label: "Buildings", value: "954K" },
     { label: "Open viol.", value: "4.4M" },
-    { label: "Landlords", value: "18.3K" },
+    { label: "Landlords", value: "629K" },
   ] },
   { key: "los-angeles", image: "/la-hero-skyline.webp", stats: [
     { label: "Buildings", value: "479K" },
     { label: "Complaints", value: "412K" },
-    { label: "Landlords", value: "14.1K" },
+    { label: "Landlords", value: "135K" },
   ] },
   { key: "chicago", image: "/chicago-hero-skyline.webp", stats: [
     { label: "Buildings", value: "319K" },
     { label: "Open viol.", value: "198K" },
-    { label: "Landlords", value: "8.2K" },
+    { label: "Landlords", value: "105K" },
   ] },
   { key: "miami", image: "/miami-hero-skyline.webp", stats: [
     { label: "Buildings", value: "94.7K" },
     { label: "Complaints", value: "76K" },
-    { label: "Landlords", value: "3.4K" },
+    { label: "Landlords", value: "63K" },
   ] },
   { key: "houston", image: "/houston-hero-skyline.webp", stats: [
     { label: "Buildings", value: "411K" },
     { label: "311 calls", value: "132K" },
-    { label: "Landlords", value: "6.8K" },
+    { label: "Landlords", value: "135K" },
   ] },
 ];
 
@@ -122,7 +122,7 @@ const cityDirectories: CityDirectory[] = [
     signature: "5 boroughs · HPD + DOB",
     chips: [
       { label: "All buildings",      path: "/buildings",          icon: Building2,  count: "954K" },
-      { label: "Worst landlords",    path: "/landlords",          icon: Trophy,     count: "18K"  },
+      { label: "Worst landlords",    path: "/landlords",          icon: Trophy,     count: "629K" },
       { label: "Crime by zip",       path: "/crime",              icon: MapPin                    },
       { label: "Rent stabilization", path: "/rent-stabilization", icon: Shield,     count: "712K" },
       { label: "Scaffolding",        path: "/scaffolding",        icon: Wrench                    },
@@ -136,7 +136,7 @@ const cityDirectories: CityDirectory[] = [
     signature: "51 neighborhoods · LAHD + LADBS",
     chips: [
       { label: "All buildings",       path: "/buildings",            icon: Building2,  count: "479K" },
-      { label: "Worst landlords",     path: "/landlords",            icon: Trophy,     count: "14K"  },
+      { label: "Worst landlords",     path: "/landlords",            icon: Trophy,     count: "135K" },
       { label: "Soft-story risk",     path: "/seismic-fire-safety",  icon: Flame,      count: "13K"  },
       { label: "Homeless encampments", path: "/encampments",         icon: Tent,       count: "26K"  },
       { label: "Crime by division",   path: "/crime",                icon: MapPin                    },
@@ -150,7 +150,7 @@ const cityDirectories: CityDirectory[] = [
     signature: "41 neighborhoods · RLTO + Energy",
     chips: [
       { label: "All buildings",     path: "/buildings",       icon: Building2,  count: "319K" },
-      { label: "Worst landlords",   path: "/landlords",       icon: Trophy,     count: "8.2K" },
+      { label: "Worst landlords",   path: "/landlords",       icon: Trophy,     count: "105K" },
       { label: "Heating tracker",     path: "/heating-tracker",    icon: Flame                     },
       { label: "Crime by district",   path: "/crime",              icon: MapPin                    },
       { label: "Affordable housing",  path: "/affordable-housing", icon: Calculator                },
@@ -167,7 +167,7 @@ const cityDirectories: CityDirectory[] = [
       { label: "Crime by neighborhood", path: "/crime",                  icon: MapPin                       },
       { label: "Worst-rated buildings", path: "/building-rankings",  icon: TrendingDown                 },
       { label: "Tenant rights",         path: "/tenant-rights",          icon: Scale                        },
-      { label: "Worst landlords",       path: "/landlords",              icon: Trophy,       count: "3.4K"  },
+      { label: "Worst landlords",       path: "/landlords",              icon: Trophy,       count: "63K"   },
     ],
   },
   {
@@ -178,7 +178,7 @@ const cityDirectories: CityDirectory[] = [
     signature: "41 neighborhoods · HCAD + FEMA",
     chips: [
       { label: "All buildings",         path: "/buildings",             icon: Building2,    count: "411K" },
-      { label: "Worst landlords",       path: "/landlords",             icon: Trophy,       count: "6.8K" },
+      { label: "Worst landlords",       path: "/landlords",             icon: Trophy,       count: "135K" },
       { label: "Neighborhoods",         path: "/neighborhoods",         icon: Compass                    },
       { label: "Crime by district",     path: "/crime",                 icon: MapPin                    },
       { label: "Worst-rated buildings", path: "/building-rankings", icon: TrendingDown               },
