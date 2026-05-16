@@ -159,8 +159,24 @@ async function supabaseFetch(path) {
       }
       return res.json();
     } catch (err) {
-      if (attempt < 4 && (err.message?.includes("500") || err.cause?.code === "UND_ERR_SOCKET")) {
-        console.log(`    Retry ${attempt + 1}/5 for ${path.slice(0, 60)}...`);
+      // Retry on transient network/connection failures:
+      // - 5xx (already caught above, but also bubbles via thrown Error message)
+      // - UND_ERR_SOCKET — undici raw socket error
+      // - "terminated" — undici closes the connection mid-stream (common during long pagination runs)
+      // - "fetch failed" — generic undici wrapper for connection-level issues
+      // - ECONNRESET / ETIMEDOUT / ENOTFOUND — DNS / TCP-level transient errors
+      const msg = err.message ?? "";
+      const causeCode = err.cause?.code ?? "";
+      const isTransient =
+        msg.includes("500") ||
+        msg.includes("terminated") ||
+        msg.includes("fetch failed") ||
+        causeCode === "UND_ERR_SOCKET" ||
+        causeCode === "ECONNRESET" ||
+        causeCode === "ETIMEDOUT" ||
+        causeCode === "ENOTFOUND";
+      if (attempt < 4 && isTransient) {
+        console.log(`    Retry ${attempt + 1}/5 for ${path.slice(0, 60)}... (${msg || causeCode})`);
         await new Promise(r => setTimeout(r, 3000 * (attempt + 1)));
         continue;
       }
@@ -380,7 +396,7 @@ async function generateHubsSitemap() {
 
 // ─── Main ───────────────────────────────────────────────────────
 
-const SITEMAP_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes max for entire sitemap generation
+const SITEMAP_TIMEOUT_MS = 180 * 60 * 1000; // 3 hours — accommodates full regen of the ~1.8M building dataset over slow local networks (was 30 min, which silently exited before buildings phase completed)
 
 // ─── Progress helpers ──────────────────────────────────────────
 
