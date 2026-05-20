@@ -62,9 +62,9 @@ Add a 6th card to the tenant-tools hub grid (`src/app/[city]/tenant-tools/page.t
 
 | Sub-category | Data source |
 |---|---|
-| **Sirens (FDNY · NYPD · ER)** | NYC FDNY firehouse list + NYPD precinct list + DOHMH hospital list, filtered to active ER bays |
-| **Active construction** | Existing DOB job filings we already sync. Filter: status = "in progress", filed within last 90 days, job description matches construction-noise keywords |
-| **Elevated train / highway proximity** | NYC LION shapefile for above-ground subway segments + FHWA NHS for highway segments. Buffer derivation: <300 ft = "on this block", <0.25 mi = nearby |
+| **Sirens (FDNY · NYPD · ER)** | NYC FDNY firehouse list + NYPD precinct list + DOHMH hospital list, filtered to active ER bays. **One unified `sub_category = 'sirens'`** — each facility is one row, with the originating institution in `metadata.facility_type` (`'firehouse'` / `'precinct'` / `'hospital_er'`). UI collapses them into a single "Sirens" block but the item list distinguishes per-row. |
+| **Active construction** | Existing DOB job filings we already sync. Filter: status = "in progress", filed within last 90 days, job description matches construction-noise keywords. `sub_category = 'active_construction'`. |
+| **Elevated train / highway proximity** | NYC LION shapefile for above-ground subway segments + FHWA NHS for highway segments. **Line-to-point derivation**: at sync time, sample one point every ~150 ft along each segment, store as separate `nearby_concerns` rows with `sub_category = 'elevated_rail'` or `'highway'`. `metadata` carries `segment_id` and `direction` so we can de-duplicate the same line at render time. This keeps the schema point-only and lets us use the same `ST_DWithin` query everywhere. |
 
 ### 3.3 Section C — Environmental / air quality (color: green `#10B981`)
 
@@ -95,7 +95,9 @@ A single unified POI table. All Tier-1 and Tier-2 syncs write here. Block-level 
 CREATE TABLE nearby_concerns (
   id BIGSERIAL PRIMARY KEY,
   metro TEXT NOT NULL,                 -- 'nyc' (later: 'los-angeles', 'chicago', 'miami')
-  category TEXT NOT NULL,              -- 'public_safety' | 'noise' | 'environmental'
+  category TEXT NOT NULL CHECK (category IN ('public_safety', 'noise', 'environmental')),
+  -- Note: Section D ('block_level') is NOT stored here — it's queried live from
+  -- existing tables (nyc_311, hpd_bedbugs, dohmh_rats) at render time.
   sub_category TEXT NOT NULL,          -- 'homeless_shelter_adult' | 'migrant_reception' | etc.
   name TEXT NOT NULL,
   address TEXT,
@@ -209,7 +211,7 @@ Each module:
 2. Normalizes to `nearby_concerns` row shape (or `sex_offender_locations_restricted` for that one)
 3. Upserts by `(source, source_record_id)`
 4. Marks rows it didn't see as `active = FALSE` (soft-delete, never hard-delete)
-5. Logs row counts to a sync-log table for monitoring
+5. Logs row counts to the existing `sync_log` table (already used by `sync-energy`, `sync` orchestrator, etc.). Each module inserts a row per run with `source = 'nearby-concerns-shelters-coalition'` (etc.), `records_synced`, `completed_at`, and `status`
 
 **No robots.txt / TOS gating** per Tier 2 sources. (Per user direction.)
 
@@ -291,7 +293,7 @@ penalties:
   for each environmental POI within 0.25 mi:  -0.6
   for each environmental POI within 0.75 mi:  -0.2
 
-block-level (relative to NYC median per-block density):
+block-level (relative to NYC median within a 0.25 mi circle):
   311 noise ≥ 1.5× median:   -0.5
   311 noise ≥ 3.0× median:   additional -0.5
   rat failures ≥ 1.5× median: -0.5
@@ -299,6 +301,22 @@ block-level (relative to NYC median per-block density):
 
 clamp to [0.0, 10.0], round to 1 decimal
 ```
+
+**Baseline definition:** "NYC median" = the median count returned by the same
+`ST_DWithin(..., 0.25 mi)` query when run against the centroid of every NYC
+building in our `buildings` table. Pre-computed offline once per quarter
+(or when 311/rat/bedbug volumes meaningfully shift) and stored as constants in
+a new `calm_score_baselines` table:
+
+```sql
+CREATE TABLE calm_score_baselines (
+  metric TEXT PRIMARY KEY,             -- 'nyc_noise_311_90d' | 'nyc_rats_12mo' | 'nyc_bedbugs_3y'
+  median_value NUMERIC NOT NULL,
+  computed_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+The first compute runs as a one-shot script (`scripts/compute-calm-score-baselines.mjs`).
 
 Stored as a computed column in the results page query — not cached at sync time, because it depends on the building's lat/lng. Cheap to compute live (PostGIS index + a count) and re-runs on each ISR revalidation.
 
