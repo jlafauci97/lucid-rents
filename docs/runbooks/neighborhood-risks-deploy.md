@@ -192,11 +192,80 @@ Migrations can stay applied — they're additive and don't affect anything else.
 
 ---
 
+## Step 8 — Set up Python scrapers (GitHub Actions)
+
+Six additional sources populate `nearby_concerns` via scrapling-based Python scripts that run weekly on GitHub Actions:
+
+- `scrape-coalition-homeless.py` — Coalition for the Homeless directory
+- `scrape-faithbased-shelters.py` — Bowery Mission, Father's Heart, NYC Rescue Mission
+- `scrape-oasas-methadone.py` — NYS OASAS methadone clinics
+- `scrape-herrc-migrant-centers.py` — hardcoded list of HERRCs + asylum hotels
+- `scrape-nypd-precincts.py` — 77 NYPD precinct station addresses
+- `scrape-bop-halfway-houses.py` — Federal BOP RRCs (with hardcoded fallback)
+
+**Setup (one-time):**
+
+1. Add GitHub repo secrets (Settings → Secrets and variables → Actions):
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+2. Workflow is at `.github/workflows/scrape-neighborhood-risks.yml`. Already on schedule: Sundays 06:00 UTC (one hour before the Vercel Socrata sync cron).
+
+**Initial backfill — run all 6 manually:**
+
+```bash
+gh workflow run scrape-neighborhood-risks.yml -f source=all
+```
+
+Or run them locally to spot-check parsed output before letting GH Actions touch the DB:
+
+```bash
+pip install "scrapling[all]" supabase requests
+playwright install --with-deps chromium
+scrapling install
+
+# Each one supports --dry-run for safe local testing:
+python3 scripts/scrape-herrc-migrant-centers.py --dry-run
+python3 scripts/scrape-coalition-homeless.py --dry-run
+# ... etc.
+```
+
+**Verify after the first weekly run:**
+
+```sql
+SELECT source, count(*) FROM nearby_concerns
+WHERE source IN (
+  'coalition_for_homeless', 'faithbased_shelters_nyc', 'nys_oasas',
+  'nyc_herrc_tracker', 'nypd_precinct_directory', 'federal_bop_rrc'
+)
+AND active = TRUE
+GROUP BY source ORDER BY count DESC;
+```
+
+Expected (rough order of magnitude):
+- `nypd_precinct_directory`: 77 rows
+- `nyc_herrc_tracker`: 8 rows (hardcoded list)
+- `federal_bop_rrc`: 3-5 rows
+- `coalition_for_homeless`, `faithbased_shelters_nyc`, `nys_oasas`: highly variable depending on site structure stability — likely single-digit to low-double-digit at first, will need parser tuning to capture more
+
+**Tuning the regex-based scrapers:**
+
+The Coalition / faith-based / OASAS / BOP scrapers use conservative regex address extractors that may yield fewer rows than the source pages actually contain. To improve coverage:
+
+1. Run with `--dry-run` to see what's being captured
+2. Inspect the source page HTML to understand the actual markup pattern
+3. Update the parser in the script to use BeautifulSoup or more specific regexes targeting the site's div/class structure
+4. Re-run dry, then commit + deploy
+
+This tuning is expected ongoing maintenance — websites change.
+
+---
+
 ## Known limitations at v1 launch
 
-Documented in `supabase/functions/sync-nearby-concerns/index.ts` and the PR description:
-
-- **10 sub-categories show "All clear"** until follow-up sync modules ship. Affected: homeless shelters, migrant reception, methadone clinics, halfway houses, NYPD precinct stations, private hospitals, brownfields, IBZ, elevated rail/highway, scraped advocacy shelter directories.
-- **Sex-offender count is 0** until the NYS DCJS scrape module ships (sensitive — requires human review pre-deploy).
-- **Family shelters are intentionally excluded** per design (DHS protects family-shelter addresses).
+- **Sex-offender count is 0** until the NYS DCJS scrape module ships. Per spec, this is intentionally deferred — it's sensitive and requires human review of the row shape before going live (to confirm no name/address leakage paths exist).
+- **Private hospitals** (Mt Sinai, NYP, NYU Langone, etc.) are not in `sirens` yet — only HHC public hospitals are. A follow-up module would add them via the Facilities Database (`2fpa-bnsx`).
+- **Elevated rail / highway noise** is not yet captured. The plan calls for sampling points along LION subway + FHWA NHS shapefiles — needs a one-shot Node seed script.
+- **Brownfields and IBZ** still empty. NYS DEC API has been spotty; EPA Envirofacts needs a query-builder pass.
+- **Family shelters are intentionally excluded** per design (DHS protects family-shelter addresses for safety; we honor that boundary).
 - **Search is building-autocomplete only** — free-text address geocoding is v1.1.
+- **Scraped sources may have low initial yield** — regex parsers are conservative and need tuning per site. See "Tuning" above.
