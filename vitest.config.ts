@@ -17,6 +17,9 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // Mirror supabase/functions/import_map.json so edge-function modules
+      // can be unit-tested via vitest without Deno's runtime resolver.
+      "shared/": `${path.resolve(__dirname, "./supabase/functions/_shared")}/`,
     },
   },
 });
