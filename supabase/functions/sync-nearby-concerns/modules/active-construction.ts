@@ -33,9 +33,8 @@ interface ShedRow {
   expired_date: string | null;
   job_description: string | null;
   building: {
-    lat: number | null;
-    lng: number | null;
-    neighborhood: string | null;
+    latitude: number | null;
+    longitude: number | null;
   } | null;
 }
 
@@ -45,8 +44,8 @@ interface ShedRow {
  */
 export function normalizeShed(r: ShedRow): ConcernInput | null {
   const b = r.building;
-  if (!b || b.lat === null || b.lng === null) return null;
-  if (!Number.isFinite(b.lat) || !Number.isFinite(b.lng)) return null;
+  if (!b || b.latitude === null || b.longitude === null) return null;
+  if (!Number.isFinite(b.latitude) || !Number.isFinite(b.longitude)) return null;
 
   const addressParts = [r.house_no, r.street_name].filter(Boolean).join(" ").trim();
   const name = addressParts
@@ -60,9 +59,8 @@ export function normalizeShed(r: ShedRow): ConcernInput | null {
     name,
     address: addressParts || null,
     borough: r.borough ?? null,
-    neighborhood: b.neighborhood ?? null,
-    lat: b.lat,
-    lng: b.lng,
+    lat: b.latitude,
+    lng: b.longitude,
     source: SOURCE,
     source_url: SOURCE_URL,
     source_record_id: r.work_permit,
@@ -86,7 +84,7 @@ export async function syncActiveConstruction(
     const { data, error } = await supabase
       .from("sidewalk_sheds")
       .select(
-        "work_permit, house_no, street_name, borough, permit_status, filing_reason, issued_date, expired_date, job_description, building:building_id(lat, lng, neighborhood)",
+        "work_permit, house_no, street_name, borough, permit_status, filing_reason, issued_date, expired_date, job_description, building:building_id(latitude, longitude)",
       )
       .in("permit_status", ["ACTIVE", "ISSUED", "RE-ISSUED", "Active", "Issued"])
       .gte("issued_date", new Date(Date.now() - 365 * 86400 * 1000).toISOString().slice(0, 10))

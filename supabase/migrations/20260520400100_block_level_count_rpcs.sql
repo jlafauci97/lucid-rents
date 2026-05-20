@@ -1,62 +1,103 @@
 -- supabase/migrations/20260520400100_block_level_count_rpcs.sql
+--
+-- Block-level count RPCs for the Neighborhood Risks tool.
+--
+-- The 311 RPCs use EXECUTE with format() — NOT a parameterized prepared
+-- statement — because Postgres' generic plan caching produces a terrible
+-- plan when the lat/lng are bind parameters: it falls back to scanning
+-- the 15M+ row complaints_311_nyc partition. With format() the literal
+-- values are baked into the query text each call, the planner sees them,
+-- and chooses the nested-loop-on-small-buildings-CTE plan.
 
--- 311 noise complaints within radius (last 90 days)
 CREATE OR REPLACE FUNCTION count_311_noise_near(
   p_lat double precision,
   p_lng double precision,
   p_radius_m int DEFAULT 1207
-) RETURNS int LANGUAGE sql STABLE AS $$
-  SELECT count(*)::int
-  FROM complaints_311
-  WHERE metro = 'nyc'
-    AND complaint_type ILIKE '%noise%'
-    AND created_date > NOW() - INTERVAL '90 days'
-    AND latitude IS NOT NULL
-    AND longitude IS NOT NULL
-    AND ST_DWithin(
-      ST_MakePoint(longitude::double precision, latitude::double precision)::geography,
-      ST_MakePoint(p_lng, p_lat)::geography,
-      p_radius_m
-    );
+) RETURNS int LANGUAGE plpgsql STABLE AS $$
+DECLARE
+  result int;
+BEGIN
+  EXECUTE format($q$
+    WITH nearby_buildings AS (
+      SELECT id FROM buildings
+      WHERE metro = 'nyc'
+        AND latitude  BETWEEN %1$s - 0.02  AND %1$s + 0.02
+        AND longitude BETWEEN %2$s - 0.025 AND %2$s + 0.025
+        AND ST_DWithin(
+          ST_MakePoint(longitude::double precision, latitude::double precision)::geography,
+          ST_MakePoint(%2$s, %1$s)::geography,
+          %3$s
+        )
+    )
+    SELECT count(*)::int
+    FROM complaints_311 c
+    WHERE c.metro = 'nyc'
+      AND c.created_date > NOW() - INTERVAL '90 days'
+      AND c.complaint_type ILIKE '%%noise%%'
+      AND EXISTS (SELECT 1 FROM nearby_buildings nb WHERE nb.id = c.building_id)
+  $q$, p_lat::text, p_lng::text, p_radius_m::text) INTO result;
+  RETURN COALESCE(result, 0);
+END;
 $$;
 
--- Rat / rodent 311 complaints within radius (last 12 months)
 CREATE OR REPLACE FUNCTION count_rats_near(
   p_lat double precision,
   p_lng double precision,
   p_radius_m int DEFAULT 1207
-) RETURNS int LANGUAGE sql STABLE AS $$
-  SELECT count(*)::int
-  FROM complaints_311
-  WHERE metro = 'nyc'
-    AND (complaint_type ILIKE '%rodent%' OR descriptor ILIKE '%rat%')
-    AND created_date > NOW() - INTERVAL '12 months'
-    AND latitude IS NOT NULL
-    AND longitude IS NOT NULL
-    AND ST_DWithin(
-      ST_MakePoint(longitude::double precision, latitude::double precision)::geography,
-      ST_MakePoint(p_lng, p_lat)::geography,
-      p_radius_m
-    );
+) RETURNS int LANGUAGE plpgsql STABLE AS $$
+DECLARE
+  result int;
+BEGIN
+  EXECUTE format($q$
+    WITH nearby_buildings AS (
+      SELECT id FROM buildings
+      WHERE metro = 'nyc'
+        AND latitude  BETWEEN %1$s - 0.02  AND %1$s + 0.02
+        AND longitude BETWEEN %2$s - 0.025 AND %2$s + 0.025
+        AND ST_DWithin(
+          ST_MakePoint(longitude::double precision, latitude::double precision)::geography,
+          ST_MakePoint(%2$s, %1$s)::geography,
+          %3$s
+        )
+    )
+    SELECT count(*)::int
+    FROM complaints_311 c
+    WHERE c.metro = 'nyc'
+      AND c.created_date > NOW() - INTERVAL '12 months'
+      AND (c.complaint_type ILIKE '%%rodent%%' OR c.descriptor ILIKE '%%rat%%')
+      AND EXISTS (SELECT 1 FROM nearby_buildings nb WHERE nb.id = c.building_id)
+  $q$, p_lat::text, p_lng::text, p_radius_m::text) INTO result;
+  RETURN COALESCE(result, 0);
+END;
 $$;
 
--- Bedbug filings within radius (last 3 years), via building join
 CREATE OR REPLACE FUNCTION count_bedbugs_near(
   p_lat double precision,
   p_lng double precision,
   p_radius_m int DEFAULT 1207
-) RETURNS int LANGUAGE sql STABLE AS $$
-  SELECT count(DISTINCT br.id)::int
-  FROM bedbug_reports br
-  JOIN buildings b ON br.building_id = b.id
-  WHERE b.metro = 'nyc'
-    AND br.filing_date > (NOW() - INTERVAL '3 years')::date
-    AND b.geom IS NOT NULL
-    AND ST_DWithin(
-      b.geom::geography,
-      ST_MakePoint(p_lng, p_lat)::geography,
-      p_radius_m
-    );
+) RETURNS int LANGUAGE plpgsql STABLE AS $$
+DECLARE
+  result int;
+BEGIN
+  EXECUTE format($q$
+    WITH nearby_buildings AS (
+      SELECT id FROM buildings
+      WHERE metro = 'nyc'
+        AND latitude  BETWEEN %1$s - 0.02  AND %1$s + 0.02
+        AND longitude BETWEEN %2$s - 0.025 AND %2$s + 0.025
+        AND ST_DWithin(
+          ST_MakePoint(longitude::double precision, latitude::double precision)::geography,
+          ST_MakePoint(%2$s, %1$s)::geography,
+          %3$s
+        )
+    )
+    SELECT count(DISTINCT br.id)::int
+    FROM bedbug_reports br
+    WHERE br.filing_date > (NOW() - INTERVAL '3 years')::date
+      AND EXISTS (SELECT 1 FROM nearby_buildings nb WHERE nb.id = br.building_id)
+  $q$, p_lat::text, p_lng::text, p_radius_m::text) INTO result;
+  RETURN COALESCE(result, 0);
+END;
 $$;
 
 GRANT EXECUTE ON FUNCTION count_311_noise_near TO anon, authenticated;

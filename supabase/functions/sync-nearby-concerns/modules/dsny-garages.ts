@@ -15,21 +15,31 @@ const SOURCE_URL = `https://data.cityofnewyork.us/Environment/DSNY-Garages/${DAT
 interface DsnyRecord {
   name?: string;
   address?: string;
-  latitude?: number;
-  longitude?: number;
+  // Older Socrata schema variant: flat lat/lng columns
+  latitude?: number | string;
+  longitude?: number | string;
+  // Current Socrata schema (xw3j-2yxf): GeoJSON point under `point.coordinates`
+  point?: { type?: string; coordinates?: [number, number] };
   type?: string;
   city?: string;
   zip?: string;
 }
 
 /**
- * Pure transform: Socrata DSNY row -> ConcernInput. Accepts lat/lng as either
- * number or numeric string (Socrata varies depending on column type).
+ * Pure transform: Socrata DSNY row -> ConcernInput. Reads coordinates from
+ * the GeoJSON `point.coordinates` field if present, falling back to legacy
+ * flat lat/lng columns. Accepts lat/lng as either number or numeric string.
  */
 export function normalizeDsnyGarage(r: DsnyRecord): ConcernInput | null {
   if (!r.name?.trim()) return null;
-  const lat = typeof r.latitude === "number" ? r.latitude : Number(r.latitude);
-  const lng = typeof r.longitude === "number" ? r.longitude : Number(r.longitude);
+  let lat: number;
+  let lng: number;
+  if (r.point?.coordinates && r.point.coordinates.length === 2) {
+    [lng, lat] = r.point.coordinates;
+  } else {
+    lat = typeof r.latitude === "number" ? r.latitude : Number(r.latitude);
+    lng = typeof r.longitude === "number" ? r.longitude : Number(r.longitude);
+  }
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
   return {
     metro: "nyc",

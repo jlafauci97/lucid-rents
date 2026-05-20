@@ -151,7 +151,7 @@ describe("normalizeShed", () => {
       issued_date: "2026-03-01",
       expired_date: "2027-03-01",
       job_description: "Facade work",
-      building: { lat: 40.7676, lng: -73.9819, neighborhood: "Midtown" },
+      building: { latitude: 40.7676, longitude: -73.9819, neighborhood: "Midtown" },
     });
     expect(result).not.toBeNull();
     expect(result!.name).toBe("Construction: 220 Central Park South");
@@ -178,7 +178,7 @@ describe("normalizeShed", () => {
         issued_date: null,
         expired_date: null,
         job_description: null,
-        building: { lat: null, lng: null, neighborhood: null },
+        building: { latitude: null, longitude: null, neighborhood: null },
       }),
     ).toBeNull();
   });
@@ -194,7 +194,7 @@ describe("normalizeShed", () => {
       issued_date: null,
       expired_date: null,
       job_description: null,
-      building: { lat: 40.7, lng: -74.0, neighborhood: null },
+      building: { latitude: 40.7, longitude: -74.0, neighborhood: null },
     });
     expect(result!.name).toBe("Construction permit PERMIT-X");
   });
