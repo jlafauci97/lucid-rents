@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { normalizeFirehouse } from "../../supabase/functions/sync-nearby-concerns/modules/sirens-fdny";
+import { normalizeHospital } from "../../supabase/functions/sync-nearby-concerns/modules/sirens-hospitals";
 import { normalizeDsnyGarage } from "../../supabase/functions/sync-nearby-concerns/modules/dsny-garages";
+import { normalizeShed } from "../../supabase/functions/sync-nearby-concerns/modules/active-construction";
 
 describe("normalizeFirehouse", () => {
   it("normalizes a complete FDNY record", () => {
@@ -86,5 +88,114 @@ describe("normalizeDsnyGarage", () => {
   it("returns null on missing name or invalid coords", () => {
     expect(normalizeDsnyGarage({})).toBeNull();
     expect(normalizeDsnyGarage({ name: "X", latitude: NaN, longitude: NaN })).toBeNull();
+  });
+});
+
+describe("normalizeHospital", () => {
+  it("normalizes an Acute Care Hospital with GeoJSON coordinates", () => {
+    const result = normalizeHospital({
+      facility_type: "Acute Care Hospital",
+      borough: "Manhattan",
+      facility_name: "Bellevue Hospital Center",
+      phone: "212-562-4141",
+      location_1: { type: "Point", coordinates: [-73.9755, 40.7397] },
+    });
+    expect(result).not.toBeNull();
+    expect(result!.name).toBe("Bellevue Hospital Center");
+    expect(result!.lat).toBeCloseTo(40.7397);
+    expect(result!.lng).toBeCloseTo(-73.9755);
+    expect(result!.category).toBe("noise");
+    expect(result!.sub_category).toBe("sirens");
+    expect(result!.metadata).toMatchObject({
+      facility_type: "hospital_er",
+      hhc_facility_type: "Acute Care Hospital",
+    });
+  });
+
+  it("filters out non-ER facility types", () => {
+    expect(
+      normalizeHospital({
+        facility_type: "Child Health Center",
+        facility_name: "La Clinica Del Barrio",
+        location_1: { type: "Point", coordinates: [-73.9, 40.7] },
+      }),
+    ).toBeNull();
+  });
+
+  it("returns null when location_1 is missing or malformed", () => {
+    expect(
+      normalizeHospital({
+        facility_type: "Acute Care Hospital",
+        facility_name: "X",
+      }),
+    ).toBeNull();
+    expect(
+      normalizeHospital({
+        facility_type: "Acute Care Hospital",
+        facility_name: "X",
+        location_1: { type: "Point", coordinates: [NaN, NaN] },
+      }),
+    ).toBeNull();
+  });
+});
+
+describe("normalizeShed", () => {
+  it("normalizes a sidewalk_shed row with joined building coords", () => {
+    const result = normalizeShed({
+      work_permit: "PERMIT-12345",
+      house_no: "220",
+      street_name: "Central Park South",
+      borough: "Manhattan",
+      permit_status: "ACTIVE",
+      filing_reason: "New Building",
+      issued_date: "2026-03-01",
+      expired_date: "2027-03-01",
+      job_description: "Facade work",
+      building: { lat: 40.7676, lng: -73.9819, neighborhood: "Midtown" },
+    });
+    expect(result).not.toBeNull();
+    expect(result!.name).toBe("Construction: 220 Central Park South");
+    expect(result!.address).toBe("220 Central Park South");
+    expect(result!.lat).toBeCloseTo(40.7676);
+    expect(result!.category).toBe("noise");
+    expect(result!.sub_category).toBe("active_construction");
+    expect(result!.source_record_id).toBe("PERMIT-12345");
+    expect(result!.metadata).toMatchObject({
+      filing_reason: "New Building",
+      permit_status: "ACTIVE",
+    });
+  });
+
+  it("returns null when building has no lat/lng", () => {
+    expect(
+      normalizeShed({
+        work_permit: "X",
+        house_no: "1",
+        street_name: "Main St",
+        borough: "Manhattan",
+        permit_status: "ACTIVE",
+        filing_reason: null,
+        issued_date: null,
+        expired_date: null,
+        job_description: null,
+        building: { lat: null, lng: null, neighborhood: null },
+      }),
+    ).toBeNull();
+  });
+
+  it("falls back to permit ID in the name when address is missing", () => {
+    const result = normalizeShed({
+      work_permit: "PERMIT-X",
+      house_no: null,
+      street_name: null,
+      borough: null,
+      permit_status: "ACTIVE",
+      filing_reason: null,
+      issued_date: null,
+      expired_date: null,
+      job_description: null,
+      building: { lat: 40.7, lng: -74.0, neighborhood: null },
+    });
+    expect(result!.name).toBe("Construction permit PERMIT-X");
   });
 });
