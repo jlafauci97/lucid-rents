@@ -74,7 +74,7 @@ export function NeighborhoodRisksHero({ result }: NeighborhoodRisksHeroProps) {
           <span className="text-sm text-[#cbd5e1] bg-white/5 border border-white/10 px-3 py-1 rounded-full">
             {building.borough}, NY
           </span>
-          <span className="text-sm font-semibold text-[#60A5FA] bg-blue-500/8 border border-blue-400/30 px-3 py-1 rounded-full">
+          <span className="text-sm font-semibold text-[#60A5FA] bg-blue-500/10 border border-blue-400/30 px-3 py-1 rounded-full">
             ⊙ 0.75 mi radius
           </span>
         </div>
