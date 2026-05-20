@@ -21,6 +21,7 @@ on:
           - herrc-migrant-centers
           - nypd-precincts
           - bop-halfway-houses
+          - nys-brownfields
       dry_run:
         description: "Dry-run (no DB writes)"
         required: false
@@ -44,6 +45,7 @@ jobs:
           - herrc-migrant-centers
           - nypd-precincts
           - bop-halfway-houses
+          - nys-brownfields
     name: "${{ matrix.scraper }}"
 
     steps:
