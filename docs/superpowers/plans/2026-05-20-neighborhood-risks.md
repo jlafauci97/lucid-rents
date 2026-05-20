@@ -484,6 +484,10 @@ git commit -m "feat(sync): add nearby-concerns-helpers with row builder and soft
 
 ## Phase 3 — Tier 1 Sync Modules (NYC Open Data + government feeds)
 
+> **Edge-function import convention:** All modules in this phase must import from `shared/` via the existing `import_map.json` alias — i.e. `import { batchUpsert } from "shared/batch-upsert.ts"`, NOT `../../_shared/batch-upsert.ts`. This matches `sync-encampments`, `sync-energy`, etc. Same applies to the new `shared/nearby-concerns-helpers.ts`.
+
+> **Required human/agent lookup before starting Phase 3:** Some Socrata dataset IDs are placeholders (`XXXX-XXXX`) in code snippets below. Before implementing a module, look up the actual 4-char + 4-char resource ID for each source listed and substitute. Resource IDs are visible in the URL of any NYC Open Data dataset page (e.g. https://data.cityofnewyork.us/resource/nia7-mtsk.json → ID is `nia7-mtsk`). Capture these in a constants block at the top of each module. If a dataset doesn't exist or has been renamed, surface this to the human reviewer rather than guessing.
+
 ### Task 6: Shelters from NYC Open Data
 
 This module pulls **public** shelter-adjacent datasets: DHS Drop-In Centers, Homebase, RHY youth shelters, HPD supportive housing. Each becomes a row with the same `sub_category = 'homeless_shelter_adult'` (or `'youth_shelter'` for RHY, `'supportive_housing'` for HPD).
@@ -554,13 +558,13 @@ Expected: FAIL.
 ```ts
 // supabase/functions/sync-nearby-concerns/modules/shelters-nyc-opendata.ts
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { batchUpsert } from "../../_shared/batch-upsert.ts";
+import { batchUpsert } from "shared/batch-upsert.ts";
 import {
   buildConcernRow,
   recordSyncRun,
   softDeleteUnseen,
   type ConcernInput,
-} from "../../_shared/nearby-concerns-helpers.ts";
+} from "shared/nearby-concerns-helpers.ts";
 
 // TODO: replace XXXX-XXXX with actual resource IDs looked up in Step 1
 const DROP_IN_DATASET = "XXXX-XXXX";
@@ -665,6 +669,8 @@ For each:
 - Write a `normalize*Record(raw): ConcernInput | null` function with a vitest test
 - Implement a `sync*(supabase)` orchestrator that fetches → normalizes → upserts → soft-deletes
 - Commit per task
+
+> **Note on Task 12 (`rail-highway-points`):** The LION shapefile (NYC streets/rail) and FHWA NHS shapefile are multi-megabyte binary files unsuitable for live edge-function fetching. The first run should be done via a one-shot script (`scripts/seed-rail-highway-points.mjs`) that parses the shapefile locally and writes points to `nearby_concerns`. The edge-function module then becomes a thin refresh that compares last_synced and only re-samples if upstream changed (rare for these datasets). Mirror the existing pattern in `scripts/sync-la-bus-stops.mjs` for shapefile parsing.
 
 ---
 
@@ -829,6 +835,8 @@ Same TDD shape. Commit per task.
 ---
 
 ### Task 14: Sex-offender restricted-table sync
+
+> **⚠ Sensitive — human review required before deploy.** This module touches the NYS DCJS Sex Offender Registry. Before merging, a human reviewer must (a) confirm the scrape is rate-limited and respectful, (b) verify the row shape inserted to `sex_offender_locations_restricted` excludes name/address/photo fields entirely, (c) confirm RLS denies anonymous SELECT on the table (re-run the verification step from Task 2).
 
 **Files:** `modules/sex-offender-nys.ts` + test
 
@@ -1004,6 +1012,8 @@ grep -rl "pg_cron\|cron.schedule" supabase/migrations/ supabase/config.toml 2>/d
 
 - [ ] **Step 2: Add cron entry** (likely a new SQL migration if pg_cron is the pattern)
 
+Substitute `<project-ref>` with the subdomain from `npx supabase status` (or `NEXT_PUBLIC_SUPABASE_URL`). The `<service-role-key>` should be stored as a Supabase secret (`supabase secrets set CRON_AUTH_KEY=...`) and referenced via `current_setting('app.cron_auth_key', true)` rather than baked into the SQL.
+
 ```sql
 -- supabase/migrations/20260520200000_nearby_concerns_cron.sql
 SELECT cron.schedule(
@@ -1012,7 +1022,7 @@ SELECT cron.schedule(
   $$
   SELECT net.http_post(
     url := 'https://<project-ref>.supabase.co/functions/v1/sync-nearby-concerns?source=all',
-    headers := jsonb_build_object('Authorization', 'Bearer <service-role-key-or-secret>')
+    headers := jsonb_build_object('Authorization', 'Bearer ' || current_setting('app.cron_auth_key', true))
   );
   $$
 );
@@ -1126,6 +1136,10 @@ git commit -m "feat(scoring): compute calm-score baselines + count RPCs"
 
 ```ts
 // src/lib/neighborhood-risks/types.ts
+// Note: ConcernCategory includes "block_level" for UI purposes, but the
+// nearby_concerns table CHECK constraint only allows the first three.
+// Block-level groups are synthesized client-side from existing tables
+// (nyc_311, dohmh_rats, hpd_bedbugs) — never written to nearby_concerns.
 export type ConcernCategory = "public_safety" | "noise" | "environmental" | "block_level";
 
 export type ConcernSubCategory =
@@ -1440,9 +1454,38 @@ function labelFor(cat: string): string {
 
 **Files:** `src/lib/neighborhood-risks/queries.ts`, `tests/lib/neighborhood-risks-queries.test.ts`
 
-- [ ] **Step 1: Write failing test (mock supabase)**
+- [ ] **Step 1: Write failing test for `groupBySubCategory`** (the pure function — easiest to TDD; the network-heavy `fetchNeighborhoodRisks` is verified in the end-to-end smoke test in Task 39)
 
-Test `groupBySubCategory(rows)` and `fetchAllForBuilding(supabase, lat, lng)`. Mock the supabase client.
+```ts
+// tests/lib/neighborhood-risks-queries.test.ts
+import { describe, expect, it } from "vitest";
+import { groupBySubCategory } from "@/lib/neighborhood-risks/queries";
+import type { ConcernRow } from "@/lib/neighborhood-risks/types";
+
+const row = (overrides: Partial<ConcernRow>): ConcernRow => ({
+  id: 1, category: "public_safety", sub_category: "homeless_shelter_adult",
+  name: "X", address: null, source: "s", source_url: null, distance_mi: 0.2,
+  ...overrides,
+});
+
+describe("groupBySubCategory", () => {
+  it("groups rows by sub_category and counts each", () => {
+    const groups = groupBySubCategory([
+      row({ sub_category: "homeless_shelter_adult", name: "Shelter A" }),
+      row({ sub_category: "homeless_shelter_adult", name: "Shelter B" }),
+      row({ sub_category: "methadone_clinic", name: "Clinic A", category: "public_safety" }),
+    ]);
+    expect(groups).toHaveLength(2);
+    const shelterGroup = groups.find((g) => g.sub_category === "homeless_shelter_adult")!;
+    expect(shelterGroup.total_count).toBe(2);
+    expect(shelterGroup.items.map((i) => i.name)).toEqual(["Shelter A", "Shelter B"]);
+  });
+
+  it("returns empty array for empty input", () => {
+    expect(groupBySubCategory([])).toEqual([]);
+  });
+});
+```
 
 - [ ] **Step 2: Implement**
 
@@ -1653,10 +1696,10 @@ Each follows the same TDD shape. One commit per component.
 |---|---|---|
 | 29 | `NeighborhoodRisksEmptyBlock.tsx` | Muted "All clear" state — usually inlined into Block but separated for clarity |
 | 30 | `NeighborhoodRisksSensitiveBlock.tsx` | Sex offender variant — gradient stripe, privacy note, registry link, no item list |
-| 31 | `NeighborhoodRisksSection.tsx` | Section header (bar + title + meta) + grid wrapper |
+| 31 | `NeighborhoodRisksSection.tsx` | Section header (bar + title + meta) + grid wrapper. Props: `category` + `result`. The component filters `result.groups` by `group.category === category` and renders each as `<NeighborhoodRisksBlock>`. For `category === 'block_level'`, it synthesizes blocks from `result.block_level` (rat_failures, noise_311, bedbug_history) since block-level data doesn't live in `result.groups`. Sex-offender block is rendered when `category === 'public_safety'` using `<NeighborhoodRisksSensitiveBlock count={result.sex_offender_count} />`. |
 | 32 | `NeighborhoodRisksJumpNav.tsx` | Sticky nav with 4 category pills + smooth scroll |
 | 33 | `NeighborhoodRisksHero.tsx` | New layered hero: gradient + dot grid + concentric pulse SVG + breadcrumb + chips + stat tiles |
-| 34 | `NeighborhoodRisksSearch.tsx` | Address autocomplete (mirror `SearchBar.tsx` but scoped to buildings only) |
+| 34 | `NeighborhoodRisksSearch.tsx` | Address autocomplete. Verified existing pattern: `src/components/search/SearchBar.tsx` — copy the debounced fetch + dropdown markup, but strip out neighborhood/landlord branches and route to `/nyc/tenant-tools/neighborhood-risks/[slug]` on select. |
 
 Reference the v7 mockup for exact styling. Use Tailwind classes that match: `bg-[#0F1D2E]`, `text-white`, `rounded-xl`, `border-[#e2e8f0]` etc.
 
