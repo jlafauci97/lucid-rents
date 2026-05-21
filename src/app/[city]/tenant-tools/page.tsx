@@ -76,6 +76,17 @@ const TOOL_CARDS = [
     cta: "Check a Building",
   },
   {
+    href: "/tenant-tools/neighborhood-risks",
+    icon: ShieldAlert,
+    label: "Neighborhood Risks",
+    description:
+      "Search any NYC building to see shelters, methadone clinics, sirens, brownfields, and other quality-of-life factors within 0.75 mi.",
+    badge: "NYC Only",
+    badgeColor: "bg-red-50 text-red-700 border-red-200",
+    cta: "Check an Address",
+    nycOnly: true,
+  },
+  {
     href: "/rent-affordability-calculator",
     icon: Calculator,
     label: "Rent Affordability Calculator",

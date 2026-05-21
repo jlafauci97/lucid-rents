@@ -113,6 +113,13 @@ const tools: ToolItem[] = [
     description: "Templates, checklists & renter resources",
   },
   {
+    path: "/tenant-tools/neighborhood-risks",
+    icon: ShieldAlert,
+    label: "Neighborhood Risks",
+    description: "What's nearby that listings won't tell you",
+    cities: ["nyc"],
+  },
+  {
     path: "/tenant-tools/templates",
     icon: FileText,
     label: "Letter Templates",

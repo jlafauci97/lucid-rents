@@ -18,3 +18,6 @@ coverage/
 
 # Scrape progress files (machine-local)
 scripts/progress/*.json
+
+# Brainstorming visual companion (machine-local)
+.superpowers/
