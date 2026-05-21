@@ -137,11 +137,30 @@ def main():
             address = s.get("address1", "").strip()
             if not address:
                 continue
-            coords = geocode(address, borough)
-            if not coords:
-                print(f"  SKIP no coords: {address}")
-                continue
-            lat, lng = coords
+            # The NYS DEC dataset publishes lat/lng on every record — use
+            # those directly. We previously geocoded every address, which
+            # turned a 30-second job into a 4-6 hour one and added DNS
+            # fatigue that broke per-county fetches.
+            lat_raw = s.get("latitude")
+            lng_raw = s.get("longitude")
+            if lat_raw and lng_raw:
+                try:
+                    lat = float(lat_raw)
+                    lng = float(lng_raw)
+                except (TypeError, ValueError):
+                    lat, lng = None, None
+            else:
+                lat, lng = None, None
+            # Fall back to PlanningLabs geocoder only when the DEC record
+            # lacks coordinates (a handful of older or intersection-style
+            # records). Most rows skip this branch entirely.
+            if lat is None or lng is None:
+                coords = geocode(address, borough)
+                if not coords:
+                    print(f"  SKIP no coords: {address}")
+                    continue
+                lat, lng = coords
+                time.sleep(0.1)  # rate limit geocoder fallback only
             name = (s.get("program_facility_name") or address)[:120]
             all_records.append({
                 "metro": "nyc",
@@ -166,7 +185,6 @@ def main():
                 "active": True,
                 "last_synced": now,
             })
-            time.sleep(0.1)  # rate limit geocoder
 
     print(f"\n=== {len(all_records)} total geocoded ===")
 
