@@ -75,11 +75,14 @@ export default async function BoroughPage({ params, searchParams }: BoroughPageP
   try {
     const supabase = await createClient();
 
-    // Get total count and paginated buildings in parallel
+    // Get total count and paginated buildings in parallel.
+    // `count: "planned"` uses the planner's row-estimate instead of running
+    // a real COUNT(*) — instant vs. multi-second on filtered borough queries.
+    // Approximate, but plenty accurate for "N buildings" UI + pagination.
     const [countRes, buildingsRes] = await Promise.all([
       supabase
         .from("buildings")
-        .select("id", { count: "exact", head: true })
+        .select("id", { count: "planned", head: true })
         .eq("borough", borough)
         .eq("metro", cityParam),
       supabase
@@ -91,8 +94,11 @@ export default async function BoroughPage({ params, searchParams }: BoroughPageP
         .range(offset, offset + PAGE_SIZE - 1),
     ]);
 
-    total = countRes.count || 0;
     buildingList = (buildingsRes.data || []) as Building[];
+    // Floor the count by (offset + rows returned) so pagination never reports
+    // fewer pages than we've already proven to exist, even if the planner's
+    // row-estimate comes back low.
+    total = Math.max(countRes.count || 0, offset + buildingList.length);
   } catch (err) {
     console.error("BoroughPage query error:", err);
   }
