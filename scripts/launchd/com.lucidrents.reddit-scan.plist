@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+launchd job for the Reddit scanner. Reddit blocks Vercel + GitHub Actions
+egress IPs, so the scan has to run from a residential IP. This LaunchAgent
+runs every 6 hours under the user's GUI session.
+
+DO NOT install this template directly. The CRON_SECRET is empty and the
+script path needs to be in a non-TCC location (~/.lucidrents/, not
+~/Desktop). Run the installer instead:
+
+    bash scripts/launchd/install-reddit-scan.sh
+
+That script:
+  1. Copies scripts/scan-and-draft-reddit.mjs to ~/.lucidrents/
+  2. Reads CRON_SECRET from .env.local
+  3. Generates the real plist at ~/Library/LaunchAgents/...
+  4. Bootstraps the LaunchAgent and kickstarts a verification run
+
+Trigger an immediate run after install:
+  launchctl kickstart -k "gui/$(id -u)/com.lucidrents.reddit-scan"
+
+Tail logs:
+  tail -f ~/Library/Logs/lucidrents-reddit-scan.log
+
+Uninstall:
+  launchctl bootout "gui/$(id -u)/com.lucidrents.reddit-scan"
+  rm ~/Library/LaunchAgents/com.lucidrents.reddit-scan.plist
+  rm -rf ~/.lucidrents
+
+WHY ~/.lucidrents/ INSTEAD OF THE REPO PATH:
+  launchd-spawned processes can't read files under ~/Desktop, ~/Documents,
+  or ~/Downloads without granting Full Disk Access (System Settings →
+  Privacy & Security → Full Disk Access) to /bin/bash, /opt/homebrew/bin/node,
+  or whatever the plist invokes. Copying scan-and-draft-reddit.mjs into
+  ~/.lucidrents/ bypasses TCC entirely. Re-run the installer after pulling
+  main if the script changes.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.lucidrents.reddit-scan</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/opt/homebrew/bin/node</string>
+        <string>/Users/REPLACE_ME/.lucidrents/scan-and-draft-reddit.mjs</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/REPLACE_ME/.lucidrents</string>
+
+    <!-- Run every 6 hours (21600 seconds). -->
+    <key>StartInterval</key>
+    <integer>21600</integer>
+
+    <!-- Don't fire on load — avoids spam during installs/restarts. -->
+    <key>RunAtLoad</key>
+    <false/>
+
+    <key>StandardOutPath</key>
+    <string>/Users/REPLACE_ME/Library/Logs/lucidrents-reddit-scan.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/REPLACE_ME/Library/Logs/lucidrents-reddit-scan.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/bin:/bin</string>
+        <key>BASE_URL</key>
+        <string>https://lucidrents.com</string>
+        <key>CRON_SECRET</key>
+        <string>REPLACE_ME</string>
+        <key>REDDIT_LOOKBACK_HOURS</key>
+        <string>6</string>
+    </dict>
+</dict>
+</plist>
