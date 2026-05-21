@@ -37,6 +37,7 @@ import { S10LAInsightsStreamed } from "@/components/building/v2/streaming/S10LAI
 import { S10ChicagoInsightsStreamed } from "@/components/building/v2/streaming/S10ChicagoInsightsStreamed";
 import { S10MiamiInsightsStreamed } from "@/components/building/v2/streaming/S10MiamiInsightsStreamed";
 import { S10HoustonInsightsStreamed } from "@/components/building/v2/streaming/S10HoustonInsightsStreamed";
+import { S015NeighborhoodRisksStreamed } from "@/components/building/v2/streaming/S015NeighborhoodRisksStreamed";
 import { SideRailStreamed } from "@/components/building/v2/streaming/SideRailStreamed";
 import { LazyOnScroll } from "@/components/building/v2/streaming/LazyOnScroll";
 import { SectionSkeleton } from "@/components/building/v2/streaming/SectionSkeleton";
@@ -286,6 +287,7 @@ export default async function BuildingPage({ params }: Props) {
             <div className="main" id="main-content">
               <S01RentalIntelligenceStreamed building={building} />
               <SubmarketTrendsStreamed building={building} />
+              <S015NeighborhoodRisksStreamed building={building} />
               <S02IssuesStreamed building={building} seeAllUrl={seeAllIssuesUrl} />
               <S03TenantReviewsStreamed building={building} seeAllUrl={seeAllReviewsUrl} />
               <S04AmenitiesStreamed building={building} />

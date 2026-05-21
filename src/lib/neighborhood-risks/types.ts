@@ -15,6 +15,7 @@ export type ConcernSubCategory =
   | "active_construction"
   | "elevated_rail"
   | "highway"
+  | "avenue_traffic"
   | "dsny_garage"
   | "brownfield"
   | "industrial_zone"

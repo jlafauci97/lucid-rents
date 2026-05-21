@@ -11,7 +11,7 @@ export const SUB_CATEGORIES_BY_CATEGORY: Record<ConcernCategory, ConcernSubCateg
     "supportive_housing",
     // sex_offender rendered separately via SensitiveBlock
   ],
-  noise: ["sirens", "active_construction", "elevated_rail", "highway"],
+  noise: ["sirens", "active_construction", "elevated_rail", "highway", "avenue_traffic"],
   environmental: ["brownfield", "industrial_zone", "dsny_garage"],
   block_level: ["rat_failures", "noise_311", "bedbug_history"],
 };
@@ -28,6 +28,7 @@ export const SUB_CATEGORY_TITLES: Record<ConcernSubCategory, string> = {
   active_construction: "Active construction",
   elevated_rail: "Elevated rail",
   highway: "Highway proximity",
+  avenue_traffic: "Avenue traffic",
   brownfield: "Industrial / brownfield",
   industrial_zone: "Industrial business zones",
   dsny_garage: "DSNY garages",
@@ -49,6 +50,7 @@ export const SUB_CATEGORY_SOURCES: Record<ConcernSubCategory, string> = {
   active_construction: "NYC DOB",
   elevated_rail: "MTA · NYC LION",
   highway: "FHWA NHS",
+  avenue_traffic: "Derived from building address",
   brownfield: "EPA + NYS DEC",
   industrial_zone: "NYC EDC IBZ",
   dsny_garage: "NYC DSNY",
@@ -70,6 +72,7 @@ export const SUB_CATEGORY_UNITS: Record<ConcernSubCategory, string> = {
   active_construction: "sites",
   elevated_rail: "segments",
   highway: "segments",
+  avenue_traffic: "on-street",
   brownfield: "sites",
   industrial_zone: "zones",
   dsny_garage: "sites",
