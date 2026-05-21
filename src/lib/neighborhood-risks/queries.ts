@@ -20,6 +20,33 @@ export interface BuildingInput {
   slug: string;
 }
 
+// Match an "Avenue" segment in an NYC address. Conservative: needs the
+// avenue token to be the trailing street suffix (case-insensitive), so
+// "5 Avenue B" / "240 Central Park South" don't get flagged, but
+// "240 CENTRAL PARK AVENUE" and "8112 21 AVENUE" do.
+const AVENUE_RE = /\b(Ave|Ave\.|Avenue)\b/i;
+
+/**
+ * True if the building's street address sits on a (typically higher-traffic)
+ * avenue. Used to synthesize an "Avenue traffic" noise concern.
+ */
+export function detectAvenueTraffic(address: string | null | undefined): boolean {
+  if (!address) return false;
+  // Inspect only the first comma-separated segment (street component).
+  const firstSeg = address.split(",")[0]?.trim() ?? "";
+  return AVENUE_RE.test(firstSeg);
+}
+
+/**
+ * Returns the trimmed street component from a full address string, e.g.
+ * "8112 21 AVENUE" from "8112 21 AVENUE, Brooklyn, NY, 11214". Falls back
+ * to the original address if no comma.
+ */
+export function extractStreetName(address: string): string {
+  const seg = address.split(",")[0]?.trim();
+  return seg || address;
+}
+
 /**
  * Groups raw concern rows by sub-category. Order within each group is preserved
  * from input order (callers typically pass distance-ascending rows).
@@ -82,6 +109,24 @@ export async function fetchNeighborhoodRisks(
     p_radius_m: RADIUS_M,
   });
   const rows: ConcernRow[] = (concernRows ?? []) as ConcernRow[];
+
+  // 1b. Synthetic concern: if the building's street address is on an Avenue,
+  // add an "Avenue traffic" noise entry at the building's own location.
+  // Heuristic — NYC's named/numbered avenues are typically higher-traffic
+  // than side streets. Conservative match: street component ends with
+  // "Ave", "Ave.", or "Avenue" (case-insensitive).
+  if (detectAvenueTraffic(building.address)) {
+    rows.unshift({
+      id: -1,
+      category: "noise",
+      sub_category: "avenue_traffic",
+      name: `On an avenue — ${extractStreetName(building.address)}`,
+      address: building.address,
+      source: "derived_from_address",
+      source_url: null,
+      distance_mi: 0,
+    });
+  }
 
   // 2. Sex-offender count (separate RPC, count only — never leaks rows)
   const { data: offenderCount } = await supabase.rpc("count_sex_offenders_near", {
