@@ -149,6 +149,24 @@ def main():
 
     print(f"\n=== {len(all_records)} total geocoded ===")
 
+    # Dedupe by source_record_id. The NYS DEC dataset has multiple program
+    # records sharing the same program_number (different operable units,
+    # different program phases, etc.). Without this, the upsert fails with
+    # "ON CONFLICT DO UPDATE command cannot affect row a second time"
+    # because Postgres can't UPSERT the same (source, source_record_id)
+    # tuple twice in one statement. First-wins is fine here — operable-unit
+    # differences don't affect the data we surface in the UI.
+    seen_ids: set[str] = set()
+    deduped = []
+    for r in all_records:
+        sid = r["source_record_id"]
+        if sid in seen_ids:
+            continue
+        seen_ids.add(sid)
+        deduped.append(r)
+    print(f"=== {len(deduped)} after dedupe by program_number ===")
+    all_records = deduped
+
     if args.dry_run:
         for r in all_records[:8]:
             mt = r["metadata"]
