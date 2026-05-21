@@ -2,12 +2,15 @@
 --
 -- Block-level count RPCs for the Neighborhood Risks tool.
 --
--- The 311 RPCs use EXECUTE with format() — NOT a parameterized prepared
--- statement — because Postgres' generic plan caching produces a terrible
--- plan when the lat/lng are bind parameters: it falls back to scanning
--- the 15M+ row complaints_311_nyc partition. With format() the literal
--- values are baked into the query text each call, the planner sees them,
--- and chooses the nested-loop-on-small-buildings-CTE plan.
+-- Performance history:
+--   v1 — direct ST_DWithin on complaints_311 ............. timed out
+--   v2 — EXISTS on small buildings CTE ................... timed out for dense areas
+--   v3 — JOIN to small buildings CTE via composite index .. ~500ms, current
+--
+-- The 311 RPCs use EXECUTE format() (not parameterized SQL) so the literal
+-- coordinates are baked into the query text per call. This lets the planner
+-- see actual lat/lng values and pick the small-buildings-CTE → JOIN path
+-- rather than scanning the 15M+ row complaints_311_nyc partition.
 
 CREATE OR REPLACE FUNCTION count_311_noise_near(
   p_lat double precision,
@@ -30,11 +33,12 @@ BEGIN
         )
     )
     SELECT count(*)::int
-    FROM complaints_311 c
-    WHERE c.metro = 'nyc'
-      AND c.created_date > NOW() - INTERVAL '90 days'
-      AND c.complaint_type ILIKE '%%noise%%'
-      AND EXISTS (SELECT 1 FROM nearby_buildings nb WHERE nb.id = c.building_id)
+    FROM nearby_buildings nb
+    JOIN complaints_311 c
+      ON c.building_id = nb.id
+     AND c.metro = 'nyc'
+     AND c.created_date > NOW() - INTERVAL '90 days'
+    WHERE c.complaint_type ILIKE '%%noise%%'
   $q$, p_lat::text, p_lng::text, p_radius_m::text) INTO result;
   RETURN COALESCE(result, 0);
 END;
@@ -61,11 +65,12 @@ BEGIN
         )
     )
     SELECT count(*)::int
-    FROM complaints_311 c
-    WHERE c.metro = 'nyc'
-      AND c.created_date > NOW() - INTERVAL '12 months'
-      AND (c.complaint_type ILIKE '%%rodent%%' OR c.descriptor ILIKE '%%rat%%')
-      AND EXISTS (SELECT 1 FROM nearby_buildings nb WHERE nb.id = c.building_id)
+    FROM nearby_buildings nb
+    JOIN complaints_311 c
+      ON c.building_id = nb.id
+     AND c.metro = 'nyc'
+     AND c.created_date > NOW() - INTERVAL '12 months'
+    WHERE c.complaint_type ILIKE '%%rodent%%' OR c.descriptor ILIKE '%%rat%%'
   $q$, p_lat::text, p_lng::text, p_radius_m::text) INTO result;
   RETURN COALESCE(result, 0);
 END;
@@ -92,9 +97,9 @@ BEGIN
         )
     )
     SELECT count(DISTINCT br.id)::int
-    FROM bedbug_reports br
+    FROM nearby_buildings nb
+    JOIN bedbug_reports br ON br.building_id = nb.id
     WHERE br.filing_date > (NOW() - INTERVAL '3 years')::date
-      AND EXISTS (SELECT 1 FROM nearby_buildings nb WHERE nb.id = br.building_id)
   $q$, p_lat::text, p_lng::text, p_radius_m::text) INTO result;
   RETURN COALESCE(result, 0);
 END;

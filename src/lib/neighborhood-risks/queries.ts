@@ -90,30 +90,44 @@ export async function fetchNeighborhoodRisks(
     radius_meters: RADIUS_M,
   });
 
-  // 3. Block-level live queries
+  // 3. Block-level live queries.
+  //
+  // The 311 RPCs scan a 15M-row partition; performance varies by neighborhood
+  // density. We hard-cap each RPC at RPC_TIMEOUT_MS so a single slow call
+  // doesn't hang page render. On timeout/error, the block falls back to 0
+  // (the UI shows "0" or "All clear" — better than a 30s spinner).
+  //
+  // Long-term fix: pre-aggregate per-building counts into a materialized view
+  // so the radius query becomes a small bbox sum instead of a partition scan.
+  const RPC_TIMEOUT_MS = 4500;
+
   const countRpc = async (
     fn: string,
     radius: number,
-    swallow: boolean,
   ): Promise<number> => {
-    try {
-      const { data } = await supabase.rpc(fn, {
-        p_lat: lat,
-        p_lng: lng,
-        p_radius_m: radius,
-      });
-      return Number(data ?? 0);
-    } catch (err) {
-      if (swallow) return 0;
-      throw err;
-    }
+    const rpcPromise = (async () => {
+      try {
+        const { data } = await supabase.rpc(fn, {
+          p_lat: lat,
+          p_lng: lng,
+          p_radius_m: radius,
+        });
+        return Number(data ?? 0);
+      } catch {
+        return 0;
+      }
+    })();
+    const timeout = new Promise<number>((resolve) =>
+      setTimeout(() => resolve(0), RPC_TIMEOUT_MS),
+    );
+    return Promise.race([rpcPromise, timeout]);
   };
 
   const [noise311, noise311Block, rats, bedbugs] = await Promise.all([
-    countRpc("count_311_noise_near", RADIUS_M, false),
-    countRpc("count_311_noise_near", ON_BLOCK_RADIUS_M, false),
-    countRpc("count_rats_near", RADIUS_M, true),
-    countRpc("count_bedbugs_near", RADIUS_M, true),
+    countRpc("count_311_noise_near", RADIUS_M),
+    countRpc("count_311_noise_near", ON_BLOCK_RADIUS_M),
+    countRpc("count_rats_near", RADIUS_M),
+    countRpc("count_bedbugs_near", RADIUS_M),
   ]);
 
   // 4. Baselines (may be empty until baseline script runs)

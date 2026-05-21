@@ -16,9 +16,8 @@ interface BuildingRow {
   name: string | null;
   full_address: string;
   borough: string;
-  neighborhood: string | null;
-  lat: number;
-  lng: number;
+  latitude: number | string;
+  longitude: number | string;
   slug: string;
 }
 
@@ -27,12 +26,19 @@ async function getBuilding(slug: string): Promise<BuildingRow | null> {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
   );
+  // Use limit(1) + maybeSingle: NYC has duplicate slugs (e.g. "0-undisclosed",
+  // generic placeholder names), so .single() would throw. Pick deterministically
+  // by id so refreshes hit the same row.
   const { data } = await supabase
     .from("buildings")
-    .select("id, name, full_address, borough, neighborhood, lat, lng, slug")
+    .select("id, name, full_address, borough, latitude, longitude, slug")
     .eq("metro", "nyc")
     .eq("slug", slug)
-    .single();
+    .not("latitude", "is", null)
+    .not("longitude", "is", null)
+    .order("id", { ascending: true })
+    .limit(1)
+    .maybeSingle();
   return (data as BuildingRow | null) ?? null;
 }
 
@@ -72,9 +78,9 @@ export default async function NeighborhoodRisksResultsPage({
     name: b.name ?? b.full_address,
     address: b.full_address,
     borough: b.borough,
-    neighborhood: b.neighborhood ?? "",
-    lat: b.lat,
-    lng: b.lng,
+    neighborhood: "",
+    lat: typeof b.latitude === "number" ? b.latitude : Number(b.latitude),
+    lng: typeof b.longitude === "number" ? b.longitude : Number(b.longitude),
     slug: b.slug,
   });
 
