@@ -155,15 +155,34 @@ def main():
             print(f"  [{mt['program_type']}] {r['name'][:50]} @ {r['address']} ({r['borough']})")
         return
 
-    for i in range(0, len(all_records), 100):
-        batch = all_records[i:i + 100]
-        try:
-            supabase.table("nearby_concerns").upsert(batch, on_conflict="source,source_record_id").execute()
-            print(f"  upserted batch: {len(batch)} rows")
-        except Exception as e:
-            print(f"  upsert failed: {e}")
+    # Upsert in batches. We deliberately recreate the Supabase client every
+    # batch — supabase-py's underlying httpx client caches DNS resolutions
+    # internally, and after ~15 min of script wall-time (the geocoder loop
+    # above) those cached lookups go stale and every batch fails with
+    # `[Errno 8] nodename nor servname provided`. A fresh client per batch
+    # forces a fresh DNS lookup and keeps the upsert side reliable.
+    BATCH_SIZE = 100
+    total_written = 0
+    for i in range(0, len(all_records), BATCH_SIZE):
+        batch = all_records[i:i + BATCH_SIZE]
+        attempt = 0
+        while attempt < 3:
+            try:
+                fresh = create_client(SUPABASE_URL, SERVICE_KEY)
+                fresh.table("nearby_concerns").upsert(
+                    batch, on_conflict="source,source_record_id"
+                ).execute()
+                total_written += len(batch)
+                print(f"  upserted batch {i // BATCH_SIZE + 1}: {len(batch)} rows")
+                break
+            except Exception as e:
+                attempt += 1
+                print(f"  upsert attempt {attempt} failed: {e}")
+                time.sleep(2 * attempt)
+        else:
+            print(f"  GIVING UP on batch {i // BATCH_SIZE + 1} after 3 attempts")
 
-    print(f"Done — {len(all_records)} rows written")
+    print(f"Done — {total_written} of {len(all_records)} rows written")
 
 
 if __name__ == "__main__":
