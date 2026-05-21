@@ -42,7 +42,28 @@ COUNTY_TO_BOROUGH = {
     "Richmond": "Staten Island",
 }
 
-NYC_COUNTIES = list(COUNTY_TO_BOROUGH.keys())
+# Manhattan has ~5,968 records and takes ~25 min of geocoding. Running it
+# last means any DNS-resolver fatigue at the tail end only affects the
+# already-populated Manhattan data (the upserts are idempotent). The four
+# outer-borough counties finish in <10 min combined while DNS is fresh.
+NYC_COUNTIES = ["Kings", "Queens", "Bronx", "Richmond", "New York"]
+
+
+def _request_with_retry(url, params, timeout, attempts=4):
+    """GET with backoff. The macOS DNS resolver intermittently fails with
+    `[Errno 8] nodename nor servname provided` after long-running scripts —
+    we hit this on every county fetch after Manhattan's ~25-min geocode
+    loop. Retrying with backoff buys time for the resolver to recover."""
+    last_err = None
+    for i in range(attempts):
+        try:
+            return requests.get(url, params=params, timeout=timeout)
+        except Exception as e:
+            last_err = e
+            # Backoff: 2, 4, 8s
+            if i < attempts - 1:
+                time.sleep(2 ** (i + 1))
+    raise last_err
 
 
 def geocode(address, borough=None):
@@ -50,7 +71,7 @@ def geocode(address, borough=None):
         return None
     query = f"{address}, {borough}, NY" if borough else f"{address}, New York, NY"
     try:
-        res = requests.get(
+        res = _request_with_retry(
             "https://geosearch.planninglabs.nyc/v2/search",
             params={"text": query, "size": 1}, timeout=10,
         )
@@ -74,7 +95,7 @@ def fetch_county(county):
             "$offset": offset,
             "$where": f"county='{county}'",
         }
-        res = requests.get(SODA_ENDPOINT, params=params, timeout=30)
+        res = _request_with_retry(SODA_ENDPOINT, params=params, timeout=30)
         res.raise_for_status()
         page = res.json()
         if not page:
