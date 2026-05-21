@@ -7,7 +7,6 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { NeighborhoodRisksSearch } from "@/components/neighborhood-risks/NeighborhoodRisksSearch";
 
 export const revalidate = 3600;
-// deploy: 1779320817
 
 export async function generateMetadata({
   params,
