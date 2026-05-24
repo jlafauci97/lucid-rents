@@ -24,6 +24,7 @@ export type ConcernSubCategory =
   | "industrial_zone"
   | "sewage_plant"
   | "power_plant"
+  | "vacant_storefront"
   // Block-level (live from existing tables):
   | "rat_failures"
   | "noise_311"

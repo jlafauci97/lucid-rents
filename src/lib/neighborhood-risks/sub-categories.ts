@@ -11,7 +11,7 @@ export const SUB_CATEGORIES_BY_CATEGORY: Record<ConcernCategory, ConcernSubCateg
     // sex_offender rendered separately via SensitiveBlock
   ],
   noise: ["sirens", "active_construction", "school", "elevated_rail", "highway", "avenue_traffic", "heliport", "bus_depot", "train_yard"],
-  environmental: ["brownfield", "industrial_zone", "dsny_garage", "sewage_plant", "power_plant"],
+  environmental: ["brownfield", "industrial_zone", "dsny_garage", "sewage_plant", "power_plant", "vacant_storefront"],
   block_level: ["rat_failures", "noise_311", "bedbug_history"],
 };
 
@@ -36,6 +36,7 @@ export const SUB_CATEGORY_TITLES: Record<ConcernSubCategory, string> = {
   dsny_garage: "DSNY garages",
   sewage_plant: "Wastewater plants",
   power_plant: "Power plants / large emitters",
+  vacant_storefront: "Vacant storefronts",
   rat_failures: "Rat sightings (12mo)",
   noise_311: "311 noise complaints (90d)",
   bedbug_history: "Bedbug history (3yr)",
@@ -63,6 +64,7 @@ export const SUB_CATEGORY_SOURCES: Record<ConcernSubCategory, string> = {
   dsny_garage: "NYC DSNY",
   sewage_plant: "NYC DEP via DCP Facilities DB",
   power_plant: "NYS DEC Title V emissions inventory",
+  vacant_storefront: "NYC DOF Local Law 157 registrations",
   rat_failures: "NYC 311 — rat/rodent",
   noise_311: "NYC 311",
   bedbug_history: "NYC HPD bedbug filings",
@@ -90,6 +92,7 @@ export const SUB_CATEGORY_UNITS: Record<ConcernSubCategory, string> = {
   dsny_garage: "sites",
   sewage_plant: "plants",
   power_plant: "facilities",
+  vacant_storefront: "storefronts",
   rat_failures: "complaints",
   noise_311: "complaints",
   bedbug_history: "buildings",
