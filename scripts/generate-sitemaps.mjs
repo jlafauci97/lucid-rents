@@ -261,7 +261,7 @@ async function generateStaticSitemap() {
     entries.push({ url: `${BASE_URL}${p.path}`, lastmod: now, changefreq: p.freq, priority: p.priority });
   }
 
-  const staticPages = ["/buildings","/landlords","/worst-rated-buildings","/feed","/crime","/rent-stabilization","/map","/search","/news","/rent-data","/scaffolding","/permits","/energy","/transit","/tenant-rights"];
+  const staticPages = ["/buildings","/landlords","/worst-rated-buildings","/feed","/crime","/rent-stabilization","/map","/search","/news","/rent-data","/permits","/transit","/tenant-rights"];
   for (const city of VALID_CITIES) {
     for (const page of staticPages) {
       entries.push({ url: `${BASE_URL}${cityPath(page, city)}`, lastmod: now, changefreq: page === "/news" ? "daily" : "weekly", priority: 0.8 });

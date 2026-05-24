@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { ChevronDown, ArrowLeftRight, ShieldCheck, ShieldAlert, Wrench, BarChart3, Construction, ClipboardList, Zap, TrainFront, Scale, Tent, FileText, AlertTriangle, Home, Droplets, Flame, Calculator, Newspaper, Radio, Siren } from "lucide-react";
+import { ChevronDown, ArrowLeftRight, ShieldCheck, ShieldAlert, Wrench, BarChart3, ClipboardList, TrainFront, Scale, Tent, FileText, AlertTriangle, Home, Droplets, Flame, Calculator, Newspaper, Radio, Siren } from "lucide-react";
 import { type City, DEFAULT_CITY, CITY_META } from "@/lib/cities";
 import { cityPath } from "@/lib/seo";
 import { useCityFromPath } from "@/lib/city-context";
@@ -66,19 +66,6 @@ const tools: ToolItem[] = [
     label: "Rent Affordability Calculator",
     description: "See if you can afford to live in your dream neighborhood",
     global: true,
-  },
-  {
-    path: "/scaffolding",
-    icon: Construction,
-    label: "Scaffolding Tracker",
-    description: "Active sidewalk sheds & scaffolding by area",
-    cities: ["nyc"],
-  },
-  {
-    path: "/energy",
-    icon: Zap,
-    label: "Energy Scores",
-    description: "Building energy efficiency & emissions data",
   },
   {
     path: "/transit",
