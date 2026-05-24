@@ -86,7 +86,7 @@ export function S02_Issues({ issues, hpdViolations, buildingId, hpdCount, dobCou
     <section className="section" id="issues">
       <div className="section-head">
         <div>
-          <div className="num">02 / 09</div>
+          <div className="num">02 / 10</div>
           <h2>Violations, 311, &amp; more.</h2>
         </div>
         <div className="meta">hpd · dob · 311 · acris<br/>last 7 years</div>

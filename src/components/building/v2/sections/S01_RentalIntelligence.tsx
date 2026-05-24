@@ -168,7 +168,7 @@ export function S01_RentalIntelligence({ rents, neighborhoodName, isRentStabiliz
     <section className="section" id="rent">
       <div className="section-head">
         <div>
-          <div className="num">01 / 09</div>
+          <div className="num">01 / 10</div>
           <h2>Rental intelligence.</h2>
         </div>
         <div className="meta"></div>

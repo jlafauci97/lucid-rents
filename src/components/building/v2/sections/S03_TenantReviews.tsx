@@ -42,7 +42,7 @@ export function S03_TenantReviews({ reviews, seeAllUrl }: Props) {
     <section className="section" id="reviews">
       <div className="section-head">
         <div>
-          <div className="num">03 / 09</div>
+          <div className="num">03 / 10</div>
           <h2>What tenants actually say.</h2>
         </div>
         <div className="meta"></div>
