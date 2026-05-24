@@ -3,7 +3,6 @@ import { syncSirensFdny } from "./modules/sirens-fdny.ts";
 import { syncSirensHospitals } from "./modules/sirens-hospitals.ts";
 import { syncDsnyGarages } from "./modules/dsny-garages.ts";
 import { syncActiveConstruction } from "./modules/active-construction.ts";
-import { syncSchoolsNycDoe } from "./modules/schools-nyc-doe.ts";
 
 /**
  * Module registry. Add new modules here as they ship.
@@ -30,7 +29,12 @@ const MODULES = {
   "sirens-hospitals": syncSirensHospitals,
   "dsny-garages": syncDsnyGarages,
   "active-construction": syncActiveConstruction,
-  "schools-nyc-doe": syncSchoolsNycDoe,
+  // Schools are NOT synced into nearby_concerns — they live in their own
+  // `nearby_schools` table (synced via the `sync-schools` edge function),
+  // which has broader coverage (public + charter + private + colleges)
+  // across multiple metros. The Neighborhood Risks query layer reads
+  // from `nearby_schools` directly and synthesizes school concerns on
+  // the fly. See src/lib/neighborhood-risks/queries.ts.
 } as const;
 
 type ModuleName = keyof typeof MODULES;
