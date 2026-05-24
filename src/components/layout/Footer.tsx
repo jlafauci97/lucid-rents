@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { headers } from "next/headers";
 import { type City, CITY_META, DEFAULT_CITY, VALID_CITIES } from "@/lib/cities";
-import { cityPath } from "@/lib/seo";
+import { cityPath, neighborhoodUrl } from "@/lib/seo";
 import { getToolsForCity, getToolLabel } from "@/lib/tenant-tools-nav";
 
 /**
@@ -16,41 +16,72 @@ async function getCurrentCity(): Promise<City> {
   return DEFAULT_CITY;
 }
 
-const DATA_SOURCES: Record<City, string[]> = {
+/**
+ * Top neighborhoods to feature in the footer per city. Curated for SEO
+ * value — high-search-volume neighborhood names. Each entry is a
+ * (zip, display name) pair; URLs resolve via neighborhoodUrl(zip, city)
+ * which produces /[city]/neighborhood/{slug}-{zip}.
+ *
+ * Stable list — refresh occasionally as search trends shift.
+ */
+const TOP_NEIGHBORHOODS: Record<City, { zip: string; name: string }[]> = {
   nyc: [
-    "NYC Open Data - HPD Violations",
-    "NYC Open Data - DOB Violations",
-    "NYC Open Data - 311 Complaints",
-    "NYC PLUTO Building Data",
+    { zip: "11211", name: "Williamsburg" },
+    { zip: "11221", name: "Bushwick" },
+    { zip: "10002", name: "Lower East Side" },
+    { zip: "11215", name: "Park Slope" },
+    { zip: "11102", name: "Astoria" },
+    { zip: "10028", name: "Upper East Side" },
+    { zip: "10023", name: "Upper West Side" },
+    { zip: "10014", name: "West Village" },
+    { zip: "10011", name: "Chelsea" },
+    { zip: "11216", name: "Bed-Stuy" },
   ],
   "los-angeles": [
-    "LA Open Data - LAHD Violations",
-    "LA Open Data - LADBS Permits",
-    "LA Open Data - 311 Complaints",
-    "LA County Assessor Data",
-    "LAHD Soft-Story Inventory",
+    { zip: "90028", name: "Hollywood" },
+    { zip: "90039", name: "Silver Lake" },
+    { zip: "90026", name: "Echo Park" },
+    { zip: "90291", name: "Venice" },
+    { zip: "90401", name: "Santa Monica" },
+    { zip: "90005", name: "Koreatown" },
+    { zip: "90010", name: "Mid-Wilshire" },
+    { zip: "91604", name: "Studio City" },
+    { zip: "90013", name: "Downtown" },
+    { zip: "90066", name: "Mar Vista" },
   ],
   chicago: [
-    "Chicago Open Data - Building Violations",
-    "Chicago Open Data - 311 Requests",
-    "Chicago Open Data - CPD Crime",
-    "Cook County Assessor Data",
-    "Chicago Energy Benchmarking",
+    { zip: "60614", name: "Lincoln Park" },
+    { zip: "60622", name: "Wicker Park" },
+    { zip: "60657", name: "Lakeview" },
+    { zip: "60647", name: "Logan Square" },
+    { zip: "60608", name: "Pilsen" },
+    { zip: "60654", name: "River North" },
+    { zip: "60610", name: "Old Town" },
+    { zip: "60611", name: "Streeterville" },
+    { zip: "60605", name: "South Loop" },
+    { zip: "60607", name: "West Loop" },
   ],
   miami: [
-    "Miami-Dade Open Data - Code Violations",
-    "Miami-Dade Open Data - 311 Requests",
-    "Miami-Dade Open Data - MDPD Crime",
-    "Miami-Dade Property Appraiser",
-    "Miami-Dade 40-Year Recertification",
-    "FEMA Flood Zone Data",
+    { zip: "33131", name: "Brickell" },
+    { zip: "33127", name: "Wynwood" },
+    { zip: "33133", name: "Coconut Grove" },
+    { zip: "33139", name: "South Beach" },
+    { zip: "33137", name: "Edgewater" },
+    { zip: "33134", name: "Coral Gables" },
+    { zip: "33128", name: "Downtown Miami" },
+    { zip: "33125", name: "Little Havana" },
   ],
   houston: [
-    "Houston Open Data - Code Violations",
-    "Houston Open Data - 311 Requests",
-    "Houston Open Data - HPD Crime",
-    "HCAD Property Data",
-    "FEMA Flood Zone Data",
+    { zip: "77006", name: "Montrose" },
+    { zip: "77007", name: "Heights" },
+    { zip: "77005", name: "Rice Village" },
+    { zip: "77002", name: "Downtown" },
+    { zip: "77030", name: "Medical Center" },
+    { zip: "77027", name: "Galleria" },
+    { zip: "77019", name: "River Oaks" },
+    { zip: "77024", name: "Memorial" },
+    { zip: "77098", name: "Upper Kirby" },
+    { zip: "77004", name: "Third Ward" },
   ],
 };
 
@@ -117,6 +148,7 @@ export async function Footer() {
   // Same canonical list the NavDropdown renders, filtered by city availability.
   const tools = getToolsForCity(city);
   const topLandlords = TOP_VIOLATION_LANDLORDS[city] ?? [];
+  const topNeighborhoods = TOP_NEIGHBORHOODS[city] ?? [];
 
   return (
     <footer className="bg-[#0F1D2E] text-gray-400 mt-auto">
@@ -216,13 +248,30 @@ export async function Footer() {
             </ul>
           </div>
 
-          {/* Data Sources */}
+          {/* Top Neighborhoods — city-specific, curated for SEO link equity */}
           <div>
-            <h4 className="text-white font-semibold text-sm mb-3">Data Sources</h4>
+            <h4 className="text-white font-semibold text-sm mb-3">
+              Top {cityName} Neighborhoods
+            </h4>
             <ul className="space-y-2 text-sm">
-              {(DATA_SOURCES[city] || DATA_SOURCES.nyc).map((source) => (
-                <li key={source}>{source}</li>
+              {topNeighborhoods.map((n) => (
+                <li key={n.zip}>
+                  <Link
+                    href={neighborhoodUrl(n.zip, city)}
+                    className="hover:text-white transition-colors"
+                  >
+                    {n.name}
+                  </Link>
+                </li>
               ))}
+              <li className="pt-1">
+                <Link
+                  href={cityPath("/neighborhoods", city)}
+                  className="hover:text-white transition-colors font-medium text-[#3B82F6]"
+                >
+                  See all neighborhoods →
+                </Link>
+              </li>
             </ul>
           </div>
         </div>
