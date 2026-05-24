@@ -97,12 +97,12 @@ export async function BoroughExploreLinks({ borough, boroughSlug, city = "nyc" }
         </section>
       )}
 
-      {/* Top landlords in this borough */}
+      {/* Top landlords in this borough — ranked by total violation count */}
       {topLandlords.length > 0 && (
         <section>
           <h2 className="text-lg font-bold text-[#0F1D2E] mb-4 flex items-center gap-2">
             <Users className="w-5 h-5 text-[#8B5CF6]" />
-            Top Landlords in {borough}
+            Top Landlords by Violations in {borough}
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {topLandlords.map(([name, stats]) => (
