@@ -7,7 +7,7 @@
  * Usage:  node scripts/generate-sitemaps.mjs
  */
 
-import { writeFileSync, mkdirSync, rmSync, readFileSync, existsSync, readdirSync, renameSync } from "node:fs";
+import { writeFileSync, mkdirSync, rmSync, readFileSync, existsSync, readdirSync } from "node:fs";
 
 const BASE_URL = "https://lucidrents.com";
 const OUT_DIR = "public/sitemap";
@@ -159,24 +159,8 @@ async function supabaseFetch(path) {
       }
       return res.json();
     } catch (err) {
-      // Retry on transient network/connection failures:
-      // - 5xx (already caught above, but also bubbles via thrown Error message)
-      // - UND_ERR_SOCKET — undici raw socket error
-      // - "terminated" — undici closes the connection mid-stream (common during long pagination runs)
-      // - "fetch failed" — generic undici wrapper for connection-level issues
-      // - ECONNRESET / ETIMEDOUT / ENOTFOUND — DNS / TCP-level transient errors
-      const msg = err.message ?? "";
-      const causeCode = err.cause?.code ?? "";
-      const isTransient =
-        msg.includes("500") ||
-        msg.includes("terminated") ||
-        msg.includes("fetch failed") ||
-        causeCode === "UND_ERR_SOCKET" ||
-        causeCode === "ECONNRESET" ||
-        causeCode === "ETIMEDOUT" ||
-        causeCode === "ENOTFOUND";
-      if (attempt < 4 && isTransient) {
-        console.log(`    Retry ${attempt + 1}/5 for ${path.slice(0, 60)}... (${msg || causeCode})`);
+      if (attempt < 4 && (err.message?.includes("500") || err.cause?.code === "UND_ERR_SOCKET")) {
+        console.log(`    Retry ${attempt + 1}/5 for ${path.slice(0, 60)}...`);
         await new Promise(r => setTimeout(r, 3000 * (attempt + 1)));
         continue;
       }
@@ -254,7 +238,6 @@ async function generateStaticSitemap() {
     { path: "/contact", freq: "monthly", priority: 0.5 },
     { path: "/privacy", freq: "monthly", priority: 0.3 },
     { path: "/terms", freq: "monthly", priority: 0.3 },
-    { path: "/search", freq: "weekly", priority: 0.7 },
     { path: "/guides/nyc-tenant-rights", freq: "monthly", priority: 0.7 },
     { path: "/guides/la-tenant-rights", freq: "monthly", priority: 0.7 },
   ]) {
@@ -284,21 +267,15 @@ async function generateStaticSitemap() {
     }
   }
 
-  // Neighborhoods + crime by zip
-  const zipData = await supabaseFetch("buildings?select=zip_code,metro,updated_at&zip_code=not.is.null&limit=10000");
-  const zipCityLastMod = new Map();
-  for (const b of zipData) {
-    if (!b.zip_code) continue;
-    const city = metroToCity(b.metro);
-    const key = `${city}:${b.zip_code}`;
-    const d = b.updated_at || now;
-    const existing = zipCityLastMod.get(key);
-    if (!existing || d > existing) zipCityLastMod.set(key, d);
-  }
-  for (const [key, lastmod] of zipCityLastMod) {
-    const [city, zip] = key.split(":");
-    entries.push({ url: `${BASE_URL}${neighborhoodUrl(zip, city)}`, lastmod, changefreq: "weekly", priority: 0.7 });
-    entries.push({ url: `${BASE_URL}${cityPath(`/crime/${zip}`, city)}`, lastmod, changefreq: "weekly", priority: 0.6 });
+  // Neighborhoods + crime by zip — iterate over the hardcoded ZIP_MAPS for
+  // full per-metro coverage. Previously we sampled `buildings.zip_code` with
+  // limit=10000, which dropped entire metros (Miami: 0 URLs, Chicago: 6) if
+  // their buildings weren't in the first 10K rows.
+  for (const [city, zipMap] of Object.entries(ZIP_MAPS)) {
+    for (const zip of Object.keys(zipMap)) {
+      entries.push({ url: `${BASE_URL}${neighborhoodUrl(zip, city)}`, lastmod: now, changefreq: "weekly", priority: 0.7 });
+      entries.push({ url: `${BASE_URL}${cityPath(`/crime/${zip}`, city)}`, lastmod: now, changefreq: "weekly", priority: 0.6 });
+    }
   }
 
   // News articles (non-fatal — skip if Supabase errors)
@@ -351,25 +328,14 @@ async function generateHubsSitemap() {
     entries.push({ url: `${BASE_URL}${cityPath("/neighborhood/compare", city)}`, lastmod: now, changefreq: "monthly", priority: 0.4 });
   }
 
-  // Rents by neighborhood — reuse ZIP enumeration (~310 unique combos)
-  try {
-    const zipData = await supabaseFetch("buildings?select=zip_code,metro,updated_at&zip_code=not.is.null&limit=10000");
-    const zipCityLastMod = new Map();
-    for (const b of zipData) {
-      if (!b.zip_code) continue;
-      const city = metroToCity(b.metro);
-      const key = `${city}:${b.zip_code}`;
-      const d = b.updated_at || now;
-      const existing = zipCityLastMod.get(key);
-      if (!existing || d > existing) zipCityLastMod.set(key, d);
-    }
-    for (const [key, lastmod] of zipCityLastMod) {
-      const [city, zip] = key.split(":");
+  // Rents by neighborhood — iterate over ZIP_MAPS for full per-metro coverage.
+  // Previously sampled `buildings.zip_code` with limit=10000, which dropped
+  // entire metros (Miami had 0 rent URLs). See same fix in generateStaticSitemap.
+  for (const [city, zipMap] of Object.entries(ZIP_MAPS)) {
+    for (const zip of Object.keys(zipMap)) {
       const slug = neighborhoodPageSlug(zip, city);
-      entries.push({ url: `${BASE_URL}${cityPath(`/rents/${slug}`, city)}`, lastmod, changefreq: "weekly", priority: 0.5 });
+      entries.push({ url: `${BASE_URL}${cityPath(`/rents/${slug}`, city)}`, lastmod: now, changefreq: "weekly", priority: 0.5 });
     }
-  } catch (e) {
-    console.warn(`  ⚠ Skipping rents-by-neighborhood in hubs sitemap: ${e.message}`);
   }
 
   // Ellis Act tracker — LA only. Route is /[city]/ellis-act (lowercase).
@@ -396,7 +362,7 @@ async function generateHubsSitemap() {
 
 // ─── Main ───────────────────────────────────────────────────────
 
-const SITEMAP_TIMEOUT_MS = 180 * 60 * 1000; // 3 hours — accommodates full regen of the ~1.8M building dataset over slow local networks (was 30 min, which silently exited before buildings phase completed)
+const SITEMAP_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes max for entire sitemap generation
 
 // ─── Progress helpers ──────────────────────────────────────────
 
@@ -411,8 +377,8 @@ function saveProgress(data) {
   writeFileSync(PROGRESS_FILE, JSON.stringify(data, null, 2));
 }
 
-function rebuildIndex(dir = OUT_DIR, { writePublicMirror = true } = {}) {
-  const files = readdirSync(dir).filter(f => f.endsWith(".xml") && f !== "index.xml");
+function rebuildIndex() {
+  const files = readdirSync(OUT_DIR).filter(f => f.endsWith(".xml") && f !== "index.xml");
   const now = new Date().toISOString();
   const indexEntries = files.map(f => ({ name: f, lastmod: now }));
   indexEntries.sort((a, b) => {
@@ -428,11 +394,11 @@ function rebuildIndex(dir = OUT_DIR, { writePublicMirror = true } = {}) {
     return order(a.name).localeCompare(order(b.name));
   });
   const indexXml = buildSitemapIndex(indexEntries);
-  writeFileSync(`${dir}/index.xml`, indexXml);
-  // public/sitemap.xml is the canonical URL robots.txt advertises — keep it
-  // in sync with the freshly-built index. Skip during fullGenerate's staging
-  // phase so the deployed mirror only flips after the atomic swap.
-  if (writePublicMirror) writeFileSync(`public/sitemap.xml`, indexXml);
+  writeFileSync(`${OUT_DIR}/index.xml`, indexXml);
+  // Also write the canonical /sitemap.xml that robots.txt points at — it
+  // was getting stuck stale because nothing kept it in sync with the chunk
+  // files. Now it's always a mirror of the freshly-built index.
+  writeFileSync(`public/sitemap.xml`, indexXml);
   return indexEntries.length;
 }
 
@@ -443,26 +409,21 @@ async function fullGenerate() {
   const isTimedOut = () => Date.now() - t0 > SITEMAP_TIMEOUT_MS;
   console.log("Full sitemap generation...");
 
-  // Stage into a sibling dir so a timeout or crash never wipes the deployed
-  // sitemaps. On full success we atomic-rename STAGING_DIR → OUT_DIR. This
-  // is the lesson from c4d2bdd: the previous wipe-then-write left 148 of
-  // 201 chunks missing after a 30-min timeout, restored from pre-dedup main.
-  const STAGING_DIR = `${OUT_DIR}.next`;
-  rmSync(STAGING_DIR, { recursive: true, force: true });
-  mkdirSync(STAGING_DIR, { recursive: true });
+  rmSync(OUT_DIR, { recursive: true, force: true });
+  mkdirSync(OUT_DIR, { recursive: true });
 
   const now = new Date().toISOString();
 
   // Static sitemap
   console.log("  [0.xml] static pages...");
   const staticEntries = await generateStaticSitemap();
-  writeFileSync(`${STAGING_DIR}/0.xml`, buildSitemapXml(staticEntries));
+  writeFileSync(`${OUT_DIR}/0.xml`, buildSitemapXml(staticEntries));
   console.log(`  [0.xml] ${staticEntries.length} URLs`);
 
   // Hubs sitemap
   console.log("  [hubs.xml] hub pages...");
   const hubsEntries = await generateHubsSitemap();
-  writeFileSync(`${STAGING_DIR}/hubs.xml`, buildSitemapXml(hubsEntries));
+  writeFileSync(`${OUT_DIR}/hubs.xml`, buildSitemapXml(hubsEntries));
   console.log(`  [hubs.xml] ${hubsEntries.length} URLs`);
 
   // Landlord sitemaps
@@ -492,7 +453,7 @@ async function fullGenerate() {
         landlordEntries.push({ url: `${BASE_URL}${landlordUrl(l.slug, city)}`, lastmod: l.updated_at ? new Date(l.updated_at).toISOString() : undefined, changefreq: "monthly", priority: 0.5 });
       }
       if (landlordEntries.length >= 10000) {
-        writeFileSync(`${STAGING_DIR}/l-${landlordBatchIndex}.xml`, buildSitemapXml(landlordEntries));
+        writeFileSync(`${OUT_DIR}/l-${landlordBatchIndex}.xml`, buildSitemapXml(landlordEntries));
         landlordUrls += landlordEntries.length;
         if (landlordBatchIndex % 20 === 0) console.log(`    l-${landlordBatchIndex}.xml (${landlordUrls.toLocaleString()} total)`);
         landlordBatchIndex++;
@@ -504,7 +465,7 @@ async function fullGenerate() {
   }
 
   if (landlordEntries.length > 0) {
-    writeFileSync(`${STAGING_DIR}/l-${landlordBatchIndex}.xml`, buildSitemapXml(landlordEntries));
+    writeFileSync(`${OUT_DIR}/l-${landlordBatchIndex}.xml`, buildSitemapXml(landlordEntries));
     landlordUrls += landlordEntries.length;
     landlordBatchIndex++;
   }
@@ -548,7 +509,7 @@ async function fullGenerate() {
           currentEntries.push({ url: `${BASE_URL}${buildingUrl(b, metroToCity(b.metro))}`, lastmod: b.updated_at ? new Date(b.updated_at).toISOString() : undefined, changefreq: "weekly", priority: 0.6 });
         }
         if (currentEntries.length >= URLS_PER_FILE) {
-          writeFileSync(`${STAGING_DIR}/b-${batchIndex}.xml`, buildSitemapXml(currentEntries));
+          writeFileSync(`${OUT_DIR}/b-${batchIndex}.xml`, buildSitemapXml(currentEntries));
           buildingUrls += currentEntries.length;
           if (batchIndex % 50 === 0) console.log(`    b-${batchIndex}.xml ✓ (${buildingUrls.toLocaleString()} total)`);
           batchIndex++;
@@ -561,30 +522,13 @@ async function fullGenerate() {
   }
 
   if (currentEntries.length > 0) {
-    writeFileSync(`${STAGING_DIR}/b-${batchIndex}.xml`, buildSitemapXml(currentEntries));
+    writeFileSync(`${OUT_DIR}/b-${batchIndex}.xml`, buildSitemapXml(currentEntries));
     buildingUrls += currentEntries.length;
     batchIndex++;
   }
   console.log(`  Buildings: ${buildingUrls.toLocaleString()} URLs across ${batchIndex} files`);
 
-  // Write index.xml inside staging too, but skip the public/sitemap.xml
-  // mirror — that one moves only after the swap so robots.txt's target
-  // can't briefly reference chunks that don't exist yet.
-  const fileCount = rebuildIndex(STAGING_DIR, { writePublicMirror: false });
-
-  // Atomic-ish swap. POSIX `rename` is atomic per-path, so the two-step
-  // (OUT_DIR → BACKUP_DIR, STAGING_DIR → OUT_DIR) has a sub-ms window where
-  // OUT_DIR doesn't exist; readers during that window will 404 once and
-  // succeed on retry. This only runs at build time, never at request time.
-  const BACKUP_DIR = `${OUT_DIR}.prev`;
-  rmSync(BACKUP_DIR, { recursive: true, force: true });
-  if (existsSync(OUT_DIR)) renameSync(OUT_DIR, BACKUP_DIR);
-  renameSync(STAGING_DIR, OUT_DIR);
-  rmSync(BACKUP_DIR, { recursive: true, force: true });
-
-  // Now safe to publish the root-level mirror that robots.txt points at.
-  writeFileSync(`public/sitemap.xml`, readFileSync(`${OUT_DIR}/index.xml`, "utf8"));
-
+  const fileCount = rebuildIndex();
   const totalUrls = staticEntries.length + landlordUrls + buildingUrls;
   const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
 
