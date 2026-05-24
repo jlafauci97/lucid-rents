@@ -7,7 +7,6 @@ export const SUB_CATEGORIES_BY_CATEGORY: Record<ConcernCategory, ConcernSubCateg
     "migrant_reception",
     "methadone_clinic",
     "halfway_house",
-    "youth_shelter",
     "supportive_housing",
     // sex_offender rendered separately via SensitiveBlock
   ],
@@ -19,7 +18,6 @@ export const SUB_CATEGORIES_BY_CATEGORY: Record<ConcernCategory, ConcernSubCateg
 /** Human-readable title for each sub-category, used in block headers. */
 export const SUB_CATEGORY_TITLES: Record<ConcernSubCategory, string> = {
   homeless_shelter_adult: "Homeless shelters",
-  youth_shelter: "Youth shelters",
   supportive_housing: "Supportive housing",
   migrant_reception: "Migrant reception centers",
   methadone_clinic: "Methadone / OASAS",
@@ -42,7 +40,6 @@ export const SUB_CATEGORY_TITLES: Record<ConcernSubCategory, string> = {
 /** Default source attribution string for each sub-category. */
 export const SUB_CATEGORY_SOURCES: Record<ConcernSubCategory, string> = {
   homeless_shelter_adult: "NYC DHS + advocacy directories",
-  youth_shelter: "NYC DYCD",
   supportive_housing: "NYC HPD",
   migrant_reception: "NYC Mayor + city contracts",
   methadone_clinic: "NYS OASAS",
@@ -65,7 +62,6 @@ export const SUB_CATEGORY_SOURCES: Record<ConcernSubCategory, string> = {
 /** Default unit label for the big count in each block. */
 export const SUB_CATEGORY_UNITS: Record<ConcernSubCategory, string> = {
   homeless_shelter_adult: "sites",
-  youth_shelter: "sites",
   supportive_housing: "buildings",
   migrant_reception: "centers",
   methadone_clinic: "clinics",

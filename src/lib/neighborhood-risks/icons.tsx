@@ -22,7 +22,6 @@ import {
 
 const ICON_MAP: Record<ConcernSubCategory, ComponentType<{ className?: string }>> = {
   homeless_shelter_adult: Home,
-  youth_shelter: Users,
   supportive_housing: Heart,
   migrant_reception: Users,
   methadone_clinic: Pill,

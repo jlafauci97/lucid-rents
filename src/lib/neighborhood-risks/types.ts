@@ -6,7 +6,6 @@ export type ConcernCategory = "public_safety" | "noise" | "environmental" | "blo
 
 export type ConcernSubCategory =
   | "homeless_shelter_adult"
-  | "youth_shelter"
   | "supportive_housing"
   | "migrant_reception"
   | "methadone_clinic"
