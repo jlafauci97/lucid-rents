@@ -2,7 +2,7 @@
  * S08 Similar buildings nearby — verbatim port of mockup lines 4258–4362.
  *
  *   <section class="section" id="similar">
- *     <div class="section-head">…08 / 09 Similar buildings nearby.…</div>
+ *     <div class="section-head">…09 / 10 Similar buildings nearby.…</div>
  *     <div class="sb-grid">
  *       4 × <article class="sb-card">
  *         <div class="sb-illust"><svg /> …building illustration…</div>
@@ -50,7 +50,7 @@ export function S08_SimilarNearby({ similar, city }: Props) {
     <section className="section" id="similar">
       <div className="section-head">
         <div>
-          <div className="num">08 / 09</div>
+          <div className="num">09 / 10</div>
           <h2>Similar buildings nearby.</h2>
         </div>
         <div className="meta"></div>

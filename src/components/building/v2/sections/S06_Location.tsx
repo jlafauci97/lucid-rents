@@ -2,7 +2,7 @@
  * S06 Location & daily life — verbatim port of mockup lines 4109–4209.
  *
  *   <section class="section" id="location">
- *     <div class="section-head">…06 / 09 Location & daily life.…</div>
+ *     <div class="section-head">…06 / 10 Location & daily life.…</div>
  *     <div class="location-grid">
  *       <div class="big-map">.pin + .mlabel</div>
  *       <div class="walk-panel">.walk-scores (3 rings) + .nearby (rows)</div>
@@ -90,7 +90,7 @@ export function S06_Location({ building, city, nearby, neighborhoodStats, demogr
     <section className="section" id="location">
       <div className="section-head">
         <div>
-          <div className="num">06 / 09</div>
+          <div className="num">06 / 10</div>
           <h2>Location &amp; daily life.</h2>
         </div>
         <div className="meta"></div>

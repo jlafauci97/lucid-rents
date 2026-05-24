@@ -104,7 +104,7 @@ export function S07_History({ building, landlord, timeline }: Props) {
     <section className="section" id="history">
       <div className="section-head">
         <div>
-          <div className="num">07 / 09</div>
+          <div className="num">08 / 10</div>
           <h2>History of the building.</h2>
         </div>
         <div className="meta">construction · ownership · permits</div>

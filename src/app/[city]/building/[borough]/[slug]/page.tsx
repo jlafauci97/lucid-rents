@@ -30,6 +30,7 @@ import { S03TenantReviewsStreamed } from "@/components/building/v2/streaming/S03
 import { S04AmenitiesStreamed } from "@/components/building/v2/streaming/S04AmenitiesStreamed";
 import { S05LandlordStreamed } from "@/components/building/v2/streaming/S05LandlordStreamed";
 import { S06LocationStreamed } from "@/components/building/v2/streaming/S06LocationStreamed";
+import { BuildingAreaSection } from "@/components/building/v2/sections/BuildingAreaSection";
 import { S07HistoryStreamed } from "@/components/building/v2/streaming/S07HistoryStreamed";
 import { S08SimilarNearbyStreamed } from "@/components/building/v2/streaming/S08SimilarNearbyStreamed";
 import { S09FAQStreamed } from "@/components/building/v2/streaming/S09FAQStreamed";
@@ -293,8 +294,9 @@ export default async function BuildingPage({ params }: Props) {
               <S04AmenitiesStreamed building={building} />
               <S05LandlordStreamed building={building} city={typedCity} />
               <S06LocationStreamed building={building} city={typedCity} />
+              <BuildingAreaSection city={typedCity} zipCode={building.zip_code ?? null} />
               <S07HistoryStreamed building={building} />
-              <LazyOnScroll fallback={<SectionSkeleton num="09 / 09" title="Frequently asked questions." id="faq" />}>
+              <LazyOnScroll fallback={<SectionSkeleton num="10 / 10" title="Frequently asked questions." id="faq" />}>
                 <S09FAQStreamed building={building} />
               </LazyOnScroll>
               {typedCity === "los-angeles" && (

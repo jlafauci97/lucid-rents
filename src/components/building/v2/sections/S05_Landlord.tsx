@@ -52,7 +52,7 @@ export function S05_Landlord({ building, landlord, city }: Props) {
     <section className="section" id="landlord">
       <div className="section-head">
         <div>
-          <div className="num">05 / 09</div>
+          <div className="num">05 / 10</div>
           <h2>The landlord.</h2>
         </div>
         <div className="meta"></div>

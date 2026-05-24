@@ -91,7 +91,7 @@ export function S04_Amenities({ amenities, amenityPremiums }: Props) {
     <section className="section" id="amenities">
       <div className="section-head">
         <div>
-          <div className="num">04 / 09</div>
+          <div className="num">04 / 10</div>
           <h2>Building amenities.</h2>
         </div>
         <div className="meta"></div>

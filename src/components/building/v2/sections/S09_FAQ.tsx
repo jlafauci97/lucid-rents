@@ -2,7 +2,7 @@
  * S09 Frequently asked questions — verbatim port of mockup lines 4365–4574.
  *
  *   <section class="section" id="faq">
- *     <div class="section-head">…09 / 09  Frequently asked questions.…</div>
+ *     <div class="section-head">…10 / 10  Frequently asked questions.…</div>
  *     <ul class="faq-list">
  *       <li class="faq-item">
  *         <details>
@@ -236,7 +236,7 @@ export function S09_FAQ({ building, data }: Props) {
     <section className="section" id="faq">
       <div className="section-head">
         <div>
-          <div className="num">09 / 09</div>
+          <div className="num">10 / 10</div>
           <h2>Frequently asked questions.</h2>
         </div>
         <div className="meta"></div>
