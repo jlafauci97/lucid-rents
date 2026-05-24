@@ -101,12 +101,6 @@ const tools: ToolItem[] = [
     cities: ["los-angeles"],
   },
   {
-    path: "/proposals",
-    icon: FileText,
-    label: "Proposals",
-    description: "Legislation & land use under review",
-  },
-  {
     path: "/tenant-tools",
     icon: Wrench,
     label: "Tenant Tools Hub",
