@@ -3,6 +3,7 @@ import { syncSirensFdny } from "./modules/sirens-fdny.ts";
 import { syncSirensHospitals } from "./modules/sirens-hospitals.ts";
 import { syncDsnyGarages } from "./modules/dsny-garages.ts";
 import { syncActiveConstruction } from "./modules/active-construction.ts";
+import { syncSchoolsNycDoe } from "./modules/schools-nyc-doe.ts";
 
 /**
  * Module registry. Add new modules here as they ship.
@@ -29,6 +30,7 @@ const MODULES = {
   "sirens-hospitals": syncSirensHospitals,
   "dsny-garages": syncDsnyGarages,
   "active-construction": syncActiveConstruction,
+  "schools-nyc-doe": syncSchoolsNycDoe,
 } as const;
 
 type ModuleName = keyof typeof MODULES;

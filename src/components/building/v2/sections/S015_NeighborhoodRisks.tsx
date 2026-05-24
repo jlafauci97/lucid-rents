@@ -101,7 +101,7 @@ export function S015_NeighborhoodRisks({ result, city }: Props) {
             Icon={Volume2}
             label="24/7 Noise"
             count={totalByCat.noise}
-            desc="sirens, construction, scaffolding, rail, avenue traffic"
+            desc="sirens, construction, schools, rail, avenue traffic"
           />
           <CategoryTile
             tone="green"
