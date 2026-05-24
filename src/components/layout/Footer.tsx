@@ -2,6 +2,7 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { type City, CITY_META, DEFAULT_CITY, VALID_CITIES } from "@/lib/cities";
 import { cityPath } from "@/lib/seo";
+import { getToolsForCity, getToolLabel } from "@/lib/tenant-tools-nav";
 
 /**
  * Read the current city from the middleware-set x-city header.
@@ -52,54 +53,6 @@ const DATA_SOURCES: Record<City, string[]> = {
     "FEMA Flood Zone Data",
   ],
 };
-
-/**
- * Tenant tools available in each city. Universal tools are listed first; each
- * city's array is concatenated with city-specific additions. Rent
- * Stabilization gets a per-city label (NYC: Rent Stabilization, LA: RSO,
- * Chicago: RLTO, Miami: Tenant Protections).
- */
-interface ToolLink {
-  href: string;
-  label: string;
-  global?: boolean; // true → don't prepend city prefix
-}
-
-function getRentStabilizationLabel(city: City): string {
-  if (city === "los-angeles") return "RSO Checker";
-  if (city === "chicago") return "RLTO Checker";
-  if (city === "miami") return "Tenant Protections";
-  return "Rent Stabilization Checker";
-}
-
-function getTenantTools(city: City): ToolLink[] {
-  const universal: ToolLink[] = [
-    { href: "/tenant-tools", label: "Tenant Tools Hub" },
-    { href: "/tenant-tools/templates", label: "Letter Templates" },
-    { href: "/tenant-tools/checklist", label: "Pre-Move-In Checklist" },
-    { href: "/tenant-rights", label: "Tenant Rights Guide" },
-    { href: "/rent-stabilization", label: getRentStabilizationLabel(city) },
-    { href: "/rent-affordability-calculator", label: "Rent Affordability Calculator", global: true },
-    { href: "/rent-timing-calculator", label: "Rent Timing Calculator", global: true },
-  ];
-  const cityExtras: Partial<Record<City, ToolLink[]>> = {
-    nyc: [
-      { href: "/tenant-tools/neighborhood-risks", label: "Neighborhood Risks" },
-    ],
-    "los-angeles": [
-      { href: "/encampments", label: "Encampment Reports" },
-      { href: "/seismic-fire-safety", label: "Seismic & Fire Zones" },
-      { href: "/ellis-act", label: "Ellis Act Tracker" },
-    ],
-    chicago: [
-      { href: "/problem-landlords", label: "Problem Landlords" },
-      { href: "/affordable-housing", label: "Affordable Housing Tracker" },
-      { href: "/lead-safety", label: "Lead Safety" },
-      { href: "/heating-tracker", label: "Heating Tracker" },
-    ],
-  };
-  return [...universal, ...(cityExtras[city] ?? [])];
-}
 
 /**
  * Top landlords by total_violations, curated per city. Surfaced from
@@ -161,7 +114,8 @@ const TOP_VIOLATION_LANDLORDS: Record<City, { name: string; slug: string }[]> = 
 export async function Footer() {
   const city = await getCurrentCity();
   const cityName = CITY_META[city]?.fullName || "New York City";
-  const tools = getTenantTools(city);
+  // Same canonical list the NavDropdown renders, filtered by city availability.
+  const tools = getToolsForCity(city);
   const topLandlords = TOP_VIOLATION_LANDLORDS[city] ?? [];
 
   return (
@@ -216,19 +170,19 @@ export async function Footer() {
             </ul>
           </div>
 
-          {/* Tenant Tools — city-aware */}
+          {/* Tenant Tools — city-aware, mirrors the NavDropdown list */}
           <div>
             <h4 className="text-white font-semibold text-sm mb-3">
               {cityName} Tenant Tools
             </h4>
             <ul className="space-y-2 text-sm">
               {tools.map((t) => (
-                <li key={t.href}>
+                <li key={t.path}>
                   <Link
-                    href={t.global ? t.href : cityPath(t.href, city)}
+                    href={t.global ? t.path : cityPath(t.path, city)}
                     className="hover:text-white transition-colors"
                   >
-                    {t.label}
+                    {getToolLabel(t, city)}
                   </Link>
                 </li>
               ))}
