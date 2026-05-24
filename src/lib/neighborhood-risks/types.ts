@@ -16,6 +16,7 @@ export type ConcernSubCategory =
   | "elevated_rail"
   | "highway"
   | "avenue_traffic"
+  | "school"
   | "dsny_garage"
   | "brownfield"
   | "industrial_zone"
