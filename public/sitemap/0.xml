@@ -109,19 +109,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://lucidrents.com/nyc/scaffolding</loc>
-    <lastmod>2026-05-16T14:33:24.529Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://lucidrents.com/nyc/permits</loc>
-    <lastmod>2026-05-16T14:33:24.529Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://lucidrents.com/nyc/energy</loc>
     <lastmod>2026-05-16T14:33:24.529Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -199,19 +187,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://lucidrents.com/CA/Los-Angeles/scaffolding</loc>
-    <lastmod>2026-05-16T14:33:24.529Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://lucidrents.com/CA/Los-Angeles/permits</loc>
-    <lastmod>2026-05-16T14:33:24.529Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://lucidrents.com/CA/Los-Angeles/energy</loc>
     <lastmod>2026-05-16T14:33:24.529Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -289,19 +265,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://lucidrents.com/IL/Chicago/scaffolding</loc>
-    <lastmod>2026-05-16T14:33:24.529Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://lucidrents.com/IL/Chicago/permits</loc>
-    <lastmod>2026-05-16T14:33:24.529Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://lucidrents.com/IL/Chicago/energy</loc>
     <lastmod>2026-05-16T14:33:24.529Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -379,19 +343,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://lucidrents.com/FL/Miami/scaffolding</loc>
-    <lastmod>2026-05-16T14:33:24.529Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://lucidrents.com/FL/Miami/permits</loc>
-    <lastmod>2026-05-16T14:33:24.529Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://lucidrents.com/FL/Miami/energy</loc>
     <lastmod>2026-05-16T14:33:24.529Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -469,19 +421,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://lucidrents.com/TX/Houston/scaffolding</loc>
-    <lastmod>2026-05-16T14:33:24.529Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://lucidrents.com/TX/Houston/permits</loc>
-    <lastmod>2026-05-16T14:33:24.529Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://lucidrents.com/TX/Houston/energy</loc>
     <lastmod>2026-05-16T14:33:24.529Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
