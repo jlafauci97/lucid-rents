@@ -590,9 +590,24 @@
   .v2 .body.v2-landlord-body { grid-template-columns: 1fr; }
 }
 
-/* Wayfinder — navy bg · editorial badge header + tile icons */
+/* Wayfinder — navy bg · editorial badge header + tile icons.
+ *
+ * Sticky positioning notes:
+ * - `align-self: start` is required because the parent .v2 .body grid stretches
+ *   row heights to match the tallest item (the main column). Without explicit
+ *   align-self, the wayfinder's grid cell tries to take the full row height,
+ *   killing the sticky-scroll effect.
+ * - `max-height` + `overflow-y: auto` lets the rail scroll within itself when
+ *   it's taller than the viewport (which happens now that we have 10 nav
+ *   entries instead of 9 after adding "About this area").
+ * - `z-index` keeps it above leaflet panes and other in-page absolute elements.
+ */
 .v2 .wayfinder {
   position: sticky; top: 84px;
+  align-self: start;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+  z-index: 5;
   background: var(--ink);
   border-radius: var(--radius);
   padding: 20px 16px;
@@ -600,6 +615,11 @@
   display: flex; flex-direction: column; gap: 18px;
   box-shadow: 0 18px 36px -24px rgba(15,29,46,0.3);
 }
+/* Subtle scrollbar styling inside the wayfinder so it doesn't look harsh */
+.v2 .wayfinder::-webkit-scrollbar { width: 4px; }
+.v2 .wayfinder::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
+.v2 .wayfinder::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
+.v2 .wayfinder { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.15) transparent; }
 
 /* Editorial badge header */
 .v2 .way-head {
