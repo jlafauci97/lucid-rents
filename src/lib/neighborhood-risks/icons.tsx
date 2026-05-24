@@ -22,6 +22,7 @@ import {
   Bus,
   Droplets,
   Zap,
+  Store,
 } from "lucide-react";
 
 const ICON_MAP: Record<ConcernSubCategory, ComponentType<{ className?: string }>> = {
@@ -44,6 +45,7 @@ const ICON_MAP: Record<ConcernSubCategory, ComponentType<{ className?: string }>
   industrial_zone: Factory,
   sewage_plant: Droplets,
   power_plant: Zap,
+  vacant_storefront: Store,
   rat_failures: Rat,
   noise_311: Megaphone,
   bedbug_history: Bug,
