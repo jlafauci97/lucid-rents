@@ -63,8 +63,6 @@ export interface NeighborhoodRisksResult {
     noise_311_on_block: number;
     bedbug_history: number;
   };
-  calm_score: number;
-  calm_score_breakdown: Array<{ reason: string; penalty: number }>;
   total_concerns: number;
   within_block_count: number;
 }

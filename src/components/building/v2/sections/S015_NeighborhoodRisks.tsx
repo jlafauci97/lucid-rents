@@ -12,7 +12,7 @@ interface Props {
 /**
  * Building-page section preview of Neighborhood Risks (Option B layout).
  * Renders 4 colored category boxes with per-category counts, total count,
- * Calm score, and a "See full report" link to /[city]/tenant-tools/
+ * and a "See full report" link to /[city]/tenant-tools/
  * neighborhood-risks/[buildingSlug].
  *
  * Slotted between S01 (rent) and S02 (issues) in the v2 building page.
@@ -51,70 +51,33 @@ export function S015_NeighborhoodRisks({ result, city }: Props) {
       </div>
 
       <div className="ri-card" style={{ padding: 24 }}>
-        {/* Header row: total + calm score */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-end",
-            marginBottom: 18,
-            gap: 16,
-          }}
-        >
-          <div>
-            <div
-              style={{
-                fontSize: 36,
-                fontWeight: 700,
-                color: "#0F1D2E",
-                lineHeight: 1,
-                fontVariantNumeric: "tabular-nums",
-              }}
-            >
-              {result.total_concerns}
-              <span style={{ fontSize: 18, color: "#64748B", fontWeight: 500 }}>
-                {" "}nearby
-              </span>
-            </div>
-            <div
-              style={{
-                fontSize: 11,
-                color: "#94a3b8",
-                textTransform: "uppercase",
-                letterSpacing: "0.6px",
-                fontWeight: 700,
-                marginTop: 6,
-              }}
-            >
-              within 0.75 mi
-            </div>
+        {/* Header row: total nearby */}
+        <div style={{ marginBottom: 18 }}>
+          <div
+            style={{
+              fontSize: 36,
+              fontWeight: 700,
+              color: "#0F1D2E",
+              lineHeight: 1,
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
+            {result.total_concerns}
+            <span style={{ fontSize: 18, color: "#64748B", fontWeight: 500 }}>
+              {" "}nearby
+            </span>
           </div>
-          <div style={{ textAlign: "right" }}>
-            <div
-              style={{
-                fontSize: 11,
-                color: "#94a3b8",
-                textTransform: "uppercase",
-                letterSpacing: "0.6px",
-                fontWeight: 700,
-                marginBottom: 4,
-              }}
-            >
-              Calm score
-            </div>
-            <div
-              style={{
-                fontSize: 30,
-                fontWeight: 700,
-                background: "linear-gradient(135deg, #FBBF24, #F59E0B)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-                lineHeight: 1,
-              }}
-            >
-              {result.calm_score.toFixed(1)} / 10
-            </div>
+          <div
+            style={{
+              fontSize: 11,
+              color: "#94a3b8",
+              textTransform: "uppercase",
+              letterSpacing: "0.6px",
+              fontWeight: 700,
+              marginTop: 6,
+            }}
+          >
+            within 0.75 mi
           </div>
         </div>
 

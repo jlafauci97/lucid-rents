@@ -21,8 +21,6 @@ const baseResult: NeighborhoodRisksResult = {
   ],
   sex_offender_count: 3,
   block_level: { rat_failures: 4, noise_311: 50, noise_311_on_block: 12, bedbug_history: 0 },
-  calm_score: 6.4,
-  calm_score_breakdown: [],
   total_concerns: 5,
   within_block_count: 0,
 };

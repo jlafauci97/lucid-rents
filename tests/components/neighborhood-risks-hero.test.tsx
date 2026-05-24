@@ -17,8 +17,6 @@ const result: NeighborhoodRisksResult = {
   groups: [],
   sex_offender_count: 0,
   block_level: { rat_failures: 0, noise_311: 0, noise_311_on_block: 0, bedbug_history: 0 },
-  calm_score: 6.4,
-  calm_score_breakdown: [],
   total_concerns: 21,
   within_block_count: 2,
 };
@@ -33,7 +31,6 @@ describe("NeighborhoodRisksHero", () => {
     expect(screen.getByText(/0\.75 mi radius/)).toBeDefined();
     expect(screen.getByText("21")).toBeDefined(); // total_concerns
     expect(screen.getByText("2")).toBeDefined(); // within_block_count
-    expect(screen.getByText("6.4 / 10")).toBeDefined();
   });
 
   it("falls back gracefully when neighborhood is empty", () => {

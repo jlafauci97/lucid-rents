@@ -1,5 +1,4 @@
 import { createClient } from "@supabase/supabase-js";
-import { computeCalmScore } from "./calm-score";
 import type {
   ConcernRow,
   ConcernSubCategoryGroup,
@@ -69,28 +68,10 @@ export function groupBySubCategory(rows: ConcernRow[]): ConcernSubCategoryGroup[
   return Array.from(groups.values());
 }
 
-function aggregatePenalties(rows: ConcernRow[]): Record<
-  "public_safety" | "noise" | "environmental",
-  { close: number; far: number }
-> {
-  const acc = {
-    public_safety: { close: 0, far: 0 },
-    noise: { close: 0, far: 0 },
-    environmental: { close: 0, far: 0 },
-  };
-  for (const r of rows) {
-    if (r.category === "block_level") continue;
-    const bucket = r.distance_mi < 0.25 ? "close" : "far";
-    const cat = r.category as keyof typeof acc;
-    if (cat in acc) acc[cat][bucket]++;
-  }
-  return acc;
-}
-
 /**
- * Fetches all Neighborhood Risks data for a building, computes the calm score,
- * and returns a UI-ready result object. Server-component-only — uses the
- * public anon key and is safe to call from RSC code paths.
+ * Fetches all Neighborhood Risks data for a building and returns a UI-ready
+ * result object. Server-component-only — uses the public anon key and is
+ * safe to call from RSC code paths.
  */
 export async function fetchNeighborhoodRisks(
   building: BuildingInput,
@@ -175,26 +156,6 @@ export async function fetchNeighborhoodRisks(
     countRpc("count_bedbugs_near", RADIUS_M),
   ]);
 
-  // 4. Baselines (may be empty until baseline script runs)
-  const { data: baselines } = await supabase
-    .from("calm_score_baselines")
-    .select("metric, median_value");
-  const baselineMap = Object.fromEntries(
-    (baselines ?? []).map((b) => [b.metric as string, Number(b.median_value)]),
-  );
-
-  // 5. Calm score
-  const poiPenalties = aggregatePenalties(rows);
-  const { score, breakdown } = computeCalmScore({
-    poiPenalties,
-    blockLevel: { noise_311: noise311, rats, bedbugs },
-    baselines: {
-      noise_311: baselineMap["nyc_noise_311_90d"] ?? 30,
-      rats: baselineMap["nyc_rats_12mo"] ?? 5,
-      bedbugs: baselineMap["nyc_bedbugs_3y"] ?? 2,
-    },
-  });
-
   return {
     building,
     groups: groupBySubCategory(rows),
@@ -205,8 +166,6 @@ export async function fetchNeighborhoodRisks(
       noise_311_on_block: noise311Block,
       bedbug_history: bedbugs,
     },
-    calm_score: score,
-    calm_score_breakdown: breakdown,
     total_concerns: rows.length + Number(offenderCount ?? 0),
     within_block_count: rows.filter((r) => r.distance_mi < 0.1).length,
   };
