@@ -6,7 +6,22 @@ import type {
 } from "./types";
 
 const RADIUS_M = 1207; // 0.75 mi
+const RADIUS_MI = 0.75;
 const ON_BLOCK_RADIUS_M = 121; // ~0.075 mi, roughly one NYC city block
+
+/** Haversine distance in miles. Used for `nearby_schools` where the table
+ * lacks a PostGIS geom column. */
+function haversineMi(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 3958.8; // Earth radius in miles
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
 
 export interface BuildingInput {
   id: string;
@@ -106,6 +121,42 @@ export async function fetchNeighborhoodRisks(
       source: "derived_from_address",
       source_url: null,
       distance_mi: 0,
+    });
+  }
+
+  // 1c. Schools — pulled from the dedicated `nearby_schools` table (synced
+  // separately via the sync-schools edge function). The table has broader
+  // coverage than the DOE-only Socrata feed: public + charter + private +
+  // colleges across NYC, LA, Houston. We use a bbox prefilter + haversine
+  // because nearby_schools doesn't have a PostGIS geom column (just lat/lng
+  // numerics indexed for the lookup path that the schools sidebar uses).
+  // K-12 + college all produce drop-off, dismissal, and dorm/library noise
+  // patterns, so we include every school type — distinguished in metadata.
+  const SCHOOL_BBOX_DEG = 0.012; // ~0.83 mi at NYC latitude — superset of 0.75 mi
+  const { data: schoolRows } = await supabase
+    .from("nearby_schools")
+    .select("school_id, name, type, address, latitude, longitude")
+    .eq("metro", "nyc")
+    .gte("latitude", lat - SCHOOL_BBOX_DEG)
+    .lte("latitude", lat + SCHOOL_BBOX_DEG)
+    .gte("longitude", lng - SCHOOL_BBOX_DEG)
+    .lte("longitude", lng + SCHOOL_BBOX_DEG);
+
+  for (const s of schoolRows ?? []) {
+    const sLat = Number(s.latitude);
+    const sLng = Number(s.longitude);
+    if (!Number.isFinite(sLat) || !Number.isFinite(sLng)) continue;
+    const distMi = haversineMi(lat, lng, sLat, sLng);
+    if (distMi > RADIUS_MI) continue;
+    rows.push({
+      id: rows.length > 0 ? -(1000 + rows.length) : -1000, // synthetic
+      category: "noise",
+      sub_category: "school",
+      name: String(s.name ?? "School"),
+      address: (s.address as string | null) ?? null,
+      source: `nearby_schools:${s.type ?? "school"}`,
+      source_url: null,
+      distance_mi: distMi,
     });
   }
 
