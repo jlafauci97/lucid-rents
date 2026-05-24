@@ -8,7 +8,7 @@ interface NeighborhoodRisksHeroProps {
 }
 
 export function NeighborhoodRisksHero({ result }: NeighborhoodRisksHeroProps) {
-  const { building, total_concerns, within_block_count, calm_score } = result;
+  const { building, total_concerns, within_block_count } = result;
 
   const breadcrumbs = [
     { label: "Home", href: "/" },
@@ -79,10 +79,9 @@ export function NeighborhoodRisksHero({ result }: NeighborhoodRisksHeroProps) {
           </span>
         </div>
 
-        <div className="grid grid-cols-3 gap-3.5 max-w-xl">
+        <div className="grid grid-cols-2 gap-3.5 max-w-md">
           <StatTile value={total_concerns} label="Nearby concerns" tone="alert" />
           <StatTile value={within_block_count} label="Within 1 block" />
-          <StatTile value={`${calm_score.toFixed(1)} / 10`} label="Calm score" tone="score" />
         </div>
       </div>
     </header>
