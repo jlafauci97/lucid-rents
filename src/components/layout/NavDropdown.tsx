@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { ChevronDown, ArrowLeftRight, ShieldCheck, ShieldAlert, Wrench, BarChart3, ClipboardList, TrainFront, Scale, Tent, FileText, AlertTriangle, Home, Droplets, Flame, Calculator, Newspaper, Radio, Siren } from "lucide-react";
+import { ChevronDown, ArrowLeftRight, ShieldCheck, ShieldAlert, Wrench, BarChart3, TrainFront, Scale, Tent, FileText, AlertTriangle, Home, Droplets, Flame, Calculator, Newspaper, Radio, Siren } from "lucide-react";
 import { type City, DEFAULT_CITY, CITY_META } from "@/lib/cities";
 import { cityPath } from "@/lib/seo";
 import { useCityFromPath } from "@/lib/city-context";
@@ -105,12 +105,6 @@ const tools: ToolItem[] = [
     icon: FileText,
     label: "Letter Templates",
     description: "Free downloadable tenant letter templates",
-  },
-  {
-    path: "/tenant-tools/checklist",
-    icon: ClipboardList,
-    label: "Pre-Move-In Checklist",
-    description: "Due diligence before you sign a lease",
   },
   {
     path: "/tenant-rights",

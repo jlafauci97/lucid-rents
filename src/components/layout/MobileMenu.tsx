@@ -17,7 +17,6 @@ import {
   ShieldCheck,
   ArrowLeftRight,
   BarChart3,
-  ClipboardList,
   TrainFront,
   Scale,
   FileText,
@@ -62,7 +61,6 @@ const secondaryLinks: NavLink[] = [
   { path: "/transit", icon: TrainFront, label: "Near Transit" },
   { path: "/tenant-tools/neighborhood-risks", icon: ShieldAlert, label: "Neighborhood Risks", cities: ["nyc"] },
   { path: "/tenant-tools/templates", icon: FileText, label: "Letter Templates" },
-  { path: "/tenant-tools/checklist", icon: ClipboardList, label: "Pre-Move-In Checklist" },
   { path: "/tenant-rights", icon: Scale, label: "Tenant Rights" },
 ];
 
