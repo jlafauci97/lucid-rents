@@ -225,7 +225,7 @@ async function runBatches(tasks, concurrency) {
   return results;
 }
 
-// ─── Static sitemap (0.xml) ────────────────────────────────────
+// ─── Static pages (merged into hubs.xml) ──────────────────────
 
 async function generateStaticSitemap() {
   const entries = [];
@@ -295,7 +295,7 @@ async function generateStaticSitemap() {
   return entries;
 }
 
-// ─── Hubs sitemap (hubs.xml) ───────────────────────────────────
+// ─── Hub pages (merged into hubs.xml with static) ─────────────
 
 async function generateHubsSitemap() {
   const entries = [];
@@ -416,12 +416,11 @@ function rebuildIndex() {
   const indexEntries = files.map(f => ({ name: f, lastmod: now }));
   indexEntries.sort((a, b) => {
     const order = (n) => {
-      // Crawl priority: buildings first, then landlords, then static, hubs last.
+      // Crawl priority: buildings first, then landlords, then hubs last.
       // Google weakly honors index.xml order; this is the only "priority signal" available.
       if (n.startsWith("b-")) return `0-${n.slice(2).replace(".xml", "").padStart(6, "0")}`;
       if (n.startsWith("l-")) return `1-${n.slice(2).replace(".xml", "").padStart(6, "0")}`;
-      if (n === "0.xml")     return "2-0";
-      if (n === "hubs.xml")  return "3-0";
+      if (n === "hubs.xml")  return "2-0";
       return n;
     };
     return order(a.name).localeCompare(order(b.name));
@@ -447,17 +446,14 @@ async function fullGenerate() {
 
   const now = new Date().toISOString();
 
-  // Static sitemap
-  console.log("  [0.xml] static pages...");
+  // Combined static + hubs sitemap. Previously split into 0.xml + hubs.xml,
+  // merged into a single hubs.xml (#241) — total well under the 50K URL limit.
+  console.log("  [hubs.xml] static + hub pages...");
   const staticEntries = await generateStaticSitemap();
-  writeFileSync(`${OUT_DIR}/0.xml`, buildSitemapXml(staticEntries));
-  console.log(`  [0.xml] ${staticEntries.length} URLs`);
-
-  // Hubs sitemap
-  console.log("  [hubs.xml] hub pages...");
   const hubsEntries = await generateHubsSitemap();
-  writeFileSync(`${OUT_DIR}/hubs.xml`, buildSitemapXml(hubsEntries));
-  console.log(`  [hubs.xml] ${hubsEntries.length} URLs`);
+  const combined = [...staticEntries, ...hubsEntries];
+  writeFileSync(`${OUT_DIR}/hubs.xml`, buildSitemapXml(combined));
+  console.log(`  [hubs.xml] ${combined.length} URLs (${staticEntries.length} static + ${hubsEntries.length} hubs)`);
 
   // Landlord sitemaps
   console.log(`  Generating landlord sitemaps...`);
@@ -587,16 +583,13 @@ async function incrementalGenerate() {
   const since = progress.lastRun;
   let newUrls = 0;
 
-  // Always refresh static sitemap (fast, no DB pagination)
-  console.log("  [0.xml] refreshing static pages...");
+  // Always refresh static + hub pages (fast, no DB pagination required for hub)
+  console.log("  [hubs.xml] refreshing static + hub pages...");
   const staticEntries = await generateStaticSitemap();
-  writeFileSync(`${OUT_DIR}/0.xml`, buildSitemapXml(staticEntries));
-
-  // Hubs sitemap
-  console.log("  [hubs.xml] hub pages...");
   const hubsEntries = await generateHubsSitemap();
-  writeFileSync(`${OUT_DIR}/hubs.xml`, buildSitemapXml(hubsEntries));
-  console.log(`  [hubs.xml] ${hubsEntries.length} URLs`);
+  const combined = [...staticEntries, ...hubsEntries];
+  writeFileSync(`${OUT_DIR}/hubs.xml`, buildSitemapXml(combined));
+  console.log(`  [hubs.xml] ${combined.length} URLs (${staticEntries.length} static + ${hubsEntries.length} hubs)`);
 
   // Append new buildings (created after last run) to new sitemap files
   const PAGE_SIZE = 1000;
