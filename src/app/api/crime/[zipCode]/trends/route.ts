@@ -58,13 +58,18 @@ export async function GET(
     }
 
     const months: CrimeTrendMonth[] = (data || []).map(
-      (row: { month: string; violent: number; property: number; quality_of_life: number; total: number }) => ({
-        month: row.month,
-        violent: Number(row.violent),
-        property: Number(row.property),
-        quality_of_life: Number(row.quality_of_life),
-        total: Number(row.total),
-      })
+      (row: { month: string; violent: number; property: number; quality_of_life: number }) => {
+        const violent = Number(row.violent) || 0;
+        const property = Number(row.property) || 0;
+        const quality_of_life = Number(row.quality_of_life) || 0;
+        return {
+          month: typeof row.month === "string" ? row.month.slice(0, 7) : row.month,
+          violent,
+          property,
+          quality_of_life,
+          total: violent + property + quality_of_life,
+        };
+      }
     );
 
     const trend = calculateTrend(months);
