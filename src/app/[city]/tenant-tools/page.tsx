@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {
   FileText,
-  ClipboardCheck,
   Calculator,
   Scale,
   ShieldCheck,
@@ -64,16 +63,6 @@ const TOOL_CARDS = [
     badge: `${TEMPLATES.length} Templates`,
     badgeColor: "bg-blue-50 text-blue-700 border-blue-200",
     cta: "Browse Templates",
-  },
-  {
-    href: "/tenant-tools/checklist",
-    icon: ClipboardCheck,
-    label: "Pre-Move-In Checklist",
-    description:
-      "Search any building and get a comprehensive due-diligence checklist before you sign a lease — violations, permits, pest history, rent stabilization status, and more.",
-    badge: "Live Data",
-    badgeColor: "bg-green-50 text-green-700 border-green-200",
-    cta: "Check a Building",
   },
   {
     href: "/tenant-tools/neighborhood-risks",
