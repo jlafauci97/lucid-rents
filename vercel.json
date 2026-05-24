@@ -53,6 +53,11 @@
     },
 
     {
+      "path": "/api/cron/reset-perf-stats",
+      "schedule": "0 4 * * 0"
+    },
+
+    {
       "path": "/api/cron/trigger?source=hpd",
       "schedule": "5 5 * * *"
     },
