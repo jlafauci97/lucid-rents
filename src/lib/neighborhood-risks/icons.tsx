@@ -18,6 +18,10 @@ import {
   Users,
   Heart,
   GraduationCap,
+  Plane,
+  Bus,
+  Droplets,
+  Zap,
 } from "lucide-react";
 
 const ICON_MAP: Record<ConcernSubCategory, ComponentType<{ className?: string }>> = {
@@ -32,9 +36,14 @@ const ICON_MAP: Record<ConcernSubCategory, ComponentType<{ className?: string }>
   highway: Car,
   avenue_traffic: CarFront,
   school: GraduationCap,
+  heliport: Plane,
+  bus_depot: Bus,
+  train_yard: Train,
   dsny_garage: Trash2,
   brownfield: Factory,
   industrial_zone: Factory,
+  sewage_plant: Droplets,
+  power_plant: Zap,
   rat_failures: Rat,
   noise_311: Megaphone,
   bedbug_history: Bug,
