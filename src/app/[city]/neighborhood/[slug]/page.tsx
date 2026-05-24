@@ -141,25 +141,29 @@ async function getBestApartments(zipCode: string, city: City) {
   return res.json();
 }
 
-async function getTopLandlords(zipCode: string, city: City): Promise<Array<{ slug: string; name: string; buildingCount: number }>> {
-  // Fetch owner_name counts for buildings in this ZIP
-  const buildingsUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/buildings?zip_code=eq.${zipCode}&metro=eq.${city}&select=owner_name&not.owner_name=is.null`;
+async function getTopLandlords(zipCode: string, city: City): Promise<Array<{ slug: string; name: string; violationCount: number; buildingCount: number }>> {
+  // Fetch owner_name + violation_count per building in this ZIP so we can
+  // rank by aggregate violations (was previously ranked by building count).
+  const buildingsUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/buildings?zip_code=eq.${zipCode}&metro=eq.${city}&select=owner_name,violation_count&not.owner_name=is.null`;
   const buildingsRes = await fetch(buildingsUrl, {
     headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! },
     next: { revalidate: 3600 },
   });
   if (!buildingsRes.ok) return [];
-  const buildingRows: Array<{ owner_name: string }> = await buildingsRes.json();
+  const buildingRows: Array<{ owner_name: string; violation_count: number | null }> = await buildingsRes.json();
 
-  // Count buildings per owner
-  const counts = new Map<string, number>();
+  // Aggregate violations + building count per owner
+  const agg = new Map<string, { violations: number; buildings: number }>();
   for (const r of buildingRows) {
     const name = r.owner_name;
-    counts.set(name, (counts.get(name) ?? 0) + 1);
+    const v = r.violation_count ?? 0;
+    const prev = agg.get(name) ?? { violations: 0, buildings: 0 };
+    agg.set(name, { violations: prev.violations + v, buildings: prev.buildings + 1 });
   }
 
-  const topOwnerNames = Array.from(counts.entries())
-    .sort((a, b) => b[1] - a[1])
+  const topOwnerNames = Array.from(agg.entries())
+    .filter(([, stats]) => stats.violations > 0)
+    .sort((a, b) => b[1].violations - a[1].violations)
     .slice(0, 10)
     .map(([name]) => name);
 
@@ -177,12 +181,16 @@ async function getTopLandlords(zipCode: string, city: City): Promise<Array<{ slu
 
   return statsRows
     .filter((l) => l.slug)
-    .map((l) => ({
-      name: l.name,
-      slug: l.slug as string,
-      buildingCount: counts.get(l.name) ?? 0,
-    }))
-    .sort((a, b) => b.buildingCount - a.buildingCount)
+    .map((l) => {
+      const stats = agg.get(l.name) ?? { violations: 0, buildings: 0 };
+      return {
+        name: l.name,
+        slug: l.slug as string,
+        violationCount: stats.violations,
+        buildingCount: stats.buildings,
+      };
+    })
+    .sort((a, b) => b.violationCount - a.violationCount)
     .slice(0, 10);
 }
 
