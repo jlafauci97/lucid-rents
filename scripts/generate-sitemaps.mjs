@@ -357,6 +357,39 @@ async function generateHubsSitemap() {
     entries.push({ url: `${BASE_URL}${path}`, lastmod: now, changefreq: "monthly", priority: 0.6 });
   }
 
+  // ─── Merged from extras.xml on 2026-05-24 ────────────────────
+  // Consolidates supplementary hub-style URLs into a single sitemap.
+
+  // City homepages (5)
+  for (const city of VALID_CITIES) {
+    entries.push({ url: `${BASE_URL}${cityPath("", city)}`, lastmod: now, changefreq: "daily", priority: 0.9 });
+  }
+
+  // Hub pages available in all 5 cities
+  const ALL_CITY_HUBS = [
+    { path: "/rankings",               freq: "weekly",  priority: 0.8 },
+    { path: "/building-rankings",      freq: "weekly",  priority: 0.8 },
+    { path: "/air-quality",            freq: "daily",   priority: 0.7 },
+    { path: "/fire-safety",            freq: "weekly",  priority: 0.7 },
+    { path: "/crime/safest",           freq: "weekly",  priority: 0.7 },
+    { path: "/tenant-tools/templates", freq: "monthly", priority: 0.5 },
+  ];
+  for (const city of VALID_CITIES) {
+    for (const { path, freq, priority } of ALL_CITY_HUBS) {
+      entries.push({ url: `${BASE_URL}${cityPath(path, city)}`, lastmod: now, changefreq: freq, priority });
+    }
+  }
+
+  // LA-only hub pages (route calls notFound() for other cities)
+  for (const path of ["/encampments", "/seismic-fire-safety"]) {
+    entries.push({ url: `${BASE_URL}${cityPath(path, "los-angeles")}`, lastmod: now, changefreq: "weekly", priority: 0.7 });
+  }
+
+  // Chicago-only hub pages
+  for (const path of ["/heating-tracker", "/lead-safety", "/problem-landlords", "/affordable-housing"]) {
+    entries.push({ url: `${BASE_URL}${cityPath(path, "chicago")}`, lastmod: now, changefreq: "weekly", priority: 0.7 });
+  }
+
   return entries;
 }
 
