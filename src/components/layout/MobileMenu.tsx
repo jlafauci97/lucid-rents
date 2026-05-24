@@ -17,9 +17,7 @@ import {
   ShieldCheck,
   ArrowLeftRight,
   BarChart3,
-  Construction,
   ClipboardList,
-  Zap,
   TrainFront,
   Scale,
   FileText,
@@ -66,8 +64,6 @@ const secondaryLinks: NavLink[] = [
   { path: "/tenant-tools/templates", icon: FileText, label: "Letter Templates" },
   { path: "/tenant-tools/checklist", icon: ClipboardList, label: "Pre-Move-In Checklist" },
   { path: "/tenant-rights", icon: Scale, label: "Tenant Rights" },
-  { path: "/energy", icon: Zap, label: "Energy Scores" },
-  { path: "/scaffolding", icon: Construction, label: "Scaffolding", cities: ["nyc"] },
 ];
 
 export function MobileMenu({ isLoggedIn }: MobileMenuProps) {

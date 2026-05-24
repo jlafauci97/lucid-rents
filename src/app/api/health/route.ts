@@ -177,8 +177,6 @@ const pages: PageCheck[] = [
   { path: "/nyc/landlords", label: "Landlords", category: "public", city: "nyc" },
   { path: "/nyc/review/new", label: "Submit Review", category: "public", city: "nyc" },
   { path: "/nyc/crime", label: "Crime Stats", category: "data", city: "nyc" },
-  { path: "/nyc/scaffolding", label: "Scaffolding", category: "data", city: "nyc" },
-  { path: "/nyc/energy", label: "Energy", category: "data", city: "nyc" },
   { path: "/nyc/rent-data", label: "Rent Data", category: "data", city: "nyc" },
   { path: "/nyc/rent-stabilization", label: "Rent Stabilization", category: "data", city: "nyc" },
   { path: "/nyc/compare", label: "Compare", category: "data", city: "nyc" },

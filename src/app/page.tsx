@@ -125,7 +125,6 @@ const cityDirectories: CityDirectory[] = [
       { label: "Worst landlords",    path: "/landlords",          icon: Trophy,     count: "629K" },
       { label: "Crime by zip",       path: "/crime",              icon: MapPin                    },
       { label: "Rent stabilization", path: "/rent-stabilization", icon: Shield,     count: "712K" },
-      { label: "Scaffolding",        path: "/scaffolding",        icon: Wrench                    },
     ],
   },
   {
