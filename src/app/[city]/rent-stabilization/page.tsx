@@ -5,7 +5,7 @@ import { canonicalUrl, cityPath, cityBreadcrumbs } from "@/lib/seo";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { FAQSection } from "@/components/seo/FAQSection";
 import { AdSidebar } from "@/components/ui/AdSidebar";
-import { isValidCity, CITY_META, type City } from "@/lib/cities";
+import { VALID_CITIES, isValidCity, CITY_META, type City } from "@/lib/cities";
 
 /* ---------------------------------------------------------------------------
  * City-specific rent stabilization config
@@ -146,6 +146,10 @@ export async function generateMetadata({
 
 export const revalidate = 3600;
 
+
+export function generateStaticParams() {
+  return VALID_CITIES.map((city) => ({ city }));
+}
 /* ---------------------------------------------------------------------------
  * Data fetching
  * -------------------------------------------------------------------------*/

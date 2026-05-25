@@ -17,6 +17,13 @@ import { RelatedTools } from "@/components/tenant-rights/RelatedTools";
 
 export const revalidate = 86400; // 24h ISR — static content
 
+// Enable on-demand ISR for unbounded dynamic params. Without this Next.js 16
+// treats the route as fully dynamic and ignores `revalidate`.
+export const dynamicParams = true;
+export function generateStaticParams() {
+  return [];
+}
+
 export async function generateMetadata({
   params,
 }: {

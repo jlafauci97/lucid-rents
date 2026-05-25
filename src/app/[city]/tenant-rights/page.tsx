@@ -6,11 +6,15 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { TENANT_RIGHTS_BY_CITY } from "@/lib/tenant-rights-data";
-import { CITY_META, type City } from "@/lib/cities";
+import { VALID_CITIES, CITY_META, type City } from "@/lib/cities";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { cityBreadcrumbs, canonicalUrl, cityPath } from "@/lib/seo";
 
 export const revalidate = 86400; // 24h ISR — static content
+
+export function generateStaticParams() {
+  return VALID_CITIES.map((city) => ({ city }));
+}
 
 export async function generateMetadata({
   params,

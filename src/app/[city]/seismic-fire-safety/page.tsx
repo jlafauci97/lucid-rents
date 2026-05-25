@@ -12,10 +12,14 @@ import {
   AlertTriangle,
   Phone,
 } from "lucide-react";
-import { CITY_META, type City } from "@/lib/cities";
+import { VALID_CITIES, CITY_META, type City } from "@/lib/cities";
 import { HazardMap } from "@/components/hazards/HazardMap";
 
 export const revalidate = 86400; // 24h ISR
+
+export function generateStaticParams() {
+  return VALID_CITIES.map((city) => ({ city }));
+}
 
 export async function generateMetadata({
   params,

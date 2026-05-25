@@ -4,13 +4,17 @@ import { Users, ShieldAlert, MapPin, TrendingDown } from "lucide-react";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { SearchBar } from "@/components/search/SearchBar";
 import { canonicalUrl, cityPath } from "@/lib/seo";
-import { isValidCity, CITY_META, type City } from "@/lib/cities";
+import { VALID_CITIES, isValidCity, CITY_META, type City } from "@/lib/cities";
 import type { Metadata } from "next";
 import { BoroughGrid } from "./BoroughGrid";
 import { BoroughGridSkeleton } from "./BoroughGridSkeleton";
 
 export const revalidate = 3600;
 
+
+export function generateStaticParams() {
+  return VALID_CITIES.map((city) => ({ city }));
+}
 export async function generateMetadata({ params }: { params: Promise<{ city: string }> }): Promise<Metadata> {
   const { city } = await params;
   if (!isValidCity(city)) return {};

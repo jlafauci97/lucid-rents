@@ -19,6 +19,13 @@ import { V2Zoom } from "@/components/building/v2/V2Zoom";
 
 export const revalidate = 86400;
 
+
+// Enable on-demand ISR for unbounded dynamic params. Without this Next.js 16
+// treats the route as fully dynamic and ignores `revalidate`.
+export const dynamicParams = true;
+export function generateStaticParams() {
+  return [];
+}
 interface Props {
   params: Promise<{ city: string; name: string }>;
 }

@@ -3,11 +3,15 @@ import { FeedView } from "@/components/feed/FeedView";
 import { canonicalUrl, cityPath } from "@/lib/seo";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import type { Metadata } from "next";
-import { isValidCity, CITY_META, type City } from "@/lib/cities";
+import { VALID_CITIES, isValidCity, CITY_META, type City } from "@/lib/cities";
 import { FeedStats, TrendingBuildings } from "./FeedSidebar";
 import { FeedStatsSkeleton, TrendingBuildingsSkeleton } from "./FeedSidebarSkeletons";
 
 export const revalidate = 300; // 5min ISR — live feed shell
+
+export function generateStaticParams() {
+  return VALID_CITIES.map((city) => ({ city }));
+}
 
 export async function generateMetadata({ params }: { params: Promise<{ city: string }> }): Promise<Metadata> {
   const { city } = await params;

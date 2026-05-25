@@ -29,6 +29,13 @@ import { NeighborhoodTopLandlords } from "@/components/neighborhood/Neighborhood
 
 export const revalidate = 3600;
 
+
+// Enable on-demand ISR for unbounded dynamic params. Without this Next.js 16
+// treats the route as fully dynamic and ignores `revalidate`.
+export const dynamicParams = true;
+export function generateStaticParams() {
+  return [];
+}
 export async function generateMetadata({
   params,
 }: {

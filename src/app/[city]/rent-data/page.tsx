@@ -11,7 +11,7 @@ const CitywideTrendChart = dynamic(() => import("@/components/rent-data/Citywide
 const BoroughRentChart = dynamic(() => import("@/components/rent-data/BoroughRentChart").then(m => m.BoroughRentChart), { loading: ChartSkeleton });
 const RGBChart = dynamic(() => import("@/components/rent-data/RGBChart").then(m => m.RGBChart), { loading: ChartSkeleton });
 import { RentMap } from "@/components/rent-data/RentMap";
-import { type City, CITY_META } from "@/lib/cities";
+import { VALID_CITIES, type City, CITY_META } from "@/lib/cities";
 
 export async function generateMetadata({ params }: { params: Promise<{ city: string }> }): Promise<Metadata> {
   const { city } = await params;
@@ -35,6 +35,10 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
 
 export const revalidate = 86400;
 
+
+export function generateStaticParams() {
+  return VALID_CITIES.map((city) => ({ city }));
+}
 async function fetchRpc(fnName: string, params: Record<string, string> = {}) {
   const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/${fnName}`;
   const res = await fetch(url, {

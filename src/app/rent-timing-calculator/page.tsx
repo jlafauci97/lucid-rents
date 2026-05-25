@@ -20,6 +20,8 @@ export const metadata: Metadata = {
   },
 };
 
+export const revalidate = 86400; // 24h ISR — fully static content
+
 export default function RentTimingCalculatorPage() {
   const faqSchema = {
     "@context": "https://schema.org",

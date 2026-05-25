@@ -8,6 +8,8 @@ export const metadata: Metadata = {
   alternates: { canonical: canonicalUrl("/privacy") },
 };
 
+export const revalidate = 86400; // 24h ISR — fully static content
+
 export default function PrivacyPolicyPage() {
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
