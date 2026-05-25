@@ -163,11 +163,11 @@ export async function proxy(request: NextRequest) {
 
       const url = request.nextUrl.clone();
       url.pathname = internalPath;
-      const requestHeaders = new Headers(request.headers);
-      requestHeaders.set("x-city", internalCity);
-      const response = NextResponse.rewrite(url, {
-        request: { headers: requestHeaders },
-      });
+      // NOTE: Don't mutate request headers via NextResponse.rewrite({ request: {...} }) —
+      // doing so opts the rewritten route out of static rendering & ISR. The
+      // Navbar derives the current city from the pathname (useCityFromPath),
+      // so x-city is no longer needed downstream.
+      const response = NextResponse.rewrite(url);
       return withNoindex(response, request);
     }
   }
@@ -189,9 +189,8 @@ export async function proxy(request: NextRequest) {
         return NextResponse.redirect(url, 301);
       }
     }
-    const requestHeaders = new Headers(request.headers);
-    requestHeaders.set("x-city", firstSegment);
-    return withNoindex(NextResponse.next({ request: { headers: requestHeaders } }), request);
+    // Pass through without mutating request headers (see note above).
+    return withNoindex(NextResponse.next(), request);
   }
 
   // 2. Redirect shorthand city slugs to canonical URLs
@@ -244,9 +243,7 @@ export async function proxy(request: NextRequest) {
   }
 
   // 5. Everything else (homepage, api, auth, dashboard, about, privacy, terms) — pass through
-  const fallbackHeaders = new Headers(request.headers);
-  fallbackHeaders.set("x-city", "nyc");
-  return withNoindex(NextResponse.next({ request: { headers: fallbackHeaders } }), request);
+  return withNoindex(NextResponse.next(), request);
 }
 
 export const config = {

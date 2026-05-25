@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Bell, BellRing } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { createClient } from "@/lib/supabase/client";
 
 interface MonitorButtonProps {
   buildingId: string;
+  /** @deprecated initial state is now fetched client-side so the parent server component can be ISR-cached */
   initialMonitored?: boolean;
 }
 
@@ -14,6 +16,24 @@ export function MonitorButton({ buildingId, initialMonitored = false }: MonitorB
   const router = useRouter();
   const [isMonitored, setIsMonitored] = useState(initialMonitored);
   const [loading, setLoading] = useState(false);
+
+  // Fetch monitored state client-side so the building page can stay ISR-cached.
+  useEffect(() => {
+    let cancelled = false;
+    const supabase = createClient();
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || cancelled) return;
+      const { data } = await supabase
+        .from("monitored_buildings")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("building_id", buildingId)
+        .maybeSingle();
+      if (!cancelled) setIsMonitored(!!data);
+    })();
+    return () => { cancelled = true; };
+  }, [buildingId]);
 
   async function handleToggle() {
     setLoading(true);

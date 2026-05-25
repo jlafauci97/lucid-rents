@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Bookmark } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { createClient } from "@/lib/supabase/client";
 
 interface SaveButtonProps {
   buildingId: string;
+  /** @deprecated initial state is now fetched client-side so the parent server component can be ISR-cached */
   initialSaved?: boolean;
 }
 
@@ -14,6 +16,24 @@ export function SaveButton({ buildingId, initialSaved = false }: SaveButtonProps
   const router = useRouter();
   const [isSaved, setIsSaved] = useState(initialSaved);
   const [loading, setLoading] = useState(false);
+
+  // Fetch saved state client-side so the building page can stay ISR-cached.
+  useEffect(() => {
+    let cancelled = false;
+    const supabase = createClient();
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || cancelled) return;
+      const { data } = await supabase
+        .from("saved_buildings")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("building_id", buildingId)
+        .maybeSingle();
+      if (!cancelled) setIsSaved(!!data);
+    })();
+    return () => { cancelled = true; };
+  }, [buildingId]);
 
   async function handleToggle() {
     setLoading(true);

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { ReviewSection } from "@/components/review/ReviewSection";
 import { ViolationsByUnit } from "@/components/building/ViolationsByUnit";
 import { MarketListings } from "@/components/building/MarketListings";
@@ -34,13 +34,15 @@ const safe = <T,>(promise: PromiseLike<{ data: T | null; error: unknown }>, fall
   });
 
 export async function DeferredBuildingContent({ building, buildingId, city, rents }: DeferredBuildingContentProps) {
-  const supabase = await createClient();
+  // Anonymous cache client only — keeps this section ISR-cacheable. Saved/monitored
+  // initial state is fetched client-side by SaveButton/MonitorButton themselves.
+  const supabase = createCacheClient();
 
   const isLA = city === "los-angeles";
   const isChicago = city === "chicago";
   const isNYC = city === "nyc";
 
-  const [violations, complaints, litigations, dobViolations, bedbugs, evictions, permits, reviews, units, violationSummaries, amenities, marketListings, rentHistory, authStatus, lahdViolationSummary, deweyBuildingRents, deweyNeighborhoodRents, deweyAmenityPremiums, deweySeasonalIndex] = await Promise.all([
+  const [violations, complaints, litigations, dobViolations, bedbugs, evictions, permits, reviews, units, violationSummaries, amenities, marketListings, rentHistory, lahdViolationSummary, deweyBuildingRents, deweyNeighborhoodRents, deweyAmenityPremiums, deweySeasonalIndex] = await Promise.all([
     safe(supabase.from("hpd_violations").select("*").eq("building_id", buildingId).order("inspection_date", { ascending: false }).limit(20), [] as HpdViolation[]),
     safe(supabase.from("complaints_311").select("*").eq("building_id", buildingId).order("created_date", { ascending: false }).limit(20), [] as Complaint311[]),
     isNYC ? safe(supabase.from("hpd_litigations").select("*").eq("building_id", buildingId).order("case_open_date", { ascending: false }).limit(20), [] as HpdLitigation[]) : Promise.resolve([] as HpdLitigation[]),
@@ -54,19 +56,6 @@ export async function DeferredBuildingContent({ building, buildingId, city, rent
     safe(supabase.from("building_amenities").select("amenity, category, source").eq("building_id", buildingId), []),
     safe(supabase.from("building_listings").select("*").eq("building_id", buildingId), []),
     safe(supabase.from("unit_rent_history").select("id, unit_number, bedrooms, bathrooms, rent, sqft, source, observed_at").eq("building_id", buildingId).order("observed_at", { ascending: false }).limit(100), []),
-    (async (): Promise<{ monitored: boolean; saved: boolean }> => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return { monitored: false, saved: false };
-        const [monitorRes, saveRes] = await Promise.all([
-          supabase.from("monitored_buildings").select("id").eq("user_id", user.id).eq("building_id", buildingId).single(),
-          supabase.from("saved_buildings").select("id").eq("user_id", user.id).eq("building_id", buildingId).single(),
-        ]);
-        return { monitored: !!monitorRes.data, saved: !!saveRes.data };
-      } catch {
-        return { monitored: false, saved: false };
-      }
-    })(),
     isLA
       ? safe(supabase.from("lahd_violation_summary").select("id, building_id, violation_type, violations_cited, violations_cleared").eq("building_id", buildingId).order("violations_cited", { ascending: false }).limit(50), [] as LahdViolationSummary[])
       : Promise.resolve([] as LahdViolationSummary[]),
@@ -91,11 +80,10 @@ export async function DeferredBuildingContent({ building, buildingId, city, rent
       <ReviewSection
         reviews={reviews}
         buildingId={buildingId}
-        isMonitored={authStatus.monitored}
         cityPath={`/${city}`}
         headerActions={
           <>
-            <SaveButton buildingId={buildingId} initialSaved={authStatus.saved} />
+            <SaveButton buildingId={buildingId} />
             <ShareButton address={shortAddress} url={canonicalUrl(buildingUrl(building, city))} />
           </>
         }
