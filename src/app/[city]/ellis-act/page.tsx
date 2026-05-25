@@ -2,12 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Ban, Search, ExternalLink, AlertTriangle } from "lucide-react";
-import { CITY_META, type City } from "@/lib/cities";
+import { VALID_CITIES, CITY_META, type City } from "@/lib/cities";
 import { canonicalUrl, cityPath, buildingUrl } from "@/lib/seo";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 
 export const revalidate = 86400; // 24h ISR
+
+export function generateStaticParams() {
+  return VALID_CITIES.map((city) => ({ city }));
+}
 
 export async function generateMetadata({ params }: { params: Promise<{ city: string }> }): Promise<Metadata> {
   const { city } = await params;
@@ -29,7 +33,7 @@ export default async function EllisActPage({ params }: { params: Promise<{ city:
   const city = cityParam as City;
   const meta = CITY_META[city];
   const cityName = meta?.fullName ?? "Los Angeles";
-  const supabase = await createClient();
+  const supabase = createCacheClient();
 
   const { data: ellisBuildings, count: totalEllis } = await supabase.from("buildings").select("id, full_address, borough, slug, ellis_act_date, residential_units, year_built", { count: "exact" }).eq("metro", city).eq("ellis_act_filing", true).order("ellis_act_date", { ascending: false }).limit(20);
   const { count: ellisEvictionCount } = await supabase.from("lahd_evictions").select("id", { count: "exact", head: true }).eq("metro", "los-angeles").ilike("eviction_category", "%Ellis%");

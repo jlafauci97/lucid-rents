@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 
 interface MonthData {
   month: string;
@@ -54,7 +54,7 @@ export async function GET(
 ) {
   try {
     const { buildingId } = await params;
-    const supabase = await createClient();
+    const supabase = createCacheClient();
 
     // Look up the building's metro to decide which violation table to query
     const { data: buildingRow } = await supabase

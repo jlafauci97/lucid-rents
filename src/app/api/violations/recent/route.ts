@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { isValidCity } from "@/lib/cities";
 
 export async function GET(request: Request) {
@@ -10,7 +10,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Invalid city" }, { status: 400 });
     }
 
-    const supabase = await createClient();
+    const supabase = createCacheClient();
 
     // Step 1: Fetch recent violations (no join — fast)
     let violationsQuery = supabase

@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { BuildingCard } from "@/components/search/BuildingCard";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -73,7 +73,7 @@ export default async function BoroughPage({ params, searchParams }: BoroughPageP
   let buildingList: Building[] = [];
 
   try {
-    const supabase = await createClient();
+    const supabase = createCacheClient();
 
     // Get total count and paginated buildings in parallel.
     // `count: "planned"` uses the planner's row-estimate instead of running
@@ -106,7 +106,7 @@ export default async function BoroughPage({ params, searchParams }: BoroughPageP
   // Fetch best apartments by price tier for this borough
   let bestApartmentTiers: { label: string; max: number; buildings: { id: string; full_address: string; borough: string; slug: string; overall_score: number | null; median_rent: number; buildingUrl: string }[] }[] = [];
   try {
-    const supabase = await createClient();
+    const supabase = createCacheClient();
     const PRICE_TIERS = [
       { label: "$1.5K", max: 1500 },
       { label: "$2K", max: 2000 },

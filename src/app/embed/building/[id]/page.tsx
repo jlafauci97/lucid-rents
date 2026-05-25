@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { CITY_META, VALID_CITIES, type City } from "@/lib/cities";
 import { buildingUrl } from "@/lib/seo";
 import type { Building } from "@/types";
@@ -13,7 +13,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const supabase = await createClient();
+  const supabase = createCacheClient();
   const { data } = await supabase.from("buildings").select("full_address").eq("id", id).single();
   return {
     title: data?.full_address ? `${data.full_address}` : "Building Embed",
@@ -41,7 +41,7 @@ export default async function BuildingEmbedPage({
   const sp = await searchParams;
   const isDark = sp.theme === "dark";
 
-  const supabase = await createClient();
+  const supabase = createCacheClient();
   const { data } = await supabase
     .from("buildings")
     .select("id, full_address, borough, slug, metro, overall_score, violation_count, complaint_count, review_count, is_rent_stabilized, is_rso")

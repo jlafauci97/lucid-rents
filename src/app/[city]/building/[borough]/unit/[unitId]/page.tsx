@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { ViolationTimeline } from "@/components/building/ViolationTimeline";
 import { ReviewCard } from "@/components/review/ReviewCard";
 import { ScoreGauge } from "@/components/ui/ScoreGauge";
@@ -13,6 +13,13 @@ import { CITY_META, type City } from "@/lib/cities";
 
 export const revalidate = 86400; // 24h ISR
 
+// Enable on-demand ISR for unbounded dynamic params. Without this Next.js 16
+// treats the route as fully dynamic and ignores `revalidate`.
+export const dynamicParams = true;
+export function generateStaticParams() {
+  return [];
+}
+
 interface UnitPageProps {
   params: Promise<{ city: string; borough: string; unitId: string }>;
 }
@@ -20,7 +27,7 @@ interface UnitPageProps {
 export async function generateMetadata({ params }: UnitPageProps): Promise<Metadata> {
   const { city: cityParam, borough: buildingId, unitId } = await params;
   const city = (cityParam || "nyc") as City;
-  const supabase = await createClient();
+  const supabase = createCacheClient();
 
   const [{ data: unit }, { data: building }] = await Promise.all([
     supabase.from("units").select("unit_number").eq("id", unitId).single(),
@@ -39,7 +46,7 @@ export async function generateMetadata({ params }: UnitPageProps): Promise<Metad
 export default async function UnitPage({ params }: UnitPageProps) {
   const { city: cityParam, borough: buildingId, unitId } = await params;
   const city = (cityParam || "nyc") as City;
-  const supabase = await createClient();
+  const supabase = createCacheClient();
 
   // Fetch unit first (need unit_number for violation query)
   const { data: unit } = await supabase

@@ -1,12 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Wind, Search, ShieldCheck } from "lucide-react";
-import { CITY_META, type City } from "@/lib/cities";
+import { VALID_CITIES, CITY_META, type City } from "@/lib/cities";
 import { canonicalUrl, cityPath } from "@/lib/seo";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 
 export const revalidate = 86400; // 24h ISR
+
+export function generateStaticParams() {
+  return VALID_CITIES.map((city) => ({ city }));
+}
 
 export async function generateMetadata({ params }: { params: Promise<{ city: string }> }): Promise<Metadata> {
   const { city } = await params;
@@ -25,7 +29,7 @@ export default async function AirQualityPage({ params }: { params: Promise<{ cit
   const city = cityParam as City;
   const meta = CITY_META[city];
   const cityName = meta?.fullName ?? "Los Angeles";
-  const supabase = await createClient();
+  const supabase = createCacheClient();
 
   const { data: worstZips } = await supabase.from("calenviroscreen").select("zip_code, ces_percentile, pm25_percentile, ozone_percentile, traffic_percentile").gte("ces_percentile", 75).order("ces_percentile", { ascending: false }).limit(10);
   const { count: highPollutionBuildings } = await supabase.from("buildings").select("id", { count: "exact", head: true }).eq("metro", city).gte("calenviroscreen_percentile", 75);

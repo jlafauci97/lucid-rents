@@ -1,8 +1,8 @@
 import { Users, DollarSign, Home, BarChart3 } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 
 export async function DemographicSnapshot({ zipCode }: { zipCode: string }) {
-  const supabase = await createClient();
+  const supabase = createCacheClient();
   const { data } = await supabase.from("census_demographics").select("zip_code, population, median_household_income, renter_occupied_pct, median_age").eq("zip_code", zipCode).limit(1);
   if (!data || data.length === 0) return null;
   const demo = data[0];

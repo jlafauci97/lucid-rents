@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { ViolationTrend } from "@/components/building/ViolationTrend";
 import { CommonIssues } from "@/components/building/CommonIssues";
 import { ViolationsByUnit } from "@/components/building/ViolationsByUnit";
@@ -22,7 +22,7 @@ interface Props {
 }
 
 export async function DeferredIssuesSection({ buildingId, city, buildingHref }: Props) {
-  const supabase = await createClient();
+  const supabase = createCacheClient();
   const isLA = city === "los-angeles";
   const isChicago = city === "chicago";
   const isNYC = city === "nyc";

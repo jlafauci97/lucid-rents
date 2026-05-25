@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { isValidCity } from "@/lib/cities";
 
 export async function GET(request: Request) {
@@ -18,7 +18,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "lat and lon required" }, { status: 400 });
     }
 
-    const supabase = await createClient();
+    const supabase = createCacheClient();
 
     // Get zip centroids
     let centroidsQuery = supabase

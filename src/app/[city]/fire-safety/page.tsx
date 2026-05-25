@@ -1,12 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Flame, ShieldCheck, AlertTriangle, ExternalLink, Search } from "lucide-react";
-import { CITY_META, type City } from "@/lib/cities";
+import { VALID_CITIES, CITY_META, type City } from "@/lib/cities";
 import { canonicalUrl, cityPath } from "@/lib/seo";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 
 export const revalidate = 86400; // 24h ISR
+
+export function generateStaticParams() {
+  return VALID_CITIES.map((city) => ({ city }));
+}
 
 export async function generateMetadata({ params }: { params: Promise<{ city: string }> }): Promise<Metadata> {
   const { city } = await params;
@@ -25,7 +29,7 @@ export default async function FireSafetyPage({ params }: { params: Promise<{ cit
   const city = cityParam as City;
   const meta = CITY_META[city];
   const cityName = meta?.fullName ?? "Los Angeles";
-  const supabase = await createClient();
+  const supabase = createCacheClient();
 
   const { count: vhfhszCount } = await supabase.from("buildings").select("id", { count: "exact", head: true }).eq("metro", city).eq("fire_hazard_zone", "VHFHSZ");
   const { count: fairPlanCount } = await supabase.from("buildings").select("id", { count: "exact", head: true }).eq("metro", city).eq("fair_plan_risk", true);

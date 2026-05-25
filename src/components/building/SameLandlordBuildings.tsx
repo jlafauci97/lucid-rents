@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { buildingUrl, landlordUrl } from "@/lib/seo";
 import { MapPin, AlertTriangle, Building2 } from "lucide-react";
 
@@ -34,7 +34,7 @@ export async function SameLandlordBuildings({
   landlordRentGrowth,
   marketRentGrowth,
 }: SameLandlordBuildingsProps) {
-  const supabase = await createClient();
+  const supabase = createCacheClient();
 
   // Prefer grouping by management company (who tenants interact with),
   // fall back to property owner

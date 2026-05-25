@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { CityProvider } from "@/lib/city-context";
 
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import {
   CITY_META,
   CITY_SHORT_NAME,
@@ -81,7 +81,7 @@ interface NeighborhoodHit {
 }
 
 async function fetchCrossCityResults(q: string, cityFilter: City | null) {
-  const supabase = await createClient();
+  const supabase = createCacheClient();
   const { abbreviated, expanded } = normalizeAddressQuery(q);
 
   const buildingsPromise = (async () => {

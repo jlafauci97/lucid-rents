@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 
 /**
  * Point-in-polygon flood zone lookup backed by PostGIS + FEMA NFHL data.
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const supabase = await createClient();
+  const supabase = createCacheClient();
   const { data, error } = await supabase.rpc("flood_zone_for_point", {
     p_lat: lat,
     p_lng: lng,

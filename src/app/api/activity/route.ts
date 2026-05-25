@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient as createServerClient } from "@/lib/supabase/server";
+import { createCacheClient as createServerClient } from "@/lib/supabase/cache-client";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { isValidCity } from "@/lib/cities";
 
@@ -82,7 +82,7 @@ export async function GET(request: Request) {
 
     // --- Fresh fetch ---
     // Prefer admin client (no 3s anon timeout) with fallback to cookie client
-    const supabase = getAdminClient() ?? await createServerClient();
+    const supabase = getAdminClient() ?? createServerClient();
 
     // Snap cutoff to midnight UTC so every request today gets the same boundary
     const cutoff = new Date();

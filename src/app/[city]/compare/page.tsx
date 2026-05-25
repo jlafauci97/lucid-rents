@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { CompareSearch } from "@/components/compare/CompareSearch";
 import { CompareGrid } from "@/components/compare/CompareGrid";
 import { Card, CardContent } from "@/components/ui/Card";
@@ -49,7 +49,7 @@ async function CompareContent({ params: paramsPromise, searchParams }: ComparePa
   let buildings: Building[] = [];
 
   if (ids.length > 0) {
-    const supabase = await createClient();
+    const supabase = createCacheClient();
     const { data, error } = await supabase
       .from("buildings")
       .select("*")

@@ -1,19 +1,23 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Shield } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { canonicalUrl, cityPath, cityBreadcrumbs } from "@/lib/seo";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { FAQSection } from "@/components/seo/FAQSection";
 import { LetterGrade } from "@/components/ui/LetterGrade";
 import { TrendBadge } from "@/components/ui/TrendBadge";
-import { isValidCity, CITY_META, type City } from "@/lib/cities";
+import { VALID_CITIES, isValidCity, CITY_META, type City } from "@/lib/cities";
 import { getNeighborhoodNameByCity } from "@/lib/neighborhoods";
 import { rankZips, type SafetyGrade } from "@/lib/crime-stats";
 
 export const revalidate = 3600;
 
+
+export function generateStaticParams() {
+  return VALID_CITIES.map((city) => ({ city }));
+}
 const GRADE_SCORES: Record<SafetyGrade, number> = {
   A: 4.5,
   B: 3.5,
@@ -66,7 +70,7 @@ export default async function SafestNeighborhoodsPage({
   const city = cityParam as City;
   const meta = CITY_META[city];
 
-  const supabase = await createClient();
+  const supabase = createCacheClient();
   const sinceDate = new Date();
   sinceDate.setFullYear(sinceDate.getFullYear() - 2);
   const sinceDateStr = sinceDate.toISOString().split("T")[0];

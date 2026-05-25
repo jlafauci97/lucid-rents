@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { TrendingUp } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { LetterGrade } from "@/components/ui/LetterGrade";
 import { buildingUrl } from "@/lib/seo";
 import { deriveScore } from "@/lib/constants";
@@ -12,7 +12,7 @@ interface TrendingBuildingsProps {
 }
 
 export async function TrendingBuildings({ city }: TrendingBuildingsProps) {
-  const supabase = await createClient();
+  const supabase = createCacheClient();
   const metro = city === "nyc" ? "nyc" : city;
 
   const { data: buildings } = await supabase

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 
 /**
  * Landlord sitemap index. Computes the chunk range from the live row
@@ -25,7 +25,7 @@ export const revalidate = 86400; // 24h ISR
 
 export async function GET() {
   try {
-    const supabase = await createClient();
+    const supabase = createCacheClient();
     const { count, error } = await supabase
       .from("landlord_stats")
       .select("*", { count: "exact", head: true })

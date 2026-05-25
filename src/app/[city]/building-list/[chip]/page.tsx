@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { canonicalUrl, cityPath, buildingUrl } from "@/lib/seo";
 import { isValidCity, CITY_META, VALID_CITIES, type City } from "@/lib/cities";
 import {
@@ -24,7 +24,7 @@ const PER_PAGE = 30;
 // Run per-request so runtime validation (notFound / redirect) always executes
 // and doesn't get stuck behind an ISR-cached "200 with not-found body" soft-404.
 // Page itself is cheap — just a filtered buildings select + count.
-export const dynamic = "force-dynamic";
+export const revalidate = 3600; // 1h ISR
 
 export async function generateMetadata({
   params,
@@ -87,7 +87,7 @@ export default async function CategoryPage({
   const offset = (page - 1) * PER_PAGE;
   const sort = sp.sort;
 
-  const supabase = await createClient();
+  const supabase = createCacheClient();
   const { buildings, count } = await getBuildingsForChip(supabase, city, chip, {
     offset,
     limit: PER_PAGE,

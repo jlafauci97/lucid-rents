@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import Link from "next/link";
 import { cache } from "react";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { Siren, Building2, MapPin } from "lucide-react";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { buildingUrl, canonicalUrl, neighborhoodUrl, cityPath, breadcrumbJsonLd } from "@/lib/seo";
@@ -45,8 +45,15 @@ interface RecentCrime {
 
 export const revalidate = 3600;
 
+
+// Enable on-demand ISR for unbounded dynamic params. Without this Next.js 16
+// treats the route as fully dynamic and ignores `revalidate`.
+export const dynamicParams = true;
+export function generateStaticParams() {
+  return [];
+}
 const getPageData = cache(async (city: City, zipCode: string) => {
-  const supabase = await createClient();
+  const supabase = createCacheClient();
   const twoYearsAgo = new Date();
   twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
   const sinceDate = twoYearsAgo.toISOString().split("T")[0];

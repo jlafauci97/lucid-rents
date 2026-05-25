@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { RentIntelligence } from "@/components/building/RentIntelligence";
 import { AmenityPremiums } from "@/components/building/AmenityPremiums";
 import { BuildingAmenities } from "@/components/building/BuildingAmenities";
@@ -21,7 +21,7 @@ interface Props {
 }
 
 export async function DeferredRentIntelligenceSection({ building, buildingId, city }: Props) {
-  const supabase = await createClient();
+  const supabase = createCacheClient();
 
   // Chart only renders data from 2019 onward (COVID-detection baseline) and only
   // uses these columns. Filter and project at the database to keep the RSC payload small.

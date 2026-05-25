@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 
 // Haversine distance in miles
 function haversine(
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const supabase = await createClient();
+  const supabase = createCacheClient();
 
   // Bounding box query for performance
   const { data: records, error } = await supabase

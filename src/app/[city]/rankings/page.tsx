@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { AlertTriangle, Building2, MapPin, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { buildingUrl, canonicalUrl } from "@/lib/seo";
@@ -45,7 +45,7 @@ export default async function RankingsPage({ params: routeParams, searchParams }
   const limit = 25;
   const offset = (page - 1) * limit;
 
-  const supabase = await createClient();
+  const supabase = createCacheClient();
 
   let query = supabase
     .from("buildings")

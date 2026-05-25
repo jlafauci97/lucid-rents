@@ -1,5 +1,5 @@
 import "@/styles/v2-tokens.css";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { notFound, permanentRedirect } from "next/navigation";
 import { Crumbs } from "@/components/landlord/v2/Crumbs";
 import { HeroV2Streamed } from "@/components/landlord/v2/streaming/HeroV2Streamed";
@@ -43,6 +43,13 @@ import { LandlordNeighborhoods } from "@/components/landlord/LandlordNeighborhoo
 
 export const revalidate = 86400; // 24h ISR — matches building v2
 
+// Enable on-demand ISR for unbounded dynamic params. Without this Next.js 16
+// treats the route as fully dynamic and ignores `revalidate`.
+export const dynamicParams = true;
+export function generateStaticParams() {
+  return [];
+}
+
 // Coarse landlord letter grade used by the wayfinder rail. Full scoring
 // and grade breakdown live in HeroV2.
 function letterGrade(score: number | null): string {
@@ -67,7 +74,7 @@ interface LandlordPageProps {
 // Resolve the canonical owner_name for a slug. Returns `null` if the slug has
 // no landlord record in this metro. Also handles the legacy "decoded name" URL.
 async function resolveOwnerName(
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  supabase: ReturnType<typeof createCacheClient>,
   slugOrName: string,
   city: City
 ): Promise<string | null> {
@@ -144,7 +151,7 @@ export default async function LandlordDetailPage({
 }: LandlordPageProps) {
   const { city: cityParam, name } = await params;
   const city = (cityParam || "nyc") as City;
-  const supabase = await createClient();
+  const supabase = createCacheClient();
 
   const [ownerName, cachedStats, neighborhoods, tenantVoice, faqItems] =
     await Promise.all([

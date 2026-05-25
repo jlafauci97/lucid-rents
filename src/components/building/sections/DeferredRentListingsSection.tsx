@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { MarketListings } from "@/components/building/MarketListings";
 import { RentRangeCard } from "@/components/building/RentRangeCard";
 import { buildingUrl } from "@/lib/seo";
@@ -22,7 +22,7 @@ interface Props {
 }
 
 export async function DeferredRentListingsSection({ building, buildingId, city, rents }: Props) {
-  const supabase = await createClient();
+  const supabase = createCacheClient();
 
   const [marketListings, amenities, rentHistory] = await Promise.all([
     safe(supabase.from("building_listings").select("*").eq("building_id", buildingId), []),

@@ -7,7 +7,7 @@ import { BuildingCard } from "@/components/search/BuildingCard";
 import { TrendingBuildings } from "@/components/search/TrendingBuildings";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { AdSidebar } from "@/components/ui/AdSidebar";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import type { Building } from "@/types";
 import { normalizeAddressQuery } from "@/lib/address-normalization";
 import { cityPath, canonicalUrl } from "@/lib/seo";
@@ -50,7 +50,7 @@ function isValidSort(s: string | undefined): s is SortOption {
 }
 
 function applySortOrder(
-  query: ReturnType<ReturnType<Awaited<ReturnType<typeof createClient>>["from"]>["select"]>,
+  query: ReturnType<ReturnType<ReturnType<typeof createCacheClient>["from"]>["select"]>,
   sort: SortOption
 ) {
   switch (sort) {
@@ -101,7 +101,7 @@ async function SearchResults({
     );
   }
 
-  const supabase = await createClient();
+  const supabase = createCacheClient();
   const limit = 20;
   const offset = (page - 1) * limit;
 

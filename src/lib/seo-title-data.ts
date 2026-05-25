@@ -8,7 +8,7 @@
  * skips the templates that depend on them.
  */
 
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { buildingNeighborhood } from "@/lib/neighborhoods";
 import { normalizeScore } from "@/lib/constants";
 import type { City } from "@/lib/cities";
@@ -81,7 +81,7 @@ export async function getBuildingTitleData(
   building: BuildingMinimal,
   city: City
 ): Promise<BuildingTitleData> {
-  const supabase = await createClient();
+  const supabase = createCacheClient();
   const isAltMetro = city === "chicago" || city === "miami" || city === "houston";
   const violationCount = isAltMetro
     ? (building.dob_violation_count ?? 0)
@@ -152,7 +152,7 @@ export async function getLandlordTitleData(
   /** Optional: pass the already-loaded tenantVoice so we don't re-fetch. */
   tenantVoice?: { avgRating: number; totalReviews: number }
 ): Promise<LandlordTitleData> {
-  const supabase = await createClient();
+  const supabase = createCacheClient();
 
   // Phase 2 RPC — graceful fallback.
   let topCategory: LandlordTitleData["topCategory"] = null;

@@ -1,7 +1,7 @@
 export const runtime = "edge";
 
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 
 interface MonthData {
   month: string;
@@ -48,7 +48,7 @@ export async function GET(
 ) {
   try {
     const { name } = await params;
-    const supabase = await createClient();
+    const supabase = createCacheClient();
 
     // Look up exact owner name from slug first, fall back to decoded name
     const { data: statsRows } = await supabase

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { canonicalUrl, cityPath } from "@/lib/seo";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
 import { chipsForCity } from "@/lib/building-list/chips";
@@ -51,7 +51,7 @@ export default async function BuildingListIndex({
   const meta = CITY_META[city];
   const chips = chipsForCity(city);
 
-  const supabase = await createClient();
+  const supabase = createCacheClient();
   const summaries = await Promise.all(
     chips.map(async (chip) => ({
       chip,

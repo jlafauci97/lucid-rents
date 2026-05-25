@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { FAQSection } from "@/components/seo/FAQSection";
 import { generateBuildingFAQ } from "@/lib/faq/building-faq";
 import type { City } from "@/lib/cities";
@@ -23,7 +23,7 @@ interface DeferredBuildingFAQProps {
 }
 
 export async function DeferredBuildingFAQ({ building, buildingId, city, rents, neighborhoodRents }: DeferredBuildingFAQProps) {
-  const supabase = await createClient();
+  const supabase = createCacheClient();
   const shortAddress = building.full_address.split(",")[0]?.trim() || building.full_address;
 
   const isNYC = city === "nyc";
