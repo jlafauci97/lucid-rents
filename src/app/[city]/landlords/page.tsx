@@ -1,6 +1,6 @@
 import { unstable_cache } from "next/cache";
 import { createClient as createSbClient } from "@supabase/supabase-js";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { ArrowRight, ArrowUpRight, Building2, Trophy, Flame, Scale, FileWarning, AlertTriangle, ShieldAlert, Gavel } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -211,7 +211,7 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
   const meta = CITY_META[city];
 
   const sortOption = SORT_OPTIONS.find((o) => o.key === sortBy) ?? SORT_OPTIONS[0];
-  const supabase = await createClient();
+  const supabase = createCacheClient();
 
   // Read from the canonical rollup so identical legal entities stored as
   // multiple near-duplicate rows in landlord_stats ("SENIOR LIVING OPTIONS,

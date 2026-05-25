@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { buildingUrl } from "@/lib/seo";
 import { formatRelativeDate } from "@/lib/utils";
 import { AlertTriangle, MessageSquare } from "lucide-react";
@@ -33,7 +33,7 @@ export async function ActivityTimeline({
     );
   }
 
-  const supabase = await createClient();
+  const supabase = createCacheClient();
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   const cutoff = thirtyDaysAgo.toISOString().split("T")[0];

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { normalizeScore } from "@/lib/constants";
 
 export interface ChecklistItem {
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "buildingId required" }, { status: 400 });
   }
 
-  const supabase = await createClient();
+  const supabase = createCacheClient();
 
   const [
     { data: building },

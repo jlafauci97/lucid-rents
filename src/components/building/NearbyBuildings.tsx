@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { buildingUrl } from "@/lib/seo";
 import { normalizeScore } from "@/lib/constants";
 import { MapPin, AlertTriangle, Building2 } from "lucide-react";
@@ -27,7 +27,7 @@ function letterGrade(score: number | null): { letter: string; color: string; bg:
 export async function NearbyBuildings({ buildingId, zipCode, borough, city }: NearbyBuildingsProps) {
   if (!zipCode) return null;
 
-  const supabase = await createClient();
+  const supabase = createCacheClient();
   const { data: buildings } = await supabase
     .from("buildings")
     .select(

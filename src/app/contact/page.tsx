@@ -9,6 +9,8 @@ export const metadata: Metadata = {
   alternates: { canonical: canonicalUrl("/contact") },
 };
 
+export const revalidate = 86400; // 24h ISR — fully static content
+
 export default function ContactPage() {
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">

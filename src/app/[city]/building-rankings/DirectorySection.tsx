@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowUpRight, Building2, ChevronLeft, ChevronRight } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { buildingUrl, landlordUrl } from "@/lib/seo";
 import type { City } from "@/lib/cities";
 
@@ -88,7 +88,7 @@ export async function DirectorySection({
   const limit = 25;
   const offset = (pageNum - 1) * limit;
   const metro = city;
-  const supabase = await createClient();
+  const supabase = createCacheClient();
 
   const baseSelect =
     "id, full_address, borough, zip_code, slug, year_built, total_units, owner_name, violation_count, complaint_count, eviction_count, litigation_count, bedbug_report_count, overall_score, review_count";

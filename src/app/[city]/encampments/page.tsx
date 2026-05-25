@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Tent, ExternalLink, AlertCircle } from "lucide-react";
 import { canonicalUrl, cityPath } from "@/lib/seo";
-import { isValidCity, CITY_META, type City } from "@/lib/cities";
+import { VALID_CITIES, isValidCity, CITY_META, type City } from "@/lib/cities";
 import { notFound } from "next/navigation";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { EncampmentMapSection } from "@/components/encampments/EncampmentMapSection";
@@ -31,6 +31,10 @@ export async function generateMetadata({
 
 export const revalidate = 3600;
 
+
+export function generateStaticParams() {
+  return VALID_CITIES.map((city) => ({ city }));
+}
 async function getEncampmentStats(city: string) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;

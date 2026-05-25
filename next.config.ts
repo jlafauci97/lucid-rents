@@ -133,43 +133,65 @@ const nextConfig: NextConfig = {
         { key: "Cache-Control", value: "public, s-maxage=300, stale-while-revalidate=1800" },
       ],
     },
-    // Cache building reviews, violations, nearby lookups
+    // Public building reads — same building looks the same for every visitor.
     {
-      source: "/api/buildings/:buildingId/reviews",
+      source: "/api/buildings/:path*/reviews",
       headers: [
         { key: "Cache-Control", value: "public, s-maxage=600, stale-while-revalidate=3600" },
       ],
     },
     {
-      source: "/api/buildings/:buildingId/violations",
+      source: "/api/buildings/:path*/violations",
       headers: [
-        { key: "Cache-Control", value: "public, s-maxage=1800, stale-while-revalidate=7200" },
+        { key: "Cache-Control", value: "public, s-maxage=1800, stale-while-revalidate=86400" },
       ],
     },
     {
       source: "/api/buildings/nearby",
       headers: [
-        { key: "Cache-Control", value: "public, s-maxage=1800, stale-while-revalidate=7200" },
+        { key: "Cache-Control", value: "public, s-maxage=3600, stale-while-revalidate=86400" },
       ],
     },
-    // Crime by zip — slow-moving, daily refresh window
     {
-      source: "/api/crime/by-zip",
+      source: "/api/encampments/nearby",
       headers: [
         { key: "Cache-Control", value: "public, s-maxage=3600, stale-while-revalidate=86400" },
       ],
     },
-    // Landlord directory + per-landlord trends
     {
-      source: "/api/landlords",
+      source: "/api/hazards/:path*",
       headers: [
-        { key: "Cache-Control", value: "public, s-maxage=600, stale-while-revalidate=1800" },
+        { key: "Cache-Control", value: "public, s-maxage=3600, stale-while-revalidate=86400" },
       ],
     },
     {
-      source: "/api/landlords/:name/trends",
+      source: "/api/flood-zones/:path*",
       headers: [
-        { key: "Cache-Control", value: "public, s-maxage=1800, stale-while-revalidate=7200" },
+        { key: "Cache-Control", value: "public, s-maxage=86400, stale-while-revalidate=604800" },
+      ],
+    },
+    {
+      source: "/api/landlords",
+      headers: [
+        { key: "Cache-Control", value: "public, s-maxage=600, stale-while-revalidate=3600" },
+      ],
+    },
+    {
+      source: "/api/landlords/:path*",
+      headers: [
+        { key: "Cache-Control", value: "public, s-maxage=600, stale-while-revalidate=3600" },
+      ],
+    },
+    {
+      source: "/api/rent-timing-calculator",
+      headers: [
+        { key: "Cache-Control", value: "public, s-maxage=86400, stale-while-revalidate=604800" },
+      ],
+    },
+    {
+      source: "/api/violations/recent",
+      headers: [
+        { key: "Cache-Control", value: "public, s-maxage=300, stale-while-revalidate=600" },
       ],
     },
   ],

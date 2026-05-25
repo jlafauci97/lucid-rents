@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { TrainFront, Bus, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { canonicalUrl, cityPath, cityBreadcrumbs } from "@/lib/seo";
@@ -16,7 +16,7 @@ import {
 } from "@/lib/subway-lines";
 import type { Metadata } from "next";
 
-import { isValidCity, CITY_META, type City } from "@/lib/cities";
+import { VALID_CITIES, isValidCity, CITY_META, type City } from "@/lib/cities";
 
 export async function generateMetadata({ params }: { params: Promise<{ city: string }> }): Promise<Metadata> {
   const { city } = await params;
@@ -41,6 +41,10 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
 export const revalidate = 86400;
 
 // ── NYC Subway groupings ────────────────────────────────────────────
+
+export function generateStaticParams() {
+  return VALID_CITIES.map((city) => ({ city }));
+}
 const SUBWAY_GROUPS = [
   { group: "1/2/3", lines: SUBWAY_LINES.filter((l) => l.group === "1/2/3") },
   { group: "4/5/6", lines: SUBWAY_LINES.filter((l) => l.group === "4/5/6") },
@@ -138,7 +142,7 @@ export default async function TransitHubPage({ params }: { params: Promise<{ cit
 
   // CTA L lines from shared definition
 
-  const supabase = await createClient();
+  const supabase = createCacheClient();
 
   // Fetch bus routes from transit_stops for the current city
   const { data: busStopData } = await supabase

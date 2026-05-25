@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import type { City } from "@/lib/cities";
 import { CITY_META } from "@/lib/cities";
 
@@ -28,7 +28,7 @@ function timeAgo(dateStr: string): string {
 
 export async function HomepageNewsGrid({ city }: { city: City }) {
   const meta = CITY_META[city];
-  const supabase = await createClient();
+  const supabase = createCacheClient();
   const { data } = await supabase
     .from("news_articles")
     .select("id, slug, title, excerpt, source_name, published_at, image_url, category")

@@ -10,7 +10,7 @@ import {
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { PaginatedFAQSection } from "@/components/seo/PaginatedFAQSection";
-import { isValidCity, CITY_META, type City } from "@/lib/cities";
+import { VALID_CITIES, isValidCity, CITY_META, type City } from "@/lib/cities";
 import { CrimeBody } from "./CrimeBody";
 import { CrimeBodySkeleton } from "./CrimeBodySkeleton";
 
@@ -39,6 +39,10 @@ export async function generateMetadata({
 
 export const revalidate = 3600;
 
+
+export function generateStaticParams() {
+  return VALID_CITIES.map((city) => ({ city }));
+}
 export default async function CrimePage({
   params: routeParams,
 }: {

@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { VerdictBanner } from "@/components/building/VerdictBanner";
 import { ReportCard } from "@/components/building/ReportCard";
 import { getLetterGrade, deriveScore } from "@/lib/constants";
@@ -19,7 +19,7 @@ interface Props {
 }
 
 export async function DeferredVerdictSection({ building, buildingId }: Props) {
-  const supabase = await createClient();
+  const supabase = createCacheClient();
 
   const reviews = await safe(
     supabase

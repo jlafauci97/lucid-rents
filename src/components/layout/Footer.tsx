@@ -1,20 +1,10 @@
-import Link from "next/link";
-import { headers } from "next/headers";
-import { type City, CITY_META, DEFAULT_CITY, VALID_CITIES } from "@/lib/cities";
-import { cityPath, neighborhoodUrl } from "@/lib/seo";
-import { getToolsForCity, getToolLabel } from "@/lib/tenant-tools-nav";
+"use client";
 
-/**
- * Read the current city from the middleware-set x-city header.
- * Falls back to DEFAULT_CITY when the route isn't city-scoped.
- * Mirrors the pattern used in Navbar.
- */
-async function getCurrentCity(): Promise<City> {
-  const h = await headers();
-  const xCity = h.get("x-city");
-  if (xCity && VALID_CITIES.includes(xCity as City)) return xCity as City;
-  return DEFAULT_CITY;
-}
+import Link from "next/link";
+import { type City, CITY_META } from "@/lib/cities";
+import { cityPath, neighborhoodUrl } from "@/lib/seo";
+import { useCityFromPath } from "@/lib/city-context";
+import { getToolsForCity, getToolLabel } from "@/lib/tenant-tools-nav";
 
 /**
  * Top neighborhoods to feature in the footer per city. Curated for SEO
@@ -142,8 +132,11 @@ const TOP_VIOLATION_LANDLORDS: Record<City, { name: string; slug: string }[]> = 
   ],
 };
 
-export async function Footer() {
-  const city = await getCurrentCity();
+export function Footer() {
+  // City is derived from the URL pathname client-side so this component can be
+  // statically prerendered. Avoids the `headers()` call that previously opted
+  // every route out of static rendering & ISR.
+  const city: City = useCityFromPath();
   const cityName = CITY_META[city]?.fullName || "New York City";
   // Same canonical list the NavDropdown renders, filtered by city availability.
   const tools = getToolsForCity(city);

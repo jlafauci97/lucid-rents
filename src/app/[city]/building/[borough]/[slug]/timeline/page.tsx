@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { ArrowLeft, Clock } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { regionFromSlug, boroughIlikePattern, buildingUrl, canonicalUrl, cityBreadcrumbs, cityPath } from "@/lib/seo";
 import { CITY_META, VALID_CITIES, type City } from "@/lib/cities";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
@@ -14,10 +14,17 @@ import type { Building, HpdViolation, Complaint311, HpdLitigation, DobViolation,
 
 export const revalidate = 86400;
 
+
+// Enable on-demand ISR for unbounded dynamic params. Without this Next.js 16
+// treats the route as fully dynamic and ignores `revalidate`.
+export const dynamicParams = true;
+export function generateStaticParams() {
+  return [];
+}
 const getBuilding = cache(async (boroughSlug: string, slug: string, metro?: string) => {
   const city = (metro || "nyc") as City;
   const borough = regionFromSlug(boroughSlug, city);
-  const supabase = await createClient();
+  const supabase = createCacheClient();
   let query = supabase.from("buildings").select("*").eq("slug", slug).ilike("borough", boroughIlikePattern(borough));
   if (metro) query = query.eq("metro", metro);
   const { data } = await query.limit(1);
@@ -53,7 +60,7 @@ export default async function TimelinePage({
   if (!building) notFound();
 
   const meta = CITY_META[city];
-  const supabase = await createClient();
+  const supabase = createCacheClient();
 
   const isNYC = city === "nyc";
   const isChicago = city === "chicago";

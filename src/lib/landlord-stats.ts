@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import type { City } from "@/lib/cities";
 
 export interface LandlordStats {
@@ -31,7 +31,7 @@ export const getLandlordStats = cache(async (
   slugOrName: string,
   city: City
 ): Promise<LandlordStats | null> => {
-  const supabase = await createClient();
+  const supabase = createCacheClient();
 
   const SELECT_COLS =
     "name, slug, building_count, total_violations, total_dob_violations, total_complaints, avg_score, worst_building_address, worst_building_violations";

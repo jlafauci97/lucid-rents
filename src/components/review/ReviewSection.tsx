@@ -16,7 +16,6 @@ type SortOption = "recent" | "highest" | "lowest" | "helpful";
 interface ReviewSectionProps {
   reviews: ReviewWithDetails[];
   buildingId: string;
-  isMonitored: boolean;
   cityPath: string;
   headerActions?: ReactNode;
 }
@@ -50,7 +49,6 @@ function sortReviews(reviews: ReviewWithDetails[], sort: SortOption): ReviewWith
 export function ReviewSection({
   reviews,
   buildingId,
-  isMonitored,
   cityPath,
   headerActions,
 }: ReviewSectionProps) {
@@ -66,7 +64,7 @@ export function ReviewSection({
         </h2>
         <div className="flex flex-wrap items-center gap-2">
           {headerActions}
-          <MonitorButton buildingId={buildingId} initialMonitored={isMonitored} />
+          <MonitorButton buildingId={buildingId} />
           <Link href={`${cityPath}/review/new?building=${buildingId}`}>
             <Button size="sm" className="whitespace-nowrap">
               <PenSquare className="w-4 h-4 mr-2" />

@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { MapPin, TrainFront, Bus } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -147,7 +147,7 @@ export default async function ApartmentsNearPage({
 
   if (!lineInfo && !landmarkData) notFound();
 
-  const supabase = await createClient();
+  const supabase = createCacheClient();
 
   // ── Transit line branch ───────────────────────────────────────────────────
   if (lineInfo) {

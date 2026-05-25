@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { ArrowLeft } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { cityPath, cityBreadcrumbs, landlordSlug, landlordUrl, canonicalUrl, buildingUrl } from "@/lib/seo";
 import { CITY_META } from "@/lib/cities";
 import type { City } from "@/lib/cities";
@@ -17,6 +17,13 @@ import { V2Zoom } from "@/components/building/v2/V2Zoom";
 
 export const revalidate = 86400;
 
+
+// Enable on-demand ISR for unbounded dynamic params. Without this Next.js 16
+// treats the route as fully dynamic and ignores `revalidate`.
+export const dynamicParams = true;
+export function generateStaticParams() {
+  return [];
+}
 interface Props {
   params: Promise<{ city: string; name: string }>;
 }
@@ -52,7 +59,7 @@ function formatDate(iso: string): string {
 }
 
 async function resolveOwnerName(
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  supabase: ReturnType<typeof createCacheClient>,
   slug: string,
   city: City
 ): Promise<string | null> {
@@ -69,7 +76,7 @@ async function resolveOwnerName(
 export default async function LandlordReviewsPage({ params }: Props) {
   const { city: cityParam, name } = await params;
   const city = (cityParam || "nyc") as City;
-  const supabase = await createClient();
+  const supabase = createCacheClient();
 
   const [ownerName, cachedStats] = await Promise.all([
     resolveOwnerName(supabase, name, city),

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { cityPath, landlordSlug, neighborhoodUrl } from "@/lib/seo";
 import { getNeighborhoodNameByCity } from "@/lib/neighborhoods";
 import { type City } from "@/lib/cities";
@@ -14,7 +14,7 @@ interface BoroughExploreLinksProps {
 export async function BoroughExploreLinks({ borough, boroughSlug, city = "nyc" }: BoroughExploreLinksProps) {
   let zipRes, landlordRes;
   try {
-    const supabase = await createClient();
+    const supabase = createCacheClient();
 
     // Fetch zip codes and top landlords for this borough in parallel
     [zipRes, landlordRes] = await Promise.all([

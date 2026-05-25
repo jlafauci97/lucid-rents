@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { IssuesTabs } from "@/components/building/IssuesTabs";
 import { ViolationTrend } from "@/components/building/ViolationTrend";
 import { CommonIssues } from "@/components/building/CommonIssues";
@@ -15,6 +15,13 @@ import type { Metadata } from "next";
 
 export const revalidate = 3600;
 
+
+// Enable on-demand ISR for unbounded dynamic params. Without this Next.js 16
+// treats the route as fully dynamic and ignores `revalidate`.
+export const dynamicParams = true;
+export function generateStaticParams() {
+  return [];
+}
 interface ViolationsPageProps {
   params: Promise<{ city: string; borough: string; slug: string }>;
 }
@@ -23,7 +30,7 @@ const getBuilding = cache(async (boroughSlug: string, slug: string, metro?: stri
   const city = (metro || "nyc") as City;
   const borough = regionFromSlug(boroughSlug, city);
 
-  const supabase = await createClient();
+  const supabase = createCacheClient();
   let query = supabase
     .from("buildings")
     .select("*")
@@ -98,7 +105,7 @@ export default async function BuildingViolationsPage({ params }: ViolationsPageP
 
   const city = metroToCity(building.metro);
   const cityMeta = CITY_META[city];
-  const supabase = await createClient();
+  const supabase = createCacheClient();
 
   const isLA = city === "los-angeles";
   const isChicago = city === "chicago";

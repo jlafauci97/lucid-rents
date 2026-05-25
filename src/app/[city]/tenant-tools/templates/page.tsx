@@ -1,12 +1,16 @@
 import type { Metadata } from "next";
 import { FileText } from "lucide-react";
-import { CITY_META, type City } from "@/lib/cities";
+import { VALID_CITIES, CITY_META, type City } from "@/lib/cities";
 import { canonicalUrl, cityPath } from "@/lib/seo";
 import { TEMPLATES, TEMPLATE_CATEGORIES, CATEGORY_COLORS } from "@/lib/tenant-templates-data";
 import { TemplateCard } from "@/components/tenant-tools/TemplateCard";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 
 export const revalidate = 86400; // 24h ISR
+
+export function generateStaticParams() {
+  return VALID_CITIES.map((city) => ({ city }));
+}
 
 export async function generateMetadata({
   params,

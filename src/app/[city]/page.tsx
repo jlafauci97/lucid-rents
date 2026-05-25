@@ -19,9 +19,13 @@ import { AdSidebar } from "@/components/ui/AdSidebar";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { CityToolsGrid } from "@/components/seo/CityToolsGrid";
 import { canonicalUrl, cityPath } from "@/lib/seo";
-import { isValidCity, CITY_META, type City } from "@/lib/cities";
+import { VALID_CITIES, isValidCity, CITY_META, type City } from "@/lib/cities";
 
 export const revalidate = 3600; // 1h ISR — city home
+
+export function generateStaticParams() {
+  return VALID_CITIES.map((city) => ({ city }));
+}
 
 export async function generateMetadata({
   params,

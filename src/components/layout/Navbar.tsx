@@ -5,65 +5,20 @@
  *
  * Styling lives in src/styles/site-nav.css (class names: .nav, .nav-inner,
  * .brand, .city-picker, .nav-search, .nav-links, .nav-login, .nav-auth).
+ *
+ * IMPORTANT: This component does NOT call cookies() or headers() — both
+ * would opt every route out of static rendering and make Cached Egress = 0.
+ * City detection happens client-side via useCityFromPath(); auth state
+ * via the client-side <NavAuth> island.
  */
 
 import Image from "next/image";
 import Link from "next/link";
-import { Suspense } from "react";
-import { headers } from "next/headers";
-import { User, LogOut } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
-import { CITY_META, DEFAULT_CITY, VALID_CITIES, type City } from "@/lib/cities";
-import { cityPath } from "@/lib/seo";
+import { DEFAULT_CITY } from "@/lib/cities";
 import { NavCityPicker } from "@/components/building/v2/NavCityPicker";
 import { SearchTrigger } from "@/components/search/SearchTrigger";
 import { NavLinksRow } from "./NavLinksRow";
-import { MobileMenu } from "./MobileMenu";
-
-// Read the current city from the middleware-set x-city header.
-// Falls back to DEFAULT_CITY when the route isn't city-scoped.
-async function getCurrentCity(): Promise<City> {
-  const h = await headers();
-  const xCity = h.get("x-city");
-  if (xCity && VALID_CITIES.includes(xCity as City)) return xCity as City;
-  return DEFAULT_CITY;
-}
-
-async function AuthSection() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (user) {
-    return (
-      <>
-        <div className="nav-auth">
-          <Link href="/profile"><User className="w-4 h-4" /> Profile</Link>
-          <form action="/api/auth/signout" method="post">
-            <button type="submit"><LogOut className="w-4 h-4" /> Sign Out</button>
-          </form>
-        </div>
-        <MobileMenu isLoggedIn />
-      </>
-    );
-  }
-  return (
-    <>
-      <Link href="/login" className="nav-login">Log in</Link>
-      <MobileMenu isLoggedIn={false} />
-    </>
-  );
-}
-
-function AuthFallback() {
-  return (
-    <>
-      <Link href="/login" className="nav-login">Log in</Link>
-      <MobileMenu isLoggedIn={false} />
-    </>
-  );
-}
+import { NavAuth } from "./NavAuth";
 
 function SocialLinks() {
   return (
@@ -104,8 +59,10 @@ function SocialLinks() {
   );
 }
 
-export async function Navbar() {
-  const city = await getCurrentCity();
+export function Navbar() {
+  // City and auth are resolved client-side so this component can be
+  // statically prerendered. Children read useCityFromPath() and ignore
+  // the fallback prop after hydration.
   return (
     <nav className="nav">
       <div className="nav-inner">
@@ -119,12 +76,10 @@ export async function Navbar() {
             className="h-[47px] lg:h-[54px] w-auto"
           />
         </Link>
-        <NavCityPicker currentCity={city} />
-        <SearchTrigger city={city} />
-        <NavLinksRow city={city} />
-        <Suspense fallback={<AuthFallback />}>
-          <AuthSection />
-        </Suspense>
+        <NavCityPicker currentCity={DEFAULT_CITY} />
+        <SearchTrigger city={DEFAULT_CITY} />
+        <NavLinksRow city={DEFAULT_CITY} />
+        <NavAuth />
         <SocialLinks />
       </div>
     </nav>

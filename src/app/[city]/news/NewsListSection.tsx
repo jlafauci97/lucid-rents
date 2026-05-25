@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { NewsList } from "@/components/news/NewsList";
 import type { NewsArticle } from "@/types";
 
@@ -12,7 +12,7 @@ export async function NewsListSection({
   page: number;
 }) {
   const offset = (page - 1) * PER_PAGE;
-  const supabase = await createClient();
+  const supabase = createCacheClient();
 
   const { count } = await supabase
     .from("news_articles")

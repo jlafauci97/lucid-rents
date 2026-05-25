@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { ExternalLink, Clock, ArrowLeft } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { canonicalUrl, breadcrumbJsonLd, newsCollectionJsonLd, cityPath } from "@/lib/seo";
 import { NEWS_CATEGORIES, type NewsCategory } from "@/lib/news-sources";
 import { NewsList } from "@/components/news/NewsList";
@@ -47,7 +47,7 @@ export async function generateMetadata({
   }
 
   // Article page metadata
-  const supabase = await createClient();
+  const supabase = createCacheClient();
   const { data: article } = await supabase
     .from("news_articles")
     .select("title, excerpt, source_name, published_at, category")
@@ -111,7 +111,7 @@ async function CategoryView({
   const page = Math.max(1, parseInt(sp.page || "1", 10));
   const offset = (page - 1) * PER_PAGE;
 
-  const supabase = await createClient();
+  const supabase = createCacheClient();
 
   const { count } = await supabase
     .from("news_articles")
@@ -246,7 +246,7 @@ function formatDate(dateStr: string): string {
 }
 
 async function ArticleView({ slug, city }: { slug: string; city: import("@/lib/cities").City }) {
-  const supabase = await createClient();
+  const supabase = createCacheClient();
 
   const { data: article } = await supabase
     .from("news_articles")

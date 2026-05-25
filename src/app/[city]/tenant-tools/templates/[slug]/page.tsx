@@ -8,7 +8,13 @@ import { TEMPLATES, getCityAgency, CATEGORY_COLORS } from "@/lib/tenant-template
 import { TemplateViewer } from "@/components/tenant-tools/TemplateViewer";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 86400; // 24h ISR — template is a static array lookup
+
+// Enable on-demand ISR for unbounded dynamic params.
+export const dynamicParams = true;
+export function generateStaticParams() {
+  return [];
+}
 
 export async function generateMetadata({
   params,

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowUpRight, Trophy, ChevronLeft, ChevronRight } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { LetterGrade } from "@/components/ui/LetterGrade";
 import { landlordUrl } from "@/lib/seo";
 import type { City } from "@/lib/cities";
@@ -92,7 +92,7 @@ export async function DirectorySection({
   const offset = (page - 1) * limit;
 
   const sortOption = SORT_OPTIONS.find((o) => o.key === sortBy) ?? SORT_OPTIONS[0];
-  const supabase = await createClient();
+  const supabase = createCacheClient();
 
   const baseSelect =
     "name,slug,building_count,total_violations,total_complaints,total_litigations,total_dob_violations,avg_score,worst_building_address,worst_building_violations";

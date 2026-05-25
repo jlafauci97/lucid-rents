@@ -17,6 +17,13 @@ export const revalidate = 3600;
 
 // ── Data types ────────────────────────────────────────────────────────
 
+// Enable on-demand ISR for unbounded dynamic params. Without this Next.js 16
+// treats the route as fully dynamic and ignores `revalidate`.
+export const dynamicParams = true;
+export function generateStaticParams() {
+  return [];
+}
+
 interface SeasonalRow {
   month_of_year: number;
   beds: number;

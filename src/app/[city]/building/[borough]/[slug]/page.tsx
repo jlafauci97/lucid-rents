@@ -1,7 +1,7 @@
 import "@/styles/v2-tokens.css";
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { regionFromSlug, regionSlug, boroughIlikePattern, buildingUrl, canonicalUrl, buildingJsonLd, breadcrumbJsonLd, cityPath } from "@/lib/seo";
 import { VALID_CITIES, CITY_META, type City } from "@/lib/cities";
 import { cache } from "react";
@@ -45,6 +45,13 @@ import { SectionSkeleton } from "@/components/building/v2/streaming/SectionSkele
 
 export const revalidate = 86400; // 24h ISR
 
+// Enable on-demand ISR for unbounded dynamic params. Without this Next.js 16
+// treats the route as fully dynamic and ignores `revalidate`.
+export const dynamicParams = true;
+export function generateStaticParams() {
+  return [];
+}
+
 interface Props {
   params: Promise<{ city: string; borough: string; slug: string }>;
 }
@@ -54,7 +61,7 @@ interface Props {
 const getBuilding = cache(async (boroughSlug: string, slug: string, metro: string) => {
   const city = (metro || "nyc") as City;
   const borough = regionFromSlug(boroughSlug, city);
-  const supabase = await createClient();
+  const supabase = createCacheClient();
   // boroughIlikePattern handles BOTH case ("KATY" vs "Katy") and separator
   // ("Mid-City" vs "Mid City"). ~9K Mid-City rows in LA store the borough with
   // a hyphen, but `regionFromSlug` falls back to title-case-with-spaces for
@@ -92,7 +99,7 @@ function slugCandidates(slug: string): string[] {
 }
 
 const findBuildingAnywhere = cache(async (slug: string) => {
-  const supabase = await createClient();
+  const supabase = createCacheClient();
   const { data } = await supabase
     .from("buildings")
     .select("borough, slug, metro")

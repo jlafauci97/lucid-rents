@@ -19,6 +19,8 @@ export const metadata: Metadata = {
   },
 };
 
+export const revalidate = 86400; // 24h ISR — fully static content
+
 const sections = [
   {
     icon: ShieldCheck,

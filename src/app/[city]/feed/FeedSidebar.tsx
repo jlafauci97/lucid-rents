@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { Shield, MessageSquare, Building2, Scale, HardHat, TrendingUp, ChevronRight } from "lucide-react";
 import { buildingUrl, cityPath } from "@/lib/seo";
 import type { City } from "@/lib/cities";
 
 export async function FeedStats({ city }: { city: City }) {
-  const supabase = await createClient();
+  const supabase = createCacheClient();
 
   const { data } = await supabase.rpc("data_snapshot_counts", { p_metro: city }).single();
 
@@ -50,7 +50,7 @@ export async function FeedStats({ city }: { city: City }) {
 }
 
 export async function TrendingBuildings({ city }: { city: City }) {
-  const supabase = await createClient();
+  const supabase = createCacheClient();
 
   const { data: buildings } = await supabase
     .from("buildings")

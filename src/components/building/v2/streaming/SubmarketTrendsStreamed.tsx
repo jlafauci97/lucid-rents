@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { submarketSlugForZip } from "@/lib/submarkets";
 import {
   SubmarketTrendsChart,
@@ -22,7 +22,7 @@ async function Inner({ building }: { building: Building }) {
   const submarketSlug = submarketSlugForZip(city, zip);
   if (!submarketSlug) return null;
 
-  const supabase = await createClient();
+  const supabase = createCacheClient();
 
   const { data: sub } = await supabase
     .from("submarkets")

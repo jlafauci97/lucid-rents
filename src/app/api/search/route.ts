@@ -2,13 +2,13 @@ export const runtime = "edge";
 
 import { isValidCity } from "@/lib/cities";
 import { normalizeAddressQuery } from "@/lib/address-normalization";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { searchSchema } from "@/lib/validators";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { NextRequest, NextResponse } from "next/server";
 
 function applySortOrder(
-  query: ReturnType<ReturnType<Awaited<ReturnType<typeof createClient>>["from"]>["select"]>,
+  query: ReturnType<ReturnType<ReturnType<typeof createCacheClient>["from"]>["select"]>,
   sort: string
 ) {
   switch (sort) {
@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
   }
   const offset = (page - 1) * limit;
 
-  const supabase = await createClient();
+  const supabase = createCacheClient();
 
   // Use ranked search function for text queries to get proper relevance ordering
   if (q) {

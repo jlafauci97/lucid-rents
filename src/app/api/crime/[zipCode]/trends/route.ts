@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 
 interface CrimeTrendMonth {
   month: string;
@@ -42,7 +42,7 @@ export async function GET(
     const { zipCode } = await params;
     const { searchParams } = new URL(request.url);
     const cityParam = searchParams.get("city") || "nyc";
-    const supabase = await createClient();
+    const supabase = createCacheClient();
 
     const { data, error } = await supabase.rpc("crime_zip_trends", {
       target_zip: zipCode,

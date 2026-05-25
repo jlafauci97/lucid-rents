@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { ReviewSection } from "@/components/review/ReviewSection";
@@ -24,33 +24,20 @@ interface Props {
 }
 
 export async function DeferredReviewsSection({ building, buildingId, city }: Props) {
-  const supabase = await createClient();
+  // Anonymous cache client only — keeps this section ISR-cacheable. Saved/monitored
+  // initial state is fetched client-side by SaveButton/MonitorButton themselves.
+  const supabase = createCacheClient();
 
-  const [reviews, authStatus] = await Promise.all([
-    safe(
-      supabase
-        .from("reviews")
-        .select(`*, profile:profiles(id, display_name, avatar_url), category_ratings:review_category_ratings(*, category:review_categories(slug, name, icon)), unit:units(unit_number)`)
-        .eq("building_id", buildingId)
-        .eq("status", "published")
-        .order("created_at", { ascending: false })
-        .limit(5),
-      [],
-    ) as Promise<ReviewWithDetails[]>,
-    (async (): Promise<{ monitored: boolean; saved: boolean }> => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return { monitored: false, saved: false };
-        const [monitorRes, saveRes] = await Promise.all([
-          supabase.from("monitored_buildings").select("id").eq("user_id", user.id).eq("building_id", buildingId).single(),
-          supabase.from("saved_buildings").select("id").eq("user_id", user.id).eq("building_id", buildingId).single(),
-        ]);
-        return { monitored: !!monitorRes.data, saved: !!saveRes.data };
-      } catch {
-        return { monitored: false, saved: false };
-      }
-    })(),
-  ]);
+  const reviews = (await safe(
+    supabase
+      .from("reviews")
+      .select(`*, profile:profiles(id, display_name, avatar_url), category_ratings:review_category_ratings(*, category:review_categories(slug, name, icon)), unit:units(unit_number)`)
+      .eq("building_id", buildingId)
+      .eq("status", "published")
+      .order("created_at", { ascending: false })
+      .limit(5),
+    [],
+  )) as ReviewWithDetails[];
 
   const shortAddress = building.full_address.split(",")[0]?.trim() || building.full_address;
   const href = buildingUrl(building, city);
@@ -60,11 +47,10 @@ export async function DeferredReviewsSection({ building, buildingId, city }: Pro
       <ReviewSection
         reviews={reviews}
         buildingId={buildingId}
-        isMonitored={authStatus.monitored}
         cityPath={`/${city}`}
         headerActions={
           <>
-            <SaveButton buildingId={buildingId} initialSaved={authStatus.saved} />
+            <SaveButton buildingId={buildingId} />
             <ShareButton address={shortAddress} url={canonicalUrl(href)} />
           </>
         }

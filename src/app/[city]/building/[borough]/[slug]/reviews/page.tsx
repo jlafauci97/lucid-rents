@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { ReviewSection } from "@/components/review/ReviewSection";
 import { SaveButton } from "@/components/building/SaveButton";
 import { ShareButton } from "@/components/building/ShareButton";
@@ -25,7 +25,7 @@ const getBuilding = cache(async (boroughSlug: string, slug: string, metro?: stri
   const city = (metro || "nyc") as City;
   const borough = regionFromSlug(boroughSlug, city);
 
-  const supabase = await createClient();
+  const supabase = createCacheClient();
   let query = supabase
     .from("buildings")
     .select("*")
@@ -104,36 +104,22 @@ export default async function BuildingReviewsPage({ params, searchParams }: Revi
 
   const city = metroToCity(building.metro);
   const cityMeta = CITY_META[city];
-  const supabase = await createClient();
+  const supabase = createCacheClient();
 
   const totalReviews = building.review_count || 0;
   const totalPages = Math.ceil(totalReviews / PAGE_SIZE);
 
-  const [reviews, authStatus] = await Promise.all([
-    safe(
-      supabase
-        .from("reviews")
-        .select(`*, profile:profiles(id, display_name, avatar_url), category_ratings:review_category_ratings(*, category:review_categories(slug, name, icon)), unit:units(unit_number)`)
-        .eq("building_id", building.id)
-        .eq("status", "published")
-        .order("created_at", { ascending: false })
-        .range(offset, offset + PAGE_SIZE - 1),
-      [],
-    ) as Promise<ReviewWithDetails[]>,
-    (async (): Promise<{ monitored: boolean; saved: boolean }> => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return { monitored: false, saved: false };
-        const [monitorRes, saveRes] = await Promise.all([
-          supabase.from("monitored_buildings").select("id").eq("user_id", user.id).eq("building_id", building.id).single(),
-          supabase.from("saved_buildings").select("id").eq("user_id", user.id).eq("building_id", building.id).single(),
-        ]);
-        return { monitored: !!monitorRes.data, saved: !!saveRes.data };
-      } catch {
-        return { monitored: false, saved: false };
-      }
-    })(),
-  ]);
+  // Anonymous read only — Save/Monitor buttons self-fetch their own state client-side.
+  const reviews = (await safe(
+    supabase
+      .from("reviews")
+      .select(`*, profile:profiles(id, display_name, avatar_url), category_ratings:review_category_ratings(*, category:review_categories(slug, name, icon)), unit:units(unit_number)`)
+      .eq("building_id", building.id)
+      .eq("status", "published")
+      .order("created_at", { ascending: false })
+      .range(offset, offset + PAGE_SIZE - 1),
+    [],
+  )) as ReviewWithDetails[];
 
   const shortAddress = building.full_address.split(",")[0]?.trim() || building.full_address;
   const bUrl = buildingUrl(building, city);
@@ -169,11 +155,10 @@ export default async function BuildingReviewsPage({ params, searchParams }: Revi
         <ReviewSection
           reviews={reviews}
           buildingId={building.id}
-          isMonitored={authStatus.monitored}
           cityPath={`/${city}`}
           headerActions={
             <>
-              <SaveButton buildingId={building.id} initialSaved={authStatus.saved} />
+              <SaveButton buildingId={building.id} />
               <ShareButton address={shortAddress} url={canonicalUrl(reviewsBase)} />
             </>
           }

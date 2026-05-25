@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { isValidCity } from "@/lib/cities";
 
 export async function GET(
@@ -19,7 +19,7 @@ export async function GET(
     sinceDate.setMonth(sinceDate.getMonth() - months);
     const sinceDateStr = sinceDate.toISOString().split("T")[0];
 
-    const supabase = await createClient();
+    const supabase = createCacheClient();
 
     // Build base query with filters that hit the composite index
     // (zip_code, cmplnt_date DESC, crime_category) WHERE zip_code IS NOT NULL

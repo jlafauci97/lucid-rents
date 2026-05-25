@@ -1,9 +1,9 @@
 import { Footprints, TrainFront, Bus, Bike } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import type { City } from "@/lib/cities";
 
 async function getTransitStatsByZip(zipCode: string, city: City) {
-  const supabase = await createClient();
+  const supabase = createCacheClient();
   const { data: buildings } = await supabase.from("buildings").select("latitude, longitude").eq("zip_code", zipCode).eq("metro", city).not("latitude", "is", null).not("longitude", "is", null).limit(50);
   if (!buildings || buildings.length === 0) return null;
 

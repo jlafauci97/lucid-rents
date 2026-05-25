@@ -7,7 +7,7 @@ import { CrimeRankingTable } from "@/components/crime/CrimeRankingTable";
 import { CITY_META, type City } from "@/lib/cities";
 import { getNeighborhoodNameByCity } from "@/lib/neighborhoods";
 import { rankZips, type CityStats, type SafetyGrade } from "@/lib/crime-stats";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 
 const GRADE_SCORES: Record<SafetyGrade, number> = {
   A: 4.5,
@@ -30,7 +30,7 @@ interface YoyRow {
 export async function CrimeBody({ city }: { city: City }) {
   const meta = CITY_META[city];
 
-  const supabase = await createClient();
+  const supabase = createCacheClient();
   const sinceDate = new Date();
   sinceDate.setFullYear(sinceDate.getFullYear() - 2);
   const sinceDateStr = sinceDate.toISOString().split("T")[0];

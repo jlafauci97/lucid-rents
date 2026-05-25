@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { RentComparison } from "./RentComparison";
 
 interface DeferredRentComparisonProps {
@@ -24,7 +24,7 @@ export async function DeferredRentComparison({
   zipCode,
   borough,
 }: DeferredRentComparisonProps) {
-  const supabase = await createClient();
+  const supabase = createCacheClient();
   const neighborhoodRents = await safe(
     supabase.rpc("get_neighborhood_median_rents", {
       p_zip: zipCode,

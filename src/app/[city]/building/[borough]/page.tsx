@@ -1,9 +1,16 @@
 import { notFound, permanentRedirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { buildingUrl } from "@/lib/seo";
 import type { City } from "@/lib/cities";
 
 export const revalidate = 86400; // 24h ISR — slug→canonical redirects rarely change
+
+// Enable on-demand ISR for unbounded dynamic params. Without this Next.js 16
+// treats the route as fully dynamic and ignores `revalidate`.
+export const dynamicParams = true;
+export function generateStaticParams() {
+  return [];
+}
 
 interface BuildingPageProps {
   params: Promise<{ city: string; borough: string }>;
@@ -13,7 +20,7 @@ export default async function BuildingRedirectPage({ params }: BuildingPageProps
   const { city: cityParam, borough } = await params;
   const city = cityParam as City;
 
-  const supabase = await createClient();
+  const supabase = createCacheClient();
 
   // Case 1: UUID-based redirect (legacy links)
   if (borough.match(/^[0-9a-f]{8}-[0-9a-f]{4}-/)) {
