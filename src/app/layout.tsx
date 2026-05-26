@@ -115,12 +115,12 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* Open TLS+DNS to origins on the critical path in parallel with HTML
-            parse so the first DB/image request doesn't pay the handshake. */}
+        {/* Supabase: NavAuth's client-side auth check fires on every page mount,
+            so opening the TLS handshake in parallel with HTML parse is worth it.
+            Unsplash preconnect was removed — only used for non-LCP region tile
+            backgrounds on city pages, where the handshake savings are negligible. */}
         <link rel="preconnect" href={SUPABASE_ORIGIN} crossOrigin="anonymous" />
         <link rel="dns-prefetch" href={SUPABASE_ORIGIN} />
-        <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="anonymous" />
-        <link rel="dns-prefetch" href="https://images.unsplash.com" />
       </head>
       <Script
         src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
