@@ -14,6 +14,17 @@ const OUT_DIR = "public/sitemap";
 const CONCURRENCY = 2;
 const PROGRESS_FILE = "scripts/.sitemap-progress.json";
 const INCREMENTAL = process.argv.includes("--incremental");
+
+// Floor every building's sitemap lastmod to this timestamp. Bump whenever a
+// site-wide change is made to the building page template (new schema, new
+// modules, new internal links) that warrants a Google re-crawl. The per-row
+// `updated_at` still wins when more recent. Must stay in sync with the value
+// in src/lib/sitemap/generator.ts.
+const BUILDING_PAGE_VERSION_AT = "2026-05-26T00:00:00.000Z";
+function buildingLastmod(updatedAt) {
+  const row = updatedAt ? new Date(updatedAt).toISOString() : null;
+  return row && row > BUILDING_PAGE_VERSION_AT ? row : BUILDING_PAGE_VERSION_AT;
+}
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -535,7 +546,7 @@ async function fullGenerate() {
     if (!rows || rows.length === 0) { done = true; } else {
       for (const b of rows) {
         if (b.slug && b.borough) {
-          currentEntries.push({ url: `${BASE_URL}${buildingUrl(b, metroToCity(b.metro))}`, lastmod: b.updated_at ? new Date(b.updated_at).toISOString() : undefined, changefreq: "weekly", priority: 0.6 });
+          currentEntries.push({ url: `${BASE_URL}${buildingUrl(b, metroToCity(b.metro))}`, lastmod: buildingLastmod(b.updated_at), changefreq: "weekly", priority: 0.6 });
         }
         if (currentEntries.length >= URLS_PER_FILE) {
           writeFileSync(`${OUT_DIR}/b-${batchIndex}.xml`, buildSitemapXml(currentEntries));
@@ -614,7 +625,7 @@ async function incrementalGenerate() {
 
     for (const b of rows) {
       if (b.slug && b.borough) {
-        currentEntries.push({ url: `${BASE_URL}${buildingUrl(b, metroToCity(b.metro))}`, lastmod: b.updated_at ? new Date(b.updated_at).toISOString() : undefined, changefreq: "weekly", priority: 0.6 });
+        currentEntries.push({ url: `${BASE_URL}${buildingUrl(b, metroToCity(b.metro))}`, lastmod: buildingLastmod(b.updated_at), changefreq: "weekly", priority: 0.6 });
       }
       if (currentEntries.length >= URLS_PER_FILE) {
         writeFileSync(`${OUT_DIR}/b-${batchIndex}.xml`, buildSitemapXml(currentEntries));
