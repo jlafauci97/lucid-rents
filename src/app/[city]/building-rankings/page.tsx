@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { unstable_cache } from "next/cache";
 import { createClient as createSbClient } from "@supabase/supabase-js";
-import { DirectorySection } from "./DirectorySection";
+import { DirectoryClient } from "./DirectoryClient";
 import { DirectorySkeleton } from "./DirectorySkeleton";
 
 // Non-cookie anonymous client safe to use inside unstable_cache. The data
@@ -155,19 +155,21 @@ const SORT_OPTIONS = [
 
 interface PageProps {
   params: Promise<{ city: string }>;
-  searchParams: Promise<{ borough?: string; sort?: string; page?: string }>;
 }
 
-export default async function BuildingRankingsPage({ params: routeParams, searchParams }: PageProps) {
+export default async function BuildingRankingsPage({ params: routeParams }: PageProps) {
   const { city: cityParam } = await routeParams;
   if (!isValidCity(cityParam)) notFound();
   const city = cityParam as City;
   const meta = CITY_META[city];
 
-  const params = await searchParams;
-  const borough = params.borough || "all";
-  const sortBy = params.sort || "violations";
-  const pageNum = Math.max(1, parseInt(params.page || "1", 10) || 1);
+  // Page is now fully static — sort / borough / page state lives entirely
+  // in the URL and is read by <DirectoryClient> on the client. The static
+  // shell renders Hero + Bento + featured lenses + borough breakdown — all
+  // computed from a cached top-200 pool that's sort-agnostic.
+  const borough = "all";
+  const sortBy = "violations";
+  const pageNum = 1;
 
   const sortOption = SORT_OPTIONS.find((o) => o.key === sortBy) ?? SORT_OPTIONS[0];
 
@@ -1266,20 +1268,15 @@ export default async function BuildingRankingsPage({ params: routeParams, search
           </section>
         )}
 
-        {/* Directory — streamed via Suspense so the static shell paints first */}
-        <Suspense fallback={<DirectorySkeleton regionLabel={meta.regionLabel} />}>
-          <DirectorySection
-            city={city}
-            sortBy={sortBy}
-            borough={borough}
-            pageNum={pageNum}
-            basePath={basePath}
-            sortOptionLabel={sortOption.label}
-            regionLabel={meta.regionLabel}
-            cityRegions={cityRegions}
-            totalBuildings={totalBuildings}
-          />
-        </Suspense>
+        {/* Directory — client island. Sort / borough / page state lives
+            in the URL and is read by useSearchParams inside DirectoryClient.
+            /api/building-rankings is edge-runtime and CDN-cacheable. */}
+        <DirectoryClient
+          city={city}
+          basePath={basePath}
+          regionLabel={meta.regionLabel}
+          cityRegions={cityRegions}
+        />
 
         {/* CTA */}
         <section className="p-8 sm:p-12 text-center" style={{ background: G.graphite, borderRadius: 28, color: "#fff" }}>
