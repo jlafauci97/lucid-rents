@@ -124,7 +124,7 @@ export function HeroV2({ building, rents, reviews, landlord, city }: Props) {
               {filledStars < 5 ? <span className="dim">{"★".repeat(5 - filledStars)}</span> : null}
             </span>
             <span className="rating">{rating.toFixed(1)}</span>
-            <a className="rev-link">{reviews.total.toLocaleString()} reviews</a>
+            <a className="rev-link" href="#reviews">{reviews.total.toLocaleString()} reviews</a>
           </div>
           <span className="verified">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
