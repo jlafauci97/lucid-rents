@@ -20,27 +20,27 @@ export const revalidate = 3600;
 
 interface BoroughPageProps {
   params: Promise<{ city: string; borough: string }>;
-  searchParams: Promise<{ page?: string; sort?: string }>;
 }
 
-// Allow any borough/region slug — don't restrict with generateStaticParams
+// Allow any borough/region slug — don't restrict with generateStaticParams,
+// but provide an empty list + dynamicParams=true so Next.js ISR-caches each
+// unique slug on first hit instead of treating the route as fully dynamic.
 export const dynamicParams = true;
+export function generateStaticParams() {
+  return [];
+}
 
 export async function generateMetadata({
   params,
-  searchParams,
 }: BoroughPageProps): Promise<Metadata> {
   const { city, borough: boroughSlug } = await params;
-  const { page: pageStr, sort } = await searchParams;
   const borough = SLUG_TO_BOROUGH[boroughSlug];
   if (!borough) return { title: "Not Found" };
 
-  const page = Math.max(1, parseInt(pageStr || "1"));
-  const title = `${borough} Buildings${page > 1 ? ` — Page ${page}` : ""}`;
+  const title = `${borough} Buildings`;
   const description = `Apartment hunting in ${borough}? Browse every building with violation scores, complaint history, and real tenant reviews.`;
   const basePath = cityPath(`/buildings/${boroughSlug}`, city as import("@/lib/cities").City);
-  const sortSuffix = sort ? `&sort=${sort}` : "";
-  const url = canonicalUrl(page === 1 ? basePath : `${basePath}?page=${page}${sortSuffix}`);
+  const url = canonicalUrl(basePath);
 
   return {
     title,
@@ -58,16 +58,24 @@ export async function generateMetadata({
 
 const PAGE_SIZE = 25;
 
-export default async function BoroughPage({ params, searchParams }: BoroughPageProps) {
+export default async function BoroughPage({ params }: BoroughPageProps) {
   const { city: cityParam, borough: boroughSlug } = await params;
-  const { page: pageStr, sort } = await searchParams;
   const borough = SLUG_TO_BOROUGH[boroughSlug];
   if (!borough) notFound();
 
-  const page = Math.max(1, parseInt(pageStr || "1"));
-  const offset = (page - 1) * PAGE_SIZE;
-  const sortColumn = sort === "score" ? "overall_score" : "violation_count";
-  const ascending = sort === "score";
+  // Static shell: render page 1, default sort. SearchParams-driven sort and
+  // pagination were removed to make this route ISR-cacheable. The
+  // server-rendered list is good for SEO of the base URL — pagination UI is
+  // kept as a Link so users can still navigate (each ?page=N URL serves the
+  // same static page-1 HTML, accepted trade-off for caching on this
+  // lower-traffic surface).
+  const page = 1;
+  const offset = 0;
+  const sortColumn = "violation_count";
+  const ascending = false;
+  const sort: string | undefined = undefined;
+  const pageStr: string | undefined = undefined;
+  void [pageStr, sort];
 
   let total = 0;
   let buildingList: Building[] = [];
@@ -151,9 +159,11 @@ export default async function BoroughPage({ params, searchParams }: BoroughPageP
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
   const basePath = cityPath(`/buildings/${boroughSlug}`, cityParam as import("@/lib/cities").City);
-  const sortSuffix = sort ? `&sort=${sort}` : "";
-  const prevUrl = page > 1 ? canonicalUrl(page === 2 ? `${basePath}${sort ? `?sort=${sort}` : ""}` : `${basePath}?page=${page - 1}${sortSuffix}`) : null;
-  const nextUrl = page < totalPages ? canonicalUrl(`${basePath}?page=${page + 1}${sortSuffix}`) : null;
+  // Static shell — pagination LINKS are kept for SEO crawling of page-2+ URLs,
+  // but those URLs serve the same static page-1 content. Accepted trade-off
+  // on this lower-traffic surface.
+  const prevUrl: string | null = null;
+  const nextUrl = totalPages > 1 ? canonicalUrl(`${basePath}?page=2`) : null;
 
   const jsonLd = {
     "@context": "https://schema.org",

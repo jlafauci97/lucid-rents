@@ -4,12 +4,16 @@ import { MapPin } from "lucide-react";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalUrl, cityPath, neighborhoodsUrl, breadcrumbJsonLd } from "@/lib/seo";
-import { CITY_META, type City } from "@/lib/cities";
+import { VALID_CITIES, CITY_META, type City } from "@/lib/cities";
 import { NeighborhoodsBody } from "./NeighborhoodsBody";
 import { NeighborhoodsBodySkeleton } from "./NeighborhoodsBodySkeleton";
 
 export const revalidate = 3600;
 
+
+export function generateStaticParams() {
+  return VALID_CITIES.map((city) => ({ city }));
+}
 export async function generateMetadata({
   params,
 }: {
@@ -36,13 +40,14 @@ export async function generateMetadata({
 
 export default async function NeighborhoodsPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ city: string }>;
-  searchParams: Promise<{ region?: string }>;
 }) {
   const { city: cityParam } = await params;
-  const { region: regionSlug } = await searchParams;
+  // Static shell: NeighborhoodsBody reads `region` from useSearchParams
+  // client-side instead of being passed it as a server prop, so this page
+  // can be statically prerendered.
+  const regionSlug: string | undefined = undefined;
   const city = cityParam as City;
   const meta = CITY_META[city];
   if (!meta) return null;

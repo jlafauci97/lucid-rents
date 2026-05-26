@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Search } from "lucide-react";
 import { LetterGrade } from "@/components/ui/LetterGrade";
 import { getLetterGrade, getGradeColor, type LetterGrade as LetterGradeType } from "@/lib/constants";
@@ -38,10 +39,17 @@ export function NeighborhoodSearch({
   regionLabel: string;
   initialRegionSlug?: string;
 }) {
+  // Read region from URL searchParams so the parent server component doesn't
+  // have to (lets that page be statically prerendered). Falls back to the
+  // initialRegionSlug prop if URL is empty.
+  const sp = useSearchParams();
+  const urlRegion = sp.get("region") || undefined;
+  const effectiveInitial = urlRegion ?? initialRegionSlug;
+
   const [query, setQuery] = useState("");
   const [selectedRegion, setSelectedRegion] = useState<string>(() => {
-    if (!initialRegionSlug) return "all";
-    const target = slugify(initialRegionSlug);
+    if (!effectiveInitial) return "all";
+    const target = slugify(effectiveInitial);
     return regions.find((r) => slugify(r) === target) ?? "all";
   });
   const [selectedGrade, setSelectedGrade] = useState<string>("all");
