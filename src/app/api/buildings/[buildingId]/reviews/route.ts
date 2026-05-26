@@ -1,6 +1,11 @@
 import { createCacheClient } from "@/lib/supabase/cache-client";
 import { NextRequest, NextResponse } from "next/server";
 
+// Edge runtime — this route is pure I/O (one anonymous Supabase read),
+// no Node-specific APIs. Edge POPs are closer to users + lower cold-start
+// cost than the default Node runtime.
+export const runtime = "edge";
+
 interface RouteContext {
   params: Promise<{ buildingId: string }>;
 }

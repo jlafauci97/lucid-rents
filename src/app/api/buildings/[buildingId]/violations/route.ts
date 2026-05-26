@@ -1,6 +1,9 @@
 import { createCacheClient } from "@/lib/supabase/cache-client";
 import { NextRequest, NextResponse } from "next/server";
 
+// Edge runtime — pure I/O Supabase read, no Node-specific APIs.
+export const runtime = "edge";
+
 interface RouteContext {
   params: Promise<{ buildingId: string }>;
 }
