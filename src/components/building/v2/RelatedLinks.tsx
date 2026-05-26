@@ -6,9 +6,18 @@ import { CITY_META } from "@/lib/cities";
 import { cityPath, landlordUrl, neighborhoodUrl, regionSlug } from "@/lib/seo";
 import { buildingNeighborhood } from "@/lib/neighborhoods";
 
+interface RelatedContext {
+  sameStreetCount: number;
+  ownerWorstCount: number;
+  sameEraCount: number;
+  neighborhoodMedian1BR: number | null;
+  neighborhoodTrackedRentsCount: number;
+}
+
 interface Props {
   building: Building;
   landlord: BuildingV2Data["landlord"];
+  context: RelatedContext;
   city: City;
 }
 
@@ -21,7 +30,16 @@ function plural(n: number, singular: string, pluralForm?: string): string {
   return `${n.toLocaleString("en-US")} ${n === 1 ? singular : (pluralForm ?? `${singular}s`)}`;
 }
 
-export function RelatedLinks({ building, landlord, city }: Props) {
+function streetDisplay(streetName: string | null | undefined): string {
+  if (!streetName) return "";
+  return streetName
+    .toLowerCase()
+    .split(/\s+/)
+    .map((w) => (w.length > 0 ? w[0].toUpperCase() + w.slice(1) : w))
+    .join(" ");
+}
+
+export function RelatedLinks({ building, landlord, context, city }: Props) {
   const meta = CITY_META[city];
   const cityName = meta.name;
   const { name: neighborhoodName, isFallback: neighborhoodIsFallback } = buildingNeighborhood(
@@ -38,6 +56,33 @@ export function RelatedLinks({ building, landlord, city }: Props) {
       href: landlordUrl(landlord.name, city),
       text: `Other buildings owned by ${landlord.name} — ${plural(landlord.portfolioSize, "property", "properties")} in ${cityName}`,
     });
+
+    // Worst-scoring buildings in this owner's portfolio
+    if (context.ownerWorstCount > 0) {
+      anchors.push({
+        href: landlordUrl(landlord.name, city),
+        text: `Worst-scoring buildings in ${landlord.name}'s portfolio (${context.ownerWorstCount})`,
+      });
+    }
+  }
+
+  // Same street / block
+  if (context.sameStreetCount > 0 && building.street_name) {
+    const street = streetDisplay(building.street_name);
+    anchors.push({
+      href: cityPath(`/buildings/${boroughSlug}`, city),
+      text: `Other buildings on ${street} (${context.sameStreetCount})`,
+    });
+  }
+
+  // Same-era buildings in this borough
+  if (context.sameEraCount > 0 && building.year_built) {
+    const startYear = building.year_built - 10;
+    const endYear = building.year_built + 10;
+    anchors.push({
+      href: cityPath(`/buildings/${boroughSlug}`, city),
+      text: `Same-era ${building.borough} buildings (built ${startYear}–${endYear}, ${context.sameEraCount.toLocaleString()})`,
+    });
   }
 
   // Neighborhood
@@ -45,6 +90,19 @@ export function RelatedLinks({ building, landlord, city }: Props) {
     anchors.push({
       href: neighborhoodUrl(building.zip_code, city),
       text: `Buildings, rent data, and risks in ${neighborhoodName}`,
+    });
+  }
+
+  // Comparable price-band: neighborhood median 1BR + count of tracked rentals
+  if (
+    building.zip_code &&
+    context.neighborhoodMedian1BR != null &&
+    context.neighborhoodTrackedRentsCount > 0
+  ) {
+    const priceBand = Math.round(context.neighborhoodMedian1BR / 100) * 100;
+    anchors.push({
+      href: neighborhoodUrl(building.zip_code, city),
+      text: `Comparable ${neighborhoodIsFallback ? building.borough : neighborhoodName} rentals — 1BR median around $${priceBand.toLocaleString()} (${context.neighborhoodTrackedRentsCount.toLocaleString()} tracked)`,
     });
   }
 
