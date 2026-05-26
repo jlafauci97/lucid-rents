@@ -11,7 +11,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { canonicalUrl, cityPath, buildingUrl } from "@/lib/seo";
-import { isValidCity, CITY_META, type City } from "@/lib/cities";
+import { VALID_CITIES, isValidCity, CITY_META, type City } from "@/lib/cities";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 
 export async function generateMetadata({
@@ -41,6 +41,10 @@ export async function generateMetadata({
 
 export const revalidate = 86400;
 
+
+export function generateStaticParams() {
+  return VALID_CITIES.map((city) => ({ city }));
+}
 interface LeadInspection {
   id: number;
   address: string;
@@ -91,14 +95,14 @@ function isFail(result: string | null): boolean {
 
 export default async function LeadSafetyPage({
   params,
-  searchParams: searchParamsPromise,
 }: {
   params: Promise<{ city: string }>;
-  searchParams: Promise<{ page?: string }>;
 }) {
   const { city } = await params;
-  const searchParams = await searchParamsPromise;
-  const currentPage = parseInt(searchParams.page || "1", 10);
+  // Static shell: render page 1 only. SearchParams-driven pagination was
+  // removed in favor of static prerendering — the previous server-rendered
+  // pagination would have made this route fully dynamic.
+  const currentPage = 1;
   const pageSize = 50;
 
   if (city !== "chicago") {

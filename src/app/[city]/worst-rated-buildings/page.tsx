@@ -1,6 +1,11 @@
 import { permanentRedirect } from "next/navigation";
+import { VALID_CITIES } from "@/lib/cities";
 
 export const revalidate = 86400; // 24h ISR — permanent redirect, safe to cache
+
+export function generateStaticParams() {
+  return VALID_CITIES.map((city) => ({ city }));
+}
 
 // The /worst-rated-buildings route was renamed to /building-rankings on
 // 2026-04-28. The proxy.ts rule handles single-segment city URLs (e.g.
@@ -8,20 +13,17 @@ export const revalidate = 86400; // 24h ISR — permanent redirect, safe to cach
 // /CA/Los-Angeles/worst-rated-buildings reach this server component before
 // the proxy rule fires. We do a permanent server-side redirect here so
 // every URL form converges on the new path.
+//
+// searchParams are intentionally NOT forwarded — this is a static
+// prerenderable page (no per-request work), and the old route had no
+// known query-string features. The new /building-rankings page handles
+// sort/borough/page itself.
 
 interface Props {
   params: Promise<{ city: string }>;
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-export default async function WorstRatedBuildingsRedirect({ params, searchParams }: Props) {
+export default async function WorstRatedBuildingsRedirect({ params }: Props) {
   const { city } = await params;
-  const sp = await searchParams;
-  const qs = new URLSearchParams();
-  for (const [k, v] of Object.entries(sp)) {
-    if (typeof v === "string") qs.set(k, v);
-    else if (Array.isArray(v)) v.forEach((vv) => qs.append(k, vv));
-  }
-  const target = `/${city}/building-rankings${qs.size ? `?${qs.toString()}` : ""}`;
-  permanentRedirect(target);
+  permanentRedirect(`/${city}/building-rankings`);
 }
