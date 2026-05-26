@@ -5,7 +5,7 @@ import { ExternalLink, Clock, ArrowLeft } from "lucide-react";
 import { createCacheClient } from "@/lib/supabase/cache-client";
 import { canonicalUrl, breadcrumbJsonLd, newsCollectionJsonLd, cityPath } from "@/lib/seo";
 import { NEWS_CATEGORIES, type NewsCategory } from "@/lib/news-sources";
-import { NewsList } from "@/components/news/NewsList";
+import { CategoryListClient } from "./CategoryListClient";
 import { CategoryIcon } from "@/components/news/CategoryIcon";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { NewsCard } from "@/components/news/NewsCard";
@@ -78,18 +78,19 @@ export async function generateMetadata({
 }
 
 export const dynamicParams = true;
+export function generateStaticParams() {
+  return [];
+}
 
 export default async function NewsSlugPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ city: string; slug: string }>;
-  searchParams: Promise<{ page?: string }>;
 }) {
   const { city, slug } = await params;
 
   if (isCategory(slug)) {
-    return <CategoryView category={slug} city={city as import("@/lib/cities").City} searchParams={searchParams} />;
+    return <CategoryView category={slug} city={city as import("@/lib/cities").City} />;
   }
 
   return <ArticleView slug={slug} city={city as import("@/lib/cities").City} />;
@@ -100,30 +101,11 @@ export default async function NewsSlugPage({
 async function CategoryView({
   category,
   city,
-  searchParams,
 }: {
   category: NewsCategory;
   city: import("@/lib/cities").City;
-  searchParams: Promise<{ page?: string }>;
 }) {
   const meta = NEWS_CATEGORIES[category];
-  const sp = await searchParams;
-  const page = Math.max(1, parseInt(sp.page || "1", 10));
-  const offset = (page - 1) * PER_PAGE;
-
-  const supabase = createCacheClient();
-
-  const { count } = await supabase
-    .from("news_articles")
-    .select("id", { count: "exact", head: true })
-    .eq("category", category);
-
-  const { data: articles } = await supabase
-    .from("news_articles")
-    .select("*")
-    .eq("category", category)
-    .order("published_at", { ascending: false })
-    .range(offset, offset + PER_PAGE - 1);
 
   const categories = Object.entries(NEWS_CATEGORIES) as [
     NewsCategory,
@@ -188,14 +170,11 @@ async function CategoryView({
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
+          {/* Paginated category list lives in a client island — keeps the
+              parent page static-prerenderable. /api/news?category=X is
+              edge-runtime + CDN-cached. */}
           <div className="min-w-0">
-            <NewsList
-              articles={(articles as NewsArticle[]) || []}
-              page={page}
-              totalCount={count || 0}
-              perPage={PER_PAGE}
-              basePath={`/news/${category}`}
-            />
+            <CategoryListClient category={category} basePath={`/news/${category}`} />
           </div>
 
           <aside className="hidden lg:block space-y-6">

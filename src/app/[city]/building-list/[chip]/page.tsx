@@ -10,10 +10,9 @@ import {
   isValidChipForCity,
   type ChipId,
 } from "@/lib/building-list/chips";
-import { getBuildingsForChip, countBuildingsForChip } from "@/lib/building-list/query";
+import { countBuildingsForChip, getChipSummary } from "@/lib/building-list/query";
 import { CategoryCard } from "@/components/building-list/CategoryCard";
-import { getChipSummary } from "@/lib/building-list/query";
-import { BuildingCard } from "@/components/search/BuildingCard";
+import { BuildingsClient } from "./BuildingsClient";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -63,10 +62,8 @@ export async function generateStaticParams() {
 
 export default async function CategoryPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ city: string; chip: string }>;
-  searchParams: Promise<{ page?: string; sort?: string }>;
 }) {
   const { city: cityParam, chip: chipParam } = await params;
   if (!isValidCity(cityParam)) notFound();
@@ -82,19 +79,13 @@ export default async function CategoryPage({
 
   const meta = CITY_META[city];
   const chip = CHIPS[chipParam as ChipId];
-  const sp = await searchParams;
-  const page = Math.max(1, parseInt(sp.page ?? "1", 10));
-  const offset = (page - 1) * PER_PAGE;
-  const sort = sp.sort;
 
+  // Static shell only needs the total count for the header copy + related
+  // chips. The actual buildings list + sort/pagination is rendered by
+  // <BuildingsClient> against /api/building-list/[chip].
   const supabase = createCacheClient();
-  const { buildings, count } = await getBuildingsForChip(supabase, city, chip, {
-    offset,
-    limit: PER_PAGE,
-    sort,
-  });
+  const count = await countBuildingsForChip(supabase, city, chip);
 
-  const totalPages = Math.max(1, Math.ceil(count / PER_PAGE));
   const basePath = cityPath(`/building-list/${chip.slug}`, city);
 
   // Related chips (sibling categories in the same city)
@@ -116,15 +107,6 @@ export default async function CategoryPage({
           description: chip.long_description,
           url: `https://lucidrents.com${basePath}`,
           numberOfItems: count,
-          itemListElement: buildings.slice(0, 10).map((b, i) => ({
-            "@type": "ListItem",
-            position: offset + i + 1,
-            url: `https://lucidrents.com${buildingUrl(
-              { borough: b.borough, slug: b.slug },
-              city,
-            )}`,
-            name: b.full_address,
-          })),
         }}
       />
 
@@ -155,96 +137,19 @@ export default async function CategoryPage({
               </span>{" "}
               building{count === 1 ? "" : "s"}
             </span>
-            <span>·</span>
-            <span>
-              Sorted by{" "}
-              <span className="text-[#0F1D2E]">
-                {sort === "reviews"
-                  ? "reviews"
-                  : sort === "year"
-                    ? "year built"
-                    : sort === "units"
-                      ? "unit count"
-                      : "LucidIQ score"}
-              </span>
-            </span>
           </div>
         </header>
 
-        {/* Sort bar */}
-        <div className="flex flex-wrap gap-2 mb-6">
-          {[
-            { key: undefined, label: "LucidIQ" },
-            { key: "reviews", label: "Reviews" },
-            { key: "year", label: "Year built" },
-            { key: "units", label: "Units" },
-          ].map((opt) => {
-            const href =
-              opt.key === undefined
-                ? basePath
-                : `${basePath}?sort=${opt.key}`;
-            const active = (sort ?? undefined) === opt.key;
-            return (
-              <Link
-                key={opt.label}
-                href={href}
-                className={`text-sm px-3 py-1.5 rounded-full border transition ${
-                  active
-                    ? "bg-[#0F1D2E] text-white border-[#0F1D2E]"
-                    : "text-[#0F1D2E] border-[#e2e8f0] hover:border-[#0F1D2E]"
-                }`}
-              >
-                {opt.label}
-              </Link>
-            );
-          })}
-        </div>
-
-        {buildings.length === 0 ? (
-          <div className="border border-dashed border-[#e2e8f0] rounded-lg p-12 text-center">
-            <p className="text-[#64748b]">
-              No buildings match this filter yet. Try another category.
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {buildings.map((b) => (
-              <BuildingCard key={b.id} building={b} />
-            ))}
-          </div>
-        )}
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <nav className="flex items-center justify-center gap-2 mt-10 text-sm">
-            {page > 1 && (
-              <Link
-                href={`${basePath}?${new URLSearchParams({
-                  ...(sort ? { sort } : {}),
-                  page: String(page - 1),
-                }).toString()}`}
-                className="px-4 py-2 border border-[#e2e8f0] rounded-full hover:border-[#0F1D2E] transition"
-              >
-                ← Prev
-              </Link>
-            )}
-            <span className="text-[#64748b]">
-              Page {page} of {totalPages}
-            </span>
-            {page < totalPages && (
-              <Link
-                href={`${basePath}?${new URLSearchParams({
-                  ...(sort ? { sort } : {}),
-                  page: String(page + 1),
-                }).toString()}`}
-                className="px-4 py-2 border border-[#e2e8f0] rounded-full hover:border-[#0F1D2E] transition"
-              >
-                Next →
-              </Link>
-            )}
-          </nav>
-        )}
-
+        {/* Sort bar + paginated buildings list lives in <BuildingsClient> so
+            this page can be statically prerendered. The client island reads
+            sort / page from useSearchParams and fetches from
+            /api/building-list/[chip] (edge runtime, CDN-cached). */}
+        <BuildingsClient
+          chipSlug={chip.slug}
+          city={city}
+          basePath={basePath}
+          countFallback={count}
+        />
         {/* Related categories */}
         {relatedSummaries.length > 0 && (
           <section className="mt-16 pt-10 border-t border-[#e2e8f0]">
