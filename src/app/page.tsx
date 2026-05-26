@@ -449,7 +449,7 @@ function iconColorClass(Icon: ChipIcon): string {
   if (Icon === MessageSquare) return "text-sky-500";
   if (Icon === TrendingDown) return "text-rose-500";
   if (Icon === Tent)         return "text-orange-500";
-  return "text-[#94a3b8]";
+  return "text-[#64748b]";
 }
 
 /* Map the short city tags used in the demo data ("NYC", "LA", "Chicago",
@@ -671,7 +671,7 @@ export default async function Home() {
         <div className="relative z-10 sm:absolute sm:inset-x-0 sm:top-0 sm:pointer-events-none">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-5 sm:pt-7 lg:pt-8 sm:pb-0 text-center">
             <div className="inline-block drop-shadow-[0_6px_24px_rgba(0,0,0,0.45)]">
-              <BrandShield width="auto" height="auto" className="h-16 sm:h-[77px] lg:h-[88px] w-auto" />
+              <BrandShield className="h-16 sm:h-[77px] lg:h-[88px] w-auto" />
             </div>
             <p className="mt-1.5 text-[9px] sm:text-[10px] uppercase tracking-[0.22em] text-white/85 font-semibold drop-shadow">
               A Rental Intelligence Platform
@@ -702,8 +702,9 @@ export default async function Home() {
                   fill
                   className="object-cover"
                   sizes="(max-width: 640px) 80vw, 20vw"
-                  priority
-                  fetchPriority={key === "nyc" ? "high" : "auto"}
+                  {...(key === "nyc"
+                    ? { priority: true, fetchPriority: "high" as const }
+                    : { loading: "lazy" as const })}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0F1D2E]/90 via-[#0F1D2E]/10 to-[#0F1D2E]/35" />
 
@@ -711,9 +712,9 @@ export default async function Home() {
                   <p className="text-[10px] uppercase tracking-[0.2em] text-amber-300 font-bold mb-1">
                     {meta.stateCode}
                   </p>
-                  <h3 className="text-2xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold tracking-tight mb-4 leading-[1.05]">
+                  <h2 className="text-2xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold tracking-tight mb-4 leading-[1.05]">
                     {meta.fullName}
-                  </h3>
+                  </h2>
                   <dl className="grid grid-cols-3 gap-2.5 mb-4">
                     {stats.map((s) => (
                       <div key={s.label}>
@@ -737,7 +738,7 @@ export default async function Home() {
         </div>
 
         {/* Mobile swipe hint */}
-        <p className="sm:hidden text-[10px] uppercase tracking-wider text-white/40 font-semibold text-center pt-3 pb-4">
+        <p className="sm:hidden text-[10px] uppercase tracking-wider text-white/75 font-semibold text-center pt-3 pb-4">
           ← Swipe between cities →
         </p>
       </section>
@@ -841,7 +842,7 @@ export default async function Home() {
                         {c.statLabel}
                       </span>
                     </div>
-                    <p className="text-[10px] text-[#94a3b8] mt-0.5">{c.signature}</p>
+                    <p className="text-[10px] text-[#64748b] mt-0.5">{c.signature}</p>
                   </div>
 
                   {/* Chips — deep links */}
@@ -850,12 +851,13 @@ export default async function Home() {
                       <li key={chip.label}>
                         <Link
                           href={cityPath(chip.path, c.key)}
+                          aria-label={`${chip.label} in ${meta.fullName}`}
                           className="flex items-center gap-2 px-2 py-1.5 rounded-md text-[12px] text-[#334155] hover:bg-[#3B82F6]/8 hover:text-[#3B82F6] transition-colors"
                         >
                           <chip.icon className={`w-4 h-4 ${iconColorClass(chip.icon)} flex-shrink-0`} strokeWidth={2.25} />
                           <span className="truncate">{chip.label}</span>
                           {chip.count && (
-                            <span className="ml-auto text-[10px] tabular-nums text-[#94a3b8] font-semibold">
+                            <span className="ml-auto text-[10px] tabular-nums text-[#64748b] font-semibold">
                               {chip.count}
                             </span>
                           )}
@@ -907,7 +909,7 @@ export default async function Home() {
                       href={landlordUrl(l.name, cityKeyFromShort(l.city))}
                       className="group flex items-baseline gap-3 px-2 py-2 rounded-md hover:bg-[#f8fafc] transition-colors"
                     >
-                      <span className="text-xs font-mono text-[#94a3b8] tabular-nums w-5">
+                      <span className="text-xs font-mono text-[#64748b] tabular-nums w-5">
                         {String(l.rank).padStart(2, "0")}
                       </span>
                       <div className="flex-1 min-w-0">
@@ -943,7 +945,7 @@ export default async function Home() {
                       href={cityPath("/feed", cityKeyFromShort(b.city))}
                       className="group flex items-baseline gap-3 px-2 py-2 rounded-md hover:bg-[#f8fafc] transition-colors"
                     >
-                      <span className="text-xs font-mono text-[#94a3b8] tabular-nums w-10">
+                      <span className="text-xs font-mono text-[#64748b] tabular-nums w-10">
                         {b.ts}
                       </span>
                       <div className="flex-1 min-w-0">
@@ -1043,7 +1045,7 @@ export default async function Home() {
                   <div className="p-4 flex-1">
                     <div className="flex items-baseline justify-between mb-3">
                       <span className="text-base font-bold text-[#0F1D2E] tracking-tight">{meta.fullName}</span>
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-[#94a3b8]">{meta.stateCode}</span>
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-[#64748b]">{meta.stateCode}</span>
                     </div>
                     <div className="flex items-baseline gap-1.5">
                       <span className="text-3xl font-bold text-[#0F1D2E] tabular-nums tracking-tight">
@@ -1065,7 +1067,7 @@ export default async function Home() {
                       )}
                       {Math.abs(c.deltaPct).toFixed(1)}% YoY
                     </div>
-                    <p className="text-[10px] text-[#94a3b8] mt-3 tabular-nums">
+                    <p className="text-[10px] text-[#64748b] mt-3 tabular-nums">
                       {c.trackedZips} zip codes tracked
                     </p>
                   </div>
@@ -1120,7 +1122,7 @@ export default async function Home() {
                   <tr key={row.source} className="border-b border-[#e2e8f0] last:border-0 hover:bg-[#f8fafc]/50">
                     <td className="px-4 py-3">
                       <div className="font-semibold text-[#0F1D2E] text-[13px]">{row.source}</div>
-                      {row.note && <div className="text-[10px] text-[#94a3b8] mt-0.5">{row.note}</div>}
+                      {row.note && <div className="text-[10px] text-[#64748b] mt-0.5">{row.note}</div>}
                     </td>
                     {cityOrder.map((key) => {
                       const cell = row.cells[key];

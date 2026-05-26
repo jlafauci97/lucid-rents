@@ -54,6 +54,33 @@ const nextConfig: NextConfig = {
           key: "Permissions-Policy",
           value: "camera=(), microphone=(), geolocation=(self)",
         },
+        // Force HTTPS for 1 year, include subdomains, eligible for browser preload list.
+        {
+          key: "Strict-Transport-Security",
+          value: "max-age=31536000; includeSubDomains; preload",
+        },
+        // Block cross-origin window access (Spectre/cross-origin info leaks).
+        { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+        // CSP in report-only mode first — flip to Content-Security-Policy after
+        // reviewing reports to confirm GA, AdSense, Vercel scripts all parse.
+        {
+          key: "Content-Security-Policy-Report-Only",
+          value: [
+            "default-src 'self'",
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://fundingchoicesmessages.google.com https://*.google.com https://vercel.live https://va.vercel-scripts.com",
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+            "img-src 'self' data: blob: https:",
+            "font-src 'self' data: https://fonts.gstatic.com",
+            "connect-src 'self' https://*.supabase.co https://www.google-analytics.com https://*.googlesyndication.com https://vitals.vercel-insights.com https://vercel.live wss://*.supabase.co",
+            "frame-src 'self' https://googleads.g.doubleclick.net https://*.googlesyndication.com https://www.youtube.com https://www.youtube-nocookie.com https://vercel.live",
+            "object-src 'none'",
+            "base-uri 'self'",
+            "form-action 'self'",
+            "frame-ancestors 'self'",
+            "require-trusted-types-for 'script'",
+            "upgrade-insecure-requests",
+          ].join("; "),
+        },
       ],
     },
     // Cache static sitemaps (regenerated at build time)
