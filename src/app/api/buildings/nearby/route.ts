@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { createCacheClient } from "@/lib/supabase/cache-client";
 import { isValidCity } from "@/lib/cities";
 
+// Edge runtime — pure I/O Supabase read, no Node-specific APIs.
+export const runtime = "edge";
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
