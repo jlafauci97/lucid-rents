@@ -41,8 +41,10 @@ function scoreToGrade10(score: number | null): { letter: string; cls: string; sc
 }
 
 export function S05_Landlord({ building, landlord, city }: Props) {
+  if (!landlord.name) return null;
+
   const portfolio = scoreToGrade10(landlord.portfolioAvgScore);
-  const landlordSlug = landlord.name ? landlordUrl(landlord.name, city) : "#";
+  const landlordSlug = landlordUrl(landlord.name, city);
   // Sort other buildings by score desc, then cap at 5.
   const others = [...landlord.otherBuildings]
     .sort((a, b) => (b.overall_score ?? 0) - (a.overall_score ?? 0))

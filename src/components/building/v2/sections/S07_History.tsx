@@ -100,6 +100,8 @@ export function S07_History({ building, landlord, timeline }: Props) {
     return parseInt(a.year) - parseInt(b.year);
   });
 
+  if (events.length === 0 && timeline.length === 0) return null;
+
   return (
     <section className="section" id="history">
       <div className="section-head">
@@ -116,19 +118,13 @@ export function S07_History({ building, landlord, timeline }: Props) {
         </div>
         <div className="tl-track"></div>
         <div className="tl-events">
-          {events.length ? events.map((ev, i) => (
+          {events.map((ev, i) => (
             <div key={`${ev.year}-${i}`} className="tl-event">
               <div className="y">{ev.year}</div>
               <div className="t">{ev.title}</div>
               <div className="d">{ev.desc}</div>
             </div>
-          )) : (
-            <div className="tl-event">
-              <div className="y">—</div>
-              <div className="t">No building history on file</div>
-              <div className="d">Major milestones (construction, ownership changes, permits) appear here once recorded.</div>
-            </div>
-          )}
+          ))}
         </div>
       </div>
 

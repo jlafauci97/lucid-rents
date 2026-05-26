@@ -30,6 +30,8 @@ function truncate(s: string, n = 220): string {
 }
 
 export function S03_TenantReviews({ reviews, seeAllUrl }: Props) {
+  if (reviews.total === 0) return null;
+
   const rating = reviews.avgRating || 0;
   const filledStars = Math.round(rating);
 

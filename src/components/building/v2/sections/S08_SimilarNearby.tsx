@@ -46,6 +46,8 @@ function BuildingIllust() {
 export function S08_SimilarNearby({ similar, city }: Props) {
   const cards = similar.slice(0, 4);
 
+  if (cards.length === 0) return null;
+
   return (
     <section className="section" id="similar">
       <div className="section-head">
@@ -57,7 +59,7 @@ export function S08_SimilarNearby({ similar, city }: Props) {
       </div>
 
       <div className="sb-grid">
-        {cards.length ? cards.map((b) => {
+        {cards.map((b) => {
           const street = b.full_address.split(",")[0] ?? b.full_address;
           return (
             <article key={b.id} className="sb-card">
@@ -75,18 +77,7 @@ export function S08_SimilarNearby({ similar, city }: Props) {
               </div>
             </article>
           );
-        }) : (
-          <article className="sb-card">
-            <div className="sb-illust"><BuildingIllust /></div>
-            <div className="sb-body">
-              <h3>No similar buildings found</h3>
-              <div className="sb-meta">
-                <span className="sb-chip">—</span>
-                <span className="sb-year">—</span>
-              </div>
-            </div>
-          </article>
-        )}
+        })}
       </div>
     </section>
   );

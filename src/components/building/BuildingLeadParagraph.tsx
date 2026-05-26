@@ -1,17 +1,17 @@
+import type { Building } from "@/types";
 import type { City } from "@/lib/cities";
-import { buildBuildingLeadParagraph } from "@/lib/seo-metadata";
+import { buildNLSummary } from "@/lib/lucidiq-summary";
 
 interface Props {
-  fullAddress: string;
+  building: Building;
   neighborhood: string;
   city: City;
-  totalUnits: number | null;
 }
 
-export function BuildingLeadParagraph({ fullAddress, neighborhood, city, totalUnits }: Props) {
+export function BuildingLeadParagraph({ building, neighborhood }: Props) {
+  const summary = buildNLSummary({ building, neighborhood });
+  if (!summary) return null;
   return (
-    <p className="building-lead-paragraph">
-      {buildBuildingLeadParagraph({ fullAddress, neighborhood, city, totalUnits })}
-    </p>
+    <p className="building-lead-paragraph">{summary}</p>
   );
 }

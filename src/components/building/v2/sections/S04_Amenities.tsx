@@ -87,6 +87,8 @@ export function S04_Amenities({ amenities, amenityPremiums }: Props) {
   const nonEmpty = CATEGORIES.filter((c) => (buckets.get(c.key) ?? []).length > 0);
   const otherItems = buckets.get("other") ?? [];
 
+  if (total === 0) return null;
+
   return (
     <section className="section" id="amenities">
       <div className="section-head">
@@ -106,43 +108,34 @@ export function S04_Amenities({ amenities, amenityPremiums }: Props) {
           <span className="ri-pill">{total} amenit{total === 1 ? "y" : "ies"}</span>
         </header>
 
-        {nonEmpty.length || otherItems.length ? (
-          <div className="am-grid">
-            {nonEmpty.map((cat) => (
-              <div key={cat.key} className={`am-cat ${cat.colorClass}`}>
-                <div className="am-cat-head">
-                  {cat.svg}
-                  {cat.label}
-                </div>
-                <ul>
-                  {buckets.get(cat.key)!.slice(0, 15).map((name) => (
-                    <li key={name}>{name}</li>
-                  ))}
-                </ul>
+        <div className="am-grid">
+          {nonEmpty.map((cat) => (
+            <div key={cat.key} className={`am-cat ${cat.colorClass}`}>
+              <div className="am-cat-head">
+                {cat.svg}
+                {cat.label}
               </div>
-            ))}
-            {otherItems.length > 0 && (
-              <div className="am-cat cat-slate">
-                <div className="am-cat-head">
-                  {BUILDING_SVG}
-                  OTHER
-                </div>
-                <ul>
-                  {otherItems.slice(0, 15).map((name) => (
-                    <li key={name}>{name}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="am-grid">
-            <div className="am-cat cat-slate">
-              <div className="am-cat-head">{BUILDING_SVG}BUILDING</div>
-              <ul><li>No amenities on file yet</li></ul>
+              <ul>
+                {buckets.get(cat.key)!.slice(0, 15).map((name) => (
+                  <li key={name}>{name}</li>
+                ))}
+              </ul>
             </div>
-          </div>
-        )}
+          ))}
+          {otherItems.length > 0 && (
+            <div className="am-cat cat-slate">
+              <div className="am-cat-head">
+                {BUILDING_SVG}
+                OTHER
+              </div>
+              <ul>
+                {otherItems.slice(0, 15).map((name) => (
+                  <li key={name}>{name}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
 
         {(() => {
           // Match building amenities against premium data

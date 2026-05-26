@@ -12,6 +12,7 @@ import { scoreToGrade } from "@/app/[city]/building/[borough]/[slug]/_data";
 import type { City } from "@/lib/cities";
 import { CITY_SHORT_NAME } from "@/lib/cities";
 import { buildingNeighborhood } from "@/lib/neighborhoods";
+import { buildingReasoning } from "@/lib/lucidiq-reasoning";
 
 interface Props {
   building: Building;
@@ -75,6 +76,24 @@ export function HeroV2({ building, rents, reviews, landlord, city }: Props) {
   const landlordLabel = landlordDots === 4 ? "Good" : landlordDots === 3 ? "Mixed" : "Concerning";
 
   const grade = scoreToGrade(building.overall_score);
+
+  const latestNbhMonth = rents.neighborhood[0]?.month?.slice(0, 7) ?? "";
+  const nbh1BR = rents.neighborhood
+    .find((r) => r.beds === 1 && r.month?.startsWith(latestNbhMonth) && r.median_rent != null)?.median_rent ?? null;
+  const own1BR = rents.current.find((r) => r.bedrooms === 1)?.median_rent ?? null;
+
+  const reasoning = buildingReasoning({
+    building,
+    reviewCount: reviews.total,
+    avgRating: reviews.total > 0 ? reviews.avgRating : null,
+    ownerName: landlord.name,
+    portfolioSize: landlord.portfolioSize,
+    portfolioAvgScore: landlord.portfolioAvgScore,
+    neighborhoodAvgScore: null,
+    neighborhoodBuildingCount: 0,
+    neighborhoodMedian1BR: nbh1BR,
+    buildingMedian1BR: own1BR,
+  });
 
   return (
     <section className="hero">
@@ -181,11 +200,10 @@ export function HeroV2({ building, rents, reviews, landlord, city }: Props) {
           <div className="grade-meta">
             <div className="score">{building.borough} · {reviews.total.toLocaleString()} review{reviews.total === 1 ? "" : "s"}</div>
             <div className="tl">
-              {reviews.total === 0
-                ? "No published reviews yet. The verdict updates once tenants weigh in."
-                : building.is_rent_stabilized
-                  ? `Rent-stabilized building in ${building.borough}. The record reflects public data from HPD, DOB, and 311.`
-                  : `${building.borough} building. The record reflects public data from HPD, DOB, and 311.`}
+              {reasoning
+                ?? (reviews.total === 0
+                  ? "No published reviews yet. The verdict updates once tenants weigh in."
+                  : `${building.borough} building. The record reflects public data from HPD, DOB, and 311.`)}
             </div>
           </div>
         </div>
