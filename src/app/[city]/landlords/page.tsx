@@ -1,15 +1,12 @@
 import { unstable_cache } from "next/cache";
 import { createClient as createSbClient } from "@supabase/supabase-js";
-import { createCacheClient } from "@/lib/supabase/cache-client";
 import { ArrowRight, ArrowUpRight, Building2, Trophy, Flame, Scale, FileWarning, AlertTriangle, ShieldAlert, Gavel } from "lucide-react";
 import Link from "next/link";
-import { Suspense } from "react";
 import { landlordUrl, canonicalUrl, cityPath } from "@/lib/seo";
 import { isValidCity, VALID_CITIES, CITY_META, type City } from "@/lib/cities";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { LandlordSearch } from "@/components/landlord-search/LandlordSearch";
-import { DirectorySection } from "./DirectorySection";
-import { DirectorySkeleton } from "./DirectorySkeleton";
+import { DirectoryClient } from "./DirectoryClient";
 import type { Metadata } from "next";
 
 // Cookie-free anonymous client for use inside unstable_cache (Next.js
@@ -24,19 +21,15 @@ function createAnonClient() {
 
 export async function generateMetadata({
   params,
-  searchParams,
 }: {
   params: Promise<{ city: string }>;
-  searchParams: Promise<{ search?: string; sort?: string; page?: string }>;
 }): Promise<Metadata> {
   const { city } = await params;
-  const { page: pageStr } = await searchParams;
   if (!isValidCity(city)) return {};
   const meta = CITY_META[city];
-  const page = parseInt(pageStr || "1", 10);
   const url = canonicalUrl(cityPath("/landlords", city));
   return {
-    title: `Landlord Directory${page > 1 ? ` — Page ${page}` : ""} | ${meta.fullName}`,
+    title: `Landlord Directory | ${meta.fullName}`,
     description: `Look up any ${meta.fullName} landlord. See their full portfolio, violation history, and complaint record before you rent.`,
     alternates: { canonical: url },
     openGraph: {
@@ -139,7 +132,6 @@ const GARBAGE_IN = `(${GARBAGE_NAMES.map((n) => `"${n}"`).join(",")})`;
 
 interface Props {
   params: Promise<{ city: string }>;
-  searchParams: Promise<{ search?: string; sort?: string; page?: string }>;
 }
 
 interface LandlordRow {
@@ -197,67 +189,28 @@ function MonoLabel({ children, color = INK_MUTE }: { children: React.ReactNode; 
   );
 }
 
-export default async function LandlordsPage({ params: routeParams, searchParams }: Props) {
+export default async function LandlordsPage({ params: routeParams }: Props) {
   const { city: cityParam } = await routeParams;
-  const params = await searchParams;
-  const search = params.search || "";
-  const sortBy = params.sort || "violations";
-  const page = parseInt(params.page || "1", 10);
-  const limit = 25;
-  const offset = (page - 1) * limit;
 
   if (!isValidCity(cityParam)) return null;
   const city = cityParam as City;
   const meta = CITY_META[city];
 
-  const sortOption = SORT_OPTIONS.find((o) => o.key === sortBy) ?? SORT_OPTIONS[0];
-  const supabase = createCacheClient();
+  // Page is now fully static — search / sort / page state live entirely in
+  // the URL and are read by <DirectoryClient> on the client. The static
+  // shell renders Bento defaults (sort = violations, page = 1). Filter /
+  // pagination state in the client island re-fetches from /api/landlords
+  // (CDN-cached per next.config.ts Cache-Control).
+  const sortOption = SORT_OPTIONS[0];
+  const limit = 25;
+  const page = 1;
 
-  // Read from the canonical rollup so identical legal entities stored as
-  // multiple near-duplicate rows in landlord_stats ("SENIOR LIVING OPTIONS,
-  // INC." + "SENIOR LIVING OPTIONS INC" + "SENIOR LIVING OPTIONS, INC")
-  // surface as a single deduped row with summed metrics. Refreshed nightly
-  // via refresh_landlord_stats_canonical_for_metro.
+  // Read from landlord_stats. The canonical-rollup field set matches what
+  // <DirectoryClient> consumes from /api/landlords, but the unstable_cache
+  // layer below only powers the Hall of Shame + Rankings strips + Bento
+  // stats — all of which are sortBy-default views.
   const baseSelect =
     "name,slug,building_count,total_violations,total_complaints,total_litigations,total_dob_violations,avg_score,worst_building_address,worst_building_violations";
-
-  // The unfiltered metro-wide count is hoisted into the shared cache below.
-  // For search variants we call the same get_landlord_directory_count RPC
-  // with the search term — it runs EXPLAIN (FORMAT JSON) and returns the
-  // planner's row estimate in ~100ms. The trigram GIN index on
-  // landlord_stats_canonical.name (idx_landlord_stats_canonical_name_trgm)
-  // gives Postgres accurate selectivity for ilike '%term%' lookups, so the
-  // estimate is close to reality without ever executing the count.
-  //
-  // Previously this used PostgREST count="planned" against the table directly,
-  // which still triggered a full row fetch for broad terms and took 6-11s.
-  // supabase-js may return a Postgres bigint as either a JS number or a
-  // string depending on its size and serialization config — coerce both.
-  const parseCount = (v: unknown): number | null => {
-    if (typeof v === "number" && Number.isFinite(v)) return v;
-    if (typeof v === "string") {
-      const n = Number(v);
-      return Number.isFinite(n) ? n : null;
-    }
-    return null;
-  };
-
-  // supabase-js's query builder is PromiseLike, not Promise — wrap in an
-  // async IIFE so the type matches Promise<number | null> for the
-  // Promise.all below.
-  const searchCountPromise: Promise<number | null> = search
-    ? (async () => {
-        try {
-          const r = await supabase.rpc("get_landlord_directory_count", {
-            p_metro: city,
-            p_search: search,
-          });
-          return parseCount(r?.data);
-        } catch {
-          return null;
-        }
-      })()
-    : Promise.resolve(null);
 
   // ─── ALL non-search/sort/page-dependent data wrapped in unstable_cache ──
   // Previously every request fanned out: shame + 5 strip queries + 2 RPCs +
@@ -362,37 +315,34 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
     { revalidate: 86400, tags: [`landlords:${city}`] }
   );
 
-  const [sharedData, searchCount] = await Promise.all([
-    fetchSharedLandlordData(city),
-    searchCountPromise,
-  ]);
+  const sharedData = await fetchSharedLandlordData(city);
   const shared = sharedData;
-  const totalRaw = search ? searchCount : sharedData.landlordCount;
 
   const featured = shared.shameRows;
   const buildingsCount = shared.buildingsCount;
   const oathTop = shared.oathTop;
   const top311 = shared.top311;
   const stripResults = shared.stripResults;
-  const total = totalRaw && totalRaw > 0 ? totalRaw : 0;
+  const total = sharedData.landlordCount > 0 ? sharedData.landlordCount : 0;
   const totalPages = Math.max(1, Math.ceil(total / limit));
 
   const basePath = cityPath("/landlords", city);
-  const baseQs: string[] = [];
-  if (search) baseQs.push(`search=${encodeURIComponent(search)}`);
-  if (sortBy !== "violations") baseQs.push(`sort=${sortBy}`);
-  const qsHead = baseQs.length ? baseQs.join("&") : "";
-  const prevHref =
-    page > 1
-      ? canonicalUrl(`${basePath}?${qsHead ? qsHead + "&" : ""}${page === 2 ? "" : `page=${page - 1}`}`.replace(/[?&]$/, ""))
-      : null;
-  const nextHref =
-    page < totalPages ? canonicalUrl(`${basePath}?${qsHead ? qsHead + "&" : ""}page=${page + 1}`) : null;
 
+  // URL builder for the Rankings strips' "See full ranking →" links.
+  // Always uses defaults from the static shell — the actual interactive
+  // sort selector lives in <DirectoryClient>.
   function url(overrides: Record<string, string>) {
-    const merged: Record<string, string> = { search, sort: sortBy, page: String(page), ...overrides };
+    const merged: Record<string, string> = {
+      sort: "violations",
+      page: "1",
+      ...overrides,
+    };
     Object.keys(merged).forEach((k) => {
-      if (!merged[k] || (k === "page" && merged[k] === "1") || (k === "sort" && merged[k] === "violations")) {
+      if (
+        !merged[k] ||
+        (k === "page" && merged[k] === "1") ||
+        (k === "sort" && merged[k] === "violations")
+      ) {
         delete merged[k];
       }
     });
@@ -403,8 +353,8 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
   return (
     <AdSidebar>
       <main style={{ background: PAPER, color: INK, fontFamily: SANS, minHeight: "100vh" }}>
-        {prevHref && <link rel="prev" href={prevHref} />}
-        {nextHref && <link rel="next" href={nextHref} />}
+        {/* Pagination link rels removed — page is now a static shell;
+            <DirectoryClient> handles its own pagination state. */}
 
         {/* Tighter horizontal padding on smallest phones — 16px gives bento cards
             and the hero search bar more breathing room at 360-414px widths. */}
@@ -729,27 +679,16 @@ export default async function LandlordsPage({ params: routeParams, searchParams 
             </div>
           </section>
 
-          {/* Browse the directory — streamed via Suspense so the static
-              shell paints first while the paginated landlord rows fetch. */}
-          <Suspense
-            fallback={
-              <DirectorySkeleton
-                total={total}
-                sortOptionLabel={sortOption.label}
-              />
-            }
-          >
-            <DirectorySection
-              city={city}
-              search={search}
-              sortBy={sortBy}
-              page={page}
-              basePath={basePath}
-              sortOptionLabel={sortOption.label}
-              total={total}
-              totalPages={totalPages}
-            />
-          </Suspense>
+          {/* Browse the directory — client-side island so the parent page
+              can be statically prerendered. Sort / search / page params live
+              in the URL and are read by useSearchParams() inside
+              DirectoryClient. The /api/landlords endpoint backing it is
+              CDN-cached (next.config.ts s-maxage=600, swr=3600). */}
+          <DirectoryClient
+            city={city}
+            basePath={basePath}
+            totalFallback={total}
+          />
 
           {/* Related */}
           <section className="mb-10 sm:mb-14">

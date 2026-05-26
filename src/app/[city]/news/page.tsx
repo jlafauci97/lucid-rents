@@ -1,17 +1,21 @@
 import Link from "next/link";
-import { Suspense } from "react";
 import type { Metadata } from "next";
 import { canonicalUrl, breadcrumbJsonLd, cityPath, cityBreadcrumbs } from "@/lib/seo";
 import { newsCollectionJsonLd } from "@/lib/seo";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
-import { type City, CITY_META } from "@/lib/cities";
+import { type City, CITY_META, VALID_CITIES } from "@/lib/cities";
 import { NEWS_CATEGORIES, type NewsCategory } from "@/lib/news-sources";
 import { CategoryIcon } from "@/components/news/CategoryIcon";
 import { AdSidebar } from "@/components/ui/AdSidebar";
-import { NewsListSection } from "./NewsListSection";
-import { NewsListSkeleton } from "./NewsListSkeleton";
+import { NewsListClient } from "./NewsListClient";
 
 export const revalidate = 1800; // 30 minutes
+
+// Pre-render all 5 cities at build time. Paginated views (?page=2+) are
+// handled client-side by <NewsListClient> against /api/news.
+export function generateStaticParams() {
+  return VALID_CITIES.map((city) => ({ city }));
+}
 
 export async function generateMetadata({ params }: { params: Promise<{ city: string }> }): Promise<Metadata> {
   const { city } = await params;
@@ -35,16 +39,12 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
 
 export default async function NewsPage({
   params: routeParams,
-  searchParams,
 }: {
   params: Promise<{ city: string }>;
-  searchParams: Promise<{ page?: string }>;
 }) {
   const { city: cityParam } = await routeParams;
   const { isValidCity: isValid, CITY_META: cityMeta } = await import("@/lib/cities");
   const cityName = isValid(cityParam) ? cityMeta[cityParam].fullName : "NYC";
-  const params = await searchParams;
-  const page = Math.max(1, parseInt(params.page || "1", 10));
 
   const categories = Object.entries(NEWS_CATEGORIES) as [
     NewsCategory,
@@ -105,11 +105,11 @@ export default async function NewsPage({
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
-          {/* Main content — streamed via Suspense so the page shell paints first. */}
+          {/* Main content — client island so the page shell stays static.
+              Pagination state lives in the URL; <NewsListClient> fetches
+              from /api/news (edge runtime, CDN-cached). */}
           <div className="min-w-0">
-            <Suspense fallback={<NewsListSkeleton />}>
-              <NewsListSection city={cityParam} page={page} />
-            </Suspense>
+            <NewsListClient city={cityParam} />
           </div>
 
           {/* Sidebar */}

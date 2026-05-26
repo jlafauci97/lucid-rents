@@ -1,24 +1,27 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { createCacheClient } from "@/lib/supabase/cache-client";
-import { ReviewSection } from "@/components/review/ReviewSection";
-import { SaveButton } from "@/components/building/SaveButton";
-import { ShareButton } from "@/components/building/ShareButton";
 import { regionFromSlug, boroughIlikePattern, buildingUrl, canonicalUrl } from "@/lib/seo";
 import { CITY_META, VALID_CITIES, type City } from "@/lib/cities";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { cache } from "react";
-import type { Building, ReviewWithDetails } from "@/types";
+import type { Building } from "@/types";
 import type { Metadata } from "next";
+import { ReviewsClient } from "./ReviewsClient";
 
 export const revalidate = 3600; // 1h ISR — review pages are SEO-traffic dominated
 
-const PAGE_SIZE = 10;
+// Enable on-demand ISR for unbounded dynamic params (city × borough × slug).
+// Without this Next.js 16 treats the route as fully dynamic and ignores
+// `revalidate` — first hit per URL renders, then caches at the edge.
+export const dynamicParams = true;
+export function generateStaticParams() {
+  return [];
+}
 
 interface ReviewsPageProps {
   params: Promise<{ city: string; borough: string; slug: string }>;
-  searchParams: Promise<{ page?: string }>;
 }
 
 const getBuilding = cache(async (boroughSlug: string, slug: string, metro?: string) => {
@@ -83,20 +86,8 @@ export async function generateMetadata({
   };
 }
 
-const safe = <T,>(promise: PromiseLike<{ data: T | null; error: unknown }>, fallback: T): Promise<T> =>
-  Promise.resolve(promise).then(({ data, error }) => {
-    if (error) console.error("Supabase query error:", error);
-    return data ?? fallback;
-  }).catch((err: unknown) => {
-    console.error("Supabase query exception:", err);
-    return fallback;
-  });
-
-export default async function BuildingReviewsPage({ params, searchParams }: ReviewsPageProps) {
+export default async function BuildingReviewsPage({ params }: ReviewsPageProps) {
   const { city: cityParam, borough, slug } = await params;
-  const { page: pageParam } = await searchParams;
-  const currentPage = Math.max(1, parseInt(pageParam || "1", 10));
-  const offset = (currentPage - 1) * PAGE_SIZE;
 
   const building = await getBuilding(borough, slug, cityParam);
 
@@ -104,23 +95,8 @@ export default async function BuildingReviewsPage({ params, searchParams }: Revi
 
   const city = metroToCity(building.metro);
   const cityMeta = CITY_META[city];
-  const supabase = createCacheClient();
 
-  const totalReviews = building.review_count || 0;
-  const totalPages = Math.ceil(totalReviews / PAGE_SIZE);
-
-  // Anonymous read only — Save/Monitor buttons self-fetch their own state client-side.
-  const reviews = (await safe(
-    supabase
-      .from("reviews")
-      .select(`*, profile:profiles(id, display_name, avatar_url), category_ratings:review_category_ratings(*, category:review_categories(slug, name, icon)), unit:units(unit_number)`)
-      .eq("building_id", building.id)
-      .eq("status", "published")
-      .order("created_at", { ascending: false })
-      .range(offset, offset + PAGE_SIZE - 1),
-    [],
-  )) as ReviewWithDetails[];
-
+  const totalReviewsFallback = building.review_count || 0;
   const shortAddress = building.full_address.split(",")[0]?.trim() || building.full_address;
   const bUrl = buildingUrl(building, city);
   const reviewsBase = `${bUrl}/reviews`;
@@ -147,57 +123,18 @@ export default async function BuildingReviewsPage({ params, searchParams }: Revi
         <h1 className="text-2xl font-bold text-[#1E293B] mb-1">
           Tenant Reviews for {shortAddress}
         </h1>
-        <p className="text-sm text-[#64748B] mb-8">
-          Showing {offset + 1}&ndash;{Math.min(offset + PAGE_SIZE, totalReviews)} of {totalReviews.toLocaleString()} review{totalReviews !== 1 ? "s" : ""}
-          {currentPage > 1 && ` \u00b7 Page ${currentPage}`}
-        </p>
 
-        <ReviewSection
-          reviews={reviews}
+        {/* Paginated reviews + pagination UI lives in a client island so the
+            parent page becomes static per (city, borough, slug). The
+            /api/buildings/[id]/reviews endpoint it hits is edge-runtime and
+            CDN-cached via next.config.ts headers. */}
+        <ReviewsClient
           buildingId={building.id}
-          cityPath={`/${city}`}
-          headerActions={
-            <>
-              <SaveButton buildingId={building.id} />
-              <ShareButton address={shortAddress} url={canonicalUrl(reviewsBase)} />
-            </>
-          }
+          city={city}
+          shortAddress={shortAddress}
+          reviewsBase={reviewsBase}
+          totalReviewsFallback={totalReviewsFallback}
         />
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between mt-8 pt-6 border-t border-[#e2e8f0]">
-            <span className="text-xs text-[#64748b]">
-              Page {currentPage} of {totalPages}
-            </span>
-            <div className="flex items-center gap-2">
-              {currentPage > 1 ? (
-                <Link
-                  href={`${reviewsBase}?page=${currentPage - 1}`}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e2e8f0] text-[#334155] hover:bg-[#f8fafc] transition-colors"
-                >
-                  <ChevronLeft className="w-3 h-3" /> Previous
-                </Link>
-              ) : (
-                <span className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e2e8f0] text-[#334155] opacity-40 cursor-not-allowed">
-                  <ChevronLeft className="w-3 h-3" /> Previous
-                </span>
-              )}
-              {currentPage < totalPages ? (
-                <Link
-                  href={`${reviewsBase}?page=${currentPage + 1}`}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e2e8f0] text-[#334155] hover:bg-[#f8fafc] transition-colors"
-                >
-                  Next <ChevronRight className="w-3 h-3" />
-                </Link>
-              ) : (
-                <span className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e2e8f0] text-[#334155] opacity-40 cursor-not-allowed">
-                  Next <ChevronRight className="w-3 h-3" />
-                </span>
-              )}
-            </div>
-          </div>
-        )}
       </div>
     </main>
   );
