@@ -42,6 +42,8 @@ import { S015NeighborhoodRisksStreamed } from "@/components/building/v2/streamin
 import { SideRailStreamed } from "@/components/building/v2/streaming/SideRailStreamed";
 import { LazyOnScroll } from "@/components/building/v2/streaming/LazyOnScroll";
 import { SectionSkeleton } from "@/components/building/v2/streaming/SectionSkeleton";
+import { LastUpdated } from "@/components/building/v2/LastUpdated";
+import { RelatedLinksStreamed } from "@/components/building/v2/streaming/RelatedLinksStreamed";
 
 export const revalidate = 86400; // 24h ISR
 
@@ -275,10 +277,9 @@ export default async function BuildingPage({ params }: Props) {
 
           <HeroV2Streamed building={building} city={typedCity} />
           <BuildingLeadParagraph
-            fullAddress={building.full_address}
+            building={building}
             neighborhood={neighborhoodName}
             city={typedCity}
-            totalUnits={building.total_units}
           />
 
           <RecordStripStreamed building={building} />
@@ -341,6 +342,10 @@ export default async function BuildingPage({ params }: Props) {
               <S08SimilarNearbyStreamed building={building} city={typedCity} />
             </LazyOnScroll>
           </div>
+
+          <RelatedLinksStreamed building={building} city={typedCity} />
+
+          <LastUpdated updatedAt={building.updated_at} />
         </main>
       </div>
     </>

@@ -113,6 +113,21 @@ export function buildingJsonLd(
     slug: string;
     name?: string | null;
     updated_at?: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
+    bbl?: string | null;
+    bin?: string | null;
+    apn?: string | null;
+    pin?: string | null;
+    folio_number?: string | null;
+    owner_name?: string | null;
+    management_company?: string | null;
+    is_rent_stabilized?: boolean;
+    stabilized_units?: number | null;
+    violation_count?: number;
+    dob_violation_count?: number;
+    complaint_count?: number;
+    eviction_count?: number;
   },
   city: City = DEFAULT_CITY
 ) {
@@ -130,10 +145,9 @@ export function buildingJsonLd(
 
   const schema: Record<string, unknown> = {
     "@context": "https://schema.org",
-    "@type": ["ApartmentComplex", "LocalBusiness"],
+    "@type": "ApartmentComplex",
     name: hasProperName ? building.name : building.full_address,
     url,
-    priceRange: "$$",
     address: {
       "@type": "PostalAddress",
       streetAddress: building.full_address.split(",")[0]?.trim(),
@@ -145,6 +159,14 @@ export function buildingJsonLd(
   };
   if (hasProperName) {
     schema.alternateName = building.full_address;
+  }
+
+  if (building.latitude != null && building.longitude != null) {
+    schema.geo = {
+      "@type": "GeoCoordinates",
+      latitude: building.latitude,
+      longitude: building.longitude,
+    };
   }
 
   if (building.year_built) {
@@ -164,6 +186,45 @@ export function buildingJsonLd(
       worstRating: 1,
       ratingCount: building.review_count,
     };
+  }
+
+  // additionalProperty: proprietary identifiers and per-building data points
+  // that vary across the network. Each one is a unique semantic signal Google
+  // can index even if it doesn't surface in rich results.
+  const additionalProperty: Array<{ "@type": "PropertyValue"; name: string; value: string | number | boolean }> = [];
+  const propertyId = building.bbl || building.bin || building.apn || building.pin || building.folio_number;
+  if (propertyId) {
+    const idLabel = building.bbl ? "BBL" : building.bin ? "BIN" : building.apn ? "APN" : building.pin ? "PIN" : "Folio Number";
+    additionalProperty.push({ "@type": "PropertyValue", name: idLabel, value: propertyId });
+  }
+  const ownerLabel = building.owner_name ?? building.management_company;
+  if (ownerLabel) {
+    additionalProperty.push({ "@type": "PropertyValue", name: "Owner", value: ownerLabel });
+  }
+  if (building.is_rent_stabilized) {
+    additionalProperty.push({ "@type": "PropertyValue", name: "Rent Stabilized", value: true });
+    if (building.stabilized_units != null && building.stabilized_units > 0) {
+      additionalProperty.push({ "@type": "PropertyValue", name: "Stabilized Units", value: building.stabilized_units });
+    }
+  }
+  const openHpd = building.violation_count ?? 0;
+  if (openHpd > 0) {
+    additionalProperty.push({ "@type": "PropertyValue", name: "HPD Violations", value: openHpd });
+  }
+  const openDob = building.dob_violation_count ?? 0;
+  if (openDob > 0) {
+    additionalProperty.push({ "@type": "PropertyValue", name: "DOB Violations", value: openDob });
+  }
+  const complaints = building.complaint_count ?? 0;
+  if (complaints > 0) {
+    additionalProperty.push({ "@type": "PropertyValue", name: "311 Complaints", value: complaints });
+  }
+  const evictions = building.eviction_count ?? 0;
+  if (evictions > 0) {
+    additionalProperty.push({ "@type": "PropertyValue", name: "Evictions Filed", value: evictions });
+  }
+  if (additionalProperty.length > 0) {
+    schema.additionalProperty = additionalProperty;
   }
 
   return schema;

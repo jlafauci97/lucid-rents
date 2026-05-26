@@ -493,6 +493,12 @@ interface BuildingRow {
   updated_at: string | null;
 }
 
+// Floor every building's sitemap lastmod to this timestamp. Bump whenever a
+// site-wide change is made to the building page template (new schema, new
+// modules, new internal links) that warrants a Google re-crawl. The per-row
+// `updated_at` still wins when more recent.
+const BUILDING_PAGE_VERSION_AT = "2026-05-26T00:00:00.000Z";
+
 export async function* generateBuildingChunks(): AsyncGenerator<string> {
   // 10K rows per Supabase pagination. The buildings table is ~1.8M rows (200
   // chunks of ~9K URLs each), so PAGE_SIZE=5000 needed ~360 sequential
@@ -516,9 +522,13 @@ export async function* generateBuildingChunks(): AsyncGenerator<string> {
     }
     for (const b of rows) {
       if (b.slug && b.borough) {
+        const rowLastmod = b.updated_at ? new Date(b.updated_at).toISOString() : null;
+        const lastmod = rowLastmod && rowLastmod > BUILDING_PAGE_VERSION_AT
+          ? rowLastmod
+          : BUILDING_PAGE_VERSION_AT;
         pending.push({
           url: `${BASE_URL}${buildingUrl({ slug: b.slug, borough: b.borough }, metroToCity(b.metro))}`,
-          lastmod: b.updated_at ? new Date(b.updated_at).toISOString() : undefined,
+          lastmod,
           changefreq: "weekly",
           priority: 0.6,
         });
