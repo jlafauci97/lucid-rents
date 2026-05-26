@@ -278,7 +278,7 @@ export function Footer() {
             {" · "}
             <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
             {" · "}
-            <Link href="/mission-control" className="text-gray-600 hover:text-gray-400 transition-colors">Admin</Link>
+            <Link href="/mission-control" className="text-gray-400 hover:text-white transition-colors">Admin</Link>
           </p>
         </div>
       </div>

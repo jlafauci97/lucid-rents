@@ -98,15 +98,15 @@ function TickerItem({ item }: { item: ActivityItem }) {
   const content = (
     <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
       <TypeIcon type={item.type} />
-      <span className="text-white/55 text-[10px] font-semibold uppercase tracking-wide">
+      <span className="text-white/85 text-[10px] font-semibold uppercase tracking-wide">
         {typeLabels[item.type]}
       </span>
-      <span className="font-medium text-white/90">
+      <span className="font-medium text-white">
         {item.buildingAddress}{item.borough ? `, ${item.borough}` : ''}
       </span>
-      <span className="text-white/45 mx-0.5">&mdash;</span>
-      <span className="text-white/70">{item.description}</span>
-      <span className="text-white/40 text-[10px]">{formatDate(item.date)}</span>
+      <span className="text-white/75 mx-0.5">&mdash;</span>
+      <span className="text-white/95">{item.description}</span>
+      <span className="text-white/80 text-[10px]">{formatDate(item.date)}</span>
     </span>
   );
 
