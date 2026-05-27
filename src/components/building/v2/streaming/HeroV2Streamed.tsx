@@ -4,22 +4,24 @@ import {
   loadRentsData,
   loadReviewsData,
   loadLandlordData,
+  loadLocalLaw104,
 } from "@/app/[city]/building/[borough]/[slug]/_data";
 import type { Building } from "@/types";
 import type { City } from "@/lib/cities";
 
 async function Inner({ building, city }: { building: Building; city: City }) {
-  const [rentsSlice, reviews, landlord] = await Promise.all([
+  const [rentsSlice, reviews, landlord, ll104] = await Promise.all([
     loadRentsData(building.id, building.metro, building.zip_code),
     loadReviewsData(building.id),
     loadLandlordData(building),
+    loadLocalLaw104(building.id, building.metro),
   ]);
   const rents = {
     current: rentsSlice.current,
     historic: rentsSlice.historic,
     neighborhood: rentsSlice.neighborhood,
   };
-  return <HeroV2 building={building} rents={rents} reviews={reviews} landlord={landlord} city={city} />;
+  return <HeroV2 building={building} rents={rents} reviews={reviews} landlord={landlord} ll104={ll104} city={city} />;
 }
 
 function HeroFallback({ building }: { building: Building }) {

@@ -1988,3 +1988,44 @@ export const loadHoustonData = unstable_cache(
   ["load-houston-data"],
   { revalidate: 3600, tags: ["building-data"] }
 );
+
+// Local Law 104 of 2019 — NYC permit-restriction status. Returns null when
+// the building is not on the city's list (the expected case for ~99% of
+// NYC buildings) or when the metro isn't NYC.
+export interface LocalLaw104Status {
+  hpdViolations: number;
+  dobViolations: number;
+  totalViolations: number;
+  dwellingUnits: number | null;
+  vioUnitsRatio: number | null;
+  asOfDate: string;
+}
+
+const _loadLocalLaw104 = async (
+  buildingId: string,
+  metro: string,
+): Promise<LocalLaw104Status | null> => {
+  if (metro !== "nyc") return null;
+  const supabase = createCacheClient();
+  return safe(async () => {
+    const { data } = await supabase
+      .from("local_law_104")
+      .select("hpd_violations, dob_violations, total_violations, dwelling_units, vio_units_ratio, as_of_date")
+      .eq("building_id", buildingId)
+      .maybeSingle();
+    if (!data) return null;
+    return {
+      hpdViolations: data.hpd_violations,
+      dobViolations: data.dob_violations,
+      totalViolations: data.total_violations,
+      dwellingUnits: data.dwelling_units,
+      vioUnitsRatio: data.vio_units_ratio,
+      asOfDate: data.as_of_date,
+    };
+  }, null);
+};
+export const loadLocalLaw104 = unstable_cache(
+  _loadLocalLaw104,
+  ["load-local-law-104"],
+  { revalidate: 3600, tags: ["building-data"] }
+);
