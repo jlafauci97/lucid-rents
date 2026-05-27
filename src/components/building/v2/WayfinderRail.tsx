@@ -34,24 +34,47 @@ export function WayfinderRail({ grade, buildingName, city, buildingPath, buildin
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    const els = SECTIONS.map((s) => document.getElementById(s.id)).filter(Boolean) as HTMLElement[];
-    if (els.length === 0) return;
+    const setup = () => {
+      const els = SECTIONS.map((s) => document.getElementById(s.id)).filter(Boolean) as HTMLElement[];
+      if (els.length === 0) return null;
+      const observer = new IntersectionObserver(
+        (entries) => {
+          // Find the topmost visible section
+          const visible = entries.filter((e) => e.isIntersecting);
+          if (visible.length > 0) {
+            // Pick the one closest to the top of the viewport
+            visible.sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+            setActiveId(visible[0].target.id);
+          }
+        },
+        { rootMargin: "-10% 0px -60% 0px", threshold: 0 }
+      );
+      for (const el of els) observer.observe(el);
+      return observer;
+    };
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        // Find the topmost visible section
-        const visible = entries.filter((e) => e.isIntersecting);
-        if (visible.length > 0) {
-          // Pick the one closest to the top of the viewport
-          visible.sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-          setActiveId(visible[0].target.id);
-        }
-      },
-      { rootMargin: "-10% 0px -60% 0px", threshold: 0 }
-    );
+    // Defer IO setup to idle so we don't pay 11 DOM lookups + observer wiring on
+    // the first-paint critical path. Scroll-spy highlight may lag 200-1500ms,
+    // invisible during normal scroll.
+    let observer: IntersectionObserver | null = null;
+    type IdleWindow = Window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+      cancelIdleCallback?: (handle: number) => void;
+    };
+    const w = window as IdleWindow;
+    const hasIdle = typeof w.requestIdleCallback === "function";
+    const handle: number = hasIdle && w.requestIdleCallback
+      ? w.requestIdleCallback(() => { observer = setup(); }, { timeout: 1500 })
+      : window.setTimeout(() => { observer = setup(); }, 200);
 
-    for (const el of els) observer.observe(el);
-    return () => observer.disconnect();
+    return () => {
+      observer?.disconnect();
+      if (hasIdle) {
+        w.cancelIdleCallback?.(handle);
+      } else {
+        clearTimeout(handle);
+      }
+    };
   }, []);
 
   // On mobile the wayfinder is a horizontal scroll strip pinned to the bottom.
