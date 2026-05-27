@@ -104,6 +104,12 @@ const nextConfig: NextConfig = {
         { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
       ],
     },
+    {
+      source: "/leaflet/:path*",
+      headers: [
+        { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+      ],
+    },
     // Cache API responses that power client-side components
     {
       source: "/api/transit/:path*",
