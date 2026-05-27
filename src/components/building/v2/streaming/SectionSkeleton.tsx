@@ -11,12 +11,13 @@ interface Props {
 }
 
 const MIN_HEIGHTS: Record<string, number> = {
-  rent: 620,
+  rent: 740,
+  "submarket-trends": 460,
   "neighborhood-risks": 420,
   issues: 560,
   reviews: 720,
   amenities: 380,
-  landlord: 480,
+  landlord: 580,
   location: 540,
   "about-this-area": 340,
   history: 460,

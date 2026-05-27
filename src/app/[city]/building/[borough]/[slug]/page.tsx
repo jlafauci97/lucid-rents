@@ -329,7 +329,11 @@ export default async function BuildingPage({ params }: Props) {
                   <S10HoustonInsightsStreamed building={building} />
                 </LazyOnScroll>
               )}
-              {typedCity === "nyc" && <S10_NYCInsights building={building} />}
+              {typedCity === "nyc" && (
+                <LazyOnScroll fallback={<SectionSkeleton num="10 / 10" title="NYC-specific insights." id="nyc-insights" />}>
+                  <S10_NYCInsights building={building} />
+                </LazyOnScroll>
+              )}
             </div>
 
             <SideRailStreamed building={building} city={typedCity} cityPrefix={cityPrefix} />
