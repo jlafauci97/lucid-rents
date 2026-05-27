@@ -22,7 +22,7 @@ async function Inner({ building, seeAllUrl }: { building: Building; seeAllUrl: s
 
 export function S02IssuesStreamed({ building, seeAllUrl }: { building: Building; seeAllUrl: string }) {
   return (
-    <Suspense fallback={<SectionSkeleton num="02 / 09" title="Violations, 311, & more." id="record" />}>
+    <Suspense fallback={<SectionSkeleton num="02 / 09" title="Violations, 311, & more." id="issues" />}>
       <Inner building={building} seeAllUrl={seeAllUrl} />
     </Suspense>
   );

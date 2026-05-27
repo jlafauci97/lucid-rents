@@ -42,7 +42,7 @@ function HeroFallback({ building }: { building: Building }) {
         <div
           className="leasing-card"
           style={{
-            minHeight: 120,
+            minHeight: 200,
             background: "rgba(0,0,0,0.03)",
             animation: "v2-pulse 1.4s ease-in-out infinite",
           }}
@@ -52,7 +52,7 @@ function HeroFallback({ building }: { building: Building }) {
       <aside
         className="verdict"
         style={{
-          minHeight: 300,
+          minHeight: 540,
           background: "rgba(0,0,0,0.03)",
           animation: "v2-pulse 1.4s ease-in-out infinite",
         }}
