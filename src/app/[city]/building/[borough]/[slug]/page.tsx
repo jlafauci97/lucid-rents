@@ -301,7 +301,9 @@ export default async function BuildingPage({ params }: Props) {
               <S03TenantReviewsStreamed building={building} seeAllUrl={seeAllReviewsUrl} />
               <S04AmenitiesStreamed building={building} />
               <S05LandlordStreamed building={building} city={typedCity} />
-              <S06LocationStreamed building={building} city={typedCity} />
+              <LazyOnScroll fallback={<SectionSkeleton num="06 / 09" title="Location & daily life." id="location" />}>
+                <S06LocationStreamed building={building} city={typedCity} />
+              </LazyOnScroll>
               <BuildingAreaSection city={typedCity} zipCode={building.zip_code ?? null} />
               <S07HistoryStreamed building={building} />
               <LazyOnScroll fallback={<SectionSkeleton num="10 / 10" title="Frequently asked questions." id="faq" />}>
