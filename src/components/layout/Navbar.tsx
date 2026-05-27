@@ -70,8 +70,8 @@ export function Navbar() {
           <Image
             src="/lucid-rents-wordmark.png"
             alt="LucidRents"
-            width={400}
-            height={112}
+            width={930}
+            height={261}
             sizes="200px"
             priority
             className="h-[47px] lg:h-[54px] w-auto"
