@@ -7,7 +7,7 @@
 
 import Link from "next/link";
 import type { Building } from "@/types";
-import type { BuildingV2Data } from "@/app/[city]/building/[borough]/[slug]/_data";
+import type { BuildingV2Data, LocalLaw104Status } from "@/app/[city]/building/[borough]/[slug]/_data";
 import { scoreToGrade } from "@/app/[city]/building/[borough]/[slug]/_data";
 import type { City } from "@/lib/cities";
 import { CITY_SHORT_NAME } from "@/lib/cities";
@@ -19,7 +19,17 @@ interface Props {
   rents: BuildingV2Data["rents"];
   reviews: BuildingV2Data["reviews"];
   landlord: BuildingV2Data["landlord"];
+  ll104: LocalLaw104Status | null;
   city: City;
+}
+
+function formatAsOfDate(iso: string): string {
+  // Render YYYY-MM-DD as "May 27, 2026" using UTC parsing so timezone
+  // doesn't shift the day from the upstream "as of" semantic.
+  const [y, m, d] = iso.split("-").map(Number);
+  if (!y || !m || !d) return iso;
+  const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  return `${months[m - 1]} ${d}, ${y}`;
 }
 
 function money(n: number | null | undefined): string {
@@ -49,7 +59,7 @@ function addressParts(full: string): { street: string; rest: string } {
 }
 
 
-export function HeroV2({ building, rents, reviews, landlord, city }: Props) {
+export function HeroV2({ building, rents, reviews, landlord, ll104, city }: Props) {
   const { street, rest } = addressParts(building.full_address);
   const { low, high } = rentBounds(rents.current);
   const { name: neighborhoodName, isFallback: neighborhoodIsFallback } = buildingNeighborhood(
@@ -98,6 +108,41 @@ export function HeroV2({ building, rents, reviews, landlord, city }: Props) {
   return (
     <section className="hero">
       <div className="hero-left">
+        {ll104 ? (
+          <div className="ll104-banner" role="status">
+            <svg className="ll104-warn" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 2L1 21h22L12 2z" fill="currentColor" fillOpacity="0.18" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/>
+              <line x1="12" y1="9"  x2="12" y2="14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              <circle cx="12" cy="17.5" r="1.1" fill="currentColor"/>
+            </svg>
+            <span className="ll104-text">
+              <strong>Local Law 104</strong>
+              <span className="ll104-sep">·</span>
+              as of {formatAsOfDate(ll104.asOfDate)}
+            </span>
+            <span className="ll104-info" tabIndex={0} aria-label="What is Local Law 104?">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="1.6"/>
+                <line x1="12" y1="11" x2="12" y2="17" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+                <circle cx="12" cy="7.5" r="1.1" fill="currentColor"/>
+              </svg>
+              <span className="ll104-tooltip" role="tooltip">
+                <strong>NYC Local Law 104 of 2019</strong>
+                <span>
+                  The Department of Buildings flagged this property for an excessive
+                  number of DOB and HPD violations relative to its dwelling units.
+                  While on the list it cannot receive most construction permits.
+                </span>
+                <span className="ll104-tooltip-stat">
+                  {ll104.totalViolations.toLocaleString()} total violations
+                  {ll104.dwellingUnits ? ` · ${ll104.dwellingUnits} unit${ll104.dwellingUnits === 1 ? "" : "s"}` : ""}
+                  {ll104.vioUnitsRatio != null ? ` · ${ll104.vioUnitsRatio} per unit` : ""}
+                </span>
+              </span>
+            </span>
+          </div>
+        ) : null}
+
         {/*
           The mockup uses h1 for building name ("Manhattan Plaza") with hero-address
           showing the street as a secondary line. Most buildings in our DB have no
