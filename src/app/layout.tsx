@@ -121,6 +121,15 @@ export default async function RootLayout({
             backgrounds on city pages, where the handshake savings are negligible. */}
         <link rel="preconnect" href={SUPABASE_ORIGIN} crossOrigin="anonymous" />
         <link rel="dns-prefetch" href={SUPABASE_ORIGIN} />
+        {/* Google ad stack: open TLS handshakes in parallel with HTML parse so the
+            lazyOnload scripts (GA, AdSense) don't pay the connect cost serially.
+            Production Lighthouse showed ~780KB of Google JS dominating SI; cheapest
+            no-UI fix is shaving the connect time. */}
+        <link rel="preconnect" href="https://pagead2.googlesyndication.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://www.googletagmanager.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://www.google-analytics.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://googleads.g.doubleclick.net" />
+        <link rel="dns-prefetch" href="https://fundingchoicesmessages.google.com" />
       </head>
       <Script
         src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
