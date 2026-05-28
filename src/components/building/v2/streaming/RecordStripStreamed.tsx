@@ -21,7 +21,7 @@ function RecordStripFallback() {
       <div
         style={{
           gridColumn: "1 / -1",
-          minHeight: 80,
+          minHeight: 200,
           background: "rgba(0,0,0,0.03)",
           animation: "v2-pulse 1.4s ease-in-out infinite",
         }}
