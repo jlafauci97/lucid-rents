@@ -35,6 +35,7 @@ Structure:
 - Excerpt: ≤160 characters. One sentence. Should make the reader curious, not summarize the whole article.
 - Body: 280–500 words in markdown. Open with a hook (scene, observation, surprising contrast). Land the data by paragraph 2. Give context in the middle (what this means for rent, risk, neighborhood trajectory). Close with a line that feels earned — a "so what" that respects the reader's time.
 - Internal links: when an <internal-links> block is provided, weave the relevant ones into the body as natural markdown anchors — aim for 2 if 2+ are available, otherwise 1 (e.g. "[Stellar Management](https://lucidrents.com/nyc/landlord/stellar-management)"). Place them on the first natural mention of that entity — never at the end as a bare list, never as "click here". The link text must be the entity name as it appears in the prose. Don't invent or rewrite URLs. If a link doesn't fit the story naturally, skip it rather than force it.
+- External sources: when an <external-links> block is provided, cite 1–2 of them as markdown anchors at the point where you reference official data, an agency, or a record (e.g. "data from [NYC Open Data](https://opendata.cityofnewyork.us/)"). These are authoritative .gov/official sources that back a claim — never a bare list, never "click here". Use only the URLs provided; don't invent or rewrite them. If none fit the story, skip rather than force.
 - Category must be exactly one of: "Rental Market", "Tenant Rights", "Data", "Guide".
 - image_query: 2–4 words for a stock photo search. Favor evocative ("rainy brooklyn stoop") over literal ("rent chart"). No proper nouns unless needed.
 - hashtags: exactly 10 hashtags tuned to get this story in front of the right readers on X/Twitter. Rules:
@@ -78,12 +79,21 @@ ${entityLinks.map((l) => `- "${l.label}" → ${l.url}`).join("\n")}
 </internal-links>\n`
       : "";
 
+  const externalBlock =
+    cfg.authoritative_sources.length > 0
+      ? `\n<external-links>
+Authoritative .gov / official data sources for this city. Cite 1–2 as markdown
+anchors where you reference official data, an agency, or a record.
+${cfg.authoritative_sources.map((s) => `- "${s.label}" → ${s.url}`).join("\n")}
+</external-links>\n`
+      : "";
+
   const userPrompt = `<signal type="${signal.type}">
 Headline seed: ${signal.headline_seed}
 Data to cite:
 ${JSON.stringify(signal.metadata, null, 2)}
 </signal>
-${linksBlock}
+${linksBlock}${externalBlock}
 Write the article as JSON now. No prose outside the JSON.`;
 
   const response = await anthropic.messages.create({

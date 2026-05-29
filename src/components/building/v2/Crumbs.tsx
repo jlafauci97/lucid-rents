@@ -37,7 +37,7 @@ export function Crumbs({
   const nbhLower = (neighborhoodName ?? "").toLowerCase();
 
   return (
-    <nav className="crumbs">
+    <nav className="crumbs" aria-label="Breadcrumb">
       <Link href="/">home</Link><span className="sep">/</span>
       <Link href={`/${prefix}`}>{prefix}</Link><span className="sep">/</span>
       <Link href={`/${prefix}/building-rankings`}>{boroughLower}</Link><span className="sep">/</span>

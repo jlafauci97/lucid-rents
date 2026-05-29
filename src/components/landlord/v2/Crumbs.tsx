@@ -10,7 +10,7 @@ interface Props {
 export function Crumbs({ city, displayName }: Props) {
   const prefix = CITY_META[city]?.urlPrefix ?? "nyc";
   return (
-    <nav className="crumbs">
+    <nav className="crumbs" aria-label="Breadcrumb">
       <Link href="/">home</Link><span className="sep">/</span>
       <Link href={`/${prefix}`}>{prefix.toLowerCase()}</Link><span className="sep">/</span>
       <Link href={`/${prefix}/landlords`}>landlords</Link><span className="sep">/</span>
