@@ -1,29 +1,87 @@
 import type { City } from "@/lib/cities";
 
 export type SignalType =
-  // Original 5
+  // Neighborhood & rent intelligence
   | "rent-trend"
-  | "violation-spike"
-  | "new-top-rated"
-  | "new-construction"
+  | "hood-rent-rank"
+  | "hood-quality-rank"
+  | "hood-value-pick"
   | "neighborhood-feature"
-  // Trend stories
+  // Building spotlights
+  | "new-top-rated"
+  | "building-most-reviewed"
+  | "building-stabilized-gem"
+  | "building-cautionary"
+  | "best-of-month"
+  // Landlord profiles
+  | "violation-spike"
+  | "landlord-watchlist"
+  | "landlord-good-actor"
+  | "landlord-eviction-heavy"
+  // City-wide market reports
+  | "new-construction"
   | "eviction-trend"
   | "permit-trend"
   | "listings-trend"
-  // Seasonal
+  | "city-violation-leaderboard"
+  | "city-value-buildings"
+  | "milestone-count"
+  // Seasonal & risk
   | "heat-season-kickoff"
   | "hurricane-watch"
   | "wildfire-impact"
-  // Data insight
-  | "best-of-month"
-  | "milestone-count"
-  // Explainers (low-score fallbacks)
+  // Guides / explainers (low-score, always-available fallbacks)
   | "explainer-class-c"
   | "explainer-rent-stab"
   | "explainer-lucidiq"
   | "explainer-notice-rights"
-  | "explainer-file-complaint";
+  | "explainer-file-complaint"
+  | "guide-red-flags"
+  | "guide-deposit-rights";
+
+/** Story families — the selector enforces variety by drawing the day's two
+ *  articles from different families. */
+export type SignalFamily =
+  | "neighborhood"
+  | "building"
+  | "landlord"
+  | "city"
+  | "seasonal"
+  | "guide";
+
+export const SIGNAL_FAMILY: Record<SignalType, SignalFamily> = {
+  "rent-trend": "neighborhood",
+  "hood-rent-rank": "neighborhood",
+  "hood-quality-rank": "neighborhood",
+  "hood-value-pick": "neighborhood",
+  "neighborhood-feature": "neighborhood",
+  "new-top-rated": "building",
+  "building-most-reviewed": "building",
+  "building-stabilized-gem": "building",
+  "building-cautionary": "building",
+  "best-of-month": "building",
+  "violation-spike": "landlord",
+  "landlord-watchlist": "landlord",
+  "landlord-good-actor": "landlord",
+  "landlord-eviction-heavy": "landlord",
+  "new-construction": "city",
+  "eviction-trend": "city",
+  "permit-trend": "city",
+  "listings-trend": "city",
+  "city-violation-leaderboard": "city",
+  "city-value-buildings": "city",
+  "milestone-count": "city",
+  "heat-season-kickoff": "seasonal",
+  "hurricane-watch": "seasonal",
+  "wildfire-impact": "seasonal",
+  "explainer-class-c": "guide",
+  "explainer-rent-stab": "guide",
+  "explainer-lucidiq": "guide",
+  "explainer-notice-rights": "guide",
+  "explainer-file-complaint": "guide",
+  "guide-red-flags": "guide",
+  "guide-deposit-rights": "guide",
+};
 
 export interface CityNewsConfig {
   /** IANA timezone (used to interpret "today" when detectors run). */
@@ -91,22 +149,14 @@ export const CITY_NEWS_CONFIG: Record<City, CityNewsConfig> = {
       "DUMBO",
     ],
     templates: [
-      "rent-trend",
-      "violation-spike",
-      "new-top-rated",
-      "new-construction",
-      "neighborhood-feature",
-      "eviction-trend",
-      "permit-trend",
-      "listings-trend",
+      "rent-trend", "hood-rent-rank", "hood-quality-rank", "hood-value-pick", "neighborhood-feature",
+      "new-top-rated", "building-most-reviewed", "building-stabilized-gem", "building-cautionary", "best-of-month",
+      "violation-spike", "landlord-watchlist", "landlord-good-actor", "landlord-eviction-heavy",
+      "new-construction", "permit-trend", "eviction-trend", "listings-trend",
+      "city-violation-leaderboard", "city-value-buildings", "milestone-count",
       "heat-season-kickoff",
-      "best-of-month",
-      "milestone-count",
-      "explainer-class-c",
-      "explainer-rent-stab",
-      "explainer-lucidiq",
-      "explainer-notice-rights",
-      "explainer-file-complaint",
+      "explainer-class-c", "explainer-rent-stab", "explainer-lucidiq", "explainer-notice-rights",
+      "explainer-file-complaint", "guide-red-flags", "guide-deposit-rights",
     ],
     thresholds: {
       rent_delta_pct: 2.0,
@@ -137,20 +187,13 @@ export const CITY_NEWS_CONFIG: Record<City, CityNewsConfig> = {
       "Mid-Wilshire",
     ],
     templates: [
-      "rent-trend",
-      "violation-spike",
-      "new-top-rated",
-      "new-construction",
-      "neighborhood-feature",
-      "eviction-trend",
-      "listings-trend",
+      "rent-trend", "hood-rent-rank", "hood-quality-rank", "hood-value-pick", "neighborhood-feature",
+      "new-top-rated", "building-most-reviewed", "building-stabilized-gem", "building-cautionary", "best-of-month",
+      "violation-spike", "landlord-watchlist", "landlord-good-actor", "landlord-eviction-heavy",
+      "eviction-trend", "listings-trend", "city-violation-leaderboard", "city-value-buildings", "milestone-count",
       "wildfire-impact",
-      "best-of-month",
-      "milestone-count",
-      "explainer-rent-stab",
-      "explainer-lucidiq",
-      "explainer-notice-rights",
-      "explainer-file-complaint",
+      "explainer-rent-stab", "explainer-lucidiq", "explainer-notice-rights",
+      "explainer-file-complaint", "guide-red-flags", "guide-deposit-rights",
     ],
     thresholds: {
       rent_delta_pct: 2.0,
@@ -192,18 +235,13 @@ export const CITY_NEWS_CONFIG: Record<City, CityNewsConfig> = {
       "The Loop",
     ],
     templates: [
-      "rent-trend",
-      "violation-spike",
-      "new-top-rated",
-      "new-construction",
-      "neighborhood-feature",
-      "listings-trend",
+      "rent-trend", "hood-rent-rank", "hood-quality-rank", "hood-value-pick", "neighborhood-feature",
+      "new-top-rated", "building-most-reviewed", "building-stabilized-gem", "building-cautionary", "best-of-month",
+      "violation-spike", "landlord-watchlist", "landlord-good-actor", "landlord-eviction-heavy",
+      "listings-trend", "city-violation-leaderboard", "city-value-buildings", "milestone-count",
       "heat-season-kickoff",
-      "best-of-month",
-      "milestone-count",
-      "explainer-lucidiq",
-      "explainer-notice-rights",
-      "explainer-file-complaint",
+      "explainer-lucidiq", "explainer-notice-rights", "explainer-file-complaint",
+      "guide-red-flags", "guide-deposit-rights",
     ],
     thresholds: {
       rent_delta_pct: 1.5,
@@ -237,18 +275,13 @@ export const CITY_NEWS_CONFIG: Record<City, CityNewsConfig> = {
       "Downtown",
     ],
     templates: [
-      "rent-trend",
-      "violation-spike",
-      "new-top-rated",
-      "new-construction",
-      "neighborhood-feature",
-      "listings-trend",
+      "rent-trend", "hood-rent-rank", "hood-quality-rank", "hood-value-pick", "neighborhood-feature",
+      "new-top-rated", "building-most-reviewed", "building-stabilized-gem", "building-cautionary", "best-of-month",
+      "violation-spike", "landlord-watchlist", "landlord-good-actor", "landlord-eviction-heavy",
+      "listings-trend", "city-violation-leaderboard", "city-value-buildings", "milestone-count",
       "hurricane-watch",
-      "best-of-month",
-      "milestone-count",
-      "explainer-lucidiq",
-      "explainer-notice-rights",
-      "explainer-file-complaint",
+      "explainer-lucidiq", "explainer-notice-rights", "explainer-file-complaint",
+      "guide-red-flags", "guide-deposit-rights",
     ],
     thresholds: {
       rent_delta_pct: 1.5,
@@ -283,16 +316,12 @@ export const CITY_NEWS_CONFIG: Record<City, CityNewsConfig> = {
       "EaDo",
     ],
     templates: [
-      "rent-trend",
-      "new-top-rated",
-      "new-construction",
-      "neighborhood-feature",
-      "listings-trend",
-      "best-of-month",
-      "milestone-count",
-      "explainer-lucidiq",
-      "explainer-notice-rights",
-      "explainer-file-complaint",
+      "rent-trend", "hood-rent-rank", "hood-quality-rank", "hood-value-pick", "neighborhood-feature",
+      "new-top-rated", "building-most-reviewed", "building-stabilized-gem", "building-cautionary", "best-of-month",
+      "violation-spike", "landlord-watchlist", "landlord-good-actor", "landlord-eviction-heavy",
+      "listings-trend", "city-violation-leaderboard", "city-value-buildings", "milestone-count",
+      "explainer-lucidiq", "explainer-notice-rights", "explainer-file-complaint",
+      "guide-red-flags", "guide-deposit-rights",
     ],
     thresholds: {
       rent_delta_pct: 1.5,

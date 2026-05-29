@@ -1,4 +1,5 @@
 import type { Detector, SignalCandidate } from "./types";
+import { neighborhoodOf, buildingLink } from "./_helpers";
 
 /**
  * End-of-month round-up of buildings that newly crossed into A-grade
@@ -11,10 +12,10 @@ export const detectBestOfMonth: Detector = async ({ city, cfg, supabase, today }
   const d30 = new Date(d.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
   const { data, error } = await supabase
     .from("buildings")
-    .select("id, full_address, borough, neighborhood, overall_score, review_count, updated_at")
+    .select("id, full_address, borough, slug, zip_code, overall_score, review_count, updated_at")
     .eq("metro", city)
     .gte("overall_score", 4.0)
-    .gte("review_count", 10)
+    .gte("review_count", 8)
     .gte("updated_at", d30);
   if (error || !data || data.length < 3) return [];
 
@@ -22,14 +23,21 @@ export const detectBestOfMonth: Detector = async ({ city, cfg, supabase, today }
     .sort((a, b) => (b.overall_score ?? 0) - (a.overall_score ?? 0))
     .slice(0, 10);
 
-  return [{
-    type: "best-of-month",
-    score: 2.5 + Math.log(data.length),
-    headline_seed: `${data.length} new A-grade buildings added this month`,
-    metadata: {
-      count: data.length,
-      top_buildings: top.map((b) => ({ address: b.full_address, score: b.overall_score, neighborhood: b.neighborhood })),
+  return [
+    {
+      type: "best-of-month",
+      score: 2.5 + Math.log(data.length),
+      headline_seed: `${data.length} new A-grade buildings added this month`,
+      metadata: {
+        count: data.length,
+        sample_building_id: top[0].id,
+        top_buildings: top.map((b) => ({
+          ...buildingLink(b, city),
+          score: Number((b.overall_score ?? 0).toFixed(1)),
+          neighborhood: neighborhoodOf(b.zip_code, b.borough, city),
+        })),
+      },
+      image_hint: `${cfg.landmark_neighborhoods[0]} A grade apartment`,
     },
-    image_hint: `${cfg.landmark_neighborhoods[0]} A grade apartment`,
-  }];
+  ];
 };
