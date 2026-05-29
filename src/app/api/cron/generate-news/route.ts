@@ -31,6 +31,37 @@ const COOLDOWN_DAYS: Record<string, number> = {
 /** Don't re-run the exact same signal_type within this many days (template variety). */
 const TYPE_COOLDOWN_DAYS = 3;
 
+/**
+ * Base appetite per story family. The selector picks families (not raw scores)
+ * so high-magnitude watchdog signals (huge violation counts) don't crowd out
+ * neighborhood, market, and guide coverage. Neighborhood/city are nudged up so
+ * the feed reads like rental intelligence, not just a violations blotter.
+ * Guides sit low — evergreen filler that only surfaces when data is thin.
+ */
+const FAMILY_BASE_PRIORITY: Record<SignalFamily, number> = {
+  neighborhood: 1.2,
+  city: 1.1,
+  building: 1.0,
+  landlord: 1.0,
+  seasonal: 0.9,
+  guide: 0.45,
+};
+
+/** Window over which a family counts as "recently covered" for balancing. */
+const FAMILY_RECENCY_DAYS = 10;
+
+/** Weighted-random pick of one key from a [key, weight] list. */
+function weightedPick<T>(entries: [T, number][]): T | null {
+  const total = entries.reduce((a, [, w]) => a + w, 0);
+  if (total <= 0) return entries[0]?.[0] ?? null;
+  let r = Math.random() * total;
+  for (const [k, w] of entries) {
+    r -= w;
+    if (r <= 0) return k;
+  }
+  return entries[entries.length - 1]?.[0] ?? null;
+}
+
 interface EntityIdentity {
   entityType: "building" | "landlord" | "neighborhood" | "topic";
   entityKey: string;
@@ -234,7 +265,7 @@ export async function GET(req: NextRequest) {
   const [{ data: featured }, { data: recentTypeRows }] = await Promise.all([
     supabase
       .from("featured_news_history")
-      .select("entity_type, entity_key, featured_at")
+      .select("entity_type, entity_key, signal_type, featured_at")
       .eq("metro", city)
       .gte("featured_at", maxCooldownIso),
     supabase
@@ -245,13 +276,26 @@ export async function GET(req: NextRequest) {
       .gte("created_at", typeSinceIso),
   ]);
 
-  // Most-recent featured_at per "type:key".
+  // Most-recent featured_at per "type:key", plus a per-family count over the
+  // recency window (drives family balancing so we don't keep publishing the
+  // same kind of story).
   const lastFeatured = new Map<string, number>();
-  for (const row of (featured ?? []) as { entity_type: string; entity_key: string; featured_at: string }[]) {
+  const recentFamilyCount = new Map<SignalFamily, number>();
+  const familyRecencyCutoff = Date.now() - FAMILY_RECENCY_DAYS * 24 * 60 * 60 * 1000;
+  for (const row of (featured ?? []) as {
+    entity_type: string;
+    entity_key: string;
+    signal_type: string;
+    featured_at: string;
+  }[]) {
     const k = `${row.entity_type}:${row.entity_key}`;
     const t = new Date(row.featured_at).getTime();
     const prev = lastFeatured.get(k);
     if (prev === undefined || t > prev) lastFeatured.set(k, t);
+    if (t >= familyRecencyCutoff) {
+      const fam = SIGNAL_FAMILY[row.signal_type as keyof typeof SIGNAL_FAMILY];
+      if (fam) recentFamilyCount.set(fam, (recentFamilyCount.get(fam) ?? 0) + 1);
+    }
   }
 
   const recentTypes = new Set((recentTypeRows ?? []).map((r) => r.signal_type as string));
@@ -273,29 +317,58 @@ export async function GET(req: NextRequest) {
   if (pool.length === 0) pool = sorted.filter((c) => !recentTypes.has(c.type));
   if (pool.length === 0) pool = sorted;
 
-  // 3. Pick up to ARTICLES_PER_RUN winners from DIFFERENT families.
+  // 3. Pick up to ARTICLES_PER_RUN winners. We pick by FAMILY first (weighted by
+  //    appetite ÷ recent coverage) so the feed spreads across neighborhoods,
+  //    market reports, buildings, landlords, and guides — instead of always the
+  //    highest-magnitude watchdog story. Within the chosen family we take the
+  //    strongest fresh candidate. The two daily picks use different families.
   const usedFamilies = new Set<SignalFamily>();
   const usedKeys = new Set<string>();
   const drafts: DraftResult[] = [];
 
   for (let i = 0; i < ARTICLES_PER_RUN; i += 1) {
-    let candidatePool = pool.filter((c) => {
+    // Group still-available candidates by family.
+    const byFamily = new Map<SignalFamily, SignalCandidate[]>();
+    for (const c of pool) {
       const id = entityIdentity(c);
-      return !usedFamilies.has(SIGNAL_FAMILY[c.type]) && !usedKeys.has(`${id.entityType}:${id.entityKey}`);
-    });
-    // If family-diversity empties the pool (small city), allow any unused entity.
-    if (candidatePool.length === 0) {
-      candidatePool = pool.filter((c) => {
-        const id = entityIdentity(c);
-        return !usedKeys.has(`${id.entityType}:${id.entityKey}`);
-      });
+      if (usedKeys.has(`${id.entityType}:${id.entityKey}`)) continue;
+      const fam = SIGNAL_FAMILY[c.type];
+      if (usedFamilies.has(fam)) continue; // keep the two picks in different families
+      const arr = byFamily.get(fam) ?? [];
+      arr.push(c);
+      byFamily.set(fam, arr);
     }
-    const winner = weightedTop3(candidatePool);
+    // Relax the different-family rule only if nothing else is left.
+    if (byFamily.size === 0) {
+      for (const c of pool) {
+        const id = entityIdentity(c);
+        if (usedKeys.has(`${id.entityType}:${id.entityKey}`)) continue;
+        const fam = SIGNAL_FAMILY[c.type];
+        const arr = byFamily.get(fam) ?? [];
+        arr.push(c);
+        byFamily.set(fam, arr);
+      }
+    }
+    if (byFamily.size === 0) break;
+
+    // Weight families by appetite ÷ (1 + recent coverage) so under-covered
+    // families rise and recently-used ones fall.
+    const familyWeights: [SignalFamily, number][] = [...byFamily.keys()].map((fam) => {
+      const base = FAMILY_BASE_PRIORITY[fam] ?? 0.5;
+      const recent = recentFamilyCount.get(fam) ?? 0;
+      return [fam, base / (1 + recent)];
+    });
+    const family = weightedPick(familyWeights);
+    if (!family) break;
+
+    // Within the family, weighted-random over the top 3 by score.
+    const winner = weightedTop3((byFamily.get(family) ?? []).sort((a, b) => b.score - a.score));
     if (!winner) break;
 
     const id = entityIdentity(winner);
-    usedFamilies.add(SIGNAL_FAMILY[winner.type]);
+    usedFamilies.add(family);
     usedKeys.add(`${id.entityType}:${id.entityKey}`);
+    recentFamilyCount.set(family, (recentFamilyCount.get(family) ?? 0) + 1);
 
     const result = await draftAndInsert(city, cfg, winner);
     drafts.push(result);
