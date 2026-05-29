@@ -32,6 +32,13 @@ export interface CityNewsConfig {
   voice: string;
   /** Agency names this city cites — keep the model using local terminology. */
   agencies: string[];
+  /**
+   * Authoritative .gov / official open-data sources the drafter can cite as
+   * external links. The model weaves 1–2 in as markdown anchors backing a data
+   * claim. Use stable official homepages/portals only — a dead link hurts
+   * E-E-A-T more than no link.
+   */
+  authoritative_sources: { label: string; url: string }[];
   /** Real outlets we write next to. Used to calibrate tone in the prompt. */
   comparable_outlets: string[];
   /** Neighborhoods the reader recognizes; used for context and fallback topics. */
@@ -60,6 +67,11 @@ export const CITY_NEWS_CONFIG: Record<City, CityNewsConfig> = {
       "NYC 311",
       "NY Housing Court",
       "ACRIS",
+    ],
+    authoritative_sources: [
+      { label: "NYC Dept. of Housing Preservation & Development", url: "https://www.nyc.gov/site/hpd/index.page" },
+      { label: "NYC Open Data", url: "https://opendata.cityofnewyork.us/" },
+      { label: "NYS Homes & Community Renewal (DHCR)", url: "https://hcr.ny.gov/" },
     ],
     comparable_outlets: [
       "Crain's NY",
@@ -108,6 +120,11 @@ export const CITY_NEWS_CONFIG: Record<City, CityNewsConfig> = {
     voice:
       "LA Times / LAist — broader geography, civic-lens, RSO-aware. Plain English. Respect the region's sprawl.",
     agencies: ["LAHD", "LADBS", "REAP", "LAPD", "Rent Registry"],
+    authoritative_sources: [
+      { label: "LA Housing Department", url: "https://housing.lacity.gov/" },
+      { label: "LA Dept. of Building & Safety", url: "https://www.ladbs.org/" },
+      { label: "LA City Open Data", url: "https://data.lacity.org/" },
+    ],
     comparable_outlets: ["LA Times", "LAist", "LA Daily News", "The Real Deal LA"],
     landmark_neighborhoods: [
       "Koreatown",
@@ -153,6 +170,11 @@ export const CITY_NEWS_CONFIG: Record<City, CityNewsConfig> = {
       "City Scavenger",
       "Cook County",
     ],
+    authoritative_sources: [
+      { label: "City of Chicago Dept. of Buildings", url: "https://www.chicago.gov/city/en/depts/bldgs.html" },
+      { label: "Chicago Data Portal", url: "https://data.cityofchicago.org/" },
+      { label: "Cook County Assessor", url: "https://www.cookcountyassessor.com/" },
+    ],
     comparable_outlets: [
       "Crain's Chicago",
       "Block Club Chicago",
@@ -195,6 +217,11 @@ export const CITY_NEWS_CONFIG: Record<City, CityNewsConfig> = {
     voice:
       "Miami Herald / The Real Deal Miami — hot-market, luxury-adjacent, post-Surfside vigilance about older buildings.",
     agencies: ["Miami-Dade Code", "40-year recert", "MRC", "Miami Building Dept"],
+    authoritative_sources: [
+      { label: "Miami-Dade County Building Dept.", url: "https://www.miamidade.gov/global/economy/building/home.page" },
+      { label: "Miami-Dade Open Data Hub", url: "https://gis-mdc.opendata.arcgis.com/" },
+      { label: "Miami-Dade Property Appraiser", url: "https://www.miamidade.gov/pa/" },
+    ],
     comparable_outlets: [
       "Miami Herald",
       "The Real Deal Miami",
@@ -235,6 +262,11 @@ export const CITY_NEWS_CONFIG: Record<City, CityNewsConfig> = {
     voice:
       "Houston Chronicle / Houston Business Journal — Sun Belt growth, Texas landlord-tenant, sprawling metro.",
     agencies: ["Harris County Code", "HCAD", "City of Houston Permits"],
+    authoritative_sources: [
+      { label: "Houston Permitting Center", url: "https://www.houstonpermittingcenter.org/" },
+      { label: "Harris Central Appraisal District", url: "https://hcad.org/" },
+      { label: "City of Houston Open Data", url: "https://cohgis-mycity.opendata.arcgis.com/" },
+    ],
     comparable_outlets: [
       "Houston Chronicle",
       "Houston Business Journal",

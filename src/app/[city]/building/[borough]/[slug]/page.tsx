@@ -181,7 +181,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description,
       url,
       siteName: "Lucid Rents",
-      type: "article",
+      type: "website",
       locale: "en_US",
     },
     twitter: {
