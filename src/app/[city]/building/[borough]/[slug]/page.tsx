@@ -1,3 +1,9 @@
+// Critical above-fold CSS subset (~40KB) — parses first so the browser
+// can start laying out hero/wayfinder/body before the full v2 sheet
+// finishes. The full sheet still loads next and contains the complete
+// ruleset (which is a superset of the critical subset, so the cascade
+// stays correct even when both are applied).
+import "@/styles/v2-tokens.critical.css";
 import "@/styles/v2-tokens.css";
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
