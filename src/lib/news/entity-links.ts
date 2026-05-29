@@ -21,6 +21,11 @@ import type { SignalCandidate } from "./templates/types";
 
 export type EntityLinkKind = "landlord" | "neighborhood" | "building" | "city";
 
+function urlField(meta: Record<string, unknown>, key: string): string | null {
+  const v = meta[key];
+  return typeof v === "string" && v.startsWith("http") ? v : null;
+}
+
 export interface EntityLink {
   label: string;
   url: string;
@@ -67,6 +72,13 @@ export function entityLinksForSignal(
     });
   }
 
+  // Building features carry a ready-made canonical URL + short address label.
+  const buildingUrl = urlField(meta, "building_url");
+  const buildingAddress = strField(meta, "building_address");
+  if (buildingUrl && buildingAddress) {
+    links.push({ label: buildingAddress, url: buildingUrl, kind: "building" });
+  }
+
   const neighborhood = strField(meta, "neighborhood");
   if (neighborhood) {
     const link = neighborhoodLink(neighborhood, city);
@@ -91,9 +103,9 @@ export function entityLinksForSignal(
  */
 export function primaryEntityLink(links: EntityLink[]): EntityLink | null {
   return (
+    links.find((l) => l.kind === "building") ??
     links.find((l) => l.kind === "landlord") ??
     links.find((l) => l.kind === "neighborhood") ??
-    links.find((l) => l.kind === "building") ??
     null
   );
 }
