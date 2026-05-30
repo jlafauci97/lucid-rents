@@ -30,6 +30,7 @@ export default function robots(): MetadataRoute.Robots {
     },
     sitemap: [
       "https://lucidrents.com/sitemap.xml",
+      "https://lucidrents.com/sitemap-buildings.xml",
       "https://lucidrents.com/sitemap-landlords.xml",
     ],
   };

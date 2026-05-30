@@ -441,6 +441,11 @@ export async function generateHubsSitemap(): Promise<UrlEntry[]> {
 
 // ─── Landlord chunks (l-N.xml) ─────────────────────────────────
 
+// Landlord counterpart to BUILDING_PAGE_VERSION_AT. Stamped on every chunk
+// entry in the dedicated /sitemap-landlords.xml index. Bump on a site-wide
+// landlord page template change to signal Google to re-crawl.
+export const LANDLORD_PAGE_VERSION_AT = "2026-05-30T00:00:00.000Z";
+
 interface LandlordRow {
   id: string;
   name: string;
@@ -496,8 +501,10 @@ interface BuildingRow {
 // Floor every building's sitemap lastmod to this timestamp. Bump whenever a
 // site-wide change is made to the building page template (new schema, new
 // modules, new internal links) that warrants a Google re-crawl. The per-row
-// `updated_at` still wins when more recent.
-const BUILDING_PAGE_VERSION_AT = "2026-05-26T00:00:00.000Z";
+// `updated_at` still wins when more recent. Exported so the dedicated
+// /sitemap-buildings.xml index route can stamp the same floor on every chunk
+// entry (single source of truth for the building-page version date).
+export const BUILDING_PAGE_VERSION_AT = "2026-05-26T00:00:00.000Z";
 
 export async function* generateBuildingChunks(): AsyncGenerator<string> {
   // 10K rows per Supabase pagination. The buildings table is ~1.8M rows (200
