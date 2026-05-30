@@ -33,6 +33,10 @@ const nextConfig: NextConfig = {
     beforeFiles: [
       // Sitemap index: /sitemap.xml → static pre-generated file
       { source: "/sitemap.xml", destination: "/sitemap/index.xml" },
+      // Dedicated building index → static pre-generated file (same pattern as
+      // /sitemap.xml). Served as a pure static asset so Googlebot fetches it
+      // identically to the master sitemap, with no route-handler involvement.
+      { source: "/sitemap-buildings.xml", destination: "/sitemap/buildings.xml" },
     ],
   }),
   headers: async () => [

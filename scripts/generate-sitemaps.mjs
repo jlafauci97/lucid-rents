@@ -443,6 +443,17 @@ function rebuildIndex() {
   // files. Now it's always a mirror of the freshly-built index.
   writeFileSync(`public/sitemap.xml`, indexXml);
 
+  // Dedicated building index — a STATIC file served at /sitemap-buildings.xml
+  // via a next.config rewrite (same pattern as /sitemap.xml). Pure static
+  // asset, so Googlebot fetches it identically to the master sitemap with no
+  // route-handler involvement. Regenerated here so it never drifts from the
+  // actual b-*.xml chunk files on disk.
+  const buildingEntries = files
+    .filter((f) => /^b-\d+\.xml$/.test(f))
+    .sort((a, b) => Number(a.match(/\d+/)[0]) - Number(b.match(/\d+/)[0]))
+    .map((f) => ({ name: f, lastmod: now }));
+  writeFileSync(`${OUT_DIR}/buildings.xml`, buildSitemapIndex(buildingEntries));
+
   // Record chunk counts so dedicated index routes (e.g. /sitemap-buildings.xml)
   // can enumerate chunks without a slow DB COUNT or a runtime readdir. The
   // building COUNT predicate has no supporting index and times out on ~2.68M
