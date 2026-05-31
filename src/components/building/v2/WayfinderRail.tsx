@@ -10,6 +10,10 @@ interface Props {
   city: string;
   buildingPath: string;
   buildingId: string;
+  /** S10 anchor id (e.g. "la-insights") when this building's city-specific
+   *  Insights section will render — drives the "Local insights" nav entry.
+   *  null/undefined hides it so the link never dead-ends. */
+  cityInsightsId?: string | null;
 }
 
 const SECTIONS = [
@@ -26,7 +30,29 @@ const SECTIONS = [
   { id: "faq", label: "FAQ", icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/></svg> },
 ];
 
-export function WayfinderRail({ grade, buildingName, city, buildingPath, buildingId }: Props) {
+// Build this building's wayfinder list: drop Crime for Miami (no crime data),
+// and append the city-specific "Local insights" entry — pointing at the right
+// S10 anchor — only when page.tsx has determined that section will render, so
+// the link never dead-ends. (Insights render after FAQ on the page, so the
+// nav entry sits there too.)
+function buildSections(city: string, cityInsightsId?: string | null) {
+  return SECTIONS.flatMap((s) => {
+    if (s.id === "crime" && city === "miami") return [];
+    if (s.id === "faq" && cityInsightsId) {
+      return [
+        s,
+        {
+          id: cityInsightsId,
+          label: "Local insights",
+          icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="22" x2="21" y2="22"/><line x1="6" y1="18" x2="6" y2="11"/><line x1="10" y1="18" x2="10" y2="11"/><line x1="14" y1="18" x2="14" y2="11"/><line x1="18" y1="18" x2="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg>,
+        },
+      ];
+    }
+    return [s];
+  });
+}
+
+export function WayfinderRail({ grade, buildingName, city, buildingPath, buildingId, cityInsightsId }: Props) {
   const router = useRouter();
   const [activeId, setActiveId] = useState("rent");
   const [copied, setCopied] = useState(false);
@@ -35,7 +61,7 @@ export function WayfinderRail({ grade, buildingName, city, buildingPath, buildin
 
   useEffect(() => {
     const setup = () => {
-      const els = SECTIONS.map((s) => document.getElementById(s.id)).filter(Boolean) as HTMLElement[];
+      const els = buildSections(city, cityInsightsId).map((s) => document.getElementById(s.id)).filter(Boolean) as HTMLElement[];
       if (els.length === 0) return null;
       const observer = new IntersectionObserver(
         (entries) => {
@@ -75,7 +101,7 @@ export function WayfinderRail({ grade, buildingName, city, buildingPath, buildin
         clearTimeout(handle);
       }
     };
-  }, []);
+  }, [city, cityInsightsId]);
 
   // On mobile the wayfinder is a horizontal scroll strip pinned to the bottom.
   // Keep the active tab centered so users can see what's next as they scroll.
@@ -109,6 +135,8 @@ export function WayfinderRail({ grade, buildingName, city, buildingPath, buildin
   const firstLine = spaceIdx > 0 ? buildingName.slice(0, spaceIdx) : buildingName;
   const secondLine = spaceIdx > 0 ? buildingName.slice(spaceIdx + 1) : null;
 
+  const sections = buildSections(city, cityInsightsId);
+
   return (
     <aside className="wayfinder">
       <header className="way-head">
@@ -120,7 +148,7 @@ export function WayfinderRail({ grade, buildingName, city, buildingPath, buildin
       </header>
 
       <ol className="waylist">
-        {SECTIONS.filter((s) => s.id !== "crime" || city !== "miami").map((s) => (
+        {sections.map((s) => (
           <li key={s.id} className={activeId === s.id ? "active" : undefined}>
             <a href={`#${s.id}`}>
               <span className="wicon">{s.icon}</span>

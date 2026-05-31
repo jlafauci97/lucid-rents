@@ -83,6 +83,42 @@ function metroToCity(metro: string | null): City {
 }
 
 /**
+ * Decide whether to show the city-specific "Local insights" wayfinder entry,
+ * returning the S10 section's anchor id (or null). Guards the nav link so it
+ * never dead-ends: it checks only the *building-row* signals that gate each S10
+ * section. Those are a subset of each section's full render condition (which
+ * also includes related-table data), so a row signal being present guarantees
+ * the section renders. A building whose insights come only from related tables
+ * (e.g. LA buyouts, Miami recerts) just won't get the shortcut — the section
+ * still renders on scroll. Keep in sync with the S10_* components.
+ */
+function cityInsightsAnchor(building: Building, metro: City): string | null {
+  switch (metro) {
+    case "nyc":
+      return building.is_rent_stabilized || (building.stabilized_units ?? 0) > 0 || building.stabilized_year != null
+        || building.is_soft_story || !!building.soft_story_status
+        ? "nyc-insights" : null;
+    case "los-angeles":
+      return building.is_rent_stabilized || (building.stabilized_units ?? 0) > 0 || building.stabilized_year != null
+        || !!building.fire_hazard_zone || building.is_soft_story || !!building.soft_story_status
+        || building.calenviroscreen_percentile != null || building.ellis_act_filing
+        || !!building.parking_type || building.car_dependency_score != null || building.fair_plan_risk
+        ? "la-insights" : null;
+    case "chicago":
+      return building.is_rlto_protected || building.ward != null || !!building.community_area || building.is_scofflaw
+        ? "chicago-insights" : null;
+    case "miami":
+      return !!building.sea_level_risk_zone || building.sea_level_risk_feet != null || !!building.flood_zone
+        ? "miami-insights" : null;
+    case "houston":
+      return !!building.flood_zone || building.in_floodplain
+        ? "houston-insights" : null;
+    default:
+      return null;
+  }
+}
+
+/**
  * Extract candidate short slugs from a long-format slug with city/state/zip suffix.
  * e.g. "7438-n-fallbrook-ave-los-angeles-ca-91307" -> ["7438-n-fallbrook-ave-los-angeles", "7438-n-fallbrook-ave"]
  */
@@ -289,6 +325,7 @@ export default async function BuildingPage({ params }: Props) {
               city={typedCity}
               buildingPath={`/${cityPrefix}/building/${borough}/${slug}`}
               buildingId={building.id}
+              cityInsightsId={cityInsightsAnchor(building, typedCity)}
             />
 
             <div className="main" id="main-content">
