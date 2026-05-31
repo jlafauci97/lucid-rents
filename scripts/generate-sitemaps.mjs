@@ -289,11 +289,15 @@ async function generateStaticSitemap() {
     }
   }
 
-  // News articles (non-fatal — skip if Supabase errors)
+  // News articles (non-fatal — skip if Supabase errors).
+  // Only OUR own published articles (auto_generated=true, status=published) —
+  // not the scraped/aggregated external news. Use each article's metro for the
+  // city-prefixed URL (e.g. /CA/Los-Angeles/news/...), not a hardcoded city.
   try {
-    const articles = await supabaseFetch("news_articles?select=slug,published_at&order=published_at.desc&limit=1000");
+    const articles = await supabaseFetch("news_articles?select=slug,published_at,metro&auto_generated=eq.true&status=eq.published&order=published_at.desc&limit=5000");
     for (const a of articles) {
-      entries.push({ url: `${BASE_URL}${cityPath(`/news/${a.slug}`)}`, lastmod: new Date(a.published_at).toISOString(), changefreq: "monthly", priority: 0.5 });
+      if (!a.slug) continue;
+      entries.push({ url: `${BASE_URL}${cityPath(`/news/${a.slug}`, metroToCity(a.metro))}`, lastmod: new Date(a.published_at).toISOString(), changefreq: "monthly", priority: 0.6 });
     }
   } catch (e) {
     console.warn(`  ⚠ Skipping news articles in sitemap: ${e.message}`);

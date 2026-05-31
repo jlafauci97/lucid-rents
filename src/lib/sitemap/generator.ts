@@ -332,21 +332,25 @@ export async function generateStaticSitemap(): Promise<UrlEntry[]> {
     entries.push({ url: `${BASE_URL}${cityPath(`/crime/${zip}`, city)}`, lastmod, changefreq: "weekly", priority: 0.6 });
   }
 
-  // News articles (non-fatal)
+  // News articles (non-fatal). Only OUR own published articles
+  // (auto_generated=true, status=published) — not scraped external news — and
+  // city-prefixed by each article's metro.
   try {
     interface NewsRow {
       slug: string;
       published_at: string;
+      metro: string | null;
     }
     const articles = await supabaseFetch<NewsRow[]>(
-      "news_articles?select=slug,published_at&order=published_at.desc&limit=1000",
+      "news_articles?select=slug,published_at,metro&auto_generated=eq.true&status=eq.published&order=published_at.desc&limit=5000",
     );
     for (const a of articles) {
+      if (!a.slug) continue;
       entries.push({
-        url: `${BASE_URL}${cityPath(`/news/${a.slug}`)}`,
+        url: `${BASE_URL}${cityPath(`/news/${a.slug}`, metroToCity(a.metro))}`,
         lastmod: new Date(a.published_at).toISOString(),
         changefreq: "monthly",
-        priority: 0.5,
+        priority: 0.6,
       });
     }
   } catch (e) {
