@@ -37,6 +37,11 @@ const nextConfig: NextConfig = {
       // /sitemap.xml). Served as a pure static asset so Googlebot fetches it
       // identically to the master sitemap, with no route-handler involvement.
       { source: "/sitemap-buildings.xml", destination: "/sitemap/buildings.xml" },
+      // Fresh alias for the building index. The original /sitemap-buildings.xml
+      // got stuck in Google's per-URL error state after repeated failed fetches
+      // during earlier deploys; this clean URL (no failure history) lets Google
+      // fetch the identical file without that backoff. Submit this one in GSC.
+      { source: "/buildings-sitemap.xml", destination: "/sitemap/buildings.xml" },
     ],
   }),
   headers: async () => [
