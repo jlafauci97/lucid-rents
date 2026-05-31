@@ -164,6 +164,24 @@ export function S01_RentalIntelligence({ rents, neighborhoodName, isRentStabiliz
     return { lo, hi, median: r.median_rent, listings: r.listing_count, isSynthetic: !hasRealRange };
   };
 
+  // Rent vs. area median — relocated from the cleared side rail. Per-bedroom
+  // comparison of this building's listings against the matching neighborhood
+  // median. Only rows with real per-bedroom data on either side are shown.
+  const rcLatestNbhMonth = rents.neighborhood[0]?.month?.slice(0, 7) ?? "";
+  const rentComparison = [0, 1, 2, 3, 4].map((beds) => {
+    const mine = rents.current.find((r) => r.bedrooms === beds);
+    const nbhForBed = rents.neighborhood.find(
+      (r) => r.beds === beds && r.month?.startsWith(rcLatestNbhMonth) && r.median_rent
+    );
+    const area = nbhForBed?.median_rent ?? null;
+    if (!mine && !area) return null;
+    const lo = mine?.min_rent ?? mine?.median_rent ?? null;
+    const hi = mine?.max_rent ?? mine?.median_rent ?? null;
+    const mid = mine?.median_rent ?? null;
+    const deltaPct = mid && area ? Math.round(((mid - area) / area) * 100) : null;
+    return { beds, lo, hi, area, deltaPct };
+  }).filter(Boolean) as Array<{ beds: number; lo: number | null; hi: number | null; area: number | null; deltaPct: number | null }>;
+
   return (
     <section className="section" id="rent">
       <div className="section-head">
@@ -279,6 +297,33 @@ export function S01_RentalIntelligence({ rents, neighborhoodName, isRentStabiliz
           </div>
         </div>
       </div>
+
+      {/* Rent vs. area median — relocated from the side rail */}
+      {rentComparison.length > 0 && (
+        <div className="ri-card ri-mt">
+          <header className="ri-head">
+            <span className="ri-icon navy">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            </span>
+            <h3>Rent vs. area median <span className="ri-pill">{neighborhoodName}</span></h3>
+          </header>
+          <div className="rc-grid">
+            {rentComparison.map((r) => (
+              <div key={r.beds} className="rc-cell">
+                <div className="rc-bed">{bedLabel(r.beds)}</div>
+                <div className="rc-line">This building: <b>{money(r.lo)} – {money(r.hi)}</b></div>
+                <div className="rc-area">
+                  {r.deltaPct != null
+                    ? <>{r.deltaPct === 0 ? "Average (0%)" : r.deltaPct > 0 ? `${r.deltaPct}% above` : `${Math.abs(r.deltaPct)}% below`}</>
+                    : "—"}
+                  <span>Area: {money(r.area)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          <footer className="ri-foot">Compared to the matching-bedroom median in {neighborhoodName}.</footer>
+        </div>
+      )}
 
       {/* Row 2: Units Historic Rent (U1 — tiles grid) */}
       <div className="ri-card ri-mt">

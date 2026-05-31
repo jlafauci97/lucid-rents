@@ -100,7 +100,31 @@ export function S07_History({ building, landlord, timeline }: Props) {
     return parseInt(a.year) - parseInt(b.year);
   });
 
-  if (events.length === 0 && timeline.length === 0) return null;
+  // "At a glance" facts — relocated from the cleared side rail. City-aware
+  // stabilized/regulated row; Houston falls back to hcad_land_use for class.
+  const buildingAny = building as unknown as Record<string, unknown>;
+  const metro = building.metro;
+  const houstonClass = metro === "houston" ? (buildingAny.hcad_land_use as string | null | undefined) ?? null : null;
+  const classValue = building.building_class ?? houstonClass ?? null;
+  const isRlto = (buildingAny.is_rlto_protected as boolean | null | undefined) ?? null;
+  let stabilizedRow: { label: string; value: string } | null = null;
+  if (metro === "nyc" && building.is_rent_stabilized && building.total_units) {
+    stabilizedRow = { label: "Rent-stab units", value: building.total_units.toLocaleString() };
+  } else if (metro === "los-angeles" && building.is_rent_stabilized && building.total_units) {
+    stabilizedRow = { label: "RSO units", value: building.total_units.toLocaleString() };
+  } else if (metro === "chicago" && isRlto != null) {
+    stabilizedRow = { label: "RLTO protected", value: isRlto ? "Yes" : "No" };
+  }
+  const hasFacts =
+    building.year_built != null ||
+    building.num_floors != null ||
+    building.total_units != null ||
+    stabilizedRow != null ||
+    classValue != null ||
+    building.bbl != null ||
+    building.bin != null;
+
+  if (events.length === 0 && timeline.length === 0 && !hasFacts) return null;
 
   return (
     <section className="section" id="history">
@@ -111,6 +135,21 @@ export function S07_History({ building, landlord, timeline }: Props) {
         </div>
         <div className="meta">construction · ownership · permits</div>
       </div>
+
+      {hasFacts && (
+        <div className="ww-card sr-facts" style={{ marginBottom: 18 }}>
+          <header className="ww-head"><h3>At a glance</h3></header>
+          <div className="facts-grid">
+            {building.year_built != null ? <div className="es-row"><span className="k">Year built</span><span className="v">{building.year_built}</span></div> : null}
+            {building.num_floors != null ? <div className="es-row"><span className="k">Floors</span><span className="v">{building.num_floors}</span></div> : null}
+            {building.total_units != null ? <div className="es-row"><span className="k">Total units</span><span className="v">{building.total_units.toLocaleString()}</span></div> : null}
+            {stabilizedRow ? <div className="es-row"><span className="k">{stabilizedRow.label}</span><span className="v">{stabilizedRow.value}</span></div> : null}
+            {classValue ? <div className="es-row"><span className="k">Class</span><span className="v">{classValue}</span></div> : null}
+            {building.bbl ? <div className="es-row"><span className="k">BBL</span><span className="v mono-v">{building.bbl}</span></div> : null}
+            {building.bin ? <div className="es-row"><span className="k">BIN</span><span className="v mono-v">{building.bin}</span></div> : null}
+          </div>
+        </div>
+      )}
 
       <div className="timeline">
         <div className="tl-years">
