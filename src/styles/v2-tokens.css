@@ -1004,6 +1004,58 @@
 }
 
 /* ========================================================
+   Relocated side-rail cards, now in the main column.
+   The side-rail card classes above are reused as-is (they're
+   scoped to .v2, not .v2 .sr); these rules only add the
+   wider-column layout the right rail never needed.
+======================================================== */
+
+/* Crime & safety — score ring on the left, incident breakdown on the right. */
+.v2 .crime-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: 10px 32px;
+  align-items: center;
+}
+.v2 .crime-score { display: flex; flex-direction: column; gap: 10px; }
+.v2 .crime-breakdown { min-width: 0; }
+@media (max-width: 900px) {
+  .v2 .crime-grid { grid-template-columns: 1fr; gap: 6px; align-items: stretch; }
+}
+
+/* Nearby transit + schools detail cards, side by side in the wide column. */
+.v2 .area-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+/* Rent vs. area median — per-bedroom comparison tiles. */
+.v2 .rc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+}
+.v2 .rc-cell {
+  display: flex; flex-direction: column; gap: 3px;
+  padding: 10px 12px;
+  background: var(--paper-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+/* History "at a glance" facts — two columns of key/value rows. */
+.v2 .facts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 24px;
+}
+@media (max-width: 600px) {
+  .v2 .facts-grid { grid-template-columns: 1fr; }
+}
+
+/* ========================================================
    Amenities section — 9 category tiles
 ======================================================== */
 .v2 .am-card {

@@ -29,8 +29,7 @@ import { S02IssuesStreamed } from "@/components/building/v2/streaming/S02IssuesS
 import { S03TenantReviewsStreamed } from "@/components/building/v2/streaming/S03TenantReviewsStreamed";
 import { S04AmenitiesStreamed } from "@/components/building/v2/streaming/S04AmenitiesStreamed";
 import { S05LandlordStreamed } from "@/components/building/v2/streaming/S05LandlordStreamed";
-import { S06LocationStreamed } from "@/components/building/v2/streaming/S06LocationStreamed";
-import { BuildingAreaSection } from "@/components/building/v2/sections/BuildingAreaSection";
+import { AreaSectionsStreamed, AreaSkeletons } from "@/components/building/v2/streaming/AreaSectionsStreamed";
 import { S07HistoryStreamed } from "@/components/building/v2/streaming/S07HistoryStreamed";
 import { S08SimilarNearbyStreamed } from "@/components/building/v2/streaming/S08SimilarNearbyStreamed";
 import { S09FAQStreamed } from "@/components/building/v2/streaming/S09FAQStreamed";
@@ -39,7 +38,6 @@ import { S10ChicagoInsightsStreamed } from "@/components/building/v2/streaming/S
 import { S10MiamiInsightsStreamed } from "@/components/building/v2/streaming/S10MiamiInsightsStreamed";
 import { S10HoustonInsightsStreamed } from "@/components/building/v2/streaming/S10HoustonInsightsStreamed";
 import { S015NeighborhoodRisksStreamed } from "@/components/building/v2/streaming/S015NeighborhoodRisksStreamed";
-import { SideRailStreamed } from "@/components/building/v2/streaming/SideRailStreamed";
 import { LazyOnScroll } from "@/components/building/v2/streaming/LazyOnScroll";
 import { SectionSkeleton } from "@/components/building/v2/streaming/SectionSkeleton";
 import { LastUpdated } from "@/components/building/v2/LastUpdated";
@@ -82,6 +80,42 @@ const getBuilding = cache(async (boroughSlug: string, slug: string, metro: strin
 function metroToCity(metro: string | null): City {
   if (metro && VALID_CITIES.includes(metro as City)) return metro as City;
   return "nyc";
+}
+
+/**
+ * Decide whether to show the city-specific "Local insights" wayfinder entry,
+ * returning the S10 section's anchor id (or null). Guards the nav link so it
+ * never dead-ends: it checks only the *building-row* signals that gate each S10
+ * section. Those are a subset of each section's full render condition (which
+ * also includes related-table data), so a row signal being present guarantees
+ * the section renders. A building whose insights come only from related tables
+ * (e.g. LA buyouts, Miami recerts) just won't get the shortcut — the section
+ * still renders on scroll. Keep in sync with the S10_* components.
+ */
+function cityInsightsAnchor(building: Building, metro: City): string | null {
+  switch (metro) {
+    case "nyc":
+      return building.is_rent_stabilized || (building.stabilized_units ?? 0) > 0 || building.stabilized_year != null
+        || building.is_soft_story || !!building.soft_story_status
+        ? "nyc-insights" : null;
+    case "los-angeles":
+      return building.is_rent_stabilized || (building.stabilized_units ?? 0) > 0 || building.stabilized_year != null
+        || !!building.fire_hazard_zone || building.is_soft_story || !!building.soft_story_status
+        || building.calenviroscreen_percentile != null || building.ellis_act_filing
+        || !!building.parking_type || building.car_dependency_score != null || building.fair_plan_risk
+        ? "la-insights" : null;
+    case "chicago":
+      return building.is_rlto_protected || building.ward != null || !!building.community_area || building.is_scofflaw
+        ? "chicago-insights" : null;
+    case "miami":
+      return !!building.sea_level_risk_zone || building.sea_level_risk_feet != null || !!building.flood_zone
+        ? "miami-insights" : null;
+    case "houston":
+      return !!building.flood_zone || building.in_floodplain
+        ? "houston-insights" : null;
+    default:
+      return null;
+  }
 }
 
 /**
@@ -291,6 +325,7 @@ export default async function BuildingPage({ params }: Props) {
               city={typedCity}
               buildingPath={`/${cityPrefix}/building/${borough}/${slug}`}
               buildingId={building.id}
+              cityInsightsId={cityInsightsAnchor(building, typedCity)}
             />
 
             <div className="main" id="main-content">
@@ -301,10 +336,9 @@ export default async function BuildingPage({ params }: Props) {
               <S03TenantReviewsStreamed building={building} seeAllUrl={seeAllReviewsUrl} />
               <S04AmenitiesStreamed building={building} />
               <S05LandlordStreamed building={building} city={typedCity} />
-              <LazyOnScroll fallback={<SectionSkeleton num="06 / 09" title="Location & daily life." id="location" />}>
-                <S06LocationStreamed building={building} city={typedCity} />
+              <LazyOnScroll fallback={<AreaSkeletons city={typedCity} />}>
+                <AreaSectionsStreamed building={building} city={typedCity} />
               </LazyOnScroll>
-              <BuildingAreaSection city={typedCity} zipCode={building.zip_code ?? null} />
               <S07HistoryStreamed building={building} />
               <LazyOnScroll fallback={<SectionSkeleton num="10 / 10" title="Frequently asked questions." id="faq" />}>
                 <S09FAQStreamed building={building} />
@@ -336,13 +370,16 @@ export default async function BuildingPage({ params }: Props) {
               )}
             </div>
 
-            <SideRailStreamed building={building} city={typedCity} cityPrefix={cityPrefix} />
+            {/* Right rail intentionally cleared — the .body grid keeps its third
+                300px track, leaving blank space on the right for now. The area
+                cards that used to live here moved into "About this area", Crime,
+                Rental intelligence, and History. */}
           </div>
 
-          {/* Similar Buildings — rendered AFTER both .main and .sr so it sits at
-              the very bottom of the page on mobile (after sidebar cards reflow
-              below main) and stays at the bottom of desktop too. Wrapped in
-              LazyOnScroll since it's always below the fold. */}
+          {/* Similar Buildings — rendered AFTER .main so it sits at the very
+              bottom of the page (also where the "Similar buildings" wayfinder
+              entry points). Wrapped in LazyOnScroll since it's always below the
+              fold. */}
           <div className="similar-bottom" style={{ marginTop: 24 }}>
             <LazyOnScroll fallback={<SectionSkeleton num="08 / 09" title="Similar buildings nearby." id="similar" />}>
               <S08SimilarNearbyStreamed building={building} city={typedCity} />

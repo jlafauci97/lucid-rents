@@ -1,15 +1,15 @@
 /**
- * S06 Location & daily life — verbatim port of mockup lines 4109–4209.
+ * "About this area" — the merged neighborhood hub.
  *
- *   <section class="section" id="location">
- *     <div class="section-head">…06 / 10 Location & daily life.…</div>
- *     <div class="location-grid">
- *       <div class="big-map">.pin + .mlabel</div>
- *       <div class="walk-panel">.walk-scores (3 rings) + .nearby (rows)</div>
- *     </div>
- *     <a class="nb-card" href="…">neighborhood feature card</a>
- *     <a class="nb-allcta">Browse all neighborhoods</a>
- *   </section>
+ * Consolidates what used to be three separate pieces:
+ *   - S06 "Location & daily life" (map + walk/transit/bike rings + neighborhood
+ *     feature card with demographics & vibe),
+ *   - the right-rail "Nearby Transit" and "Nearby Schools" cards (now cleared
+ *     from the side rail and surfaced here in full detail),
+ *   - the old `BuildingAreaSection` cross-links (now <AreaCrossLinks/>).
+ *
+ * One section, one wayfinder entry (#about-this-area). The old standalone
+ * "Location" nav entry is gone.
  */
 
 import Link from "next/link";
@@ -21,6 +21,7 @@ import { getNeighborhoodNameByCity } from "@/lib/neighborhoods";
 import { getNeighborhoodVibe } from "@/lib/neighborhood-vibes";
 import type { BuildingV2Data } from "@/app/[city]/building/[borough]/[slug]/_data";
 import { BigMap } from "@/components/building/v2/BigMap";
+import { AreaCrossLinks } from "@/components/building/v2/sections/AreaCrossLinks";
 
 interface Props {
   building: Building;
@@ -32,9 +33,6 @@ interface Props {
 }
 
 // Derive walk/transit/bike scores from real nearby-stop data.
-// Transit = capped by count + proximity of subway/bus stops.
-// Walk = transit + schools + amenity density proxy.
-// Bike = walk * 0.85 (softer — city-dependent bike infra not yet modeled).
 function deriveScores(nearby: BuildingV2Data["nearby"]): { walk: number; transit: number; bike: number } {
   const subwayCount = nearby.transitSubway.length;
   const busCount = nearby.transitBus.length;
@@ -42,15 +40,12 @@ function deriveScores(nearby: BuildingV2Data["nearby"]): { walk: number; transit
   const closestSubwayMi = nearby.transitSubway[0]?.distMiles ?? 2;
   const closestBusMi = nearby.transitBus[0]?.distMiles ?? 2;
 
-  // Transit score: 0..100.  Closer + more stops → higher.
   let transit = 0;
-  if (subwayCount > 0) transit += 40 + Math.max(0, 30 - closestSubwayMi * 60); // up to 70 from subway
-  if (busCount > 0) transit += 20 + Math.max(0, 10 - closestBusMi * 30);      // up to 30 from bus
+  if (subwayCount > 0) transit += 40 + Math.max(0, 30 - closestSubwayMi * 60);
+  if (busCount > 0) transit += 20 + Math.max(0, 10 - closestBusMi * 30);
   transit = Math.min(100, Math.round(transit));
 
-  // Walk score: transit + school density.
   const walk = Math.min(100, Math.round(transit * 0.7 + Math.min(schoolCount * 4, 30)));
-
   const bike = Math.max(0, Math.round(walk * 0.85));
   return { walk, transit, bike };
 }
@@ -61,23 +56,118 @@ function coords(b: Building): string {
   return "";
 }
 
-export function S06_Location({ building, city, nearby, neighborhoodStats, demographics, vibe }: Props) {
+/** Detailed nearby transit (subway + bus). Ported from the cleared side rail. */
+function NearbyTransitCard({ nearby }: { nearby: BuildingV2Data["nearby"] }) {
+  return (
+    <section className="sr-card">
+      <header className="sr-head">
+        <span className="sr-icon navy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="4" y="3" width="16" height="16" rx="2"/><circle cx="8" cy="17" r="1.5"/><circle cx="16" cy="17" r="1.5"/><path d="M4 11h16"/></svg></span>
+        <h4>Nearby Transit</h4>
+      </header>
+      {nearby.transitSubway.length > 0 ? (
+        <>
+          <div className="sr-sub">SUBWAY</div>
+          <ul className="sr-list">
+            {nearby.transitSubway.map((s) => (
+              <li key={s.stop_id}>
+                <div className="nt-info">
+                  <b>{s.name}</b>
+                  {s.lines?.length ? <span className="lines">{s.lines.slice(0, 5).map((ln) => <span key={ln} className="line r1">{ln}</span>)}</span> : null}
+                </div>
+                <div className="nt-dist">{s.distMiles.toFixed(1)} mi<small>{s.walkMin} min</small></div>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+      {nearby.transitBus.length > 0 ? (
+        <>
+          <div className="sr-sub">BUS</div>
+          <ul className="sr-list">
+            {nearby.transitBus.map((s) => (
+              <li key={s.stop_id}>
+                <div className="nt-info">
+                  <b>{s.name}</b>
+                  {s.lines?.length ? <span className="lines">{s.lines.slice(0, 4).map((ln) => <span key={ln} className="line bus">{ln}</span>)}</span> : null}
+                </div>
+                <div className="nt-dist">{s.distMiles.toFixed(1)} mi<small>{s.walkMin} min</small></div>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+    </section>
+  );
+}
+
+/** Detailed nearby schools (public / charter / private). Ported from the cleared side rail. */
+function NearbySchoolsCard({ nearby }: { nearby: BuildingV2Data["nearby"] }) {
+  return (
+    <section className="sr-card">
+      <header className="sr-head">
+        <span className="sr-icon sky"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.5 3 3 6 3s6-1.5 6-3v-5"/></svg></span>
+        <h4>Nearby Schools &amp; Colleges</h4>
+      </header>
+      {nearby.schoolsPublic.length > 0 ? (
+        <>
+          <div className="sr-sub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/></svg>PUBLIC SCHOOLS</div>
+          <ul className="sr-list">
+            {nearby.schoolsPublic.map((s) => (
+              <li key={s.school_id}>
+                <div className="nt-info"><b>{s.name}</b>{s.grades ? <span className="grade">{s.grades}</span> : null}</div>
+                <div className="nt-dist">{s.distMiles.toFixed(1)} mi<small>{s.walkMin} min</small></div>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+      {nearby.schoolsCharter.length > 0 ? (
+        <>
+          <div className="sr-sub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>CHARTER SCHOOLS</div>
+          <ul className="sr-list">
+            {nearby.schoolsCharter.map((s) => (
+              <li key={s.school_id}>
+                <div className="nt-info"><b>{s.name}</b>{s.grades ? <span className="grade">{s.grades}</span> : null}</div>
+                <div className="nt-dist">{s.distMiles.toFixed(1)} mi<small>{s.walkMin} min</small></div>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+      {nearby.schoolsPrivate.length > 0 ? (
+        <>
+          <div className="sr-sub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>PRIVATE SCHOOLS</div>
+          <ul className="sr-list">
+            {nearby.schoolsPrivate.map((s) => (
+              <li key={s.school_id}>
+                <div className="nt-info"><b>{s.name}</b>{s.grades ? <span className="grade">{s.grades}</span> : null}</div>
+                <div className="nt-dist">{s.distMiles.toFixed(1)} mi<small>{s.walkMin} min</small></div>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+    </section>
+  );
+}
+
+export function AboutThisArea({ building, city, nearby, neighborhoodStats, demographics, vibe }: Props) {
   const { walk: w, transit: t, bike: bk } = deriveScores(nearby);
   const cityName = ((CITY_META as Record<string, { name?: string; fullName?: string }>)[city])?.name ?? city;
   const borough = building.borough;
   const street = building.full_address.split(",")[0] ?? building.full_address;
 
-  // Resolve the *real* neighborhood name + description by zip (Hell's Kitchen,
-  // Chelsea, Park Slope, etc.) rather than falling back to the borough label.
   const realNbhName = building.zip_code ? getNeighborhoodNameByCity(building.zip_code, city) : null;
   const neighborhoodName = realNbhName || borough;
   const neighborhoodHref = building.zip_code ? neighborhoodUrl(building.zip_code, city) : "#";
   const localVibe = building.zip_code ? getNeighborhoodVibe(city, building.zip_code) : null;
-  // Prefer vibe description from props (data layer), fall back to local lookup, then generic
   const nbhDescription = vibe?.description
     ?? localVibe?.description
     ?? `Learn more about ${neighborhoodName}${cityName ? ` in ${cityName}` : ""} — buildings tracked, typical rents, and resident sentiment.`;
   const vibeTags = vibe?.tags?.length ? vibe.tags : localVibe?.vibeTags ?? [];
+
+  const hasTransit = nearby.transitSubway.length > 0 || nearby.transitBus.length > 0;
+  const hasSchools = nearby.schoolsPublic.length > 0 || nearby.schoolsCharter.length > 0 || nearby.schoolsPrivate.length > 0;
 
   const ring = (val: number) => (
     <svg className="ring" viewBox="0 0 36 36">
@@ -87,13 +177,13 @@ export function S06_Location({ building, city, nearby, neighborhoodStats, demogr
   );
 
   return (
-    <section className="section" id="location">
+    <section className="section" id="about-this-area">
       <div className="section-head">
         <div>
-          <div className="num">06 / 10</div>
-          <h2>Location &amp; daily life.</h2>
+          <div className="num">07 / 10</div>
+          <h2>About this area.</h2>
         </div>
-        <div className="meta"></div>
+        <div className="meta">{neighborhoodName}{building.zip_code ? ` · ${building.zip_code}` : ""}</div>
       </div>
 
       <div className="location-grid">
@@ -149,6 +239,14 @@ export function S06_Location({ building, city, nearby, neighborhoodStats, demogr
           </div>
         </div>
       </div>
+
+      {/* Detailed nearby transit + schools — moved out of the cleared side rail */}
+      {(hasTransit || hasSchools) && (
+        <div className="area-detail-grid">
+          {hasTransit && <NearbyTransitCard nearby={nearby} />}
+          {hasSchools && <NearbySchoolsCard nearby={nearby} />}
+        </div>
+      )}
 
       {/* Neighborhood feature */}
       <Link className="nb-card" href={neighborhoodHref}>
@@ -238,6 +336,9 @@ export function S06_Location({ building, city, nearby, neighborhoodStats, demogr
           </span>
         </div>
       </Link>
+
+      {/* Internal cross-links to neighborhood / crime / rent hub pages */}
+      <AreaCrossLinks city={city} zipCode={building.zip_code ?? null} />
 
       <Link className="nb-allcta" href={neighborhoodsUrl(city)}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>

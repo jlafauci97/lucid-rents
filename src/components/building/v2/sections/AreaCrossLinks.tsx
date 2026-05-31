@@ -1,16 +1,15 @@
 /**
- * "About this area" cross-link section on the v2 building page.
+ * Area cross-links — internal links from every building page to its
+ * neighborhood overview, crime stats, rent trends, and adjacent neighborhoods.
  *
- * Adds outbound internal links from every building page to its
- * neighborhood overview, crime stats, rent trends, and 5 adjacent
- * neighborhoods. The neighborhood/crime/rent destinations all exist in
- * the sitemap (568 ZIPs × 3 page types = 1,704 hub-style URLs). Linking
- * from ~3M buildings massively concentrates internal link signal on
- * these hub pages.
+ * Previously its own `BuildingAreaSection` (a standalone `#about-this-area`
+ * section). It now renders *inside* the merged "About this area" section as a
+ * fragment (no `<section>`/section-head of its own), so the surrounding section
+ * owns the heading and anchor.
  *
- * Visual language matches the existing v2 building page sections
- * (S06 Location, S08 Similar/Nearby) — section-head with num + h2,
- * card grid below.
+ * SEO note (unchanged): the neighborhood/crime/rent destinations are hub-style
+ * URLs in the sitemap (568 ZIPs × 3 page types). Linking from ~3M building pages
+ * concentrates internal link signal on these hubs.
  */
 
 import Link from "next/link";
@@ -26,8 +25,8 @@ interface Props {
   zipCode: string | null;
 }
 
-export function BuildingAreaSection({ city, zipCode }: Props) {
-  // Nothing to render without a ZIP — the section depends on it for all URLs.
+export function AreaCrossLinks({ city, zipCode }: Props) {
+  // Nothing to render without a ZIP — every URL below depends on it.
   if (!zipCode) return null;
 
   const neighborhoodName = getNeighborhoodNameByCity(zipCode, city) ?? "this area";
@@ -41,17 +40,7 @@ export function BuildingAreaSection({ city, zipCode }: Props) {
     .filter((a) => !!a.name); // drop ZIPs that don't have a known neighborhood name
 
   return (
-    <section className="section" id="about-this-area">
-      <div className="section-head">
-        <div>
-          <div className="num">07 / 10</div>
-          <h2>About this area.</h2>
-        </div>
-        <div className="meta">
-          {neighborhoodName} · {zipCode}
-        </div>
-      </div>
-
+    <>
       <div className="area-grid">
         <Link href={neighborhoodUrl(zipCode, city)} className="area-card">
           <div className="area-card-label">
@@ -125,6 +114,7 @@ export function BuildingAreaSection({ city, zipCode }: Props) {
           display: grid;
           grid-template-columns: 1fr 1fr;
           gap: 12px;
+          margin-top: 14px;
         }
         .area-card-wide { grid-column: 1 / -1; }
         .area-card {
@@ -217,8 +207,11 @@ export function BuildingAreaSection({ city, zipCode }: Props) {
           font-size: 11px;
           color: oklch(0.55 0.01 240);
         }
+        @media (max-width: 640px) {
+          .area-grid { grid-template-columns: 1fr; }
+        }
       `}</style>
-    </section>
+    </>
   );
 }
 
