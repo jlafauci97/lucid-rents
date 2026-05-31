@@ -439,7 +439,14 @@ export function categorizeArticle(
  * Generate a URL-safe slug from an article title and date.
  */
 export function generateArticleSlug(title: string, publishedAt: string): string {
-  const datePrefix = publishedAt.slice(0, 10); // YYYY-MM-DD
+  // Normalize the date first. RSS feeds pass RFC-2822 strings like
+  // "Sun, 31 May 2026 14:00:00 GMT" — a raw .slice(0,10) on that yields
+  // "Sun, 31 Ma" (commas/spaces → invalid URL). Parse to a real date and take
+  // the ISO YYYY-MM-DD. Fall back to a raw slice only if the date is unparseable.
+  const parsed = new Date(publishedAt);
+  const datePrefix = Number.isNaN(parsed.getTime())
+    ? publishedAt.slice(0, 10).replace(/[^0-9-]/g, "-")
+    : parsed.toISOString().slice(0, 10);
   const titleSlug = title
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
