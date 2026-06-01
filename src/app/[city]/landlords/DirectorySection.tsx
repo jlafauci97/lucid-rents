@@ -4,6 +4,7 @@ import { createCacheClient } from "@/lib/supabase/cache-client";
 import { LetterGrade } from "@/components/ui/LetterGrade";
 import { landlordUrl } from "@/lib/seo";
 import type { City } from "@/lib/cities";
+import { GARBAGE_NOT_IN } from "@/lib/landlord-garbage-names";
 
 /* ─── Bento style tokens (subset used by this section) ─────────── */
 const SANS = `"Geist", "Inter", system-ui, sans-serif`;
@@ -49,24 +50,6 @@ const SORT_OPTIONS = [
   { key: "buildings",   label: "Buildings",   col: "building_count" },
 ] as const;
 
-/* Filter placeholder/redacted owner names from display.
-   See page.tsx for the full rationale on this list. */
-const GARBAGE_NAMES = [
-  "AVAILABLE FROM DATA SOURCE",
-  "NAME NOT ON FILE",
-  "NOT AVAILABLE",
-  "NOT AVAILABLE FROM THE DATA",
-  "NOT AVAILABLE FROM THE DATA SOURCE",
-  "UNKNOWN",
-  "UNKNOWN OWNER",
-  "N/A",
-  "NA",
-  "UNAVAILABLE",
-  "UNAVAILABLE OWNER",
-  "Taxpayer Unknown",
-];
-const GARBAGE_IN = `(${GARBAGE_NAMES.map((n) => `"${n}"`).join(",")})`;
-
 interface DirectorySectionProps {
   city: City;
   search: string;
@@ -101,7 +84,7 @@ export async function DirectorySection({
     .from("landlord_stats_canonical")
     .select(baseSelect)
     .eq("metro", city)
-    .not("name", "in", GARBAGE_IN)
+    .not("name", "in", GARBAGE_NOT_IN)
     .order(sortOption.col, { ascending: false })
     .range(offset, offset + limit - 1);
 
