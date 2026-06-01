@@ -1,4 +1,6 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "regions": ["pdx1"],
   "ignoreCommand": "git diff --quiet HEAD^ HEAD -- src/ public/ next.config.ts package.json tsconfig.json vercel.json",
   "crons": [
     {
