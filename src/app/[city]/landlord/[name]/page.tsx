@@ -1,4 +1,5 @@
 import "@/styles/v2-tokens.css";
+import { cache } from "react";
 import { createCacheClient } from "@/lib/supabase/cache-client";
 import { notFound, permanentRedirect } from "next/navigation";
 import { Crumbs } from "@/components/landlord/v2/Crumbs";
@@ -28,7 +29,7 @@ import {
   cityPath,
 } from "@/lib/seo";
 import type { Metadata } from "next";
-import { CITY_META } from "@/lib/cities";
+import { CITY_META, VALID_CITIES } from "@/lib/cities";
 import type { City } from "@/lib/cities";
 import { buildLandlordDescription } from "@/lib/seo-metadata";
 import { pickLandlordTitle } from "@/lib/seo-titles";
@@ -102,6 +103,34 @@ async function resolveOwnerName(
   return byName?.[0]?.owner_name ?? null;
 }
 
+/**
+ * Cross-metro fallback for a landlord slug requested under the wrong city
+ * (e.g. `/nyc/landlord/alhani` for an LA landlord). The slug-based landlord
+ * sitemap historically emitted some URLs under the wrong city (fixed in #193),
+ * but Google had already indexed them — and with no fallback they dead-ended
+ * into the "Landlord Not Found" noindex boundary instead of pointing at the
+ * live page in the correct metro. Mirrors `findBuildingAnywhere` on the
+ * building page: find the slug in ANY *other* metro (most-substantial
+ * portfolio first) so the page can canonicalise + redirect there. Returns
+ * null when the slug only exists in the requested city (→ genuine notFound).
+ */
+const findLandlordAnywhere = cache(
+  async (slug: string, excludeCity: City): Promise<{ name: string; city: City } | null> => {
+    const supabase = createCacheClient();
+    const { data } = await supabase
+      .from("landlord_stats")
+      .select("name, metro, building_count")
+      .eq("slug", slug)
+      .gt("building_count", 0)
+      .order("building_count", { ascending: false })
+      .limit(5);
+    const match = data?.find(
+      (r) => VALID_CITIES.includes(r.metro as City) && (r.metro as City) !== excludeCity
+    );
+    return match ? { name: match.name, city: match.metro as City } : null;
+  }
+);
+
 export async function generateMetadata({
   params,
 }: LandlordPageProps): Promise<Metadata> {
@@ -116,6 +145,16 @@ export async function generateMetadata({
   // rows and we redirect the page render below; the metadata must agree
   // so we don't end up with HTTP 200 + "Not Found" title (soft-404).
   if (!stats || stats.buildingCount === 0) {
+    // Wrong-city slug that's a real landlord elsewhere → point the canonical at
+    // the correct-city URL (no noindex) so Google consolidates there. Must
+    // agree with the page's cross-metro redirect below. Mirrors building page.
+    const elsewhere = await findLandlordAnywhere(name, city);
+    if (elsewhere) {
+      return {
+        title: "Redirecting…",
+        alternates: { canonical: canonicalUrl(landlordUrl(elsewhere.name, elsewhere.city)) },
+      };
+    }
     return { title: "Landlord Not Found", robots: { index: false, follow: false } };
   }
 
@@ -165,15 +204,19 @@ export default async function LandlordDetailPage({
       loadLandlordFAQ(name, city),
     ]);
 
-  // No matching landlord, or a junk stats row with no buildings to render —
-  // surface the not-found UI from src/app/not-found.tsx. We tried `redirect()`
-  // here originally but Next 16 / Vercel silently swallow the redirect signal
-  // for streamed pages with revalidate set, returning HTTP 200 + an empty
-  // body. notFound() also returns HTTP 200 in Next 16 (soft-404) but at least
-  // renders meaningful content for users instead of a blank page.
-  // The buildingCount === 0 guard catches stale sitemap slugs and cross-metro
-  // mismatches (e.g. an LA landlord slug requested under /nyc/).
+  // No renderable landlord in THIS city (missing, or a junk zero-building row).
   if (!ownerName || !cachedStats || cachedStats.buildingCount === 0) {
+    // Cross-metro mismatch (e.g. an LA landlord slug requested under /nyc/):
+    // redirect to the real city instead of noindexing. generateMetadata sets
+    // the matching canonical, so even where Next 16 streaming SSR coerces this
+    // redirect to a 200 the page still consolidates to the correct URL (same
+    // behaviour as the building page's cross-metro redirect) — no noindex.
+    const elsewhere = await findLandlordAnywhere(name, city);
+    if (elsewhere) {
+      permanentRedirect(landlordUrl(elsewhere.name, elsewhere.city));
+    }
+    // Genuinely absent everywhere — surface the not-found UI from
+    // src/app/not-found.tsx (noindex), which Google deindexes naturally.
     notFound();
   }
 
