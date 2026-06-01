@@ -103,6 +103,31 @@ Reply:`,
       });
 
       const reply = result.text.trim();
+
+      // The drafter prompt instructs the model to return the literal token
+      // "SKIP" when the thread isn't a housing/tenant/landlord question
+      // (personal finance, transit, concert, neighbor disputes, etc.).
+      // Persist the row as 'skipped' so we dedupe and don't re-scan it,
+      // but don't surface it for human review.
+      if (/^SKIP\b/i.test(reply)) {
+        const row = await saveRedditThread({
+          threadId: thread.threadId,
+          subreddit: thread.subreddit,
+          title: thread.title,
+          url: thread.url,
+          relevanceScore: thread.relevanceScore,
+          keywordsMatched: thread.keywordsMatched,
+          draftReply: "(model returned SKIP — off-topic)",
+          status: "skipped",
+        });
+        if (row) {
+          results.push({ threadId: thread.threadId, ok: true, error: "skipped (off-topic)" });
+        } else {
+          results.push({ threadId: thread.threadId, ok: false, error: "skipped + save failed" });
+        }
+        continue;
+      }
+
       if (!reply || reply.length < 40) {
         results.push({ threadId: thread.threadId, ok: false, error: "reply too short" });
         continue;
