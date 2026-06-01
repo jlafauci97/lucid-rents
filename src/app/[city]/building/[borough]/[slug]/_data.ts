@@ -745,32 +745,29 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
           precinct: null,
         };
       }
-      const since = new Date(); since.setMonth(since.getMonth() - 12);
-      const { data } = await supabase
-        .from("nypd_complaints")
-        .select("crime_category, law_category, precinct")
-        .eq("zip_code", zipCode)
+      // Non-Miami metros (NYC/Chicago/LA/Houston): one pre-aggregated row per zip,
+      // refreshed in batch by scripts/load-crime-aggregates.mjs. Replaces a
+      // fetch-up-to-1000-rows-and-count query that took ~12s for high-volume zips
+      // and timed out under the anon role, silently zeroing the Crime section.
+      const { data: agg } = await supabase
+        .from("crime_zip_aggregates")
+        .select("total_12mo, violent, property, qol, top_precinct")
+        .eq("zip", zipCode)
         .eq("metro", building.metro ?? "nyc")
-        .gte("cmplnt_date", since.toISOString().slice(0, 10));
-      const rows = (data ?? []) as Array<{ crime_category: string | null; law_category: string | null; precinct: string | null }>;
-      let violent = 0, property = 0, qol = 0;
-      const precinctCounts = new Map<string, number>();
-      for (const r of rows) {
-        const cat = (r.crime_category ?? "").toLowerCase();
-        const law = (r.law_category ?? "").toLowerCase();
-        if (/violent|assault|robbery|murder|rape|weapon/.test(cat)) violent++;
-        else if (/property|burglary|larceny|theft|grand|petit/.test(cat)) property++;
-        else qol++;
-        if (law === "violation" || /misdemean/.test(cat)) {
-          if (!/violent|assault|robbery|murder|rape/.test(cat)) qol++;
-        }
-        if (r.precinct) precinctCounts.set(r.precinct, (precinctCounts.get(r.precinct) ?? 0) + 1);
-      }
-      const total12mo = rows.length;
-      // Safety score: lower density = higher score. Benchmark zip typical density ~ 800 incidents/yr.
-      const safetyScore = Math.max(0, Math.min(100, Math.round(100 - (total12mo / 12))));
-      const precinct = [...precinctCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
-      return { total12mo, violent, property, qualityOfLife: qol, safetyScore, precinct };
+        .limit(1);
+      const row = agg?.[0] as { total_12mo: number | null; violent: number | null; property: number | null; qol: number | null; top_precinct: string | null } | undefined;
+      if (!row) return { total12mo: 0, violent: 0, property: 0, qualityOfLife: 0, safetyScore: 50, precinct: null };
+      const total12mo = row.total_12mo ?? 0;
+      // Density-based score on the same scale as Miami: ~12,000 incidents/yr → 0; 0 → 100.
+      const safetyScore = Math.max(0, Math.min(100, Math.round(100 - (total12mo / 120))));
+      return {
+        total12mo,
+        violent: row.violent ?? 0,
+        property: row.property ?? 0,
+        qualityOfLife: row.qol ?? 0,
+        safetyScore,
+        precinct: row.top_precinct ?? null,
+      };
     }, { total12mo: 0, violent: 0, property: 0, qualityOfLife: 0, safetyScore: 50, precinct: null } as BuildingV2Data["crime"]),
 
     // Neighborhood stats — buildings tracked + avg score + median 1BR for this zip.
@@ -1614,31 +1611,29 @@ const _loadLocationData = async (building: Building): Promise<{
           precinct: null,
         };
       }
-      const since = new Date(); since.setMonth(since.getMonth() - 12);
-      const { data } = await supabase
-        .from("nypd_complaints")
-        .select("crime_category, law_category, precinct")
-        .eq("zip_code", zipCode)
+      // Non-Miami metros (NYC/Chicago/LA/Houston): one pre-aggregated row per zip,
+      // refreshed in batch by scripts/load-crime-aggregates.mjs. Replaces a
+      // fetch-up-to-1000-rows-and-count query that took ~12s for high-volume zips
+      // and timed out under the anon role, silently zeroing the Crime section.
+      const { data: agg } = await supabase
+        .from("crime_zip_aggregates")
+        .select("total_12mo, violent, property, qol, top_precinct")
+        .eq("zip", zipCode)
         .eq("metro", building.metro ?? "nyc")
-        .gte("cmplnt_date", since.toISOString().slice(0, 10));
-      const rows = (data ?? []) as Array<{ crime_category: string | null; law_category: string | null; precinct: string | null }>;
-      let violent = 0, property = 0, qol = 0;
-      const precinctCounts = new Map<string, number>();
-      for (const r of rows) {
-        const cat = (r.crime_category ?? "").toLowerCase();
-        const law = (r.law_category ?? "").toLowerCase();
-        if (/violent|assault|robbery|murder|rape|weapon/.test(cat)) violent++;
-        else if (/property|burglary|larceny|theft|grand|petit/.test(cat)) property++;
-        else qol++;
-        if (law === "violation" || /misdemean/.test(cat)) {
-          if (!/violent|assault|robbery|murder|rape/.test(cat)) qol++;
-        }
-        if (r.precinct) precinctCounts.set(r.precinct, (precinctCounts.get(r.precinct) ?? 0) + 1);
-      }
-      const total12mo = rows.length;
-      const safetyScore = Math.max(0, Math.min(100, Math.round(100 - (total12mo / 12))));
-      const precinct = [...precinctCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
-      return { total12mo, violent, property, qualityOfLife: qol, safetyScore, precinct };
+        .limit(1);
+      const row = agg?.[0] as { total_12mo: number | null; violent: number | null; property: number | null; qol: number | null; top_precinct: string | null } | undefined;
+      if (!row) return { total12mo: 0, violent: 0, property: 0, qualityOfLife: 0, safetyScore: 50, precinct: null };
+      const total12mo = row.total_12mo ?? 0;
+      // Density-based score on the same scale as Miami: ~12,000 incidents/yr → 0; 0 → 100.
+      const safetyScore = Math.max(0, Math.min(100, Math.round(100 - (total12mo / 120))));
+      return {
+        total12mo,
+        violent: row.violent ?? 0,
+        property: row.property ?? 0,
+        qualityOfLife: row.qol ?? 0,
+        safetyScore,
+        precinct: row.top_precinct ?? null,
+      };
     }, { total12mo: 0, violent: 0, property: 0, qualityOfLife: 0, safetyScore: 50, precinct: null } as BuildingV2Data["crime"]),
     safe(async () => {
       if (!zipCode) return { buildingsTracked: 0, avgLucidIQ: null, median1BR: null };
