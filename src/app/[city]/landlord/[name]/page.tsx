@@ -40,6 +40,7 @@ import {
   loadLandlordFAQ,
 } from "./_data";
 import { LandlordNeighborhoods } from "@/components/landlord/LandlordNeighborhoods";
+import { LandlordLeadParagraph } from "@/components/landlord/LandlordLeadParagraph";
 
 export const revalidate = 86400; // 24h ISR — matches building v2
 
@@ -225,6 +226,17 @@ export default async function LandlordDetailPage({
           city={city}
           displayName={displayName}
           fullCity={CITY_META[city].fullName}
+        />
+
+        {/* SEO/AI lead paragraph — rendered in the synchronous shell (not behind
+            a Suspense boundary) so crawlers and LLMs read a data-grounded
+            portfolio summary without consuming the streamed sections below.
+            Mirrors BuildingLeadParagraph on the building page. */}
+        <LandlordLeadParagraph
+          stats={cachedStats}
+          tenantVoice={tenantVoice}
+          neighborhoods={neighborhoods}
+          city={city}
         />
 
         <RecordStripStreamed slug={correctSlug} city={city} />
