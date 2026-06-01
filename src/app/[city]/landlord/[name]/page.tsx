@@ -40,6 +40,7 @@ import {
   loadLandlordFAQ,
 } from "./_data";
 import { LandlordNeighborhoods } from "@/components/landlord/LandlordNeighborhoods";
+import { LandlordLeadParagraph } from "@/components/landlord/LandlordLeadParagraph";
 import { InContentAd } from "@/components/ads/InContentAd";
 import { FloatingAdRail } from "@/components/ads/FloatingAdRail";
 
@@ -227,6 +228,17 @@ export default async function LandlordDetailPage({
           city={city}
           displayName={displayName}
           fullCity={CITY_META[city].fullName}
+        />
+
+        {/* SEO/AI lead paragraph — rendered in the synchronous shell (not behind
+            a Suspense boundary) so crawlers and LLMs read a data-grounded
+            portfolio summary without consuming the streamed sections below.
+            Mirrors BuildingLeadParagraph on the building page. */}
+        <LandlordLeadParagraph
+          stats={cachedStats}
+          tenantVoice={tenantVoice}
+          neighborhoods={neighborhoods}
+          city={city}
         />
 
         <RecordStripStreamed slug={correctSlug} city={city} />
