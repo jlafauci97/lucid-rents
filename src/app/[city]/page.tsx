@@ -15,7 +15,6 @@ import { HomepageNewsGrid } from "@/components/home/HomepageNewsGrid";
 import { CityFaq } from "@/components/home/CityFaq";
 import { CityHomeCta } from "@/components/home/CityHomeCta";
 import { BrandShield } from "@/components/layout/BrandShield";
-import { AdSidebar } from "@/components/ui/AdSidebar";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { CityToolsGrid } from "@/components/seo/CityToolsGrid";
 import { canonicalUrl, cityPath } from "@/lib/seo";
@@ -69,8 +68,10 @@ export default async function CityHomePage({
   const meta = CITY_META[city];
 
   return (
-    <AdSidebar>
-      <div style={{ zoom: 0.9 }}>
+    // No <AdSidebar> on the metro home page — the floating vertical rail
+    // and in-content ad were overwhelming the hero/search experience.
+    // Layout-level FooterAd + mobile AnchorAd still apply.
+    <div style={{ zoom: 0.9 }}>
         <JsonLd
           data={{
             "@context": "https://schema.org",
@@ -195,6 +196,5 @@ export default async function CityHomePage({
         {/* NEW — Close-out CTA (replaces old inline review CTA) */}
         <CityHomeCta city={city} />
       </div>
-    </AdSidebar>
   );
 }
