@@ -42,6 +42,11 @@ const nextConfig: NextConfig = {
       // during earlier deploys; this clean URL (no failure history) lets Google
       // fetch the identical file without that backoff. Submit this one in GSC.
       { source: "/buildings-sitemap.xml", destination: "/sitemap/buildings.xml" },
+      // Hubs sitemap is DYNAMIC (ISR) so newly published articles auto-appear
+      // within the hour — the index lists /sitemap/hubs.xml, and this rewrite
+      // (beforeFiles, so it wins over the stale static public/sitemap/hubs.xml)
+      // serves it from the dynamic route instead.
+      { source: "/sitemap/hubs.xml", destination: "/sitemap-hubs.xml" },
     ],
   }),
   headers: async () => [
