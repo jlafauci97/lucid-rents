@@ -1,8 +1,10 @@
+import { Fragment } from "react";
 import { createCacheClient } from "@/lib/supabase/cache-client";
 import { AlertTriangle, Building2, MapPin, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { buildingUrl, canonicalUrl } from "@/lib/seo";
 import { AdSidebar } from "@/components/ui/AdSidebar";
+import { InFeedAd } from "@/components/ads/InFeedAd";
 import { getRegions, getRegionLabel } from "@/lib/constants";
 import { CITY_META, type City } from "@/lib/cities";
 import type { Metadata } from "next";
@@ -174,8 +176,14 @@ export default async function RankingsPage({ params: routeParams, searchParams }
               <tbody className="divide-y divide-[#e2e8f0]">
                 {buildings.map((building, idx) => {
                   const rank = offset + idx + 1;
+                  // InFeedAd inserted every 7 rows (skip last to avoid trailing
+                  // ad with no content after). 6-col table → colSpan={6} for
+                  // the ad row to span the full width.
+                  const showAdAfter =
+                    (idx + 1) % 7 === 0 && idx !== buildings.length - 1;
                   return (
-                    <tr key={building.id} className="hover:bg-gray-50 transition-colors">
+                    <Fragment key={building.id}>
+                    <tr className="hover:bg-gray-50 transition-colors">
                       <td className="px-4 py-3">
                         <span className={`text-sm font-bold ${rank <= 3 ? "text-[#ef4444]" : "text-[#94a3b8]"}`}>
                           {rank}
@@ -227,6 +235,14 @@ export default async function RankingsPage({ params: routeParams, searchParams }
                         </span>
                       </td>
                     </tr>
+                    {showAdAfter && (
+                      <tr>
+                        <td colSpan={6} className="px-4 py-4 bg-gray-50">
+                          <InFeedAd />
+                        </td>
+                      </tr>
+                    )}
+                    </Fragment>
                   );
                 })}
               </tbody>

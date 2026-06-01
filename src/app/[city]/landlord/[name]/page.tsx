@@ -40,6 +40,8 @@ import {
   loadLandlordFAQ,
 } from "./_data";
 import { LandlordNeighborhoods } from "@/components/landlord/LandlordNeighborhoods";
+import { InContentAd } from "@/components/ads/InContentAd";
+import { FloatingAdRail } from "@/components/ads/FloatingAdRail";
 
 export const revalidate = 86400; // 24h ISR — matches building v2
 
@@ -251,12 +253,16 @@ export default async function LandlordDetailPage({
               avgScore={cachedStats.avgScore}
               buildingCount={cachedStats.buildingCount}
             />
+            {/* AdSense — horizontal in-content ads mirror building page cadence:
+                after section 1, then every 2 sections. */}
+            <InContentAd />
             <S02TrendStreamed
               slug={correctSlug}
               city={city}
               buildingCount={cachedStats.buildingCount}
             />
             <S03CaseFileStreamed slug={correctSlug} city={city} />
+            <InContentAd />
             <S04BuildingsStreamed slug={correctSlug} city={city} />
             <S05OwnershipStreamed
               slug={correctSlug}
@@ -264,18 +270,21 @@ export default async function LandlordDetailPage({
               displayName={displayName}
               buildingCount={cachedStats.buildingCount}
             />
+            <InContentAd />
             <S06TenantVoiceStreamed slug={correctSlug} city={city} />
             <S07WhereStreamed
               slug={correctSlug}
               city={city}
               buildingCount={cachedStats.buildingCount}
             />
+            <InContentAd />
             <LandlordNeighborhoods city={city} neighborhoods={neighborhoods} />
             <S08CompareStreamed
               slug={correctSlug}
               city={city}
               currentAvgScore={cachedStats.avgScore}
             />
+            <InContentAd />
             <S09FAQStreamed slug={correctSlug} city={city} />
             {/* Only NYC has a loaded insights payload in Phase 1. Skipping
                 the streamed wrapper for the other metros avoids a Suspense
@@ -286,6 +295,10 @@ export default async function LandlordDetailPage({
           </main>
         </div>
       </div>
+      {/* AdSense — landlord page's .v2-landlord-body grid is 2-col (no right
+          rail like building page), so vertical ads use a fixed-position
+          floating rail that fills the empty space beyond 1600px viewport. */}
+      <FloatingAdRail count={3} />
     </div>
   );
 }

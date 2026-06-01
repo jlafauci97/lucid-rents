@@ -9,6 +9,8 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { ScrollToTopOnNav } from "@/components/layout/ScrollToTopOnNav";
 import { JsonLd } from "@/components/seo/JsonLd";
+import { FooterAd } from "@/components/ads/FooterAd";
+import { AnchorAd } from "@/components/ads/AnchorAd";
 
 const GA_MEASUREMENT_ID = "G-FS7Q3PF982";
 const ADSENSE_CLIENT_ID = "ca-pub-2908534121884582";
@@ -159,6 +161,11 @@ export default async function RootLayout({
         <Navbar />
         <main className="min-h-[calc(100vh-64px-200px)]">{children}</main>
         <Footer />
+        {/* AdSense — see src/components/ads/. FooterAd renders site-wide below
+            the footer; AnchorAd is mobile-only sticky bottom. Both gate
+            themselves via shouldShowAdsForPath (auth/dashboard/embed excluded). */}
+        <FooterAd />
+        <AnchorAd />
       </body>
     </html>
   );

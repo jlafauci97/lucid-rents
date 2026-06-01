@@ -189,7 +189,7 @@ export default async function TransitHubPage({ params }: { params: Promise<{ cit
   const accentColor = isChicago ? "#00A1DE" : isLA ? "#E3242B" : "#0039A6";
 
   return (
-    <AdSidebar>
+    <AdSidebar withMultiplexAd>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* JSON-LD */}
         <script

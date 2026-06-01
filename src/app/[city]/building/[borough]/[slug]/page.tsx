@@ -42,6 +42,8 @@ import { LazyOnScroll } from "@/components/building/v2/streaming/LazyOnScroll";
 import { SectionSkeleton } from "@/components/building/v2/streaming/SectionSkeleton";
 import { LastUpdated } from "@/components/building/v2/LastUpdated";
 import { RelatedLinksStreamed } from "@/components/building/v2/streaming/RelatedLinksStreamed";
+import { InContentAd } from "@/components/ads/InContentAd";
+import { AdRail } from "@/components/ads/AdRail";
 
 export const revalidate = 86400; // 24h ISR
 
@@ -330,19 +332,28 @@ export default async function BuildingPage({ params }: Props) {
 
             <div className="main" id="main-content">
               <S01RentalIntelligenceStreamed building={building} />
+              {/* AdSense — horizontal in-content ad after section 1, then every
+                  2 sections. Placement chosen per AdSense's in-article CTR
+                  guidance: between full content blocks, not mid-section. */}
+              <InContentAd />
               <SubmarketTrendsStreamed building={building} />
               <S015NeighborhoodRisksStreamed building={building} />
+              <InContentAd />
               <S02IssuesStreamed building={building} seeAllUrl={seeAllIssuesUrl} />
               <S03TenantReviewsStreamed building={building} seeAllUrl={seeAllReviewsUrl} />
+              <InContentAd />
               <S04AmenitiesStreamed building={building} />
               <S05LandlordStreamed building={building} city={typedCity} />
+              <InContentAd />
               <LazyOnScroll fallback={<AreaSkeletons city={typedCity} />}>
                 <AreaSectionsStreamed building={building} city={typedCity} />
               </LazyOnScroll>
+              <InContentAd />
               <S07HistoryStreamed building={building} />
               <LazyOnScroll fallback={<SectionSkeleton num="10 / 10" title="Frequently asked questions." id="faq" />}>
                 <S09FAQStreamed building={building} />
               </LazyOnScroll>
+              <InContentAd />
               {typedCity === "los-angeles" && (
                 <LazyOnScroll fallback={<SectionSkeleton num="10 / 10" title="LA-specific insights." id="la-insights" />}>
                   <S10LAInsightsStreamed building={building} />
@@ -370,10 +381,12 @@ export default async function BuildingPage({ params }: Props) {
               )}
             </div>
 
-            {/* Right rail intentionally cleared — the .body grid keeps its third
-                300px track, leaving blank space on the right for now. The area
-                cards that used to live here moved into "About this area", Crime,
-                Rental intelligence, and History. */}
+            {/* Right rail was cleared in main; reusing the 300px grid track
+                for stacked vertical AdSense units. Three units = ~1800px
+                stacked, roughly matches the page's scrollable height. */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 24, minWidth: 0 }}>
+              <AdRail count={3} />
+            </div>
           </div>
 
           {/* Similar Buildings — rendered AFTER .main so it sits at the very
