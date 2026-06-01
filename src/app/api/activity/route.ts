@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { createCacheClient as createServerClient } from "@/lib/supabase/cache-client";
+import { unstable_cache } from "next/cache";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { isValidCity } from "@/lib/cities";
 
@@ -19,7 +20,11 @@ function getAdminClient() {
   return null;
 }
 
-export const maxDuration = 30;
+// Headroom for a cold cache-fill: the first uncached `filter=all` request must
+// fan out across every source table while their pages are still on cold storage.
+// Single-flight (below) ensures only one such fill runs at a time, so 60s is
+// ample; the previous 30s limit was being tripped on cold prod hits (504).
+export const maxDuration = 60;
 
 export interface ActivityItem {
   type: "review" | "violation" | "complaint" | "litigation" | "dob_violation" | "crime" | "bedbug" | "eviction" | "la_eviction" | "tenant_buyout" | "permit" | "enforcement" | "rlto_violation" | "lead_inspection";
@@ -47,11 +52,47 @@ function cityToMetro(city: string | null): string | null {
 }
 
 // ---------------------------------------------------------------------------
-// Server-side cache – guarantees stable pagination within the TTL window and
-// prevents Supabase from being hit on every page/filter/refresh request.
+// Durable caching + single-flight.
+//
+// The `filter=all` feed fans out ~12 parallel queries across multi-million-row
+// tables (complaints_311, hpd_violations, dob_violations, nypd_complaints, …)
+// plus building joins. Cold, that working set lives on Supabase's networked
+// storage, so one uncached request can take 15–30s — enough to trip the 30s
+// function limit in production (returning a 504, which is never cached, so the
+// next request pays the same cost again) and to pin the dev server when
+// requests stack up.
+//
+// Two layers prevent that:
+//   1. unstable_cache — durable across requests, dev recompiles, and prod
+//      instances (Next Data Cache / Vercel cache), keyed by filter+city. The
+//      old module-level Map was per-instance and wiped on every dev recompile.
+//   2. An in-flight promise map — collapses concurrent cache misses into one
+//      computation, so a burst can't stampede the DB while the cache is cold.
+//      This is the direct fix for "slow calls stack up and saturate".
 // ---------------------------------------------------------------------------
-const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
-const cache = new Map<string, { items: ActivityItem[]; ts: number }>();
+const FEED_REVALIDATE = 600; // seconds — matches the ticker's next.revalidate
+
+const inflight = new Map<string, Promise<ActivityItem[]>>();
+
+/** Durable-cached + single-flight accessor for the full merged feed. */
+function getActivityItems(
+  filter: string,
+  cityParam: string | null
+): Promise<ActivityItem[]> {
+  const key = `${filter}:${cityParam || "all"}`;
+  const existing = inflight.get(key);
+  if (existing) return existing; // coalesce concurrent misses → one DB fan-out
+
+  const cached = unstable_cache(
+    () => computeActivityItems(filter, cityParam),
+    ["activity-feed", filter, cityParam || "all"],
+    { revalidate: FEED_REVALIDATE, tags: ["activity-feed"] }
+  );
+
+  const promise = cached().finally(() => inflight.delete(key));
+  inflight.set(key, promise);
+  return promise;
+}
 
 export async function GET(request: Request) {
   try {
@@ -64,25 +105,52 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Invalid city" }, { status: 400 });
     }
 
+    // Single-flight + durable cache live in getActivityItems; pagination is
+    // applied here so every page/limit shares one cached computation.
+    const items = await getActivityItems(filter, cityParam);
+
+    const offset = (page - 1) * limit;
+    const result = items.slice(offset, offset + limit);
+    const totalPages = Math.ceil(items.length / limit);
+    return NextResponse.json({ items: result, page, totalPages, hasMore: page < totalPages });
+  } catch (error) {
+    console.error("Activity feed error:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch activity feed" },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * Compute the full merged, date-sorted activity feed for a (filter, city).
+ * Expensive: fans out across every source table and normalizes the rows.
+ * Wrapped by getActivityItems (unstable_cache + single-flight) so this body
+ * runs at most once per (filter, city) per revalidate window per instance.
+ *
+ * Uses only cookie-free clients (service-role admin, else the anon cache
+ * client) so it is safe to execute inside unstable_cache.
+ */
+async function computeActivityItems(
+  filter: string,
+  cityParam: string | null
+): Promise<ActivityItem[]> {
+    // Only reached on a cache miss, so this also confirms single-flight: a burst
+    // of concurrent requests should emit exactly one "computed feed" line.
+    const startedAt = Date.now();
     const metro = cityToMetro(cityParam);
 
-    // When fetching all types, limit each source to keep total response time under control.
-    // A single-filter request can afford more rows since only one query runs.
-    const perSourceLimit = filter === "all" ? 300 : 2000;
+    // When fetching all types, ~12 source queries run; cap each low so the cold
+    // cache-fill stays well under maxDuration and light on the DB. 120/source
+    // still far exceeds anything rendered (ticker shows 30, the feed paginates
+    // ~30/page) and leaves the recent items + their ordering unchanged — only
+    // very deep "all" pagination is trimmed. A single-filter request runs just
+    // one query, so it can afford far more rows for deep pagination.
+    const perSourceLimit = filter === "all" ? 120 : 2000;
 
-    // --- Check cache ---
-    const cacheKey = `${filter}:${cityParam || "all"}`;
-    const cached = cache.get(cacheKey);
-    if (cached && Date.now() - cached.ts < CACHE_TTL) {
-      const offset = (page - 1) * limit;
-      const result = cached.items.slice(offset, offset + limit);
-      const totalPages = Math.ceil(cached.items.length / limit);
-      return NextResponse.json({ items: result, page, totalPages, hasMore: page < totalPages });
-    }
-
-    // --- Fresh fetch ---
-    // Prefer admin client (no 3s anon timeout) with fallback to cookie client
-    const supabase = getAdminClient() ?? createServerClient();
+    // Prefer admin client (no 3s anon timeout); fall back to the anon cache
+    // client (also cookie-free, so unstable_cache stays happy).
+    const supabase = getAdminClient() ?? createCacheClient();
 
     // Snap cutoff to midnight UTC so every request today gets the same boundary
     const cutoff = new Date();
@@ -645,19 +713,8 @@ export async function GET(request: Request) {
       return b.id < a.id ? -1 : b.id > a.id ? 1 : 0;
     });
 
-    // Store in cache
-    cache.set(cacheKey, { items, ts: Date.now() });
-
-    const offset = (page - 1) * limit;
-    const result = items.slice(offset, offset + limit);
-    const totalPages = Math.ceil(items.length / limit);
-
-    return NextResponse.json({ items: result, page, totalPages, hasMore: page < totalPages });
-  } catch (error) {
-    console.error("Activity feed error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch activity feed" },
-      { status: 500 }
+    console.log(
+      `[activity] computed feed (filter=${filter}, city=${cityParam ?? "all"}): ${items.length} items in ${Date.now() - startedAt}ms`
     );
-  }
+    return items;
 }

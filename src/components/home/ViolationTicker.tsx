@@ -132,23 +132,77 @@ export function ViolationTicker({ metro, initialItems }: ViolationTickerProps = 
   useEffect(() => {
     if (initialItems && initialItems.length > 0) return;
 
-    const params = new URLSearchParams({ limit: "30" });
-    if (metro) params.set("city", metro);
-    fetch(`/api/activity?${params}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.items && data.items.length > 0) {
-          setItems(data.items);
-        } else if (metro) {
-          return fetch(`/api/activity?limit=30`)
-            .then((res) => res.json())
-            .then((data) => {
-              if (data.items) setItems(data.items);
-            });
+    const cacheKey = `lr_ticker_activity:${metro || "all"}`;
+    const CACHE_MS = 5 * 60 * 1000;
+
+    // Reuse a recent client result so remounts and client-side navigations don't
+    // re-hit the (cold-sensitive) endpoint on every mount.
+    try {
+      const raw = sessionStorage.getItem(cacheKey);
+      if (raw) {
+        const cached = JSON.parse(raw) as { items: ActivityItem[]; ts: number };
+        if (cached.items?.length && Date.now() - cached.ts < CACHE_MS) {
+          setItems(cached.items);
+          setLoading(false);
+          return;
         }
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+      }
+    } catch {
+      /* ignore malformed cache */
+    }
+
+    let cancelled = false;
+
+    const store = (items: ActivityItem[] | undefined) => {
+      if (cancelled || !items?.length) return;
+      setItems(items);
+      try {
+        sessionStorage.setItem(cacheKey, JSON.stringify({ items, ts: Date.now() }));
+      } catch {
+        /* quota / private mode — non-fatal */
+      }
+    };
+
+    const load = async () => {
+      try {
+        const params = new URLSearchParams({ limit: "30" });
+        if (metro) params.set("city", metro);
+        const res = await fetch(`/api/activity?${params}`);
+        const data = await res.json();
+        if (data.items && data.items.length > 0) {
+          store(data.items);
+        } else if (metro) {
+          // City has no recent activity — fall back to the all-cities feed.
+          const fb = await fetch(`/api/activity?limit=30`);
+          const fbData = await fb.json();
+          store(fbData.items);
+        }
+      } catch {
+        /* network error — leave the skeleton/empty state */
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    // Don't fetch in a background tab; wait until the ticker is actually visible.
+    if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+      const onVisible = () => {
+        if (document.visibilityState === "visible") {
+          document.removeEventListener("visibilitychange", onVisible);
+          if (!cancelled) load();
+        }
+      };
+      document.addEventListener("visibilitychange", onVisible);
+      return () => {
+        cancelled = true;
+        document.removeEventListener("visibilitychange", onVisible);
+      };
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, [metro, initialItems]);
 
   if (loading) {
