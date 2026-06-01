@@ -213,7 +213,7 @@ export default async function RentStabilizationPage({
   const totalUnits = boroughStats.reduce((s, b) => s + b.total_stabilized_units, 0);
 
   return (
-    <AdSidebar>
+    <AdSidebar withMultiplexAd>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* JSON-LD */}
         <script

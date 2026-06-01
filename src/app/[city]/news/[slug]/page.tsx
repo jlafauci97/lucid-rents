@@ -113,7 +113,7 @@ async function CategoryView({
   ][];
 
   return (
-    <AdSidebar>
+    <AdSidebar withMultiplexAd>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <script
           type="application/ld+json"
@@ -247,7 +247,7 @@ async function ArticleView({ slug, city }: { slug: string; city: import("@/lib/c
     .limit(4);
 
   return (
-    <AdSidebar>
+    <AdSidebar withMultiplexAd>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <script
           type="application/ld+json"

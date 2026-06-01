@@ -31,7 +31,7 @@ export default async function ChecklistPage({
   const cityName = meta?.fullName ?? "Your City";
 
   return (
-    <AdSidebar>
+    <AdSidebar withMultiplexAd>
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Breadcrumbs
           items={cityBreadcrumbs(

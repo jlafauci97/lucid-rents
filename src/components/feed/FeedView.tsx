@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { Fragment, useEffect, useState, useCallback } from "react";
 import { Shield, MessageSquare, Star, RefreshCw, Scale, HardHat, Siren, Bug, DoorOpen, ChevronLeft, ChevronRight, DollarSign, FileCheck, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -8,6 +8,7 @@ import type { ActivityItem } from "@/app/api/activity/route";
 import { buildingUrl, cityPath } from "@/lib/seo";
 import { useCity } from "@/lib/city-context";
 import type { City } from "@/lib/cities";
+import { InFeedAd } from "@/components/ads/InFeedAd";
 
 /** Resolve the City key from a metro/db value. */
 function metroToCity(metro?: string): City {
@@ -429,8 +430,17 @@ export function FeedView() {
             </div>
 
             {/* Items in this group */}
-            {group.items.map((item) => (
-              <FeedCard key={`${item.type}-${item.id}`} item={item} />
+            {group.items.map((item, idx, arr) => (
+              <Fragment key={`${item.type}-${item.id}`}>
+                <FeedCard item={item} />
+                {/* InFeedAd every 5 items per date group. Skipping the trailing
+                    slot (last index) keeps the group's closing edge clean. */}
+                {(idx + 1) % 5 === 0 && idx !== arr.length - 1 ? (
+                  <div className="px-5 py-3 border-b border-[#f1f5f9]">
+                    <InFeedAd />
+                  </div>
+                ) : null}
+              </Fragment>
             ))}
           </div>
         ))}

@@ -270,7 +270,7 @@ export default async function NeighborhoodPage({
   ];
 
   return (
-    <AdSidebar>
+    <AdSidebar withMultiplexAd>
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <JsonLd data={{
         "@context": "https://schema.org",

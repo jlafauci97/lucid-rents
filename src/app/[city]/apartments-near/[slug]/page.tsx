@@ -216,7 +216,7 @@ export default async function ApartmentsNearPage({
     const rsLabel = city === "los-angeles" ? "RSO" : "Rent Stabilized";
 
     return (
-      <AdSidebar>
+      <AdSidebar withMultiplexAd>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "CollectionPage", name: `Apartments Near the ${lineInfo.displayName}`, description: `${totalCount} buildings near ${lineInfo.displayName} ${stopWord} in ${meta.fullName}`, url: canonicalUrl(transitLineUrl(slug, city)), publisher: { "@type": "Organization", name: "Lucid Rents", url: "https://lucidrents.com" } }) }} />
 

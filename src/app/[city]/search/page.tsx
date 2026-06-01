@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { Fragment, Suspense } from "react";
 import { SearchBar } from "@/components/search/SearchBar";
 import { SearchFilters } from "@/components/search/SearchFilters";
 import { SearchSort } from "@/components/search/SearchSort";
@@ -7,6 +7,7 @@ import { BuildingCard } from "@/components/search/BuildingCard";
 import { TrendingBuildings } from "@/components/search/TrendingBuildings";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { AdSidebar } from "@/components/ui/AdSidebar";
+import { InFeedAd } from "@/components/ads/InFeedAd";
 import { createCacheClient } from "@/lib/supabase/cache-client";
 import type { Building } from "@/types";
 import { normalizeAddressQuery } from "@/lib/address-normalization";
@@ -145,8 +146,14 @@ async function SearchResults({
         {count} building{count !== 1 ? "s" : ""} found
       </p>
       <div className="space-y-4">
-        {(buildings as Building[]).map((building) => (
-          <BuildingCard key={building.id} building={building} />
+        {(buildings as Building[]).map((building, idx, arr) => (
+          <Fragment key={building.id}>
+            <BuildingCard building={building} />
+            {/* InFeedAd every 5 results, never trailing the last item. */}
+            {(idx + 1) % 5 === 0 && idx !== arr.length - 1 ? (
+              <InFeedAd />
+            ) : null}
+          </Fragment>
         ))}
       </div>
       {totalPages > 1 && (
