@@ -28,28 +28,22 @@ export async function GET(req: NextRequest) {
   };
   const sortCol = sortColumns[sort] || "total_violations";
 
-  // Count total matching landlords
-  let countQuery = supabase
-    .from("landlord_stats")
-    .select("id", { count: "exact", head: true });
-
-  if (cityParam) {
-    countQuery = countQuery.eq("metro", cityParam);
-  }
-  if (search) {
-    countQuery = countQuery.ilike("name", `%${search}%`);
-  }
-
-  const { count: total, error: countError } = await countQuery;
-  if (countError) {
-    return NextResponse.json({ error: countError.message }, { status: 500 });
-  }
-
-  // Fetch paginated results
+  // One indexed page fetch with a PLANNED count folded in. The previous code
+  // ran a separate `count: "exact"` head query first, which forced a full
+  // count over ~631K NYC rows (EXPLAIN cost ~11K) on every request and was
+  // the entire latency cost here — the ordered page itself is an indexed
+  // range scan (EXPLAIN cost ~2) via idx_landlord_stats_metro_<col>_desc.
+  // The directory UI renders its "of N total" copy from a server-provided
+  // fallback (totalFallback) and never reads this count; the search callers
+  // use only the results. So a planner estimate is plenty, and folding it
+  // into the data query also drops a full cross-region round-trip.
   const offset = (page - 1) * limit;
   let query = supabase
     .from("landlord_stats")
-    .select("name,slug,building_count,total_violations,total_complaints,total_litigations,total_dob_violations,avg_score,worst_building_id,worst_building_address,worst_building_violations")
+    .select(
+      "name,slug,building_count,total_violations,total_complaints,total_litigations,total_dob_violations,avg_score,worst_building_id,worst_building_address,worst_building_violations",
+      { count: "planned" },
+    )
     .order(sortCol, { ascending: false })
     .range(offset, offset + limit - 1);
 
@@ -60,7 +54,7 @@ export async function GET(req: NextRequest) {
     query = query.ilike("name", `%${search}%`);
   }
 
-  const { data: landlords, error } = await query;
+  const { data: landlords, count: total, error } = await query;
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
