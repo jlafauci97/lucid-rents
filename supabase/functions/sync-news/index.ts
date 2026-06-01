@@ -2,6 +2,7 @@ import { getSupabaseAdmin } from "shared/supabase-admin.ts";
 import {
   NEWS_SOURCES,
   categorizeArticle,
+  decodeHtmlEntities,
   generateArticleSlug,
   isHousingRelevant,
 } from "shared/news-sources.ts";
@@ -100,7 +101,7 @@ Deno.serve(async (req) => {
           return {
             guid,
             slug: generateArticleSlug(title, publishedAt),
-            title: title.trim(),
+            title: decodeHtmlEntities(title).trim(),
             excerpt: excerpt || null,
             url: link,
             source_name: source.name,

@@ -436,14 +436,51 @@ export function categorizeArticle(
 }
 
 /**
+ * Decode the HTML entities RSS titles routinely carry, so they don't leak into
+ * slugs as digit runs ("8217" = `&#8217;` = ’) or into stored <title> text.
+ * Covers numeric, hex, and the common named entities; anything left over is
+ * stripped by the slug regex anyway.
+ */
+export function decodeHtmlEntities(input: string): string {
+  const fromCode = (code: number): string =>
+    Number.isInteger(code) && code >= 0 && code <= 0x10ffff ? String.fromCodePoint(code) : "";
+  return input
+    .replace(/&#x([0-9a-f]+);/gi, (_m, hex) => fromCode(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_m, dec) => fromCode(parseInt(dec, 10)))
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&(?:apos|lsquo|rsquo|sbquo);/gi, "'")
+    .replace(/&(?:ldquo|rdquo|bdquo);/gi, '"')
+    .replace(/&(?:ndash|mdash);/gi, "-")
+    .replace(/&hellip;/gi, "...");
+}
+
+/**
+ * Date portion (YYYY-MM-DD) for an article slug. ISO inputs are used verbatim
+ * (no timezone shift); RFC-822 RSS pubDates (e.g. "Fri, 24 Apr 2026 …") are
+ * parsed — the previous `.slice(0, 10)` turned those into a broken "Fri, 24 Ap"
+ * prefix, producing URLs with literal commas/spaces.
+ */
+function slugDatePrefix(publishedAt: string): string {
+  const iso = publishedAt.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (iso) return iso[1];
+  const parsed = new Date(publishedAt);
+  return Number.isNaN(parsed.getTime()) ? "undated" : parsed.toISOString().slice(0, 10);
+}
+
+/**
  * Generate a URL-safe slug from an article title and date.
  */
 export function generateArticleSlug(title: string, publishedAt: string): string {
-  const datePrefix = publishedAt.slice(0, 10); // YYYY-MM-DD
-  const titleSlug = title
+  const datePrefix = slugDatePrefix(publishedAt);
+  const titleSlug = decodeHtmlEntities(title)
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-+|-+$)/g, "")
-    .slice(0, 80);
+    .slice(0, 80)
+    .replace(/-+$/, "");
   return `${datePrefix}-${titleSlug}`;
 }
