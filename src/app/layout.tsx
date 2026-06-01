@@ -11,6 +11,7 @@ import { ScrollToTopOnNav } from "@/components/layout/ScrollToTopOnNav";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { FooterAd } from "@/components/ads/FooterAd";
 import { AnchorAd } from "@/components/ads/AnchorAd";
+import { AdsenseLoader } from "@/components/ads/AdsenseLoader";
 
 const GA_MEASUREMENT_ID = "G-FS7Q3PF982";
 const ADSENSE_CLIENT_ID = "ca-pub-2908534121884582";
@@ -145,13 +146,10 @@ export default async function RootLayout({
           gtag('config', '${GA_MEASUREMENT_ID}');
         `}
       </Script>
-      <Script
-        id="google-adsense"
-        async
-        src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT_ID}`}
-        crossOrigin="anonymous"
-        strategy="lazyOnload"
-      />
+      {/* adsbygoogle.js is injected by AdsenseLoader (below) on first user
+          interaction rather than at lazyOnload. The preconnect to
+          pagead2.googlesyndication.com remains in <head> so the TLS handshake
+          can warm up before the script load fires. */}
       <body
         className={`${sora.variable} ${geistMono.variable} ${geistSans.variable} ${youngSerif.variable} antialiased`}
         style={{ fontFamily: "var(--font-sora), system-ui, sans-serif" }}
@@ -163,9 +161,11 @@ export default async function RootLayout({
         <Footer />
         {/* AdSense — see src/components/ads/. FooterAd renders site-wide below
             the footer; AnchorAd is mobile-only sticky bottom. Both gate
-            themselves via shouldShowAdsForPath (auth/dashboard/embed excluded). */}
+            themselves via shouldShowAdsForPath (auth/dashboard/embed excluded).
+            AdsenseLoader injects adsbygoogle.js on first user interaction. */}
         <FooterAd />
         <AnchorAd />
+        <AdsenseLoader />
       </body>
     </html>
   );

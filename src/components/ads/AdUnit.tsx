@@ -3,6 +3,12 @@
 import { useEffect, useRef } from "react";
 import { ADSENSE_CLIENT_ID, isRealSlot } from "./ad-slots";
 
+/** Distance (px) from the viewport edge at which we trigger the ad push.
+ *  Larger value = ads start loading earlier as the user scrolls toward
+ *  them, so they're more likely to be filled by the time they're visible.
+ *  Smaller value = less wasted bandwidth on ads the user never reaches. */
+const VIEWPORT_PREFETCH_MARGIN_PX = 300;
+
 interface AdUnitProps {
   slot: string;
   /**
@@ -37,10 +43,13 @@ declare global {
  * Base AdSense ad unit. All higher-level ad components wrap this.
  *
  * Behavior:
- *  - Pushes to `window.adsbygoogle` exactly once on mount (useRef guard)
- *  - Renders a placeholder div while waiting for the AdSense script
- *  - No-ops with a dev-only warning when the slot ID is still a TODO_ placeholder
- *  - Reserves space (`minHeight`) to prevent CLS even on no-fill
+ *  - Defers `adsbygoogle.push()` until the slot is within ~one viewport of
+ *    visibility (IntersectionObserver). Ads at the bottom of a long page
+ *    never load if the user doesn't scroll there → big TBT / network savings.
+ *  - Pushes exactly once (useRef guard survives observer fire + re-render)
+ *  - Falls back to immediate push on browsers without IntersectionObserver
+ *  - Renders a dev-only striped placeholder for TODO_ slots
+ *  - Reserves `minHeight` to prevent CLS even on no-fill
  */
 export function AdUnit({
   slot,
@@ -53,17 +62,44 @@ export function AdUnit({
   style,
 }: AdUnitProps) {
   const pushed = useRef(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (pushed.current) return;
     if (!isRealSlot(slot)) return;
-    pushed.current = true;
-    try {
-      (window.adsbygoogle = window.adsbygoogle || []).push({});
-    } catch {
-      // adsbygoogle.js not loaded yet (cookie blocker, slow network, ad block).
-      // Silent no-op — the ad just won't render, which is the desired outcome.
+    const el = containerRef.current;
+    if (!el) return;
+
+    function push() {
+      if (pushed.current) return;
+      pushed.current = true;
+      try {
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+      } catch {
+        // adsbygoogle.js not loaded yet (cookie blocker, slow network, ad block).
+        // Silent no-op — the ad just won't render, which is the desired outcome.
+      }
     }
+
+    // Fallback for browsers without IntersectionObserver (effectively zero
+    // share of real traffic in 2026, but keeps the component safe).
+    if (typeof IntersectionObserver === "undefined") {
+      push();
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry?.isIntersecting) return;
+        push();
+        observer.disconnect();
+      },
+      { rootMargin: `${VIEWPORT_PREFETCH_MARGIN_PX}px 0px` },
+    );
+    observer.observe(el);
+
+    return () => observer.disconnect();
   }, [slot]);
 
   if (!isRealSlot(slot)) {
@@ -96,7 +132,11 @@ export function AdUnit({
   }
 
   return (
-    <div className={className} style={{ minHeight, overflow: "hidden", ...style }}>
+    <div
+      ref={containerRef}
+      className={className}
+      style={{ minHeight, overflow: "hidden", ...style }}
+    >
       <ins
         className="adsbygoogle"
         style={{ display: "block", minHeight }}
