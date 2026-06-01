@@ -34,12 +34,26 @@ export async function GET(request: Request) {
   const offset = (page - 1) * PER_PAGE;
   const supabase = createCacheClient();
 
+  // The query's NULLS ordering must match the chosen index's, or Postgres
+  // can't use the index to satisfy ORDER BY and falls back to a full
+  // scan + sort — which blows past the 8s anon statement_timeout (→ HTTP
+  // 500) on high-cardinality columns like complaint_count (~194K NYC rows).
+  // The partial indexes from migration 20260428300000 are `DESC NULLS LAST`
+  // for every count column EXCEPT violation_count, whose index
+  // (idx_buildings_metro_violations) is plain `DESC` (i.e. NULLS FIRST).
+  // supabase-js `.order(col,{ascending:false})` defaults to NULLS FIRST, so
+  // only violation_count matched its index; complaints / evictions /
+  // lawsuits / bedbug full-scanned and timed out. `.gt(sortCol, 0)` means
+  // no NULLs ever appear in the result, so this only steers index
+  // selection — it never changes the output.
+  const nullsFirst = sortCol === "violation_count";
+
   let q = supabase
     .from("buildings")
     .select(SELECT_COLS, { count: "planned" })
     .eq("metro", city)
     .gt(sortCol, 0)
-    .order(sortCol, { ascending: false })
+    .order(sortCol, { ascending: false, nullsFirst })
     .range(offset, offset + PER_PAGE - 1);
 
   if (borough !== "all") {
