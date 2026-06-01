@@ -282,11 +282,6 @@
     },
 
     {
-      "path": "/api/cron/regenerate-sitemaps",
-      "schedule": "0 6 * * *"
-    },
-
-    {
       "path": "/api/cron/sync-nearby-concerns",
       "schedule": "0 7 * * 0"
     }
