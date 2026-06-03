@@ -749,16 +749,16 @@ export default async function Home() {
       </Suspense>
 
       {/* Stats band — platform scale at a glance, between the ticker and directory. */}
-      <section className="bg-[#0F1D2E] border-b border-white/5 relative overflow-hidden">
+      <section className="bg-white border-b border-[#e2e8f0] relative overflow-hidden">
         <div
           className="absolute inset-0 opacity-40 pointer-events-none"
           style={{
             background:
-              "radial-gradient(900px 220px at 20% 50%, rgba(59,130,246,0.18), transparent 60%), radial-gradient(700px 180px at 90% 50%, rgba(252,211,77,0.08), transparent 65%)",
+              "radial-gradient(900px 220px at 20% 50%, rgba(59,130,246,0.10), transparent 60%), radial-gradient(700px 180px at 90% 50%, rgba(239,68,68,0.10), transparent 65%)",
           }}
         />
         <div className="relative max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-9 sm:py-10">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-6 gap-y-8 sm:divide-x sm:divide-white/8">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-6 gap-y-8 sm:divide-x sm:divide-[#e2e8f0]">
             {[
               { value: "2.2M",  label: "Buildings monitored", sub: "across 5 metros",         Icon: Building2 },
               { value: "12M+",  label: "Code violations",     sub: "HPD · LADBS · DOB",       Icon: ShieldAlert },
@@ -767,16 +767,16 @@ export default async function Home() {
               { value: "5",     label: "Cities covered",      sub: "NYC · LA · CHI · MIA · HOU", Icon: MapPin },
             ].map((s, i) => (
               <div key={s.label} className={`${i > 0 ? "sm:pl-6" : ""} flex flex-col items-start`}>
-                <span className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-white/5 ring-1 ring-white/10 mb-3">
-                  <s.Icon className="w-[18px] h-[18px] text-amber-300" strokeWidth={2.25} />
+                <span className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-red-50 ring-1 ring-red-100 mb-3">
+                  <s.Icon className="w-[18px] h-[18px] text-red-600" strokeWidth={2.25} />
                 </span>
-                <div className="text-[28px] sm:text-[32px] font-bold text-white tabular-nums leading-none tracking-tight">
+                <div className="text-[28px] sm:text-[32px] font-bold text-[#0F1D2E] tabular-nums leading-none tracking-tight">
                   {s.value}
                 </div>
-                <div className="text-[10px] uppercase tracking-[0.18em] text-amber-300/90 font-bold mt-2 leading-tight">
+                <div className="text-[10px] uppercase tracking-[0.18em] text-red-600 font-bold mt-2 leading-tight">
                   {s.label}
                 </div>
-                <div className="text-[10px] text-white/50 mt-1 leading-tight">{s.sub}</div>
+                <div className="text-[10px] text-[#64748b] mt-1 leading-tight">{s.sub}</div>
               </div>
             ))}
           </div>
