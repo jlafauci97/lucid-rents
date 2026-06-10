@@ -26,6 +26,7 @@ import { VibeCheck } from "@/components/neighborhood/VibeCheck";
 import { NeighborhoodSectionNav } from "@/components/neighborhood/NeighborhoodSectionNav";
 import { getNeighborhoodVibe } from "@/lib/neighborhood-vibes";
 import { NeighborhoodTopLandlords } from "@/components/neighborhood/NeighborhoodTopLandlords";
+import { RiskGradeCard } from "@/components/neighborhood/RiskGradeCard";
 
 export const revalidate = 3600;
 
@@ -372,6 +373,17 @@ export default async function NeighborhoodPage({
     {/* Full-bleed section nav */}
     <NeighborhoodSectionNav />
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+      {/* Composite Livability Risk Grade */}
+      <RiskGradeCard
+        neighborhoodName={neighborhoodName ? `${neighborhoodName} (${zipCode})` : zipCode}
+        input={{
+          buildingCount,
+          totalViolations,
+          totalComplaints,
+          crime,
+        }}
+      />
 
       {/* Percentile Rankings */}
       <div id="rankings" className="scroll-mt-28">
