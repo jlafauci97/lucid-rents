@@ -41,16 +41,41 @@ export async function generateMetadata({
   const cityParam = params.city && isValidCity(params.city) ? params.city : null;
   const cityName = cityParam ? CITY_META[cityParam].fullName : null;
 
+  // Canonical: base /search URL with only `q` preserved — never
+  // pagination/sort params (page, sort) which would split indexing signals.
+  const ogImages = [
+    {
+      url: "/og-image.jpg",
+      width: 1200,
+      height: 630,
+      alt: "Lucid Rents - Know Your Apartment Before You Sign",
+    },
+  ];
+
   if (q) {
     const scope = cityName ? `${cityName}` : "NYC, LA, Chicago, Miami, and Houston";
     const title = `Search: ${q} | Lucid Rents`;
     const description = `Results for "${q}" across ${scope} — buildings, landlords, and neighborhoods with violations, complaints, and tenant reviews.`;
-    const path = cityParam ? `/search?q=${encodeURIComponent(q)}&city=${cityParam}` : `/search?q=${encodeURIComponent(q)}`;
+    const path = `/search?q=${encodeURIComponent(q)}`;
     return {
       title,
       description,
       alternates: { canonical: canonicalUrl(path) },
-      openGraph: { title, description, url: canonicalUrl(path), siteName: "Lucid Rents", type: "website" },
+      openGraph: {
+        title,
+        description,
+        url: canonicalUrl(path),
+        siteName: "Lucid Rents",
+        type: "website",
+        locale: "en_US",
+        images: ogImages,
+      },
+      twitter: {
+        card: "summary_large_image",
+        title,
+        description,
+        images: ["/og-image.jpg"],
+      },
     };
   }
 
@@ -61,7 +86,21 @@ export async function generateMetadata({
     title,
     description,
     alternates: { canonical: canonicalUrl("/search") },
-    openGraph: { title, description, url: canonicalUrl("/search"), siteName: "Lucid Rents", type: "website" },
+    openGraph: {
+      title,
+      description,
+      url: canonicalUrl("/search"),
+      siteName: "Lucid Rents",
+      type: "website",
+      locale: "en_US",
+      images: ogImages,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: ["/og-image.jpg"],
+    },
   };
 }
 

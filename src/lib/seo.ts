@@ -340,6 +340,49 @@ export function newsCollectionJsonLd(city: City = DEFAULT_CITY) {
   };
 }
 
+export function newsArticleJsonLd(article: {
+  slug: string;
+  title: string;
+  excerpt?: string | null;
+  published_at: string;
+  updated_at?: string | null;
+  image_url?: string | null;
+}) {
+  const url = canonicalUrl(`/news/${article.slug}`);
+  const schema: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": "NewsArticle",
+    headline: article.title,
+    url,
+    mainEntityOfPage: { "@type": "WebPage", "@id": url },
+    datePublished: article.published_at,
+    author: {
+      "@type": "Organization",
+      name: "Lucid Rents",
+      url: BASE_URL,
+    },
+    publisher: {
+      "@type": "Organization",
+      name: "Lucid Rents",
+      url: BASE_URL,
+      logo: {
+        "@type": "ImageObject",
+        url: `${BASE_URL}/lucid-rents-logo.png`,
+      },
+    },
+  };
+  if (article.excerpt) {
+    schema.description = article.excerpt;
+  }
+  if (article.updated_at) {
+    schema.dateModified = article.updated_at;
+  }
+  if (article.image_url) {
+    schema.image = article.image_url;
+  }
+  return schema;
+}
+
 /** Build a standard [Home, {City}, ...trail] breadcrumb array for city pages */
 export function cityBreadcrumbs(
   city: City,

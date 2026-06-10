@@ -31,11 +31,16 @@ export async function generateMetadata({
 }: SearchPageProps): Promise<Metadata> {
   const [{ city: cityParam }, params] = await Promise.all([paramsPromise, searchParams]);
   const cityName = CITY_META[cityParam as City]?.fullName || "NYC";
-  const title = params.q ? `Search: ${params.q}` : `Search ${cityName} Buildings`;
-  const description = params.q
-    ? `Results for "${params.q}" — see violations, complaints, tenant reviews, and building scores before you sign.`
+  const q = (params.q || "").trim();
+  const title = q ? `Search: ${q}` : `Search ${cityName} Buildings`;
+  const description = q
+    ? `Results for "${q}" — see violations, complaints, tenant reviews, and building scores before you sign.`
     : `Search any ${cityName} building by address or zip code. Instantly see violations, tenant reviews, and safety data.`;
-  const url = canonicalUrl(cityPath("/search", cityParam as City));
+  // Canonical: base city search URL with only `q` preserved — pagination,
+  // sort, and filter params (page, sort, borough, zip) are deliberately
+  // excluded so paginated/sorted variants consolidate onto one URL.
+  const basePath = cityPath("/search", cityParam as City);
+  const url = canonicalUrl(q ? `${basePath}?q=${encodeURIComponent(q)}` : basePath);
   return {
     title,
     description,

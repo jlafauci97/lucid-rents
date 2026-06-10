@@ -1,4 +1,4 @@
-import { canonicalUrl } from "@/lib/seo";
+import { canonicalUrl, faqJsonLd } from "@/lib/seo";
 import { JsonLd } from "@/components/seo/JsonLd";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -91,22 +91,16 @@ You can also file complaints directly with HPD online at www1.nyc.gov/site/hpd/r
 ];
 
 export default function TenantRightsGuidePage() {
-  const faqJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: sections.map((s) => ({
-      "@type": "Question",
-      name: `What are tenant rights regarding ${s.title.toLowerCase()} in NYC?`,
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: s.content.split("\n\n")[0],
-      },
-    })),
-  };
+  const faqSchema = faqJsonLd(
+    sections.map((s) => ({
+      q: `What are tenant rights regarding ${s.title.toLowerCase()} in NYC?`,
+      a: s.content.split("\n\n")[0],
+    }))
+  );
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <JsonLd data={faqJsonLd} />
+      <JsonLd data={faqSchema} />
       <nav className="text-sm text-[#64748b] mb-6">
         <Link href="/" className="hover:text-[#3B82F6]">Home</Link>
         {" / "}

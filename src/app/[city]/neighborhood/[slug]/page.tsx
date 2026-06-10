@@ -285,6 +285,10 @@ export default async function NeighborhoodPage({
           addressRegion: CITY_META[city].stateCode,
           addressCountry: "US",
         },
+        containedInPlace: {
+          "@type": "City",
+          name: CITY_META[city].fullName,
+        },
       }} />
       <JsonLd data={breadcrumbJsonLd([
         { name: "Home", url: "/" },

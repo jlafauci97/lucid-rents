@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { ExternalLink, Clock, ArrowLeft } from "lucide-react";
 import { createCacheClient } from "@/lib/supabase/cache-client";
-import { canonicalUrl, breadcrumbJsonLd, newsCollectionJsonLd, cityPath } from "@/lib/seo";
+import { canonicalUrl, breadcrumbJsonLd, newsCollectionJsonLd, newsArticleJsonLd, cityPath } from "@/lib/seo";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { NEWS_CATEGORIES, type NewsCategory } from "@/lib/news-sources";
 import { CategoryListClient } from "./CategoryListClient";
 import { CategoryIcon } from "@/components/news/CategoryIcon";
@@ -249,29 +250,7 @@ async function ArticleView({ slug, city }: { slug: string; city: import("@/lib/c
   return (
     <AdSidebar withMultiplexAd>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "NewsArticle",
-              headline: typedArticle.title,
-              description: typedArticle.excerpt,
-              url: canonicalUrl(`/news/${slug}`),
-              datePublished: typedArticle.published_at,
-              publisher: {
-                "@type": "Organization",
-                name: typedArticle.source_name,
-              },
-              ...(typedArticle.author
-                ? { author: { "@type": "Person", name: typedArticle.author } }
-                : {}),
-              ...(typedArticle.image_url
-                ? { image: typedArticle.image_url }
-                : {}),
-            }),
-          }}
-        />
+        <JsonLd data={newsArticleJsonLd(typedArticle)} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{

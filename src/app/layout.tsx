@@ -133,6 +133,8 @@ export default async function RootLayout({
         <link rel="preconnect" href="https://www.google-analytics.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://googleads.g.doubleclick.net" />
         <link rel="dns-prefetch" href="https://fundingchoicesmessages.google.com" />
+        {/* LLM discoverability: points AI crawlers at the llms.txt overview */}
+        <link rel="alternate" type="text/plain" href="/llms.txt" title="LLM-friendly site overview" />
       </head>
       <Script
         src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
