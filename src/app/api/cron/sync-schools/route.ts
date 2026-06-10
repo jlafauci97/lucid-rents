@@ -3,10 +3,13 @@ import { createClient } from "@supabase/supabase-js";
 
 export const maxDuration = 300;
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Created lazily so `next build` doesn't require Supabase env vars.
+function getSupabaseAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 import { NextRequest } from "next/server";
 
@@ -246,6 +249,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    const supabase = getSupabaseAdmin();
     const [nycSchools, laSchools] = await Promise.all([
       fetchNYCSchools(),
       fetchLASchools(),

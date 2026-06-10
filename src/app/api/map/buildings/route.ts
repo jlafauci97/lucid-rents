@@ -37,12 +37,15 @@ export async function GET(request: Request) {
       }
     }
 
-    // Fetch buildings with violations/complaints (the interesting ones for the map)
-    let url = `${supabaseUrl}/rest/v1/buildings?select=id,full_address,borough,zip_code,slug,overall_score,violation_count,complaint_count,review_count&or=(violation_count.gt.0,complaint_count.gt.0)&limit=5000`;
+    // Fetch buildings with violations/complaints (the interesting ones for the map).
+    // All filters (metro/borough) go on the query string before the limit so
+    // the 5000-row cap applies to the filtered set, not an unfiltered scan.
+    let url = `${supabaseUrl}/rest/v1/buildings?select=id,full_address,borough,zip_code,slug,overall_score,violation_count,complaint_count,review_count&or=(violation_count.gt.0,complaint_count.gt.0)`;
     if (cityParam) url += `&metro=eq.${encodeURIComponent(cityParam)}`;
     if (borough) {
       url += `&borough=eq.${encodeURIComponent(borough)}`;
     }
+    url += `&limit=5000`;
 
     const buildingsRes = await fetch(url, {
       headers: { apikey: supabaseKey },

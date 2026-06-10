@@ -3,10 +3,13 @@ import { createClient } from "@supabase/supabase-js";
 
 export const maxDuration = 300;
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Created lazily so `next build` doesn't require Supabase env vars.
+function getSupabaseAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 const BATCH_SIZE = 500;
 
@@ -151,6 +154,7 @@ async function fetchMetroRailStations(): Promise<TransitStop[]> {
 
 // ── Upsert helpers ─────────────────────────────────────────────────
 async function upsertBatch(stops: TransitStop[]) {
+  const supabase = getSupabaseAdmin();
   const rows = stops.map((s) => ({
     type: s.type,
     stop_id: s.stop_id,

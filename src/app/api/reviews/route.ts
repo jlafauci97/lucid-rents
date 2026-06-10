@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { createReviewSchema } from "@/lib/validators";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
@@ -9,6 +10,9 @@ export async function POST(req: NextRequest) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const rl = await checkRateLimit(`reviews:${user.id}`);
+  if (rl.limited) return rl.response;
 
   const json = await req.json();
   const parsed = createReviewSchema.safeParse(json);
@@ -32,12 +36,20 @@ export async function POST(req: NextRequest) {
   // Find or create unit
   let unitId = data.unit_id;
   if (!unitId && data.unit_number) {
-    const { data: existingUnit } = await supabase
+    const { data: existingUnit, error: unitLookupError } = await supabase
       .from("units")
       .select("id")
       .eq("building_id", data.building_id)
       .eq("unit_number", data.unit_number)
-      .single();
+      .maybeSingle();
+
+    if (unitLookupError) {
+      console.error("Failed to look up unit:", unitLookupError);
+      return NextResponse.json(
+        { error: "Failed to create review" },
+        { status: 500 }
+      );
+    }
 
     if (existingUnit) {
       unitId = existingUnit.id;
@@ -52,7 +64,7 @@ export async function POST(req: NextRequest) {
           .eq("id", existingUnit.id);
       }
     } else {
-      const { data: newUnit } = await supabase
+      const { data: newUnit, error: unitCreateError } = await supabase
         .from("units")
         .insert({
           building_id: data.building_id,
@@ -62,6 +74,14 @@ export async function POST(req: NextRequest) {
         })
         .select("id")
         .single();
+
+      if (unitCreateError) {
+        console.error("Failed to create unit:", unitCreateError);
+        return NextResponse.json(
+          { error: "Failed to create review" },
+          { status: 500 }
+        );
+      }
 
       if (newUnit) {
         unitId = newUnit.id;
@@ -76,11 +96,18 @@ export async function POST(req: NextRequest) {
   // Build reviewer display name from profile if preference is 'name'
   let reviewerName: string | null = null;
   if (data.reviewer_display_preference === "name") {
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("display_name")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
+    if (profileError) {
+      console.error("Failed to look up profile:", profileError);
+      return NextResponse.json(
+        { error: "Failed to create review" },
+        { status: 500 }
+      );
+    }
     if (profile?.display_name) {
       const parts = profile.display_name.trim().split(/\s+/);
       reviewerName = parts.length > 1
@@ -178,11 +205,17 @@ export async function POST(req: NextRequest) {
 
   // Insert rent history from review data
   if (data.unit_number && data.rent_amount) {
-    const { data: building } = await supabase
+    // The review is already created at this point — log lookup failures
+    // instead of failing the request (rent history is best-effort).
+    const { data: building, error: buildingError } = await supabase
       .from("buildings")
       .select("metro")
       .eq("id", data.building_id)
-      .single();
+      .maybeSingle();
+
+    if (buildingError) {
+      console.error("Failed to look up building for rent history:", buildingError);
+    }
 
     if (building?.metro) {
       const { error: rentError } = await supabase

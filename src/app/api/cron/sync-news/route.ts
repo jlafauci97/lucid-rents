@@ -8,10 +8,13 @@ import {
   isHousingRelevant,
 } from "@/lib/news-sources";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Created lazily so `next build` doesn't require Supabase env vars.
+function getSupabaseAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 const parser = new Parser({
   timeout: 10000,
@@ -26,6 +29,7 @@ export async function GET(req: NextRequest) {
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const supabase = getSupabaseAdmin();
   const results: { source: string; added: number; error?: string }[] = [];
 
   for (const source of NEWS_SOURCES) {

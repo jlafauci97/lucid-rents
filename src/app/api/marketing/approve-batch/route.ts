@@ -1,26 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { waitUntil } from "@vercel/functions";
 import { resumeHook } from "workflow/api";
-import { createClient } from "@/lib/supabase/server";
+import { getMarketingActor } from "@/lib/marketing/auth";
 import { getDraft, updateDraft } from "@/lib/marketing/supabase-queries";
 import type { ApproveBatchRequest } from "@/types/marketing";
 
-async function checkAdmin(): Promise<string | null> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-  const adminIds = (process.env.MARKETING_ADMIN_IDS || "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-  return adminIds.includes(user.id) ? user.id : null;
-}
-
 export async function POST(req: NextRequest) {
-  const adminId = await checkAdmin();
-  if (!adminId) {
+  // Admin user id or "mission-control" — kept for attribution.
+  const actor = await getMarketingActor();
+  if (!actor) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

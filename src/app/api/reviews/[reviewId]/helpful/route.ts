@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { NextRequest, NextResponse } from "next/server";
 
 interface RouteContext {
@@ -14,13 +15,24 @@ export async function POST(req: NextRequest, context: RouteContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const rl = await checkRateLimit(`helpful:${user.id}`);
+  if (rl.limited) return rl.response;
+
   // Check if already voted
-  const { data: existing } = await supabase
+  const { data: existing, error: voteLookupError } = await supabase
     .from("helpful_votes")
     .select("id")
     .eq("user_id", user.id)
     .eq("review_id", reviewId)
-    .single();
+    .maybeSingle();
+
+  if (voteLookupError) {
+    console.error("Failed to look up helpful vote:", voteLookupError);
+    return NextResponse.json(
+      { error: "Failed to record vote" },
+      { status: 500 }
+    );
+  }
 
   if (existing) {
     // Remove vote
@@ -34,11 +46,16 @@ export async function POST(req: NextRequest, context: RouteContext) {
   }
 
   // Get updated count
-  const { data: review } = await supabase
+  const { data: review, error: countError } = await supabase
     .from("reviews")
     .select("helpful_count")
     .eq("id", reviewId)
-    .single();
+    .maybeSingle();
+
+  if (countError) {
+    // Vote already toggled — log and fall back to 0 rather than failing.
+    console.error("Failed to read helpful count:", countError);
+  }
 
   return NextResponse.json({
     helpful_count: review?.helpful_count || 0,

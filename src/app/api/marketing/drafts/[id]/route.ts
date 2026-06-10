@@ -1,27 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireMarketingAuth } from "@/lib/marketing/auth";
 import { getDraft, updateDraft } from "@/lib/marketing/supabase-queries";
 import type { PlatformVariants } from "@/types/marketing";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-async function checkAdmin(): Promise<string | null> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-  const adminIds = (process.env.MARKETING_ADMIN_IDS || "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-  return adminIds.includes(user.id) ? user.id : null;
-}
-
 export async function GET(
   _req: NextRequest,
   { params }: RouteContext
 ) {
+  if (!(await requireMarketingAuth())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { id } = await params;
 
   try {
@@ -40,8 +31,7 @@ export async function PATCH(
   req: NextRequest,
   { params }: RouteContext
 ) {
-  const adminId = await checkAdmin();
-  if (!adminId) {
+  if (!(await requireMarketingAuth())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

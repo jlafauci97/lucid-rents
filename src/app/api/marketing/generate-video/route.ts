@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireMarketingAuth } from "@/lib/marketing/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   submitTextToVideo,
@@ -17,6 +18,10 @@ import type { MarketingVideoType } from "@/types/marketing";
 export const maxDuration = 300; // 5 min — video gen takes time
 
 export async function POST(req: NextRequest) {
+  if (!(await requireMarketingAuth())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const body = await req.json();
     const { draftId, videoType } = body as {

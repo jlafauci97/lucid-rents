@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
@@ -28,6 +29,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const rl = await checkRateLimit(`monitor:${user.id}`);
+  if (rl.limited) return rl.response;
+
   const { buildingId } = await req.json();
   if (!buildingId) {
     return NextResponse.json({ error: "buildingId is required" }, { status: 400 });
@@ -55,6 +59,9 @@ export async function DELETE(req: NextRequest) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const rl = await checkRateLimit(`monitor:${user.id}`);
+  if (rl.limited) return rl.response;
 
   const { buildingId } = await req.json();
   if (!buildingId) {

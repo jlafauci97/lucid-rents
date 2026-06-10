@@ -7,10 +7,11 @@ import { searchSchema } from "@/lib/validators";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { NextRequest, NextResponse } from "next/server";
 
-function applySortOrder(
-  query: ReturnType<ReturnType<ReturnType<typeof createCacheClient>["from"]>["select"]>,
-  sort: string
-) {
+function applySortOrder<
+  T extends {
+    order(column: string, options: { ascending: boolean; nullsFirst?: boolean }): T;
+  },
+>(query: T, sort: string): T {
   switch (sort) {
     case "score-desc":
       return query.order("overall_score", { ascending: false, nullsFirst: false });
@@ -77,10 +78,19 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ buildings, total, page });
   }
 
-  // Non-text queries: browse by filters only
+  // Non-text queries: browse by filters only.
+  // Explicit column list (matches what BuildingCard & the typeahead
+  // consumers read; see BUILDING_COLUMNS in src/lib/building-list/query.ts)
+  // and `count: "planned"` — `exact` does a full COUNT(*) that times out on
+  // the >1M-row buildings table.
   let query = supabase
     .from("buildings")
-    .select("*", { count: "exact" })
+    .select(
+      `id, metro, borough, full_address, name, slug, year_built, total_units,
+       residential_units, overall_score, review_count, violation_count,
+       complaint_count, is_rent_stabilized, zip_code`,
+      { count: "planned" }
+    )
     .range(offset, offset + limit - 1);
 
   if (cityParam) {

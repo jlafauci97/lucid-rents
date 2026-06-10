@@ -6,10 +6,13 @@ const ZORI_CSV_URL =
 
 const BATCH_SIZE = 500;
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Created lazily so `next build` doesn't require Supabase env vars.
+function getSupabaseAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 /** Map NYC zip codes to boroughs */
 const ZIP_BOROUGH: Record<string, string> = {};
@@ -136,6 +139,7 @@ function parseZoriCsv(text: string): RentRow[] {
 }
 
 export async function GET() {
+  const supabase = getSupabaseAdmin();
   const startTime = Date.now();
   const errors: string[] = [];
 

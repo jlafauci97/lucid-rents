@@ -3,10 +3,13 @@ import { createClient } from "@supabase/supabase-js";
 
 export const maxDuration = 300;
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Created lazily so `next build` doesn't require Supabase env vars.
+function getSupabaseAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 const PAGE_SIZE = 5000;
 const BATCH_SIZE = 500;
@@ -197,6 +200,7 @@ async function syncSodaDataset(opts: {
   dateFilterField?: string;
 }): Promise<number> {
   const { sodaBase, dataset, transform, sourceKey, startTime, lastSync, dateFilterField } = opts;
+  const supabase = getSupabaseAdmin();
   let filter = opts.filter;
 
   if (lastSync && dateFilterField) {
@@ -272,7 +276,7 @@ async function syncSodaDataset(opts: {
  * -------------------------------------------------------------------------*/
 
 async function linkBuildingsByBbl() {
-  await supabase.rpc("exec_sql", {
+  await getSupabaseAdmin().rpc("exec_sql", {
     query: `
       UPDATE energy_benchmarks e
       SET building_id = b.id
@@ -285,7 +289,7 @@ async function linkBuildingsByBbl() {
 }
 
 async function linkBuildingsByApn() {
-  await supabase.rpc("exec_sql", {
+  await getSupabaseAdmin().rpc("exec_sql", {
     query: `
       UPDATE energy_benchmarks e
       SET building_id = b.id
@@ -298,7 +302,7 @@ async function linkBuildingsByApn() {
 }
 
 async function updateBuildingScores() {
-  await supabase.rpc("exec_sql", {
+  await getSupabaseAdmin().rpc("exec_sql", {
     query: `
       UPDATE buildings b
       SET energy_star_score = sub.energy_star_score
@@ -319,7 +323,7 @@ async function updateBuildingScores() {
  * -------------------------------------------------------------------------*/
 
 async function backfillLaBoroughs() {
-  await supabase.rpc("exec_sql", {
+  await getSupabaseAdmin().rpc("exec_sql", {
     query: `
       UPDATE energy_benchmarks e
       SET borough = b.borough
@@ -337,7 +341,7 @@ async function backfillLaBoroughs() {
  * -------------------------------------------------------------------------*/
 
 async function linkChicagoBuildingsByAddress() {
-  await supabase.rpc("exec_sql", {
+  await getSupabaseAdmin().rpc("exec_sql", {
     query: `
       UPDATE energy_benchmarks e
       SET building_id = b.id
@@ -355,6 +359,7 @@ async function linkChicagoBuildingsByAddress() {
  * -------------------------------------------------------------------------*/
 
 export async function GET() {
+  const supabase = getSupabaseAdmin();
   const startTime = Date.now();
 
   try {

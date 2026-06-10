@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireMarketingAuth } from "@/lib/marketing/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { MarketingRedditStatus } from "@/types/marketing";
 
@@ -11,6 +12,10 @@ const STATUSES: MarketingRedditStatus[] = [
 ];
 
 export async function GET() {
+  if (!(await requireMarketingAuth())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const supabase = createAdminClient();
     const results = await Promise.all(

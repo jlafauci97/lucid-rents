@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireMarketingAuth } from "@/lib/marketing/auth";
 import { listDrafts } from "@/lib/marketing/supabase-queries";
 import type { MarketingDraftStatus } from "@/types/marketing";
 
 export async function GET(req: NextRequest) {
+  if (!(await requireMarketingAuth())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { searchParams } = req.nextUrl;
   const status = searchParams.get("status") as MarketingDraftStatus | null;
   const limitParam = searchParams.get("limit");
@@ -20,13 +25,14 @@ export async function GET(req: NextRequest) {
 
   try {
     let drafts = await listDrafts(status ?? undefined, limit);
+    const total = drafts.length;
 
     // Apply offset manually (listDrafts doesn't support offset natively)
     if (offset && offset > 0) {
       drafts = drafts.slice(offset);
     }
 
-    return NextResponse.json({ drafts, count: drafts.length });
+    return NextResponse.json({ drafts, count: total });
   } catch (err) {
     console.error("List drafts error:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

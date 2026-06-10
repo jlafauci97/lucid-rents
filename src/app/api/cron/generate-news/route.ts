@@ -12,10 +12,13 @@ import { entityLinksForSignal, primaryEntityLink } from "@/lib/news/entity-links
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Created lazily so `next build` doesn't require Supabase env vars.
+function getSupabaseAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 /** How many articles to publish per city per run. */
 const ARTICLES_PER_RUN = 2;
@@ -158,6 +161,7 @@ async function draftAndInsert(
   cfg: (typeof CITY_NEWS_CONFIG)[City],
   winner: SignalCandidate
 ): Promise<DraftResult> {
+  const supabase = getSupabaseAdmin();
   const family = SIGNAL_FAMILY[winner.type];
   const entityLinks = entityLinksForSignal(winner, city);
 
@@ -235,6 +239,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: `No config for city ${city}` }, { status: 400 });
   }
 
+  const supabase = getSupabaseAdmin();
   const today = todayInTz(cfg.tz);
 
   // 1. Run every enabled detector.

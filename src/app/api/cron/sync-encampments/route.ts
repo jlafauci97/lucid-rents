@@ -3,10 +3,13 @@ import { createClient } from "@supabase/supabase-js";
 
 export const maxDuration = 300;
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Created lazily so `next build` doesn't require Supabase env vars.
+function getSupabaseAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 // MyLA311 2026 dataset — filter for "Homeless Encampment" type
 const SODA_ENDPOINT = "https://data.lacity.org/resource/2cy6-i7zn.json";
@@ -42,6 +45,7 @@ function buildAddress(r: SodaRecord): string {
 }
 
 async function getLastSyncDate(): Promise<string | null> {
+  const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from("encampments")
     .select("created_date")
@@ -70,6 +74,7 @@ async function fetchPage(offset: number, extraWhere?: string): Promise<SodaRecor
 }
 
 async function upsertBatch(records: SodaRecord[]) {
+  const supabase = getSupabaseAdmin();
   const rows = records
     .filter((r) => r.casenumber && r.createddate)
     .map((r) => ({

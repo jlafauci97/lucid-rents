@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireMarketingAuth } from "@/lib/marketing/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { MarketingContentType, MarketingVideoType } from "@/types/marketing";
 import {
@@ -10,6 +11,10 @@ import {
 export const maxDuration = 120;
 
 export async function POST(req: NextRequest) {
+  if (!(await requireMarketingAuth())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const body = await req.json();
     const { prompt, contentType, videoType } = body as {

@@ -1,9 +1,14 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getRun } from "workflow/api";
+import { requireMarketingAuth } from "@/lib/marketing/auth";
 
 type RouteContext = { params: Promise<{ runId: string }> };
 
 export async function GET(_req: NextRequest, { params }: RouteContext) {
+  if (!(await requireMarketingAuth())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { runId } = await params;
 
   let run;
