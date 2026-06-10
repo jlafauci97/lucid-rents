@@ -1,7 +1,8 @@
 import { createCacheClient } from "@/lib/supabase/cache-client";
 import { VerdictBanner } from "@/components/building/VerdictBanner";
 import { ReportCard } from "@/components/building/ReportCard";
-import { getLetterGrade, deriveScore } from "@/lib/constants";
+import { getLetterGrade } from "@/lib/constants";
+import { verdictScore, verdictSummary } from "@/lib/building/verdict";
 import type { Building, ReviewWithDetails } from "@/types";
 
 const safe = <T,>(promise: PromiseLike<{ data: T | null; error: unknown }>, fallback: T): Promise<T> =>
@@ -70,13 +71,9 @@ export async function DeferredVerdictSection({ building, buildingId }: Props) {
     })
     .sort((a, b) => b.score - a.score);
 
-  const rcOverallScore = building.overall_score ?? deriveScore(building.violation_count || 0, building.complaint_count || 0);
+  const rcOverallScore = verdictScore(building.overall_score, building.violation_count || 0, building.complaint_count || 0);
   const rcOverallGrade = getLetterGrade(rcOverallScore);
-  const summaryText = rcOverallScore >= 4 ? "Excellent building — top-rated by tenants with minimal issues."
-    : rcOverallScore >= 3 ? "Good building with responsive management and moderate concerns."
-    : rcOverallScore >= 2 ? "Decent building but has room for improvement in some areas."
-    : rcOverallScore >= 1 ? "Below average — tenants report significant concerns."
-    : "Poor conditions — multiple serious issues reported by tenants.";
+  const summaryText = verdictSummary(rcOverallScore);
 
   return (
     <>

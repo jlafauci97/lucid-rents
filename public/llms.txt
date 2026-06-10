@@ -49,6 +49,10 @@ Lucid Rents aggregates public data from city agencies including:
 - Miami: Miami-Dade code violations, MDPD crime data
 - Houston: City of Houston violations, HPD crime data
 
+## Public API
+
+- Building verdict: `https://lucidrents.com/api/buildings/{id}/verdict` — free, no-auth JSON endpoint returning a building's letter grade, score, review/violation/complaint counts, rent stabilization status, canonical page URL, and a one-sentence rental verdict
+
 ## Extended Info
 
 - [Full details for AI systems](https://lucidrents.com/llms-full.txt)

@@ -353,6 +353,48 @@ export default function ForAIPage() {
           </p>
         </section>
 
+        {/* ----- Verdict API ----- */}
+        <section>
+          <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
+            Building Verdict API
+          </h2>
+          <p>
+            A free, public JSON endpoint that answers &ldquo;should I rent in
+            this building?&rdquo; for any building ID — the same letter grade,
+            score, and verdict shown on the building&apos;s report page. No
+            authentication or API key required (rate limited per IP).
+          </p>
+          <p className="font-mono text-xs mt-2">
+            <code>GET https://lucidrents.com/api/buildings/&#123;id&#125;/verdict</code>
+          </p>
+          <p className="mt-2">Example response:</p>
+          <pre className="font-mono text-xs bg-[#F7F8FA] border border-[#E5E8EE] rounded-lg p-4 overflow-x-auto">
+{`{
+  "id": "8f1c2d3e-...",
+  "name": "Carnegie Mews",
+  "address": "123 Main Street",
+  "city": "nyc",
+  "borough": "Manhattan",
+  "slug": "123-main-street",
+  "url": "https://lucidrents.com/nyc/building/manhattan/123-main-street",
+  "grade": "B",
+  "score": 3.4,
+  "review_count": 12,
+  "avg_rating": 3.6,
+  "violation_count": 48,
+  "complaint_count": 112,
+  "is_rent_stabilized": true,
+  "year_built": 1927,
+  "total_units": 84,
+  "verdict": "Good building with responsive management and moderate concerns."
+}`}
+          </pre>
+          <p className="mt-2">
+            Responses are cacheable for one hour. Unknown building IDs return a
+            404 with a JSON error body.
+          </p>
+        </section>
+
         {/* ----- Machine-Readable Resources ----- */}
         <section>
           <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
