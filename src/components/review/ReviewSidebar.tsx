@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Check, ChevronDown } from "lucide-react";
 
 interface SidebarStep {
@@ -41,19 +41,19 @@ export default function ReviewSidebar({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [savedLabel, setSavedLabel] = useState<string | null>(null);
 
-  const updateSavedLabel = useCallback(() => {
-    if (lastSaved) {
-      setSavedLabel(formatRelativeTime(lastSaved));
-    } else {
-      setSavedLabel(null);
-    }
-  }, [lastSaved]);
-
+  // Re-keyed on lastSaved: update the label immediately, then refresh it
+  // every 10s so the relative time stays current without a stale closure.
   useEffect(() => {
-    updateSavedLabel();
-    const interval = setInterval(updateSavedLabel, 10_000);
+    if (!lastSaved) {
+      setSavedLabel(null);
+      return;
+    }
+    setSavedLabel(formatRelativeTime(lastSaved));
+    const interval = setInterval(() => {
+      setSavedLabel(formatRelativeTime(lastSaved));
+    }, 10_000);
     return () => clearInterval(interval);
-  }, [updateSavedLabel]);
+  }, [lastSaved]);
 
   function isClickable(index: number) {
     return steps[index].completed || index === currentStep;

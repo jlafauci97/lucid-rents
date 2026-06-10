@@ -68,6 +68,7 @@ interface Props {
 export function SearchOverlay({ city, onClose }: Props) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
+  const seq = useRef(0);
   const [mounted, setMounted] = useState(false);
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(false);
@@ -218,6 +219,7 @@ export function SearchOverlay({ city, onClose }: Props) {
   useEffect(() => {
     const trimmed = q.trim();
     if (trimmed.length < 2) {
+      seq.current++; // invalidate any in-flight responses
       setBuildings([]);
       setLandlords([]);
       setLoading(false);
@@ -225,6 +227,10 @@ export function SearchOverlay({ city, onClose }: Props) {
     }
     setLoading(true);
     const controller = new AbortController();
+    // Stale-response guard: only the latest request may apply state or clear
+    // loading. Abort covers cleanup, but an in-flight response can still
+    // resolve after a newer request has started.
+    const mySeq = ++seq.current;
     const t = window.setTimeout(async () => {
       try {
         const [bRes, lRes] = await Promise.all([
@@ -259,8 +265,8 @@ export function SearchOverlay({ city, onClose }: Props) {
                 violation_count: b.violation_count,
               }),
             );
-          setBuildings(rows);
-        } else {
+          if (mySeq === seq.current) setBuildings(rows);
+        } else if (mySeq === seq.current) {
           setBuildings([]);
         }
         if (lRes.ok) {
@@ -284,17 +290,20 @@ export function SearchOverlay({ city, onClose }: Props) {
                   l.totalViolations ?? l.total_violations ?? null,
               }),
             );
-          setLandlords(rows);
-        } else {
+          if (mySeq === seq.current) setLandlords(rows);
+        } else if (mySeq === seq.current) {
           setLandlords([]);
         }
       } catch (err) {
-        if ((err as { name?: string }).name !== "AbortError") {
+        if (
+          (err as { name?: string }).name !== "AbortError" &&
+          mySeq === seq.current
+        ) {
           setBuildings([]);
           setLandlords([]);
         }
       } finally {
-        setLoading(false);
+        if (mySeq === seq.current) setLoading(false);
       }
     }, 180);
     return () => {

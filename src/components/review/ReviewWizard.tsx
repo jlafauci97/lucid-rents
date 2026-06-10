@@ -109,6 +109,7 @@ export function ReviewWizard({
   // ── Auto-save ────────────────────────────────────────────────────
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const draftRestoredRef = useRef(false);
+  const amenitiesAbortRef = useRef<AbortController | null>(null);
 
   // ── Preselected building ─────────────────────────────────────────
   useEffect(() => {
@@ -127,9 +128,17 @@ export function ReviewWizard({
   // ── Fetch building amenities on building selection ───────────────
   const handleBuildingSelect = useCallback(
     (building: Building | null) => {
+      // Abort any in-flight amenities fetch so a slow earlier response
+      // can't apply stale amenities for a previously selected building.
+      amenitiesAbortRef.current?.abort();
+      amenitiesAbortRef.current = null;
       setSelectedBuilding(building);
       if (building) {
-        fetch(`/api/buildings/${building.id}/amenities`)
+        const controller = new AbortController();
+        amenitiesAbortRef.current = controller;
+        fetch(`/api/buildings/${building.id}/amenities`, {
+          signal: controller.signal,
+        })
           .then((res) => {
             if (!res.ok) throw new Error("Not found");
             return res.json();
@@ -141,7 +150,8 @@ export function ReviewWizard({
               setBuildingAmenities(data.amenities);
             }
           })
-          .catch(() => {
+          .catch((err) => {
+            if ((err as { name?: string })?.name === "AbortError") return;
             setBuildingAmenities([]);
           });
       } else {
@@ -150,6 +160,13 @@ export function ReviewWizard({
     },
     []
   );
+
+  // Abort any pending amenities fetch on unmount.
+  useEffect(() => {
+    return () => {
+      amenitiesAbortRef.current?.abort();
+    };
+  }, []);
 
   // ── Restore draft from localStorage on mount ─────────────────────
   useEffect(() => {

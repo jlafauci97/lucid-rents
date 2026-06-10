@@ -48,6 +48,7 @@ export function SearchBar({
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const seq = useRef(0);
   const debouncedQuery = useDebounce(query, 300);
   const { recent } = useRecentBuildings();
 
@@ -104,6 +105,7 @@ export function SearchBar({
 
   useEffect(() => {
     if (debouncedQuery.length < 2) {
+      seq.current++; // invalidate any in-flight responses
       setResults([]);
       setNeighborhoodResults([]);
       setLandlordResults([]);
@@ -129,14 +131,20 @@ export function SearchBar({
     const landlordApi = `/api/landlords?search=${encodeURIComponent(debouncedQuery)}&city=${city}&page=1`;
 
     const controller = new AbortController();
+    // Stale-response guard: only the latest request may apply state. The
+    // AbortController covers effect cleanup, but a response already past the
+    // network layer can still resolve after a newer request started.
+    const mySeq = ++seq.current;
     const isAbort = (err: unknown) => (err as { name?: string })?.name === "AbortError";
 
     Promise.all([
       fetch(buildingApi, { signal: controller.signal })
         .then((res) => res.json())
-        .then((data) => setResults(data.buildings || []))
+        .then((data) => {
+          if (mySeq === seq.current) setResults(data.buildings || []);
+        })
         .catch((err) => {
-          if (!isAbort(err)) setResults([]);
+          if (!isAbort(err) && mySeq === seq.current) setResults([]);
         }),
       fetch(landlordApi, { signal: controller.signal })
         .then((res) => res.json())
@@ -154,17 +162,17 @@ export function SearchBar({
                 total_violations: l.totalViolations ?? null,
               }),
             );
-          setLandlordResults(rows);
+          if (mySeq === seq.current) setLandlordResults(rows);
         })
         .catch((err) => {
-          if (!isAbort(err)) setLandlordResults([]);
+          if (!isAbort(err) && mySeq === seq.current) setLandlordResults([]);
         }),
     ])
       .then(() => {
-        if (!controller.signal.aborted) setOpen(true);
+        if (!controller.signal.aborted && mySeq === seq.current) setOpen(true);
       })
       .finally(() => {
-        if (!controller.signal.aborted) setLoading(false);
+        if (!controller.signal.aborted && mySeq === seq.current) setLoading(false);
       });
 
     return () => controller.abort();

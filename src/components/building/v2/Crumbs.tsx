@@ -40,7 +40,9 @@ export function Crumbs({
     <nav className="crumbs" aria-label="Breadcrumb">
       <Link href="/">home</Link><span className="sep">/</span>
       <Link href={`/${prefix}`}>{prefix}</Link><span className="sep">/</span>
-      <Link href={`/${prefix}/building-rankings`}>{boroughLower}</Link><span className="sep">/</span>
+      {/* Borough buildings list — must match the BreadcrumbList JSON-LD on the
+          building page, which points at cityPath(`/buildings/${boroughSlug}`). */}
+      <Link href={`/${prefix}/buildings/${boroughSlug}`}>{boroughLower}</Link><span className="sep">/</span>
       {neighborhoodSlug && neighborhoodName ? (
         <>
           <Link href={`/${prefix}/neighborhood/${neighborhoodSlug}`}>{nbhLower}</Link><span className="sep">/</span>

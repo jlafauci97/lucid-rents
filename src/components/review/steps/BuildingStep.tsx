@@ -56,14 +56,23 @@ export function BuildingStep({
       return;
     }
     setSearchLoading(true);
-    fetch(`/api/search?q=${encodeURIComponent(debouncedSearch)}&limit=6`)
+    const controller = new AbortController();
+    fetch(`/api/search?q=${encodeURIComponent(debouncedSearch)}&limit=6`, {
+      signal: controller.signal,
+    })
       .then((res) => res.json())
       .then((data) => {
         setBuildingResults(data.buildings || []);
         setSearchOpen(true);
       })
-      .catch(() => setBuildingResults([]))
-      .finally(() => setSearchLoading(false));
+      .catch((err) => {
+        if ((err as { name?: string })?.name === "AbortError") return;
+        setBuildingResults([]);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setSearchLoading(false);
+      });
+    return () => controller.abort();
   }, [debouncedSearch]);
 
   // Click outside to close search
