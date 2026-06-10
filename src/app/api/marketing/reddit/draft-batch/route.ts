@@ -1,15 +1,17 @@
 // Accepts a batch of Reddit candidates (fetched from outside Vercel — Reddit
-// blocks datacenter IPs), drafts replies using the same AI Gateway path as
-// the content workflow, and saves them as `draft_ready`. Auth via CRON_SECRET.
+// blocks datacenter IPs), scores their relevance with Claude (geo kill +
+// weighted threshold, same bar as the legacy workflow path), drafts replies
+// for the qualified ones using the same AI Gateway path as the content
+// workflow, and saves them as `draft_ready`. Auth via CRON_SECRET.
 
 import { NextRequest, NextResponse } from "next/server";
-import { generateText } from "ai";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { saveRedditThread } from "@/lib/marketing/supabase-queries";
 import {
-  REDDIT_SYSTEM_PROMPT,
-  getSubredditTone,
-} from "@/lib/marketing/brand-voice";
+  scoreThreadRelevance,
+  lookupBuildingContext,
+  draftRedditReply,
+} from "@/lib/marketing/reddit-ai";
 
 export const maxDuration = 300;
 export const dynamic = "force-dynamic";
@@ -60,49 +62,43 @@ export async function POST(req: NextRequest) {
   const existingSet = new Set((existing ?? []).map((r) => r.thread_id));
   const fresh = body.candidates.filter((c) => !existingSet.has(c.threadId));
 
-  const results: { threadId: string; ok: boolean; error?: string }[] = [];
+  const results: {
+    threadId: string;
+    ok: boolean;
+    skipped?: string;
+    score?: number;
+    error?: string;
+  }[] = [];
   let saved = 0;
+  let scoredOut = 0;
 
   for (const thread of fresh) {
     try {
-      let buildingContext = "";
-      const addressMatch = (thread.title + " " + thread.selftext).match(
-        /\d+\s+[\w\s]+(?:st|street|ave|avenue|blvd|boulevard|rd|road|dr|drive|pl|place|way|ln|lane)\b/i
-      );
-      if (addressMatch) {
-        const { data: buildings } = await supabase
-          .from("buildings")
-          .select("address, city, violation_count, owner_name")
-          .ilike("address", `%${addressMatch[0].trim()}%`)
-          .limit(3);
-        if (buildings && buildings.length > 0) {
-          buildingContext = `\n\nRELEVANT BUILDING DATA FROM LUCIDRENTS:\n${buildings
-            .map(
-              (b) =>
-                `- ${b.address}, ${b.city}: ${b.violation_count ?? 0} violations, owner: ${b.owner_name ?? "unknown"}`
-            )
-            .join("\n")}`;
-        }
+      // LLM relevance gate. The scanner's keyword match is just a pre-filter;
+      // this is what keeps lease-takeover ads and out-of-market posts from
+      // reaching the review queue.
+      const relevance = await scoreThreadRelevance(thread);
+      if (!relevance) {
+        results.push({ threadId: thread.threadId, ok: false, error: "score parse error" });
+        continue;
+      }
+      if (!relevance.qualified) {
+        scoredOut++;
+        results.push({
+          threadId: thread.threadId,
+          ok: false,
+          skipped: relevance.geoMatch < 0.5 ? "geo_mismatch" : "below_threshold",
+          score: relevance.weighted,
+        });
+        continue;
       }
 
-      const result = await generateText({
-        model: "anthropic/claude-sonnet-4.6" as never,
-        system:
-          REDDIT_SYSTEM_PROMPT +
-          `\n\nSUBREDDIT TONE for r/${thread.subreddit}: ${getSubredditTone(thread.subreddit)}`,
-        prompt: `THREAD in r/${thread.subreddit}:
-Title: ${thread.title}
-Body: ${thread.selftext}
-Thread score: ${thread.score} | Comments: ${thread.numComments}
-${buildingContext}
+      const buildingContext = await lookupBuildingContext(
+        supabase,
+        thread.title + " " + thread.selftext
+      );
 
-Write a helpful Reddit reply. Lead with value. Be genuine. If there is relevant building data above, weave it in naturally. Only mention lucidrents.com if it fits as a natural next step.
-
-Reply:`,
-        maxOutputTokens: 800,
-      });
-
-      const reply = result.text.trim();
+      const reply = await draftRedditReply(thread, buildingContext);
       if (!reply || reply.length < 40) {
         results.push({ threadId: thread.threadId, ok: false, error: "reply too short" });
         continue;
@@ -113,13 +109,16 @@ Reply:`,
         subreddit: thread.subreddit,
         title: thread.title,
         url: thread.url,
-        relevanceScore: thread.relevanceScore,
+        relevanceScore: relevance.weighted,
         keywordsMatched: thread.keywordsMatched,
         draftReply: reply,
         status: "draft_ready",
+        selftext: thread.selftext,
+        postScore: thread.score,
+        numComments: thread.numComments,
       });
       if (row) saved++;
-      results.push({ threadId: thread.threadId, ok: true });
+      results.push({ threadId: thread.threadId, ok: true, score: relevance.weighted });
     } catch (err) {
       results.push({
         threadId: thread.threadId,
@@ -133,6 +132,7 @@ Reply:`,
     ok: true,
     received: body.candidates.length,
     fresh: fresh.length,
+    scoredOut,
     saved,
     results,
   });

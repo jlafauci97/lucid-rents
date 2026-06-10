@@ -26,53 +26,25 @@ import {
   getWaitTimeSeconds,
 } from "@/lib/marketing/reddit";
 
-// Brand voice
+// Brand voice / scan config
 import {
-  REDDIT_SYSTEM_PROMPT,
-  getSubredditTone,
   TARGET_SUBREDDITS,
   REDDIT_KEYWORDS,
   GENERAL_SUBREDDITS,
-  SUPPORTED_GEO_TOKENS,
-  UNSUPPORTED_STATE_CODES,
 } from "@/lib/marketing/brand-voice";
 
-// Minimum weighted relevance score required to keep a candidate.
-// 0.5 was too permissive — it let lease-takeover ads, job posts, and
-// out-of-state rants through. 0.7 is roughly "this is clearly about a
-// renter problem in one of our markets and we can add real value."
-const MIN_RELEVANCE_SCORE = 0.7;
+// Geo gates (shared with the GitHub Actions scanner path)
+import {
+  hasUnsupportedStateTag,
+  mentionsSupportedMetro,
+} from "@/lib/marketing/reddit-geo";
 
-/**
- * Reject a post if its title or body is tagged with a US state code we don't
- * cover (e.g. "[MI] my LL ..." or "[CA] [SK] LL gave notice"). Returns true
- * when the post should be DROPPED.
- */
-function hasUnsupportedStateTag(title: string, body: string): boolean {
-  const text = `${title} ${body}`;
-  // Match bracketed two-letter codes like [MI], [PA], [GA].
-  const matches = text.match(/\[([A-Z]{2})\]/g);
-  if (!matches) return false;
-  for (const m of matches) {
-    const code = m.slice(1, 3);
-    if (UNSUPPORTED_STATE_CODES.has(code)) return true;
-  }
-  return false;
-}
-
-/**
- * For posts from general (national) subs, require the title or body to
- * explicitly mention one of our metros. Without this, we drown in posts
- * from random states.
- */
-function mentionsSupportedMetro(title: string, body: string): boolean {
-  const text = `${title} ${body}`.toLowerCase();
-  return SUPPORTED_GEO_TOKENS.some((tok) => {
-    // Match as a whole word so "ca" doesn't trigger on "scary".
-    const re = new RegExp(`\\b${tok.replace(/\./g, "\\.")}\\b`, "i");
-    return re.test(text);
-  });
-}
+// LLM scoring + drafting (shared with /api/marketing/reddit/draft-batch)
+import {
+  scoreThreadRelevance,
+  lookupBuildingContext,
+  draftRedditReply,
+} from "@/lib/marketing/reddit-ai";
 
 // ---------------------------------------------------------------------------
 // Types local to this workflow
@@ -101,6 +73,9 @@ interface DraftEntry {
   draftReply: string;
   relevanceScore: number;
   keywordsMatched: string[];
+  selftext: string;
+  postScore: number;
+  numComments: number;
 }
 
 interface SavedDraft {
@@ -324,57 +299,16 @@ async function scoreRelevance(
     return [];
   }
 
-  // Score each candidate via Claude
-  const { generateText } = await import("ai");
+  // Score each candidate via Claude (shared scorer — same geo kill +
+  // threshold as the draft-batch endpoint).
   const keywordsLower = REDDIT_KEYWORDS.map((k) => k.toLowerCase());
   const scored: ScoredCandidate[] = [];
 
   for (const candidate of subredditChecked) {
     try {
-      const result = await generateText({
-        model: "anthropic/claude-sonnet-4.6" as never,
-        system: `You are a relevance scorer for LucidRents, a rental intelligence platform that ONLY covers 5 metros: NYC, Los Angeles, Chicago, Miami, and Houston. Score how relevant a Reddit thread is for a helpful, non-promotional reply that could mention lucidrents.com.
+      const relevance = await scoreThreadRelevance(candidate);
 
-Return ONLY a JSON object with this structure:
-{
-  "geoMatch": 0.0-1.0,
-  "directRelevance": 0.0-1.0,
-  "valueOpportunity": 0.0-1.0,
-  "naturalFit": 0.0-1.0
-}
-
-HARD RULES — give 0.0 on geoMatch (which kills the post) when:
-- The post is explicitly about a state or city we don't cover (Denver, San Diego, Seattle, Atlanta, Detroit, anywhere outside NYC/LA/Chicago/Miami/Houston).
-- The post is about home buying / mortgages / selling a house — we serve renters, not buyers.
-- The post is an apartment listing, sublease ad, lease takeover, or roommate-search ad — these are ads, not problems we can help with.
-- The post is unrelated to housing entirely (jobs, jury duty, event tickets, dating, car leases).
-- The post is from a national sub (renters / Tenant / realestate / personalfinance) WITHOUT explicitly mentioning NYC/LA/Chicago/Miami/Houston by name.
-
-Scoring criteria (only matters if geoMatch > 0):
-- geoMatch (0.4 weight): Is the post about a renter problem in NYC, LA, Chicago, Miami, or Houston? 1.0 = clearly one of our metros. 0.0 = elsewhere or no city mentioned.
-- directRelevance (0.3 weight): Renter problem we have data for — landlord violations, building conditions, tenant rights, rent stabilization, eviction, habitability.
-- valueOpportunity (0.2 weight): Can we add genuine value by referencing specific data (HPD/LAHD/RLTO records, building violation history, rent law)?
-- naturalFit (0.1 weight): Can we mention lucidrents.com without feeling forced?`,
-        prompt: `Subreddit: r/${candidate.subreddit}
-Title: ${candidate.title}
-Body: ${candidate.selftext.slice(0, 1000)}
-Score: ${candidate.score} | Comments: ${candidate.numComments}`,
-        maxOutputTokens: 300,
-      });
-
-      let parsed: {
-        geoMatch: number;
-        directRelevance: number;
-        valueOpportunity: number;
-        naturalFit: number;
-      };
-      try {
-        let text = result.text.trim();
-        if (text.startsWith("```")) {
-          text = text.replace(/^```(?:json)?\s*/, "").replace(/\s*```$/, "");
-        }
-        parsed = JSON.parse(text);
-      } catch {
+      if (!relevance) {
         console.log(
           JSON.stringify({
             step: "scoreRelevance",
@@ -385,34 +319,18 @@ Score: ${candidate.score} | Comments: ${candidate.numComments}`,
         continue;
       }
 
-      // Hard kill: if the LLM gave geoMatch < 0.5, the post is about a
-      // metro we don't cover (or no metro at all). Skip immediately so a
-      // strong directRelevance score can't drag a Denver post over the line.
-      if (parsed.geoMatch < 0.5) {
+      if (!relevance.qualified) {
+        // geoMatch < 0.5 means the post is about a metro we don't cover (or
+        // no metro at all) — a strong directRelevance score can't drag a
+        // Denver post over the line.
         console.log(
           JSON.stringify({
             step: "scoreRelevance",
-            event: "geo_mismatch",
+            event:
+              relevance.geoMatch < 0.5 ? "geo_mismatch" : "below_threshold",
             threadId: candidate.threadId,
-            geoMatch: parsed.geoMatch,
-          })
-        );
-        continue;
-      }
-
-      const weightedScore =
-        parsed.geoMatch * 0.4 +
-        parsed.directRelevance * 0.3 +
-        parsed.valueOpportunity * 0.2 +
-        parsed.naturalFit * 0.1;
-
-      if (weightedScore < MIN_RELEVANCE_SCORE) {
-        console.log(
-          JSON.stringify({
-            step: "scoreRelevance",
-            event: "below_threshold",
-            threadId: candidate.threadId,
-            score: weightedScore,
+            score: relevance.weighted,
+            geoMatch: relevance.geoMatch,
           })
         );
         continue;
@@ -425,7 +343,7 @@ Score: ${candidate.score} | Comments: ${candidate.numComments}`,
 
       scored.push({
         ...candidate,
-        relevanceScore: Math.round(weightedScore * 100) / 100,
+        relevanceScore: relevance.weighted,
         keywordsMatched: matched,
       });
     } catch (err) {
@@ -472,7 +390,6 @@ async function draftReplies(
     })
   );
 
-  const { generateText } = await import("ai");
   const { createAdminClient } = await import("@/lib/supabase/admin");
   const supabase = createAdminClient();
 
@@ -480,56 +397,25 @@ async function draftReplies(
 
   for (const thread of qualified) {
     try {
-      // Try to look up relevant building data if an address-like pattern exists
-      let buildingContext = "";
-      const addressMatch = (thread.title + " " + thread.selftext).match(
-        /\d+\s+[\w\s]+(?:st|street|ave|avenue|blvd|boulevard|rd|road|dr|drive|pl|place|way|ln|lane)\b/i
+      // Look up relevant building data if an address-like pattern exists
+      const buildingContext = await lookupBuildingContext(
+        supabase,
+        thread.title + " " + thread.selftext
       );
 
-      if (addressMatch) {
-        const { data: buildings } = await supabase
-          .from("buildings")
-          .select("address, city, violation_count, owner_name")
-          .ilike("address", `%${addressMatch[0].trim()}%`)
-          .limit(3);
-
-        if (buildings && buildings.length > 0) {
-          buildingContext = `\n\nRELEVANT BUILDING DATA FROM LUCIDRENTS:\n${buildings
-            .map(
-              (b) =>
-                `- ${b.address}, ${b.city}: ${b.violation_count ?? 0} violations, owner: ${b.owner_name ?? "unknown"}`
-            )
-            .join("\n")}`;
-        }
-      }
-
-      const subredditTone = getSubredditTone(thread.subreddit);
-
-      const result = await generateText({
-        model: "anthropic/claude-sonnet-4.6" as never,
-        system:
-          REDDIT_SYSTEM_PROMPT +
-          `\n\nSUBREDDIT TONE for r/${thread.subreddit}: ${subredditTone}`,
-        prompt: `THREAD in r/${thread.subreddit}:
-Title: ${thread.title}
-Body: ${thread.selftext}
-Thread score: ${thread.score} | Comments: ${thread.numComments}
-${buildingContext}
-
-Write a helpful Reddit reply. Lead with value. Be genuine. If there is relevant building data above, weave it in naturally. Only mention lucidrents.com if it fits as a natural next step (e.g., "you can look up any building's violation history at lucidrents.com").
-
-Reply:`,
-        maxOutputTokens: 800,
-      });
+      const reply = await draftRedditReply(thread, buildingContext);
 
       drafts.push({
         threadId: thread.threadId,
         subreddit: thread.subreddit,
         title: thread.title,
         url: thread.url,
-        draftReply: result.text.trim(),
+        draftReply: reply,
         relevanceScore: thread.relevanceScore,
         keywordsMatched: thread.keywordsMatched,
+        selftext: thread.selftext,
+        postScore: thread.score,
+        numComments: thread.numComments,
       });
     } catch (err) {
       console.log(
@@ -581,6 +467,9 @@ async function saveDrafts(drafts: DraftEntry[]): Promise<SavedDraft[]> {
       draftReply: draft.draftReply,
       hookToken,
       status: "draft_ready",
+      selftext: draft.selftext,
+      postScore: draft.postScore,
+      numComments: draft.numComments,
     });
 
     if (row) {

@@ -88,6 +88,12 @@ export interface MarketingRedditThread {
   status: MarketingRedditStatus;
   replied_at: string | null;
   created_at: string;
+  /** Original post body (capped at 2000 chars at scan time). */
+  selftext: string | null;
+  /** Reddit upvote score at scan time. */
+  post_score: number | null;
+  /** Comment count at scan time. */
+  num_comments: number | null;
 }
 
 export interface MarketingTrend {

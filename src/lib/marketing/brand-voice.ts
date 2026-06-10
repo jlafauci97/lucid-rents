@@ -1,4 +1,5 @@
 import type { MarketingContentType } from "@/types/marketing";
+import redditConfig from "./reddit-config.json";
 
 // ===== PLATFORM CONFIGS =====
 
@@ -162,6 +163,8 @@ export function getSubredditTone(subreddit: string): string {
     LArentals: "Practical and supportive. Many first-time renters here.",
     chicago: "Midwest-friendly. Helpful and straightforward.",
     chicagoapartments: "Practical housing advice. Reference RLTO when relevant.",
+    houston: "Casual and practical. Houston renters deal with sprawl, flooding, and lax code enforcement — be concrete and specific.",
+    HoustonClassifieds: "Practical and to the point. Focus on actionable rental advice.",
     realestate: "Professional and measured. Data-heavy responses do well here.",
     FirstTimeHomeBuyer: "Empathetic and educational. Many anxious first-timers here.",
     Tenant: "Supportive and advocacy-oriented. This community rallies around tenant rights.",
@@ -181,15 +184,12 @@ export function getSubredditTone(subreddit: string): string {
 // only qualifies if its title or body explicitly mentions one of our 5 metros
 // (NYC / LA / Chicago / Miami / Houston) or a state code we support.
 // Without that gate we drown in posts from MI, MO, GA, PA, CT, UT, OR, etc.
+//
+// The lists themselves live in reddit-config.json so the GitHub Actions
+// scanner (scripts/scan-and-draft-reddit.mjs, plain Node) reads the exact
+// same data and can't drift from the app again.
 
-export const TARGET_SUBREDDITS = {
-  nyc: ["NYCapartments", "AskNYC", "nycrentals", "NYCinfohub"],
-  "los-angeles": ["AskLosAngeles", "LosAngeles", "LArentals"],
-  chicago: ["chicago", "chicagoapartments"],
-  miami: ["Miami", "askmiami", "FloridaRenters"],
-  houston: ["houston", "HoustonClassifieds"],
-  general: ["realestate", "FirstTimeHomeBuyer", "Tenant", "renters", "personalfinance"],
-};
+export const TARGET_SUBREDDITS = redditConfig.targetSubreddits;
 
 /** Subs that are NOT geographically constrained — require an extra geo gate. */
 export const GENERAL_SUBREDDITS = new Set(TARGET_SUBREDDITS.general);
@@ -199,25 +199,7 @@ export const GENERAL_SUBREDDITS = new Set(TARGET_SUBREDDITS.general);
  * Used to gate posts from general subs and to discard posts from city subs
  * that explicitly tag a different state in the title (e.g. "[MI] my LL ...").
  */
-export const SUPPORTED_GEO_TOKENS = [
-  // States we cover
-  "ny", "ny.", "nys", "nyc", "new york",
-  "ca", "calif", "california", "los angeles",
-  "il", "ill.", "illinois", "chicago",
-  "fl", "fla.", "florida", "miami",
-  "tx", "tex.", "texas", "houston",
-];
-
-/**
- * State codes for the 45 states we DON'T cover. Used to hard-reject a post
- * whose title is tagged like "[MI]" or "[OR] my landlord ...". Faster and
- * more reliable than asking the LLM to figure out the geography.
- */
-export const UNSUPPORTED_STATE_CODES = new Set([
-  "AL","AK","AZ","AR","CO","CT","DE","DC","GA","HI","ID","IN","IA","KS","KY",
-  "LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NC",
-  "ND","OH","OK","OR","PA","RI","SC","SD","TN","UT","VT","VA","WA","WV","WI","WY",
-]);
+export { SUPPORTED_GEO_TOKENS, UNSUPPORTED_STATE_CODES } from "./reddit-geo";
 
 // ===== REDDIT KEYWORDS =====
 //
@@ -225,51 +207,7 @@ export const UNSUPPORTED_STATE_CODES = new Set([
 // post, jury summons, and out-of-state rant in existence. Phrases that
 // signal a real renter problem in our markets stay; one-word noise is gone.
 
-export const REDDIT_KEYWORDS = [
-  "hpd violation",
-  "hpd complaint",
-  "lahd",
-  "rso violation",
-  "rlto",
-  "rent stabilized",
-  "rent stabilization",
-  "rent control",
-  "tenant rights",
-  "renters rights",
-  "tenants rights",
-  "311 complaint",
-  "moving to nyc",
-  "moving to la",
-  "moving to los angeles",
-  "moving to chicago",
-  "moving to miami",
-  "moving to houston",
-  "flood zone",
-  "40 year recertification",
-  "40-year recertification",
-  "condo recertification",
-  "bad landlord",
-  "slumlord",
-  "no heat",
-  "no hot water",
-  "housing court",
-  "eviction notice",
-  "illegal eviction",
-  "rent increase",
-  "rent hike",
-  "security deposit",
-  "withhold rent",
-  "warranty of habitability",
-  "habitability",
-  "uninhabitable",
-  "lease takeover",
-  "broker fee",
-  "apartment hunting nyc",
-  "apartment hunting chicago",
-  "apartment hunting la",
-  "apartment hunting miami",
-  "apartment hunting houston",
-];
+export const REDDIT_KEYWORDS: string[] = redditConfig.keywords;
 
 // ===== LUCID THE LIZARD — MASCOT CHARACTER =====
 

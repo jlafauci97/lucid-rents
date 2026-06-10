@@ -1,7 +1,15 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { RefreshCw, MessageSquare, ExternalLink } from "lucide-react";
+import {
+  RefreshCw,
+  MessageSquare,
+  ExternalLink,
+  ChevronDown,
+  ChevronRight,
+  Sparkles,
+  ArrowBigUp,
+} from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -10,6 +18,11 @@ import type { MarketingRedditThread, MarketingRedditStatus } from "@/types/marke
 type RedditFilter = "draft_ready" | "approved" | "replied" | "skipped" | "all";
 
 type CountsByStatus = Partial<Record<RedditFilter, number>>;
+
+interface ReplyQuota {
+  repliedToday: number;
+  maxDaily: number;
+}
 
 function formatRelativeTime(isoDate: string): string {
   const diff = Date.now() - new Date(isoDate).getTime();
@@ -36,6 +49,9 @@ export function RedditTab() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [editedReplies, setEditedReplies] = useState<Record<string, string>>({});
   const [counts, setCounts] = useState<CountsByStatus>({});
+  const [quota, setQuota] = useState<ReplyQuota | null>(null);
+  const [expandedPosts, setExpandedPosts] = useState<Record<string, boolean>>({});
+  const [regenLoading, setRegenLoading] = useState<string | null>(null);
 
   const fetchThreads = useCallback(async () => {
     try {
@@ -62,6 +78,9 @@ export function RedditTab() {
       const data = await res.json();
       if (data?.byStatus) {
         setCounts({ ...data.byStatus, all: data.total });
+      }
+      if (data?.quota) {
+        setQuota(data.quota);
       }
     } catch (err) {
       console.error("Failed to fetch Reddit counts:", err);
@@ -105,6 +124,36 @@ export function RedditTab() {
       alert(`${action === "approve" ? "Approve" : "Decline"} failed: network error`);
     } finally {
       setActionLoading(null);
+    }
+  }
+
+  async function handleRegenerate(threadId: string) {
+    // window.prompt keeps this dependency-free, matching the alert() error
+    // pattern used elsewhere in this component.
+    const guidance = window.prompt(
+      "Optional guidance for the new draft (leave blank for none):",
+      ""
+    );
+    if (guidance === null) return; // cancelled
+
+    setRegenLoading(threadId);
+    try {
+      const res = await fetch("/api/marketing/reddit/regenerate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ threadId, guidance: guidance || undefined }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert(`Regenerate failed: ${body?.error ?? `HTTP ${res.status}`}`);
+        return;
+      }
+      setEditedReplies((prev) => ({ ...prev, [threadId]: body.reply }));
+    } catch (err) {
+      console.error("Regenerate failed:", err);
+      alert("Regenerate failed: network error");
+    } finally {
+      setRegenLoading(null);
     }
   }
 
@@ -152,16 +201,30 @@ export function RedditTab() {
             );
           })}
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => {
-            setLoading(true);
-            fetchThreads();
-          }}
-        >
-          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-        </Button>
+        <div className="flex items-center gap-3">
+          {quota && (
+            <span
+              className={`text-xs tabular-nums ${
+                quota.repliedToday >= quota.maxDaily
+                  ? "text-[#dc2626] font-medium"
+                  : "text-[#64748b]"
+              }`}
+              title="Replies posted today vs. daily limit"
+            >
+              Today: {quota.repliedToday}/{quota.maxDaily} replies
+            </span>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setLoading(true);
+              fetchThreads();
+            }}
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+          </Button>
+        </div>
       </div>
 
       {/* Approved tab — explain the auto-post cadence */}
@@ -241,6 +304,49 @@ export function RedditTab() {
               </div>
             </div>
 
+            {/* Original post body (stored at scan time) */}
+            {thread.selftext && (
+              <div>
+                <button
+                  onClick={() =>
+                    setExpandedPosts((prev) => ({
+                      ...prev,
+                      [thread.id]: !prev[thread.id],
+                    }))
+                  }
+                  className="inline-flex items-center gap-1 text-xs font-medium text-[#64748b] hover:text-[#0F1D2E]"
+                >
+                  {expandedPosts[thread.id] ? (
+                    <ChevronDown className="h-3.5 w-3.5" />
+                  ) : (
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  )}
+                  Original post
+                  {(thread.post_score != null || thread.num_comments != null) && (
+                    <span className="inline-flex items-center gap-1 ml-1 text-[#94a3b8]">
+                      {thread.post_score != null && (
+                        <span className="inline-flex items-center gap-0.5">
+                          <ArrowBigUp className="h-3.5 w-3.5" />
+                          {thread.post_score}
+                        </span>
+                      )}
+                      {thread.num_comments != null && (
+                        <span className="inline-flex items-center gap-0.5">
+                          <MessageSquare className="h-3 w-3" />
+                          {thread.num_comments}
+                        </span>
+                      )}
+                    </span>
+                  )}
+                </button>
+                {expandedPosts[thread.id] && (
+                  <div className="mt-1.5 rounded-lg bg-gray-50 border border-[#e2e8f0] px-3 py-2 text-xs text-[#475569] whitespace-pre-wrap max-h-64 overflow-y-auto">
+                    {thread.selftext}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Keywords */}
             {thread.keywords_matched && thread.keywords_matched.length > 0 && (
               <div className="flex flex-wrap gap-1">
@@ -277,6 +383,16 @@ export function RedditTab() {
             {/* Actions — only on pending tab */}
             {!isReadOnly && (
               <div className="flex justify-end gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleRegenerate(thread.id)}
+                  loading={regenLoading === thread.id}
+                  disabled={actionLoading === thread.id}
+                >
+                  <Sparkles className="h-3.5 w-3.5 mr-1" />
+                  Regenerate
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"
