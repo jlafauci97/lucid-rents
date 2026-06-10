@@ -21,3 +21,8 @@ scripts/progress/*.json
 
 # Brainstorming visual companion (machine-local)
 .superpowers/
+
+# Sitemaps are generated to Vercel Blob by /api/cron/regenerate-sitemaps —
+# never commit them (the old static copies were ~750 MB of XML).
+public/sitemap/
+public/sitemap.xml

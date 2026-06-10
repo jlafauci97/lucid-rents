@@ -31,22 +31,22 @@ const nextConfig: NextConfig = {
   ],
   rewrites: async () => ({
     beforeFiles: [
-      // Sitemap index: /sitemap.xml → static pre-generated file
-      { source: "/sitemap.xml", destination: "/sitemap/index.xml" },
-      // Dedicated building index → static pre-generated file (same pattern as
-      // /sitemap.xml). Served as a pure static asset so Googlebot fetches it
-      // identically to the master sitemap, with no route-handler involvement.
-      { source: "/sitemap-buildings.xml", destination: "/sitemap/buildings.xml" },
-      // Fresh alias for the building index. The original /sitemap-buildings.xml
-      // got stuck in Google's per-URL error state after repeated failed fetches
-      // during earlier deploys; this clean URL (no failure history) lets Google
-      // fetch the identical file without that backoff. Submit this one in GSC.
-      { source: "/buildings-sitemap.xml", destination: "/sitemap/buildings.xml" },
-      // Hubs sitemap is DYNAMIC (ISR) so newly published articles auto-appear
-      // within the hour — the index lists /sitemap/hubs.xml, and this rewrite
-      // (beforeFiles, so it wins over the stale static public/sitemap/hubs.xml)
-      // serves it from the dynamic route instead.
+      // All sitemaps are served from Vercel Blob via /sitemap-v2/[chunk]
+      // (regenerated daily by /api/cron/regenerate-sitemaps). The ~750 MB of
+      // static XML previously committed under public/sitemap/ is gone — the
+      // public URLs below are unchanged, so no GSC resubmission is needed.
+      { source: "/sitemap.xml", destination: "/sitemap-v2/index.xml" },
+      // Dedicated building index. /buildings-sitemap.xml is the clean alias
+      // submitted in GSC after the original URL accumulated fetch-error
+      // backoff during earlier deploys; both serve the identical Blob file.
+      { source: "/sitemap-buildings.xml", destination: "/sitemap-v2/buildings.xml" },
+      { source: "/buildings-sitemap.xml", destination: "/sitemap-v2/buildings.xml" },
+      // Hubs sitemap stays DYNAMIC (ISR) so newly published articles
+      // auto-appear within the hour. Must precede the catch-all below.
       { source: "/sitemap/hubs.xml", destination: "/sitemap-hubs.xml" },
+      // Catch-all for child chunks referenced by the indexes
+      // (/sitemap/b-N.xml, /sitemap/l-N.xml, /sitemap/0.xml, …).
+      { source: "/sitemap/:chunk", destination: "/sitemap-v2/:chunk" },
     ],
   }),
   headers: async () => [

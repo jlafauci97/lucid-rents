@@ -13,7 +13,10 @@ export interface DraftedArticle {
   hashtags: string[];
 }
 
-const MODEL = "claude-sonnet-4-6";
+// Override via NEWS_DRAFTER_MODEL to A/B cheaper models (e.g.
+// "claude-haiku-4-5-20251001" is ~5x cheaper per output token). Compare a few
+// days of drafts in mission-control before making a switch permanent.
+const MODEL = process.env.NEWS_DRAFTER_MODEL || "claude-sonnet-4-6";
 
 const BASE_EDITOR_PROMPT = `You are a staff writer for Lucid Rents — think Curbed, The Hustle, or Morning Brew with a real-estate beat. Your job is to turn cold data into something a renter actually wants to read at 7am with their coffee.
 

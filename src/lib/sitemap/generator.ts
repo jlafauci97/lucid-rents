@@ -710,6 +710,19 @@ export async function regenerateAllToBlob(): Promise<RegenerateResult> {
     errors.push(`building chunks: ${(e as Error).message}`);
   }
 
+  // buildings.xml — dedicated index of just the b-N chunks. Served at
+  // /sitemap-buildings.xml and /buildings-sitemap.xml (both submitted in GSC),
+  // so it must exist in Blob alongside the master index.
+  try {
+    const buildingEntries: IndexEntry[] = written
+      .filter((name) => name.startsWith("b-"))
+      .map((name) => ({ name, lastmod: now }));
+    buildingEntries.sort((a, b) => order(a.name).localeCompare(order(b.name)));
+    await writeChunkToBlob("buildings.xml", buildSitemapIndex(buildingEntries));
+  } catch (e) {
+    errors.push(`buildings.xml: ${(e as Error).message}`);
+  }
+
   // Final index write — covers any partial chunks since the last checkpoint
   // boundary and ensures the index is consistent with the full `written` set.
   try {
@@ -743,7 +756,7 @@ function order(n: string): string {
 // ─── Chunk name validation (for route handler) ─────────────────
 
 export function isValidChunkName(name: string): boolean {
-  if (name === "index.xml" || name === "0.xml" || name === "hubs.xml") return true;
+  if (name === "index.xml" || name === "buildings.xml" || name === "0.xml" || name === "hubs.xml") return true;
   if (/^b-\d+\.xml$/.test(name)) return true;
   if (/^l-\d+\.xml$/.test(name)) return true;
   return false;

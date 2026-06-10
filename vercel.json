@@ -2,6 +2,10 @@
   "ignoreCommand": "git diff --quiet HEAD^ HEAD -- src/ public/ next.config.ts package.json tsconfig.json vercel.json",
   "crons": [
     {
+      "path": "/api/cron/regenerate-sitemaps",
+      "schedule": "0 8 * * *"
+    },
+    {
       "path": "/api/cron/generate-news?city=nyc",
       "schedule": "0 11 * * *"
     },
