@@ -210,9 +210,9 @@ describe("tenantResourcesForCity", () => {
 });
 
 describe("faqBankForCity", () => {
-  it("returns 6 items per city", () => {
+  it("returns 7 items per city", () => {
     (["nyc", "los-angeles", "chicago", "miami", "houston"] as const).forEach((city) => {
-      expect(faqBankForCity(city)).toHaveLength(6);
+      expect(faqBankForCity(city)).toHaveLength(7);
     });
   });
 
@@ -227,9 +227,11 @@ describe("faqBankForCity", () => {
     expect(faqBankForCity("houston").some((f) => f.q.toLowerCase().includes("rent-stabilized"))).toBe(false);
   });
 
-  it("uses RLTO question for Chicago", () => {
+  it("uses scofflaw-list question for Chicago (answer cites RLTO)", () => {
     const chi = faqBankForCity("chicago");
-    expect(chi.some((f) => f.q.toLowerCase().includes("rlto"))).toBe(true);
+    const scoff = chi.find((f) => f.q.toLowerCase().includes("scofflaw"));
+    expect(scoff).toBeDefined();
+    expect(scoff?.aTemplate.toLowerCase()).toContain("rlto");
   });
 
   it("uses 40-year recert question for Miami", () => {
@@ -254,24 +256,45 @@ describe("faqBankForCity", () => {
     });
   });
 
-  it("all cities have a trend question", () => {
+  it("all cities have a violations question", () => {
     (["nyc", "los-angeles", "chicago", "miami", "houston"] as const).forEach((city) => {
-      expect(faqBankForCity(city).some((f) => f.q.toLowerCase().includes("getting worse"))).toBe(true);
+      expect(faqBankForCity(city).some((f) => f.q.toLowerCase().includes("violations"))).toBe(true);
     });
   });
 
-  it("all cities have an operator question", () => {
+  it("all cities have an 'is good landlord' question", () => {
     (["nyc", "los-angeles", "chicago", "miami", "houston"] as const).forEach((city) => {
-      expect(faqBankForCity(city).some((f) => f.q.toLowerCase().includes("operates"))).toBe(true);
+      expect(faqBankForCity(city).some((f) => f.q.toLowerCase().includes("good landlord"))).toBe(true);
     });
   });
 
-  it("aTemplate for portfolio rank uses {{portfolioRank}} placeholder", () => {
+  it("all cities have a file-a-complaint question with {{complaintAction}} placeholder", () => {
     (["nyc", "los-angeles", "chicago", "miami", "houston"] as const).forEach((city) => {
       const faq = faqBankForCity(city);
-      const q1 = faq.find((f) => f.q.toLowerCase().includes("biggest landlord"));
-      expect(q1?.aTemplate).toContain("{{portfolioRank}}");
+      const q = faq.find((f) => f.q.toLowerCase().includes("complaint"));
+      expect(q?.aTemplate).toContain("{{complaintAction}}");
     });
+  });
+
+  it("portfolio-size aTemplate uses {{buildingCount}} and {{unitCount}} placeholders", () => {
+    (["nyc", "los-angeles", "chicago", "miami", "houston"] as const).forEach((city) => {
+      const faq = faqBankForCity(city);
+      const q1 = faq.find((f) => f.q.toLowerCase().includes("how many buildings"));
+      expect(q1?.aTemplate).toContain("{{buildingCount}}");
+      expect(q1?.aTemplate).toContain("{{unitCount}}");
+    });
+  });
+
+  it("Miami recert aTemplate uses {{recertsPending}} placeholder", () => {
+    const faq = faqBankForCity("miami");
+    const q = faq.find((f) => f.q.toLowerCase().includes("recert"));
+    expect(q?.aTemplate).toContain("{{recertsPending}}");
+  });
+
+  it("Houston dangerous-building aTemplate uses {{dangerousCount}} placeholder", () => {
+    const faq = faqBankForCity("houston");
+    const q = faq.find((f) => f.q.toLowerCase().includes("dangerous"));
+    expect(q?.aTemplate).toContain("{{dangerousCount}}");
   });
 
   it("NYC rent-stab aTemplate uses {{rentStabShare}} placeholder", () => {
@@ -280,9 +303,9 @@ describe("faqBankForCity", () => {
     expect(q?.aTemplate).toContain("{{rentStabShare}}");
   });
 
-  it("CHI RLTO aTemplate uses {{rltoStatus}} placeholder", () => {
+  it("CHI scofflaw aTemplate uses {{rltoStatus}} placeholder", () => {
     const faq = faqBankForCity("chicago");
-    const q = faq.find((f) => f.q.toLowerCase().includes("rlto"));
+    const q = faq.find((f) => f.q.toLowerCase().includes("scofflaw"));
     expect(q?.aTemplate).toContain("{{rltoStatus}}");
   });
 });

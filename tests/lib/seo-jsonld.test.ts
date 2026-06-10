@@ -14,9 +14,9 @@ const buildingFixture = {
 };
 
 describe("buildingJsonLd", () => {
-  it("uses multi-type ['ApartmentComplex','LocalBusiness']", () => {
+  it("uses single @type 'ApartmentComplex' (LocalBusiness dropped in #260)", () => {
     const ld = buildingJsonLd(buildingFixture, "nyc") as Record<string, unknown>;
-    expect(ld["@type"]).toEqual(["ApartmentComplex", "LocalBusiness"]);
+    expect(ld["@type"]).toBe("ApartmentComplex");
   });
 
   it("sets AggregateRating.worstRating to 1 (Google spec)", () => {
@@ -26,9 +26,51 @@ describe("buildingJsonLd", () => {
     expect(rating.bestRating).toBe(5);
   });
 
-  it("includes priceRange", () => {
+  it("does not emit a boilerplate priceRange (removed in #260)", () => {
     const ld = buildingJsonLd(buildingFixture, "nyc") as Record<string, unknown>;
-    expect(ld.priceRange).toBe("$$");
+    expect(ld.priceRange).toBeUndefined();
+  });
+
+  it("includes geo coordinates when latitude/longitude are present", () => {
+    const ld = buildingJsonLd(
+      { ...buildingFixture, latitude: 40.731, longitude: -73.982 },
+      "nyc"
+    ) as Record<string, unknown>;
+    expect(ld.geo).toEqual({
+      "@type": "GeoCoordinates",
+      latitude: 40.731,
+      longitude: -73.982,
+    });
+  });
+
+  it("omits geo when coordinates are missing", () => {
+    const ld = buildingJsonLd(buildingFixture, "nyc") as Record<string, unknown>;
+    expect(ld.geo).toBeUndefined();
+  });
+
+  it("sets dateModified from updated_at", () => {
+    const ld = buildingJsonLd(
+      { ...buildingFixture, updated_at: "2026-05-26T12:00:00Z" },
+      "nyc"
+    ) as Record<string, unknown>;
+    expect(ld.dateModified).toBe("2026-05-26T12:00:00Z");
+  });
+
+  it("emits additionalProperty entries for BBL, owner, and violation counts", () => {
+    const ld = buildingJsonLd(
+      {
+        ...buildingFixture,
+        bbl: "1009710040",
+        owner_name: "Stuyvesant Town LLC",
+        violation_count: 12,
+      },
+      "nyc"
+    ) as Record<string, unknown>;
+    const props = ld.additionalProperty as Array<{ name: string; value: unknown }>;
+    expect(Array.isArray(props)).toBe(true);
+    expect(props).toContainEqual({ "@type": "PropertyValue", name: "BBL", value: "1009710040" });
+    expect(props).toContainEqual({ "@type": "PropertyValue", name: "Owner", value: "Stuyvesant Town LLC" });
+    expect(props).toContainEqual({ "@type": "PropertyValue", name: "HPD Violations", value: 12 });
   });
 
   it("sets addressLocality to resolved neighborhood when zip matches", () => {
