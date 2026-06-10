@@ -1,31 +1,11 @@
 export const runtime = "edge";
 
 import { isValidCity } from "@/lib/cities";
-import { normalizeAddressQuery } from "@/lib/address-normalization";
 import { createCacheClient } from "@/lib/supabase/cache-client";
 import { searchSchema } from "@/lib/validators";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { applySortOrder, searchBuildingsRanked } from "@/lib/search/query";
 import { NextRequest, NextResponse } from "next/server";
-
-function applySortOrder<
-  T extends {
-    order(column: string, options: { ascending: boolean; nullsFirst?: boolean }): T;
-  },
->(query: T, sort: string): T {
-  switch (sort) {
-    case "score-desc":
-      return query.order("overall_score", { ascending: false, nullsFirst: false });
-    case "score-asc":
-      return query.order("overall_score", { ascending: true, nullsFirst: false });
-    case "violations-desc":
-      return query.order("violation_count", { ascending: false });
-    case "reviews-desc":
-      return query.order("review_count", { ascending: false });
-    case "relevance":
-    default:
-      return query.order("review_count", { ascending: false });
-  }
-}
 
 export async function GET(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0] ?? "anonymous";
@@ -53,27 +33,19 @@ export async function GET(req: NextRequest) {
 
   // Use ranked search function for text queries to get proper relevance ordering
   if (q) {
-    const { abbreviated, expanded } = normalizeAddressQuery(q);
-    const { data, error } = await supabase.rpc("search_buildings_ranked", {
-      search_query: abbreviated,
-      search_query_alt: abbreviated !== expanded ? expanded : null,
-      city_filter: cityParam || null,
-      borough_filter: borough || null,
-      zip_filter: zip || null,
-      sort_by: sort || "relevance",
-      page_offset: offset,
-      page_limit: limit,
+    const { buildings, total, error } = await searchBuildingsRanked(supabase, {
+      q,
+      city: cityParam,
+      borough,
+      zip,
+      sort,
+      offset,
+      limit,
     });
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error }, { status: 500 });
     }
-
-    const buildings = (data || []).map((row: Record<string, unknown>) => {
-      const { total_count, ...building } = row;
-      return building;
-    });
-    const total = data?.[0]?.total_count ?? 0;
 
     return NextResponse.json({ buildings, total, page });
   }

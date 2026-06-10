@@ -24,6 +24,7 @@ import {
   ArrowRight,
   Loader2,
   CornerDownLeft,
+  Sparkles,
 } from "lucide-react";
 import { CITY_META, type City } from "@/lib/cities";
 import { buildingUrl, landlordUrl } from "@/lib/seo";
@@ -60,6 +61,41 @@ type Suggestion =
   | LandlordSuggestion
   | NeighborhoodSuggestion;
 
+/** Interpretation block returned by POST /api/search/natural. */
+interface NlInterpretation {
+  city: string;
+  borough: string | null;
+  neighborhood: string | null;
+  zip: string | null;
+  keywords: string;
+  filters: {
+    rentStabilized: boolean | null;
+    maxViolations: "none" | "low" | null;
+    minScore: number | null;
+  };
+  sort: string;
+}
+
+type NlStatus = "idle" | "loading" | "done" | "error";
+
+/** One-line human summary, e.g. "Astoria · rent-stabilized · no violations". */
+function summarizeInterpretation(i: NlInterpretation | null): string {
+  if (!i) return "";
+  const parts: string[] = [];
+  if (i.neighborhood) parts.push(i.neighborhood);
+  else if (i.borough) parts.push(i.borough);
+  else if (i.zip) parts.push(i.zip);
+  if (i.filters?.rentStabilized) parts.push("rent-stabilized");
+  if (i.filters?.maxViolations === "none") parts.push("no violations");
+  else if (i.filters?.maxViolations === "low") parts.push("few violations");
+  if (typeof i.filters?.minScore === "number")
+    parts.push(`score ${i.filters.minScore}+`);
+  if (i.sort === "score-desc") parts.push("top-rated first");
+  else if (i.sort === "reviews-desc") parts.push("most reviewed first");
+  if (i.keywords) parts.push(`“${i.keywords}”`);
+  return parts.join(" · ");
+}
+
 interface Props {
   city: City;
   onClose: () => void;
@@ -79,6 +115,10 @@ export function SearchOverlay({ city, onClose }: Props) {
     BuildingSuggestion[]
   >([]);
   const [topLandlords, setTopLandlords] = useState<LandlordSuggestion[]>([]);
+  // "Smart search" (natural-language) state — replaces the result list when done.
+  const [nlStatus, setNlStatus] = useState<NlStatus>("idle");
+  const [nlBuildings, setNlBuildings] = useState<BuildingSuggestion[]>([]);
+  const [nlSummary, setNlSummary] = useState("");
 
   const cityMeta = CITY_META[city];
   const prefix = cityMeta?.urlPrefix ?? "nyc";
@@ -312,9 +352,70 @@ export function SearchOverlay({ city, onClose }: Props) {
     };
   }, [q, city]);
 
+  // Any edit to the query invalidates a previous smart-search answer.
+  useEffect(() => {
+    setNlStatus("idle");
+    setNlBuildings([]);
+    setNlSummary("");
+  }, [q, city]);
+
+  // Smart search: POST the raw query to /api/search/natural. Follows the same
+  // seq-guard pattern as the autocomplete fetch above — bumping seq invalidates
+  // any in-flight autocomplete response, and a later keystroke (which also
+  // bumps seq) invalidates this response.
+  async function askLucid() {
+    const query = q.trim();
+    if (!query) return;
+    const mySeq = ++seq.current;
+    setLoading(false);
+    setNlStatus("loading");
+    try {
+      const res = await fetch("/api/search/natural", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ q: query, city }),
+      });
+      if (mySeq !== seq.current) return;
+      if (!res.ok) {
+        setNlStatus("error");
+        return;
+      }
+      const j = await res.json();
+      if (mySeq !== seq.current) return;
+      const rows: BuildingSuggestion[] = (j.buildings ?? [])
+        .slice(0, 8)
+        .map(
+          (b: {
+            id: string;
+            full_address: string;
+            borough: string;
+            slug?: string;
+            review_count?: number | null;
+            violation_count?: number | null;
+          }) => ({
+            kind: "building",
+            id: b.id,
+            full_address: b.full_address,
+            borough: b.borough,
+            slug: b.slug ?? "",
+            review_count: b.review_count,
+            violation_count: b.violation_count,
+          }),
+        );
+      setNlBuildings(rows);
+      setNlSummary(summarizeInterpretation(j.interpretation ?? null));
+      setNlStatus("done");
+    } catch {
+      if (mySeq === seq.current) setNlStatus("error");
+    }
+  }
+
   const flat: Suggestion[] = useMemo(
-    () => [...buildings, ...neighborhoods, ...landlords],
-    [buildings, neighborhoods, landlords],
+    () =>
+      nlStatus === "done"
+        ? nlBuildings
+        : [...buildings, ...neighborhoods, ...landlords],
+    [nlStatus, nlBuildings, buildings, neighborhoods, landlords],
   );
 
   useEffect(() => {
@@ -355,6 +456,8 @@ export function SearchOverlay({ city, onClose }: Props) {
   const isSearching = trimmed.length >= 2;
   const hasAnyResults =
     buildings.length + landlords.length + neighborhoods.length > 0;
+  // "Smart search" affordance only for query-like sentences (≥ 4 words).
+  const canAsk = trimmed.split(/\s+/).filter(Boolean).length >= 4;
 
   if (!mounted) return null;
 
@@ -423,7 +526,45 @@ export function SearchOverlay({ city, onClose }: Props) {
           className="search-overlay-body"
           role="listbox"
         >
-          {isSearching ? (
+          {isSearching && nlStatus === "done" ? (
+            <>
+              <div className="search-overlay-msg" aria-live="polite">
+                <Sparkles aria-hidden="true" />{" "}
+                {nlSummary || "Smart search results"}
+              </div>
+              {nlBuildings.length > 0 ? (
+                <ResultGroup title="Smart results" icon={<Building2 />}>
+                  {nlBuildings.map((b, i) => (
+                    <ResultRow
+                      key={`nl-${b.id}`}
+                      href={hrefFor(b)}
+                      active={activeIdx === i}
+                      onHover={() => setActiveIdx(i)}
+                      primary={b.full_address}
+                      secondary={[
+                        b.borough,
+                        typeof b.review_count === "number" &&
+                        b.review_count > 0
+                          ? `${b.review_count} review${b.review_count === 1 ? "" : "s"}`
+                          : null,
+                        typeof b.violation_count === "number" &&
+                        b.violation_count > 0
+                          ? `${b.violation_count} violation${b.violation_count === 1 ? "" : "s"}`
+                          : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                      onClick={onClose}
+                    />
+                  ))}
+                </ResultGroup>
+              ) : (
+                <div className="search-overlay-msg">
+                  No buildings matched that ask.
+                </div>
+              )}
+            </>
+          ) : isSearching ? (
             <>
               {loading && !hasAnyResults ? (
                 <div className="search-overlay-msg">
@@ -534,6 +675,29 @@ export function SearchOverlay({ city, onClose }: Props) {
                   See all results for &ldquo;{trimmed}&rdquo;{" "}
                   <ArrowRight />
                 </Link>
+              ) : null}
+
+              {/* Smart search: one-line affordance for sentence-like queries */}
+              {canAsk ? (
+                nlStatus === "loading" ? (
+                  <div className="search-overlay-msg" aria-live="polite">
+                    <Loader2 className="search-overlay-spin" /> Asking
+                    LucidRents…
+                  </div>
+                ) : nlStatus === "error" ? (
+                  <div className="search-overlay-msg">
+                    Smart search didn&rsquo;t work this time — regular matches
+                    are shown above.
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    className="search-overlay-link"
+                    onClick={askLucid}
+                  >
+                    ✦ Ask LucidRents: &ldquo;{trimmed}&rdquo;
+                  </button>
+                )
               ) : null}
             </>
           ) : (
