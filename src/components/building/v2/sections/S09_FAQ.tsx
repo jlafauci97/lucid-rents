@@ -20,6 +20,8 @@
 import type { Building } from "@/types";
 import type { BuildingV2Data } from "@/app/[city]/building/[borough]/[slug]/_data";
 import { generateBuildingFAQ } from "@/lib/faq/building-faq";
+import type { FAQItem, FAQGroup } from "@/lib/faq/types";
+import { S09FAQInteractive } from "./S09_FAQ_Interactive";
 
 interface Props {
   building: Building;
@@ -27,7 +29,7 @@ interface Props {
 }
 
 export function S09_FAQ({ building, data }: Props) {
-  let faqs: Array<{ question: string; answer: string }> = [];
+  let faqs: FAQItem[] = [];
   try {
     // Map BuildingV2Data into the shapes generateBuildingFAQ expects so every
     // eligible question fires (previously all source arrays were passed empty,
@@ -187,7 +189,7 @@ export function S09_FAQ({ building, data }: Props) {
       violations: hpdViolations,
       complaints: complaints311,
       litigations: [],
-    } as unknown as Parameters<typeof generateBuildingFAQ>[0]) as Array<{ question: string; answer: string }>;
+    } as unknown as Parameters<typeof generateBuildingFAQ>[0]);
   } catch {
     faqs = [];
   }
@@ -195,8 +197,9 @@ export function S09_FAQ({ building, data }: Props) {
   // Minimal on-page fallback so the section is never empty.
   if (!faqs.length) {
     const street = building.full_address.split(",")[0] ?? building.full_address;
-    faqs = [
+    const fallback: Array<{ question: string; answer: string; group: FAQGroup }> = [
       {
+        group: "Building",
         question: `When was ${street} built and how many units does it have?`,
         answer: [
           building.year_built ? `${street} was built in ${building.year_built}.` : null,
@@ -205,16 +208,19 @@ export function S09_FAQ({ building, data }: Props) {
         ].filter(Boolean).join(" "),
       },
       {
+        group: "Rent",
         question: `Is ${street} rent stabilized?`,
         answer: building.is_rent_stabilized
           ? `Yes, ${street} is registered as rent stabilized. Rent-stabilized tenants have protections limiting annual rent increases and providing lease renewal rights.`
           : `${street} does not appear to be rent stabilized based on public records.`,
       },
       {
+        group: "Safety",
         question: `Are there violations at ${street}?`,
         answer: `${street} has ${building.violation_count ?? 0} HPD violations and ${building.complaint_count ?? 0} 311 complaints on record. See the Violations section above for the full breakdown.`,
       },
     ];
+    faqs = fallback;
   }
 
   // Drop any entries that didn't produce a real answer — an empty string
@@ -242,19 +248,7 @@ export function S09_FAQ({ building, data }: Props) {
         <div className="meta"></div>
       </div>
 
-      <ul className="faq-list">
-        {faqs.map((f, i) => (
-          <li key={i} className="faq-item">
-            <details>
-              <summary>
-                <span>{f.question}</span>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-              </summary>
-              <div className="faq-body">{f.answer}</div>
-            </details>
-          </li>
-        ))}
-      </ul>
+      <S09FAQInteractive faqs={faqs} />
 
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
     </section>
