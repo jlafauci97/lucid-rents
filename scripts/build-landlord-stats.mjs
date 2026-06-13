@@ -151,7 +151,7 @@ CREATE INDEX idx_landlord_stats_slug ON landlord_stats(slug);
 CREATE INDEX idx_landlord_stats_violations ON landlord_stats(total_violations DESC);
 CREATE INDEX idx_landlord_stats_complaints ON landlord_stats(total_complaints DESC);
 CREATE INDEX idx_landlord_stats_buildings ON landlord_stats(building_count DESC);
-CREATE INDEX idx_landlord_stats_name_trgm ON landlord_stats USING gin (name gin_trgm_ops);
+CREATE INDEX idx_landlord_stats_name_trgm ON landlord_stats USING gin (name extensions.gin_trgm_ops);
 ALTER TABLE landlord_stats ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow public read" ON landlord_stats FOR SELECT USING (true);
   `);

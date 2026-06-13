@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createReviewSchema } from "@/lib/validators";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -9,6 +10,8 @@ export async function POST(req: NextRequest) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const admin = createAdminClient();
 
   const json = await req.json();
   const parsed = createReviewSchema.safeParse(json);
@@ -43,7 +46,7 @@ export async function POST(req: NextRequest) {
       unitId = existingUnit.id;
       // Update bedrooms/bathrooms if provided and not yet set
       if (bedroomsInt !== null || bathroomsNum !== null) {
-        await supabase
+        await admin
           .from("units")
           .update({
             ...(bedroomsInt !== null && { bedrooms: bedroomsInt }),
@@ -52,7 +55,7 @@ export async function POST(req: NextRequest) {
           .eq("id", existingUnit.id);
       }
     } else {
-      const { data: newUnit } = await supabase
+      const { data: newUnit } = await admin
         .from("units")
         .insert({
           building_id: data.building_id,
@@ -185,7 +188,7 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (building?.metro) {
-      const { error: rentError } = await supabase
+      const { error: rentError } = await admin
         .from("unit_rent_history")
         .insert({
           building_id: data.building_id,
