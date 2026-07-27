@@ -173,6 +173,12 @@ const cityStripe: Partial<Record<City, string>> = {
    static defaults below when a stream is missing. */
 const ALL_CITIES: City[] = ["nyc", "los-angeles", "chicago"];
 
+/* PostgREST filter for the cross-metro streams below. Without it, the
+   landlord and review queries take the global top-N and balanceAcrossMetros()
+   then interleaves by metro, which surfaces buildings from metros that are
+   hidden from the public site. */
+const ACTIVE_METRO_FILTER = `&metro=in.(${ALL_CITIES.join(",")})`;
+
 type RentPoint = { date: string; avg_rent: number };
 type LandlordRow = { name: string; metro: string; building_count: number; total_violations: number };
 type FlaggedRow = {
@@ -264,11 +270,15 @@ async function fetchHomeData(): Promise<LiveHomeData | null> {
   const [rentsArr, landlords, flaggedArr, reviews] = await Promise.all([
     Promise.all(ALL_CITIES.map((c) => rpc<RentPoint[]>("rent_trend_citywide", { p_metro: c }))),
     pgSelect<LandlordRow[]>(
-      "landlord_stats?select=name,metro,building_count,total_violations&order=total_violations.desc&limit=30"
+      "landlord_stats?select=name,metro,building_count,total_violations" +
+        ACTIVE_METRO_FILTER +
+        "&order=total_violations.desc&limit=30"
     ),
     Promise.all(ALL_CITIES.map((c) => flaggedForMetro(c))),
     pgSelect<ReviewRow[]>(
-      "reviews?select=id,title,body,overall_rating,created_at,metro,buildings(full_address,borough)&status=eq.published&order=created_at.desc&limit=30"
+      "reviews?select=id,title,body,overall_rating,created_at,metro,buildings(full_address,borough)&status=eq.published" +
+        ACTIVE_METRO_FILTER +
+        "&order=created_at.desc&limit=30"
     ),
   ]);
 
