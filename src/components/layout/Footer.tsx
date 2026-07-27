@@ -14,7 +14,7 @@ import { getToolsForCity, getToolLabel } from "@/lib/tenant-tools-nav";
  *
  * Stable list — refresh occasionally as search trends shift.
  */
-const TOP_NEIGHBORHOODS: Record<City, { zip: string; name: string }[]> = {
+const TOP_NEIGHBORHOODS: Partial<Record<City, { zip: string; name: string }[]>> = {
   nyc: [
     { zip: "11211", name: "Williamsburg" },
     { zip: "11221", name: "Bushwick" },
@@ -51,40 +51,18 @@ const TOP_NEIGHBORHOODS: Record<City, { zip: string; name: string }[]> = {
     { zip: "60605", name: "South Loop" },
     { zip: "60607", name: "West Loop" },
   ],
-  miami: [
-    { zip: "33131", name: "Brickell" },
-    { zip: "33127", name: "Wynwood" },
-    { zip: "33133", name: "Coconut Grove" },
-    { zip: "33139", name: "South Beach" },
-    { zip: "33137", name: "Edgewater" },
-    { zip: "33134", name: "Coral Gables" },
-    { zip: "33128", name: "Downtown Miami" },
-    { zip: "33125", name: "Little Havana" },
-  ],
-  houston: [
-    { zip: "77006", name: "Montrose" },
-    { zip: "77007", name: "Heights" },
-    { zip: "77005", name: "Rice Village" },
-    { zip: "77002", name: "Downtown" },
-    { zip: "77030", name: "Medical Center" },
-    { zip: "77027", name: "Galleria" },
-    { zip: "77019", name: "River Oaks" },
-    { zip: "77024", name: "Memorial" },
-    { zip: "77098", name: "Upper Kirby" },
-    { zip: "77004", name: "Third Ward" },
-  ],
 };
 
 /**
  * Top landlords by total_violations, curated per city. Surfaced from
  * `landlord_stats` (2026-05-24 snapshot) and filtered to real
- * LLC/Corp/LP entities — skipping junk like "CURRENT OWNER",
- * "CITY OF HOUSTON", and last-name-only collapsed records.
+ * LLC/Corp/LP entities — skipping junk like "CURRENT OWNER"
+ * and last-name-only collapsed records.
  *
  * Order matches the live ranking at snapshot time; the data is stable
  * enough that hardcoding avoids an extra DB query on every page load.
  */
-const TOP_VIOLATION_LANDLORDS: Record<City, { name: string; slug: string }[]> = {
+const TOP_VIOLATION_LANDLORDS: Partial<Record<City, { name: string; slug: string }[]>> = {
   nyc: [
     { name: "Linden Plaza Housing Co.", slug: "linden-plaza-housing-co-inc" },
     { name: "Flatbush Gardens", slug: "flatbush-gardens-housing-development-fun-d-corporat" },
@@ -111,24 +89,6 @@ const TOP_VIOLATION_LANDLORDS: Record<City, { name: string; slug: string }[]> = 
     { name: "South Shore IL Preservation LP", slug: "south-shore-il-preservation-lp" },
     { name: "Goldmine Investments LLC", slug: "goldmine-investments-llc" },
     { name: "Metro Capital Investors LLC", slug: "metro-capital-investors-llc" },
-  ],
-  miami: [
-    { name: "South Dade Too LLC", slug: "south-dade-too-llc" },
-    { name: "29055 SW 107 Ave LLC", slug: "29055-sw-107-ave-llc" },
-    { name: "A & B Real Estate Holdings", slug: "a-b-real-estate-holdings-llc" },
-    { name: "Ortez Corporation", slug: "ortez-corporation" },
-    { name: "Castle Key LLC", slug: "castle-key-llc" },
-    { name: "Maksanim LLC", slug: "maksanim-llc" },
-    { name: "Finca Cayo Cujal LLC", slug: "finca-cayo-cujal-llc" },
-  ],
-  houston: [
-    { name: "PCLO H2 LLC", slug: "pclo-h2-llc" },
-    { name: "SKD Ventures LLC", slug: "skd-ventures-llc" },
-    { name: "Enersolutions LLC", slug: "enersolutions-llc" },
-    { name: "Dan Investments LLC", slug: "dan-investments-llc" },
-    { name: "K To Lousiana LLC", slug: "k-to-lousiana-llc" },
-    { name: "CCLCC Trust", slug: "cclcc-trust" },
-    { name: "J Cassel Enterprises LLC", slug: "j-cassel-enterprises-llc" },
   ],
 };
 

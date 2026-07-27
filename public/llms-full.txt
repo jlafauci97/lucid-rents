@@ -1,6 +1,6 @@
 # Lucid Rents — Full Reference for AI Systems
 
-> Lucid Rents is a rental intelligence platform that helps renters research apartment buildings before signing a lease. It aggregates public violation records, tenant complaints, 311 reports, crime statistics, rent data, and tenant reviews across five major U.S. cities. All building data is sourced from official city agency open data portals and augmented with community-submitted reviews.
+> Lucid Rents is a rental intelligence platform that helps renters research apartment buildings before signing a lease. It aggregates public violation records, tenant complaints, 311 reports, crime statistics, rent data, and tenant reviews across three major U.S. cities. All building data is sourced from official city agency open data portals and augmented with community-submitted reviews.
 
 ## Mission
 
@@ -32,8 +32,6 @@ City URL prefixes:
 - NYC: `/nyc`
 - Los Angeles: `/CA/Los-Angeles`
 - Chicago: `/IL/Chicago`
-- Miami: `/FL/Miami`
-- Houston: `/TX/Houston`
 
 ## Cities & Coverage
 
@@ -73,28 +71,6 @@ City URL prefixes:
   - 311 service requests
   - CPD crime data by district
   - Cook County assessor data
-
-### Miami, Florida
-
-- URL prefix: `/FL/Miami`
-- Neighborhoods: Brickell, Downtown Miami, Wynwood, Edgewater, Miami Beach, South Beach, Coconut Grove, Coral Gables, Little Havana, and 25+ more
-- Crime source: MDPD
-- Data sources:
-  - Miami-Dade County code violations
-  - 311 service requests
-  - MDPD crime data by district
-  - Miami-Dade property appraiser data
-
-### Houston, Texas
-
-- URL prefix: `/TX/Houston`
-- Neighborhoods: Downtown, Midtown, Montrose, Heights, River Oaks, Galleria, Medical Center, Memorial, and 35+ more
-- Crime source: HPD
-- Data sources:
-  - City of Houston code violations
-  - 311 service requests
-  - HPD crime data by beat
-  - HCAD property records
 
 ## Data Categories
 

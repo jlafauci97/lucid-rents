@@ -15,7 +15,7 @@ export interface Region {
   featured?: boolean;
 }
 
-export const REGIONS_BY_CITY: Record<City, Region[]> = {
+export const REGIONS_BY_CITY: Partial<Record<City, Region[]>> = {
   nyc: [
     { featured: true, name: "Brooklyn",      meta: "Williamsburg · Park Slope · DUMBO",   count: "89K BUILDINGS", slug: "brooklyn",      bg: "https://images.unsplash.com/photo-1499092346589-b9b6be3e94b2?w=1200&q=80" },
     {                 name: "Manhattan",     meta: "Midtown · Upper East · SoHo",         count: "42K BLDGS",     slug: "manhattan",     bg: "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=900&q=80" },
@@ -36,19 +36,5 @@ export const REGIONS_BY_CITY: Record<City, Region[]> = {
     {                 name: "West Side",      meta: "Wicker Park · Logan Square · Humboldt",    count: "98K BLDGS",      slug: "west-side",      bg: "https://loremflickr.com/900/600/wickerpark,chicago/all" },
     {                 name: "South Side",     meta: "Hyde Park · Bronzeville · Chatham",        count: "135K BLDGS",     slug: "south-side",     bg: "https://loremflickr.com/900/600/hydepark,chicago/all" },
     {                 name: "Far North Side", meta: "Rogers Park · Edgewater · Uptown",         count: "50K BLDGS",      slug: "far-north-side", bg: "https://loremflickr.com/900/600/edgewater,chicago,lake/all" },
-  ],
-  miami: [
-    { featured: true, name: "Central Miami",     meta: "Brickell · Wynwood · Downtown",       count: "45K BUILDINGS", slug: "central-miami",     bg: "https://loremflickr.com/1200/800/brickell,miami,downtown/all" },
-    {                 name: "Miami Beach",       meta: "South Beach · Mid-Beach · Surfside",  count: "38K BLDGS",     slug: "miami-beach",       bg: "https://loremflickr.com/900/600/southbeach,miami,artdeco/all" },
-    {                 name: "South Miami",       meta: "Coral Gables · Coconut Grove",         count: "44K BLDGS",     slug: "south-miami",       bg: "https://loremflickr.com/900/600/coralgables,miami/all" },
-    {                 name: "North Miami-Dade",  meta: "Aventura · Sunny Isles · N. Miami",    count: "28K BLDGS",     slug: "north-miami-dade",  bg: "https://loremflickr.com/900/600/aventura,miami/all" },
-    {                 name: "West Miami-Dade",   meta: "Doral · Sweetwater · Fontainebleau",   count: "22K BLDGS",     slug: "west-miami-dade",   bg: "https://loremflickr.com/900/600/doral,miami/all" },
-  ],
-  houston: [
-    { featured: true, name: "Inner Loop",         meta: "Heights · Montrose · Museum District", count: "65K BUILDINGS", slug: "inner-loop",         bg: "https://loremflickr.com/1200/800/heights,houston/all" },
-    {                 name: "West Houston",       meta: "Galleria · Memorial · Energy Corridor", count: "55K BLDGS",     slug: "west-houston",       bg: "https://loremflickr.com/900/600/galleria,houston/all" },
-    {                 name: "Southwest Houston",  meta: "Bellaire · Meyerland · Sugar Land",    count: "42K BLDGS",     slug: "southwest-houston",  bg: "https://loremflickr.com/900/600/bellaire,houston/all" },
-    {                 name: "Northwest Houston",  meta: "Spring · The Woodlands · Cypress",     count: "38K BLDGS",     slug: "northwest-houston",  bg: "https://loremflickr.com/900/600/woodlands,houston/all" },
-    {                 name: "Southeast Houston",  meta: "Pasadena · Deer Park · Park Place",    count: "28K BLDGS",     slug: "southeast-houston",  bg: "https://loremflickr.com/900/600/pasadena,houston/all" },
   ],
 };

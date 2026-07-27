@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { deriveScore, normalizeScore } from "@/lib/constants";
-import { isValidCity } from "@/lib/cities";
+import { isValidCity, VALID_CITIES } from "@/lib/cities";
 import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function GET(request: Request) {
@@ -22,8 +22,13 @@ export async function GET(request: Request) {
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
     // Get zip centroids for lat/lon mapping
+    // Default scope: only publicly visible metros (miami/houston are hidden).
+    const metroFilter = cityParam
+      ? `&metro=eq.${encodeURIComponent(cityParam)}`
+      : `&metro=in.(${VALID_CITIES.join(",")})`;
+
     let centroidsUrl = `${supabaseUrl}/rest/v1/zip_centroids?select=zip_code,avg_lat,avg_lon`;
-    if (cityParam) centroidsUrl += `&metro=eq.${encodeURIComponent(cityParam)}`;
+    centroidsUrl += metroFilter;
 
     const centroidsRes = await fetch(centroidsUrl, {
       headers: { apikey: supabaseKey },
@@ -39,7 +44,7 @@ export async function GET(request: Request) {
 
     // Fetch buildings with violations/complaints (the interesting ones for the map)
     let url = `${supabaseUrl}/rest/v1/buildings?select=id,full_address,borough,zip_code,slug,overall_score,violation_count,complaint_count,review_count&or=(violation_count.gt.0,complaint_count.gt.0)&limit=5000`;
-    if (cityParam) url += `&metro=eq.${encodeURIComponent(cityParam)}`;
+    url += metroFilter;
     if (borough) {
       url += `&borough=eq.${encodeURIComponent(borough)}`;
     }

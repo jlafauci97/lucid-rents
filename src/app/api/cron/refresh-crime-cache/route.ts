@@ -4,7 +4,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export const maxDuration = 300; // 5 minutes
 export const dynamic = "force-dynamic";
 
-const METROS = ["nyc", "chicago", "los-angeles", "houston"] as const;
+// houston removed while that metro is off the public site; re-add to resume.
+const METROS = ["nyc", "chicago", "los-angeles"] as const;
+
+// Set true to resume refreshing the Miami rollup block below.
+const REFRESH_MIAMI = false;
 
 /**
  * Refresh the crime_by_zip_cache table with pre-aggregated stats.
@@ -108,6 +112,7 @@ export async function GET(request: Request) {
 
   // Miami uses miami_crime_aggregates (annual zip-level rollups, not incident-level).
   // Refresh by re-running the same INSERT/upsert the migration uses.
+  if (REFRESH_MIAMI) {
   const miamiStart = Date.now();
   const { error: miamiErr } = await supabase.rpc("exec_sql", {
     sql: `
@@ -154,6 +159,7 @@ export async function GET(request: Request) {
     zips: miamiErr ? 0 : (miamiCount || 0),
     elapsed: Math.round((Date.now() - miamiStart) / 1000),
   };
+  }
 
   return NextResponse.json({
     success: true,

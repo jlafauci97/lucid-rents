@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createCacheClient } from "@/lib/supabase/cache-client";
+import { HIDDEN_CITIES, VALID_CITIES } from "@/lib/cities";
 
 // Haversine distance in miles
 function haversine(
@@ -65,15 +66,21 @@ export async function GET(request: NextRequest) {
     .lte("longitude", lng + BBOX_DEGREES);
 
   if (city) {
+    // Hidden metros (miami/houston) get an empty result rather than silently
+    // falling back to NYC schools.
+    if ((HIDDEN_CITIES as string[]).includes(city)) {
+      return NextResponse.json({ schools: {} });
+    }
     const metroMap: Record<string, string> = {
       "los-angeles": "los-angeles",
       "CA/Los-Angeles": "los-angeles",
       "chicago": "chicago",
-      "miami": "miami",
-      "houston": "houston",
     };
     const metro = metroMap[city] || "nyc";
     query = query.eq("metro", metro);
+  } else {
+    // Default scope: only publicly visible metros
+    query = query.in("metro", VALID_CITIES);
   }
 
   const { data: schools, error } = await query;

@@ -4089,6 +4089,29 @@ const SOURCES: Record<string, (supabase: SupabaseClient, sinceOverride?: string)
   "houston-crimes": syncHoustonCrimes,
 };
 
+// Miami/Houston were pulled from the public site (July 2026). Their sync
+// handlers are retained but disabled — empty this set to re-enable them.
+// Disabled sources return 200 { skipped: true } (not 400) so stale callers
+// don't page anyone.
+const DISABLED_SOURCES = new Set([
+  "miami-violations",
+  "miami-311",
+  "miami-crimes",
+  "miami-permits",
+  "miami-unsafe",
+  "miami-recerts",
+  "houston-violations",
+  "houston-311",
+  "houston-crimes",
+]);
+
+function skippedResponse(source: string | null, mode: string | null): Response {
+  return new Response(
+    JSON.stringify({ skipped: true, reason: "source disabled (metro off public site)", source, mode }),
+    { status: 200, headers: { "Content-Type": "application/json" } }
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Link-only tables
 // ---------------------------------------------------------------------------
@@ -4129,6 +4152,11 @@ async function runLinkOnly(
   const isChicagoLink = sourceParam === "chicago" || (sourceParam && CHICAGO_ADDR_SOURCES.includes(sourceParam));
   const isMiamiLink = sourceParam === "miami" || (sourceParam && MIAMI_ADDR_SOURCES.includes(sourceParam));
   const isHoustonLink = sourceParam === "houston" || (sourceParam && HOUSTON_ADDR_SOURCES.includes(sourceParam));
+
+  // Miami/Houston link work is disabled while those metros are off the public site.
+  if (isMiamiLink || isHoustonLink) {
+    return skippedResponse(sourceParam, "link");
+  }
 
   if (sourceParam && !tablesToLink && sourceParam !== "complaints" && !LA_ADDR_SOURCES.includes(sourceParam) && !isChicagoLink && !isMiamiLink && !isHoustonLink) {
     return new Response(
@@ -4262,6 +4290,9 @@ Deno.serve(async (req) => {
     let sourcesToRun: [string, (supabase: SupabaseClient, sinceOverride?: string) => Promise<SyncResult>][];
 
     if (sourceParam) {
+      if (DISABLED_SOURCES.has(sourceParam)) {
+        return skippedResponse(sourceParam, mode);
+      }
       const fn = SOURCES[sourceParam];
       if (!fn) {
         return new Response(
@@ -4271,7 +4302,7 @@ Deno.serve(async (req) => {
       }
       sourcesToRun = [[sourceParam, fn]];
     } else {
-      sourcesToRun = Object.entries(SOURCES);
+      sourcesToRun = Object.entries(SOURCES).filter(([name]) => !DISABLED_SOURCES.has(name));
     }
 
     // Run selected syncs sequentially

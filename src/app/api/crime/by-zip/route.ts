@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createCacheClient } from "@/lib/supabase/cache-client";
-import { isValidCity } from "@/lib/cities";
+import { isValidCity, VALID_CITIES } from "@/lib/cities";
 
 export async function GET(request: Request) {
   try {
@@ -19,20 +19,31 @@ export async function GET(request: Request) {
     // crime_by_zip is a public RPC on aggregated data.
     const supabase = createCacheClient();
 
-    const rpcParams: Record<string, string> = { since_date: sinceDateStr };
-    if (cityParam) rpcParams.metro = cityParam;
+    // The RPC only accepts a single optional metro and its rows carry no metro
+    // column, so an unscoped call can't be post-filtered. Default scope: fan
+    // out one call per publicly visible metro (miami/houston are hidden) and
+    // merge, preserving the RPC's total-desc ordering.
+    const metros = cityParam ? [cityParam] : VALID_CITIES;
+    const results = await Promise.all(
+      metros.map((metro) =>
+        supabase.rpc("crime_by_zip", { since_date: sinceDateStr, metro })
+      )
+    );
 
-    const { data, error } = await supabase.rpc("crime_by_zip", rpcParams);
-
-    if (error) {
-      console.error("crime_by_zip RPC error:", error);
+    const failed = results.find((r) => r.error);
+    if (failed?.error) {
+      console.error("crime_by_zip RPC error:", failed.error);
       return NextResponse.json(
         { error: "Failed to fetch crime data" },
         { status: 500 }
       );
     }
 
-    return NextResponse.json(data || []);
+    const data = results
+      .flatMap((r) => r.data || [])
+      .sort((a, b) => Number(b.total) - Number(a.total));
+
+    return NextResponse.json(data);
   } catch (error) {
     console.error("Crime by-zip API error:", error);
     return NextResponse.json(

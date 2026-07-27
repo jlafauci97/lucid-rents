@@ -33,7 +33,7 @@ export default function AboutPage() {
             brokers, and property managers already have. By aggregating public
             records and community reviews into one easy-to-use tool, we aim to
             level the playing field for millions of renters across NYC, Los
-            Angeles, Chicago, Miami, and Houston.
+            Angeles, and Chicago.
           </p>
         </section>
 
@@ -48,8 +48,8 @@ export default function AboutPage() {
                 Building Profiles
               </h3>
               <p className="text-xs text-[#64748b]">
-                Detailed pages for over 1.8 million buildings across NYC,
-                Los Angeles, Chicago, Miami, and Houston with violation
+                Detailed pages for over 1.7 million buildings across NYC,
+                Los Angeles, and Chicago with violation
                 histories, complaints, and tenant reviews.
               </p>
             </div>
@@ -93,7 +93,7 @@ export default function AboutPage() {
           </h2>
           <p>
             Lucid Rents aggregates publicly available data from city-specific
-            government agencies across all five cities, including:
+            government agencies across all three cities, including:
           </p>
           <ul className="list-disc list-inside space-y-1 mt-2">
             <li>
@@ -108,15 +108,6 @@ export default function AboutPage() {
             <li>
               <strong>Chicago</strong> — CDPH violations, CDBS permits, CPD
               crime data, Cook County Assessor records, RLTO protections
-            </li>
-            <li>
-              <strong>Miami</strong> — Miami-Dade code violations, RER permits,
-              MDPD crime data, Property Appraiser records, building
-              recertification data
-            </li>
-            <li>
-              <strong>Houston</strong> — City of Houston permits, HPD crime
-              data, HCAD property records, flood zone data
             </li>
           </ul>
           <p className="mt-3">

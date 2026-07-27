@@ -8,7 +8,7 @@ import { RelatedGuides } from "@/components/calculators/RelatedGuides";
 export const metadata: Metadata = {
   title: "Rent Affordability Calculator — How Much Can You Pay?",
   description:
-    "Find out how much rent you can actually afford. Enter your income and expenses, then discover which neighborhoods in NYC, LA, Chicago, Miami, or Houston fit your budget — backed by real rent data.",
+    "Find out how much rent you can actually afford. Enter your income and expenses, then discover which neighborhoods in NYC, LA, or Chicago fit your budget — backed by real rent data.",
   alternates: { canonical: canonicalUrl("/rent-affordability-calculator") },
   openGraph: {
     title: "Rent Affordability Calculator — Can I Afford to Live Here?",

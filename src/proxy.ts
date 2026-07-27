@@ -2,7 +2,7 @@
 // default in Next 16 — no runtime export allowed.
 
 import { NextResponse, type NextRequest } from "next/server";
-import { VALID_CITIES, STATE_CITY_MAP, CITY_META } from "@/lib/cities";
+import { VALID_CITIES, HIDDEN_CITIES, STATE_CITY_MAP, CITY_META } from "@/lib/cities";
 import { neighborhoodPageSlug } from "@/lib/nyc-neighborhoods";
 import { neighborhoodPageSlugByCity } from "@/lib/neighborhoods";
 import { MC_COOKIE, verifyCookieValue } from "@/lib/mission-control/auth";
@@ -133,6 +133,23 @@ export async function proxy(request: NextRequest) {
   // Split path segments: "/nyc/buildings" => ["", "nyc", "buildings"]
   const segments = pathname.split("/");
   const firstSegment = segments[1] || "";
+
+  // 0. Hidden-city gate. Miami/Houston were pulled from public view (July
+  // 2026); their URLs get a hard 404 at the edge in every form — internal
+  // slug (/miami), state prefix (/FL/Miami), and shorthand (/mia). Done here
+  // rather than via notFound() because runtime notFound() was being coerced
+  // to HTTP 200 soft-404s on this deployment (see chip guard below).
+  {
+    const HIDDEN_SHORTHANDS: Record<string, string> = { mia: "miami", hou: "houston" };
+    const stateMapped = STATE_CITY_MAP[firstSegment.toUpperCase()]?.[segments[2] || ""];
+    const hiddenHit =
+      HIDDEN_CITIES.includes(firstSegment as (typeof HIDDEN_CITIES)[number]) ||
+      (stateMapped && HIDDEN_CITIES.includes(stateMapped)) ||
+      firstSegment in HIDDEN_SHORTHANDS;
+    if (hiddenHit) {
+      return withNoindex(new NextResponse(null, { status: 404 }), request);
+    }
+  }
 
   // 0. Best-buildings chip guard. Intercepts invalid (city, chip) combos at
   // the edge so the HTTP response is a real 307 redirect or 404 — Next.js

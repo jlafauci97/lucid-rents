@@ -12,12 +12,12 @@ import { BrandShield } from "@/components/brand/BrandShield";
 export const metadata: Metadata = {
   title: "Lucid Rents — Apartment Building Intelligence",
   description:
-    "Search any building in NYC, LA, Chicago, Miami, or Houston. Violations, complaints, crime data, tenant reviews, and rent history — combined into one record per building.",
+    "Search any building in NYC, LA, or Chicago. Violations, complaints, crime data, tenant reviews, and rent history — combined into one record per building.",
   alternates: { canonical: canonicalUrl("/") },
   openGraph: {
     title: "Lucid Rents — Apartment Building Intelligence",
     description:
-      "Per-city directory of building records, worst landlords, live activity, and rent data across NYC, LA, Chicago, Miami, and Houston.",
+      "Per-city directory of building records, worst landlords, live activity, and rent data across NYC, LA, and Chicago.",
     url: canonicalUrl("/"),
     siteName: "Lucid Rents",
     type: "website",
@@ -29,8 +29,6 @@ const CITY_TAGS: Record<string, { bg: string; fg: string }> = {
   NYC: { bg: "bg-blue-500/10", fg: "text-blue-700" },
   LA: { bg: "bg-orange-500/10", fg: "text-orange-700" },
   Chicago: { bg: "bg-red-500/10", fg: "text-red-700" },
-  Miami: { bg: "bg-teal-500/10", fg: "text-teal-700" },
-  Houston: { bg: "bg-purple-500/10", fg: "text-purple-700" },
 };
 
 function CityTag({ city }: { city: string }) {
@@ -58,16 +56,6 @@ const panels: { key: City; image?: string; stats: { label: string; value: string
     { label: "Open viol.", value: "198K" },
     { label: "Landlords", value: "105K" },
   ] },
-  { key: "miami", image: "/miami-hero-skyline.webp", stats: [
-    { label: "Buildings", value: "94.7K" },
-    { label: "Complaints", value: "76K" },
-    { label: "Landlords", value: "63K" },
-  ] },
-  { key: "houston", image: "/houston-hero-skyline.webp", stats: [
-    { label: "Buildings", value: "411K" },
-    { label: "311 calls", value: "132K" },
-    { label: "Landlords", value: "135K" },
-  ] },
 ];
 
 /* Static fallbacks — used when the live queries fail or env is missing. */
@@ -75,8 +63,8 @@ const defaultWorstLandlords = [
   { rank: 1, name: "Pangea Properties", city: "Chicago", buildings: 89, violations: 2114 },
   { rank: 2, name: "Bronstein Properties", city: "NYC", buildings: 47, violations: 1243 },
   { rank: 3, name: "Kaufman Equities", city: "LA", buildings: 23, violations: 891 },
-  { rank: 4, name: "Sentinel Real Estate", city: "Houston", buildings: 31, violations: 712 },
-  { rank: 5, name: "Riverside Holdings", city: "Miami", buildings: 18, violations: 503 },
+  { rank: 4, name: "Sentinel Real Estate", city: "Chicago", buildings: 31, violations: 712 },
+  { rank: 5, name: "Riverside Holdings", city: "LA", buildings: 18, violations: 503 },
   { rank: 6, name: "Wexford Property Group", city: "NYC", buildings: 26, violations: 487 },
 ];
 
@@ -84,17 +72,17 @@ const defaultFlagged = [
   { addr: "234 W 28th St", city: "NYC", note: "3 new HPD violations", ts: "12m" },
   { addr: "5621 Hollywood Blvd", city: "LA", note: "DBS code violation", ts: "47m" },
   { addr: "812 N Wells St", city: "Chicago", note: "Building court referral", ts: "1h" },
-  { addr: "1010 Brickell Ave", city: "Miami", note: "Code enforcement notice", ts: "2h" },
-  { addr: "4400 Westheimer Rd", city: "Houston", note: "311 noise complaint cluster", ts: "3h" },
+  { addr: "3300 W 6th St", city: "LA", note: "REAP escrow referral", ts: "2h" },
+  { addr: "2145 N Milwaukee Ave", city: "Chicago", note: "311 noise complaint cluster", ts: "3h" },
   { addr: "1247 Bedford Ave", city: "NYC", note: "Heat / hot water complaint", ts: "4h" },
 ];
 
 const defaultReviews = [
   { addr: "1234 Lake Shore Dr", city: "Chicago", quote: "Roaches every summer. Manager won't return calls.", stars: 2 },
   { addr: "456 Sunset Blvd", city: "LA", quote: "Great location, terrible walls — you hear everything.", stars: 3 },
-  { addr: "999 Brickell Bay", city: "Miami", quote: "Pool is gorgeous. AC has been broken since June.", stars: 3 },
+  { addr: "310 E 23rd St", city: "NYC", quote: "Roof deck is gorgeous. Elevator has been broken since June.", stars: 3 },
   { addr: "78 Avenue B", city: "NYC", quote: "Super is responsive. Old building, expect it.", stars: 4 },
-  { addr: "1600 Main St", city: "Houston", quote: "Charged a $200 fee for 'normal wear and tear.'", stars: 2 },
+  { addr: "1600 N Vine St", city: "LA", quote: "Charged a $200 fee for 'normal wear and tear.'", stars: 2 },
   { addr: "212 W Adams", city: "Chicago", quote: "Loud, but you knew that. Otherwise solid.", stars: 4 },
 ];
 
@@ -155,37 +143,9 @@ const cityDirectories: CityDirectory[] = [
       { label: "Affordable housing",  path: "/affordable-housing", icon: Calculator                },
     ],
   },
-  {
-    key: "miami",
-    image: "/miami-hero-skyline.webp",
-    stat: "94.7K",
-    statLabel: "buildings",
-    signature: "37 neighborhoods · 40-Yr + FEMA",
-    chips: [
-      { label: "All buildings",         path: "/buildings",              icon: Building2,    count: "94.7K" },
-      { label: "Crime by neighborhood", path: "/crime",                  icon: MapPin                       },
-      { label: "Worst-rated buildings", path: "/building-rankings",  icon: TrendingDown                 },
-      { label: "Tenant rights",         path: "/tenant-rights",          icon: Scale                        },
-      { label: "Worst landlords",       path: "/landlords",              icon: Trophy,       count: "63K"   },
-    ],
-  },
-  {
-    key: "houston",
-    image: "/houston-hero-skyline.webp",
-    stat: "411K",
-    statLabel: "buildings",
-    signature: "41 neighborhoods · HCAD + FEMA",
-    chips: [
-      { label: "All buildings",         path: "/buildings",             icon: Building2,    count: "411K" },
-      { label: "Worst landlords",       path: "/landlords",             icon: Trophy,       count: "135K" },
-      { label: "Neighborhoods",         path: "/neighborhoods",         icon: Compass                    },
-      { label: "Crime by district",     path: "/crime",                 icon: MapPin                    },
-      { label: "Worst-rated buildings", path: "/building-rankings", icon: TrendingDown               },
-    ],
-  },
 ];
 
-const cityOrder: City[] = ["nyc", "los-angeles", "chicago", "miami", "houston"];
+const cityOrder: City[] = ["nyc", "los-angeles", "chicago"];
 
 /* ─── Per-city rent snapshot ───────────────────────────────────────
    Median 1BR + YoY change shown as a horizontal row above the
@@ -195,17 +155,13 @@ const cityRents: CityRent[] = [
   { key: "nyc",         median: 3750, deltaPct:  2.1, trackedZips: 178 },
   { key: "los-angeles", median: 2580, deltaPct:  0.8, trackedZips: 312 },
   { key: "chicago",     median: 1920, deltaPct:  3.4, trackedZips:  86 },
-  { key: "miami",       median: 2640, deltaPct: -1.2, trackedZips:  41 },
-  { key: "houston",     median: 1480, deltaPct:  1.6, trackedZips:  67 },
 ];
 
 /* Per-city stripe color, drawn from the existing CITY_TAGS palette. */
-const cityStripe: Record<City, string> = {
+const cityStripe: Partial<Record<City, string>> = {
   nyc:           "bg-blue-500",
   "los-angeles": "bg-orange-500",
   chicago:       "bg-red-500",
-  miami:         "bg-teal-500",
-  houston:       "bg-purple-500",
 };
 
 /* ─── Live data fetching ───────────────────────────────────────────
@@ -215,7 +171,7 @@ const cityStripe: Record<City, string> = {
    Every fetch is wrapped in a try-catch with a null fallback so the
    page can never crash on a bad query — the JSX falls back to the
    static defaults below when a stream is missing. */
-const ALL_CITIES: City[] = ["nyc", "los-angeles", "chicago", "miami", "houston"];
+const ALL_CITIES: City[] = ["nyc", "los-angeles", "chicago"];
 
 type RentPoint = { date: string; avg_rent: number };
 type LandlordRow = { name: string; metro: string; building_count: number; total_violations: number };
@@ -240,8 +196,6 @@ function metroToShort(m?: string): string {
   if (m === "nyc") return "NYC";
   if (m === "los-angeles") return "LA";
   if (m === "chicago") return "Chicago";
-  if (m === "miami") return "Miami";
-  if (m === "houston") return "Houston";
   return "NYC";
 }
 
@@ -334,9 +288,9 @@ async function fetchHomeData(): Promise<LiveHomeData | null> {
     };
   });
 
-  /* Round-robin across metros so all 5 cities are represented in each
+  /* Round-robin across metros so all 3 cities are represented in each
      stream — total_violations would otherwise put NYC in every slot
-     since NYC has 4M+ violations vs 76K in Miami. We sort within each
+     since NYC has 4M+ violations vs 198K in Chicago. We sort within each
      metro by the source's existing order, then interleave. */
   function balanceAcrossMetros<T extends { metro?: string | null }>(
     items: T[],
@@ -452,15 +406,13 @@ function iconColorClass(Icon: ChipIcon): string {
   return "text-[#64748b]";
 }
 
-/* Map the short city tags used in the demo data ("NYC", "LA", "Chicago",
-   "Miami", "Houston") to canonical City keys for cityPath(). */
+/* Map the short city tags used in the demo data ("NYC", "LA", "Chicago")
+   to canonical City keys for cityPath(). */
 function cityKeyFromShort(short: string): City {
   switch (short) {
     case "NYC":     return "nyc";
     case "LA":      return "los-angeles";
     case "Chicago": return "chicago";
-    case "Miami":   return "miami";
-    case "Houston": return "houston";
     default:        return "nyc";
   }
 }
@@ -483,8 +435,6 @@ const coverageRows: CoverageRow[] = [
       nyc:           { path: "/landlords", count: "4.4M" },
       "los-angeles": { path: "/landlords", count: "412K" },
       chicago:       { path: "/landlords", count: "198K" },
-      miami:         { path: "/landlords", count: "76K"  },
-      houston:       { path: "/landlords", count: "132K" },
     },
   },
   {
@@ -494,8 +444,6 @@ const coverageRows: CoverageRow[] = [
       nyc:           { path: "/feed", count: "350K+" },
       "los-angeles": { path: "/feed", count: "120K+" },
       chicago:       { path: "/feed", count: "85K+"  },
-      miami:         { path: "/feed", count: "32K+"  },
-      houston:       { path: "/feed", count: "45K+"  },
     },
   },
   {
@@ -505,8 +453,6 @@ const coverageRows: CoverageRow[] = [
       nyc:           { path: "/crime" },
       "los-angeles": { path: "/crime" },
       chicago:       { path: "/crime" },
-      miami:         { path: "/crime" },
-      houston:       { path: "/crime" },
     },
   },
   {
@@ -516,8 +462,6 @@ const coverageRows: CoverageRow[] = [
       nyc:           { path: "/feed" },
       "los-angeles": { path: "/feed" },
       chicago:       { path: "/feed" },
-      miami:         { path: "/feed" },
-      houston:       { path: "/feed" },
     },
   },
   {
@@ -527,8 +471,6 @@ const coverageRows: CoverageRow[] = [
       nyc:           { path: "/landlords" },
       "los-angeles": { path: "/landlords" },
       chicago:       { path: "/landlords" },
-      miami:         { path: "/landlords" },
-      houston:       { path: "/landlords" },
     },
   },
   {
@@ -558,21 +500,6 @@ const coverageRows: CoverageRow[] = [
     note: "Heating performance + efficiency",
     cells: {
       chicago:       { path: "/heating-tracker" },
-    },
-  },
-  {
-    source: "40-year recertification",
-    note: "Structural + electrical reports",
-    cells: {
-      miami:         { label: "Tracked" },
-    },
-  },
-  {
-    source: "FEMA flood zones",
-    note: "Hazard map overlays",
-    cells: {
-      miami:         { label: "Tracked" },
-      houston:       { label: "Tracked" },
     },
   },
 ];
@@ -653,7 +580,7 @@ export default async function Home() {
           name: "Lucid Rents",
           url: canonicalUrl("/"),
           description:
-            "Per-city directory of building records, worst landlords, live activity, and rent data across NYC, LA, Chicago, Miami, and Houston.",
+            "Per-city directory of building records, worst landlords, live activity, and rent data across NYC, LA, and Chicago.",
           potentialAction: {
             "@type": "SearchAction",
             target: {
@@ -665,7 +592,7 @@ export default async function Home() {
         }}
       />
 
-      {/* Panorama hero — mobile: text above + horizontal city scroll. Desktop: text overlaid on full-bleed 5-panel grid. */}
+      {/* Panorama hero — mobile: text above + horizontal city scroll. Desktop: text overlaid on full-bleed 3-panel grid. */}
       <section className="relative bg-[#0F1D2E] sm:h-[62vh] sm:min-h-[544px] sm:max-h-[704px]">
         {/* Brand block — in-flow above on mobile, absolute overlay on desktop */}
         <div className="relative z-10 sm:absolute sm:inset-x-0 sm:top-0 sm:pointer-events-none">
@@ -685,8 +612,8 @@ export default async function Home() {
           </div>
         </div>
 
-        {/* 5-panel layer — in-flow with fixed height on mobile, absolute fill grid on desktop */}
-        <div className="relative h-[352px] sm:h-auto sm:absolute sm:inset-0 flex sm:grid sm:grid-cols-5 overflow-x-auto sm:overflow-visible snap-x snap-mandatory sm:snap-none">
+        {/* 3-panel layer — in-flow with fixed height on mobile, absolute fill grid on desktop */}
+        <div className="relative h-[352px] sm:h-auto sm:absolute sm:inset-0 flex sm:grid sm:grid-cols-3 overflow-x-auto sm:overflow-visible snap-x snap-mandatory sm:snap-none">
           {panels.map(({ key, image, stats }) => {
             const meta = CITY_META[key];
             return (
@@ -701,7 +628,7 @@ export default async function Home() {
                   alt={`${meta.fullName} skyline`}
                   fill
                   className="object-cover"
-                  sizes="(max-width: 640px) 80vw, 20vw"
+                  sizes="(max-width: 640px) 80vw, 34vw"
                   {...(key === "nyc"
                     ? { priority: true, fetchPriority: "high" as const }
                     : { loading: "lazy" as const })}
@@ -760,11 +687,11 @@ export default async function Home() {
         <div className="relative max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-9 sm:py-10">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-6 gap-y-8 sm:divide-x sm:divide-[#e2e8f0]">
             {[
-              { value: "2.2M",  label: "Buildings monitored", sub: "across 5 metros",         Icon: Building2 },
+              { value: "1.75M", label: "Buildings monitored", sub: "across 3 metros",         Icon: Building2 },
               { value: "12M+",  label: "Code violations",     sub: "HPD · LADBS · DOB",       Icon: ShieldAlert },
               { value: "5M+",   label: "311 complaints",      sub: "heat · noise · pests",    Icon: MessageSquare },
               { value: "100+",  label: "Public data sources", sub: "combined per building",   Icon: Database },
-              { value: "5",     label: "Cities covered",      sub: "NYC · LA · CHI · MIA · HOU", Icon: MapPin },
+              { value: "3",     label: "Cities covered",      sub: "NYC · LA · CHI",          Icon: MapPin },
             ].map((s, i) => (
               <div key={s.label} className={`${i > 0 ? "sm:pl-6" : ""} flex flex-col items-start`}>
                 <span className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-red-50 ring-1 ring-red-100 mb-3">
@@ -804,7 +731,7 @@ export default async function Home() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {cityDirectories.map((c) => {
               const meta = CITY_META[c.key];
               return (
@@ -892,7 +819,7 @@ export default async function Home() {
                 Live streams
               </p>
               <h2 className="text-2xl sm:text-3xl font-bold text-[#0F1D2E] tracking-tight">
-                Right now, across all 5 cities.
+                Right now, across all 3 cities.
               </h2>
             </div>
             <p className="hidden sm:block text-xs text-[#64748b]">Updated every 60s.</p>
@@ -1031,7 +958,7 @@ export default async function Home() {
             </p>
           </div>
 
-          <div className="flex sm:grid sm:grid-cols-5 gap-3 sm:gap-4 overflow-x-auto sm:overflow-visible snap-x snap-mandatory sm:snap-none -mx-4 sm:mx-0 px-4 sm:px-0 pb-2 sm:pb-0">
+          <div className="flex sm:grid sm:grid-cols-3 gap-3 sm:gap-4 overflow-x-auto sm:overflow-visible snap-x snap-mandatory sm:snap-none -mx-4 sm:mx-0 px-4 sm:px-0 pb-2 sm:pb-0">
             {cityRentsLive.map((c) => {
               const meta = CITY_META[c.key];
               const rentUp = c.deltaPct >= 0;

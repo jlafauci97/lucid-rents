@@ -31,7 +31,8 @@ export async function GET(req: NextRequest) {
 
   // Reconcile building count drift per metro (chunked to avoid timeouts)
   let buildingsFixed = 0;
-  const metros = ["nyc", "los-angeles", "chicago", "miami", "houston"];
+  // miami/houston excluded while those metros are off the public site
+  const metros = ["nyc", "los-angeles", "chicago"];
   for (const metro of metros) {
     try {
       const { data } = await supabase.rpc("reconcile_building_counts" as never, { target_metro: metro } as never);

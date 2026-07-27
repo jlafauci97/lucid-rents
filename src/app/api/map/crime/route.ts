@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { isValidCity } from "@/lib/cities";
+import { isValidCity, VALID_CITIES } from "@/lib/cities";
 
 export async function GET(request: Request) {
   try {
@@ -14,8 +14,14 @@ export async function GET(request: Request) {
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
     // Get zip centroids for lat/lon mapping
+    // Default scope: only publicly visible metros (miami/houston are hidden).
+    // Points are emitted only for zips present in the centroid map, so scoping
+    // the centroids also drops hidden-metro rows the crime_by_zip RPC returns
+    // when called without a metro filter (US zips are unique per metro).
     let centroidsUrl = `${supabaseUrl}/rest/v1/zip_centroids?select=zip_code,avg_lat,avg_lon`;
-    if (cityParam) centroidsUrl += `&metro=eq.${encodeURIComponent(cityParam)}`;
+    centroidsUrl += cityParam
+      ? `&metro=eq.${encodeURIComponent(cityParam)}`
+      : `&metro=in.(${VALID_CITIES.join(",")})`;
 
     const centroidsRes = await fetch(centroidsUrl, {
       headers: { apikey: supabaseKey },

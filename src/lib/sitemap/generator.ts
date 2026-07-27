@@ -33,13 +33,19 @@ function requireEnv(): { url: string; key: string } {
 
 export type City = "nyc" | "los-angeles" | "chicago" | "miami" | "houston";
 
+// miami/houston removed while those metros are off the public site (July
+// 2026) — add them back here AND in scripts/generate-sitemaps.mjs to relaunch.
 export const VALID_CITIES: City[] = [
   "nyc",
   "los-angeles",
   "chicago",
-  "miami",
-  "houston",
 ];
+
+/**
+ * PostgREST filter appended to row queries: active metros only, while keeping
+ * legacy NULL-metro rows (metroToCity treats those as NYC).
+ */
+const ACTIVE_METRO_FILTER = "&or=(metro.is.null,metro.in.(nyc,los-angeles,chicago))";
 
 interface CityMeta {
   urlPrefix: string;
@@ -259,7 +265,7 @@ interface ZipBuildingRow {
 
 async function buildZipLastModMap(): Promise<Map<string, string>> {
   const zipData = await supabaseFetch<ZipBuildingRow[]>(
-    "buildings?select=zip_code,metro,updated_at&zip_code=not.is.null&limit=10000",
+    `buildings?select=zip_code,metro,updated_at&zip_code=not.is.null${ACTIVE_METRO_FILTER}&limit=10000`,
   );
   const now = new Date().toISOString();
   const map = new Map<string, string>();
@@ -342,7 +348,7 @@ export async function generateStaticSitemap(): Promise<UrlEntry[]> {
       metro: string | null;
     }
     const articles = await supabaseFetch<NewsRow[]>(
-      "news_articles?select=slug,published_at,metro&auto_generated=eq.true&status=eq.published&order=published_at.desc&limit=5000",
+      `news_articles?select=slug,published_at,metro&auto_generated=eq.true&status=eq.published${ACTIVE_METRO_FILTER}&order=published_at.desc&limit=5000`,
     );
     for (const a of articles) {
       if (!a.slug) continue;
@@ -465,7 +471,7 @@ export async function* generateLandlordChunks(): AsyncGenerator<string> {
 
   while (true) {
     const rows = await supabaseFetch<LandlordRow[]>(
-      `landlord_stats?select=id,name,slug,metro,updated_at&building_count=gt.0&id=gt.${cursor}&order=id.asc&limit=1000`,
+      `landlord_stats?select=id,name,slug,metro,updated_at&building_count=gt.0${ACTIVE_METRO_FILTER}&id=gt.${cursor}&order=id.asc&limit=1000`,
     );
     if (!rows || rows.length === 0) break;
 
@@ -525,7 +531,7 @@ export async function* generateBuildingChunks(): AsyncGenerator<string> {
 
   while (!done) {
     const rows = await supabaseFetch<BuildingRow[]>(
-      `buildings?select=id,slug,borough,metro,updated_at&id=gt.${cursor}&order=id.asc&limit=${PAGE_SIZE}`,
+      `buildings?select=id,slug,borough,metro,updated_at${ACTIVE_METRO_FILTER}&id=gt.${cursor}&order=id.asc&limit=${PAGE_SIZE}`,
     );
     if (!rows || rows.length === 0) {
       done = true;

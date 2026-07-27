@@ -6,16 +6,8 @@
       "schedule": "0 11 * * *"
     },
     {
-      "path": "/api/cron/generate-news?city=miami",
-      "schedule": "15 11 * * *"
-    },
-    {
       "path": "/api/cron/generate-news?city=chicago",
       "schedule": "0 12 * * *"
-    },
-    {
-      "path": "/api/cron/generate-news?city=houston",
-      "schedule": "15 12 * * *"
     },
     {
       "path": "/api/cron/generate-news?city=los-angeles",
@@ -207,68 +199,6 @@
     {
       "path": "/api/cron/trigger?mode=link&source=chicago-crimes",
       "schedule": "35 19 * * *"
-    },
-
-    {
-      "path": "/api/cron/trigger?source=miami-violations",
-      "schedule": "5 20 * * *"
-    },
-    {
-      "path": "/api/cron/trigger?source=miami-311",
-      "schedule": "35 20 * * *"
-    },
-    {
-      "path": "/api/cron/trigger?source=miami-crimes",
-      "schedule": "5 21 * * *"
-    },
-    {
-      "path": "/api/cron/trigger?source=miami-permits",
-      "schedule": "35 21 * * *"
-    },
-    {
-      "path": "/api/cron/trigger?source=miami-unsafe",
-      "schedule": "5 5 * * 2"
-    },
-    {
-      "path": "/api/cron/trigger?source=miami-recerts",
-      "schedule": "35 5 * * 2"
-    },
-    {
-      "path": "/api/cron/trigger?mode=link&source=miami-violations",
-      "schedule": "5 22 * * *"
-    },
-    {
-      "path": "/api/cron/trigger?mode=link&source=miami-311",
-      "schedule": "35 22 * * *"
-    },
-    {
-      "path": "/api/cron/trigger?mode=link&source=miami-permits",
-      "schedule": "5 23 * * *"
-    },
-
-    {
-      "path": "/api/cron/trigger?source=houston-violations",
-      "schedule": "5 2 * * *"
-    },
-    {
-      "path": "/api/cron/trigger?source=houston-311",
-      "schedule": "35 2 * * *"
-    },
-    {
-      "path": "/api/cron/trigger?source=houston-crimes",
-      "schedule": "5 4 * * *"
-    },
-    {
-      "path": "/api/cron/trigger?mode=link&source=houston-violations",
-      "schedule": "35 0 * * *"
-    },
-    {
-      "path": "/api/cron/trigger?mode=link&source=houston-311",
-      "schedule": "5 1 * * *"
-    },
-    {
-      "path": "/api/cron/trigger?mode=link&source=houston-crimes",
-      "schedule": "35 1 * * *"
     },
 
     {

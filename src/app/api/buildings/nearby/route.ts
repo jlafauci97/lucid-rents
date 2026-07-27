@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createCacheClient } from "@/lib/supabase/cache-client";
-import { isValidCity } from "@/lib/cities";
+import { isValidCity, VALID_CITIES } from "@/lib/cities";
 
 // Edge runtime — pure I/O Supabase read, no Node-specific APIs.
 export const runtime = "edge";
@@ -30,6 +30,8 @@ export async function GET(request: Request) {
 
     if (cityParam) {
       centroidsQuery = centroidsQuery.eq("metro", cityParam);
+    } else {
+      centroidsQuery = centroidsQuery.in("metro", VALID_CITIES);
     }
 
     const { data: centroids } = await centroidsQuery;
@@ -61,6 +63,8 @@ export async function GET(request: Request) {
 
     if (cityParam) {
       buildingsQuery = buildingsQuery.eq("metro", cityParam);
+    } else {
+      buildingsQuery = buildingsQuery.in("metro", VALID_CITIES);
     }
 
     const { data: buildings } = await buildingsQuery;

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createCacheClient } from "@/lib/supabase/cache-client";
+import { isValidCity } from "@/lib/cities";
 
 interface CrimeTrendMonth {
   month: string;
@@ -42,6 +43,9 @@ export async function GET(
     const { zipCode } = await params;
     const { searchParams } = new URL(request.url);
     const cityParam = searchParams.get("city") || "nyc";
+    if (!isValidCity(cityParam)) {
+      return NextResponse.json({ error: "Invalid city" }, { status: 400 });
+    }
     const supabase = createCacheClient();
 
     const { data, error } = await supabase.rpc("crime_zip_trends", {
