@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createCacheClient } from "@/lib/supabase/cache-client";
-import { isValidCity } from "@/lib/cities";
+import { isValidCity, VALID_CITIES } from "@/lib/cities";
 
 // Edge runtime — pure I/O Supabase read, no Node-specific APIs.
 export const runtime = "edge";
@@ -28,6 +28,8 @@ export async function GET(request: Request) {
 
     if (cityParam) {
       violationsQuery = violationsQuery.eq("metro", cityParam);
+    } else {
+      violationsQuery = violationsQuery.in("metro", VALID_CITIES);
     }
 
     const { data: violations, error } = await violationsQuery;

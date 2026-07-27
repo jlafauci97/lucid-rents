@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { createCacheClient } from "@/lib/supabase/cache-client";
-import { CITY_META, VALID_CITIES, type City } from "@/lib/cities";
+import { CITY_META, HIDDEN_CITIES, VALID_CITIES, type City } from "@/lib/cities";
 import { buildingUrl } from "@/lib/seo";
 import type { Building } from "@/types";
 
@@ -51,6 +51,8 @@ export default async function BuildingEmbedPage({
   if (!data) notFound();
   const building = data as Building;
 
+  // Hidden metros (miami/houston) must 404 rather than fall back to nyc.
+  if (HIDDEN_CITIES.includes(building.metro as City)) notFound();
   const city = (VALID_CITIES.includes(building.metro as City) ? building.metro : "nyc") as City;
   const meta = CITY_META[city];
   const grade = getGrade(building.overall_score);

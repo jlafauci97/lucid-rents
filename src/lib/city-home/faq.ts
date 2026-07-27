@@ -16,11 +16,11 @@ const SHARED: FaqItem[] = [
   },
   {
     q: "Where does the data come from?",
-    a: "Official city agencies (HPD, DOB, 311 for NYC; LAHD and REAP for LA; Chicago's Building Services and RLTO tracking; Miami-Dade Code Enforcement; Harris County Code for Houston) plus tenant-submitted reviews.",
+    a: "Official city agencies (HPD, DOB, 311 for NYC; LAHD and REAP for LA; Chicago's Building Services and RLTO tracking) plus tenant-submitted reviews.",
   },
 ];
 
-export const FAQ_BY_CITY: Record<City, FaqItem[]> = {
+export const FAQ_BY_CITY: Partial<Record<City, FaqItem[]>> = {
   nyc: [
     ...SHARED,
     {
@@ -52,28 +52,6 @@ export const FAQ_BY_CITY: Record<City, FaqItem[]> = {
     {
       q: "How does Chicago's heat ordinance work?",
       a: "Between September 15 and June 1, indoor temperature must reach 68°F daytime and 66°F overnight. Heat complaints filed with 311 show up on the building's record.",
-    },
-  ],
-  miami: [
-    ...SHARED,
-    {
-      q: "What's the 40-year recertification rule?",
-      a: "Miami-Dade requires buildings 40+ years old to pass a structural and electrical recertification, then repeat every 10 years. Overdue recerts are flagged on building pages.",
-    },
-    {
-      q: "Are rents controlled in Miami?",
-      a: "No — Florida preempts rent control statewide. But Miami-Dade does regulate habitability and code compliance aggressively post-Surfside.",
-    },
-  ],
-  houston: [
-    ...SHARED,
-    {
-      q: "Does Houston have rent control?",
-      a: "No — Texas prohibits local rent control. Landlord-tenant rules follow Texas Property Code §92, which we summarize on every building page.",
-    },
-    {
-      q: "What's a Harris County Code violation?",
-      a: "Habitability, structural, or sanitation issues tracked by the county's code enforcement team. Open violations appear on each building's public record.",
     },
   ],
 };

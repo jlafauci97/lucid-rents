@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
 import { createCacheClient } from "@/lib/supabase/cache-client";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
-import { isValidCity } from "@/lib/cities";
+import { isValidCity, VALID_CITIES } from "@/lib/cities";
 
 // Use service-role admin client for the activity feed API.
 // The default anon role has a 3-second statement timeout which causes
@@ -168,10 +168,16 @@ async function computeActivityItems(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const promises: PromiseLike<any>[] = [];
 
-    // Helper: conditionally apply metro filter (skip when fetching all cities)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    function withMetro<T extends { eq: (col: string, val: string) => T }>(query: T): T {
-      return metro ? query.eq("metro", metro) : query;
+    // Helper: conditionally apply metro filter. "All cities" requests are
+    // scoped to the publicly visible metros so hidden metros (miami/houston)
+    // never leak into the feed.
+    function withMetro<
+      T extends {
+        eq: (col: string, val: string) => T;
+        in: (col: string, vals: string[]) => T;
+      },
+    >(query: T): T {
+      return metro ? query.eq("metro", metro) : query.in("metro", VALID_CITIES);
     }
 
     // Conditionally fetch based on filter — scoped to metro (city) when provided

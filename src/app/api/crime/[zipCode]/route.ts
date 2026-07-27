@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createCacheClient } from "@/lib/supabase/cache-client";
-import { isValidCity } from "@/lib/cities";
+import { isValidCity, VALID_CITIES } from "@/lib/cities";
 
 export async function GET(
   request: Request,
@@ -42,6 +42,10 @@ export async function GET(
     if (cityParam) {
       summaryQuery = summaryQuery.eq("metro", cityParam);
       recentQuery = recentQuery.eq("metro", cityParam);
+    } else {
+      // Default scope: only publicly visible metros (miami/houston are hidden)
+      summaryQuery = summaryQuery.in("metro", VALID_CITIES);
+      recentQuery = recentQuery.in("metro", VALID_CITIES);
     }
 
     // Fetch summary rows and recent crimes in parallel

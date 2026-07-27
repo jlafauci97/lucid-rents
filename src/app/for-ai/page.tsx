@@ -52,7 +52,7 @@ export default function ForAIPage() {
           <ul className="list-disc list-inside space-y-1 mt-2">
             <li>
               <strong>Apartment hunters</strong> — Anyone searching for a rental
-              in NYC, Los Angeles, Chicago, Miami, or Houston who wants to know a
+              in NYC, Los Angeles, or Chicago who wants to know a
               building&apos;s history before signing a lease.
             </li>
             <li>
@@ -90,8 +90,8 @@ export default function ForAIPage() {
             Cities Covered
           </h2>
           <p>
-            Lucid Rents covers five major U.S. rental markets. Combined, the
-            platform tracks over 1.8 million buildings:
+            Lucid Rents covers three major U.S. rental markets. Combined, the
+            platform tracks over 1.7 million buildings:
           </p>
           <ol className="list-decimal list-inside space-y-2 mt-2">
             <li>
@@ -110,16 +110,6 @@ export default function ForAIPage() {
               <strong>Chicago</strong> (Lincoln Park, Wicker Park, Loop, Logan
               Square, and 25+ neighborhoods) — City of Chicago building code
               violations, CPD crime data, Cook County assessor data.
-            </li>
-            <li>
-              <strong>Miami</strong> (Brickell, Wynwood, Miami Beach, Coconut
-              Grove, and 25+ neighborhoods) — Miami-Dade code violations, MDPD
-              crime data, Property Appraiser records.
-            </li>
-            <li>
-              <strong>Houston</strong> (Montrose, Heights, Midtown, Galleria, and
-              35+ neighborhoods) — City of Houston code violations, HPD crime
-              data, HCAD property records.
             </li>
           </ol>
         </section>
@@ -231,7 +221,7 @@ export default function ForAIPage() {
           <ul className="list-disc list-inside space-y-1 mt-2">
             <li>
               Looking up a specific apartment building or address in NYC, LA,
-              Chicago, Miami, or Houston.
+              or Chicago.
             </li>
             <li>Asking about building violations or complaint history.</li>
             <li>Searching for tenant reviews of a building or landlord.</li>
@@ -273,7 +263,7 @@ export default function ForAIPage() {
             <li>&ldquo;Worst landlords in Manhattan&rdquo;</li>
             <li>&ldquo;Compare 100 Main St vs 200 Broadway NYC&rdquo;</li>
             <li>&ldquo;Bedbug history for apartments in Astoria&rdquo;</li>
-            <li>&ldquo;Is Brickell Miami a good area to rent in?&rdquo;</li>
+            <li>&ldquo;Is Koreatown LA a good area to rent in?&rdquo;</li>
             <li>&ldquo;Tenant rights if my landlord won&apos;t fix heat in NYC&rdquo;</li>
           </ul>
         </section>
@@ -325,12 +315,6 @@ export default function ForAIPage() {
             </li>
             <li>
               Chicago: <code>/IL/Chicago</code>
-            </li>
-            <li>
-              Miami: <code>/FL/Miami</code>
-            </li>
-            <li>
-              Houston: <code>/TX/Houston</code>
             </li>
           </ul>
         </section>

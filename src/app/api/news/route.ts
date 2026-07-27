@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createCacheClient } from "@/lib/supabase/cache-client";
-import { isValidCity } from "@/lib/cities";
+import { isValidCity, VALID_CITIES } from "@/lib/cities";
 
 // Edge runtime — pure I/O Supabase read for the city news listing.
 export const runtime = "edge";
@@ -29,6 +29,7 @@ export async function GET(request: Request) {
     .from("news_articles")
     .select("id", { count: "exact", head: true });
   if (city) countQ = countQ.eq("metro", city);
+  else countQ = countQ.in("metro", VALID_CITIES);
   if (category) countQ = countQ.eq("category", category);
   const { count } = await countQ;
 
@@ -38,6 +39,7 @@ export async function GET(request: Request) {
     .order("published_at", { ascending: false })
     .range(offset, offset + PER_PAGE - 1);
   if (city) listQ = listQ.eq("metro", city);
+  else listQ = listQ.in("metro", VALID_CITIES);
   if (category) listQ = listQ.eq("category", category);
   const { data: articles, error } = await listQ;
 

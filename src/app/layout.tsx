@@ -58,7 +58,7 @@ const organizationSchema = {
   url: SITE_URL,
   logo: `${SITE_URL}/lucid-rents-logo.png`,
   description:
-    "Rental intelligence platform combining violations, complaints, crime data, and tenant reviews into one record per building across NYC, LA, Chicago, Miami, and Houston.",
+    "Rental intelligence platform combining violations, complaints, crime data, and tenant reviews into one record per building across NYC, LA, and Chicago.",
   sameAs: [
     "https://www.instagram.com/lucid_rents/",
     "https://x.com/LucidRents",
@@ -73,7 +73,7 @@ export const metadata: Metadata = {
     template: "%s | Lucid Rents",
   },
   description:
-    "Don't sign a lease blind. Check any NYC, LA, Chicago, Miami, or Houston building for violations, bedbug history, evictions, and real tenant reviews — free.",
+    "Don't sign a lease blind. Check any NYC, LA, or Chicago building for violations, bedbug history, evictions, and real tenant reviews — free.",
   keywords: [
     "NYC apartments",
     "Los Angeles apartments",
@@ -83,8 +83,6 @@ export const metadata: Metadata = {
     "NYC rentals",
     "LA rentals",
     "Chicago apartments",
-    "Miami apartments",
-    "Houston apartments",
     "apartment search",
     "bedbug reports",
     "evictions",

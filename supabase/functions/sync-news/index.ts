@@ -1,6 +1,7 @@
 import { getSupabaseAdmin } from "shared/supabase-admin.ts";
 import {
   NEWS_SOURCES,
+  type NewsSource,
   categorizeArticle,
   decodeHtmlEntities,
   generateArticleSlug,
@@ -68,7 +69,12 @@ Deno.serve(async (req) => {
   const supabase = getSupabaseAdmin();
   const results: { source: string; added: number; error?: string }[] = [];
 
-  for (const source of NEWS_SOURCES) {
+  // Miami/Houston feeds are skipped while those metros are off the public
+  // site — feed definitions stay in _shared/news-sources.ts for relaunch.
+  const DISABLED_METROS = new Set(["miami", "houston"]);
+  const activeSources = NEWS_SOURCES.filter((s: NewsSource) => !s.metro || !DISABLED_METROS.has(s.metro));
+
+  for (const source of activeSources) {
     try {
       const feed = await parseRSS(source.feedUrl);
       const articles = (feed.items || [])

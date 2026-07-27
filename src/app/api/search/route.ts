@@ -1,6 +1,6 @@
 export const runtime = "edge";
 
-import { isValidCity } from "@/lib/cities";
+import { isValidCity, VALID_CITIES } from "@/lib/cities";
 import { normalizeAddressQuery } from "@/lib/address-normalization";
 import { createCacheClient } from "@/lib/supabase/cache-client";
 import { searchSchema } from "@/lib/validators";
@@ -68,10 +68,18 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    const buildings = (data || []).map((row: Record<string, unknown>) => {
+    let buildings = (data || []).map((row: Record<string, unknown>) => {
       const { total_count, ...building } = row;
       return building;
     });
+    // The RPC's city_filter=null means "all metros" — post-filter hidden metros
+    // (miami/houston) out of unscoped searches. Rows include `metro`, so this is
+    // a cheap in-process filter; total_count may slightly overcount as a result.
+    if (!cityParam) {
+      buildings = buildings.filter((b: Record<string, unknown>) =>
+        (VALID_CITIES as string[]).includes(String(b.metro))
+      );
+    }
     const total = data?.[0]?.total_count ?? 0;
 
     return NextResponse.json({ buildings, total, page });
@@ -85,6 +93,8 @@ export async function GET(req: NextRequest) {
 
   if (cityParam) {
     query = query.eq("metro", cityParam);
+  } else {
+    query = query.in("metro", VALID_CITIES);
   }
   if (borough) {
     query = query.eq("borough", borough);

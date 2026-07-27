@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createCacheClient } from "@/lib/supabase/cache-client";
-import { isValidCity } from "@/lib/cities";
+import { isValidCity, VALID_CITIES } from "@/lib/cities";
 
 // Haversine distance in miles
 function haversine(
@@ -71,6 +71,8 @@ export async function GET(request: NextRequest) {
 
   if (cityParam) {
     transitQuery = transitQuery.eq("metro", cityParam);
+  } else {
+    transitQuery = transitQuery.in("metro", VALID_CITIES);
   }
 
   const { data: stops, error } = await transitQuery;

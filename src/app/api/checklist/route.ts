@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createCacheClient } from "@/lib/supabase/cache-client";
 import { normalizeScore } from "@/lib/constants";
+import { isValidCity } from "@/lib/cities";
 
 export interface ChecklistItem {
   id: string;
@@ -13,6 +14,9 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const buildingId = searchParams.get("buildingId");
   const city = searchParams.get("city") || "nyc";
+  if (!isValidCity(city)) {
+    return NextResponse.json({ error: "Invalid city" }, { status: 400 });
+  }
 
   if (!buildingId) {
     return NextResponse.json({ error: "buildingId required" }, { status: 400 });

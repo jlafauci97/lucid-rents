@@ -5054,6 +5054,25 @@ const SOURCES: Record<string, (supabase: ReturnType<typeof getSupabaseAdmin>, si
   "houston-crimes": syncHoustonCrimes,
 };
 
+// Miami/Houston were pulled from the public site (July 2026). Their sync
+// handlers are retained but disabled — empty this set to re-enable them.
+// Mirrors the same guard in supabase/functions/sync/index.ts.
+const DISABLED_SOURCES = new Set([
+  "miami-violations",
+  "miami-311",
+  "miami-crimes",
+  "miami-permits",
+  "miami-unsafe",
+  "miami-recerts",
+  "houston-violations",
+  "houston-311",
+  "houston-crimes",
+]);
+
+function skippedResponse(source: string | null, mode: string | null): NextResponse {
+  return NextResponse.json({ skipped: true, reason: "source disabled (metro off public site)", source, mode });
+}
+
 // ---------------------------------------------------------------------------
 // Link-only tables — maps source name to the DB table + label used by linkByBbl
 // ---------------------------------------------------------------------------
@@ -5947,6 +5966,9 @@ export async function GET(req: NextRequest) {
     let sourcesToRun: [string, (supabase: ReturnType<typeof getSupabaseAdmin>, sinceOverride?: string) => Promise<SyncResult>][];
 
     if (sourceParam) {
+      if (DISABLED_SOURCES.has(sourceParam)) {
+        return skippedResponse(sourceParam, mode);
+      }
       const fn = SOURCES[sourceParam];
       if (!fn) {
         return NextResponse.json(
@@ -5956,7 +5978,7 @@ export async function GET(req: NextRequest) {
       }
       sourcesToRun = [[sourceParam, fn]];
     } else {
-      sourcesToRun = Object.entries(SOURCES);
+      sourcesToRun = Object.entries(SOURCES).filter(([name]) => !DISABLED_SOURCES.has(name));
     }
 
     // Run selected syncs (sequentially when running all to avoid timeout)

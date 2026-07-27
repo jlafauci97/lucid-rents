@@ -1,4 +1,4 @@
-import { isValidCity } from "@/lib/cities";
+import { isValidCity, VALID_CITIES } from "@/lib/cities";
 import { createCacheClient } from "@/lib/supabase/cache-client";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -49,6 +49,8 @@ export async function GET(req: NextRequest) {
 
   if (cityParam) {
     query = query.eq("metro", cityParam);
+  } else {
+    query = query.in("metro", VALID_CITIES);
   }
   if (search) {
     query = query.ilike("name", `%${search}%`);

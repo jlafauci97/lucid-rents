@@ -1,6 +1,19 @@
 export type City = "nyc" | "los-angeles" | "chicago" | "miami" | "houston";
 
-export const VALID_CITIES: City[] = ["nyc", "los-angeles", "chicago", "miami", "houston"];
+/** Every city that exists in the data model (DB rows, syncs, internal tooling). */
+export const ALL_CITIES: City[] = ["nyc", "los-angeles", "chicago", "miami", "houston"];
+
+/**
+ * Cities currently visible on the public site. Miami and Houston were pulled
+ * from public view in July 2026 (data, DB rows, and code all retained) — to
+ * relaunch them, add them back here and re-enable their crons in vercel.json
+ * (see docs/miami-houston-removal.md).
+ */
+export const VALID_CITIES: City[] = ["nyc", "los-angeles", "chicago"];
+
+/** Cities that exist in the data model but are hidden from the public site. */
+export const HIDDEN_CITIES: City[] = ALL_CITIES.filter((c) => !VALID_CITIES.includes(c));
+
 export const DEFAULT_CITY: City = "nyc";
 
 export interface CityMeta {

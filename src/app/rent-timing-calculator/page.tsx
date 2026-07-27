@@ -7,12 +7,12 @@ import { RelatedGuides } from "@/components/calculators/RelatedGuides";
 export const metadata: Metadata = {
   title: "Best Time to Rent — Seasonal Rent Calculator",
   description:
-    "Find the cheapest month to sign your lease. Based on 12 years of rental data across NYC, LA, Chicago, Miami, and Houston.",
+    "Find the cheapest month to sign your lease. Based on 12 years of rental data across NYC, LA, and Chicago.",
   alternates: { canonical: canonicalUrl("/rent-timing-calculator") },
   openGraph: {
     title: "Best Time to Rent — Seasonal Rent Calculator",
     description:
-      "Find the cheapest month to sign your lease. Based on 12 years of rental data across NYC, LA, Chicago, Miami, and Houston.",
+      "Find the cheapest month to sign your lease. Based on 12 years of rental data across NYC, LA, and Chicago.",
     url: canonicalUrl("/rent-timing-calculator"),
     siteName: "Lucid Rents",
     type: "website",
@@ -32,7 +32,7 @@ export default function RentTimingCalculatorPage() {
         name: "What is the cheapest month to rent an apartment?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "In most major U.S. cities, January and February are the cheapest months to sign a lease. Rental demand is lowest during winter, giving renters more negotiating power and lower prices. Our data across NYC, LA, Chicago, Miami, and Houston confirms that winter months consistently have rent indices 3-8% below the annual average.",
+          text: "In most major U.S. cities, January and February are the cheapest months to sign a lease. Rental demand is lowest during winter, giving renters more negotiating power and lower prices. Our data across NYC, LA, and Chicago confirms that winter months consistently have rent indices 3-8% below the annual average.",
         },
       },
       {

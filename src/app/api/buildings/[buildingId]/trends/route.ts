@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createCacheClient } from "@/lib/supabase/cache-client";
+import { HIDDEN_CITIES } from "@/lib/cities";
 
 interface MonthData {
   month: string;
@@ -63,6 +64,9 @@ export async function GET(
       .eq("id", buildingId)
       .single();
     const metro = buildingRow?.metro || "nyc";
+    if ((HIDDEN_CITIES as string[]).includes(metro)) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
     const isChicago = metro === "chicago" || metro === "miami";
 
     const fiveYearsAgo = new Date();

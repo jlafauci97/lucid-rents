@@ -2,7 +2,7 @@ export const runtime = "edge";
 
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { isValidCity } from "@/lib/cities";
+import { isValidCity, VALID_CITIES } from "@/lib/cities";
 import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function GET(request: NextRequest) {
@@ -34,6 +34,8 @@ export async function GET(request: NextRequest) {
 
   if (cityParam) {
     query = query.eq("metro", cityParam);
+  } else {
+    query = query.in("metro", VALID_CITIES);
   }
 
   if (borough && borough !== "all") {

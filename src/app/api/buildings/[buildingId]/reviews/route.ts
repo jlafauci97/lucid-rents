@@ -1,4 +1,5 @@
 import { createCacheClient } from "@/lib/supabase/cache-client";
+import { HIDDEN_CITIES } from "@/lib/cities";
 import { NextRequest, NextResponse } from "next/server";
 
 // Edge runtime — this route is pure I/O (one anonymous Supabase read),
@@ -21,6 +22,16 @@ export async function GET(req: NextRequest, context: RouteContext) {
   // Non-cookies client so next.config.ts Cache-Control headers apply.
   // Reviews are public (filtered by status=published) — no auth context needed.
   const supabase = createCacheClient();
+
+  // Buildings in hidden metros (miami/houston) are not publicly visible.
+  const { data: buildingRow } = await supabase
+    .from("buildings")
+    .select("metro")
+    .eq("id", buildingId)
+    .single();
+  if (buildingRow && (HIDDEN_CITIES as string[]).includes(buildingRow.metro)) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
 
   let query = supabase
     .from("reviews")
