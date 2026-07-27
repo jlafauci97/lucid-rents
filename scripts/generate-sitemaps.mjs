@@ -39,9 +39,10 @@ if (!SUPABASE_URL || !SUPABASE_KEY) {
 // 2026) — add them back here AND in src/lib/sitemap/generator.ts to relaunch.
 const VALID_CITIES = ["nyc", "los-angeles", "chicago"];
 
-// PostgREST filter: active metros only, keeping legacy NULL-metro rows
-// (metroToCity treats those as NYC).
-const ACTIVE_METRO_FILTER = "&or=(metro.is.null,metro.in.(nyc,los-angeles,chicago))";
+// PostgREST filter: active metros only. Plain `in.` (not an `or=` with an
+// is.null branch) so Postgres can use idx_buildings_metro — `metro` is NOT NULL
+// DEFAULT 'nyc' on buildings, news_articles, and landlord_stats.
+const ACTIVE_METRO_FILTER = "&metro=in.(nyc,los-angeles,chicago)";
 
 const CITY_META = {
   nyc: { urlPrefix: "nyc", regions: ["Manhattan", "Brooklyn", "Queens", "Bronx", "Staten Island"] },

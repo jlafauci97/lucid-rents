@@ -42,10 +42,12 @@ export const VALID_CITIES: City[] = [
 ];
 
 /**
- * PostgREST filter appended to row queries: active metros only, while keeping
- * legacy NULL-metro rows (metroToCity treats those as NYC).
+ * PostgREST filter appended to row queries: active metros only. Plain `in.` (not
+ * an `or=` with an is.null branch) so Postgres can use idx_buildings_metro —
+ * `metro` is NOT NULL DEFAULT 'nyc' on buildings, news_articles, and
+ * landlord_stats, so there are no null rows to rescue.
  */
-const ACTIVE_METRO_FILTER = "&or=(metro.is.null,metro.in.(nyc,los-angeles,chicago))";
+const ACTIVE_METRO_FILTER = "&metro=in.(nyc,los-angeles,chicago)";
 
 interface CityMeta {
   urlPrefix: string;
