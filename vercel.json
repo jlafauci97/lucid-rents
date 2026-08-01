@@ -212,16 +212,40 @@
     },
 
     {
-      "path": "/api/cron/rankings-snapshot?city=nyc",
+      "path": "/api/cron/rankings-snapshot?city=nyc&kind=worst_buildings",
       "schedule": "0 5 1 * *"
     },
     {
-      "path": "/api/cron/rankings-snapshot?city=los-angeles",
+      "path": "/api/cron/rankings-snapshot?city=nyc&kind=worst_landlords",
+      "schedule": "10 5 1 * *"
+    },
+    {
+      "path": "/api/cron/rankings-snapshot?city=nyc&kind=worst_neighborhoods",
       "schedule": "20 5 1 * *"
     },
     {
-      "path": "/api/cron/rankings-snapshot?city=chicago",
+      "path": "/api/cron/rankings-snapshot?city=los-angeles&kind=worst_buildings",
+      "schedule": "30 5 1 * *"
+    },
+    {
+      "path": "/api/cron/rankings-snapshot?city=los-angeles&kind=worst_landlords",
       "schedule": "40 5 1 * *"
+    },
+    {
+      "path": "/api/cron/rankings-snapshot?city=los-angeles&kind=worst_neighborhoods",
+      "schedule": "50 5 1 * *"
+    },
+    {
+      "path": "/api/cron/rankings-snapshot?city=chicago&kind=worst_buildings",
+      "schedule": "0 6 1 * *"
+    },
+    {
+      "path": "/api/cron/rankings-snapshot?city=chicago&kind=worst_landlords",
+      "schedule": "10 6 1 * *"
+    },
+    {
+      "path": "/api/cron/rankings-snapshot?city=chicago&kind=worst_neighborhoods",
+      "schedule": "20 6 1 * *"
     },
 
     {
