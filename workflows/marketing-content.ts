@@ -1,6 +1,5 @@
 import {
   getWritable,
-  defineHook,
   sleep,
   FatalError,
   RetryableError,
@@ -27,7 +26,7 @@ import {
 } from "@/lib/marketing/supabase-queries";
 
 // External API clients
-import { publishToAllPlatforms } from "@/lib/marketing/post-bridge";
+import { publishDraft, DraftNotFoundError } from "@/lib/marketing/publish-draft";
 import {
   submitTextToVideo,
   checkTaskStatus,
@@ -65,15 +64,6 @@ function emitEvent(event: MarketingWorkflowEvent): void {
     writer.releaseLock();
   }
 }
-
-// ---------------------------------------------------------------------------
-// Hook: human approval
-// ---------------------------------------------------------------------------
-
-export const contentApprovalHook = defineHook<{
-  approved: boolean;
-  editedContent?: { caption?: string; platform_variants?: PlatformVariants };
-}>();
 
 // ---------------------------------------------------------------------------
 // Step 0 - Initialize draft row
@@ -252,18 +242,25 @@ async function gatherSourceData(
 
     case "building_horror": {
       // Find buildings with the most violations — no date filter, just highest counts
-      const { data: buildings } = await supabase
+      const { data: buildings, error: buildingsError } = await supabase
         .from("buildings")
         .select("id, full_address, city, borough, violation_count, owner_name, zip_code, metro")
         .gt("violation_count", 10)
         .order("violation_count", { ascending: false })
         .limit(20);
 
-      // Pick a random one from top 20 to avoid repeating the same building
-      const building = buildings?.[Math.floor(Math.random() * (buildings?.length ?? 1))] ?? null;
-      if (!building) {
-        throw new FatalError("No buildings with violations found");
+      // There are always buildings over 10 violations, so an empty result means
+      // the query failed (usually a statement timeout), not that the data is
+      // gone. Treating that as fatal killed 17 runs — retry instead.
+      if (buildingsError) {
+        throw new RetryableError(`buildings query failed: ${buildingsError.message}`);
       }
+      if (!buildings || buildings.length === 0) {
+        throw new RetryableError("buildings query returned no rows (likely a timeout)");
+      }
+
+      // Pick a random one from top 20 to avoid repeating the same building
+      const building = buildings[Math.floor(Math.random() * buildings.length)];
 
       // Get recent violations for this building
       const { data: violations } = await supabase
@@ -285,7 +282,7 @@ async function gatherSourceData(
       // Get violation data from buildings
       const { data: buildingData } = await supabase
         .from("buildings")
-        .select("zip_code, violation_count, city")
+        .select("id, zip_code, violation_count, city")
         .not("zip_code", "is", null)
         .gt("violation_count", 0)
         .limit(500);
@@ -316,6 +313,13 @@ async function gatherSourceData(
         const entry = zipMap.get(zip)!;
         entry.totalViolations += (b.violation_count as number) || 0;
         entry.count += 1;
+        // The rent lookup was built but never read, so every neighborhood post
+        // shipped with "avgRent: 0".
+        const rent = rentByBuilding.get(b.id as string);
+        if (rent !== undefined) {
+          entry.totalRent += rent;
+          entry.rentCount += 1;
+        }
       }
 
       // Pick an interesting zip (high violations per building)
@@ -334,6 +338,13 @@ async function gatherSourceData(
             city: data.city,
           };
         }
+      }
+
+      // An all-empty pick means no zip cleared the bar. Emitting it anyway is
+      // what produced posts about a neighborhood with no name, no rent and no
+      // violations — fail instead so nothing unsourced reaches generation.
+      if (!picked.zip) {
+        throw new RetryableError("no neighborhood met the aggregation threshold");
       }
 
       sourceData = { neighborhood: picked };
@@ -629,9 +640,11 @@ async function generateVideo(
   emitEvent({ type: "video_generating", videoType, tool });
 
   try {
+    // Kling only accepts a duration of 5 or 10 — anything else is a hard
+    // HTTP 400 (code 1201). Sending 12 killed every avatar run for weeks.
     const videoId = await submitTextToVideo({
       prompt: script,
-      duration: videoType === "avatar" ? 12 : 5,
+      duration: videoType === "avatar" ? 10 : 5,
       aspectRatio: videoType === "avatar" ? "16:9" : "9:16",
     });
 
@@ -685,17 +698,15 @@ async function generateVideo(
 
     return [blobResult.url];
   } catch (err) {
-    // Don't retry on billing/auth errors — they're permanent
+    // Video is a nice-to-have, never a blocker. A caption + Pinterest card is
+    // still a publishable post, so degrade to text-only rather than failing the
+    // run. Retrying here is what turned a bad `duration` param into 28 dead
+    // runs — the step exhausted its retries and took the whole workflow down.
     const msg = err instanceof Error ? err.message : String(err);
-    const isPermanent = msg.includes("401") || msg.includes("429") || msg.includes("balance") || msg.includes("access key");
-    console.log(JSON.stringify({ step: "generateVideo", event: "error", permanent: isPermanent, error: msg }));
-
-    if (isPermanent) {
-      return []; // Skip video, don't waste credits retrying
-    }
-
-    // Only retry on transient errors (network issues, etc.)
-    throw new RetryableError(`Video generation error (${tool}): ${msg}`);
+    console.log(
+      JSON.stringify({ step: "generateVideo", event: "error", degraded: "text-only", error: msg })
+    );
+    return [];
   }
 }
 
@@ -727,8 +738,12 @@ async function saveDraft(
 
   const hookToken = `approval:${draftId}`;
 
+  // content_type has to be written back here — initDraft only ever set a
+  // placeholder, so without this every row reads "landlord_expose" and
+  // getRecentContentTypes (which drives rotation) sees nothing but that.
   await updateDraft(draftId, {
     status: "draft",
+    contentType: data.contentType,
     caption: data.caption,
     platformVariants: variants,
     mediaUrls: data.mediaUrls,
@@ -746,6 +761,102 @@ async function saveDraft(
 }
 
 // ---------------------------------------------------------------------------
+// Step 5b - Pre-publish sanity gate
+// ---------------------------------------------------------------------------
+
+/**
+ * Last line of defence before content goes out unattended. Publishing is
+ * automatic, so this is the only thing standing between a bad data pull and a
+ * public post. It checks the copy is real and that the numbers in it came from
+ * somewhere — it deliberately does NOT judge tone or quality.
+ */
+async function validateDraft(draftId: string): Promise<{ ok: boolean; reasons: string[] }> {
+  "use step";
+  const t0 = Date.now();
+  console.log(JSON.stringify({ step: "validateDraft", event: "start", draftId }));
+
+  const draft = await getDraft(draftId);
+  if (!draft) {
+    return { ok: false, reasons: [`draft ${draftId} not found`] };
+  }
+
+  const reasons: string[] = [];
+  const caption = (draft.caption ?? "").trim();
+  const variants = draft.platform_variants ?? {};
+  const source = draft.source_data ?? {};
+
+  if (caption.length < 20) {
+    reasons.push(`caption too short (${caption.length} chars)`);
+  }
+
+  // Unrendered template slots and stringified nullish values are the classic
+  // tells that a data lookup came back empty but generation carried on anyway.
+  const artifacts = [
+    /\{\{[^}]*\}\}/, // {{placeholder}}
+    /\[(?:INSERT|TODO|NAME|ADDRESS|NUMBER|X+)\]/i, // [INSERT NAME]
+    /\b(?:undefined|NaN)\b/,
+    /\bnull\b/i,
+  ];
+  const captionAndVariants = caption + " " + JSON.stringify(variants);
+  for (const rx of artifacts) {
+    const hit = captionAndVariants.match(rx);
+    if (hit) reasons.push(`template artifact in copy: ${hit[0]}`);
+  }
+
+  if (Object.keys(variants).length === 0) {
+    reasons.push("no platform variants generated");
+  }
+
+  // Every claim we publish has to trace back to a real row. An empty
+  // source_data means the post is unsourced, which is the one failure mode
+  // that actually damages credibility.
+  if (Object.keys(source).length === 0) {
+    reasons.push("source_data is empty — post would be unsourced");
+  }
+
+  // Type-specific: the headline number must be non-zero, otherwise we publish
+  // things like "this landlord has 0 violations". Paths are dotted because
+  // some source shapes nest (neighborhood_trend puts everything under one key).
+  const numericClaims: Record<string, string[]> = {
+    landlord_expose: ["totalViolations"],
+    building_horror: ["violationCount"],
+    neighborhood_trend: ["neighborhood.totalViolations", "neighborhood.buildingCount"],
+  };
+
+  const readPath = (obj: Record<string, unknown>, path: string): unknown =>
+    path.split(".").reduce<unknown>(
+      (acc, key) =>
+        acc && typeof acc === "object" ? (acc as Record<string, unknown>)[key] : undefined,
+      obj
+    );
+
+  for (const path of numericClaims[draft.content_type] ?? []) {
+    const raw = readPath(source, path);
+    const value = Number(raw ?? 0);
+    if (!Number.isFinite(value) || value <= 0) {
+      reasons.push(`${draft.content_type}.${path} is ${String(raw)} — no story here`);
+    }
+  }
+
+  const ok = reasons.length === 0;
+  console.log(
+    JSON.stringify({ step: "validateDraft", event: "done", draftId, ok, reasons, ms: Date.now() - t0 })
+  );
+  return { ok, reasons };
+}
+
+/** Park a draft that failed validation so a human can look, without publishing. */
+async function holdForReview(draftId: string, reasons: string[]): Promise<void> {
+  "use step";
+  console.log(JSON.stringify({ step: "holdForReview", event: "start", draftId, reasons }));
+  await updateDraft(draftId, {
+    status: "draft",
+    errorMessage: `Held from auto-publish: ${reasons.join("; ")}`,
+  });
+  console.log(JSON.stringify({ step: "holdForReview", event: "done", draftId }));
+}
+
+// ---------------------------------------------------------------------------
 // Step 6 - Publish to all platforms
 // ---------------------------------------------------------------------------
 
@@ -757,33 +868,15 @@ async function publish(
   const t0 = Date.now();
   console.log(JSON.stringify({ step: "publish", event: "start", draftId }));
 
-  const draft = await getDraft(draftId);
-  if (!draft) {
-    throw new FatalError(`Draft ${draftId} not found`);
+  let results: PublishResult[];
+  try {
+    results = await publishDraft(draftId, editedContent);
+  } catch (err) {
+    if (err instanceof DraftNotFoundError) {
+      throw new FatalError(err.message);
+    }
+    throw err;
   }
-
-  // Apply edits if present
-  let variants = draft.platform_variants ?? {};
-  let caption = draft.caption ?? "";
-
-  if (editedContent?.caption) {
-    caption = editedContent.caption;
-  }
-  if (editedContent?.platform_variants) {
-    variants = { ...variants, ...editedContent.platform_variants };
-  }
-
-  const mediaUrls = draft.media_urls ?? [];
-
-  const results: PublishResult[] = await publishToAllPlatforms(variants, mediaUrls);
-
-  await updateDraft(draftId, {
-    status: "published",
-    caption,
-    platformVariants: variants,
-    publishedAt: new Date().toISOString(),
-    publishResults: results,
-  });
 
   emitEvent({ type: "published", results });
 
@@ -796,17 +889,6 @@ async function publish(
       ms: Date.now() - t0,
     })
   );
-}
-
-// ---------------------------------------------------------------------------
-// Helper step - Mark rejected
-// ---------------------------------------------------------------------------
-
-async function markRejected(draftId: string): Promise<void> {
-  "use step";
-  console.log(JSON.stringify({ step: "markRejected", event: "start", draftId }));
-  await updateDraft(draftId, { status: "rejected" });
-  console.log(JSON.stringify({ step: "markRejected", event: "done", draftId }));
 }
 
 // ---------------------------------------------------------------------------
@@ -824,6 +906,7 @@ async function handleFailure(
 
   await updateDraft(draftId, {
     status: "failed",
+    contentType,
     errorMessage: `[${stepName}] ${error}`,
   });
 
@@ -912,22 +995,25 @@ export async function contentWorkflow(): Promise<void> {
       sourceData,
       pinterestImageUrl,
     });
-    console.log("[contentWorkflow] saveDraft done, waiting for approval");
+    console.log(`[contentWorkflow] saveDraft done, hookToken=${hookToken}`);
 
-    // Hook: Wait for human approval
-    const hook = contentApprovalHook.create({ token: hookToken });
-    const approval = await hook;
+    // Step 5b: Sanity gate. Publishing is unattended, so a draft that fails
+    // validation is parked for review rather than sent. This replaced a
+    // blocking approval hook that stranded 56 drafts and published none.
+    const validation = await validateDraft(draftId);
 
-    if (!approval.approved) {
-      console.log("[contentWorkflow] REJECTED");
-      await markRejected(draftId);
+    if (!validation.ok) {
+      console.log(
+        `[contentWorkflow] HELD, failed validation: ${validation.reasons.join("; ")}`
+      );
+      await holdForReview(draftId, validation.reasons);
       return;
     }
 
-    console.log("[contentWorkflow] APPROVED, publishing");
+    console.log("[contentWorkflow] validation passed, publishing");
 
     // Step 6: Publish
-    await publish(draftId, approval.editedContent);
+    await publish(draftId);
     console.log("[contentWorkflow] DONE, published");
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : String(err);

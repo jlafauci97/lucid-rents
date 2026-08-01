@@ -39,6 +39,7 @@ export async function updateDraft(
   id: string,
   data: {
     status?: MarketingDraftStatus;
+    contentType?: MarketingContentType;
     hookToken?: string;
     caption?: string;
     platformVariants?: PlatformVariants;
@@ -54,6 +55,7 @@ export async function updateDraft(
 
   const patch: Record<string, unknown> = {};
   if (data.status !== undefined) patch.status = data.status;
+  if (data.contentType !== undefined) patch.content_type = data.contentType;
   if (data.hookToken !== undefined) patch.hook_token = data.hookToken;
   if (data.caption !== undefined) patch.caption = data.caption;
   if (data.platformVariants !== undefined) patch.platform_variants = data.platformVariants;
