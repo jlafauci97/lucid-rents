@@ -16,6 +16,28 @@ function authorized(req: NextRequest): boolean {
   return req.headers.get("authorization") === `Bearer ${process.env.CRON_SECRET}`;
 }
 
+/**
+ * Supabase throws PostgrestError, a plain object rather than an Error, so
+ * `String(err)` on it yields "[object Object]" and the actual failure is lost.
+ */
+function describeError(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (err && typeof err === "object") {
+    const e = err as { message?: string; code?: string; details?: string; hint?: string };
+    if (e.message || e.code) {
+      return [e.code && `[${e.code}]`, e.message, e.details, e.hint]
+        .filter(Boolean)
+        .join(" ");
+    }
+    try {
+      return JSON.stringify(err);
+    } catch {
+      return Object.prototype.toString.call(err);
+    }
+  }
+  return String(err);
+}
+
 export async function GET(req: NextRequest) {
   if (!authorized(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -101,11 +123,7 @@ export async function POST(req: NextRequest) {
         }
         generated.push(data);
       } catch (err) {
-        errors.push({
-          kind,
-          city,
-          error: err instanceof Error ? err.message : String(err),
-        });
+        errors.push({ kind, city, error: describeError(err) });
       }
     }
   }
