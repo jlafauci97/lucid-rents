@@ -9,6 +9,7 @@ import {
   currentPeriod,
   isValidPeriod,
   SNAPSHOT_KINDS,
+  type SnapshotKind,
 } from "@/lib/marketing/ranking-snapshots";
 
 export const maxDuration = 300;
@@ -34,11 +35,22 @@ export async function GET(req: NextRequest) {
     );
   }
 
+  // The scheduled crons pin both city and kind so each invocation does exactly
+  // one ranking — generating all three for a city exceeds the function limit.
+  const kindParam = req.nextUrl.searchParams.get("kind") as SnapshotKind | null;
+  if (kindParam && !SNAPSHOT_KINDS.includes(kindParam)) {
+    return NextResponse.json(
+      { error: `kind must be one of ${SNAPSHOT_KINDS.join(", ")}` },
+      { status: 400 }
+    );
+  }
+  const kinds = kindParam ? [kindParam] : SNAPSHOT_KINDS;
+
   const created: string[] = [];
   const skipped: { key: string; reason: string }[] = [];
 
   for (const city of cities) {
-    for (const kind of SNAPSHOT_KINDS) {
+    for (const kind of kinds) {
       const key = `${city}/${kind}`;
       try {
         const result = await generateSnapshot(kind, city, period);
