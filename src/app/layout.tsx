@@ -15,6 +15,7 @@ import { AdsenseLoader } from "@/components/ads/AdsenseLoader";
 
 const GA_MEASUREMENT_ID = "G-FS7Q3PF982";
 const ADSENSE_CLIENT_ID = "ca-pub-2908534121884582";
+const CLARITY_PROJECT_ID = "xvce52ac0c";
 
 const sora = Sora({
   variable: "--font-sora",
@@ -131,6 +132,7 @@ export default async function RootLayout({
         <link rel="preconnect" href="https://www.google-analytics.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://googleads.g.doubleclick.net" />
         <link rel="dns-prefetch" href="https://fundingchoicesmessages.google.com" />
+        <link rel="preconnect" href="https://www.clarity.ms" crossOrigin="anonymous" />
       </head>
       <Script
         src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
@@ -142,6 +144,20 @@ export default async function RootLayout({
           function gtag(){dataLayer.push(arguments);}
           gtag('js', new Date());
           gtag('config', '${GA_MEASUREMENT_ID}');
+        `}
+      </Script>
+      {/* Microsoft Clarity — click heatmaps + session recordings.
+          afterInteractive (not lazyOnload like GA above) on purpose: lazyOnload
+          waits for window.load, which on our image-heavy pages lands after the
+          first clicks and scrolls, and those are exactly what Clarity exists to
+          record. Drop to lazyOnload if it ever shows up in a Lighthouse trace. */}
+      <Script id="microsoft-clarity" strategy="afterInteractive">
+        {`
+          (function(c,l,a,r,i,t,y){
+            c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+            t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+            y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+          })(window, document, "clarity", "script", "${CLARITY_PROJECT_ID}");
         `}
       </Script>
       {/* adsbygoogle.js is injected by AdsenseLoader (below) on first user
