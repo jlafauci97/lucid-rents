@@ -6,6 +6,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { generateText } from "ai";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { saveRedditThread } from "@/lib/marketing/supabase-queries";
+import { evaluateThread } from "@/lib/marketing/reddit-gate";
+import { scoreThread } from "@/lib/marketing/reddit-scoring";
 import {
   REDDIT_SYSTEM_PROMPT,
   getSubredditTone,
@@ -22,8 +24,9 @@ interface Candidate {
   selftext: string;
   score: number;
   numComments: number;
-  relevanceScore: number;
-  keywordsMatched: string[];
+  /** Advisory only — the server rescores every candidate. */
+  relevanceScore?: number;
+  keywordsMatched?: string[];
 }
 
 interface Body {
@@ -62,28 +65,52 @@ export async function POST(req: NextRequest) {
 
   const results: { threadId: string; ok: boolean; error?: string }[] = [];
   let saved = 0;
+  let skipped = 0;
 
   for (const thread of fresh) {
     try {
-      let buildingContext = "";
-      const addressMatch = (thread.title + " " + thread.selftext).match(
-        /\d+\s+[\w\s]+(?:st|street|ave|avenue|blvd|boulevard|rd|road|dr|drive|pl|place|way|ln|lane)\b/i
-      );
-      if (addressMatch) {
-        const { data: buildings } = await supabase
-          .from("buildings")
-          .select("address, city, violation_count, owner_name")
-          .ilike("address", `%${addressMatch[0].trim()}%`)
-          .limit(3);
-        if (buildings && buildings.length > 0) {
-          buildingContext = `\n\nRELEVANT BUILDING DATA FROM LUCIDRENTS:\n${buildings
-            .map(
-              (b) =>
-                `- ${b.address}, ${b.city}: ${b.violation_count ?? 0} violations, owner: ${b.owner_name ?? "unknown"}`
-            )
-            .join("\n")}`;
-        }
+      // Score here rather than trusting the caller. The scanner runs off-box
+      // and previously supplied its own relevanceScore, which nothing checked.
+      const scored = await scoreThread({
+        subreddit: thread.subreddit,
+        title: thread.title,
+        selftext: thread.selftext ?? "",
+        score: thread.score,
+        numComments: thread.numComments,
+      });
+
+      const relevanceScore = scored?.relevanceScore ?? 0;
+      const keywordsMatched = scored?.keywordsMatched ?? thread.keywordsMatched ?? [];
+
+      const gate = await evaluateThread({
+        title: thread.title,
+        selftext: thread.selftext ?? "",
+        subreddit: thread.subreddit,
+        relevanceScore,
+      });
+
+      if (!gate.pass || !gate.hook) {
+        // Record the skip so the filter's behaviour stays reviewable instead of
+        // silently discarding candidates.
+        await saveRedditThread({
+          threadId: thread.threadId,
+          subreddit: thread.subreddit,
+          title: thread.title,
+          url: thread.url,
+          relevanceScore,
+          keywordsMatched,
+          draftReply: "",
+          status: "skipped",
+          selftext: thread.selftext,
+          postScore: thread.score,
+          numComments: thread.numComments,
+        });
+        skipped++;
+        results.push({ threadId: thread.threadId, ok: false, error: gate.reason });
+        continue;
       }
+
+      const hook = gate.hook;
 
       const result = await generateText({
         model: "anthropic/claude-sonnet-4.6" as never,
@@ -94,12 +121,22 @@ export async function POST(req: NextRequest) {
 Title: ${thread.title}
 Body: ${thread.selftext}
 Thread score: ${thread.score} | Comments: ${thread.numComments}
-${buildingContext}
 
-Write a helpful Reddit reply. Lead with value. Be genuine. If there is relevant building data above, weave it in naturally. Only mention lucidrents.com if it fits as a natural next step.
+THE ONE FACT THIS REPLY EXISTS TO SHARE (from LucidRents' own data):
+  ${hook.kind}: ${hook.label} — ${hook.stat}
+  Source page: ${hook.url}
+
+Write a short, helpful Reddit reply that answers the person and works this
+specific fact in naturally. Requirements:
+- Cite the fact above. It is the reason we are replying; without it, say nothing.
+- Link the source page once, inline, where it is genuinely useful.
+- Do NOT give legal advice, and do NOT reference any jurisdiction other than
+  ${hook.city}.
+- No greeting, no sign-off, no marketing language. Sound like a person who
+  happened to have the data, because that is what we are.
 
 Reply:`,
-        maxOutputTokens: 800,
+        maxOutputTokens: 500,
       });
 
       const reply = result.text.trim();
@@ -108,15 +145,29 @@ Reply:`,
         continue;
       }
 
+      // A reply that dropped the fact it was built around is not the reply we
+      // approved the thread for.
+      if (!reply.includes(hook.url)) {
+        results.push({
+          threadId: thread.threadId,
+          ok: false,
+          error: "generated reply omitted the source link",
+        });
+        continue;
+      }
+
       const row = await saveRedditThread({
         threadId: thread.threadId,
         subreddit: thread.subreddit,
         title: thread.title,
         url: thread.url,
-        relevanceScore: thread.relevanceScore,
-        keywordsMatched: thread.keywordsMatched,
+        relevanceScore,
+        keywordsMatched,
         draftReply: reply,
         status: "draft_ready",
+        selftext: thread.selftext,
+        postScore: thread.score,
+        numComments: thread.numComments,
       });
       if (row) saved++;
       results.push({ threadId: thread.threadId, ok: true });
@@ -129,11 +180,16 @@ Reply:`,
     }
   }
 
+  console.log(
+    `[reddit/draft-batch] received=${body.candidates.length} fresh=${fresh.length} drafted=${saved} skipped=${skipped}`
+  );
+
   return NextResponse.json({
     ok: true,
     received: body.candidates.length,
     fresh: fresh.length,
     saved,
+    skipped,
     results,
   });
 }

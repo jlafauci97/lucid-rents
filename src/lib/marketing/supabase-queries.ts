@@ -170,6 +170,11 @@ export async function saveRedditThread(data: {
   draftReply: string;
   hookToken?: string;
   status?: MarketingRedditStatus;
+  /** Post body. Without this the thread cannot be re-evaluated later — every
+   *  row written before this was added has an empty selftext. */
+  selftext?: string;
+  postScore?: number;
+  numComments?: number;
 }): Promise<MarketingRedditThread | null> {
   const supabase = createAdminClient();
 
@@ -186,6 +191,9 @@ export async function saveRedditThread(data: {
         draft_reply: data.draftReply,
         hook_token: data.hookToken ?? null,
         status: data.status ?? "detected",
+        selftext: data.selftext ?? null,
+        post_score: data.postScore ?? null,
+        num_comments: data.numComments ?? null,
       },
       { onConflict: "thread_id", ignoreDuplicates: true }
     )
