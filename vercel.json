@@ -212,8 +212,16 @@
     },
 
     {
-      "path": "/api/cron/rankings-snapshot",
+      "path": "/api/cron/rankings-snapshot?city=nyc",
       "schedule": "0 5 1 * *"
+    },
+    {
+      "path": "/api/cron/rankings-snapshot?city=los-angeles",
+      "schedule": "20 5 1 * *"
+    },
+    {
+      "path": "/api/cron/rankings-snapshot?city=chicago",
+      "schedule": "40 5 1 * *"
     },
 
     {

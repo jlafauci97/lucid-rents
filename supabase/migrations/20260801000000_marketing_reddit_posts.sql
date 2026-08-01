@@ -27,8 +27,12 @@ CREATE INDEX IF NOT EXISTS idx_reddit_posts_status
 
 -- One post per kind+city per day, so a re-run or a retry cannot produce a
 -- duplicate ranking of the same data.
+--
+-- Cast through UTC explicitly: created_at::date on a timestamptz depends on the
+-- session TimeZone, which makes it STABLE rather than IMMUTABLE, and Postgres
+-- refuses to index it.
 CREATE UNIQUE INDEX IF NOT EXISTS idx_reddit_posts_daily_unique
-  ON public.marketing_reddit_posts (kind, city, (created_at::date));
+  ON public.marketing_reddit_posts (kind, city, ((created_at AT TIME ZONE 'UTC')::date));
 
 ALTER TABLE public.marketing_reddit_posts ENABLE ROW LEVEL SECURITY;
 
