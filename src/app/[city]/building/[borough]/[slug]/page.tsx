@@ -42,6 +42,7 @@ import { LazyOnScroll } from "@/components/building/v2/streaming/LazyOnScroll";
 import { SectionSkeleton } from "@/components/building/v2/streaming/SectionSkeleton";
 import { LastUpdated } from "@/components/building/v2/LastUpdated";
 import { RelatedLinksStreamed } from "@/components/building/v2/streaming/RelatedLinksStreamed";
+import { EmbedSnippet } from "@/components/building/v2/EmbedSnippet";
 import { InContentAd } from "@/components/ads/InContentAd";
 import { AdRail } from "@/components/ads/AdRail";
 
@@ -400,6 +401,8 @@ export default async function BuildingPage({ params }: Props) {
           </div>
 
           <RelatedLinksStreamed building={building} city={typedCity} />
+
+          <EmbedSnippet buildingId={building.id} address={building.full_address} />
 
           <LastUpdated updatedAt={building.updated_at} />
         </main>

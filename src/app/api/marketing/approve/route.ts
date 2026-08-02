@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { resumeHook } from "workflow/api";
 import { createClient } from "@/lib/supabase/server";
 import { getDraft, updateDraft } from "@/lib/marketing/supabase-queries";
+import { publishDraft } from "@/lib/marketing/publish-draft";
 import type { ApproveRequest } from "@/types/marketing";
 
 async function checkAdmin(): Promise<string | null> {
@@ -44,27 +44,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Draft not found" }, { status: 404 });
     }
 
-    const hookToken = draft.hook_token;
-    if (!hookToken) {
+    if (draft.status === "published") {
       return NextResponse.json(
-        { error: "Draft has no pending approval hook" },
+        { error: "Draft is already published" },
         { status: 409 }
       );
     }
 
-    if (action === "approve") {
-      await updateDraft(draftId, { status: "approved" });
-      await resumeHook(hookToken, {
-        approved: true,
-        editedContent,
-      });
-    } else {
-      // reject
+    if (action !== "approve") {
       await updateDraft(draftId, { status: "rejected" });
-      await resumeHook(hookToken, { approved: false });
+      return NextResponse.json({ ok: true, status: "rejected" });
     }
 
-    return NextResponse.json({ ok: true });
+    // The content workflow publishes on its own now, so approving is no longer
+    // resuming a suspended hook — it publishes directly. This route exists for
+    // drafts the auto-publish sanity gate held back for a human to look at.
+    await updateDraft(draftId, { status: "approved" });
+    const results = await publishDraft(draftId, editedContent);
+
+    return NextResponse.json({ ok: true, status: "published", results });
   } catch (err) {
     console.error("Approve draft error:", err);
     return NextResponse.json(

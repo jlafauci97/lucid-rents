@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { waitUntil } from "@vercel/functions";
-import { resumeHook } from "workflow/api";
 import { createClient } from "@/lib/supabase/server";
 import { getDraft, updateDraft } from "@/lib/marketing/supabase-queries";
+import { publishDraft } from "@/lib/marketing/publish-draft";
 import type { ApproveBatchRequest } from "@/types/marketing";
 
 async function checkAdmin(): Promise<string | null> {
@@ -43,9 +43,13 @@ export async function POST(req: NextRequest) {
     (async () => {
       for (const id of draftIds) {
         const draft = await getDraft(id);
-        if (!draft?.hook_token) continue;
-        await updateDraft(id, { status: "approved" });
-        await resumeHook(draft.hook_token, { approved: true });
+        if (!draft || draft.status === "published") continue;
+        try {
+          await updateDraft(id, { status: "approved" });
+          await publishDraft(id);
+        } catch (err) {
+          console.error(`[approve-batch] publish failed for draft ${id}:`, err);
+        }
         // Wait 2 minutes between publishes (except last)
         if (id !== draftIds[draftIds.length - 1]) {
           await new Promise((r) => setTimeout(r, 120_000));

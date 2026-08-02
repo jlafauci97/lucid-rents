@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Reddit candidate scanner, run on the always-on Mac mini.
+
+  Reddit's JSON API refuses datacenter IPs, so this cannot run as a Vercel
+  cron. Install with:
+
+    cp scripts/launchd/com.lucidrents.reddit-scanner.plist ~/Library/LaunchAgents/
+    launchctl load ~/Library/LaunchAgents/com.lucidrents.reddit-scanner.plist
+
+  Edit WorkingDirectory and the node path below to match the mini.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.lucidrents.reddit-scanner</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/local/bin/node</string>
+        <string>scripts/reddit-scanner.mjs</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/jesselafauci/Desktop/lucid-rents</string>
+
+    <!-- Every 30 minutes. -->
+    <key>StartInterval</key>
+    <integer>1800</integer>
+
+    <!-- Don't fire a burst of catch-up runs after the mini wakes from sleep. -->
+    <key>RunAtLoad</key>
+    <false/>
+
+    <key>StandardOutPath</key>
+    <string>/tmp/lucidrents-reddit-scanner.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/lucidrents-reddit-scanner.error.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin</string>
+    </dict>
+</dict>
+</plist>

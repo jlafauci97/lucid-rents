@@ -24,7 +24,6 @@ function createAnonClient() {
 }
 import { buildingUrl, landlordUrl, canonicalUrl, cityPath, neighborhoodUrl } from "@/lib/seo";
 import { isValidCity, CITY_META, VALID_CITIES, type City } from "@/lib/cities";
-import { listPeriods, periodLabel } from "@/lib/marketing/ranking-snapshots";
 import { getRegions, normalizeScore } from "@/lib/constants";
 import {
   WATCHLIST, MOVERS, BY_ERA, BY_SIZE, TOP_ZIPS, COMPLAINT_CLOUD,
@@ -163,10 +162,6 @@ export default async function BuildingRankingsPage({ params: routeParams }: Page
   if (!isValidCity(cityParam)) notFound();
   const city = cityParam as City;
   const meta = CITY_META[city];
-
-  // Frozen monthly snapshots, if any exist. Returns [] rather than throwing
-  // when none have been published, so this page renders either way.
-  const archivePeriods = await listPeriods(city);
 
   // Page is now fully static — sort / borough / page state lives entirely
   // in the URL and is read by <DirectoryClient> on the client. The static
@@ -454,19 +449,6 @@ export default async function BuildingRankingsPage({ params: routeParams }: Page
             Ranked by violations, evictions, lawsuits, and what tenants actually report. Pull up any building&rsquo;s
             full file before you sign a lease.
           </p>
-
-          {archivePeriods.length > 0 && (
-            <p style={{ fontSize: 14, color: INK_MUTE, maxWidth: 720, margin: "14px auto 0" }}>
-              This page updates daily. For figures that stay quotable, see the{" "}
-              <Link
-                href={`/${meta.urlPrefix}/building-rankings/${archivePeriods[0]}`}
-                style={{ color: "#7c3aed", fontWeight: 600 }}
-              >
-                {periodLabel(archivePeriods[0])} snapshot
-              </Link>
-              {archivePeriods.length > 1 && " and earlier months"}.
-            </p>
-          )}
 
           <form action={cityPath("/buildings", city)} className="mt-8 max-w-2xl mx-auto">
             <div className="flex items-center" style={{ background: "#fff", border: `1px solid ${BORDER}`, borderRadius: 16, padding: 6, boxShadow: SHADOW }}>
