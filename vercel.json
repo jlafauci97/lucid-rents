@@ -212,6 +212,11 @@
     },
 
     {
+      "path": "/api/cron/press-kit?sinceHours=168",
+      "schedule": "0 4 * * 1"
+    },
+
+    {
       "path": "/api/cron/rankings-snapshot?city=nyc&kind=worst_buildings",
       "schedule": "0 5 1 * *"
     },
