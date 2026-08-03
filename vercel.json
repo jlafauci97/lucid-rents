@@ -75,10 +75,6 @@
       "schedule": "5 5 * * 1"
     },
     {
-      "path": "/api/cron/trigger?source=sheds",
-      "schedule": "35 5 * * 1"
-    },
-    {
       "path": "/api/cron/trigger?source=hpd-registrations",
       "schedule": "5 4 * * 4"
     },
@@ -158,6 +154,14 @@
     {
       "path": "/api/cron/trigger?source=la-soft-story",
       "schedule": "5 11 1 * *"
+    },
+    {
+      "path": "/api/cron/trigger?source=lapd",
+      "schedule": "5 20 * * *"
+    },
+    {
+      "path": "/api/cron/trigger?source=la-violation-summary",
+      "schedule": "35 20 * * *"
     },
 
     {
