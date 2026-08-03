@@ -37,12 +37,35 @@ export async function publishDraft(
 
   const results = await publishToAllPlatforms(variants, draft.media_urls ?? []);
 
+  // Only call it published if something actually published. Marking the row
+  // `published` regardless of outcome is how a run where all nine platforms
+  // failed still looked like a success — the same class of silent failure that
+  // let this pipeline report 241 runs and zero posts without anyone noticing.
+  const succeeded = results.filter((r) => !r.error);
+
+  if (succeeded.length === 0) {
+    const reasons = [...new Set(results.map((r) => String(r.error)))].join("; ");
+    await updateDraft(draftId, {
+      status: "failed",
+      caption,
+      platformVariants: variants,
+      publishResults: results,
+      errorMessage: `Publish failed on all ${results.length} platforms: ${reasons}`,
+    });
+    throw new Error(`Publish failed on all ${results.length} platforms: ${reasons}`);
+  }
+
   await updateDraft(draftId, {
     status: "published",
     caption,
     platformVariants: variants,
     publishedAt: new Date().toISOString(),
     publishResults: results,
+    ...(succeeded.length < results.length
+      ? {
+          errorMessage: `Partial publish: ${succeeded.length}/${results.length} platforms succeeded`,
+        }
+      : {}),
   });
 
   return results;
