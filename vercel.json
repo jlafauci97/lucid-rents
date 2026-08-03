@@ -75,6 +75,10 @@
       "schedule": "5 5 * * 1"
     },
     {
+      "path": "/api/cron/trigger?source=sync-hpd-lead",
+      "schedule": "5 23 * * 1"
+    },
+    {
       "path": "/api/cron/trigger?source=hpd-registrations",
       "schedule": "5 4 * * 4"
     },
