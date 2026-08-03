@@ -7,6 +7,8 @@ import {
 } from "workflow";
 
 // Types
+import { VALID_CITIES } from "@/lib/cities";
+
 import type {
   MarketingContentType,
   MarketingVideoType,
@@ -199,7 +201,8 @@ async function gatherSourceData(
       // Find owners with highest violation counts
       const { data: buildings } = await supabase
         .from("buildings")
-        .select("owner_name, violation_count, full_address, city")
+        .select("owner_name, violation_count, full_address, metro")
+        .in("metro", VALID_CITIES)
         .not("owner_name", "is", null)
         .order("violation_count", { ascending: false })
         .limit(100);
@@ -244,7 +247,8 @@ async function gatherSourceData(
       // Find buildings with the most violations — no date filter, just highest counts
       const { data: buildings, error: buildingsError } = await supabase
         .from("buildings")
-        .select("id, full_address, city, borough, violation_count, owner_name, zip_code, metro")
+        .select("id, full_address, borough, violation_count, owner_name, zip_code, metro")
+        .in("metro", VALID_CITIES)
         .gt("violation_count", 10)
         .order("violation_count", { ascending: false })
         .limit(20);
@@ -282,7 +286,8 @@ async function gatherSourceData(
       // Get violation data from buildings
       const { data: buildingData } = await supabase
         .from("buildings")
-        .select("id, zip_code, violation_count, city")
+        .select("id, zip_code, violation_count, metro")
+        .in("metro", VALID_CITIES)
         .not("zip_code", "is", null)
         .gt("violation_count", 0)
         .limit(500);
@@ -308,7 +313,7 @@ async function gatherSourceData(
       for (const b of buildingData ?? []) {
         const zip = b.zip_code as string;
         if (!zipMap.has(zip)) {
-          zipMap.set(zip, { totalRent: 0, rentCount: 0, totalViolations: 0, count: 0, city: b.city as string });
+          zipMap.set(zip, { totalRent: 0, rentCount: 0, totalViolations: 0, count: 0, city: b.metro as string });
         }
         const entry = zipMap.get(zip)!;
         entry.totalViolations += (b.violation_count as number) || 0;
@@ -371,6 +376,7 @@ async function gatherSourceData(
       const { data: articles } = await supabase
         .from("news_articles")
         .select("*")
+        .in("metro", VALID_CITIES)
         .order("published_at", { ascending: false })
         .limit(3);
 
@@ -392,7 +398,8 @@ async function gatherSourceData(
       // Pick a random interesting building
       const { data: buildings } = await supabase
         .from("buildings")
-        .select("full_address, city, violation_count, owner_name")
+        .select("full_address, metro, violation_count, owner_name")
+        .in("metro", VALID_CITIES)
         .gte("violation_count", 20)
         .order("violation_count", { ascending: false })
         .limit(20);
