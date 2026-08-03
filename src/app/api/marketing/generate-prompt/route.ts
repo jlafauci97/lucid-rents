@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isMarketingAuthorized } from "@/lib/marketing/api-auth";
 
 export const maxDuration = 30;
 
 export async function POST(req: NextRequest) {
-  try {
+  if (!(await isMarketingAuthorized(req))) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }  try {
     const body = await req.json();
     const { topic, city, tone, contentType, angle } = body as {
       topic: string;

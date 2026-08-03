@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isMarketingAuthorized } from "@/lib/marketing/api-auth";
 import { getAnalytics } from "@/lib/marketing/supabase-queries";
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = req.nextUrl;
+  if (!(await isMarketingAuthorized(req))) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }  const { searchParams } = req.nextUrl;
   const startDate = searchParams.get("startDate") ?? undefined;
   const endDate = searchParams.get("endDate") ?? undefined;
 
