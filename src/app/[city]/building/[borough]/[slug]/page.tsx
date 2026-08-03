@@ -2,6 +2,7 @@ import "@/styles/v2-tokens.css";
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { createCacheClient } from "@/lib/supabase/cache-client";
+import { unwrap } from "@/lib/supabase/unwrap";
 import { regionFromSlug, regionSlug, boroughIlikePattern, buildingUrl, canonicalUrl, buildingJsonLd, breadcrumbJsonLd, cityPath } from "@/lib/seo";
 import { VALID_CITIES, CITY_META, type City } from "@/lib/cities";
 import { cache } from "react";
@@ -70,13 +71,18 @@ const getBuilding = cache(async (boroughSlug: string, slug: string, metro: strin
   // a hyphen, but `regionFromSlug` falls back to title-case-with-spaces for
   // slugs not in the regions list. Plain ilike("Mid City") never matched →
   // redirect-to-self via Next 16 streaming → Google "Redirect error".
-  const { data } = await supabase
-    .from("buildings")
-    .select("*")
-    .eq("slug", slug)
-    .ilike("borough", boroughIlikePattern(borough))
-    .eq("metro", metro)
-    .limit(1);
+  // unwrap(), not `const { data }` — a failed query must not read as "building
+  // doesn't exist". See src/lib/supabase/unwrap.ts.
+  const data = unwrap(
+    await supabase
+      .from("buildings")
+      .select("*")
+      .eq("slug", slug)
+      .ilike("borough", boroughIlikePattern(borough))
+      .eq("metro", metro)
+      .limit(1),
+    `getBuilding ${metro}/${boroughSlug}/${slug}`
+  );
   return (data?.[0] as Building) ?? null;
 });
 
@@ -139,20 +145,26 @@ function slugCandidates(slug: string): string[] {
 
 const findBuildingAnywhere = cache(async (slug: string) => {
   const supabase = createCacheClient();
-  const { data } = await supabase
-    .from("buildings")
-    .select("borough, slug, metro")
-    .eq("slug", slug)
-    .limit(1);
+  const data = unwrap(
+    await supabase
+      .from("buildings")
+      .select("borough, slug, metro")
+      .eq("slug", slug)
+      .limit(1),
+    `findBuildingAnywhere ${slug}`
+  );
   if (data?.[0]) return data[0];
 
   const candidates = slugCandidates(slug);
   for (const candidate of candidates) {
-    const { data: fallback } = await supabase
-      .from("buildings")
-      .select("borough, slug, metro")
-      .eq("slug", candidate)
-      .limit(1);
+    const fallback = unwrap(
+      await supabase
+        .from("buildings")
+        .select("borough, slug, metro")
+        .eq("slug", candidate)
+        .limit(1),
+      `findBuildingAnywhere fallback ${candidate}`
+    );
     if (fallback?.[0]) return fallback[0];
   }
   return null;

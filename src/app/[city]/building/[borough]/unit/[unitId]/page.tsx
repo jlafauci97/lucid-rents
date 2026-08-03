@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createCacheClient } from "@/lib/supabase/cache-client";
+import { unwrap } from "@/lib/supabase/unwrap";
 import { ViolationTimeline } from "@/components/building/ViolationTimeline";
 import { ReviewCard } from "@/components/review/ReviewCard";
 import { ScoreGauge } from "@/components/ui/ScoreGauge";
@@ -48,13 +49,20 @@ export default async function UnitPage({ params }: UnitPageProps) {
   const city = (cityParam || "nyc") as City;
   const supabase = createCacheClient();
 
-  // Fetch unit first (need unit_number for violation query)
-  const { data: unit } = await supabase
-    .from("units")
-    .select("*")
-    .eq("id", unitId)
-    .eq("building_id", buildingId)
-    .single();
+  // Fetch unit first (need unit_number for violation query).
+  // maybeSingle() + unwrap(), not single() — single() raises PGRST116 on an
+  // empty result, so a genuine miss and a failed query look identical. Only a
+  // real failure may throw; a miss must fall through to notFound(). See
+  // src/lib/supabase/unwrap.ts.
+  const unit = unwrap(
+    await supabase
+      .from("units")
+      .select("*")
+      .eq("id", unitId)
+      .eq("building_id", buildingId)
+      .maybeSingle(),
+    `unit ${buildingId}/${unitId}`
+  );
 
   if (!unit) notFound();
 
@@ -64,7 +72,7 @@ export default async function UnitPage({ params }: UnitPageProps) {
       .from("buildings")
       .select("id, full_address, borough, slug, zip_code, owner_name")
       .eq("id", buildingId)
-      .single(),
+      .maybeSingle(),
     supabase
       .from("hpd_violations")
       .select("*")
@@ -81,7 +89,7 @@ export default async function UnitPage({ params }: UnitPageProps) {
       .order("created_at", { ascending: false }),
   ]);
 
-  const building = buildingRes.data;
+  const building = unwrap(buildingRes, `unit building ${buildingId}`);
   if (!building) notFound();
 
   const violations = (violationsRes.data || []) as HpdViolation[];

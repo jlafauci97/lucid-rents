@@ -1,6 +1,7 @@
 import "@/styles/v2-tokens.css";
 import { cache } from "react";
 import { createCacheClient } from "@/lib/supabase/cache-client";
+import { unwrap } from "@/lib/supabase/unwrap";
 import { notFound, permanentRedirect } from "next/navigation";
 import { Crumbs } from "@/components/landlord/v2/Crumbs";
 import { HeroV2Streamed } from "@/components/landlord/v2/streaming/HeroV2Streamed";
@@ -82,23 +83,39 @@ async function resolveOwnerName(
   slugOrName: string,
   city: City
 ): Promise<string | null> {
-  const { data: statsRows } = await supabase
-    .from("landlord_stats")
-    .select("name")
-    .eq("slug", slugOrName)
-    .eq("metro", city)
-    .limit(1);
+  // unwrap(), not `const { data }` — a failed query must not read as "landlord
+  // doesn't exist". See src/lib/supabase/unwrap.ts.
+  const statsRows = unwrap(
+    await supabase
+      .from("landlord_stats")
+      .select("name")
+      .eq("slug", slugOrName)
+      .eq("metro", city)
+      .limit(1),
+    `resolveOwnerName ${city}/${slugOrName}`
+  );
 
   if (statsRows?.[0]?.name) return statsRows[0].name;
 
-  // Legacy fallback: old URLs had the owner name URL-encoded directly.
+  // Legacy fallback: old URLs had the owner name URL-encoded directly. Only
+  // worth a query when the path was ACTUALLY percent-encoded. `owner_name`
+  // has no expression index, so this ILIKE is a full scan of `buildings` that
+  // reliably hits the statement timeout (57014) — and a plain slug can never
+  // match one anyway ("alhani-realty-llc" is not ILIKE "ALHANI REALTY LLC").
+  // Running it on every miss meant every nonexistent landlord URL paid a
+  // guaranteed timeout, which used to be swallowed into a soft-404.
   const decoded = decodeURIComponent(slugOrName);
-  const { data: byName } = await supabase
-    .from("buildings")
-    .select("owner_name")
-    .ilike("owner_name", decoded)
-    .eq("metro", city)
-    .limit(1);
+  if (decoded === slugOrName) return null;
+
+  const byName = unwrap(
+    await supabase
+      .from("buildings")
+      .select("owner_name")
+      .ilike("owner_name", decoded)
+      .eq("metro", city)
+      .limit(1),
+    `resolveOwnerName legacy ${city}/${decoded}`
+  );
 
   return byName?.[0]?.owner_name ?? null;
 }
@@ -117,13 +134,16 @@ async function resolveOwnerName(
 const findLandlordAnywhere = cache(
   async (slug: string, excludeCity: City): Promise<{ name: string; city: City } | null> => {
     const supabase = createCacheClient();
-    const { data } = await supabase
-      .from("landlord_stats")
-      .select("name, metro, building_count")
-      .eq("slug", slug)
-      .gt("building_count", 0)
-      .order("building_count", { ascending: false })
-      .limit(5);
+    const data = unwrap(
+      await supabase
+        .from("landlord_stats")
+        .select("name, metro, building_count")
+        .eq("slug", slug)
+        .gt("building_count", 0)
+        .order("building_count", { ascending: false })
+        .limit(5),
+      `findLandlordAnywhere ${slug}`
+    );
     const match = data?.find(
       (r) => VALID_CITIES.includes(r.metro as City) && (r.metro as City) !== excludeCity
     );

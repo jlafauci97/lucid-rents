@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { ArrowLeft } from "lucide-react";
 import { createCacheClient } from "@/lib/supabase/cache-client";
+import { unwrap } from "@/lib/supabase/unwrap";
 import { cityPath, cityBreadcrumbs, landlordSlug, landlordUrl, canonicalUrl, buildingUrl } from "@/lib/seo";
 import { CITY_META } from "@/lib/cities";
 import type { City } from "@/lib/cities";
@@ -59,13 +60,18 @@ async function resolveOwnerName(
   slug: string,
   city: City
 ): Promise<string | null> {
-  const { data } = await supabase
-    .from("landlord_stats")
-    .select("name")
-    .eq("slug", slug)
-    .eq("metro", city)
-    .limit(1)
-    .maybeSingle();
+  // unwrap(), not `const { data }` — a failed query must not read as
+  // "landlord doesn't exist". See src/lib/supabase/unwrap.ts.
+  const data = unwrap(
+    await supabase
+      .from("landlord_stats")
+      .select("name")
+      .eq("slug", slug)
+      .eq("metro", city)
+      .limit(1)
+      .maybeSingle(),
+    `resolveOwnerName ${city}/${slug}`
+  );
   return data?.name ?? null;
 }
 
