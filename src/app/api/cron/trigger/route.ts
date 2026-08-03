@@ -77,6 +77,7 @@ const VERCEL_DISPATCH_SOURCES = new Set([
   "chicago-lead",
   // standalone edge functions
   "sync-rent-stabilization",
+  "sync-hpd-lead",
 ]);
 
 /** Standalone edge functions are invoked by name; everything else goes to `sync`. */
@@ -90,6 +91,7 @@ const STANDALONE_FUNCTIONS = new Set([
   "sync-rent-stabilization",
   "sync-zillow-rents",
   "geocode-buildings",
+  "sync-hpd-lead",
 ]);
 
 function getFunctionName(source: string | null): string {
