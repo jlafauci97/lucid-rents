@@ -168,6 +168,22 @@ export async function proxy(request: NextRequest) {
       const remainingPath = segments.slice(3).join("/");
       const internalPath = `/${internalCity}${remainingPath ? `/${remainingPath}` : ""}`;
 
+      // Old /rankings and /worst-rated-buildings paths must 301 HERE, before
+      // the rewrite below hides them behind the internal city slug. Otherwise
+      // they fall through to the page component, whose permanentRedirect() is
+      // coerced by Next 16 streaming SSR into an HTTP 200 carrying
+      // `<meta http-equiv="refresh">` — which Google files under "Page with
+      // redirect" — and which pointed at the INTERNAL slug
+      // (/chicago/building-rankings), itself a non-canonical URL that then
+      // canonicalises to /IL/Chicago/building-rankings. Two wasted hops from a
+      // 200 with no canonical of its own.
+      if (segments[3] === "rankings" || segments[3] === "worst-rated-buildings") {
+        const url = request.nextUrl.clone();
+        const rest = segments.slice(4);
+        url.pathname = `/${CITY_META[internalCity].urlPrefix}/building-rankings${rest.length ? "/" + rest.join("/") : ""}`;
+        return NextResponse.redirect(url, 301);
+      }
+
       // Handle neighborhood slug redirects for LA
       if (segments[3] === "neighborhood" && segments[4] && /^\d{5}$/.test(segments[4])) {
         const newSlug = neighborhoodPageSlugByCity(segments[4], internalCity);
@@ -191,10 +207,15 @@ export async function proxy(request: NextRequest) {
 
   // 1b. Path already starts with a valid single-segment city (e.g. "nyc")
   if (VALID_CITIES.includes(firstSegment as (typeof VALID_CITIES)[number])) {
-    // Redirect old /rankings or /worst-rated-buildings URL to /building-rankings
+    // Redirect old /rankings or /worst-rated-buildings URL to /building-rankings.
+    // Target the city's EXTERNAL prefix, not the matched segment: reaching this
+    // via an internal slug (/chicago/...) would otherwise 301 to another
+    // internal-slug URL that just canonicalises again. For nyc the two are the
+    // same string, so that form is unchanged.
     if (segments[2] === "rankings" || segments[2] === "worst-rated-buildings") {
       const url = request.nextUrl.clone();
-      url.pathname = `/${firstSegment}/building-rankings${segments.slice(3).length ? "/" + segments.slice(3).join("/") : ""}`;
+      const prefix = CITY_META[firstSegment as (typeof VALID_CITIES)[number]].urlPrefix;
+      url.pathname = `/${prefix}/building-rankings${segments.slice(3).length ? "/" + segments.slice(3).join("/") : ""}`;
       return NextResponse.redirect(url, 301);
     }
     // Redirect old-format neighborhood URLs: /nyc/neighborhood/10001 -> /nyc/neighborhood/chelsea-10001
