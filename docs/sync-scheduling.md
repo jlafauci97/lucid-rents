@@ -126,3 +126,25 @@ was still on the April build.
 `rawContent.replace is not a function`. Its RSS content field parses to an
 object, and the `as string` cast in `sync-news/index.ts` doesn't guard against
 that. It has been contributing 0 articles; needs a typeof check.
+
+## sync-news RSS field handling — fixed 2026-08-03 (v8)
+
+Two bugs, same root cause: RSS/Atom fields are not reliably strings, and the
+code used `as string` casts that lied about it.
+
+1. **Chicago Sun-Times threw every run** — `rawContent.replace is not a
+   function`. fast-xml-parser returns an object when an element carries
+   attributes or CDATA (`{ "#text": "...", "$_type": "html" }`).
+2. **After the throw was fixed it still yielded 0** — the feed is *Atom*, where
+   the URL is an attribute-only element (`<link rel="alternate" href="…"/>`)
+   parsed as `{ $_href, $_rel }` with no text node. Every entry resolved to an
+   empty link and was dropped by the title/link filter.
+
+Now handled by `toText` / `pickContent` / `pickLink` / `pickAuthor`, which cover
+strings, `#text` objects, Atom link arrays (preferring `rel="alternate"`), and
+nested `<author><name>`. Result: **Sun-Times 0 → 55 articles**, run total
+132 → 187, zero errors across all 14 sources.
+
+**Still at zero, not a code bug:** `The Real Deal LA` and
+`Crain's Chicago Business` both return **HTTP 403** — those publishers block our
+user agent. Needs a UA/fetch strategy change or dropping the feeds.
