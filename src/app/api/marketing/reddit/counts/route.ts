@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { isMarketingAuthorized } from "@/lib/marketing/api-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { MarketingRedditStatus } from "@/types/marketing";
 
@@ -10,8 +11,10 @@ const STATUSES: MarketingRedditStatus[] = [
   "skipped",
 ];
 
-export async function GET() {
-  try {
+export async function GET(req: NextRequest) {
+  if (!(await isMarketingAuthorized(req))) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }  try {
     const supabase = createAdminClient();
     const results = await Promise.all(
       STATUSES.map(async (status) => {

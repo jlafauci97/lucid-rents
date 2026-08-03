@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isMarketingAuthorized } from "@/lib/marketing/api-auth";
 import { listDrafts } from "@/lib/marketing/supabase-queries";
 import type { MarketingDraftStatus } from "@/types/marketing";
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = req.nextUrl;
+  if (!(await isMarketingAuthorized(req))) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }  const { searchParams } = req.nextUrl;
   const status = searchParams.get("status") as MarketingDraftStatus | null;
   const limitParam = searchParams.get("limit");
   const offsetParam = searchParams.get("offset");
