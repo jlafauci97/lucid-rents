@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Reddit queue poster, run on the always-on Mac mini.
+
+  Posts one queued item per run through the user's logged-in Chrome. Rate
+  limits (5/day, 2 per subreddit, 15-minute gap) are enforced server-side by
+  /api/marketing/reddit/queue, so this can run often without over-posting — it
+  simply gets "nothing to post" until the next slot opens.
+
+  Requires on the mini:
+    - Chrome running, signed in to Reddit as the posting account
+    - Chrome > View > Developer > Allow JavaScript from Apple Events
+    - .env.local with CRON_SECRET and REDDIT_USERNAME
+
+  Install:
+    cp scripts/launchd/com.lucidrents.reddit-poster.plist ~/Library/LaunchAgents/
+    launchctl load ~/Library/LaunchAgents/com.lucidrents.reddit-poster.plist
+
+  Edit WorkingDirectory and the node path below to match the mini.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.lucidrents.reddit-poster</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/local/bin/node</string>
+        <string>scripts/post-reddit-queue.mjs</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/jesselafauci/Desktop/lucid-rents</string>
+
+    <!-- Every 20 minutes. The server decides whether a slot is actually open. -->
+    <key>StartInterval</key>
+    <integer>1200</integer>
+
+    <!-- Don't fire a burst of catch-up runs when the mini wakes. -->
+    <key>RunAtLoad</key>
+    <false/>
+
+    <key>StandardOutPath</key>
+    <string>/tmp/lucidrents-reddit-poster.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/lucidrents-reddit-poster.error.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin</string>
+    </dict>
+</dict>
+</plist>
