@@ -44,23 +44,32 @@ const LOCAL_SCHEDULER_SOURCES = new Set([
 ]);
 
 /**
- * Sources Vercel dispatches. Stage 1 of the restore: everything confirmed dead
- * since June except `nypd`, which is the single heaviest source (multi-million
- * rows) and the one most likely to spike DB load. Add "nypd" here once stage 1
- * has run clean for a few days — see docs/sync-scheduling.md.
+ * Sources Vercel dispatches. Everything confirmed dead since June, plus the two
+ * crime sources that had no cron at all (`lapd`, dead since March) and
+ * `la-violation-summary`.
+ *
+ * `sheds` (sidewalk sheds) is deliberately NOT here — dropped 2026-08-01, not
+ * needed for now. Its cron entry was removed from vercel.json too; re-add both
+ * to bring it back.
+ *
+ * `nypd` and `lapd` are the two heaviest sources. They are scheduled off-peak
+ * and away from the local scheduler's 01:00/17:00/21:00 UTC windows so a spike
+ * can't repeat the 2026-07-27 DB wedge.
  */
 const VERCEL_DISPATCH_SOURCES = new Set([
   // NYC
   "bedbugs",
-  "sheds",
   "evictions",
   "permits",
   "hpd-registrations",
   "hpd-contacts",
+  "nypd",
   // LA
   "ladbs",
   "la-permits",
   "la-soft-story",
+  "lapd",
+  "la-violation-summary",
   // Chicago
   "chicago-crimes",
   "chicago-permits",

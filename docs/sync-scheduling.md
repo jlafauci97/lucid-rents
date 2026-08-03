@@ -28,14 +28,19 @@ Three of them had ended in `failed`.
 runs. The allowlist now makes the split explicit, and the nightly sync summary
 (below) makes a stall visible within a day.
 
-## Staged restore
+## Restore status
 
-Stage 1 (2026-08-01) re-enabled everything above **except `nypd`** — the single
-heaviest source (multi-million rows), held back so a load spike couldn't wedge
-the database the way the 2026-07-27 incident did.
+Everything dead since June is now dispatched, including both heavy crime
+sources. `nypd` runs at its existing 07:05 UTC slot; `lapd` and
+`la-violation-summary` had **no cron entry in either scheduler** and were given
+new ones at 20:05 / 20:35 UTC — off-peak and clear of the local scheduler's
+01:00 / 17:00 / 21:00 windows, so a spike can't repeat the 2026-07-27 DB wedge.
 
-**Stage 2:** once stage 1 has run clean for a few days, add `"nypd"` to
-`VERCEL_DISPATCH_SOURCES` in `src/app/api/cron/trigger/route.ts`. Confirm with:
+**Dropped deliberately:** `sheds` (sidewalk sheds) — not needed as of
+2026-08-01. Removed from both `VERCEL_DISPATCH_SOURCES` and `vercel.json`;
+re-add in both places to bring it back.
+
+Confirm a restore landed with:
 
 ```sql
 SELECT sync_type, MAX(started_at), SUM(records_added)
@@ -43,8 +48,13 @@ FROM sync_log WHERE started_at > now() - interval '3 days'
 GROUP BY sync_type ORDER BY 2 DESC;
 ```
 
-Still unscheduled anywhere: `lapd` (LA crime, last run 2026-03-25) has no cron
-entry in either scheduler. Needs one added deliberately — it is also heavy.
+### Known gap: HPD lead violations has no handler
+
+`hpd_lead_violations` (last populated 2026-03-09) **cannot** be restored by a
+cron. There is no `syncHPDLeadViolations` function in
+`supabase/functions/sync/index.ts` and no matching key in its `SOURCES`
+registry — the table was filled by a one-off import. Bringing it back means
+writing the handler, registering it, and redeploying the edge function.
 
 ## Alerting
 
