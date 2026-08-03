@@ -1,6 +1,7 @@
 import { unstable_cache } from "next/cache";
 import type { City } from "@/lib/cities";
 import { createCacheClient } from "@/lib/supabase/cache-client";
+import { unwrap } from "@/lib/supabase/unwrap";
 import { computeGradeDistribution, aggregateRegions } from "@/lib/landlord-v2-helpers";
 import { faqBankForCity } from "@/lib/landlord-city-adapters";
 import { CITY_META } from "@/lib/cities";
@@ -221,13 +222,19 @@ export const resolveOwnerName = cached(
   "resolve-owner-name",
   async (slug: string, city: City): Promise<string | null> => {
     const supabase = createCacheClient();
-    const { data } = await supabase
-      .from("landlord_stats")
-      .select("name")
-      .eq("slug", slug)
-      .eq("metro", city)
-      .limit(1)
-      .maybeSingle();
+    // unwrap(), not `const { data }` — every loader below funnels through this
+    // and the pages call notFound() on an empty result, so a failed query must
+    // not read as "landlord doesn't exist". See src/lib/supabase/unwrap.ts.
+    const data = unwrap(
+      await supabase
+        .from("landlord_stats")
+        .select("name")
+        .eq("slug", slug)
+        .eq("metro", city)
+        .limit(1)
+        .maybeSingle(),
+      `resolveOwnerName ${city}/${slug}`
+    );
     return data?.name ?? null;
   }
 );
@@ -268,11 +275,15 @@ export const loadLandlordBuildingList = cached(
     const ownerName = await resolveOwnerName(slug, city);
     if (!ownerName) return [];
     const supabase = createCacheClient();
-    const { data } = await supabase
-      .from("buildings")
-      .select(BUILDING_LIST_COLUMNS)
-      .eq("owner_name", ownerName)
-      .eq("metro", city);
+    // unwrap() — /record and /buildings call notFound() on an empty list.
+    const data = unwrap(
+      await supabase
+        .from("buildings")
+        .select(BUILDING_LIST_COLUMNS)
+        .eq("owner_name", ownerName)
+        .eq("metro", city),
+      `loadLandlordBuildingList ${city}/${slug}`
+    );
     return (data ?? []) as LandlordBuildingRow[];
   }
 );
@@ -950,13 +961,17 @@ export const loadLandlordAllReviews = cached(
     if (buildings.length === 0) return [];
     const supabase = createCacheClient();
     const byId = new Map(buildings.map((b) => [b.id, b]));
-    const { data } = await supabase
-      .from("reviews")
-      .select("id, overall_rating, body, created_at, building_id")
-      .in("building_id", buildings.map((b) => b.id))
-      .eq("status", "published")
-      .order("created_at", { ascending: false })
-      .limit(1000);
+    // unwrap() — /reviews calls notFound() on an empty list.
+    const data = unwrap(
+      await supabase
+        .from("reviews")
+        .select("id, overall_rating, body, created_at, building_id")
+        .in("building_id", buildings.map((b) => b.id))
+        .eq("status", "published")
+        .order("created_at", { ascending: false })
+        .limit(1000),
+      `loadLandlordAllReviews ${city}/${slug}`
+    );
     type Row = { id: string; overall_rating: number | null; body: string | null; created_at: string; building_id: string };
     return ((data ?? []) as Row[])
       .filter((r) => typeof r.overall_rating === "number" && r.overall_rating > 0)

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
+import { unwrap } from "@/lib/supabase/unwrap";
 import { isValidCity } from "@/lib/cities";
 import { canonicalUrl, cityPath } from "@/lib/seo";
 import { fetchNeighborhoodRisks } from "@/lib/neighborhood-risks/queries";
@@ -29,7 +30,10 @@ async function getBuilding(slug: string): Promise<BuildingRow | null> {
   // Use limit(1) + maybeSingle: NYC has duplicate slugs (e.g. "0-undisclosed",
   // generic placeholder names), so .single() would throw. Pick deterministically
   // by id so refreshes hit the same row.
-  const { data } = await supabase
+  // unwrap(), not `const { data }` — a failed query must not read as
+  // "building doesn't exist". See src/lib/supabase/unwrap.ts.
+  const data = unwrap(
+    await supabase
     .from("buildings")
     .select("id, name, full_address, borough, latitude, longitude, slug")
     .eq("metro", "nyc")
@@ -38,7 +42,9 @@ async function getBuilding(slug: string): Promise<BuildingRow | null> {
     .not("longitude", "is", null)
     .order("id", { ascending: true })
     .limit(1)
-    .maybeSingle();
+    .maybeSingle(),
+    `neighborhood-risks building ${slug}`
+  );
   return (data as BuildingRow | null) ?? null;
 }
 

@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { createCacheClient } from "@/lib/supabase/cache-client";
+import { unwrap } from "@/lib/supabase/unwrap";
 import type { City } from "@/lib/cities";
 
 export interface LandlordStats {
@@ -36,28 +37,37 @@ export const getLandlordStats = cache(async (
   const SELECT_COLS =
     "name, slug, building_count, total_violations, total_dob_violations, total_complaints, avg_score, worst_building_address, worst_building_violations";
 
-  // Primary: match by slug
-  const bySlug = await supabase
-    .from("landlord_stats")
-    .select(SELECT_COLS)
-    .eq("slug", slugOrName)
-    .eq("metro", city)
-    .limit(1)
-    .maybeSingle();
-
-  let row = bySlug.data;
-
-  // Fallback: legacy URL format — resolve by ilike name match
-  if (!row && !bySlug.error) {
-    const decoded = decodeURIComponent(slugOrName);
-    const byName = await supabase
+  // Primary: match by slug. unwrap() rather than swallowing the error — the
+  // landlord page calls notFound() on a null return, and a failed query must
+  // not be indistinguishable from a missing landlord. See
+  // src/lib/supabase/unwrap.ts.
+  let row = unwrap(
+    await supabase
       .from("landlord_stats")
       .select(SELECT_COLS)
-      .ilike("name", decoded)
+      .eq("slug", slugOrName)
       .eq("metro", city)
       .limit(1)
-      .maybeSingle();
-    row = byName.data;
+      .maybeSingle(),
+    `getLandlordStats ${city}/${slugOrName}`
+  );
+
+  // Fallback: legacy URL format — resolve by ilike name match. Skipped unless
+  // the path was actually percent-encoded: `name` has no expression index, so
+  // this ILIKE is a full scan, and a plain slug can never match a display name
+  // anyway. See the matching guard in the landlord page's resolveOwnerName.
+  const decoded = decodeURIComponent(slugOrName);
+  if (!row && decoded !== slugOrName) {
+    row = unwrap(
+      await supabase
+        .from("landlord_stats")
+        .select(SELECT_COLS)
+        .ilike("name", decoded)
+        .eq("metro", city)
+        .limit(1)
+        .maybeSingle(),
+      `getLandlordStats legacy ${city}/${decoded}`
+    );
   }
 
   if (!row) return null;

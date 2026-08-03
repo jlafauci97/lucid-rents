@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { createCacheClient } from "@/lib/supabase/cache-client";
+import { unwrap } from "@/lib/supabase/unwrap";
 import { IssuesTabs } from "@/components/building/IssuesTabs";
 import { ViolationTrend } from "@/components/building/ViolationTrend";
 import { CommonIssues } from "@/components/building/CommonIssues";
@@ -41,7 +42,9 @@ const getBuilding = cache(async (boroughSlug: string, slug: string, metro?: stri
     query = query.eq("metro", metro);
   }
 
-  const { data } = await query.limit(1);
+  // unwrap(), not `const { data }` — a failed query must not read as
+  // "building doesn't exist". See src/lib/supabase/unwrap.ts.
+  const data = unwrap(await query.limit(1), `getBuilding ${metro}/${boroughSlug}/${slug}`);
 
   if (!data || data.length === 0) return null;
   return data[0] as Building;

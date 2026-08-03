@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { createCacheClient } from "@/lib/supabase/cache-client";
+import { unwrap } from "@/lib/supabase/unwrap";
 import { CITY_META, HIDDEN_CITIES, VALID_CITIES, type City } from "@/lib/cities";
 import { buildingUrl } from "@/lib/seo";
 import type { Building } from "@/types";
@@ -42,11 +43,17 @@ export default async function BuildingEmbedPage({
   const isDark = sp.theme === "dark";
 
   const supabase = createCacheClient();
-  const { data } = await supabase
-    .from("buildings")
-    .select("id, full_address, borough, slug, metro, overall_score, violation_count, complaint_count, review_count, is_rent_stabilized, is_rso")
-    .eq("id", id)
-    .single();
+  // maybeSingle() + unwrap(), not single() — single() raises PGRST116 on an
+  // empty result, so a genuine miss and a failed query look identical. Only a
+  // real failure may throw. See src/lib/supabase/unwrap.ts.
+  const data = unwrap(
+    await supabase
+      .from("buildings")
+      .select("id, full_address, borough, slug, metro, overall_score, violation_count, complaint_count, review_count, is_rent_stabilized, is_rso")
+      .eq("id", id)
+      .maybeSingle(),
+    `embed building ${id}`
+  );
 
   if (!data) notFound();
   const building = data as Building;

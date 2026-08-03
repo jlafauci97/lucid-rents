@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { ArrowLeft, Clock } from "lucide-react";
 import { createCacheClient } from "@/lib/supabase/cache-client";
+import { unwrap } from "@/lib/supabase/unwrap";
 import { regionFromSlug, boroughIlikePattern, buildingUrl, canonicalUrl, cityBreadcrumbs, cityPath } from "@/lib/seo";
 import { CITY_META, VALID_CITIES, type City } from "@/lib/cities";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
@@ -27,7 +28,9 @@ const getBuilding = cache(async (boroughSlug: string, slug: string, metro?: stri
   const supabase = createCacheClient();
   let query = supabase.from("buildings").select("*").eq("slug", slug).ilike("borough", boroughIlikePattern(borough));
   if (metro) query = query.eq("metro", metro);
-  const { data } = await query.limit(1);
+  // unwrap(), not `const { data }` — a failed query must not read as
+  // "building doesn't exist". See src/lib/supabase/unwrap.ts.
+  const data = unwrap(await query.limit(1), `getBuilding ${metro}/${boroughSlug}/${slug}`);
   if (!data || data.length === 0) return null;
   return data[0] as Building;
 });
