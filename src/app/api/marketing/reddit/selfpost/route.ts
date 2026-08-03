@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { VALID_CITIES, type City } from "@/lib/cities";
 import { buildSelfPost, type SelfPostKind } from "@/lib/marketing/reddit-selfpost";
+import { MC_COOKIE, verifyCookieValue } from "@/lib/mission-control/auth";
 
 export const maxDuration = 300;
 export const dynamic = "force-dynamic";
@@ -14,6 +15,18 @@ const KINDS: SelfPostKind[] = ["worst_buildings", "worst_landlords", "worst_neig
 
 function authorized(req: NextRequest): boolean {
   return req.headers.get("authorization") === `Bearer ${process.env.CRON_SECRET}`;
+}
+
+/**
+ * Read access for the mission-control UI.
+ *
+ * The proxy only gates /mission-control *pages*, not /api/marketing/*, so a
+ * browser-facing read has to verify the session cookie itself rather than
+ * assume it was checked upstream. Generation still requires CRON_SECRET.
+ */
+async function canRead(req: NextRequest): Promise<boolean> {
+  if (authorized(req)) return true;
+  return verifyCookieValue(req.cookies.get(MC_COOKIE)?.value);
 }
 
 /**
@@ -39,7 +52,7 @@ function describeError(err: unknown): string {
 }
 
 export async function GET(req: NextRequest) {
-  if (!authorized(req)) {
+  if (!(await canRead(req))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -55,6 +68,49 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
   return NextResponse.json({ ok: true, posts: data ?? [] });
+}
+
+/**
+ * Marks a draft as posted or rejected.
+ *
+ * Nothing here publishes to Reddit — posting happens by hand through the
+ * /reddit-post flow. This only records what was done with a draft so the queue
+ * stops showing it.
+ */
+export async function PATCH(req: NextRequest) {
+  if (!(await canRead(req))) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  let body: { id?: string; status?: string; postedUrl?: string };
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  const { id, status, postedUrl } = body;
+  if (!id || (status !== "posted" && status !== "rejected")) {
+    return NextResponse.json(
+      { error: "id and status ('posted' | 'rejected') are required" },
+      { status: 400 }
+    );
+  }
+
+  const supabase = createAdminClient();
+  const { error } = await supabase
+    .from("marketing_reddit_posts")
+    .update({
+      status,
+      posted_url: status === "posted" ? (postedUrl ?? null) : null,
+      posted_at: status === "posted" ? new Date().toISOString() : null,
+    })
+    .eq("id", id);
+
+  if (error) {
+    return NextResponse.json({ error: describeError(error) }, { status: 500 });
+  }
+  return NextResponse.json({ ok: true, id, status });
 }
 
 export async function POST(req: NextRequest) {
