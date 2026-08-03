@@ -89,3 +89,40 @@ neighborhood rent charts, the seasonal index and the rent-timing calculator)
 have no data past **March 2026**. This is a purchased dataset loaded by script,
 not a live sync — it needs a re-import, not a cron fix. The live scraper feeding
 `building_rents` is healthy (~36K rows/30d).
+
+## HPD lead violations — restored 2026-08-03
+
+`hpd_lead_violations` had no handler anywhere, which is why it stopped on
+2026-03-09. Rather than add a source to the 4,400-line `sync` function (a risky
+redeploy), it now has its own small standalone function:
+`supabase/functions/sync-hpd-lead`, dispatched via
+`/api/cron/trigger?source=sync-hpd-lead`.
+
+**The upstream dataset is retired.** SODA `au8t-hgv2` stops at **2020-01-07**
+with 29,416 rows total and zero records in the last two years. This sync
+therefore maintains a historical set — it will not produce new violations
+unless NYC republishes. The cron runs **weekly** (Mon 23:05 UTC) for that
+reason, not daily.
+
+We hold all 16,239 rows in the 2010+ window (verified 2026-08-03). The
+remaining upstream rows are pre-2010 or have no issue date; `POST {"full":
+true, "offset": N}` walks the dataset from the start if they're ever wanted.
+
+Only ~16% of rows link to a building — BBL matching against old records is
+inherently lossy.
+
+## sync-news — Miami/Houston guard is live
+
+Deployed 2026-08-03 (v6). Before that, the guard existed in the repo but had
+never been deployed, so Houston was still ingesting ~27 articles/week and Miami
+~6. Post-deploy the function processes **14 sources instead of 22** and no
+hidden-metro feed appears in its results.
+
+That deploy also shipped #289 (HTML-entity decoding + RSS date normalization in
+slugs), which had been sitting undeployed since 2026-06-01 — the live function
+was still on the April build.
+
+**Known pre-existing bug:** the Chicago Sun-Times feed fails with
+`rawContent.replace is not a function`. Its RSS content field parses to an
+object, and the `as string` cast in `sync-news/index.ts` doesn't guard against
+that. It has been contributing 0 articles; needs a typeof check.
