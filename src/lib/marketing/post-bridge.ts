@@ -19,10 +19,23 @@ import type { PlatformVariants, PublishResult } from "@/types/marketing";
 const API_BASE = "https://api.post-bridge.com/v1";
 const TIMEOUT_MS = 20000;
 
+/**
+ * Prefers POST_BRIDGE_API_TOKEN — the variable the news client uses, and the
+ * one that is actually valid in production. POST_BRIDGE_API_KEY has been dead
+ * for months: it 401s, and its stored value has a literal "\n" appended, which
+ * would corrupt the Authorization header even against a live key. Reading the
+ * token first means marketing publishing works with no env change at all.
+ *
+ * Values are trimmed of whitespace and stray escaped newlines for the same
+ * reason — a trailing newline in a secret is invisible in a dashboard and
+ * produces an indistinguishable 401.
+ */
 function apiToken(): string {
-  const token = process.env.POST_BRIDGE_API_KEY || process.env.POST_BRIDGE_API_TOKEN;
-  if (!token) throw new Error("Missing POST_BRIDGE_API_KEY env var");
-  return token;
+  const raw = process.env.POST_BRIDGE_API_TOKEN || process.env.POST_BRIDGE_API_KEY;
+  if (!raw) {
+    throw new Error("Missing POST_BRIDGE_API_TOKEN (or POST_BRIDGE_API_KEY) env var");
+  }
+  return raw.replace(/\\n/g, "").trim();
 }
 
 async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
