@@ -21,3 +21,11 @@ scripts/progress/*.json
 
 # Brainstorming visual companion (machine-local)
 .superpowers/
+
+# Local Claude Code session state
+.claude/scheduled_tasks.lock
+.claude/settings.local.json
+.claude/worktrees/
+
+# Supabase CLI local state
+supabase/.temp/
