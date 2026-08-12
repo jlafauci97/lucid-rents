@@ -47,7 +47,7 @@ export function SaveButton({ buildingId, initialSaved = false }: SaveButtonProps
         });
 
         if (res.status === 401) {
-          router.push("/login");
+          router.push(`/login?next=${encodeURIComponent(window.location.pathname)}`);
           return;
         }
 
@@ -62,7 +62,7 @@ export function SaveButton({ buildingId, initialSaved = false }: SaveButtonProps
         });
 
         if (res.status === 401) {
-          router.push("/login");
+          router.push(`/login?next=${encodeURIComponent(window.location.pathname)}`);
           return;
         }
 

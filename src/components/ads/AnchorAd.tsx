@@ -25,14 +25,27 @@ export function AnchorAd() {
   const pushed = useRef(false);
 
   useEffect(() => {
-    if (pushed.current) return;
     if (!isRealSlot(SLOT_MOBILE_ANCHOR)) return;
-    pushed.current = true;
-    try {
-      (window.adsbygoogle = window.adsbygoogle || []).push({});
-    } catch {
-      // ads.js not loaded — silent no-op
+
+    // The anchor container is display:none on desktop (>= 768px). Pushing
+    // while hidden makes adsbygoogle throw "No slot size for
+    // availableWidth=0", so only push when the mobile layout is active —
+    // and catch up if the viewport later shrinks to mobile.
+    const mq = window.matchMedia("(max-width: 767px)");
+
+    function pushIfMobile() {
+      if (pushed.current || !mq.matches) return;
+      pushed.current = true;
+      try {
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+      } catch {
+        // ads.js not loaded — silent no-op
+      }
     }
+
+    pushIfMobile();
+    mq.addEventListener("change", pushIfMobile);
+    return () => mq.removeEventListener("change", pushIfMobile);
   }, []);
 
   if (!shouldShowAdsForPath(pathname)) return null;

@@ -1,15 +1,22 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { SocialAuthButtons } from "@/components/auth/SocialAuthButtons";
 
-export default function LoginPage() {
+/** Only allow same-site relative paths so ?next= can't be an open redirect. */
+function safeNext(next: string | null): string {
+  if (next && next.startsWith("/") && !next.startsWith("//")) return next;
+  return "/profile";
+}
+
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -32,7 +39,9 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/profile");
+    // Return the user to the page that sent them here (e.g. the building
+    // they tried to save) instead of dumping them on /profile.
+    router.push(safeNext(searchParams.get("next")));
     router.refresh();
   }
 
@@ -106,5 +115,14 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  // useSearchParams requires a Suspense boundary in the app router.
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
   );
 }

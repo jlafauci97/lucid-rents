@@ -66,11 +66,16 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({
-    buildings: data ?? [],
-    page,
-    perPage: PER_PAGE,
-    count: count ?? 0,
-    totalPages: Math.max(1, Math.ceil((count ?? 0) / PER_PAGE)),
-  });
+  // Emitted here (not just next.config.ts) because Vercel's CDN caches
+  // based on the function's own response headers.
+  return NextResponse.json(
+    {
+      buildings: data ?? [],
+      page,
+      perPage: PER_PAGE,
+      count: count ?? 0,
+      totalPages: Math.max(1, Math.ceil((count ?? 0) / PER_PAGE)),
+    },
+    { headers: { "Cache-Control": "public, s-maxage=600, stale-while-revalidate=3600" } },
+  );
 }
