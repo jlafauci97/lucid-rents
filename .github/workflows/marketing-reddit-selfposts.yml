@@ -51,18 +51,15 @@ jobs:
 
           # One request per city+kind rather than a single call for all nine.
           #
-          # The endpoint loops cities x kinds server-side, and the whole batch
-          # cannot finish inside the platform's ~100s response ceiling: an
-          # unscoped call returns HTTP 524. Measured individually against
-          # production, worst_buildings/nyc completes in ~32s while
-          # worst_landlords and worst_neighborhoods each exceed 120s on their
-          # own (worstNeighborhoods aggregates one ZIP at a time — ~180 serial
-          # round-trips for NYC; worstLandlords sorts 2000 building rows).
+          # The endpoint loops cities x kinds server-side and the full matrix
+          # takes ~4m30s, well past the platform's ~100s response ceiling: an
+          # unscoped call returns HTTP 524. Each individual city+kind finishes
+          # in 4-45s, so scoping every request keeps all nine inside the limit.
           #
-          # Splitting the calls means the kinds that do fit still produce
-          # drafts every week instead of the whole run dying on the slowest
-          # one. The slow queries need fixing separately — this loop contains
-          # the damage, it does not repair it.
+          # This was far worse before the covering indexes added in
+          # 20260812120000_ranking_aggregate_indexes.sql: worst_landlords and
+          # worst_neighborhoods exceeded 120s on their own and never generated
+          # at all. All nine succeed now.
           if [ -n "${CITY}" ]; then cities="${CITY}"; else cities="nyc los-angeles chicago"; fi
           if [ -n "${KIND}" ]; then kinds="${KIND}"; else kinds="worst_buildings worst_landlords worst_neighborhoods"; fi
 
@@ -124,8 +121,9 @@ else:
           if [ "${failed}" != "0" ]; then
             echo "::warning::${failed} of $((ok+skipped+failed)) self-post(s) failed to generate"
           fi
-          # Only a total washout fails the run; partial output is the expected
-          # steady state until the slow ranking queries are fixed.
+          # Only a total washout fails the run. All nine currently succeed, so
+          # any failure is a warning worth reading rather than the norm — but a
+          # single slow city should not throw away the drafts that did generate.
           if [ "${ok}" = "0" ] && [ "${skipped}" = "0" ]; then
             echo "::error::no self-posts generated at all"
             exit 1
