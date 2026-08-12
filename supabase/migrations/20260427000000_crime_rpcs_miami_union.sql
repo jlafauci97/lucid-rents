@@ -58,6 +58,11 @@ ON CONFLICT (metro, zip_code) DO UPDATE SET
   refreshed_at = EXCLUDED.refreshed_at;
 
 -- 2. crime_by_zip — read from cache (fast, all metros)
+-- Earlier definitions in the chain have different OUT row types, and
+-- CREATE OR REPLACE cannot change a return type.
+DROP FUNCTION IF EXISTS crime_by_zip(date, text);
+DROP FUNCTION IF EXISTS crime_zip_yoy(text);
+DROP FUNCTION IF EXISTS crime_zip_yoy(date, text);
 CREATE OR REPLACE FUNCTION crime_by_zip(
     since_date date DEFAULT (now() - interval '1 year')::date,
     metro text DEFAULT NULL

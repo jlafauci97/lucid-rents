@@ -2,6 +2,10 @@
 -- Groups by house_no + street_name + borough so each row represents a
 -- physical location with its total permit count and first/latest issued dates.
 
+-- The original definition (20260309000100_sidewalk_sheds.sql) has a different
+-- OUT row type, and CREATE OR REPLACE cannot change a return type.
+DROP FUNCTION IF EXISTS scaffolding_longest();
+
 CREATE OR REPLACE FUNCTION scaffolding_longest()
 RETURNS TABLE(
   house_no text, street_name text, borough text, zip_code text,

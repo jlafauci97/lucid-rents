@@ -43,9 +43,11 @@ CREATE TABLE IF NOT EXISTS miami_forty_year_recerts (
   latitude double precision,
   longitude double precision,
   imported_at timestamptz DEFAULT now(),
-  metro text NOT NULL DEFAULT 'miami',
-  UNIQUE(COALESCE(process_number, ''), COALESCE(folio_number, ''))
+  metro text NOT NULL DEFAULT 'miami'
 );
+-- UNIQUE on expressions is not valid inside CREATE TABLE; use a unique index.
+CREATE UNIQUE INDEX IF NOT EXISTS miami_forty_year_recerts_proc_folio_key
+  ON miami_forty_year_recerts ((COALESCE(process_number, '')), (COALESCE(folio_number, '')));
 
 CREATE INDEX idx_miami_recert_building ON miami_forty_year_recerts(building_id) WHERE building_id IS NOT NULL;
 CREATE INDEX idx_miami_recert_due ON miami_forty_year_recerts(due_date);
@@ -70,9 +72,11 @@ CREATE TABLE IF NOT EXISTS miami_flood_claims (
   latitude double precision,
   longitude double precision,
   imported_at timestamptz DEFAULT now(),
-  metro text NOT NULL DEFAULT 'miami',
-  UNIQUE(address, claim_date, COALESCE(amount_paid::text, ''))
+  metro text NOT NULL DEFAULT 'miami'
 );
+-- UNIQUE on expressions is not valid inside CREATE TABLE; use a unique index.
+CREATE UNIQUE INDEX IF NOT EXISTS miami_flood_claims_addr_date_amount_key
+  ON miami_flood_claims (address, claim_date, (COALESCE(amount_paid::text, '')));
 
 CREATE INDEX idx_miami_flood_building ON miami_flood_claims(building_id) WHERE building_id IS NOT NULL;
 CREATE INDEX idx_miami_flood_date ON miami_flood_claims(claim_date DESC);

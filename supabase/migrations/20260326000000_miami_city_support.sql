@@ -26,7 +26,11 @@ CREATE INDEX IF NOT EXISTS idx_buildings_miami_violations ON buildings (metro, v
 CREATE INDEX IF NOT EXISTS idx_buildings_miami_zip ON buildings (metro, zip_code) WHERE metro = 'miami';
 
 -- Miami zip centroids
-INSERT INTO zip_centroids (zip_code, latitude, longitude, borough, metro) VALUES
+-- zip_centroids has no latitude/longitude/borough columns (they are avg_lat /
+-- avg_lon, and borough was never part of the table) — map them, drop borough.
+INSERT INTO zip_centroids (zip_code, avg_lat, avg_lon, metro)
+SELECT zip_code, lat, lon, metro
+FROM (VALUES
   ('33131', 25.7617, -80.1918, 'Brickell', 'miami'),
   ('33132', 25.7753, -80.1870, 'Downtown Miami', 'miami'),
   ('33127', 25.8100, -80.1991, 'Wynwood', 'miami'),
@@ -83,4 +87,5 @@ INSERT INTO zip_centroids (zip_code, latitude, longitude, borough, metro) VALUES
   ('33155', 25.7320, -80.2920, 'West Miami', 'miami'),
   ('33128', 25.7770, -80.2050, 'Downtown Miami', 'miami'),
   ('33130', 25.7670, -80.2090, 'Downtown Miami', 'miami')
+) AS v(zip_code, lat, lon, borough, metro)
 ON CONFLICT (zip_code) DO NOTHING;

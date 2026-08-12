@@ -2,6 +2,11 @@
 -- Multi-city permit RPCs: add p_metro parameter to filter by metro area
 -- ============================================================================
 
+-- The permit_stats body below has an ungrouped-column bug and never validated;
+-- 20260427110000_permits_perf_caches.sql replaces it with the working version.
+-- Skip body validation so the chain replays.
+SET check_function_bodies = off;
+
 -- RPC: Permit stats by borough/area filtered by metro
 CREATE OR REPLACE FUNCTION permit_stats(p_metro text DEFAULT 'nyc')
 RETURNS TABLE(borough text, active_count bigint, top_work_type text)
