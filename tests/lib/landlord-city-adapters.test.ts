@@ -210,9 +210,9 @@ describe("tenantResourcesForCity", () => {
 });
 
 describe("faqBankForCity", () => {
-  it("returns 6 items per city", () => {
+  it("returns 7 items per city", () => {
     (["nyc", "los-angeles", "chicago", "miami", "houston"] as const).forEach((city) => {
-      expect(faqBankForCity(city)).toHaveLength(6);
+      expect(faqBankForCity(city)).toHaveLength(7);
     });
   });
 
@@ -227,9 +227,12 @@ describe("faqBankForCity", () => {
     expect(faqBankForCity("houston").some((f) => f.q.toLowerCase().includes("rent-stabilized"))).toBe(false);
   });
 
-  it("uses RLTO question for Chicago", () => {
+  // The Chicago-specific question asks about the scofflaw list by name; RLTO
+  // is explained in the answer, where it reads as context rather than jargon
+  // in a search result.
+  it("uses the scofflaw-list question for Chicago", () => {
     const chi = faqBankForCity("chicago");
-    expect(chi.some((f) => f.q.toLowerCase().includes("rlto"))).toBe(true);
+    expect(chi.some((f) => f.q.toLowerCase().includes("scofflaw"))).toBe(true);
   });
 
   it("uses 40-year recert question for Miami", () => {
@@ -254,23 +257,23 @@ describe("faqBankForCity", () => {
     });
   });
 
-  it("all cities have a trend question", () => {
+  // The "is it getting worse" trend question and the "biggest landlord"
+  // portfolio-rank question were both dropped in the #139 SEO rewrite — they
+  // have no equivalent in the current bank, so there is nothing left to assert.
+
+  it("all cities have a portfolio-size question", () => {
     (["nyc", "los-angeles", "chicago", "miami", "houston"] as const).forEach((city) => {
-      expect(faqBankForCity(city).some((f) => f.q.toLowerCase().includes("getting worse"))).toBe(true);
+      expect(
+        faqBankForCity(city).some((f) => f.q.toLowerCase().includes("how many buildings"))
+      ).toBe(true);
     });
   });
 
-  it("all cities have an operator question", () => {
+  it("portfolio-size aTemplate uses {{buildingCount}} and {{unitCount}} placeholders", () => {
     (["nyc", "los-angeles", "chicago", "miami", "houston"] as const).forEach((city) => {
-      expect(faqBankForCity(city).some((f) => f.q.toLowerCase().includes("operates"))).toBe(true);
-    });
-  });
-
-  it("aTemplate for portfolio rank uses {{portfolioRank}} placeholder", () => {
-    (["nyc", "los-angeles", "chicago", "miami", "houston"] as const).forEach((city) => {
-      const faq = faqBankForCity(city);
-      const q1 = faq.find((f) => f.q.toLowerCase().includes("biggest landlord"));
-      expect(q1?.aTemplate).toContain("{{portfolioRank}}");
+      const q = faqBankForCity(city).find((f) => f.q.toLowerCase().includes("how many buildings"));
+      expect(q?.aTemplate).toContain("{{buildingCount}}");
+      expect(q?.aTemplate).toContain("{{unitCount}}");
     });
   });
 
@@ -280,9 +283,9 @@ describe("faqBankForCity", () => {
     expect(q?.aTemplate).toContain("{{rentStabShare}}");
   });
 
-  it("CHI RLTO aTemplate uses {{rltoStatus}} placeholder", () => {
+  it("CHI scofflaw aTemplate uses {{rltoStatus}} placeholder", () => {
     const faq = faqBankForCity("chicago");
-    const q = faq.find((f) => f.q.toLowerCase().includes("rlto"));
+    const q = faq.find((f) => f.q.toLowerCase().includes("scofflaw"));
     expect(q?.aTemplate).toContain("{{rltoStatus}}");
   });
 });
