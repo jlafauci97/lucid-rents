@@ -14,9 +14,12 @@ const buildingFixture = {
 };
 
 describe("buildingJsonLd", () => {
-  it("uses multi-type ['ApartmentComplex','LocalBusiness']", () => {
+  // #260 dropped the LocalBusiness half of the old multi-type: a building we
+  // neither own nor operate is not our business listing, and claiming it risks
+  // a structured-data penalty.
+  it("uses the single ApartmentComplex type, not a LocalBusiness multi-type", () => {
     const ld = buildingJsonLd(buildingFixture, "nyc") as Record<string, unknown>;
-    expect(ld["@type"]).toEqual(["ApartmentComplex", "LocalBusiness"]);
+    expect(ld["@type"]).toBe("ApartmentComplex");
   });
 
   it("sets AggregateRating.worstRating to 1 (Google spec)", () => {
@@ -26,9 +29,12 @@ describe("buildingJsonLd", () => {
     expect(rating.bestRating).toBe(5);
   });
 
-  it("includes priceRange", () => {
+  // The old hardcoded priceRange: "$$" was the same on every building in the
+  // network regardless of rent. #260 removed it rather than emit a value we
+  // cannot substantiate.
+  it("omits priceRange rather than emitting a hardcoded one", () => {
     const ld = buildingJsonLd(buildingFixture, "nyc") as Record<string, unknown>;
-    expect(ld.priceRange).toBe("$$");
+    expect(ld.priceRange).toBeUndefined();
   });
 
   it("sets addressLocality to resolved neighborhood when zip matches", () => {
