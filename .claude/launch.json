@@ -3,15 +3,21 @@
   "configurations": [
     {
       "name": "dev",
-      "runtimeExecutable": "/opt/homebrew/bin/npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeExecutable": "/bin/zsh",
+      "runtimeArgs": [
+        "-c",
+        "export PATH=/opt/homebrew/bin:$PATH; exec node ./node_modules/.bin/next dev --turbopack"
+      ],
       "port": 3000,
       "autoPort": true
     },
     {
       "name": "dev-webpack",
-      "runtimeExecutable": "node",
-      "runtimeArgs": ["./node_modules/.bin/next", "dev", "--webpack"],
+      "runtimeExecutable": "/bin/zsh",
+      "runtimeArgs": [
+        "-c",
+        "export PATH=/opt/homebrew/bin:$PATH; exec node ./node_modules/.bin/next dev --webpack"
+      ],
       "port": 3000,
       "autoPort": true
     }

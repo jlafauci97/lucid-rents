@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type MouseEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { smoothScrollToId } from "@/lib/smooth-scroll";
 
 interface Props {
   grade: string;
@@ -137,6 +138,15 @@ export function WayfinderRail({ grade, buildingName, city, buildingPath, buildin
 
   const sections = buildSections(city, cityInsightsId);
 
+  // Glide to the section instead of the browser's instant anchor jump. Keep the
+  // real href so modified-clicks, no-JS, and "copy link" still work natively.
+  const handleNav = (e: MouseEvent<HTMLAnchorElement>, id: string) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+    e.preventDefault();
+    smoothScrollToId(id);
+    history.replaceState(null, "", `#${id}`);
+  };
+
   return (
     <aside className="wayfinder">
       <header className="way-head">
@@ -150,7 +160,7 @@ export function WayfinderRail({ grade, buildingName, city, buildingPath, buildin
       <ol className="waylist">
         {sections.map((s) => (
           <li key={s.id} className={activeId === s.id ? "active" : undefined}>
-            <a href={`#${s.id}`}>
+            <a href={`#${s.id}`} onClick={(e) => handleNav(e, s.id)}>
               <span className="wicon">{s.icon}</span>
               {s.label}
             </a>
