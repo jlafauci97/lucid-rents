@@ -2,21 +2,23 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "//": "Default preview target. Uses --webpack, not --turbopack: on Next 16.2.1 the Turbopack dev server floods the log with 'Could not find the module ... in the React Client Manifest' (an RSC bundler bug) and serves intermittent 500s on repeat requests. Webpack is slower to compile but serves reliably. Retry --turbopack after a Next upgrade; 16.2.12 did not fix it and 16.3.0 was worse (every request 500).",
       "name": "dev",
       "runtimeExecutable": "/bin/zsh",
       "runtimeArgs": [
         "-c",
-        "export PATH=/opt/homebrew/bin:$PATH; exec node ./node_modules/.bin/next dev --turbopack"
+        "export PATH=/opt/homebrew/bin:$PATH; exec node ./node_modules/.bin/next dev --webpack"
       ],
       "port": 3000,
       "autoPort": true
     },
     {
-      "name": "dev-webpack",
+      "//": "Kept so the Turbopack path can be re-tested after a Next upgrade.",
+      "name": "dev-turbopack",
       "runtimeExecutable": "/bin/zsh",
       "runtimeArgs": [
         "-c",
-        "export PATH=/opt/homebrew/bin:$PATH; exec node ./node_modules/.bin/next dev --webpack"
+        "export PATH=/opt/homebrew/bin:$PATH; exec node ./node_modules/.bin/next dev --turbopack"
       ],
       "port": 3000,
       "autoPort": true
