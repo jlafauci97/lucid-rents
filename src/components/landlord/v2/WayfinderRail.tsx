@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type MouseEvent } from "react";
 import Link from "next/link";
 import { cityPath } from "@/lib/seo";
+import { smoothScrollToId } from "@/lib/smooth-scroll";
 import type { City } from "@/lib/cities";
 
 interface Props {
@@ -123,6 +124,15 @@ export function WayfinderRail({ grade, displayName, city, slug }: Props) {
   const firstLine = spaceIdx > 0 ? displayName.slice(0, spaceIdx) : displayName;
   const secondLine = spaceIdx > 0 ? displayName.slice(spaceIdx + 1) : null;
 
+  // Glide to the section instead of the browser's instant anchor jump. Keep the
+  // real href so modified-clicks, no-JS, and "copy link" still work natively.
+  const handleNav = (e: MouseEvent<HTMLAnchorElement>, id: string) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+    e.preventDefault();
+    smoothScrollToId(id);
+    history.replaceState(null, "", `#${id}`);
+  };
+
   return (
     <aside
       className="wayfinder"
@@ -146,7 +156,7 @@ export function WayfinderRail({ grade, displayName, city, slug }: Props) {
       <ol className="waylist">
         {SECTIONS.map((s) => (
           <li key={s.id} className={activeId === s.id ? "active" : undefined}>
-            <a href={`#${s.id}`}>
+            <a href={`#${s.id}`} onClick={(e) => handleNav(e, s.id)}>
               <span className="wicon">{s.icon}</span>
               {s.label}
             </a>
@@ -177,7 +187,7 @@ export function WayfinderRail({ grade, displayName, city, slug }: Props) {
           </svg>
           Compare buildings
         </Link>
-        <a href={`#casefile`} className="tool">
+        <a href={`#casefile`} className="tool" onClick={(e) => handleNav(e, "casefile")}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M8 21h8M12 17v4M7 3h10l4 8H3z"/>
           </svg>
