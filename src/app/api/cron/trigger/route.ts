@@ -78,6 +78,13 @@ const VERCEL_DISPATCH_SOURCES = new Set([
   // standalone edge functions
   "sync-rent-stabilization",
   "sync-hpd-lead",
+  // Monthly standalone syncs. Their vercel.json crons pointed here all along,
+  // but they were missing from this allowlist, so every run no-op'd — no
+  // sync_log rows at all as of 2026-08-11. Nothing else schedules them.
+  "sync-zillow-rents",
+  "sync-energy",
+  "sync-transit",
+  "sync-schools",
 ]);
 
 /** Standalone edge functions are invoked by name; everything else goes to `sync`. */

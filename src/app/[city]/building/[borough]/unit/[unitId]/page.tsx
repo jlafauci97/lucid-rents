@@ -12,7 +12,9 @@ import type { Metadata } from "next";
 import { buildingUrl } from "@/lib/seo";
 import { CITY_META, type City } from "@/lib/cities";
 
-export const revalidate = 86400; // 24h ISR
+// 7-day ISR — unit rent data changes on monthly sync cadence; see building
+// [slug] page for why a short TTL is expensive.
+export const revalidate = 604800;
 
 // Enable on-demand ISR for unbounded dynamic params. Without this Next.js 16
 // treats the route as fully dynamic and ignores `revalidate`.

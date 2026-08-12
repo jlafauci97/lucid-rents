@@ -18,13 +18,14 @@ export async function triggerRevalidation(paths: string[]): Promise<void> {
   }
 
   try {
+    // The endpoint authenticates via `secret` in the JSON body (it never read
+    // the Authorization header — every call before this fix silently 401'd).
     const res = await fetch(`${siteUrl}/api/revalidate`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${cronSecret}`,
       },
-      body: JSON.stringify({ paths }),
+      body: JSON.stringify({ paths, secret: cronSecret }),
     });
 
     if (!res.ok) {

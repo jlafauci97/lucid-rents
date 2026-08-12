@@ -28,6 +28,19 @@ Three of them had ended in `failed`.
 runs. The allowlist now makes the split explicit, and the nightly sync summary
 (below) makes a stall visible within a day.
 
+## 2026-08-12 cron trim + dispatch fixes
+
+`vercel.json` previously declared ~24 cron entries that `/api/cron/trigger`
+unconditionally no-op'd (every `mode=link` entry and every source on the local
+scheduler). They were removed so the cron list reflects what actually runs.
+Three dispatch bugs were fixed at the same time:
+
+- `ladbs` was allowlisted but its only cron was `mode=link` (always skipped) —
+  ingestion had been dead since March. Its cron is now a real sync run.
+- `sync-zillow-rents`, `sync-energy`, `sync-transit`, `sync-schools` had
+  monthly crons but were missing from `VERCEL_DISPATCH_SOURCES`, so every run
+  no-op'd (no `sync_log` rows at all). They are now allowlisted.
+
 ## Restore status
 
 Everything dead since June is now dispatched, including both heavy crime

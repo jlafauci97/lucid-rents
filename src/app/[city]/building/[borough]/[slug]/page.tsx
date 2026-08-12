@@ -47,7 +47,11 @@ import { EmbedSnippet } from "@/components/building/v2/EmbedSnippet";
 import { InContentAd } from "@/components/ads/InContentAd";
 import { AdRail } from "@/components/ads/AdRail";
 
-export const revalidate = 86400; // 24h ISR
+// 7-day ISR. Buildings a sync actually touches are revalidated on-demand by
+// the sync jobs (targeted revalidatePath), so a short TTL here only buys ISR
+// cache rewrites on every bot re-crawl — at 24h that was millions of ISR
+// writes a month on the Vercel bill.
+export const revalidate = 604800;
 
 // Enable on-demand ISR for unbounded dynamic params. Without this Next.js 16
 // treats the route as fully dynamic and ignores `revalidate`.

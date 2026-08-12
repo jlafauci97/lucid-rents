@@ -30,22 +30,6 @@
     },
 
     {
-      "path": "/api/cron/trigger?source=hpd",
-      "schedule": "5 5 * * *"
-    },
-    {
-      "path": "/api/cron/trigger?source=complaints",
-      "schedule": "35 5 * * *"
-    },
-    {
-      "path": "/api/cron/trigger?source=litigations",
-      "schedule": "5 6 * * *"
-    },
-    {
-      "path": "/api/cron/trigger?source=dob",
-      "schedule": "35 6 * * *"
-    },
-    {
       "path": "/api/cron/trigger?source=nypd",
       "schedule": "5 7 * * *"
     },
@@ -56,18 +40,6 @@
     {
       "path": "/api/cron/trigger?source=permits",
       "schedule": "5 8 * * *"
-    },
-    {
-      "path": "/api/cron/trigger?mode=link",
-      "schedule": "35 8 * * *"
-    },
-    {
-      "path": "/api/cron/trigger?source=sync-news",
-      "schedule": "5 9 * * *"
-    },
-    {
-      "path": "/api/cron/trigger?source=sync-news",
-      "schedule": "5 18 * * *"
     },
 
     {
@@ -108,52 +80,12 @@
     },
 
     {
-      "path": "/api/cron/trigger?source=lahd",
-      "schedule": "5 10 * * *"
-    },
-    {
-      "path": "/api/cron/trigger?source=la-311",
-      "schedule": "35 10 * * *"
-    },
-    {
       "path": "/api/cron/trigger?source=la-permits",
       "schedule": "5 11 * * *"
     },
     {
-      "path": "/api/cron/trigger?source=la-evictions",
-      "schedule": "35 11 * * *"
-    },
-    {
-      "path": "/api/cron/trigger?source=la-buyouts",
-      "schedule": "5 12 * * *"
-    },
-    {
-      "path": "/api/cron/trigger?source=la-ccris",
-      "schedule": "35 12 * * *"
-    },
-    {
-      "path": "/api/cron/trigger?mode=link&source=lahd",
-      "schedule": "5 13 * * *"
-    },
-    {
-      "path": "/api/cron/trigger?mode=link&source=la-311",
-      "schedule": "35 13 * * *"
-    },
-    {
-      "path": "/api/cron/trigger?mode=link&source=ladbs",
+      "path": "/api/cron/trigger?source=ladbs",
       "schedule": "5 14 * * *"
-    },
-    {
-      "path": "/api/cron/trigger?mode=link&source=la-evictions",
-      "schedule": "35 14 * * *"
-    },
-    {
-      "path": "/api/cron/trigger?mode=link&source=la-buyouts",
-      "schedule": "5 15 * * *"
-    },
-    {
-      "path": "/api/cron/trigger?mode=link&source=la-ccris",
-      "schedule": "35 15 * * *"
     },
     {
       "path": "/api/cron/trigger?source=la-soft-story",
@@ -169,14 +101,6 @@
     },
 
     {
-      "path": "/api/cron/trigger?source=chicago-violations",
-      "schedule": "5 16 * * *"
-    },
-    {
-      "path": "/api/cron/trigger?source=chicago-311",
-      "schedule": "35 16 * * *"
-    },
-    {
       "path": "/api/cron/trigger?source=chicago-crimes",
       "schedule": "5 17 * * *"
     },
@@ -191,22 +115,6 @@
     {
       "path": "/api/cron/trigger?source=chicago-lead",
       "schedule": "35 5 * * 3"
-    },
-    {
-      "path": "/api/cron/trigger?mode=link&source=chicago-violations",
-      "schedule": "5 18 * * *"
-    },
-    {
-      "path": "/api/cron/trigger?mode=link&source=chicago-311",
-      "schedule": "35 18 * * *"
-    },
-    {
-      "path": "/api/cron/trigger?mode=link&source=chicago-permits",
-      "schedule": "5 19 * * *"
-    },
-    {
-      "path": "/api/cron/trigger?mode=link&source=chicago-crimes",
-      "schedule": "35 19 * * *"
     },
 
     {
