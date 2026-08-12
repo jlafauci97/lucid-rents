@@ -204,6 +204,10 @@ async function postReply(item) {
   // can see. These never become postable, so they are retired rather than
   // retried forever.
   const state = await evalInTab(`(function(){
+    // A logged-out session is bounced to /login, which has no #siteTable and
+    // would otherwise read as 'missing'. Retiring a live thread because the
+    // cookie lapsed is far worse than retrying, so this is reported separately.
+    if(location.pathname.indexOf('/login') === 0) return 'logged-out';
     var link = document.querySelector('#siteTable .thing.link');
     if(!link) return 'missing';
     if(document.querySelector('.archived-infobar')) return 'archived';
@@ -216,6 +220,11 @@ async function postReply(item) {
     if(text === '[deleted]' || text === '[removed]') return 'deleted';
     return 'ok';
   })()`);
+  if (state === "logged-out") {
+    // Preflight confirmed a session moments ago, so this means it lapsed
+    // mid-run. Retryable: the thread itself is fine.
+    throw new Error("Reddit session lapsed mid-run (bounced to /login) — sign in again");
+  }
   if (state !== "ok") {
     throw new PermanentSkip(`thread is ${state} — retiring it, nothing was posted`);
   }
