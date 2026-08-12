@@ -98,15 +98,10 @@ jobs:
               # A 200 can still carry a per-item error, so the body decides the
               # outcome. "already generated today" is the unique index doing its
               # job on a re-run, not a failure.
-              verdict=$(python3 -c "
-import json
-d = json.load(open('response.json'))
-if d.get('generated'):
-    print('ok')
-else:
-    errs = [e.get('error','') for e in d.get('errors', [])]
-    print('skip' if any('already generated today' in e for e in errs) else 'fail:' + ('; '.join(errs) or 'empty response'))
-")
+              # Single line: a multi-line python script would have to sit at
+              # column 0 (python forbids leading indentation), which ends the
+              # YAML block scalar early and makes the workflow file unparseable.
+              verdict=$(python3 -c "import json; d = json.load(open('response.json')); errs = [e.get('error','') for e in d.get('errors', [])]; print('ok' if d.get('generated') else ('skip' if any('already generated today' in e for e in errs) else 'fail:' + ('; '.join(errs) or 'empty response')))")
               case "${verdict}" in
                 ok)    echo "OK       ${city}/${kind}"; ok=$((ok+1)) ;;
                 skip)  echo "SKIP     ${city}/${kind} (already generated today)"; skipped=$((skipped+1)) ;;
