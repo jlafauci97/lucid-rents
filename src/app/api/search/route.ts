@@ -82,7 +82,13 @@ export async function GET(req: NextRequest) {
     }
     const total = data?.[0]?.total_count ?? 0;
 
-    return NextResponse.json({ buildings, total, page });
+    // Vercel's CDN only caches based on headers the function itself emits —
+    // the matching next.config.ts headers() rule is applied after the cache
+    // decision, so without this every identical query re-hits the DB.
+    return NextResponse.json(
+      { buildings, total, page },
+      { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=3600" } },
+    );
   }
 
   // Non-text queries: browse by filters only
@@ -111,9 +117,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({
-    buildings: data || [],
-    total: count || 0,
-    page,
-  });
+  return NextResponse.json(
+    {
+      buildings: data || [],
+      total: count || 0,
+      page,
+    },
+    { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=3600" } },
+  );
 }

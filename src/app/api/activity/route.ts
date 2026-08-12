@@ -112,7 +112,12 @@ export async function GET(request: Request) {
     const offset = (page - 1) * limit;
     const result = items.slice(offset, offset + limit);
     const totalPages = Math.ceil(items.length / limit);
-    return NextResponse.json({ items: result, page, totalPages, hasMore: page < totalPages });
+    // Emitted here (not just next.config.ts) because Vercel's CDN caches
+    // based on the function's own response headers.
+    return NextResponse.json(
+      { items: result, page, totalPages, hasMore: page < totalPages },
+      { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=1800" } },
+    );
   } catch (error) {
     console.error("Activity feed error:", error);
     return NextResponse.json(

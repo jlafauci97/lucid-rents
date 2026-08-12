@@ -81,18 +81,20 @@ const nextConfig: NextConfig = {
           key: "Content-Security-Policy-Report-Only",
           value: [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://fundingchoicesmessages.google.com https://*.google.com https://vercel.live https://va.vercel-scripts.com",
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://fundingchoicesmessages.google.com https://*.google.com https://vercel.live https://va.vercel-scripts.com https://www.clarity.ms https://*.clarity.ms",
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
             "img-src 'self' data: blob: https:",
             "font-src 'self' data: https://fonts.gstatic.com",
-            "connect-src 'self' https://*.supabase.co https://www.google-analytics.com https://*.googlesyndication.com https://vitals.vercel-insights.com https://vercel.live wss://*.supabase.co",
-            "frame-src 'self' https://googleads.g.doubleclick.net https://*.googlesyndication.com https://www.youtube.com https://www.youtube-nocookie.com https://vercel.live",
+            "connect-src 'self' https://*.supabase.co https://www.google-analytics.com https://*.googlesyndication.com https://vitals.vercel-insights.com https://vercel.live wss://*.supabase.co https://*.clarity.ms",
+            "frame-src 'self' https://googleads.g.doubleclick.net https://*.googlesyndication.com https://www.youtube.com https://www.youtube-nocookie.com https://vercel.live https://ep2.adtrafficquality.google https://www.google.com",
             "object-src 'none'",
             "base-uri 'self'",
             "form-action 'self'",
             "frame-ancestors 'self'",
             "require-trusted-types-for 'script'",
-            "upgrade-insecure-requests",
+            // NOTE: re-add "upgrade-insecure-requests" when flipping this
+            // policy from report-only to enforcing — the directive is ignored
+            // in report-only mode and just logs a console error on every page.
           ].join("; "),
         },
       ],

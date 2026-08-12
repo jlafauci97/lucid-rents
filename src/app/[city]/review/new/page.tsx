@@ -9,18 +9,21 @@ export const metadata: Metadata = {
 };
 
 interface ReviewNewPageProps {
+  params: Promise<{ city: string }>;
   searchParams: Promise<{ building?: string }>;
 }
 
-export default async function ReviewNewPage({ searchParams }: ReviewNewPageProps) {
+export default async function ReviewNewPage({ params: routeParams, searchParams }: ReviewNewPageProps) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+  const params = await searchParams;
 
   if (!user) {
-    redirect("/login");
+    // Send the user back here after login instead of dropping them on /profile.
+    const { city } = await routeParams;
+    const next = `/${city}/review/new${params.building ? `?building=${params.building}` : ""}`;
+    redirect(`/login?next=${encodeURIComponent(next)}`);
   }
-
-  const params = await searchParams;
 
   const { data: categories } = await supabase
     .from("review_categories")

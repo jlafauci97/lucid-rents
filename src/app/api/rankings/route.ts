@@ -62,10 +62,15 @@ export async function GET(request: NextRequest) {
 
   const hasMore = (data?.length || 0) === limit;
 
-  return NextResponse.json({
-    buildings: data || [],
-    total: hasMore ? (page * limit) + 1 : offset + (data?.length || 0),
-    page,
-    totalPages: hasMore ? page + 1 : page,
-  });
+  // Emitted here (not just next.config.ts) because Vercel's CDN caches
+  // based on the function's own response headers.
+  return NextResponse.json(
+    {
+      buildings: data || [],
+      total: hasMore ? (page * limit) + 1 : offset + (data?.length || 0),
+      page,
+      totalPages: hasMore ? page + 1 : page,
+    },
+    { headers: { "Cache-Control": "public, s-maxage=600, stale-while-revalidate=3600" } },
+  );
 }

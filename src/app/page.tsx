@@ -641,7 +641,9 @@ export default async function Home() {
                   sizes="(max-width: 640px) 80vw, 34vw"
                   {...(key === "nyc"
                     ? { priority: true, fetchPriority: "high" as const }
-                    : { loading: "lazy" as const })}
+                    : // All three panels sit above the fold on desktop, so any
+                      // of them can be the LCP element — never lazy-load them.
+                      { priority: true })}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0F1D2E]/90 via-[#0F1D2E]/10 to-[#0F1D2E]/35" />
 

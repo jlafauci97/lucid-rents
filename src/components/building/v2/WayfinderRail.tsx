@@ -184,7 +184,7 @@ export function WayfinderRail({ grade, buildingName, city, buildingPath, buildin
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ buildingId }),
               });
-              if (res.status === 401) { router.push("/login"); return; }
+              if (res.status === 401) { router.push(`/login?next=${encodeURIComponent(window.location.pathname)}`); return; }
               if (res.ok || res.status === 409) setSaved(!saved);
             } catch { /* network error */ } finally { setSaving(false); }
           }}

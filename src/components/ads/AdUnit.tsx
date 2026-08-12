@@ -70,8 +70,27 @@ export function AdUnit({
     const el = containerRef.current;
     if (!el) return;
 
+    let resizeObserver: ResizeObserver | undefined;
+
     function push() {
       if (pushed.current) return;
+      // Pushing while the container has no width makes adsbygoogle throw
+      // "No slot size for availableWidth=0" (happens when the slot is inside
+      // a hidden responsive variant). Wait until the container has real
+      // width before pushing.
+      const target = containerRef.current;
+      if (target && target.offsetWidth === 0 && typeof ResizeObserver !== "undefined") {
+        if (!resizeObserver) {
+          resizeObserver = new ResizeObserver(() => {
+            if (target.offsetWidth > 0) {
+              resizeObserver?.disconnect();
+              push();
+            }
+          });
+          resizeObserver.observe(target);
+        }
+        return;
+      }
       pushed.current = true;
       try {
         (window.adsbygoogle = window.adsbygoogle || []).push({});
@@ -85,7 +104,7 @@ export function AdUnit({
     // share of real traffic in 2026, but keeps the component safe).
     if (typeof IntersectionObserver === "undefined") {
       push();
-      return;
+      return () => resizeObserver?.disconnect();
     }
 
     const observer = new IntersectionObserver(
@@ -99,7 +118,10 @@ export function AdUnit({
     );
     observer.observe(el);
 
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      resizeObserver?.disconnect();
+    };
   }, [slot]);
 
   if (!isRealSlot(slot)) {
