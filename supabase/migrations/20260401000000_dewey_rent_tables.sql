@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS dewey_amenity_premiums (
   premium_dollars numeric(10,2),
   sample_size integer NOT NULL DEFAULT 0,
   period text NOT NULL, -- 'all_time', '2024', '2025', etc.
-  created_at timestamptz NOT NULL DEFAULT now(),
+  created_at timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_dewey_amenity_premiums_unique
@@ -113,7 +113,7 @@ CREATE TABLE IF NOT EXISTS dewey_seasonal_index (
   beds smallint NOT NULL,
   rent_index numeric(6,4) NOT NULL, -- 1.0 = annual average
   sample_years integer NOT NULL DEFAULT 0,
-  created_at timestamptz NOT NULL DEFAULT now(),
+  created_at timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_dewey_seasonal_index_unique

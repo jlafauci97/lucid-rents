@@ -5,6 +5,10 @@
 -- Also normalize NYC borough names in buildings table.
 -- ============================================================================
 
+-- zillow_rents.borough was added directly in prod (no migration file); the
+-- RPCs below depend on it.
+ALTER TABLE zillow_rents ADD COLUMN IF NOT EXISTS borough text;
+
 -- Drop old zero-arg overloads (the p_metro versions with DEFAULT 'nyc' remain)
 DROP FUNCTION IF EXISTS rent_trend_citywide();
 DROP FUNCTION IF EXISTS rent_trend_by_borough();

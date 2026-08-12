@@ -132,11 +132,19 @@ DROP INDEX IF EXISTS idx_profiles_display_name;         -- 0 scans
 -- ---------------------------------------------------------------------------
 -- 4. TUNE AUTOVACUUM (vacuum at 5% dead tuples instead of default 20%)
 -- ---------------------------------------------------------------------------
-ALTER TABLE complaints_311 SET (
-  autovacuum_vacuum_scale_factor = 0.05,
-  autovacuum_analyze_scale_factor = 0.02,
-  autovacuum_vacuum_cost_delay = 2
-);
+-- complaints_311 was a plain table when this ran in prod; it is partitioned in
+-- the rebuilt chain (baseline carries the final partitioned form), and
+-- partitioned parents reject storage parameters — skip it there.
+DO $$
+BEGIN
+  ALTER TABLE complaints_311 SET (
+    autovacuum_vacuum_scale_factor = 0.05,
+    autovacuum_analyze_scale_factor = 0.02,
+    autovacuum_vacuum_cost_delay = 2
+  );
+EXCEPTION WHEN wrong_object_type THEN
+  NULL;
+END $$;
 ALTER TABLE dob_violations SET (
   autovacuum_vacuum_scale_factor = 0.05,
   autovacuum_analyze_scale_factor = 0.02,
