@@ -76,6 +76,18 @@ function esc(s) {
   return String(s).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
+/**
+ * A queue item that can never succeed, however many times it is retried —
+ * the thread was deleted, removed, locked or archived. Distinct from an
+ * ordinary failure, which is worth retrying on the next run.
+ */
+class PermanentSkip extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "PermanentSkip";
+  }
+}
+
 class AppleEventsJSDisabled extends Error {
   constructor() {
     super(
@@ -155,6 +167,22 @@ async function preflight() {
   if (!user || /^ERR:/.test(user)) {
     throw new Error("Not signed in to Reddit in Chrome (old.reddit shows no user)");
   }
+
+  // REDDIT_USERNAME does NOT choose the posting account — replies post as
+  // whoever Chrome is signed in as, and REDDIT_USERNAME only builds the
+  // self-post target r/u_<name>. If the two disagree, replies silently go out
+  // under the wrong account and self-posts aim at a profile this session
+  // cannot submit to. Refuse to post rather than guess which one is right.
+  if (REDDIT_USERNAME && user.toLowerCase() !== REDDIT_USERNAME.toLowerCase()) {
+    throw new Error(
+      `Chrome is signed in as ${user} but REDDIT_USERNAME is ${REDDIT_USERNAME}.\n` +
+        "        Sign Chrome in as the posting account, or correct REDDIT_USERNAME in .env.local."
+    );
+  }
+  if (!REDDIT_USERNAME) {
+    log(`WARNING: REDDIT_USERNAME is not set — cannot verify the posting account`);
+  }
+
   log(`Chrome ready, signed in as ${user}`);
   return user;
 }
@@ -168,6 +196,29 @@ async function postReply(item) {
   const url = item.url.replace("www.reddit.com", "old.reddit.com");
   await openUrl(url);
   if (!(await waitForLoad())) throw new Error("thread page did not finish loading");
+
+  // A thread can die between the scanner finding it and this run: the OP
+  // deletes it, a mod removes it, or it locks/archives. Old Reddit still
+  // renders a reply box on a deleted thread, so without this check the post
+  // "succeeds" and leaves a promotional comment on a dead thread that nobody
+  // can see. These never become postable, so they are retired rather than
+  // retried forever.
+  const state = await evalInTab(`(function(){
+    var link = document.querySelector('#siteTable .thing.link');
+    if(!link) return 'missing';
+    if(document.querySelector('.archived-infobar')) return 'archived';
+    if(document.querySelector('.locked-infobar')) return 'locked';
+    if((link.className||'').indexOf('locked') !== -1) return 'locked';
+    var author = link.querySelector('.author');
+    if(!author || author.textContent.trim() === '[deleted]') return 'deleted';
+    var body = link.querySelector('.usertext-body');
+    var text = body ? body.textContent.trim() : '';
+    if(text === '[deleted]' || text === '[removed]') return 'deleted';
+    return 'ok';
+  })()`);
+  if (state !== "ok") {
+    throw new PermanentSkip(`thread is ${state} — retiring it, nothing was posted`);
+  }
 
   // The top-level reply box is the first .usertext form outside the comment tree.
   const filled = await evalInTab(`(function(){
@@ -265,14 +316,14 @@ async function fetchItem() {
   return res.json();
 }
 
-async function reportResult(type, id, ok, url, error) {
+async function reportResult(type, id, ok, url, error, permanent = false) {
   const res = await fetch(`${BASE_URL}/api/marketing/reddit/queue`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${CRON_SECRET}`,
     },
-    body: JSON.stringify({ type, id, ok, url, error }),
+    body: JSON.stringify({ type, id, ok, url, error, permanent }),
   });
   if (!res.ok) log(`WARNING: could not record result: HTTP ${res.status}`);
 }
@@ -322,10 +373,17 @@ async function main() {
     await reportResult(item.type, item.id, true, url);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    log(`FAILED: ${message}`);
-    // Left in its original status so the next run retries it.
-    await reportResult(item.type, item.id, false, null, message);
-    process.exit(1);
+    const permanent = err instanceof PermanentSkip;
+    if (permanent) {
+      // Retired, not failed: a dead thread would otherwise be served again
+      // every run forever, and replies are served ahead of self-posts, so one
+      // dead thread starves the whole queue behind it.
+      log(`SKIPPED: ${message}`);
+    } else {
+      log(`FAILED: ${message}`);
+    }
+    await reportResult(item.type, item.id, false, null, message, permanent);
+    process.exit(permanent ? 0 : 1);
   }
 }
 

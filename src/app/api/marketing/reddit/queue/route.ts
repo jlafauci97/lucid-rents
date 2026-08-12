@@ -102,14 +102,22 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let body: { type?: string; id?: string; ok?: boolean; url?: string; error?: string };
+  let body: {
+    type?: string;
+    id?: string;
+    ok?: boolean;
+    url?: string;
+    error?: string;
+    /** The item can never succeed (thread deleted/removed/locked); retire it. */
+    permanent?: boolean;
+  };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { type, id, ok, url, error } = body;
+  const { type, id, ok, url, error, permanent } = body;
   if (!id || (type !== "reply" && type !== "selfpost")) {
     return NextResponse.json({ error: "type and id are required" }, { status: 400 });
   }
@@ -119,10 +127,16 @@ export async function PATCH(req: NextRequest) {
 
   if (type === "reply") {
     // A failed post stays 'approved' so the next run retries it; the error is
-    // recorded rather than silently swallowed.
+    // recorded rather than silently swallowed. A *permanent* failure — the
+    // thread is gone, removed, locked or archived — is retired to 'skipped'
+    // instead. Retrying it would be pointless, and because approved replies
+    // are always served ahead of self-posts, one dead thread left in
+    // 'approved' starves the entire queue behind it indefinitely.
     const patch = ok
       ? { status: "replied", replied_at: now }
-      : { status: "approved" };
+      : permanent
+        ? { status: "skipped" }
+        : { status: "approved" };
     const { error: dbError } = await supabase
       .from("marketing_reddit_threads")
       .update(patch)
@@ -136,7 +150,9 @@ export async function PATCH(req: NextRequest) {
       .update(
         ok
           ? { status: "posted", posted_at: now, posted_url: url ?? null }
-          : { status: "draft" }
+          : permanent
+            ? { status: "rejected" }
+            : { status: "draft" }
       )
       .eq("id", id);
     if (dbError) {
@@ -145,7 +161,11 @@ export async function PATCH(req: NextRequest) {
   }
 
   console.log(
-    `[reddit/queue] ${type} ${id} -> ${ok ? "posted" : `failed: ${error ?? "unknown"}`}`
+    `[reddit/queue] ${type} ${id} -> ${
+      ok
+        ? "posted"
+        : `${permanent ? "retired" : "failed"}: ${error ?? "unknown"}`
+    }`
   );
   return NextResponse.json({ ok: true });
 }
