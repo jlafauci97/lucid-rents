@@ -1,4 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { after } from "next/server";
+
+// Keep the lambda alive long enough for the after() dispatch below to hold
+// its connection while the edge function runs (most sources finish < 300s).
+export const maxDuration = 300;
 
 /**
  * Cron dispatcher → Supabase Edge Functions.
@@ -78,6 +83,13 @@ const VERCEL_DISPATCH_SOURCES = new Set([
   // standalone edge functions
   "sync-rent-stabilization",
   "sync-hpd-lead",
+  // Monthly standalone syncs. Their vercel.json crons pointed here all along,
+  // but they were missing from this allowlist, so every run no-op'd — no
+  // sync_log rows at all as of 2026-08-11. Nothing else schedules them.
+  "sync-zillow-rents",
+  "sync-energy",
+  "sync-transit",
+  "sync-schools",
 ]);
 
 /** Standalone edge functions are invoked by name; everything else goes to `sync`. */
@@ -134,16 +146,31 @@ export async function GET(req: NextRequest) {
 
   const fnName = getFunctionName(source);
 
-  // Fire-and-forget: the edge function runs far longer than this route's
-  // budget, and it records its own outcome in sync_log.
-  fetch(`${supabaseUrl}/functions/v1/${fnName}`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${cronSecret}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ source, mode }),
-  }).catch((err) => console.error("[cron/trigger] edge invoke failed:", source, err));
+  // Dispatch via after(): a bare fire-and-forget fetch dies when Vercel
+  // freezes the lambda right after the response is sent — that is why the
+  // "restored" sources of 2026-07-26 mostly never ran (14 edge invocations in
+  // 10 days instead of ~160). after() keeps the function alive until the
+  // fetch settles; the edge function records its own outcome in sync_log.
+  after(async () => {
+    try {
+      const res = await fetch(`${supabaseUrl}/functions/v1/${fnName}`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${cronSecret}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ source, mode }),
+      });
+      if (!res.ok) {
+        console.error(
+          `[cron/trigger] edge fn ${fnName} responded ${res.status}:`,
+          await res.text()
+        );
+      }
+    } catch (err) {
+      console.error("[cron/trigger] edge invoke failed:", source, err);
+    }
+  });
 
   return NextResponse.json(
     { triggered: true, function: fnName, source, mode },

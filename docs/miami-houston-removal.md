@@ -1,9 +1,16 @@
 # Miami & Houston removal (July 2026)
 
 Miami and Houston were pulled from public view on 2026-07-26 so the site
-focuses on NYC, LA, and Chicago. **Nothing was deleted** — all data stays in
-the database, all sync/handler code stays in the repo, and this document is
-the runbook for turning the two metros back on.
+focuses on NYC, LA, and Chicago. All sync/handler code stays in the repo, and
+this document is the runbook for turning the two metros back on.
+
+> **Update 2026-08-12:** the Miami/Houston **tables were dropped** from the
+> database as part of a cost cleanup (~1.5 GB; migration
+> `20260812000000_drop_miami_houston_and_dead_tables.sql`). Miami/Houston rows
+> in shared tables (`buildings`, etc.) were left alone. Everything dropped is
+> re-importable from public open-data portals via the `scripts/backfill-*`
+> scripts, so bringing the metros back now also means re-running those
+> backfills.
 
 ## What was changed
 

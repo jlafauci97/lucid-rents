@@ -144,6 +144,47 @@ async function notifyIndexNowForBuildings(
   }
 }
 
+// Cap on per-run targeted revalidations. Beyond this the building pages'
+// ISR expiry catches the long tail; a bigger cap just recreates the
+// every-page render storm the cap exists to prevent.
+const REVALIDATE_BUILDINGS_CAP = 200;
+
+/**
+ * Revalidate the ISR cache for only the buildings this run touched (capped).
+ * Never blanket-invalidate "/[city]/building/[borough]/[slug]" — that wipes
+ * every building page (~700K URLs) and the resulting bot re-render storm was
+ * the single biggest line on the Vercel bill (17.9M ISR writes/month).
+ * Best-effort — errors are logged but never thrown.
+ */
+async function revalidateAffectedBuildingPages(
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+  buildingIds: Set<string>
+): Promise<number> {
+  if (buildingIds.size === 0) return 0;
+  let revalidated = 0;
+  try {
+    const ids = [...buildingIds].slice(0, REVALIDATE_BUILDINGS_CAP);
+    const { data } = await supabase
+      .from("buildings")
+      .select("metro, borough, slug")
+      .in("id", ids)
+      .not("slug", "is", null);
+
+    for (const b of data ?? []) {
+      const city = (b.metro || "nyc") as City;
+      if (CITY_META[city] && b.borough && b.slug) {
+        const path = buildingUrl({ borough: b.borough, slug: b.slug }, city);
+        revalidatePath(path);
+        revalidatePath(`${path}/violations`);
+        revalidated++;
+      }
+    }
+  } catch (err) {
+    console.error("Targeted revalidation error:", err);
+  }
+  return revalidated;
+}
+
 /** Upsert rows in batches to avoid payload size limits.
  *  Use ignoreDuplicates=true for high-volume tables where existing records
  *  don't need updating (ON CONFLICT DO NOTHING — much faster).
@@ -5910,7 +5951,12 @@ async function runLinkOnly(
     });
   } catch { /* best-effort logging */ }
 
-  // Notify search engines about updated building pages
+  // Refresh cached pages for the buildings this run linked, then notify
+  // search engines about them
+  const buildingsRevalidated = await revalidateAffectedBuildingPages(
+    supabase,
+    allAffectedIds
+  );
   const indexNowResult = await notifyIndexNowForBuildings(supabase, allAffectedIds);
 
   return NextResponse.json({
@@ -5919,6 +5965,7 @@ async function runLinkOnly(
     source: sourceParam || "all",
     duration_seconds: parseFloat(elapsed),
     buildings_updated: allAffectedIds.size,
+    buildings_revalidated: buildingsRevalidated,
     slugs_backfilled: slugsBackfilled,
     building_count_errors: countErrors,
     link_results: linkResults,
@@ -6023,15 +6070,19 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Invalidate cached pages so fresh data is served immediately
+    // Invalidate cached list pages (a handful of routes — cheap). Building
+    // pages are revalidated per-affected-building below, never blanket-nuked.
     try {
       revalidatePath("/[city]", "page");
-      revalidatePath("/[city]/building/[borough]/[slug]", "page");
       revalidatePath("/[city]/building-rankings", "page");
       revalidatePath("/[city]/buildings/[borough]", "page");
     } catch {
       // revalidation is best-effort; don't fail the sync
     }
+    const buildingsRevalidated = await revalidateAffectedBuildingPages(
+      supabase,
+      allAffectedIds
+    );
 
     // Notify search engines about updated building pages
     const indexNowResult = await notifyIndexNowForBuildings(supabase, allAffectedIds);
@@ -6046,6 +6097,7 @@ export async function GET(req: NextRequest) {
       duration_seconds: parseFloat(elapsed),
       stale_syncs_cleaned: staleCleaned,
       buildings_updated: allAffectedIds.size,
+      buildings_revalidated: buildingsRevalidated,
       slugs_backfilled: slugsBackfilled,
       building_count_errors: countErrors,
       indexnow: indexNowResult,

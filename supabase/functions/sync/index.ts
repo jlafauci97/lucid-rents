@@ -118,6 +118,47 @@ async function notifyIndexNowForBuildings(
   }
 }
 
+// Cap on per-run targeted revalidations. Beyond this the building pages'
+// ISR expiry catches the long tail; a bigger cap just recreates the
+// every-page render storm the cap exists to prevent.
+const REVALIDATE_BUILDINGS_CAP = 200;
+
+/**
+ * Revalidate the ISR cache for only the buildings this run touched (capped).
+ * Never send the "/[city]/building/[borough]/[slug]" route pattern — that
+ * wipes every building page (~700K URLs) and the resulting bot re-render
+ * storm was the single biggest line on the Vercel bill.
+ * Best-effort — errors are logged but never thrown.
+ */
+async function revalidateAffectedBuildingPages(
+  supabase: SupabaseClient,
+  buildingIds: Set<string>
+): Promise<number> {
+  if (buildingIds.size === 0) return 0;
+  try {
+    const ids = [...buildingIds].slice(0, REVALIDATE_BUILDINGS_CAP);
+    const { data } = await supabase
+      .from("buildings")
+      .select("metro, borough, slug")
+      .in("id", ids)
+      .not("slug", "is", null);
+
+    const paths: string[] = [];
+    for (const b of data ?? []) {
+      const city = (b.metro || "nyc") as City;
+      if (CITY_META[city] && b.borough && b.slug) {
+        const path = buildingUrl({ borough: b.borough, slug: b.slug }, city);
+        paths.push(path, `${path}/violations`);
+      }
+    }
+    await triggerRevalidation(paths);
+    return paths.length;
+  } catch (err) {
+    console.error("Targeted revalidation error:", err);
+    return 0;
+  }
+}
+
 /** Select an existing building by slug+metro, or insert a new one.
  *  Handles race conditions (23505 duplicate key) by retrying the SELECT. */
 async function findOrCreateBuilding(
@@ -4222,6 +4263,10 @@ async function runLinkOnly(
     });
   } catch { /* best-effort logging */ }
 
+  const buildingsRevalidated = await revalidateAffectedBuildingPages(
+    supabase,
+    allAffectedIds
+  );
   const indexNowResult = await notifyIndexNowForBuildings(supabase, allAffectedIds);
 
   return new Response(JSON.stringify({
@@ -4230,6 +4275,7 @@ async function runLinkOnly(
     source: sourceParam || "all",
     duration_seconds: parseFloat(elapsed),
     buildings_updated: allAffectedIds.size,
+    buildings_revalidated: buildingsRevalidated,
     slugs_backfilled: slugsBackfilled,
     link_results: linkResults,
     indexnow: indexNowResult,
@@ -4341,14 +4387,19 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Trigger revalidation on the Next.js app instead of direct revalidatePath
+    // Trigger revalidation on the Next.js app instead of direct revalidatePath.
+    // List pages only — building pages are revalidated per-affected-building
+    // below, never blanket-nuked.
     const revalidationPaths = [
       "/[city]",
-      "/[city]/building/[borough]/[slug]",
       "/[city]/worst-rated-buildings",
       "/[city]/buildings/[borough]",
     ];
     await triggerRevalidation(revalidationPaths);
+    const buildingsRevalidated = await revalidateAffectedBuildingPages(
+      supabase,
+      allAffectedIds
+    );
 
     // Notify search engines about updated building pages
     const indexNowResult = await notifyIndexNowForBuildings(supabase, allAffectedIds);
@@ -4363,6 +4414,7 @@ Deno.serve(async (req) => {
       duration_seconds: parseFloat(elapsed),
       stale_syncs_cleaned: staleCleaned,
       buildings_updated: allAffectedIds.size,
+      buildings_revalidated: buildingsRevalidated,
       slugs_backfilled: slugsBackfilled,
       building_count_errors: countErrors,
       indexnow: indexNowResult,

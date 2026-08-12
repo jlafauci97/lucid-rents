@@ -1,9 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 
-const ALLOWED_PATH_PATTERNS = [/^\/\[city\]($|\/)/, /^\/$/];
+const ALLOWED_PATH_PATTERNS = [
+  /^\/\[city\]($|\/)/,
+  /^\/$/,
+  // Concrete building pages (and their /violations subpage), sent by the sync
+  // edge function for targeted per-building revalidation. The route-pattern
+  // form "/[city]/building/[borough]/[slug]" is deliberately NOT special-cased
+  // here beyond the generic /[city] prefix — callers should revalidate the
+  // specific buildings they touched, not every building page on the site.
+  /^\/[a-z0-9-]+\/building\/[a-z0-9-]+\/[a-z0-9-]+(\/violations)?$/,
+];
 const ALLOWED_TAG_PATTERNS = [/^landlords:[a-z-]+$/, /^landlord-data$/];
-const MAX_ITEMS = 10;
+// High enough for a capped per-building batch from a sync run (2 paths per
+// building × 200-building cap), low enough to bound a single request's work.
+const MAX_ITEMS = 400;
 
 export async function POST(req: NextRequest) {
   const { paths, tags, secret } = await req.json();
@@ -24,7 +35,12 @@ export async function POST(req: NextRequest) {
         typeof p === "string" &&
         ALLOWED_PATH_PATTERNS.some((re) => re.test(p))
     );
-    for (const path of valid) revalidatePath(path, "page");
+    for (const path of valid) {
+      // Route patterns ("/[city]/...") need the "page" type; concrete URLs
+      // ("/nyc/building/manhattan/x") are revalidated individually without it.
+      if (path.includes("[")) revalidatePath(path, "page");
+      else revalidatePath(path);
+    }
     revalidatedPaths = valid.length;
   }
 
