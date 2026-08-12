@@ -23,6 +23,9 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
   },
+  other: {
+    "backlink-exchange-verification": "16f54349ead75dcaeea9235235ed7d38",
+  },
 };
 
 const CITY_TAGS: Record<string, { bg: string; fg: string }> = {
