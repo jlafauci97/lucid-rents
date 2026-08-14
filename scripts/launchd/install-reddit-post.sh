@@ -28,6 +28,16 @@
 # run fails at preflight. Chrome must also have "Allow JavaScript from Apple
 # Events" enabled (View -> Developer).
 #
+# WHY THE APP BUNDLE: macOS never shows the Automation prompt for Apple
+# platform binaries (/bin/bash, osascript) running as launchd jobs — tccd
+# denies them instantly with -1723 and no dialog. The job therefore runs
+# through a tiny ad-hoc-signed app bundle (LucidRentsPoster.app) whose
+# compiled launcher spawns the runner as a child, so the bundle stays the
+# TCC "responsible process" and the prompt can appear and be remembered.
+# The grant is tied to the ad-hoc signature (cdhash), so the installer only
+# builds the app when it is missing; deleting the app forces a rebuild and
+# a fresh one-time prompt.
+#
 # Usage:
 #   bash scripts/launchd/install-reddit-post.sh
 #
@@ -107,11 +117,85 @@ if [ -f "$INSTALL_DIR/PAUSE_POSTING" ]; then
   exit 0
 fi
 
+# The rent scrapers launch their own copies of /Applications/Google Chrome
+# through Playwright. While any of those are alive, "tell application
+# \"Google Chrome\"" routes Apple Events nondeterministically — the poster can
+# end up reading the scraper's headless instance (not signed in, JS from
+# Apple Events off) and fail preflight with a misleading error. Wait for the
+# scrapers to finish; if they are still running after 20 minutes, leave the
+# queue item untouched for the next scheduled slot.
+waited=0
+while pgrep -f 'playwright_chromiumdev_profile' >/dev/null 2>&1; do
+  if [ "\$waited" -ge 1200 ]; then
+    echo "[runner] \$(date -u +%Y-%m-%dT%H:%M:%SZ) scraper Chrome still running after 20m — skipping this slot"
+    exit 1
+  fi
+  if [ "\$waited" -eq 0 ]; then
+    echo "[runner] \$(date -u +%Y-%m-%dT%H:%M:%SZ) scraper Chrome running — waiting for it to finish"
+  fi
+  sleep 30
+  waited=\$((waited + 30))
+done
+
 echo "[runner] \$(date -u +%Y-%m-%dT%H:%M:%SZ) starting"
 "$NODE_BIN" "$INSTALL_DIR/post-reddit-queue.mjs" "\$@"
 echo "[runner] \$(date -u +%Y-%m-%dT%H:%M:%SZ) done"
 RUNNER_EOF
 chmod +x "$RUNNER"
+
+# Build the TCC wrapper app if it does not exist yet (see header comment).
+# Rebuilding would change the ad-hoc cdhash and invalidate the recorded
+# Automation grant, so an existing app is left alone.
+APP_DIR="$INSTALL_DIR/LucidRentsPoster.app"
+APP_BIN="$APP_DIR/Contents/MacOS/poster"
+if [ ! -x "$APP_BIN" ]; then
+  echo "[install] building $APP_DIR"
+  if ! command -v clang >/dev/null; then
+    echo "FATAL: clang not found — install Xcode Command Line Tools (xcode-select --install)" >&2
+    exit 1
+  fi
+  mkdir -p "$APP_DIR/Contents/MacOS"
+  cat > "$APP_DIR/Contents/Info.plist" <<'APP_PLIST_EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>CFBundleIdentifier</key><string>com.lucidrents.poster</string>
+  <key>CFBundleName</key><string>LucidRentsPoster</string>
+  <key>CFBundleExecutable</key><string>poster</string>
+  <key>CFBundlePackageType</key><string>APPL</string>
+  <key>CFBundleVersion</key><string>1.0</string>
+  <key>LSUIElement</key><true/>
+  <key>NSAppleEventsUsageDescription</key><string>Posts queued LucidRents content to Reddit through the signed-in Chrome session.</string>
+</dict></plist>
+APP_PLIST_EOF
+  LAUNCHER_SRC="$(mktemp -t poster-launcher).c"
+  cat > "$LAUNCHER_SRC" <<LAUNCHER_EOF
+#include <spawn.h>
+#include <stdio.h>
+#include <sys/wait.h>
+extern char **environ;
+int main(int argc, char *argv[]) {
+    /* Spawn (not exec) so this signed bundle binary stays alive as the
+       TCC "responsible process" for the Apple Events the child sends. */
+    char *args[argc + 3];
+    args[0] = "/bin/bash";
+    args[1] = "$RUNNER";
+    for (int i = 1; i < argc; i++) args[i + 1] = argv[i];
+    args[argc + 1] = NULL;
+    pid_t pid;
+    int rc = posix_spawn(&pid, "/bin/bash", NULL, NULL, args, environ);
+    if (rc != 0) { fprintf(stderr, "posix_spawn failed: %d\n", rc); return 1; }
+    int status = 0;
+    if (waitpid(pid, &status, 0) < 0) { perror("waitpid"); return 1; }
+    return WIFEXITED(status) ? WEXITSTATUS(status) : 1;
+}
+LAUNCHER_EOF
+  clang -o "$APP_BIN" "$LAUNCHER_SRC"
+  rm -f "$LAUNCHER_SRC"
+  codesign --force --sign - --identifier com.lucidrents.poster "$APP_DIR"
+else
+  echo "[install] $APP_DIR already built — keeping it (and its Automation grant)"
+fi
 
 # Four fixed times rather than StartInterval: posting overnight reads as a bot,
 # and fixed hours keep runs inside the window where the machine is awake and
@@ -127,8 +211,7 @@ cat > "$PLIST_PATH" <<PLIST_EOF
     <string>com.lucidrents.reddit-post</string>
     <key>ProgramArguments</key>
     <array>
-        <string>/bin/bash</string>
-        <string>${RUNNER}</string>
+        <string>${APP_BIN}</string>
     </array>
     <key>WorkingDirectory</key>
     <string>${INSTALL_DIR}</string>
