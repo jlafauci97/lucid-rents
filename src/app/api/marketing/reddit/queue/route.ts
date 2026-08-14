@@ -71,7 +71,39 @@ export async function GET(req: NextRequest) {
   }
 
   // Then our own posts. These go to our profile, so subreddit rate limits do
-  // not apply — but we still space them out, one per run.
+  // not apply — but they need their own spacing now that the poster polls
+  // every few minutes instead of running on four fixed slots: without it a
+  // backlog of drafts would all publish within the hour. Mirror the old
+  // schedule's cadence: at least 3 hours apart, at most 3 in 24 hours.
+  const { data: recentPosts } = await supabase
+    .from("marketing_reddit_posts")
+    .select("posted_at")
+    .eq("status", "posted")
+    .gte("posted_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+    .order("posted_at", { ascending: false });
+
+  const MIN_SELFPOST_GAP_MS = 3 * 60 * 60 * 1000;
+  const MAX_SELFPOSTS_PER_DAY = 3;
+  if ((recentPosts?.length ?? 0) >= MAX_SELFPOSTS_PER_DAY) {
+    return NextResponse.json({
+      ok: true,
+      item: null,
+      reason: `Self-post daily limit reached (${MAX_SELFPOSTS_PER_DAY}/24h)`,
+    });
+  }
+  const lastPostedAt = recentPosts?.[0]?.posted_at
+    ? new Date(recentPosts[0].posted_at as string).getTime()
+    : 0;
+  const selfPostWaitMs = lastPostedAt + MIN_SELFPOST_GAP_MS - Date.now();
+  if (selfPostWaitMs > 0) {
+    return NextResponse.json({
+      ok: true,
+      item: null,
+      reason: "Self-post gap (3h) not elapsed",
+      waitSeconds: Math.ceil(selfPostWaitMs / 1000),
+    });
+  }
+
   const { data: selfPosts } = await supabase
     .from("marketing_reddit_posts")
     .select("id, title, body")

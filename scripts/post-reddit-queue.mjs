@@ -381,6 +381,25 @@ async function main() {
 
   log(`next: ${item.type} ${item.id}${item.subreddit ? ` r/${item.subreddit}` : ""}`);
 
+  // Local mirror of the server's self-post spacing (3h apart). The server
+  // rule lives in the queue API and only exists after that deploy reaches
+  // production; this stamp file keeps a draft backlog from draining at poll
+  // speed in the meantime, and is a harmless double-check afterwards.
+  const SELFPOST_STAMP = path.join(os.homedir(), ".lucidrents", "last-selfpost");
+  if (item.type === "selfpost" && !DRY_RUN) {
+    try {
+      const last = fs.statSync(SELFPOST_STAMP).mtimeMs;
+      const gapMs = 3 * 60 * 60 * 1000;
+      if (Date.now() - last < gapMs) {
+        const mins = Math.ceil((gapMs - (Date.now() - last)) / 60000);
+        log(`self-post gap (3h) not elapsed locally — deferring ~${mins} min`);
+        return;
+      }
+    } catch {
+      /* no stamp yet — free to post */
+    }
+  }
+
   if (DRY_RUN) {
     log(`title: ${item.title ?? "(reply)"}`);
     log(`body:\n${item.body}`);
@@ -397,6 +416,9 @@ async function main() {
           ? await postReply(browser.page, item)
           : await postSelfPost(browser.page, item);
       log(`POSTED: ${url}`);
+      if (item.type === "selfpost") {
+        fs.writeFileSync(path.join(os.homedir(), ".lucidrents", "last-selfpost"), url);
+      }
       await reportResult(item.type, item.id, true, url);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

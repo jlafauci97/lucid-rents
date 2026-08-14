@@ -26,9 +26,9 @@
 #
 # SCRAPER INTERLOCK: scrape.sh owns the machine's default route through a
 # WireGuard tunnel for its whole run (up to ~2h30). Posting to Reddit through
-# a commercial VPN IP is an account-health risk, so the runner waits for
-# scrape.sh to finish (3h cap) and warns if some other VPN still holds the
-# default route afterwards.
+# a commercial VPN IP is an account-health risk, so the runner defers to the
+# next 15-minute tick while a scrape run is alive, and warns if some other
+# VPN still holds the default route.
 #
 # TCC: launchd-spawned processes cannot read ~/Desktop, ~/Documents or
 # ~/Downloads without Full Disk Access, so this copies the poster into
@@ -127,29 +127,20 @@ if [ -f "$INSTALL_DIR/PAUSE_POSTING" ]; then
   exit 0
 fi
 
+# Quiet hours: the poller ticks every 15 minutes around the clock, but
+# posting overnight reads as a bot. Outside 9:00–20:59 local, do nothing.
+hour=\$(date +%H)
+if [ "\$hour" -lt 9 ] || [ "\$hour" -ge 21 ]; then
+  exit 0
+fi
+
 # scrape.sh routes the whole machine through a WireGuard VPN for its entire
-# run. Posting to Reddit from a commercial VPN IP is an account-health risk,
-# so wait for the scrape run to finish. Scrape phases are wall-clock-capped
-# around 2h30; if somehow still busy after 3 hours, leave the queue item
-# untouched for the next scheduled slot. launchd skips calendar fires while
-# the job is running, so a delayed run cannot stack with the next.
-scrapers_busy() {
-  pgrep -f 'lucid-rents-sync/scripts/sync/scrape.sh' >/dev/null 2>&1
-}
-waited=0
-while scrapers_busy; do
-  if [ "\$waited" -ge 10800 ]; then
-    echo "[runner] \$(date -u +%Y-%m-%dT%H:%M:%SZ) scrapers still running after 3h — skipping this slot"
-    exit 1
-  fi
-  if [ "\$waited" -eq 0 ]; then
-    echo "[runner] \$(date -u +%Y-%m-%dT%H:%M:%SZ) scrapers running — waiting for them to finish"
-  fi
-  sleep 60
-  waited=\$((waited + 60))
-done
-if [ "\$waited" -gt 0 ]; then
-  echo "[runner] \$(date -u +%Y-%m-%dT%H:%M:%SZ) scrapers clear after \${waited}s"
+# run. Posting to Reddit from a commercial VPN IP is an account-health risk.
+# With a 15-minute poll there is no need to sit and wait — defer to the next
+# tick, which retries automatically until the scrape run ends.
+if pgrep -f 'lucid-rents-sync/scripts/sync/scrape.sh' >/dev/null 2>&1; then
+  echo "[runner] \$(date -u +%Y-%m-%dT%H:%M:%SZ) scrapers running (VPN owns egress) — deferring to next tick"
+  exit 0
 fi
 
 # Belt and braces: if something else still owns the default route through a
@@ -167,12 +158,11 @@ echo "[runner] \$(date -u +%Y-%m-%dT%H:%M:%SZ) done"
 RUNNER_EOF
 chmod +x "$RUNNER"
 
-# Four fixed times rather than StartInterval: posting overnight reads as a bot,
-# and fixed hours keep runs inside the window where the machine is awake and
-# somebody could notice a bad post. Each run publishes at most one item, so
-# this is a ceiling of 4 posts/day. The times sit clear of the scrape starts
-# (2:00, 11:00, 13:00, 16:00, 17:00, 20:00 local) so the interlock above waits
-# minutes, not hours, when a scrape overruns.
+# Poll every 15 minutes: approving a reply in mission control should turn
+# into a post within minutes, not at the next fixed slot. The cadence and
+# ceilings live server-side in the queue API (replies: 5/day, 2/subreddit,
+# 15-min gap; self-posts: 3/24h, 3h apart) — the poller is just a dumb pump,
+# and the runner above keeps it inside 9:00–20:59 and off the scrapers' VPN.
 echo "[install] writing $PLIST_PATH"
 cat > "$PLIST_PATH" <<PLIST_EOF
 <?xml version="1.0" encoding="UTF-8"?>
@@ -199,13 +189,8 @@ cat > "$PLIST_PATH" <<PLIST_EOF
         <key>PATH</key>
         <string>/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
     </dict>
-    <key>StartCalendarInterval</key>
-    <array>
-        <dict><key>Hour</key><integer>9</integer><key>Minute</key><integer>40</integer></dict>
-        <dict><key>Hour</key><integer>12</integer><key>Minute</key><integer>40</integer></dict>
-        <dict><key>Hour</key><integer>15</integer><key>Minute</key><integer>40</integer></dict>
-        <dict><key>Hour</key><integer>19</integer><key>Minute</key><integer>40</integer></dict>
-    </array>
+    <key>StartInterval</key>
+    <integer>900</integer>
     <key>StandardOutPath</key>
     <string>${LOG_PATH}</string>
     <key>StandardErrorPath</key>
@@ -232,7 +217,8 @@ fi
 
 echo
 echo "[install] done. Installed com.lucidrents.reddit-post"
-echo "  schedule : 9:40, 12:40, 15:40, 19:40 local — one item per run (max 4/day)"
+echo "  schedule : every 15 min, 9:00-20:59 local — approve in mission control and it posts"
+echo "  ceilings : server-side (replies 5/day + 15-min gap; self-posts 3/24h, 3h apart)"
 echo "  logs     : $LOG_PATH"
 echo "  pause    : touch $INSTALL_DIR/PAUSE_POSTING"
 echo
