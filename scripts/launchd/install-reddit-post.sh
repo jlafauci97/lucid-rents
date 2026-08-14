@@ -143,14 +143,15 @@ if pgrep -f 'lucid-rents-sync/scripts/sync/scrape.sh' >/dev/null 2>&1; then
   exit 0
 fi
 
-# Belt and braces: if something else still owns the default route through a
-# tunnel (Proton GUI left connected, a scrape teardown that failed), say so.
-# Proceed anyway — if VPN-on is the machine's deliberate resting state we
-# should not silently stop posting forever — but make it visible in the log.
-default_iface=\$(route -n get default 2>/dev/null | awk '/interface:/{print \$2}')
-case "\$default_iface" in
-  utun*|wg*) echo "[runner] WARNING: default route is via \$default_iface (VPN?) — posting will egress through it" ;;
-esac
+# Belt and braces: the WireGuard tunnel captures egress WITHOUT appearing as
+# the default-route interface ('route -n get default' still says en1 while
+# the external IP is the VPN's), so check for the tunnel itself. Proton
+# WireGuard configs always assign 10.2.0.2 to the interface. This catches a
+# tunnel left up by a crashed scrape run or brought up by anything else.
+if ifconfig 2>/dev/null | grep -q 'inet 10\.2\.0\.2'; then
+  echo "[runner] \$(date -u +%Y-%m-%dT%H:%M:%SZ) WireGuard tunnel is up (10.2.0.2) — deferring to next tick"
+  exit 0
+fi
 
 echo "[runner] \$(date -u +%Y-%m-%dT%H:%M:%SZ) starting"
 "$NODE_BIN" "$INSTALL_DIR/post-reddit-queue.mjs" "\$@"
