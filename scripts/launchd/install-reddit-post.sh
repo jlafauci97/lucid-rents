@@ -7,36 +7,34 @@
 # until a human remembered to run a command. This is the missing half of the
 # pipeline; the scanner has had a LaunchAgent since #163.
 #
-# WHY A LaunchAgent AND NOT A CRON/CI JOB: the poster drives Chrome through
-# AppleScript, so it needs a logged-in GUI session with Chrome signed in to the
-# posting account. It cannot run on Vercel, in GitHub Actions, or over a plain
-# SSH session. This must be installed on the always-on Mac (the Mac mini).
+# WHY A LaunchAgent AND NOT A CRON/CI JOB: the poster drives a logged-in
+# Chrome profile, so it needs the always-on Mac (the Mac mini) with a GUI
+# session. It cannot run on Vercel, in GitHub Actions, or over a plain SSH
+# session.
 #
 # WHAT IT PUBLISHES: one queue item per run. The API serves approved replies
 # first (highest relevance), then self-post drafts. Replies therefore still
 # require a human to move them draft_ready -> approved in mission control;
 # self-posts publish unattended by design.
 #
+# BROWSER: the poster launches its own Chrome (the real /Applications binary)
+# against ~/.lucidrents/chrome-posting-profile via playwright-core, installed
+# here under ~/.lucidrents. It does NOT touch the interactive browser and it
+# does not use AppleScript, so there are no macOS Automation prompts and no
+# collisions with the rent scrapers' Playwright Chrome instances. Sign the
+# profile in once with: node scripts/setup-reddit-profile.mjs
+#
+# SCRAPER INTERLOCK: scrape.sh owns the machine's default route through a
+# WireGuard tunnel for its whole run (up to ~2h30). Posting to Reddit through
+# a commercial VPN IP is an account-health risk, so the runner waits for
+# scrape.sh to finish (3h cap) and warns if some other VPN still holds the
+# default route afterwards.
+#
 # TCC: launchd-spawned processes cannot read ~/Desktop, ~/Documents or
 # ~/Downloads without Full Disk Access, so this copies the poster into
 # ~/.lucidrents/ and bakes the env into the plist rather than reading
 # .env.local at run time. Re-run this installer after pulling main if
 # post-reddit-queue.mjs changed — it is a copy, not a symlink.
-#
-# ONE-TIME PROMPT: the first run asks for permission to control Google Chrome
-# (System Settings -> Privacy & Security -> Automation). Approve it or every
-# run fails at preflight. Chrome must also have "Allow JavaScript from Apple
-# Events" enabled (View -> Developer).
-#
-# WHY THE APP BUNDLE: macOS never shows the Automation prompt for Apple
-# platform binaries (/bin/bash, osascript) running as launchd jobs — tccd
-# denies them instantly with -1723 and no dialog. The job therefore runs
-# through a tiny ad-hoc-signed app bundle (LucidRentsPoster.app) whose
-# compiled launcher spawns the runner as a child, so the bundle stays the
-# TCC "responsible process" and the prompt can appear and be remembered.
-# The grant is tied to the ad-hoc signature (cdhash), so the installer only
-# builds the app when it is missing; deleting the app forces a rebuild and
-# a fresh one-time prompt.
 #
 # Usage:
 #   bash scripts/launchd/install-reddit-post.sh
@@ -78,9 +76,9 @@ if [ -z "$CRON_SECRET" ]; then
   exit 1
 fi
 if [ -z "$REDDIT_USERNAME" ]; then
-  # Not fatal for self-posts alone, but preflight uses it to confirm Chrome is
-  # signed in as the right account, and it builds the r/u_<name> self-post
-  # target. Without it the poster cannot verify who it is posting as.
+  # Not fatal for self-posts alone, but preflight uses it to confirm the
+  # profile is signed in as the right account, and it builds the r/u_<name>
+  # self-post target. Without it the poster cannot verify who it is posting as.
   echo "FATAL: REDDIT_USERNAME not set in $REPO_ROOT/.env.local" >&2
   exit 1
 fi
@@ -93,6 +91,8 @@ if [ -z "$NODE_BIN" ]; then
   echo "FATAL: no node binary found (tried /opt/homebrew/bin/node and PATH)" >&2
   exit 1
 fi
+NPM_BIN="$(dirname "$NODE_BIN")/npm"
+[ -x "$NPM_BIN" ] || NPM_BIN="$(command -v npm)"
 
 INSTALL_DIR="$HOME/.lucidrents"
 RUNNER="$INSTALL_DIR/run-reddit-post.sh"
@@ -101,12 +101,22 @@ LOG_PATH="$HOME/Library/Logs/lucidrents-reddit-post.log"
 
 mkdir -p "$INSTALL_DIR" "$HOME/Library/LaunchAgents" "$HOME/Library/Logs"
 
-echo "[install] copying post-reddit-queue.mjs -> $INSTALL_DIR/"
+echo "[install] copying poster scripts -> $INSTALL_DIR/"
 cp "$REPO_ROOT/scripts/post-reddit-queue.mjs" "$INSTALL_DIR/post-reddit-queue.mjs"
+cp "$REPO_ROOT/scripts/setup-reddit-profile.mjs" "$INSTALL_DIR/setup-reddit-profile.mjs"
 
-# The runner exists purely for the kill switch. launchd has no concept of
-# "installed but paused", and unloading the agent to stop posting is easy to
-# forget to undo.
+# playwright-core drives the system Chrome — no bundled-browser download, and
+# nothing added to the web app's package.json.
+if [ ! -d "$INSTALL_DIR/node_modules/playwright-core" ]; then
+  echo "[install] installing playwright-core into $INSTALL_DIR"
+  (cd "$INSTALL_DIR" && "$NPM_BIN" install --no-fund --no-audit --silent playwright-core)
+else
+  echo "[install] playwright-core already installed"
+fi
+
+# The runner exists for the kill switch and the scraper interlock. launchd has
+# no concept of "installed but paused", and unloading the agent to stop
+# posting is easy to forget to undo.
 echo "[install] writing $RUNNER"
 cat > "$RUNNER" <<RUNNER_EOF
 #!/bin/bash
@@ -117,20 +127,14 @@ if [ -f "$INSTALL_DIR/PAUSE_POSTING" ]; then
   exit 0
 fi
 
-# The rent scrapers launch their own copies of /Applications/Google Chrome
-# through Playwright. While any of those are alive, "tell application
-# \"Google Chrome\"" routes Apple Events nondeterministically — the poster can
-# end up reading the scraper's headless instance (not signed in, JS from
-# Apple Events off) and fail preflight with a misleading error. The scrapers
-# relaunch Chrome between boroughs, so waiting for a momentary Chrome-free gap
-# is a race; wait for the whole scrape run (the scrape.sh parents) to finish.
-# Scrape phases are wall-clock-capped around 2h30, so a colliding slot posts
-# late rather than failing; if somehow still busy after 3 hours, leave the
-# queue item untouched for the next scheduled slot. launchd skips calendar
-# fires while the job is running, so a delayed run cannot stack with the next.
+# scrape.sh routes the whole machine through a WireGuard VPN for its entire
+# run. Posting to Reddit from a commercial VPN IP is an account-health risk,
+# so wait for the scrape run to finish. Scrape phases are wall-clock-capped
+# around 2h30; if somehow still busy after 3 hours, leave the queue item
+# untouched for the next scheduled slot. launchd skips calendar fires while
+# the job is running, so a delayed run cannot stack with the next.
 scrapers_busy() {
-  pgrep -f 'lucid-rents-sync/scripts/sync/scrape.sh' >/dev/null 2>&1 ||
-    pgrep -f 'playwright_chromiumdev_profile' >/dev/null 2>&1
+  pgrep -f 'lucid-rents-sync/scripts/sync/scrape.sh' >/dev/null 2>&1
 }
 waited=0
 while scrapers_busy; do
@@ -146,13 +150,16 @@ while scrapers_busy; do
 done
 if [ "\$waited" -gt 0 ]; then
   echo "[runner] \$(date -u +%Y-%m-%dT%H:%M:%SZ) scrapers clear after \${waited}s"
-  # One more settle: a fresh scrape phase sometimes starts within a minute.
-  sleep 30
-  if scrapers_busy; then
-    echo "[runner] \$(date -u +%Y-%m-%dT%H:%M:%SZ) scrapers restarted during settle — skipping this slot"
-    exit 1
-  fi
 fi
+
+# Belt and braces: if something else still owns the default route through a
+# tunnel (Proton GUI left connected, a scrape teardown that failed), say so.
+# Proceed anyway — if VPN-on is the machine's deliberate resting state we
+# should not silently stop posting forever — but make it visible in the log.
+default_iface=\$(route -n get default 2>/dev/null | awk '/interface:/{print \$2}')
+case "\$default_iface" in
+  utun*|wg*) echo "[runner] WARNING: default route is via \$default_iface (VPN?) — posting will egress through it" ;;
+esac
 
 echo "[runner] \$(date -u +%Y-%m-%dT%H:%M:%SZ) starting"
 "$NODE_BIN" "$INSTALL_DIR/post-reddit-queue.mjs" "\$@"
@@ -160,64 +167,12 @@ echo "[runner] \$(date -u +%Y-%m-%dT%H:%M:%SZ) done"
 RUNNER_EOF
 chmod +x "$RUNNER"
 
-# Build the TCC wrapper app if it does not exist yet (see header comment).
-# Rebuilding would change the ad-hoc cdhash and invalidate the recorded
-# Automation grant, so an existing app is left alone.
-APP_DIR="$INSTALL_DIR/LucidRentsPoster.app"
-APP_BIN="$APP_DIR/Contents/MacOS/poster"
-if [ ! -x "$APP_BIN" ]; then
-  echo "[install] building $APP_DIR"
-  if ! command -v clang >/dev/null; then
-    echo "FATAL: clang not found — install Xcode Command Line Tools (xcode-select --install)" >&2
-    exit 1
-  fi
-  mkdir -p "$APP_DIR/Contents/MacOS"
-  cat > "$APP_DIR/Contents/Info.plist" <<'APP_PLIST_EOF'
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0"><dict>
-  <key>CFBundleIdentifier</key><string>com.lucidrents.poster</string>
-  <key>CFBundleName</key><string>LucidRentsPoster</string>
-  <key>CFBundleExecutable</key><string>poster</string>
-  <key>CFBundlePackageType</key><string>APPL</string>
-  <key>CFBundleVersion</key><string>1.0</string>
-  <key>LSUIElement</key><true/>
-  <key>NSAppleEventsUsageDescription</key><string>Posts queued LucidRents content to Reddit through the signed-in Chrome session.</string>
-</dict></plist>
-APP_PLIST_EOF
-  LAUNCHER_SRC="$(mktemp -t poster-launcher).c"
-  cat > "$LAUNCHER_SRC" <<LAUNCHER_EOF
-#include <spawn.h>
-#include <stdio.h>
-#include <sys/wait.h>
-extern char **environ;
-int main(int argc, char *argv[]) {
-    /* Spawn (not exec) so this signed bundle binary stays alive as the
-       TCC "responsible process" for the Apple Events the child sends. */
-    char *args[argc + 3];
-    args[0] = "/bin/bash";
-    args[1] = "$RUNNER";
-    for (int i = 1; i < argc; i++) args[i + 1] = argv[i];
-    args[argc + 1] = NULL;
-    pid_t pid;
-    int rc = posix_spawn(&pid, "/bin/bash", NULL, NULL, args, environ);
-    if (rc != 0) { fprintf(stderr, "posix_spawn failed: %d\n", rc); return 1; }
-    int status = 0;
-    if (waitpid(pid, &status, 0) < 0) { perror("waitpid"); return 1; }
-    return WIFEXITED(status) ? WEXITSTATUS(status) : 1;
-}
-LAUNCHER_EOF
-  clang -o "$APP_BIN" "$LAUNCHER_SRC"
-  rm -f "$LAUNCHER_SRC"
-  codesign --force --sign - --identifier com.lucidrents.poster "$APP_DIR"
-else
-  echo "[install] $APP_DIR already built — keeping it (and its Automation grant)"
-fi
-
 # Four fixed times rather than StartInterval: posting overnight reads as a bot,
 # and fixed hours keep runs inside the window where the machine is awake and
 # somebody could notice a bad post. Each run publishes at most one item, so
-# this is a ceiling of 4 posts/day.
+# this is a ceiling of 4 posts/day. The times sit clear of the scrape starts
+# (2:00, 11:00, 13:00, 16:00, 17:00, 20:00 local) so the interlock above waits
+# minutes, not hours, when a scrape overruns.
 echo "[install] writing $PLIST_PATH"
 cat > "$PLIST_PATH" <<PLIST_EOF
 <?xml version="1.0" encoding="UTF-8"?>
@@ -228,7 +183,8 @@ cat > "$PLIST_PATH" <<PLIST_EOF
     <string>com.lucidrents.reddit-post</string>
     <key>ProgramArguments</key>
     <array>
-        <string>${APP_BIN}</string>
+        <string>/bin/bash</string>
+        <string>${RUNNER}</string>
     </array>
     <key>WorkingDirectory</key>
     <string>${INSTALL_DIR}</string>
@@ -245,10 +201,10 @@ cat > "$PLIST_PATH" <<PLIST_EOF
     </dict>
     <key>StartCalendarInterval</key>
     <array>
-        <dict><key>Hour</key><integer>10</integer><key>Minute</key><integer>20</integer></dict>
-        <dict><key>Hour</key><integer>13</integer><key>Minute</key><integer>20</integer></dict>
-        <dict><key>Hour</key><integer>16</integer><key>Minute</key><integer>20</integer></dict>
-        <dict><key>Hour</key><integer>19</integer><key>Minute</key><integer>20</integer></dict>
+        <dict><key>Hour</key><integer>9</integer><key>Minute</key><integer>40</integer></dict>
+        <dict><key>Hour</key><integer>12</integer><key>Minute</key><integer>40</integer></dict>
+        <dict><key>Hour</key><integer>15</integer><key>Minute</key><integer>40</integer></dict>
+        <dict><key>Hour</key><integer>19</integer><key>Minute</key><integer>40</integer></dict>
     </array>
     <key>StandardOutPath</key>
     <string>${LOG_PATH}</string>
@@ -266,11 +222,23 @@ echo "[install] (re)bootstrapping LaunchAgent"
 launchctl bootout "gui/$(id -u)/com.lucidrents.reddit-post" 2>/dev/null || true
 launchctl bootstrap "gui/$(id -u)" "$PLIST_PATH"
 
+# The AppleScript era needed an ad-hoc-signed wrapper app for TCC; it is dead
+# weight now and its Automation grant with it.
+if [ -d "$INSTALL_DIR/LucidRentsPoster.app" ]; then
+  echo "[install] removing obsolete LucidRentsPoster.app (AppleScript-era TCC wrapper)"
+  rm -rf "$INSTALL_DIR/LucidRentsPoster.app"
+  tccutil reset AppleEvents com.lucidrents.poster >/dev/null 2>&1 || true
+fi
+
 echo
 echo "[install] done. Installed com.lucidrents.reddit-post"
-echo "  schedule : 10:20, 13:20, 16:20, 19:20 local — one item per run (max 4/day)"
+echo "  schedule : 9:40, 12:40, 15:40, 19:40 local — one item per run (max 4/day)"
 echo "  logs     : $LOG_PATH"
 echo "  pause    : touch $INSTALL_DIR/PAUSE_POSTING"
 echo
-echo "Verify with a dry run before letting the schedule post for real:"
+echo "If the posting profile has never been signed in on this machine:"
+echo "  $NODE_BIN $REPO_ROOT/scripts/setup-reddit-profile.mjs"
+echo
+echo "Verify before letting the schedule post for real:"
+echo "  $NODE_BIN $INSTALL_DIR/post-reddit-queue.mjs --check"
 echo "  $NODE_BIN $INSTALL_DIR/post-reddit-queue.mjs --dry-run"
