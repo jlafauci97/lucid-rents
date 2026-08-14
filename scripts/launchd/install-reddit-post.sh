@@ -121,21 +121,38 @@ fi
 # through Playwright. While any of those are alive, "tell application
 # \"Google Chrome\"" routes Apple Events nondeterministically — the poster can
 # end up reading the scraper's headless instance (not signed in, JS from
-# Apple Events off) and fail preflight with a misleading error. Wait for the
-# scrapers to finish; if they are still running after 20 minutes, leave the
-# queue item untouched for the next scheduled slot.
+# Apple Events off) and fail preflight with a misleading error. The scrapers
+# relaunch Chrome between boroughs, so waiting for a momentary Chrome-free gap
+# is a race; wait for the whole scrape run (the scrape.sh parents) to finish.
+# Scrape phases are wall-clock-capped around 2h30, so a colliding slot posts
+# late rather than failing; if somehow still busy after 3 hours, leave the
+# queue item untouched for the next scheduled slot. launchd skips calendar
+# fires while the job is running, so a delayed run cannot stack with the next.
+scrapers_busy() {
+  pgrep -f 'lucid-rents-sync/scripts/sync/scrape.sh' >/dev/null 2>&1 ||
+    pgrep -f 'playwright_chromiumdev_profile' >/dev/null 2>&1
+}
 waited=0
-while pgrep -f 'playwright_chromiumdev_profile' >/dev/null 2>&1; do
-  if [ "\$waited" -ge 1200 ]; then
-    echo "[runner] \$(date -u +%Y-%m-%dT%H:%M:%SZ) scraper Chrome still running after 20m — skipping this slot"
+while scrapers_busy; do
+  if [ "\$waited" -ge 10800 ]; then
+    echo "[runner] \$(date -u +%Y-%m-%dT%H:%M:%SZ) scrapers still running after 3h — skipping this slot"
     exit 1
   fi
   if [ "\$waited" -eq 0 ]; then
-    echo "[runner] \$(date -u +%Y-%m-%dT%H:%M:%SZ) scraper Chrome running — waiting for it to finish"
+    echo "[runner] \$(date -u +%Y-%m-%dT%H:%M:%SZ) scrapers running — waiting for them to finish"
   fi
-  sleep 30
-  waited=\$((waited + 30))
+  sleep 60
+  waited=\$((waited + 60))
 done
+if [ "\$waited" -gt 0 ]; then
+  echo "[runner] \$(date -u +%Y-%m-%dT%H:%M:%SZ) scrapers clear after \${waited}s"
+  # One more settle: a fresh scrape phase sometimes starts within a minute.
+  sleep 30
+  if scrapers_busy; then
+    echo "[runner] \$(date -u +%Y-%m-%dT%H:%M:%SZ) scrapers restarted during settle — skipping this slot"
+    exit 1
+  fi
+fi
 
 echo "[runner] \$(date -u +%Y-%m-%dT%H:%M:%SZ) starting"
 "$NODE_BIN" "$INSTALL_DIR/post-reddit-queue.mjs" "\$@"
