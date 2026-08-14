@@ -7,17 +7,18 @@ name: Marketing Reddit Self-Posts
 # SelfPostsTab had a button, so generation only happened when somebody clicked
 # it — which happened once, on 2026-08-01, and never again.
 #
-# WEEKLY, not daily. The endpoint's unique index is (kind, city, UTC date), so
-# daily runs are *possible*, but a run produces 3 cities x 3 kinds = 9 drafts
-# and posting is still a manual step. Daily would bury the queue in stale
-# rankings that nobody publishes, and the underlying violation rankings barely
-# move day to day. Weekly keeps drafts roughly in step with what actually gets
-# posted. To go daily, change the cron below to "0 13 * * *".
+# DAILY with rotation. The scheduled run passes rotate=daily, and the endpoint
+# picks ONE kind per city per day (staggered so the three cities never post
+# the same story shape the same day, cycling through all kinds over the week).
+# That yields at most 3 drafts/day — matched to the poster's 3-per-day
+# publishing cap — instead of the full 3x7 matrix, and the endpoint also skips
+# any (kind, city) that still has an unposted draft pending, so a backlog
+# can't build up. Manual dispatch still generates whatever you scope it to.
 
 on:
-  # Mondays 09:00 ET (13:00 UTC) — start of week, ahead of the workday.
+  # Daily 09:00 ET (13:00 UTC), ahead of the workday.
   schedule:
-    - cron: "0 13 * * 1"
+    - cron: "0 13 * * *"
   workflow_dispatch:
     inputs:
       city:
@@ -25,7 +26,7 @@ on:
         required: false
         default: ""
       kind:
-        description: "Single kind (worst_buildings, worst_landlords, worst_neighborhoods). Blank = all."
+        description: "Single kind (worst_buildings, worst_landlords, worst_neighborhoods, most_311_complaints, most_evictions, most_litigated, bedbug_hotspots). Blank = all."
         required: false
         default: ""
       dry_run:
@@ -49,25 +50,39 @@ jobs:
         run: |
           set -euo pipefail
 
-          # One request per city+kind rather than a single call for all nine.
+          # One request per city+kind rather than a single unscoped call.
           #
           # The endpoint loops cities x kinds server-side and the full matrix
           # takes ~4m30s, well past the platform's ~100s response ceiling: an
           # unscoped call returns HTTP 524. Each individual city+kind finishes
-          # in 4-45s, so scoping every request keeps all nine inside the limit.
+          # in 4-45s, so scoping every request keeps each one inside the limit.
           #
           # This was far worse before the covering indexes added in
           # 20260812120000_ranking_aggregate_indexes.sql: worst_landlords and
           # worst_neighborhoods exceeded 120s on their own and never generated
-          # at all. All nine succeed now.
+          # at all. Every kind/city pair with data succeeds now.
           if [ -n "${CITY}" ]; then cities="${CITY}"; else cities="nyc los-angeles chicago"; fi
-          if [ -n "${KIND}" ]; then kinds="${KIND}"; else kinds="worst_buildings worst_landlords worst_neighborhoods"; fi
+
+          # Scheduled runs rotate: one kind per city per day, chosen
+          # server-side. Manual dispatch with an explicit kind (or none, for
+          # the full matrix) keeps the old cross-product behavior.
+          if [ "${GITHUB_EVENT_NAME}" = "schedule" ] && [ -z "${KIND}" ]; then
+            kinds="__rotate__"
+          elif [ -n "${KIND}" ]; then
+            kinds="${KIND}"
+          else
+            kinds="worst_buildings worst_landlords worst_neighborhoods most_311_complaints most_evictions most_litigated bedbug_hotspots"
+          fi
 
           ok=0; failed=0; skipped=0
 
           for city in ${cities}; do
             for kind in ${kinds}; do
-              query="?city=${city}&kind=${kind}"
+              if [ "${kind}" = "__rotate__" ]; then
+                query="?city=${city}&rotate=daily"
+              else
+                query="?city=${city}&kind=${kind}"
+              fi
               if [ "${DRY_RUN}" = "true" ]; then query="${query}&dryRun=true"; fi
 
               # Delete the previous body first: on a timeout curl writes no new
@@ -101,10 +116,10 @@ jobs:
               # Single line: a multi-line python script would have to sit at
               # column 0 (python forbids leading indentation), which ends the
               # YAML block scalar early and makes the workflow file unparseable.
-              verdict=$(python3 -c "import json; d = json.load(open('response.json')); errs = [e.get('error','') for e in d.get('errors', [])]; print('ok' if d.get('generated') else ('skip' if any('already generated today' in e for e in errs) else 'fail:' + ('; '.join(errs) or 'empty response')))")
+              verdict=$(python3 -c "import json; d = json.load(open('response.json')); errs = [e.get('error','') for e in d.get('errors', [])]; benign = ('already generated today', 'draft of this kind already pending', 'not enough ranked rows'); print('ok' if d.get('generated') else ('skip:' + '; '.join(errs) if errs and all(any(b in e for b in benign) for e in errs) else 'fail:' + ('; '.join(errs) or 'empty response')))")
               case "${verdict}" in
                 ok)    echo "OK       ${city}/${kind}"; ok=$((ok+1)) ;;
-                skip)  echo "SKIP     ${city}/${kind} (already generated today)"; skipped=$((skipped+1)) ;;
+                skip*) echo "SKIP     ${city}/${kind} (${verdict#skip:})"; skipped=$((skipped+1)) ;;
                 fail*) echo "FAIL     ${city}/${kind}: ${verdict#fail:}"; failed=$((failed+1)) ;;
               esac
             done
@@ -116,7 +131,7 @@ jobs:
           if [ "${failed}" != "0" ]; then
             echo "::warning::${failed} of $((ok+skipped+failed)) self-post(s) failed to generate"
           fi
-          # Only a total washout fails the run. All nine currently succeed, so
+          # Only a total washout fails the run. Every pair with data succeeds, so
           # any failure is a warning worth reading rather than the norm — but a
           # single slow city should not throw away the drafts that did generate.
           if [ "${ok}" = "0" ] && [ "${skipped}" = "0" ]; then
