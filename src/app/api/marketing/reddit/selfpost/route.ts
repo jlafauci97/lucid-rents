@@ -11,7 +11,15 @@ import { MC_COOKIE, verifyCookieValue } from "@/lib/mission-control/auth";
 export const maxDuration = 300;
 export const dynamic = "force-dynamic";
 
-const KINDS: SelfPostKind[] = ["worst_buildings", "worst_landlords", "worst_neighborhoods"];
+const KINDS: SelfPostKind[] = [
+  "worst_buildings",
+  "worst_landlords",
+  "worst_neighborhoods",
+  "most_311_complaints",
+  "most_evictions",
+  "most_litigated",
+  "bedbug_hotspots",
+];
 
 function authorized(req: NextRequest): boolean {
   return req.headers.get("authorization") === `Bearer ${process.env.CRON_SECRET}`;
@@ -122,9 +130,34 @@ export async function POST(req: NextRequest) {
   const cityParam = url.searchParams.get("city") as City | null;
   const kindParam = url.searchParams.get("kind") as SelfPostKind | null;
   const dryRun = url.searchParams.get("dryRun") === "true";
+  const rotate = url.searchParams.get("rotate") === "daily";
 
   const cities = cityParam ? [cityParam] : VALID_CITIES;
   const kinds = kindParam ? [kindParam] : KINDS;
+
+  // Daily rotation: one kind per city per day, staggered so no two cities
+  // publish the same story shape on the same day and every (kind, city)
+  // pair recurs every KINDS.length days. The daily cron calls this per city;
+  // generating the full 7-kind matrix every day would bury the queue in
+  // near-identical drafts that the 3-per-day posting cap can never drain.
+  // In rotation mode each city gets an ordered candidate list starting at its
+  // kind-of-the-day: some kinds have no data outside NYC (litigation and
+  // bedbug filings are NYC datasets), and a city whose kind-of-the-day comes
+  // up empty should fall through to the next kind rather than sit the day out.
+  const dayIndex = Math.floor(Date.now() / 86_400_000);
+  const perCityKinds: { city: City; candidates: SelfPostKind[] }[] =
+    rotate && !kindParam
+      ? cities.map((c) => {
+          const start = (dayIndex + VALID_CITIES.indexOf(c)) % KINDS.length;
+          return {
+            city: c,
+            candidates: KINDS.map((_, i) => KINDS[(start + i) % KINDS.length]),
+          };
+        })
+      : cities.map((c) => ({ city: c, candidates: kinds }));
+  // Matrix mode generates every candidate; rotation stops after the first
+  // draft that lands.
+  const stopAfterFirst = rotate && !kindParam;
 
   for (const c of cities) {
     if (!VALID_CITIES.includes(c)) {
@@ -141,17 +174,34 @@ export async function POST(req: NextRequest) {
   const generated: unknown[] = [];
   const errors: { kind: string; city: string; error: string }[] = [];
 
-  for (const city of cities) {
-    for (const kind of kinds) {
+  for (const { city, candidates } of perCityKinds) {
+    for (const kind of candidates) {
       try {
+        // An unposted draft of the same shape means the queue hasn't caught
+        // up; a second copy with slightly fresher numbers just buries the
+        // first. In rotation mode a pending draft also means this city has
+        // backlog — stop rather than fall through and generate more.
+        const { count: pending } = await supabase
+          .from("marketing_reddit_posts")
+          .select("id", { count: "exact", head: true })
+          .eq("kind", kind)
+          .eq("city", city)
+          .eq("status", "draft");
+        if ((pending ?? 0) > 0) {
+          errors.push({ kind, city, error: "draft of this kind already pending" });
+          if (stopAfterFirst) break;
+          continue;
+        }
+
         const post = await buildSelfPost(kind, city);
         if (!post) {
           errors.push({ kind, city, error: "not enough ranked rows to publish" });
-          continue;
+          continue; // rotation: fall through to the next candidate kind
         }
 
         if (dryRun) {
           generated.push(post);
+          if (stopAfterFirst) break;
           continue;
         }
 
@@ -173,13 +223,16 @@ export async function POST(req: NextRequest) {
         if (error) {
           if (error.code === "23505") {
             errors.push({ kind, city, error: "already generated today" });
+            if (stopAfterFirst) break;
             continue;
           }
           throw error;
         }
         generated.push(data);
+        if (stopAfterFirst) break;
       } catch (err) {
         errors.push({ kind, city, error: describeError(err) });
+        if (stopAfterFirst) break;
       }
     }
   }

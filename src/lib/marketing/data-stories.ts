@@ -315,4 +315,111 @@ export async function worstNeighborhoods(
   };
 }
 
+// ---------------------------------------------------------------------------
+// Metric rankings — same shape as worstBuildings, different axis of misery.
+// ---------------------------------------------------------------------------
+
+/**
+ * Building-level counters that already have (metro, count DESC) partial
+ * indexes on buildings (see 20260812120000_ranking_aggregate_indexes.sql and
+ * friends) — ranking on anything else needs an index added first, or the
+ * generator blows through the workflow's per-request time budget.
+ */
+export type BuildingMetric =
+  | "complaint_count"
+  | "eviction_count"
+  | "litigation_count"
+  | "bedbug_report_count";
+
+export interface RankedBuildingByMetric {
+  rank: number;
+  address: string;
+  url: string;
+  count: number;
+  units: number | null;
+  owner: string | null;
+}
+
+const METRIC_CONFIG: Record<
+  BuildingMetric,
+  { min: number; sourceNote: (city: City) => string }
+> = {
+  complaint_count: {
+    min: 10,
+    sourceNote: (city) =>
+      city === "nyc"
+        ? "NYC 311 service requests"
+        : city === "los-angeles"
+          ? "LA MyLA311 service requests"
+          : "Chicago 311 service requests",
+  },
+  eviction_count: {
+    min: 2,
+    sourceNote: (city) =>
+      city === "nyc"
+        ? "NYC marshal eviction records"
+        : city === "los-angeles"
+          ? "LAHD eviction filings"
+          : "Cook County eviction records",
+  },
+  litigation_count: {
+    min: 2,
+    sourceNote: () => "HPD housing litigation records",
+  },
+  bedbug_report_count: {
+    min: 2,
+    sourceNote: () => "NYC DOHMH bedbug filings",
+  },
+};
+
+/**
+ * Buildings ranked by one of the indexed complaint/enforcement counters.
+ * Returns raw totals (basis "total"): unlike violations, these counters are
+ * rare enough per building that a per-unit rate on a 6-unit walk-up would
+ * mostly rank noise.
+ */
+export async function worstBuildingsByMetric(
+  city: City,
+  metric: BuildingMetric,
+  limit = 10
+): Promise<{ meta: StoryMeta; rows: RankedBuildingByMetric[] }> {
+  const supabase = createAdminClient();
+  const cfg = METRIC_CONFIG[metric];
+
+  const { data, error } = await supabase
+    .from("buildings")
+    .select(`full_address, slug, borough, residential_units, owner_name, ${metric}`)
+    .eq("metro", city)
+    .gte(metric, cfg.min)
+    .not("slug", "is", null)
+    .order(metric, { ascending: false, nullsFirst: false })
+    .limit(limit * 3);
+
+  if (error) throw error;
+
+  const rows = ((data ?? []) as Record<string, unknown>[])
+    .map((b) => ({
+      address: b.full_address as string,
+      url: canonicalUrl(
+        buildingUrl({ borough: b.borough as string, slug: b.slug as string }, city)
+      ),
+      count: (b[metric] as number) ?? 0,
+      units: ((b.residential_units as number) ?? 0) > 0 ? (b.residential_units as number) : null,
+      owner: b.owner_name ? displayOwnerName(b.owner_name as string) : null,
+    }))
+    .slice(0, limit)
+    .map((r, i) => ({ rank: i + 1, ...r }));
+
+  return {
+    meta: {
+      city,
+      cityName: CITY_META[city].name,
+      basis: "total",
+      generatedAt: new Date().toISOString(),
+      sourceNote: cfg.sourceNote(city),
+    },
+    rows,
+  };
+}
+
 export const STORY_CITIES = VALID_CITIES;
