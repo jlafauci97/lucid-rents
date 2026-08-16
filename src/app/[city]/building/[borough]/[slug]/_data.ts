@@ -6,6 +6,34 @@ import { normalizeScore } from "@/lib/constants";
 import { getNeighborhoodVibe } from "@/lib/neighborhood-vibes";
 
 // ──────────────────────────────────────────────────────────────
+// Data-cache policy: 7 days, matching the page's ISR window. Short TTLs here
+// (previously 30-60 min vs the page's 7-day revalidate) guaranteed every ISR
+// regeneration found ALL data caches cold and re-ran ~50 queries. Freshness
+// is event-driven instead: sync jobs revalidateTag(`building-${id}`) for the
+// buildings they touch (see api/cron/sync revalidateAffectedBuildingPages).
+// The per-call wrapper exists because unstable_cache tags are static per
+// wrapper — tagging by building requires constructing the cache at call time.
+// Cache keys are unchanged (args are auto-keyed), so this is drop-in.
+// ──────────────────────────────────────────────────────────────
+const BUILDING_DATA_TTL = 604800;
+
+export function buildingTag(buildingId: string): string {
+  return `building-${buildingId}`;
+}
+
+function cachedPerBuilding<A extends unknown[], R>(
+  fn: (...args: A) => Promise<R>,
+  keyBase: string,
+  idOf: (...args: A) => string,
+): (...args: A) => Promise<R> {
+  return (...args: A) =>
+    unstable_cache(fn, [keyBase], {
+      revalidate: BUILDING_DATA_TTL,
+      tags: ["building-data", buildingTag(idOf(...args))],
+    })(...args);
+}
+
+// ──────────────────────────────────────────────────────────────
 // scoreToGrade — maps a score to a letter grade.
 // Overall scores are stored on a 0–5 scale (star rating), with some legacy
 // 0–100 values still floating around. `normalizeScore` handles both.
@@ -610,17 +638,21 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
       return data ?? [];
     }, [] as BuildingV2Data["landlord"]["otherBuildings"]),
 
-    // Landlord stats: portfolio size + avg score
+    // Landlord stats: portfolio size + avg score. Bounded sample (was an
+    // unlimited select — thousands of rows for big landlords on every cold
+    // render, to compute one average). The avg over ≤500 buildings is
+    // statistically indistinguishable; size comes from the planner count.
     safe(async () => {
       if (!ownerName) return { portfolioSize: 0, portfolioAvgScore: null };
       const column = building.management_company ? "management_company" : "owner_name";
-      const { data } = await supabase
+      const { data, count } = await supabase
         .from("buildings")
-        .select("overall_score")
+        .select("overall_score", { count: "planned" })
         .eq(column, ownerName)
-        .eq("metro", building.metro);
+        .eq("metro", building.metro)
+        .limit(500);
       const arr = (data as Array<{ overall_score: number | null }> | null) ?? [];
-      const portfolioSize = arr.length;
+      const portfolioSize = Math.max(count ?? 0, arr.length);
       const scores = arr.map((r) => r.overall_score).filter((n): n is number => typeof n === "number");
       const portfolioAvgScore = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
       return { portfolioSize, portfolioAvgScore };
@@ -1157,11 +1189,7 @@ const _loadRentsData = async (
   ]);
   return { current, historic, neighborhood, seasonalIndex };
 };
-export const loadRentsData = unstable_cache(
-  _loadRentsData,
-  ["load-rents-data"],
-  { revalidate: 3600, tags: ["building-data"] }
-);
+export const loadRentsData = cachedPerBuilding(_loadRentsData, "load-rents-data", (id) => id);
 
 // S02 — Issues: HPD top, 311 top, recent violations, unit-level HPD, monthly trends.
 const _loadIssuesData = async (
@@ -1170,20 +1198,22 @@ const _loadIssuesData = async (
   const supabase = createCacheClient();
   const [hpdTop, complaintsTop, recentViolations, hpdViolations, trends] = await Promise.all([
     safe(async () => {
-      const { data } = await supabase
-        .from("hpd_violations")
-        .select("nov_description")
-        .eq("building_id", buildingId)
-        .limit(5000);
+      // Grouped counts via RPC (distinct descriptions, typically a few
+      // hundred) instead of pulling up to 5000 raw rows to count in Node.
+      // The JS taxonomy still applies, over (description, count) pairs.
+      const { data } = await supabase.rpc("building_hpd_desc_counts", {
+        _building_id: buildingId,
+      });
       if (!data) return [];
       const counts = new Map<string, number>();
       let uncategorized = 0;
-      for (const row of data) {
-        const desc = (row as { nov_description: string | null }).nov_description ?? "";
-        if (!desc.trim()) { uncategorized++; continue; }
+      for (const row of data as Array<{ nov_description: string | null; cnt: number }>) {
+        const desc = row.nov_description ?? "";
+        const n = Number(row.cnt) || 0;
+        if (!desc.trim()) { uncategorized += n; continue; }
         const cat = categorizeHpdViolation(desc);
-        if (cat === "Other") { uncategorized++; continue; }
-        counts.set(cat, (counts.get(cat) ?? 0) + 1);
+        if (cat === "Other") { uncategorized += n; continue; }
+        counts.set(cat, (counts.get(cat) ?? 0) + n);
       }
       const ranked = Array.from(counts.entries())
         .map(([category, count]) => ({ category, count }))
@@ -1195,15 +1225,14 @@ const _loadIssuesData = async (
       return ranked;
     }, [] as BuildingV2Data["issues"]["hpdTop"]),
     safe(async () => {
-      const { data } = await supabase
-        .from("complaints_311")
-        .select("complaint_type")
-        .eq("building_id", buildingId);
+      const { data } = await supabase.rpc("building_311_type_counts", {
+        _building_id: buildingId,
+      });
       if (!data) return [];
       const counts = new Map<string, number>();
-      for (const row of data) {
-        const key = (row as { complaint_type: string | null }).complaint_type ?? "Other";
-        counts.set(key, (counts.get(key) ?? 0) + 1);
+      for (const row of data as Array<{ complaint_type: string | null; cnt: number }>) {
+        const key = row.complaint_type ?? "Other";
+        counts.set(key, (counts.get(key) ?? 0) + (Number(row.cnt) || 0));
       }
       return Array.from(counts.entries())
         .map(([type, count]) => ({ type, count }))
@@ -1279,65 +1308,33 @@ const _loadIssuesData = async (
       }));
     }, [] as BuildingV2Data["issues"]["hpdViolations"]),
     safe(async () => {
+      // Monthly buckets computed in Postgres — previously this pulled every
+      // dated row from 4 tables (unbounded) to bucket in Node.
       const since = new Date();
       since.setFullYear(since.getFullYear() - 7);
       const sinceISO = since.toISOString().slice(0, 10);
-      const [hpdRes, dobRes, compRes, evictRes] = await Promise.all([
-        supabase
-          .from("hpd_violations")
-          .select("inspection_date")
-          .eq("building_id", buildingId)
-          .gte("inspection_date", sinceISO),
-        supabase
-          .from("dob_violations")
-          .select("issue_date")
-          .eq("building_id", buildingId)
-          .gte("issue_date", sinceISO),
-        supabase
-          .from("complaints_311")
-          .select("created_date")
-          .eq("building_id", buildingId)
-          .gte("created_date", sinceISO),
-        supabase
-          .from("evictions")
-          .select("executed_date")
-          .eq("building_id", buildingId)
-          .gte("executed_date", sinceISO),
-      ]);
-      const buckets = new Map<string, { hpd: number; dob: number; complaints: number; evictions: number }>();
-      const bucket = (m: string) => {
-        if (!buckets.has(m)) buckets.set(m, { hpd: 0, dob: 0, complaints: 0, evictions: 0 });
-        return buckets.get(m)!;
-      };
-      const month = (d: string | null) => (d ?? "").slice(0, 7);
-      for (const r of hpdRes.data ?? []) {
-        const m = month((r as { inspection_date: string | null }).inspection_date);
-        if (m) bucket(m).hpd++;
-      }
-      for (const r of dobRes.data ?? []) {
-        const m = month((r as { issue_date: string | null }).issue_date);
-        if (m) bucket(m).dob++;
-      }
-      for (const r of compRes.data ?? []) {
-        const m = month((r as { created_date: string | null }).created_date);
-        if (m) bucket(m).complaints++;
-      }
-      for (const r of evictRes.data ?? []) {
-        const m = month((r as { executed_date: string | null }).executed_date);
-        if (m) bucket(m).evictions++;
-      }
-      return Array.from(buckets.entries())
-        .map(([mo, v]) => ({ month: mo, ...v }))
-        .sort((a, b) => a.month.localeCompare(b.month));
+      const { data } = await supabase.rpc("building_issue_monthly_trends", {
+        _building_id: buildingId,
+        _since: sinceISO,
+      });
+      return ((data ?? []) as Array<{
+        month: string;
+        hpd: number;
+        dob: number;
+        complaints: number;
+        evictions: number;
+      }>).map((r) => ({
+        month: r.month,
+        hpd: Number(r.hpd) || 0,
+        dob: Number(r.dob) || 0,
+        complaints: Number(r.complaints) || 0,
+        evictions: Number(r.evictions) || 0,
+      }));
     }, [] as BuildingV2Data["issues"]["trends"]),
   ]);
   return { hpdTop, complaintsTop, recentViolations, hpdViolations, trends };
 };
-export const loadIssuesData = unstable_cache(
-  _loadIssuesData,
-  ["load-issues-data-v2"],
-  { revalidate: 3600, tags: ["building-data"] }
-);
+export const loadIssuesData = cachedPerBuilding(_loadIssuesData, "load-issues-data-v2", (id) => id);
 
 // S03 — Tenant Reviews: counts + distribution + top 3 pull quotes.
 const _loadReviewsData = async (
@@ -1402,11 +1399,7 @@ const _loadReviewsData = async (
     pullQuotes,
   };
 };
-export const loadReviewsData = unstable_cache(
-  _loadReviewsData,
-  ["load-reviews-data"],
-  { revalidate: 1800, tags: ["building-data"] }
-);
+export const loadReviewsData = cachedPerBuilding(_loadReviewsData, "load-reviews-data", (id) => id);
 
 // S04 — Amenities + amenity premiums.
 const _loadAmenitiesData = async (
@@ -1440,11 +1433,7 @@ const _loadAmenitiesData = async (
   ]);
   return { amenities, amenityPremiums };
 };
-export const loadAmenitiesData = unstable_cache(
-  _loadAmenitiesData,
-  ["load-amenities-data"],
-  { revalidate: 3600, tags: ["building-data"] }
-);
+export const loadAmenitiesData = cachedPerBuilding(_loadAmenitiesData, "load-amenities-data", (id) => id);
 
 // S05 — Landlord: owner portfolio buildings + portfolio stats.
 const _loadLandlordData = async (
@@ -1507,16 +1496,19 @@ const _loadLandlordData = async (
         .limit(6);
       return data ?? [];
     }, [] as BuildingV2Data["landlord"]["otherBuildings"]),
+    // Bounded sample — see the sibling loader's note; avoids an unlimited
+    // portfolio select on every cold render.
     safe(async () => {
       if (!ownerName) return { portfolioSize: 0, portfolioAvgScore: null };
       const column = building.management_company ? "management_company" : "owner_name";
-      const { data } = await supabase
+      const { data, count } = await supabase
         .from("buildings")
-        .select("overall_score")
+        .select("overall_score", { count: "planned" })
         .eq(column, ownerName)
-        .eq("metro", building.metro);
+        .eq("metro", building.metro)
+        .limit(500);
       const arr = (data as Array<{ overall_score: number | null }> | null) ?? [];
-      const portfolioSize = arr.length;
+      const portfolioSize = Math.max(count ?? 0, arr.length);
       const scores = arr.map((r) => r.overall_score).filter((n): n is number => typeof n === "number");
       const portfolioAvgScore = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
       return { portfolioSize, portfolioAvgScore };
@@ -1533,11 +1525,7 @@ const _loadLandlordData = async (
     registrationEndDate: hpdOwner?.registration_end_date ?? null,
   };
 };
-export const loadLandlordData = unstable_cache(
-  _loadLandlordData,
-  ["load-landlord-data"],
-  { revalidate: 3600, tags: ["building-data"] }
-);
+export const loadLandlordData = cachedPerBuilding(_loadLandlordData, "load-landlord-data", (b) => b.id);
 
 // S06 — Location: nearby transit/schools, crime, neighborhood stats, demographics, vibe.
 const _loadLocationData = async (building: Building): Promise<{
@@ -1688,11 +1676,7 @@ const _loadLocationData = async (building: Building): Promise<{
     vibe: { description: vibeData?.description ?? null, tags: vibeData?.vibeTags ?? [] },
   };
 };
-export const loadLocationData = unstable_cache(
-  _loadLocationData,
-  ["load-location-data"],
-  { revalidate: 3600, tags: ["building-data"] }
-);
+export const loadLocationData = cachedPerBuilding(_loadLocationData, "load-location-data", (b) => b.id);
 
 // S07 — History: building timeline + latest energy benchmark (energy row shared with SideRail).
 const _loadHistoryData = async (building: Building): Promise<{
@@ -1748,11 +1732,7 @@ const _loadHistoryData = async (building: Building): Promise<{
   ]);
   return { timeline, energy };
 };
-export const loadHistoryData = unstable_cache(
-  _loadHistoryData,
-  ["load-history-data"],
-  { revalidate: 3600, tags: ["building-data"] }
-);
+export const loadHistoryData = cachedPerBuilding(_loadHistoryData, "load-history-data", (b) => b.id);
 
 // S08 — Similar buildings nearby (same zip, up to 6).
 const _loadSimilarData = async (
@@ -1771,11 +1751,7 @@ const _loadSimilarData = async (
     return data ?? [];
   }, [] as BuildingV2Data["similar"]);
 };
-export const loadSimilarData = unstable_cache(
-  _loadSimilarData,
-  ["load-similar-data"],
-  { revalidate: 3600, tags: ["building-data"] }
-);
+export const loadSimilarData = cachedPerBuilding(_loadSimilarData, "load-similar-data", (id) => id);
 
 // S10 LA — buyouts, SCEP, earthquake retrofit.
 const _loadLAData = async (
@@ -1812,11 +1788,7 @@ const _loadLAData = async (
   ]);
   return { buyouts, scepInspections, earthquakeRetrofit: retrofit?.[0] ?? null };
 };
-export const loadLAData = unstable_cache(
-  _loadLAData,
-  ["load-la-data"],
-  { revalidate: 3600, tags: ["building-data"] }
-);
+export const loadLAData = cachedPerBuilding(_loadLAData, "load-la-data", (id) => id);
 
 // S10 Chicago — RLTO, demolitions, lead inspections, affordable units, energy rating.
 const _loadChicagoData = async (
@@ -1877,11 +1849,7 @@ const _loadChicagoData = async (
     energyRating: energy?.[0] ?? null,
   };
 };
-export const loadChicagoData = unstable_cache(
-  _loadChicagoData,
-  ["load-chicago-data"],
-  { revalidate: 3600, tags: ["building-data"] }
-);
+export const loadChicagoData = cachedPerBuilding(_loadChicagoData, "load-chicago-data", (id) => id);
 
 // S10 Miami — 40-year recerts, unsafe structures, storm damage, flood claims.
 const _loadMiamiData = async (
@@ -1928,11 +1896,7 @@ const _loadMiamiData = async (
   ]);
   return { recerts, unsafeStructures, stormDamage, floodClaims };
 };
-export const loadMiamiData = unstable_cache(
-  _loadMiamiData,
-  ["load-miami-data"],
-  { revalidate: 3600, tags: ["building-data"] }
-);
+export const loadMiamiData = cachedPerBuilding(_loadMiamiData, "load-miami-data", (id) => id);
 
 // S10 Houston — dangerous buildings, industrial proximity, tax protests, affordable housing.
 const _loadHoustonData = async (
@@ -1978,11 +1942,7 @@ const _loadHoustonData = async (
   ]);
   return { dangerousBuildings, industrialProximity, taxProtests, affordableHousing };
 };
-export const loadHoustonData = unstable_cache(
-  _loadHoustonData,
-  ["load-houston-data"],
-  { revalidate: 3600, tags: ["building-data"] }
-);
+export const loadHoustonData = cachedPerBuilding(_loadHoustonData, "load-houston-data", (id) => id);
 
 // Local Law 104 of 2019 — NYC permit-restriction status. Returns null when
 // the building is not on the city's list (the expected case for ~99% of
@@ -2019,8 +1979,4 @@ const _loadLocalLaw104 = async (
     };
   }, null);
 };
-export const loadLocalLaw104 = unstable_cache(
-  _loadLocalLaw104,
-  ["load-local-law-104"],
-  { revalidate: 3600, tags: ["building-data"] }
-);
+export const loadLocalLaw104 = cachedPerBuilding(_loadLocalLaw104, "load-local-law-104", (id) => id);

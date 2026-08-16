@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import type {
   ConcernRow,
@@ -91,6 +92,39 @@ export function groupBySubCategory(rows: ConcernRow[]): ConcernSubCategoryGroup[
 export async function fetchNeighborhoodRisks(
   building: BuildingInput,
 ): Promise<NeighborhoodRisksResult> {
+  // Geo data changes slowly; cache one week keyed by rounded coordinates
+  // (~11m grid — buildings sharing a rounded cell share identical radius
+  // results for all practical purposes). Uncached, this branch's PostGIS
+  // waterfall set the whole building page's cold TTFB.
+  //
+  // Degraded results (an RPC timed out and fell back to 0) are NOT cached —
+  // caching would freeze a wrong "0" for a week. We throw inside the cached
+  // scope to abort the cache write, then serve the degraded result uncached.
+  const cacheKey = `${building.lat.toFixed(4)},${building.lng.toFixed(4)}`;
+  let escaped: NeighborhoodRisksResult | null = null;
+  const cached = unstable_cache(
+    async () => {
+      const { result, degraded } = await fetchNeighborhoodRisksUncached(building);
+      if (degraded) {
+        escaped = result;
+        throw new Error("neighborhood-risks: degraded result, skipping cache");
+      }
+      return result;
+    },
+    ["neighborhood-risks", cacheKey],
+    { revalidate: 604800, tags: ["neighborhood-risks"] },
+  );
+  try {
+    return await cached();
+  } catch (e) {
+    if (escaped) return escaped;
+    throw e;
+  }
+}
+
+async function fetchNeighborhoodRisksUncached(
+  building: BuildingInput,
+): Promise<{ result: NeighborhoodRisksResult; degraded: boolean }> {
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -98,12 +132,30 @@ export async function fetchNeighborhoodRisks(
 
   const { lat, lng } = building;
 
-  // 1. POI rows within 0.75 mi
-  const { data: concernRows } = await supabase.rpc("nearby_concerns_within_radius", {
+  // Kick off every independent query up front — previously these ran as a
+  // serial waterfall and their latencies added up.
+  const concernsPromise = supabase.rpc("nearby_concerns_within_radius", {
     p_lat: lat,
     p_lng: lng,
     p_radius_m: RADIUS_M,
   });
+  const SCHOOL_BBOX_DEG = 0.012; // ~0.83 mi at NYC latitude — superset of 0.75 mi
+  const schoolsPromise = supabase
+    .from("nearby_schools")
+    .select("school_id, name, type, address, latitude, longitude")
+    .eq("metro", "nyc")
+    .gte("latitude", lat - SCHOOL_BBOX_DEG)
+    .lte("latitude", lat + SCHOOL_BBOX_DEG)
+    .gte("longitude", lng - SCHOOL_BBOX_DEG)
+    .lte("longitude", lng + SCHOOL_BBOX_DEG);
+  const offendersPromise = supabase.rpc("count_sex_offenders_near", {
+    lat,
+    lng,
+    radius_meters: RADIUS_M,
+  });
+
+  // 1. POI rows within 0.75 mi
+  const { data: concernRows } = await concernsPromise;
   const rows: ConcernRow[] = (concernRows ?? []) as ConcernRow[];
 
   // 1b. Synthetic concern: if the building's street address is on an Avenue,
@@ -132,15 +184,7 @@ export async function fetchNeighborhoodRisks(
   // numerics indexed for the lookup path that the schools sidebar uses).
   // K-12 + college all produce drop-off, dismissal, and dorm/library noise
   // patterns, so we include every school type — distinguished in metadata.
-  const SCHOOL_BBOX_DEG = 0.012; // ~0.83 mi at NYC latitude — superset of 0.75 mi
-  const { data: schoolRows } = await supabase
-    .from("nearby_schools")
-    .select("school_id, name, type, address, latitude, longitude")
-    .eq("metro", "nyc")
-    .gte("latitude", lat - SCHOOL_BBOX_DEG)
-    .lte("latitude", lat + SCHOOL_BBOX_DEG)
-    .gte("longitude", lng - SCHOOL_BBOX_DEG)
-    .lte("longitude", lng + SCHOOL_BBOX_DEG);
+  const { data: schoolRows } = await schoolsPromise;
 
   for (const s of schoolRows ?? []) {
     const sLat = Number(s.latitude);
@@ -161,11 +205,7 @@ export async function fetchNeighborhoodRisks(
   }
 
   // 2. Sex-offender count (separate RPC, count only — never leaks rows)
-  const { data: offenderCount } = await supabase.rpc("count_sex_offenders_near", {
-    lat,
-    lng,
-    radius_meters: RADIUS_M,
-  });
+  const { data: offenderCount } = await offendersPromise;
 
   // 3. Block-level live queries.
   //
@@ -176,8 +216,11 @@ export async function fetchNeighborhoodRisks(
   //
   // Long-term fix: pre-aggregate per-building counts into a materialized view
   // so the radius query becomes a small bbox sum instead of a partition scan.
-  const RPC_TIMEOUT_MS = 4500;
+  // 2.5s (was 4.5s): results are now cached a week, so a rare timeout only
+  // zeroes one cache fill instead of every render — favor bounding TTFB.
+  const RPC_TIMEOUT_MS = 2500;
 
+  let degraded = false;
   const countRpc = async (
     fn: string,
     radius: number,
@@ -191,11 +234,15 @@ export async function fetchNeighborhoodRisks(
         });
         return Number(data ?? 0);
       } catch {
+        degraded = true;
         return 0;
       }
     })();
     const timeout = new Promise<number>((resolve) =>
-      setTimeout(() => resolve(0), RPC_TIMEOUT_MS),
+      setTimeout(() => {
+        degraded = true;
+        resolve(0);
+      }, RPC_TIMEOUT_MS),
     );
     return Promise.race([rpcPromise, timeout]);
   };
@@ -208,16 +255,19 @@ export async function fetchNeighborhoodRisks(
   ]);
 
   return {
-    building,
-    groups: groupBySubCategory(rows),
-    sex_offender_count: Number(offenderCount ?? 0),
-    block_level: {
-      rat_failures: rats,
-      noise_311: noise311,
-      noise_311_on_block: noise311Block,
-      bedbug_history: bedbugs,
+    result: {
+      building,
+      groups: groupBySubCategory(rows),
+      sex_offender_count: Number(offenderCount ?? 0),
+      block_level: {
+        rat_failures: rats,
+        noise_311: noise311,
+        noise_311_on_block: noise311Block,
+        bedbug_history: bedbugs,
+      },
+      total_concerns: rows.length + Number(offenderCount ?? 0),
+      within_block_count: rows.filter((r) => r.distance_mi < 0.1).length,
     },
-    total_concerns: rows.length + Number(offenderCount ?? 0),
-    within_block_count: rows.filter((r) => r.distance_mi < 0.1).length,
+    degraded,
   };
 }

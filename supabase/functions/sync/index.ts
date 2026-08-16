@@ -139,19 +139,23 @@ async function revalidateAffectedBuildingPages(
     const ids = [...buildingIds].slice(0, REVALIDATE_BUILDINGS_CAP);
     const { data } = await supabase
       .from("buildings")
-      .select("metro, borough, slug")
+      .select("id, metro, borough, slug")
       .in("id", ids)
       .not("slug", "is", null);
 
     const paths: string[] = [];
+    const tags: string[] = [];
     for (const b of data ?? []) {
       const city = (b.metro || "nyc") as City;
       if (CITY_META[city] && b.borough && b.slug) {
         const path = buildingUrl({ borough: b.borough, slug: b.slug }, city);
         paths.push(path, `${path}/violations`);
+        // Busts the building page's 7-day data caches (_data.ts loaders);
+        // revalidating the path alone would re-render from stale data.
+        tags.push(`building-${b.id}`);
       }
     }
-    await triggerRevalidation(paths);
+    await triggerRevalidation(paths, tags);
     return paths.length;
   } catch (err) {
     console.error("Targeted revalidation error:", err);
