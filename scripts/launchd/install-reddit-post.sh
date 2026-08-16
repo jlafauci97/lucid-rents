@@ -13,9 +13,8 @@
 # session.
 #
 # WHAT IT PUBLISHES: one queue item per run. The API serves approved replies
-# first (highest relevance), then self-post drafts. Replies therefore still
-# require a human to move them draft_ready -> approved in mission control;
-# self-posts publish unattended by design.
+# first (highest relevance), then approved self-posts. Both queues share the
+# same human gate: nothing publishes until it is approved in mission control.
 #
 # BROWSER: the poster launches its own Chrome (the real /Applications binary)
 # against ~/.lucidrents/chrome-posting-profile via playwright-core, installed

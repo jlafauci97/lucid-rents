@@ -64,26 +64,43 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const url = new URL(req.url);
+  const status = url.searchParams.get("status") ?? "draft";
+  if (!["draft", "approved", "posted", "rejected", "all"].includes(status)) {
+    return NextResponse.json({ error: "invalid status filter" }, { status: 400 });
+  }
+
   const supabase = createAdminClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("marketing_reddit_posts")
-    .select("id, kind, city, title, body, links, status, created_at")
-    .eq("status", "draft")
+    .select("id, kind, city, title, body, links, status, posted_url, posted_at, created_at")
     .order("created_at", { ascending: false })
     .limit(20);
+  if (status !== "all") query = query.eq("status", status);
+
+  const { data, error } = await query;
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-  return NextResponse.json({ ok: true, posts: data ?? [] });
+
+  // Status counts drive the mission-control filter chips.
+  const { data: countRows } = await supabase
+    .from("marketing_reddit_posts")
+    .select("status");
+  const byStatus: Record<string, number> = {};
+  for (const r of countRows ?? []) {
+    byStatus[r.status as string] = (byStatus[r.status as string] ?? 0) + 1;
+  }
+
+  return NextResponse.json({ ok: true, posts: data ?? [], byStatus });
 }
 
 /**
- * Marks a draft as posted or rejected.
- *
- * Nothing here publishes to Reddit — posting happens by hand through the
- * /reddit-post flow. This only records what was done with a draft so the queue
- * stops showing it.
+ * Moves a self-post through its lifecycle: draft -> approved (mission control
+ * approve button; the Mac mini poster only publishes approved posts),
+ * draft/approved -> rejected, or -> posted (recorded by the poster via the
+ * queue API, or by hand if something was published manually).
  */
 export async function PATCH(req: NextRequest) {
   if (!(await canRead(req))) {
@@ -98,9 +115,9 @@ export async function PATCH(req: NextRequest) {
   }
 
   const { id, status, postedUrl } = body;
-  if (!id || (status !== "posted" && status !== "rejected")) {
+  if (!id || (status !== "approved" && status !== "posted" && status !== "rejected")) {
     return NextResponse.json(
-      { error: "id and status ('posted' | 'rejected') are required" },
+      { error: "id and status ('approved' | 'posted' | 'rejected') are required" },
       { status: 400 }
     );
   }
@@ -177,10 +194,10 @@ export async function POST(req: NextRequest) {
   for (const { city, candidates } of perCityKinds) {
     for (const kind of candidates) {
       try {
-        // An unposted draft of the same shape means the queue hasn't caught
-        // up; a second copy with slightly fresher numbers just buries the
-        // first. In rotation mode a pending draft also means this city has
-        // backlog — stop rather than fall through and generate more.
+        // An unreviewed draft of the same shape is still waiting in mission
+        // control; a second copy with slightly fresher numbers just buries
+        // the first. In rotation mode, fall through to the next kind so the
+        // city still gets a fresh story today.
         const { count: pending } = await supabase
           .from("marketing_reddit_posts")
           .select("id", { count: "exact", head: true })
@@ -188,8 +205,7 @@ export async function POST(req: NextRequest) {
           .eq("city", city)
           .eq("status", "draft");
         if ((pending ?? 0) > 0) {
-          errors.push({ kind, city, error: "draft of this kind already pending" });
-          if (stopAfterFirst) break;
+          errors.push({ kind, city, error: "draft of this kind already pending review" });
           continue;
         }
 

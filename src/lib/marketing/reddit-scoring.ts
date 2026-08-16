@@ -1,4 +1,5 @@
 import { generateText } from "ai";
+import { marketingModel } from "@/lib/marketing/ai-model";
 import { REDDIT_KEYWORDS } from "./brand-voice";
 
 /**
@@ -53,7 +54,7 @@ export async function scoreThread(candidate: {
   numComments?: number;
 }): Promise<ScoredThread | null> {
   const result = await generateText({
-    model: "anthropic/claude-sonnet-4.6" as never,
+    model: marketingModel(),
     system: SCORING_SYSTEM_PROMPT,
     prompt: `Subreddit: r/${candidate.subreddit}
 Title: ${candidate.title}

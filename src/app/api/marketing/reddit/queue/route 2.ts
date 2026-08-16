@@ -71,45 +71,11 @@ export async function GET(req: NextRequest) {
   }
 
   // Then our own posts. These go to our profile, so subreddit rate limits do
-  // not apply — but they need their own spacing now that the poster polls
-  // every few minutes instead of running on four fixed slots: without it a
-  // backlog of drafts would all publish within the hour. Mirror the old
-  // schedule's cadence: at least 3 hours apart, at most 3 in 24 hours.
-  const { data: recentPosts } = await supabase
-    .from("marketing_reddit_posts")
-    .select("posted_at")
-    .eq("status", "posted")
-    .gte("posted_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
-    .order("posted_at", { ascending: false });
-
-  const MIN_SELFPOST_GAP_MS = 3 * 60 * 60 * 1000;
-  const MAX_SELFPOSTS_PER_DAY = 3;
-  if ((recentPosts?.length ?? 0) >= MAX_SELFPOSTS_PER_DAY) {
-    return NextResponse.json({
-      ok: true,
-      item: null,
-      reason: `Self-post daily limit reached (${MAX_SELFPOSTS_PER_DAY}/24h)`,
-    });
-  }
-  const lastPostedAt = recentPosts?.[0]?.posted_at
-    ? new Date(recentPosts[0].posted_at as string).getTime()
-    : 0;
-  const selfPostWaitMs = lastPostedAt + MIN_SELFPOST_GAP_MS - Date.now();
-  if (selfPostWaitMs > 0) {
-    return NextResponse.json({
-      ok: true,
-      item: null,
-      reason: "Self-post gap (3h) not elapsed",
-      waitSeconds: Math.ceil(selfPostWaitMs / 1000),
-    });
-  }
-
-  // Like replies, self-posts only publish after a human moved them
-  // draft -> approved in mission control.
+  // not apply — but we still space them out, one per run.
   const { data: selfPosts } = await supabase
     .from("marketing_reddit_posts")
     .select("id, title, body")
-    .eq("status", "approved")
+    .eq("status", "draft")
     .order("created_at", { ascending: true })
     .limit(1);
 
@@ -136,22 +102,14 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let body: {
-    type?: string;
-    id?: string;
-    ok?: boolean;
-    url?: string;
-    error?: string;
-    /** The item can never succeed (thread deleted/removed/locked); retire it. */
-    permanent?: boolean;
-  };
+  let body: { type?: string; id?: string; ok?: boolean; url?: string; error?: string };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { type, id, ok, url, error, permanent } = body;
+  const { type, id, ok, url, error } = body;
   if (!id || (type !== "reply" && type !== "selfpost")) {
     return NextResponse.json({ error: "type and id are required" }, { status: 400 });
   }
@@ -161,16 +119,10 @@ export async function PATCH(req: NextRequest) {
 
   if (type === "reply") {
     // A failed post stays 'approved' so the next run retries it; the error is
-    // recorded rather than silently swallowed. A *permanent* failure — the
-    // thread is gone, removed, locked or archived — is retired to 'skipped'
-    // instead. Retrying it would be pointless, and because approved replies
-    // are always served ahead of self-posts, one dead thread left in
-    // 'approved' starves the entire queue behind it indefinitely.
+    // recorded rather than silently swallowed.
     const patch = ok
       ? { status: "replied", replied_at: now }
-      : permanent
-        ? { status: "skipped" }
-        : { status: "approved" };
+      : { status: "approved" };
     const { error: dbError } = await supabase
       .from("marketing_reddit_threads")
       .update(patch)
@@ -184,12 +136,7 @@ export async function PATCH(req: NextRequest) {
       .update(
         ok
           ? { status: "posted", posted_at: now, posted_url: url ?? null }
-          : permanent
-            ? { status: "rejected" }
-            : // Stays approved so the next run retries it — bouncing back to
-              // 'draft' would silently demand a second human approval for a
-              // transient browser failure.
-              { status: "approved" }
+          : { status: "draft" }
       )
       .eq("id", id);
     if (dbError) {
@@ -198,11 +145,7 @@ export async function PATCH(req: NextRequest) {
   }
 
   console.log(
-    `[reddit/queue] ${type} ${id} -> ${
-      ok
-        ? "posted"
-        : `${permanent ? "retired" : "failed"}: ${error ?? "unknown"}`
-    }`
+    `[reddit/queue] ${type} ${id} -> ${ok ? "posted" : `failed: ${error ?? "unknown"}`}`
   );
   return NextResponse.json({ ok: true });
 }
