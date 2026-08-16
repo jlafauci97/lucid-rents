@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { notFound, redirect } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import type { Metadata } from "next";
 import { cityPath, canonicalUrl, cityBreadcrumbs, landlordSlug, landlordUrl } from "@/lib/seo";
 import type { City } from "@/lib/cities";
@@ -177,12 +177,14 @@ export default async function LandlordRecordPage({ params }: Props) {
 
   const cachedStats = await getLandlordStats(name, city);
   if (!cachedStats) {
-    redirect(cityPath("/landlords", city));
+    // Dead landlord URL: 404 (deindexes cleanly) instead of redirecting to
+    // the hub — redirect-to-hub is what GSC flags as "Page with redirect".
+    notFound();
   }
 
   const correctSlug = landlordSlug(cachedStats.name);
   if (correctSlug !== name) {
-    redirect(cityPath(`/landlord/${correctSlug}/record`, city));
+    permanentRedirect(cityPath(`/landlord/${correctSlug}/record`, city));
   }
 
   return (

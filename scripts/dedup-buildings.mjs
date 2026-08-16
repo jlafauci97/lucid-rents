@@ -78,6 +78,27 @@ async function dedupGroup(keeperId, loserIds, rows) {
     merge_updates: mergeUpdates,
   });
   if (error) throw new Error(`Dedup group failed for ${keeperId}: ${error.message}`);
+
+  // Record slug redirects so the deleted losers' URLs 308 to the survivor
+  // (the building page's miss handler reads building_slug_redirects before
+  // falling back to heuristics). Chain-collapse afterwards so any older
+  // redirect pointing at a loser now points straight at the keeper — the
+  // read path deliberately follows a single hop only.
+  // Best-effort: a redirect-recording failure must not fail the dedup.
+  const redirects = losers
+    .filter(l => l.slug && keeper.slug && l.slug !== keeper.slug)
+    .map(l => ({ old_slug: l.slug, new_slug: keeper.slug }));
+  if (redirects.length > 0) {
+    const { error: rErr } = await supabase
+      .from("building_slug_redirects")
+      .upsert(redirects, { onConflict: "old_slug" });
+    if (rErr) console.warn(`  slug-redirect upsert failed for ${keeperId}: ${rErr.message}`);
+    const { error: cErr } = await supabase
+      .from("building_slug_redirects")
+      .update({ new_slug: keeper.slug })
+      .in("new_slug", redirects.map(r => r.old_slug));
+    if (cErr) console.warn(`  slug-redirect chain-collapse failed for ${keeperId}: ${cErr.message}`);
+  }
 }
 
 async function dedupMetro(metro) {
@@ -211,6 +232,20 @@ async function disambiguateSlugs(metro) {
   }
 
   console.log(`[${metro}] Disambiguated ${fixed} slugs`);
+  // NOTE: disambiguation renames do NOT get building_slug_redirects rows —
+  // the un-suffixed slug stays live on the keeper row, and a redirect row
+  // for it would shadow a live URL.
+
+  // Safety pass: drop any redirect whose old_slug has since come back to
+  // life as a real building slug (both sides indexed; cheap semi-join).
+  const { error: cleanErr } = await supabase.rpc("exec_sql", {
+    query: `
+      DELETE FROM building_slug_redirects r
+      USING buildings b
+      WHERE b.slug = r.old_slug
+    `,
+  });
+  if (cleanErr) console.warn(`[${metro}] slug-redirect cleanup failed: ${cleanErr.message}`);
 }
 
 // --- Task 7: Pre-flight Verification ---
