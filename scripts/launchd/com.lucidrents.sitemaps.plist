@@ -10,7 +10,8 @@
     cp scripts/launchd/com.lucidrents.sitemaps.plist ~/Library/LaunchAgents/
     launchctl load ~/Library/LaunchAgents/com.lucidrents.sitemaps.plist
 
-  Edit WorkingDirectory and the node path below to match the mini. Requires
+  Edit the repo paths below to match the mini (tsx is invoked straight from
+  node_modules/.bin — npx hangs indefinitely under launchd). Requires
   NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY and BLOB_READ_WRITE_TOKEN
   in the repo's .env.local (the script loads it itself).
 -->
@@ -21,8 +22,7 @@
 
     <key>ProgramArguments</key>
     <array>
-        <string>/usr/local/bin/npx</string>
-        <string>tsx</string>
+        <string>/Users/jesselafauci/Desktop/lucid-rents/node_modules/.bin/tsx</string>
         <string>scripts/generate-sitemaps-blob.mts</string>
     </array>
 
