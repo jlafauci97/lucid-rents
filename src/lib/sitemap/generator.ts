@@ -197,33 +197,35 @@ const BACKOFF_UNIT_MS = 5000;
 
 async function supabaseFetch<T = unknown>(path: string): Promise<T> {
   const { url, key } = requireEnv();
+  let lastErr: unknown;
   for (let attempt = 0; attempt < FETCH_ATTEMPTS; attempt++) {
     try {
       const res = await fetch(`${url}/rest/v1/${path}`, {
         headers: { apikey: key },
       });
       if (!res.ok) {
-        if (res.status >= 500 && attempt < FETCH_ATTEMPTS - 1) {
-          await new Promise((r) => setTimeout(r, BACKOFF_UNIT_MS * (attempt + 1)));
-          continue;
-        }
-        throw new Error(`Supabase ${res.status}: ${path}`);
+        // 4xx = our bug, fail fast. 5xx = DB pressure, retry.
+        if (res.status < 500) throw new FatalFetchError(`Supabase ${res.status}: ${path}`);
+        lastErr = new Error(`Supabase ${res.status}: ${path}`);
+      } else {
+        return (await res.json()) as T;
       }
-      return (await res.json()) as T;
     } catch (err) {
-      const e = err as { message?: string; cause?: { code?: string } };
-      if (
-        attempt < FETCH_ATTEMPTS - 1 &&
-        (e.message?.includes("500") || e.cause?.code === "UND_ERR_SOCKET")
-      ) {
-        await new Promise((r) => setTimeout(r, BACKOFF_UNIT_MS * (attempt + 1)));
-        continue;
-      }
-      throw err;
+      if (err instanceof FatalFetchError) throw err;
+      // Everything else — undici "fetch failed", socket resets, DNS blips —
+      // is transient on a nightly job with no deadline. A 2h19m run died to
+      // one unretried "fetch failed" at building chunk 101 (Aug 2026);
+      // never again.
+      lastErr = err;
+    }
+    if (attempt < FETCH_ATTEMPTS - 1) {
+      await new Promise((r) => setTimeout(r, BACKOFF_UNIT_MS * (attempt + 1)));
     }
   }
-  throw new Error("unreachable");
+  throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
 }
+
+class FatalFetchError extends Error {}
 
 // ─── XML builders (must stay byte-identical with the script) ────
 
@@ -478,12 +480,18 @@ interface LandlordRow {
   updated_at: string | null;
 }
 
-/** A generated sitemap chunk plus the freshest lastmod among its entries —
- * used by the index writer so index <lastmod> reflects real content dates. */
+/** A generated sitemap chunk plus the freshest lastmod among its entries
+ * (used by the index writer) and the id of the last row included (used to
+ * resume the phase from this chunk boundary after a failure). */
 export interface GeneratedChunk {
   xml: string;
   lastmod?: string;
+  /** Keyset cursor: id of the last row this chunk includes. Restarting the
+   * generator with this as startCursor regenerates the NEXT chunk. */
+  cursor: string;
 }
+
+const CURSOR_ZERO = "00000000-0000-0000-0000-000000000000";
 
 function maxLastmod(entries: UrlEntry[]): string | undefined {
   let max: string | undefined;
@@ -493,7 +501,9 @@ function maxLastmod(entries: UrlEntry[]): string | undefined {
   return max;
 }
 
-export async function* generateLandlordChunks(): AsyncGenerator<GeneratedChunk> {
+export async function* generateLandlordChunks(
+  startCursor: string = CURSOR_ZERO,
+): AsyncGenerator<GeneratedChunk> {
   // 1000 rows/page: the role's 8s statement_timeout cancels reads at ~5-6K
   // rows on a quiet DB (~1.5ms/row, measured Aug 2026), but under prod load
   // spikes even 2500 rows exceeds it. 1000 keeps a wide margin; the patient
@@ -501,7 +511,8 @@ export async function* generateLandlordChunks(): AsyncGenerator<GeneratedChunk> 
   const PAGE_SIZE = 1000;
   const URLS_PER_FILE = 10000;
   let pending: UrlEntry[] = [];
-  let cursor = "00000000-0000-0000-0000-000000000000";
+  let cursor = startCursor;
+  let lastIncludedId = startCursor;
 
   while (true) {
     const rows = await supabaseFetch<LandlordRow[]>(
@@ -518,9 +529,10 @@ export async function* generateLandlordChunks(): AsyncGenerator<GeneratedChunk> 
           changefreq: "monthly",
           priority: 0.5,
         });
+        lastIncludedId = l.id;
       }
       if (pending.length >= URLS_PER_FILE) {
-        yield { xml: buildSitemapXml(pending), lastmod: maxLastmod(pending) };
+        yield { xml: buildSitemapXml(pending), lastmod: maxLastmod(pending), cursor: lastIncludedId };
         pending = [];
       }
     }
@@ -528,7 +540,7 @@ export async function* generateLandlordChunks(): AsyncGenerator<GeneratedChunk> 
     if (rows.length < PAGE_SIZE) break;
   }
   if (pending.length > 0) {
-    yield { xml: buildSitemapXml(pending), lastmod: maxLastmod(pending) };
+    yield { xml: buildSitemapXml(pending), lastmod: maxLastmod(pending), cursor: lastIncludedId };
   }
 }
 
@@ -550,14 +562,17 @@ interface BuildingRow {
 // entry (single source of truth for the building-page version date).
 export const BUILDING_PAGE_VERSION_AT = "2026-05-26T00:00:00.000Z";
 
-export async function* generateBuildingChunks(): AsyncGenerator<GeneratedChunk> {
+export async function* generateBuildingChunks(
+  startCursor: string = CURSOR_ZERO,
+): AsyncGenerator<GeneratedChunk> {
   // 1000 rows/page — see the landlord generator's sizing note. ~2.5M
   // active-metro rows ≈ 2500 sequential pages ≈ 1.5-2h wall clock, fine for
   // the nightly Mac-mini run this generator targets (no Vercel maxDuration).
   const PAGE_SIZE = 1000;
   const URLS_PER_FILE = 10000;
   let pending: UrlEntry[] = [];
-  let cursor = "00000000-0000-0000-0000-000000000000";
+  let cursor = startCursor;
+  let lastIncludedId = startCursor;
   let done = false;
 
   while (!done) {
@@ -580,9 +595,10 @@ export async function* generateBuildingChunks(): AsyncGenerator<GeneratedChunk> 
           changefreq: "weekly",
           priority: 0.6,
         });
+        lastIncludedId = b.id;
       }
       if (pending.length >= URLS_PER_FILE) {
-        yield { xml: buildSitemapXml(pending), lastmod: maxLastmod(pending) };
+        yield { xml: buildSitemapXml(pending), lastmod: maxLastmod(pending), cursor: lastIncludedId };
         pending = [];
       }
     }
@@ -590,7 +606,7 @@ export async function* generateBuildingChunks(): AsyncGenerator<GeneratedChunk> 
     if (rows.length < PAGE_SIZE) done = true;
   }
   if (pending.length > 0) {
-    yield { xml: buildSitemapXml(pending), lastmod: maxLastmod(pending) };
+    yield { xml: buildSitemapXml(pending), lastmod: maxLastmod(pending), cursor: lastIncludedId };
   }
 }
 
@@ -715,42 +731,54 @@ export async function regenerateAllToBlob(): Promise<RegenerateResult> {
   }
   await checkpointIndex();
 
-  // Landlord chunks — stream each chunk straight to Blob as it's generated.
-  // Bounded memory (one chunk at a time) + partial-recovery: if the run
-  // dies mid-stream, every l-N.xml written before the failure stays in
-  // `written` and the most recent checkpoint index.xml references it.
-  try {
-    let i = 0;
-    for await (const chunk of generateLandlordChunks()) {
-      const name = `l-${i}.xml`;
-      await writeChunkToBlob(name, chunk.xml);
-      written.set(name, chunk.lastmod);
-      console.log(`[regenerate-sitemaps] wrote ${name} (${chunk.xml.length} bytes)`);
-      i++;
-      if (i % 10 === 0) await checkpointIndex();
-    }
-    landlordChunkCount = i;
-  } catch (e) {
-    errors.push(`landlord chunks: ${(e as Error).message}`);
-  }
-  await checkpointIndex();
+  // Streaming phases — each chunk goes straight to Blob (bounded memory),
+  // and the phase RESUMES from the last completed chunk's keyset cursor if
+  // the generator dies (DB pressure outlasting supabaseFetch's retries, or
+  // a network drop: a 2h19m run once died to one unretried "fetch failed").
+  // Only an error budget of PHASE_RESTARTS consecutive failed restarts
+  // aborts the phase.
+  const PHASE_RESTARTS = 10;
+  const RESTART_WAIT_MS = 60_000;
 
-  // Building chunks — same streaming pattern, re-checkpointing every 10
-  // chunks so a usable index.xml always exists after a partial run.
-  try {
+  async function runPhase(
+    label: string,
+    prefix: "l" | "b",
+    makeGenerator: (startCursor?: string) => AsyncGenerator<GeneratedChunk>,
+  ): Promise<number> {
     let i = 0;
-    for await (const chunk of generateBuildingChunks()) {
-      const name = `b-${i}.xml`;
-      await writeChunkToBlob(name, chunk.xml);
-      written.set(name, chunk.lastmod);
-      console.log(`[regenerate-sitemaps] wrote ${name} (${chunk.xml.length} bytes)`);
-      i++;
-      if (i % 10 === 0) await checkpointIndex();
+    let resumeCursor: string | undefined;
+    let restarts = 0;
+    for (;;) {
+      try {
+        for await (const chunk of makeGenerator(resumeCursor)) {
+          const name = `${prefix}-${i}.xml`;
+          await writeChunkToBlob(name, chunk.xml);
+          written.set(name, chunk.lastmod);
+          resumeCursor = chunk.cursor;
+          restarts = 0; // progress resets the error budget
+          console.log(`[regenerate-sitemaps] wrote ${name} (${chunk.xml.length} bytes)`);
+          i++;
+          if (i % 10 === 0) await checkpointIndex();
+        }
+        return i;
+      } catch (e) {
+        restarts++;
+        if (restarts >= PHASE_RESTARTS) {
+          errors.push(`${label}: ${(e as Error).message} (gave up after ${restarts} restarts at chunk ${i})`);
+          return i;
+        }
+        console.warn(
+          `[regenerate-sitemaps] ${label} failed at chunk ${i} (${(e as Error).message}); ` +
+            `restart ${restarts}/${PHASE_RESTARTS} from cursor ${resumeCursor ?? "start"} in ${RESTART_WAIT_MS / 1000}s`,
+        );
+        await new Promise((r) => setTimeout(r, RESTART_WAIT_MS));
+      }
     }
-    buildingChunkCount = i;
-  } catch (e) {
-    errors.push(`building chunks: ${(e as Error).message}`);
   }
+
+  landlordChunkCount = await runPhase("landlord chunks", "l", (c) => generateLandlordChunks(c));
+  await checkpointIndex();
+  buildingChunkCount = await runPhase("building chunks", "b", (c) => generateBuildingChunks(c));
 
   // Dedicated sub-indexes: buildings.xml (b-chunks only, served at
   // /buildings-sitemap.xml and /sitemap-buildings.xml) and landlords.xml
