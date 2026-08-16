@@ -337,6 +337,50 @@ export default function ForAIPage() {
           </p>
         </section>
 
+        {/* ----- MCP Endpoint ----- */}
+        <section>
+          <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
+            For AI Agents: MCP Endpoint
+          </h2>
+          <p>
+            Lucid Rents runs a free, read-only{" "}
+            <strong>MCP (Model Context Protocol) server</strong> so AI
+            assistants and agents can query building intelligence directly as
+            structured tool calls instead of scraping pages:
+          </p>
+          <p className="mt-2 font-mono text-xs">
+            <code>https://lucidrents.com/api/mcp</code> — Streamable HTTP, no
+            authentication required
+          </p>
+          <ul className="list-disc list-inside space-y-1 mt-2">
+            <li>
+              <code>search_buildings(query, city?)</code> — resolve an address
+              to building matches
+            </li>
+            <li>
+              <code>get_building_report(city, slug)</code> — score, violations,
+              complaints, rents, landlord, similar buildings
+            </li>
+            <li>
+              <code>get_landlord_record(city, slugOrName)</code> — portfolio
+              size, violations, average building score
+            </li>
+            <li>
+              <code>get_neighborhood_stats(city, zip)</code> — median rents by
+              bedrooms and crime summary
+            </li>
+            <li>
+              <code>get_review_summary(city, slug)</code> — tenant review
+              counts, ratings, and pull quotes
+            </li>
+          </ul>
+          <p className="mt-2">
+            Every tool response includes the canonical lucidrents.com page URL
+            for citation, plus a <code>more</code> field listing what the full
+            page adds. Rate limit: 30 tool calls per minute per client.
+          </p>
+        </section>
+
         {/* ----- Machine-Readable Resources ----- */}
         <section>
           <h2 className="text-lg font-semibold text-[#1A1F36] mb-2">
