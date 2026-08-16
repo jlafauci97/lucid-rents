@@ -48,7 +48,9 @@ const SUPABASE_ORIGIN = (() => {
   }
 })();
 
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://lucidrents.com";
+// .trim(): the Vercel-stored value carries a trailing newline, which was
+// corrupting the Organization schema URLs on every page.
+const SITE_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://lucidrents.com").trim();
 
 const organizationSchema = {
   "@context": "https://schema.org",
@@ -66,7 +68,7 @@ const organizationSchema = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://lucidrents.com"),
+  metadataBase: new URL((process.env.NEXT_PUBLIC_APP_URL || "https://lucidrents.com").trim()),
   title: {
     default: "Lucid Rents - Know Your Apartment Before You Sign",
     template: "%s | Lucid Rents",
