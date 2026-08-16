@@ -3,7 +3,7 @@ import Link from "next/link";
 import { cache } from "react";
 import { TrendingUp, TrendingDown, Building2, CalendarDays, DollarSign, Sparkles, Search } from "lucide-react";
 import { parseNeighborhoodSlug } from "@/lib/nyc-neighborhoods";
-import { getNeighborhoodNameByCity } from "@/lib/neighborhoods";
+import { getNeighborhoodNameByCity, neighborhoodPageSlugByCity } from "@/lib/neighborhoods";
 import { CITY_META } from "@/lib/cities";
 import type { City } from "@/lib/cities";
 import { canonicalUrl, cityPath } from "@/lib/seo";
@@ -312,6 +312,12 @@ export default async function NeighborhoodRentsPage({
 
   const trend = computeTrendStats(rents);
 
+  // Latest month with data → link target for the monthly rent report.
+  const latestReportMonth =
+    rents.length > 0
+      ? rents.reduce((max, r) => (r.month > max ? r.month : max), rents[0].month).slice(0, 7)
+      : null;
+
   if (rents.length === 0) {
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
@@ -416,6 +422,19 @@ export default async function NeighborhoodRentsPage({
               </span>
             )}
           </div>
+
+          {/* Monthly rent report interlink */}
+          {latestReportMonth && (
+            <p className="mt-4 text-sm">
+              <Link
+                href={cityPath(`/rent-report/${neighborhoodPageSlugByCity(zipCode, city)}/${latestReportMonth}`, city)}
+                className="text-[#3B82F6] font-medium hover:underline"
+              >
+                Read the {MONTH_NAMES[Number(latestReportMonth.slice(5, 7)) - 1]} {latestReportMonth.slice(0, 4)}{" "}
+                {displayName} rent report →
+              </Link>
+            </p>
+          )}
         </div>
 
         {/* ── Rent Trend Chart ─────────────────────────────────────── */}
