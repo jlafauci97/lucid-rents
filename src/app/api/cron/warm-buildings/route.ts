@@ -8,11 +8,12 @@ export const maxDuration = 300;
 /**
  * Warm the ISR cache for the most-visited building pages.
  *
- * Building pages are `revalidate = 86400` with no generateStaticParams, and
+ * Building pages are `revalidate = 604800` with no generateStaticParams, and
  * every deploy resets the ISR cache — so the first visitor to any building
- * after a deploy (or after 24h) pays the full cold build: 9-23s measured in
- * production. This cron self-fetches the top pages per metro so a machine
- * pays that cost instead of a person.
+ * after a deploy pays the cold build (~1-2s since the Aug 2026 render-cost
+ * fixes; 9-23s before them). This cron self-fetches the top pages per metro
+ * so a machine pays that cost instead of a person — or Googlebot, whose
+ * experienced latency directly sets the crawl rate it grants us.
  *
  * Buildings are ranked by review_count (a proxy for traffic — reviewed
  * buildings are the ones people search for), then violation_count as a
@@ -30,10 +31,14 @@ function getSupabaseAdmin() {
   });
 }
 
-const PER_METRO = 150;
-// Modest parallelism: enough to warm ~450 pages inside maxDuration without
+// 500/metro (was 150): renders are ~10x cheaper since the Aug 2026 fixes and
+// the 7-day data caches mean repeat warms mostly skip the DB entirely, so the
+// same 300s window covers far more of the crawl surface. Sized to finish
+// inside maxDuration at ~1-2s/page cold, well under it once caches are warm.
+const PER_METRO = 500;
+// Modest parallelism: enough to warm ~1500 pages inside maxDuration without
 // stampeding the database that's also serving live traffic.
-const CONCURRENCY = 6;
+const CONCURRENCY = 8;
 
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
