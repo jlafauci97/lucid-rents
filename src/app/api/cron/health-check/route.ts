@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 export const maxDuration = 60;
 export const revalidate = 0;
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://lucidrents.com";
+const BASE_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://lucidrents.com").trim();
 
 const ROUTES_TO_CHECK = [
   // Core pages

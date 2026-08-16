@@ -47,7 +47,8 @@ export async function GET(req: NextRequest) {
   }
 
   const supabase = getSupabaseAdmin();
-  const origin = process.env.NEXT_PUBLIC_APP_URL || "https://lucidrents.com";
+  // .trim() guards against the env value's trailing newline (breaks fetch URLs)
+  const origin = (process.env.NEXT_PUBLIC_APP_URL || "https://lucidrents.com").trim();
   const startTime = Date.now();
   const metros: City[] = ["nyc", "los-angeles", "chicago"];
 
