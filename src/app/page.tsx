@@ -10,7 +10,9 @@ import { ViolationTickerServer } from "@/components/home/ViolationTickerServer";
 import { BrandShield } from "@/components/brand/BrandShield";
 
 export const metadata: Metadata = {
-  title: "Lucid Rents — Apartment Building Intelligence",
+  // absolute: the root layout's "%s | Lucid Rents" template otherwise applies
+  // to the homepage too, rendering "…Intelligence | Lucid Rents" (doubled).
+  title: { absolute: "Lucid Rents — Apartment Building Intelligence" },
   description:
     "Search any building in NYC, LA, or Chicago. Violations, complaints, crime data, tenant reviews, and rent history — combined into one record per building.",
   alternates: { canonical: canonicalUrl("/") },

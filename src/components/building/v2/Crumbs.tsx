@@ -40,7 +40,10 @@ export function Crumbs({
     <nav className="crumbs" aria-label="Breadcrumb">
       <Link href="/">home</Link><span className="sep">/</span>
       <Link href={`/${prefix}`}>{prefix}</Link><span className="sep">/</span>
-      <Link href={`/${prefix}/building-rankings`}>{boroughLower}</Link><span className="sep">/</span>
+      {/* Borough crumb targets the borough building directory — this link
+          exists on ~2M building pages, making it the directory's dominant
+          inbound edge; it previously pointed at /building-rankings. */}
+      <Link href={`/${prefix}/buildings/${boroughSlug}`}>{boroughLower}</Link><span className="sep">/</span>
       {neighborhoodSlug && neighborhoodName ? (
         <>
           <Link href={`/${prefix}/neighborhood/${neighborhoodSlug}`}>{nbhLower}</Link><span className="sep">/</span>

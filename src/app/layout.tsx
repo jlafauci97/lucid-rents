@@ -88,21 +88,17 @@ export const metadata: Metadata = {
     "bedbug reports",
     "evictions",
   ],
+  // No images here on purpose: the file-based opengraph-image.tsx routes
+  // (root + six dynamic per-page-type ones) provide og:image, and Twitter
+  // falls back to og:image when twitter.images is unset. Declaring a static
+  // image here produced doubled og:image tags AND overrode the per-page
+  // dynamic art specifically for Twitter shares.
   openGraph: {
     type: "website",
     siteName: "Lucid Rents",
-    images: [
-      {
-        url: "/og-image.jpg",
-        width: 1200,
-        height: 630,
-        alt: "Lucid Rents - Know Your Apartment Before You Sign",
-      },
-    ],
   },
   twitter: {
     card: "summary_large_image",
-    images: ["/og-image.jpg"],
   },
   other: {
     "google-adsense-account": ADSENSE_CLIENT_ID,

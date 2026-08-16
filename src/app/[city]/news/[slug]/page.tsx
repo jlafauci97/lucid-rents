@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { ExternalLink, Clock, ArrowLeft } from "lucide-react";
@@ -272,13 +273,27 @@ async function ArticleView({ slug, city }: { slug: string; city: import("@/lib/c
               headline: typedArticle.title,
               description: typedArticle.excerpt,
               url: canonicalUrl(cityPath(`/news/${slug}`, city)),
+              mainEntityOfPage: {
+                "@type": "WebPage",
+                "@id": canonicalUrl(cityPath(`/news/${slug}`, city)),
+              },
               datePublished: typedArticle.published_at,
+              dateModified: typedArticle.published_at,
+              // Publisher must be the site (with logo) to qualify for article
+              // rich results; the source outlet is credited via author/isBasedOn.
               publisher: {
                 "@type": "Organization",
-                name: typedArticle.source_name,
+                name: "Lucid Rents",
+                logo: {
+                  "@type": "ImageObject",
+                  url: canonicalUrl("/lucid-rents-logo.png"),
+                },
               },
               ...(typedArticle.author
                 ? { author: { "@type": "Person", name: typedArticle.author } }
+                : { author: { "@type": "Organization", name: typedArticle.source_name } }),
+              ...(typedArticle.url && !typedArticle.auto_generated
+                ? { isBasedOn: typedArticle.url }
                 : {}),
               ...(typedArticle.image_url
                 ? { image: typedArticle.image_url }
@@ -343,12 +358,17 @@ async function ArticleView({ slug, city }: { slug: string; city: import("@/lib/c
         {typedArticle.auto_generated && typedArticle.body ? (
           <>
             {typedArticle.image_url && (
-              <div className="rounded-xl overflow-hidden border border-[#e2e8f0] mb-6">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+              // 16:9 aspect box + next/image: the hero is the LCP element on
+              // every article — the raw <img> with no dimensions was both
+              // unoptimized and the page's main layout shift.
+              <div className="relative aspect-[16/9] rounded-xl overflow-hidden border border-[#e2e8f0] mb-6">
+                <Image
                   src={typedArticle.image_url}
                   alt={typedArticle.title}
-                  className="w-full h-auto object-cover"
+                  fill
+                  priority
+                  sizes="(max-width: 1024px) 100vw, 768px"
+                  className="object-cover"
                 />
               </div>
             )}
