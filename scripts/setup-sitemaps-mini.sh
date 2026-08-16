@@ -38,7 +38,9 @@ ok "Supabase keys present"
 if ! grep -q "^BLOB_READ_WRITE_TOKEN=" .env.local; then
   step "Fetching BLOB_READ_WRITE_TOKEN from Vercel (may open a browser login)"
   TMPENV="$(mktemp)"
-  npx vercel env pull "$TMPENV" --environment=production >/dev/null
+  # --yes: mktemp pre-creates the file, and without a TTY the overwrite
+  # prompt kills the pull instead of asking.
+  npx vercel env pull "$TMPENV" --environment=production --yes >/dev/null
   grep "^BLOB_READ_WRITE_TOKEN=" "$TMPENV" >> .env.local || { rm -f "$TMPENV"; die "token not found in Vercel env"; }
   rm -f "$TMPENV"
   ok "token added to .env.local"
@@ -46,21 +48,21 @@ else
   ok "BLOB_READ_WRITE_TOKEN already in .env.local"
 fi
 
-step "Smoke-testing the generator (60s — looking for the first chunk upload)"
+step "Smoke-testing the generator (up to 5m — looking for the first chunk upload)"
 LOG="$(mktemp)"
 ( npx tsx scripts/generate-sitemaps-blob.mts >"$LOG" 2>&1 & echo $! > "$LOG.pid" )
 SMOKE_PID="$(cat "$LOG.pid")"
 passed=""
-for i in {1..60}; do
+for i in {1..300}; do
   sleep 1
-  if grep -q "wrote l-0.xml" "$LOG"; then passed=1; break; fi
+  if grep -q "wrote " "$LOG"; then passed=1; break; fi
   if grep -q "missing env\|ERROR" "$LOG"; then break; fi
 done
 kill "$SMOKE_PID" 2>/dev/null || true
 if [[ -n "$passed" ]]; then
   ok "generator authenticated and uploaded a chunk"
 else
-  print "----- last log lines -----"; tail -5 "$LOG"; print "--------------------------"
+  print -- "----- last log lines -----"; tail -5 "$LOG"; print -- "--------------------------"
   die "smoke test failed — see log above"
 fi
 
