@@ -158,6 +158,25 @@ export async function proxy(request: NextRequest) {
   const bbResponse = checkBuildingListChip(request, segments, firstSegment);
   if (bbResponse) return withNoindex(bbResponse, request);
 
+  // 0a2. Building "/review" → "/reviews". Cloudflare's AI Crawl Control
+  // demand-signals report (Aug 2026) showed AI assistants guessing
+  // /building/<borough>/<slug>/review across 384 distinct paths and 404ing —
+  // active demand for review content bounced on a singular/plural miss.
+  // Matches any city-prefix shape since /review is always the last segment
+  // after /building/x/y.
+  {
+    const bIdx = segments.indexOf("building");
+    if (
+      bIdx > 0 &&
+      segments.length === bIdx + 4 &&
+      segments[segments.length - 1] === "review"
+    ) {
+      const url = request.nextUrl.clone();
+      url.pathname = `${pathname.slice(0, -"/review".length)}/reviews`;
+      return NextResponse.redirect(url, 301);
+    }
+  }
+
   // 0b. Directory pagination canonicalization, shared by both city-prefix
   // shapes below. Legacy ?page=N URLs (the fake-pagination era: every ?page=N
   // served page-1 content) 301 to the real path-segment form /page/N, and
