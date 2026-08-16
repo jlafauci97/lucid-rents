@@ -660,6 +660,7 @@ async function writeChunkToBlob(name: string, xml: string): Promise<string> {
     allowOverwrite: true,
     addRandomSuffix: false,
   });
+  console.log(`[regenerate-sitemaps] wrote ${name} (${xml.length} bytes)`);
   return result.url;
 }
 
@@ -718,6 +719,7 @@ export async function regenerateAllToBlob(): Promise<RegenerateResult> {
     written.set("0.xml", maxLastmod(staticEntries));
   } catch (e) {
     errors.push(`0.xml: ${(e as Error).message}`);
+    console.error(`[regenerate-sitemaps] ERROR 0.xml: ${(e as Error).message}`);
   }
 
   // hubs.xml
@@ -728,6 +730,7 @@ export async function regenerateAllToBlob(): Promise<RegenerateResult> {
     written.set("hubs.xml", maxLastmod(hubsEntries));
   } catch (e) {
     errors.push(`hubs.xml: ${(e as Error).message}`);
+    console.error(`[regenerate-sitemaps] ERROR hubs.xml: ${(e as Error).message}`);
   }
   await checkpointIndex();
 
@@ -756,7 +759,6 @@ export async function regenerateAllToBlob(): Promise<RegenerateResult> {
           written.set(name, chunk.lastmod);
           resumeCursor = chunk.cursor;
           restarts = 0; // progress resets the error budget
-          console.log(`[regenerate-sitemaps] wrote ${name} (${chunk.xml.length} bytes)`);
           i++;
           if (i % 10 === 0) await checkpointIndex();
         }
