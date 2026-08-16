@@ -327,12 +327,40 @@ async function postSelfPost(page, item) {
 // Queue
 // ---------------------------------------------------------------------------
 
+/**
+ * Thrown when the queue API is unreachable. The scrape VPN tearing down can
+ * leave the network broken for a minute or two right when the runner's guard
+ * lets a tick through; that is a "try again next tick" condition, not a
+ * failure worth an exit 1 and a red log line.
+ */
+class NetworkUnavailable extends Error {
+  constructor(cause) {
+    super(`queue API unreachable: ${cause}`);
+    this.name = "NetworkUnavailable";
+  }
+}
+
 async function fetchItem() {
-  const res = await fetch(`${BASE_URL}/api/marketing/reddit/queue`, {
-    headers: { Authorization: `Bearer ${CRON_SECRET}` },
-  });
-  if (!res.ok) throw new Error(`queue GET failed: HTTP ${res.status}`);
-  return res.json();
+  let lastError;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const res = await fetch(`${BASE_URL}/api/marketing/reddit/queue`, {
+        headers: { Authorization: `Bearer ${CRON_SECRET}` },
+      });
+      if (!res.ok) throw new Error(`queue GET failed: HTTP ${res.status}`);
+      return res.json();
+    } catch (err) {
+      lastError = err;
+      // HTTP errors are the server answering; only connection-level failures
+      // (fetch failed / DNS / reset) are worth retrying.
+      if (!(err instanceof TypeError)) throw err;
+      if (attempt < 3) {
+        log(`queue fetch failed (attempt ${attempt}/3) — retrying in 20s`);
+        await sleep(20000);
+      }
+    }
+  }
+  throw new NetworkUnavailable(lastError?.cause?.message ?? lastError?.message);
 }
 
 async function reportResult(type, id, ok, url, error, permanent = false) {
@@ -373,7 +401,17 @@ async function main() {
     process.exit(1);
   }
 
-  const { item, reason, waitSeconds } = await fetchItem();
+  let queue;
+  try {
+    queue = await fetchItem();
+  } catch (err) {
+    if (err instanceof NetworkUnavailable) {
+      log(`${err.message} — deferring to next tick`);
+      return;
+    }
+    throw err;
+  }
+  const { item, reason, waitSeconds } = queue;
   if (!item) {
     log(`nothing to post — ${reason ?? "queue empty"}${waitSeconds ? ` (${waitSeconds}s)` : ""}`);
     return;
