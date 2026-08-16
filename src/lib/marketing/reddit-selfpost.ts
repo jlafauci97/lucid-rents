@@ -2,8 +2,10 @@ import type { City } from "@/lib/cities";
 import { CITY_META } from "@/lib/cities";
 import {
   worstBuildings,
+  worstBuildingsByMetric,
   worstLandlords,
   worstNeighborhoods,
+  type BuildingMetric,
   type StoryMeta,
 } from "./data-stories";
 
@@ -20,7 +22,14 @@ import {
  * would then have to defend.
  */
 
-export type SelfPostKind = "worst_buildings" | "worst_landlords" | "worst_neighborhoods";
+export type SelfPostKind =
+  | "worst_buildings"
+  | "worst_landlords"
+  | "worst_neighborhoods"
+  | "most_311_complaints"
+  | "most_evictions"
+  | "most_litigated"
+  | "bedbug_hotspots";
 
 export interface SelfPost {
   kind: SelfPostKind;
@@ -81,6 +90,94 @@ export async function buildSelfPost(kind: SelfPostKind, city: City): Promise<Sel
       kind,
       city,
       title: `The 10 worst buildings in ${cityName} by violation record (${new Date().getFullYear()} data)`,
+      body,
+      links: rows.map((r) => r.url),
+    };
+  }
+
+  // Counter-based rankings share one skeleton: intro, table, methodology,
+  // a closing line that tells the reader how to check any building. Cities
+  // whose records don't cover a counter (litigation and bedbug filings are
+  // NYC datasets) return too few rows and the kind is skipped for that city.
+  const METRIC_KINDS: Partial<
+    Record<
+      SelfPostKind,
+      {
+        metric: BuildingMetric;
+        column: string;
+        title: (cityName: string) => string;
+        intro: (cityName: string) => string;
+        closing: string;
+      }
+    >
+  > = {
+    most_311_complaints: {
+      metric: "complaint_count",
+      column: "311 complaints",
+      title: (c) => `The 10 most complained-about buildings in ${c}, by 311 records`,
+      intro: (c) =>
+        `Rankings usually track official violations, but 311 complaints show what tenants themselves keep reporting. These ${c} buildings have generated the most complaints on record.`,
+      closing:
+        "A complaint isn't a confirmed violation — but hundreds of them at one address is a pattern worth knowing about before you sign a lease.",
+    },
+    most_evictions: {
+      metric: "eviction_count",
+      column: "Evictions on record",
+      title: (c) => `The ${c} buildings with the most evictions on record`,
+      intro: (c) =>
+        `Eviction filings are public record. These ${c} buildings have the most on file — worth knowing whether you're apartment hunting or already living in one.`,
+      closing:
+        "High eviction counts can mean aggressive management, high turnover, or both. Either way it's information a listing will never volunteer.",
+    },
+    most_litigated: {
+      metric: "litigation_count",
+      column: "Housing court cases",
+      title: (c) => `${c} buildings whose landlords keep ending up in housing court`,
+      intro: (c) =>
+        `Housing litigation is what happens after violations pile up and nothing gets fixed. These ${c} buildings have the most cases on record against their owners.`,
+      closing:
+        "Litigation is the strongest signal in this data — someone was pushed far enough to sue, and a judge agreed there was a case.",
+    },
+    bedbug_hotspots: {
+      metric: "bedbug_report_count",
+      column: "Bedbug filings",
+      title: (c) => `${c}'s worst buildings for bedbugs, per official filings`,
+      intro: (c) =>
+        `Bedbug infestations get filed with the city, and the filings are public. These ${c} buildings have the most on record.`,
+      closing:
+        "One filing can be bad luck. Repeat filings across years usually mean the building never actually cleared it.",
+    },
+  };
+
+  const metricKind = METRIC_KINDS[kind];
+  if (metricKind) {
+    const { meta, rows } = await worstBuildingsByMetric(city, metricKind.metric, 10);
+    if (rows.length < 5) return null;
+
+    const body = [
+      metricKind.intro(cityName),
+      "",
+      table(
+        ["#", "Building", metricKind.column, "Units"],
+        rows.map((r) => [
+          String(r.rank),
+          `[${r.address}](${r.url})`,
+          fmt(r.count),
+          r.units !== null ? fmt(r.units) : "—",
+        ])
+      ),
+      "",
+      `*Source: ${meta.sourceNote}, pulled ${meta.generatedAt.slice(0, 10)}. Ranked by total records on file.*`,
+      "",
+      metricKind.closing,
+      "",
+      `You can look up any ${cityName} building the same way — the records are public, they're just scattered across systems that don't talk to each other.`,
+    ].join("\n");
+
+    return {
+      kind,
+      city,
+      title: metricKind.title(cityName),
       body,
       links: rows.map((r) => r.url),
     };

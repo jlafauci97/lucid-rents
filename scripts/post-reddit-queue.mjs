@@ -2,14 +2,27 @@
 /**
  * Reddit queue poster.
  *
- * Runs ON THE MAC MINI via launchd, because posting goes through the user's
- * logged-in Chrome rather than an API token — a Vercel cron has no browser to
+ * Runs ON THE MAC MINI via launchd, because posting goes through a logged-in
+ * browser session rather than an API token — a Vercel cron has no browser to
  * drive. The mini is always on, so it owns the whole posting loop.
  *
- * Chrome is driven with AppleScript (`osascript`) rather than Playwright or
- * Puppeteer: those launch their own browser with no Reddit session, and their
- * automation fingerprint is exactly what Reddit blocks. AppleScript talks to
- * the real Chrome the user is already signed into.
+ * The poster drives ITS OWN Chrome instance (real /Applications Chrome, not
+ * Playwright's bundled Chromium) against a dedicated profile in
+ * ~/.lucidrents/chrome-posting-profile. It used to drive the user's
+ * interactive Chrome over AppleScript, which failed two ways on the mini:
+ *
+ *   1. The rent scrapers launch Playwright copies of the same Chrome bundle,
+ *      and `tell application "Google Chrome"` routes Apple Events to whichever
+ *      instance macOS feels like — the poster would preflight against a
+ *      headless scraper profile that is not signed in.
+ *   2. launchd jobs running as /bin/bash never get the macOS Automation
+ *      prompt (tccd silently denies platform binaries with -1723), so the
+ *      scheduler could not get permission to script Chrome at all.
+ *
+ * Driving our own spawned instance over CDP has neither problem: Playwright
+ * holds a pipe to the exact process it launched, and no Apple Events means no
+ * TCC. The automation-fingerprint flags mirror what the rent scrapers already
+ * use successfully against far more hostile targets.
  *
  * old.reddit.com is used throughout. New Reddit is a React app whose DOM shifts
  * constantly; old Reddit is plain forms and is far more stable to automate.
@@ -20,21 +33,20 @@
  * posted unless the page actually confirms it.
  *
  * Setup on the mini:
- *   1. Chrome > View > Developer > Allow JavaScript from Apple Events
- *   2. Sign in to Reddit in Chrome as the posting account
+ *   1. bash scripts/launchd/install-reddit-post.sh   (installs playwright-core)
+ *   2. node scripts/setup-reddit-profile.mjs         (sign the profile in once)
  *   3. .env.local needs CRON_SECRET and REDDIT_USERNAME
  *
  * Usage:
  *   node scripts/post-reddit-queue.mjs             # post one queued item
  *   node scripts/post-reddit-queue.mjs --dry-run   # show what it would post
+ *   node scripts/post-reddit-queue.mjs --check     # verify browser + session
  */
 
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
 
-const execFileAsync = promisify(execFile);
 const DRY_RUN = process.argv.includes("--dry-run");
 const ROOT = path.resolve(import.meta.dirname, "..");
 
@@ -61,19 +73,77 @@ const log = (...a) => console.log(`[poster]`, ...a);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // ---------------------------------------------------------------------------
-// Chrome via AppleScript
+// Browser (Playwright driving the real Chrome, dedicated profile)
 // ---------------------------------------------------------------------------
 
-/** Runs AppleScript and returns stdout. */
-async function osa(script) {
-  const { stdout } = await execFileAsync("osascript", ["-e", script], {
-    maxBuffer: 10 * 1024 * 1024,
-  });
-  return stdout.trim();
+export const PROFILE_DIR = path.join(os.homedir(), ".lucidrents", "chrome-posting-profile");
+export const CHROME_BIN = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+
+/**
+ * playwright-core is installed under ~/.lucidrents (by the installer), not in
+ * the web app's node_modules — the site build has no reason to carry a browser
+ * driver. The ~/.lucidrents copy is tried FIRST: the repo checkout lives on
+ * iCloud Drive, and resolving a package out of an iCloud node_modules can
+ * block for minutes while evicted files rehydrate.
+ */
+export async function loadPlaywright() {
+  const local = path.join(os.homedir(), ".lucidrents", "node_modules", "playwright-core", "index.mjs");
+  try {
+    return await import(local);
+  } catch {
+    try {
+      return await import("playwright-core");
+    } catch {
+      throw new Error(
+        "playwright-core not found. Run: bash scripts/launchd/install-reddit-post.sh " +
+          "(or: cd ~/.lucidrents && npm install playwright-core)"
+      );
+    }
+  }
 }
 
-function esc(s) {
-  return String(s).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+/** Launches the posting browser and returns { context, page, close }. */
+export async function launchPostingBrowser({ headless = false } = {}) {
+  const { chromium } = await loadPlaywright();
+  if (!fs.existsSync(CHROME_BIN)) throw new Error(`Chrome not found at ${CHROME_BIN}`);
+  fs.mkdirSync(PROFILE_DIR, { recursive: true });
+  // A crashed run can leave Chrome's singleton lock behind and make the next
+  // launch fail with "profile is in use".
+  for (const f of ["SingletonLock", "SingletonSocket", "SingletonCookie"]) {
+    fs.rmSync(path.join(PROFILE_DIR, f), { force: true });
+  }
+  const context = await chromium.launchPersistentContext(PROFILE_DIR, {
+    executablePath: CHROME_BIN,
+    headless,
+    viewport: null,
+    // Drop Playwright's --enable-automation (infobar + navigator.webdriver)
+    // and its keychain bypass flags: cookies cloned from the interactive
+    // Chrome are encrypted with the real "Chrome Safe Storage" keychain key,
+    // which --use-mock-keychain would hide from this instance.
+    ignoreDefaultArgs: ["--enable-automation", "--use-mock-keychain", "--password-store=basic"],
+    args: [
+      "--disable-blink-features=AutomationControlled",
+      "--no-first-run",
+      "--no-default-browser-check",
+      "--disable-sync",
+    ],
+  });
+  const page = context.pages()[0] ?? (await context.newPage());
+  return {
+    context,
+    page,
+    close: async () => {
+      try {
+        await context.close();
+      } catch {
+        /* already gone */
+      }
+    },
+  };
+}
+
+async function goto(page, url) {
+  await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 });
 }
 
 /**
@@ -88,102 +158,40 @@ class PermanentSkip extends Error {
   }
 }
 
-class AppleEventsJSDisabled extends Error {
-  constructor() {
-    super(
-      "Chrome refused to run JavaScript from Apple Events.\n" +
-        "        Fix on the mini: Chrome menu > View > Developer > tick 'Allow JavaScript from Apple Events'.\n" +
-        "        (If the Developer submenu is hidden, it appears once you open DevTools once.)"
-    );
-    this.name = "AppleEventsJSDisabled";
-  }
-}
-
-/** Evaluates JS in the frontmost Chrome tab and returns the result as a string. */
-async function evalInTab(js) {
-  // The JS is wrapped so a thrown page error comes back as text rather than an
-  // AppleScript failure with no detail.
-  const wrapped = `(function(){try{return String(${js});}catch(e){return "ERR:"+e.message;}})()`;
-  try {
-    return await osa(
-      `tell application "Google Chrome" to execute javascript "${esc(wrapped)}" in active tab of front window`
-    );
-  } catch (err) {
-    // -1723 is Chrome's "Access not allowed" for Apple Events JS. It is the
-    // single most likely setup failure, so name it rather than surfacing a
-    // raw osascript stack trace.
-    if (/-1723|Access not allowed/i.test(String(err?.message ?? err))) {
-      throw new AppleEventsJSDisabled();
-    }
-    throw err;
-  }
-}
-
-async function openUrl(url) {
-  await osa(
-    `tell application "Google Chrome"
-       if (count of windows) = 0 then make new window
-       set URL of active tab of front window to "${esc(url)}"
-     end tell`
+/** Reads the logged-in old-reddit username off the current page ('' if none). */
+export async function loggedInUser(page) {
+  return page.evaluate(
+    () => document.querySelector("#header-bottom-right .user a")?.textContent?.trim() ?? ""
   );
 }
 
-/** Waits for document.readyState complete, up to timeoutMs. */
-async function waitForLoad(timeoutMs = 25000) {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    await sleep(700);
-    try {
-      if ((await evalInTab("document.readyState")) === "complete") return true;
-    } catch {
-      // Chrome can be mid-navigation; keep waiting.
-    }
-  }
-  return false;
-}
-
-async function currentUrl() {
-  return osa(`tell application "Google Chrome" to return URL of active tab of front window`);
-}
-
-/** Confirms Chrome is reachable and Apple Events JS is enabled. */
-async function preflight() {
-  try {
-    await osa(`tell application "Google Chrome" to return name`);
-  } catch {
-    throw new Error("Chrome is not running or not scriptable");
-  }
-  await openUrl("https://old.reddit.com/");
-  await waitForLoad();
-
-  const probe = await evalInTab("1+1");
-  if (probe !== "2") {
-    throw new Error(`Chrome returned an unexpected probe result: ${probe}`);
-  }
-
-  const user = await evalInTab(
-    `(document.querySelector('#header-bottom-right .user a')||{}).textContent||""`
-  );
-  if (!user || /^ERR:/.test(user)) {
-    throw new Error("Not signed in to Reddit in Chrome (old.reddit shows no user)");
+/** Confirms the posting profile has a live Reddit session as the right user. */
+async function preflight(page) {
+  await goto(page, "https://old.reddit.com/");
+  const user = await loggedInUser(page);
+  if (!user) {
+    throw new Error(
+      "Posting profile is not signed in to Reddit.\n" +
+        "        Fix on the mini: node scripts/setup-reddit-profile.mjs"
+    );
   }
 
   // REDDIT_USERNAME does NOT choose the posting account — replies post as
-  // whoever Chrome is signed in as, and REDDIT_USERNAME only builds the
+  // whoever the profile is signed in as, and REDDIT_USERNAME only builds the
   // self-post target r/u_<name>. If the two disagree, replies silently go out
   // under the wrong account and self-posts aim at a profile this session
   // cannot submit to. Refuse to post rather than guess which one is right.
   if (REDDIT_USERNAME && user.toLowerCase() !== REDDIT_USERNAME.toLowerCase()) {
     throw new Error(
-      `Chrome is signed in as ${user} but REDDIT_USERNAME is ${REDDIT_USERNAME}.\n` +
-        "        Sign Chrome in as the posting account, or correct REDDIT_USERNAME in .env.local."
+      `Posting profile is signed in as ${user} but REDDIT_USERNAME is ${REDDIT_USERNAME}.\n` +
+        "        Re-run scripts/setup-reddit-profile.mjs as the posting account, or fix .env.local."
     );
   }
   if (!REDDIT_USERNAME) {
     log(`WARNING: REDDIT_USERNAME is not set — cannot verify the posting account`);
   }
 
-  log(`Chrome ready, signed in as ${user}`);
+  log(`browser ready, signed in as ${user}`);
   return user;
 }
 
@@ -192,10 +200,9 @@ async function preflight() {
 // ---------------------------------------------------------------------------
 
 /** Posts a top-level comment on a thread. */
-async function postReply(item) {
+async function postReply(page, item) {
   const url = item.url.replace("www.reddit.com", "old.reddit.com");
-  await openUrl(url);
-  if (!(await waitForLoad())) throw new Error("thread page did not finish loading");
+  await goto(page, url);
 
   // A thread can die between the scanner finding it and this run: the OP
   // deletes it, a mod removes it, or it locks/archives. Old Reddit still
@@ -203,23 +210,23 @@ async function postReply(item) {
   // "succeeds" and leaves a promotional comment on a dead thread that nobody
   // can see. These never become postable, so they are retired rather than
   // retried forever.
-  const state = await evalInTab(`(function(){
+  const state = await page.evaluate(() => {
     // A logged-out session is bounced to /login, which has no #siteTable and
     // would otherwise read as 'missing'. Retiring a live thread because the
     // cookie lapsed is far worse than retrying, so this is reported separately.
-    if(location.pathname.indexOf('/login') === 0) return 'logged-out';
-    var link = document.querySelector('#siteTable .thing.link');
-    if(!link) return 'missing';
-    if(document.querySelector('.archived-infobar')) return 'archived';
-    if(document.querySelector('.locked-infobar')) return 'locked';
-    if((link.className||'').indexOf('locked') !== -1) return 'locked';
-    var author = link.querySelector('.author');
-    if(!author || author.textContent.trim() === '[deleted]') return 'deleted';
-    var body = link.querySelector('.usertext-body');
-    var text = body ? body.textContent.trim() : '';
-    if(text === '[deleted]' || text === '[removed]') return 'deleted';
-    return 'ok';
-  })()`);
+    if (location.pathname.indexOf("/login") === 0) return "logged-out";
+    const link = document.querySelector("#siteTable .thing.link");
+    if (!link) return "missing";
+    if (document.querySelector(".archived-infobar")) return "archived";
+    if (document.querySelector(".locked-infobar")) return "locked";
+    if ((link.className || "").indexOf("locked") !== -1) return "locked";
+    const author = link.querySelector(".author");
+    if (!author || author.textContent.trim() === "[deleted]") return "deleted";
+    const body = link.querySelector(".usertext-body");
+    const text = body ? body.textContent.trim() : "";
+    if (text === "[deleted]" || text === "[removed]") return "deleted";
+    return "ok";
+  });
   if (state === "logged-out") {
     // Preflight confirmed a session moments ago, so this means it lapsed
     // mid-run. Retryable: the thread itself is fine.
@@ -230,85 +237,88 @@ async function postReply(item) {
   }
 
   // The top-level reply box is the first .usertext form outside the comment tree.
-  const filled = await evalInTab(`(function(){
-    var f = document.querySelector('.commentarea > .usertext form, form.usertext');
-    if(!f) return 'no-form';
-    var ta = f.querySelector('textarea[name="text"]');
-    if(!ta) return 'no-textarea';
-    var setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set;
-    setter.call(ta, ${JSON.stringify(item.body)});
-    ta.dispatchEvent(new Event('input',{bubbles:true}));
-    return ta.value.length;
-  })()`);
+  const filled = await page.evaluate((body) => {
+    const f = document.querySelector(".commentarea > .usertext form, form.usertext");
+    if (!f) return "no-form";
+    const ta = f.querySelector('textarea[name="text"]');
+    if (!ta) return "no-textarea";
+    const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value").set;
+    setter.call(ta, body);
+    ta.dispatchEvent(new Event("input", { bubbles: true }));
+    return String(ta.value.length);
+  }, item.body);
 
-  if (filled === "no-form" || filled === "no-textarea" || /^ERR:/.test(filled)) {
+  if (filled === "no-form" || filled === "no-textarea") {
     throw new Error(`could not find the reply box (${filled})`);
   }
   if (Number(filled) < 20) throw new Error(`reply box only took ${filled} chars`);
 
-  const clicked = await evalInTab(`(function(){
-    var f = document.querySelector('.commentarea > .usertext form, form.usertext');
-    var b = f && f.querySelector('button[type="submit"], .save');
-    if(!b) return 'no-button';
+  const clicked = await page.evaluate(() => {
+    const f = document.querySelector(".commentarea > .usertext form, form.usertext");
+    const b = f && f.querySelector('button[type="submit"], .save');
+    if (!b) return "no-button";
     b.click();
-    return 'clicked';
-  })()`);
+    return "clicked";
+  });
   if (clicked !== "clicked") throw new Error(`could not submit (${clicked})`);
 
   // Reddit renders the new comment in place; wait for it to appear.
   await sleep(6000);
-  const confirmed = await evalInTab(`(function(){
-    var snippet = ${JSON.stringify(item.body.slice(0, 60))};
-    return document.body.innerText.indexOf(snippet) !== -1 ? 'yes' : 'no';
-  })()`);
-  if (confirmed !== "yes") {
+  const confirmed = await page.evaluate(
+    (snippet) => document.body.innerText.indexOf(snippet) !== -1,
+    item.body.slice(0, 60)
+  );
+  if (!confirmed) {
     throw new Error("submitted but the comment did not appear on the page");
   }
 
-  return await currentUrl();
+  return page.url();
 }
 
 /** Submits a self-post to our own profile (r/u_<username> on old Reddit). */
-async function postSelfPost(item) {
+async function postSelfPost(page, item) {
   if (!REDDIT_USERNAME) throw new Error("REDDIT_USERNAME not set");
 
   const submitUrl = `https://old.reddit.com/r/u_${encodeURIComponent(REDDIT_USERNAME)}/submit?selftext=true`;
-  await openUrl(submitUrl);
-  if (!(await waitForLoad())) throw new Error("submit page did not finish loading");
+  await goto(page, submitUrl);
 
-  const filled = await evalInTab(`(function(){
-    var title = document.querySelector('textarea[name="title"], input[name="title"]');
-    var text  = document.querySelector('textarea[name="text"]');
-    if(!title) return 'no-title';
-    if(!text) return 'no-text';
-    function setVal(el,v){
-      var proto = el.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;
-      Object.getOwnPropertyDescriptor(proto,'value').set.call(el,v);
-      el.dispatchEvent(new Event('input',{bubbles:true}));
-    }
-    setVal(title, ${JSON.stringify(item.title)});
-    setVal(text, ${JSON.stringify(item.body)});
-    return title.value.length + ':' + text.value.length;
-  })()`);
+  const filled = await page.evaluate(
+    ({ title, body }) => {
+      const titleEl = document.querySelector('textarea[name="title"], input[name="title"]');
+      const textEl = document.querySelector('textarea[name="text"]');
+      if (!titleEl) return "no-title";
+      if (!textEl) return "no-text";
+      function setVal(el, v) {
+        const proto = el.tagName === "TEXTAREA" ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+        Object.getOwnPropertyDescriptor(proto, "value").set.call(el, v);
+        el.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+      setVal(titleEl, title);
+      setVal(textEl, body);
+      return titleEl.value.length + ":" + textEl.value.length;
+    },
+    { title: item.title, body: item.body }
+  );
 
-  if (/^(no-title|no-text|ERR:)/.test(filled)) {
+  if (/^(no-title|no-text)/.test(filled)) {
     throw new Error(`could not fill the submit form (${filled})`);
   }
 
-  const clicked = await evalInTab(`(function(){
-    var b = document.querySelector('#newlink button[type="submit"], button[name="submit"], .btn[type="submit"]');
-    if(!b) return 'no-button';
+  const clicked = await page.evaluate(() => {
+    const b = document.querySelector(
+      '#newlink button[type="submit"], button[name="submit"], .btn[type="submit"]'
+    );
+    if (!b) return "no-button";
     b.click();
-    return 'clicked';
-  })()`);
+    return "clicked";
+  });
   if (clicked !== "clicked") throw new Error(`could not submit (${clicked})`);
 
   // A successful submit navigates to the new post's comments page.
   const deadline = Date.now() + 30000;
   while (Date.now() < deadline) {
     await sleep(1500);
-    const u = await currentUrl();
-    if (/\/comments\//.test(u)) return u;
+    if (/\/comments\//.test(page.url())) return page.url();
   }
   throw new Error("submitted but never landed on a post page");
 }
@@ -342,14 +352,19 @@ async function reportResult(type, id, ok, url, error, permanent = false) {
 // ---------------------------------------------------------------------------
 
 async function main() {
-  // --check verifies the Chrome side only: scriptable, Apple Events JS
-  // enabled, and signed in. Run this on the mini before installing the job —
-  // all three are silent failure modes that otherwise only surface as a
-  // mysteriously unposted queue.
+  // --check verifies the browser side only: Chrome launches against the
+  // posting profile and the profile is signed in as the right account. Run
+  // this on the mini after setup — both are silent failure modes that
+  // otherwise only surface as a mysteriously unposted queue.
   if (process.argv.includes("--check")) {
-    await preflight();
-    log(`profile target: r/u_${REDDIT_USERNAME ?? "(REDDIT_USERNAME not set!)"}`);
-    log("check passed — Chrome is ready to post");
+    const browser = await launchPostingBrowser();
+    try {
+      await preflight(browser.page);
+      log(`profile target: r/u_${REDDIT_USERNAME ?? "(REDDIT_USERNAME not set!)"}`);
+      log("check passed — posting browser is ready");
+    } finally {
+      await browser.close();
+    }
     return;
   }
 
@@ -366,6 +381,25 @@ async function main() {
 
   log(`next: ${item.type} ${item.id}${item.subreddit ? ` r/${item.subreddit}` : ""}`);
 
+  // Local mirror of the server's self-post spacing (3h apart). The server
+  // rule lives in the queue API and only exists after that deploy reaches
+  // production; this stamp file keeps a draft backlog from draining at poll
+  // speed in the meantime, and is a harmless double-check afterwards.
+  const SELFPOST_STAMP = path.join(os.homedir(), ".lucidrents", "last-selfpost");
+  if (item.type === "selfpost" && !DRY_RUN) {
+    try {
+      const last = fs.statSync(SELFPOST_STAMP).mtimeMs;
+      const gapMs = 3 * 60 * 60 * 1000;
+      if (Date.now() - last < gapMs) {
+        const mins = Math.ceil((gapMs - (Date.now() - last)) / 60000);
+        log(`self-post gap (3h) not elapsed locally — deferring ~${mins} min`);
+        return;
+      }
+    } catch {
+      /* no stamp yet — free to post */
+    }
+  }
+
   if (DRY_RUN) {
     log(`title: ${item.title ?? "(reply)"}`);
     log(`body:\n${item.body}`);
@@ -373,30 +407,42 @@ async function main() {
     return;
   }
 
-  await preflight();
-
+  const browser = await launchPostingBrowser();
   try {
-    const url =
-      item.type === "reply" ? await postReply(item) : await postSelfPost(item);
-    log(`POSTED: ${url}`);
-    await reportResult(item.type, item.id, true, url);
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    const permanent = err instanceof PermanentSkip;
-    if (permanent) {
-      // Retired, not failed: a dead thread would otherwise be served again
-      // every run forever, and replies are served ahead of self-posts, so one
-      // dead thread starves the whole queue behind it.
-      log(`SKIPPED: ${message}`);
-    } else {
-      log(`FAILED: ${message}`);
+    await preflight(browser.page);
+    try {
+      const url =
+        item.type === "reply"
+          ? await postReply(browser.page, item)
+          : await postSelfPost(browser.page, item);
+      log(`POSTED: ${url}`);
+      if (item.type === "selfpost") {
+        fs.writeFileSync(path.join(os.homedir(), ".lucidrents", "last-selfpost"), url);
+      }
+      await reportResult(item.type, item.id, true, url);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      const permanent = err instanceof PermanentSkip;
+      if (permanent) {
+        // Retired, not failed: a dead thread would otherwise be served again
+        // every run forever, and replies are served ahead of self-posts, so one
+        // dead thread starves the whole queue behind it.
+        log(`SKIPPED: ${message}`);
+      } else {
+        log(`FAILED: ${message}`);
+      }
+      await reportResult(item.type, item.id, false, null, message, permanent);
+      process.exitCode = permanent ? 0 : 1;
     }
-    await reportResult(item.type, item.id, false, null, message, permanent);
-    process.exit(permanent ? 0 : 1);
+  } finally {
+    await browser.close();
   }
 }
 
-main().catch((err) => {
-  console.error(`[poster] fatal: ${err.stack || err.message}`);
-  process.exit(1);
-});
+const isCli = process.argv[1] && import.meta.url.endsWith(path.basename(process.argv[1]));
+if (isCli) {
+  main().catch((err) => {
+    console.error(`[poster] fatal: ${err.stack || err.message}`);
+    process.exit(1);
+  });
+}

@@ -4,6 +4,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { generateText } from "ai";
+import { marketingModel } from "@/lib/marketing/ai-model";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { saveRedditThread } from "@/lib/marketing/supabase-queries";
 import { evaluateThread } from "@/lib/marketing/reddit-gate";
@@ -113,7 +114,7 @@ export async function POST(req: NextRequest) {
       const hook = gate.hook;
 
       const result = await generateText({
-        model: "anthropic/claude-sonnet-4.6" as never,
+        model: marketingModel(),
         system:
           REDDIT_SYSTEM_PROMPT +
           `\n\nSUBREDDIT TONE for r/${thread.subreddit}: ${getSubredditTone(thread.subreddit)}`,
