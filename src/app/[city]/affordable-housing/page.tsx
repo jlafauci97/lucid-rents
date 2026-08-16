@@ -58,13 +58,20 @@ interface AffordableUnit {
   building: { slug: string; borough: string } | null;
 }
 
+// 7-day fetch-cache TTL (was 24h): with nightly deploys, a 24h TTL meant the
+// cache entry was stale at exactly the moment the build prerendered this page,
+// forcing a live query against a DB busy with sitemap generation — which blew
+// Vercel's 60s/page budget. ARO data changes rarely; a week of staleness is
+// fine, and the warm entry keeps deploys off the DB's critical path.
+const AFFORDABLE_FETCH_REVALIDATE = 604800;
+
 async function fetchAffordableUnits(offset: number, limit: number): Promise<AffordableUnit[]> {
   const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/chicago_affordable_units?select=id,project_name,address,total_units,affordable_units,income_requirement,status,ward,latitude,longitude,building:buildings(slug,borough)&order=affordable_units.desc.nullslast&limit=${limit}&offset=${offset}`;
   const res = await fetch(url, {
     headers: {
       apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     },
-    next: { revalidate: 86400 },
+    next: { revalidate: AFFORDABLE_FETCH_REVALIDATE },
   });
   if (!res.ok) return [];
   return res.json();
@@ -77,7 +84,7 @@ async function fetchAffordableCount(): Promise<number> {
       apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       Prefer: "count=exact",
     },
-    next: { revalidate: 86400 },
+    next: { revalidate: AFFORDABLE_FETCH_REVALIDATE },
   });
   const range = res.headers.get("content-range");
   return range ? parseInt(range.split("/")[1] || "0") : 0;

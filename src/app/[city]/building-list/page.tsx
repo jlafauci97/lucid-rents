@@ -1,11 +1,10 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { createCacheClient } from "@/lib/supabase/cache-client";
 import { canonicalUrl, cityPath } from "@/lib/seo";
 import { isValidCity, CITY_META, type City } from "@/lib/cities";
 import { chipsForCity } from "@/lib/building-list/chips";
-import { getChipSummary } from "@/lib/building-list/query";
+import { getChipSummaryCached } from "@/lib/building-list/query";
 import { CategoryCard } from "@/components/building-list/CategoryCard";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { AdSidebar } from "@/components/ui/AdSidebar";
@@ -51,11 +50,10 @@ export default async function BuildingListIndex({
   const meta = CITY_META[city];
   const chips = chipsForCity(city);
 
-  const supabase = createCacheClient();
   const summaries = await Promise.all(
     chips.map(async (chip) => ({
       chip,
-      ...(await getChipSummary(supabase, city, chip.id)),
+      ...(await getChipSummaryCached(city, chip.id)),
     })),
   );
 

@@ -1,4 +1,6 @@
+import { unstable_cache } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { createCacheClient } from "@/lib/supabase/cache-client";
 import type { City } from "@/lib/cities";
 import type { Building } from "@/types";
 import { CHIPS, type Chip, type ChipId } from "./chips";
@@ -35,6 +37,26 @@ export async function countBuildingsForChip(
   }
   return count ?? 0;
 }
+
+// Cached variants for build-time / prerender callers. Even planner-estimate
+// counts queue behind a saturated DB (deploys during the nightly sitemap
+// window blew Vercel's 60s/page prerender budget), so the static shells read
+// through the data cache — which persists across deploys on Vercel — and only
+// hit Supabase when the entry is cold. Counts drift slowly; a day of staleness
+// is invisible in "N buildings" copy.
+export const getChipCountCached = unstable_cache(
+  async (city: City, chipId: ChipId) =>
+    countBuildingsForChip(createCacheClient(), city, CHIPS[chipId]),
+  ["building-list-chip-count"],
+  { revalidate: 86400, tags: ["building-list"] },
+);
+
+export const getChipSummaryCached = unstable_cache(
+  async (city: City, chipId: ChipId) =>
+    getChipSummary(createCacheClient(), city, chipId),
+  ["building-list-chip-summary"],
+  { revalidate: 86400, tags: ["building-list"] },
+);
 
 export async function getBuildingsForChip(
   supabase: SupabaseClient,
