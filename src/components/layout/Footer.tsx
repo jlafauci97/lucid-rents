@@ -228,6 +228,14 @@ export function Footer() {
                   See all neighborhoods →
                 </Link>
               </li>
+              <li>
+                <Link
+                  href={cityPath("/rent-report", city)}
+                  className="hover:text-white transition-colors font-medium text-[#3B82F6]"
+                >
+                  Monthly rent reports →
+                </Link>
+              </li>
             </ul>
           </div>
         </div>

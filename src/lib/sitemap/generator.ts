@@ -467,6 +467,55 @@ export async function generateHubsSitemap(): Promise<UrlEntry[]> {
     entries.push({ url: `${BASE_URL}${path}`, changefreq: "monthly", priority: 0.6 });
   }
 
+  // ─── Monthly rent reports ────────────────────────────────────
+  // Hub page per city (always exists), then dated report pages for the
+  // latest 3 data months per zip. The dated set is gated on actual
+  // dewey_neighborhood_rents presence (two bounded, zip-indexed queries per
+  // city) rather than a static ZIP_MAPS × calendar-month enumeration —
+  // dewey data trails the calendar by weeks to months, so calendar-derived
+  // URLs would 404. Trade-off: costs 6 small queries per nightly run;
+  // non-fatal on failure (hub entries stay, dated entries skipped).
+  for (const city of VALID_CITIES) {
+    entries.push({ url: `${BASE_URL}${cityPath("/rent-report", city)}`, changefreq: "weekly", priority: 0.6 });
+  }
+  try {
+    const addM = (month: string, delta: number): string => {
+      const [y, m] = month.split("-").map(Number);
+      const total = y * 12 + (m - 1) + delta;
+      return `${Math.floor(total / 12)}-${String((total % 12) + 1).padStart(2, "0")}`;
+    };
+    const cutoff = `${addM(new Date().toISOString().slice(0, 7), -12)}-01`;
+    for (const city of VALID_CITIES) {
+      const zipList = Object.keys(ZIP_MAPS[city]).join(",");
+      const probe = await supabaseFetch<{ month: string }[]>(
+        `dewey_neighborhood_rents?zip=in.(${zipList})&month=gte.${cutoff}&listing_count=gte.1&select=month&order=month.desc&limit=1`,
+      );
+      if (probe.length === 0) continue;
+      const latest = probe[0].month.slice(0, 7);
+      const months = [latest, addM(latest, -1), addM(latest, -2)];
+      const rows = await supabaseFetch<{ zip: string; month: string }[]>(
+        `dewey_neighborhood_rents?zip=in.(${zipList})&month=in.(${months.map((m) => `${m}-01`).join(",")})&listing_count=gte.1&select=zip,month&limit=20000`,
+      );
+      const seen = new Set<string>();
+      for (const r of rows) {
+        const m = r.month.slice(0, 7);
+        const key = `${r.zip}:${m}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        entries.push({
+          url: `${BASE_URL}${cityPath(`/rent-report/${neighborhoodPageSlug(r.zip, city)}/${m}`, city)}`,
+          // lastmod = the report's data month: the page content is fixed
+          // once that month's listings are ingested.
+          lastmod: `${m}-01`,
+          changefreq: "monthly",
+          priority: 0.5,
+        });
+      }
+    }
+  } catch (e) {
+    console.warn(`  Skipping dated rent-report pages in sitemap: ${(e as Error).message}`);
+  }
+
   return entries;
 }
 
