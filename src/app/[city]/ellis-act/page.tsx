@@ -29,11 +29,15 @@ const getEllisActData = unstable_cache(
         .eq("ellis_act_filing", true)
         .order("ellis_act_date", { ascending: false })
         .limit(20),
+      // LAHD's dataset never labels rows "Ellis" — eviction_category is only
+      // At-Fault / No-Fault / Not Provided. Ellis Act withdrawals require a
+      // 120-day notice, so No-Fault + "120 Day" is the dataset's Ellis signature.
       supabase
         .from("lahd_evictions")
         .select("id", { count: "exact", head: true })
         .eq("metro", "los-angeles")
-        .ilike("eviction_category", "%Ellis%"),
+        .eq("eviction_category", "No-Fault")
+        .eq("notice_type", "120 Day"),
     ]);
     return { ellisBuildings, totalEllis, ellisEvictionCount };
   },
@@ -89,7 +93,7 @@ export default async function EllisActPage({ params }: { params: Promise<{ city:
         <section className="mb-10">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="bg-white rounded-xl border border-gray-200 p-5"><div className="text-3xl font-bold text-rose-600">{totalEllis ?? 0}</div><p className="text-sm text-gray-500 mt-1">Buildings with Ellis Act filings</p></div>
-            <div className="bg-white rounded-xl border border-gray-200 p-5"><div className="text-3xl font-bold text-gray-900">{ellisEvictionCount ?? 0}</div><p className="text-sm text-gray-500 mt-1">LAHD Ellis Act eviction notices</p></div>
+            <div className="bg-white rounded-xl border border-gray-200 p-5"><div className="text-3xl font-bold text-gray-900">{ellisEvictionCount ?? 0}</div><p className="text-sm text-gray-500 mt-1">LAHD 120-day no-fault eviction notices</p></div>
             <div className="bg-white rounded-xl border border-gray-200 p-5"><div className="flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-amber-500" /><span className="text-sm font-medium text-gray-500">Why It Matters</span></div><p className="text-xs text-gray-600 mt-2">Buildings with prior Ellis Act filings may file again, displacing all tenants.</p></div>
           </div>
         </section>
