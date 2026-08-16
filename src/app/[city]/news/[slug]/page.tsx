@@ -4,8 +4,9 @@ import type { Metadata } from "next";
 import { ExternalLink, Clock, ArrowLeft } from "lucide-react";
 import { createCacheClient } from "@/lib/supabase/cache-client";
 import { canonicalUrl, breadcrumbJsonLd, newsCollectionJsonLd, cityPath } from "@/lib/seo";
+import { isValidCity, CITY_META, type City } from "@/lib/cities";
 import { NEWS_CATEGORIES, type NewsCategory } from "@/lib/news-sources";
-import { CategoryListClient } from "./CategoryListClient";
+import { NewsListSection } from "../NewsListSection";
 import { CategoryIcon } from "@/components/news/CategoryIcon";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 import { NewsCard } from "@/components/news/NewsCard";
@@ -23,22 +24,27 @@ function isCategory(slug: string): slug is NewsCategory {
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ city: string; slug: string }>;
 }): Promise<Metadata> {
-  const { slug } = await params;
+  const { city: cityParam, slug } = await params;
+  const city = (isValidCity(cityParam) ? cityParam : "nyc") as City;
+  const cityName = CITY_META[city].fullName;
 
-  // Category page metadata
+  // Category page metadata. Canonicals MUST be city-prefixed: the bare
+  // /news/... form 301s through proxy.ts, so the old canonicals pointed at a
+  // redirect — and for non-NYC articles at the wrong city entirely.
   if (isCategory(slug)) {
     const meta = NEWS_CATEGORIES[slug];
-    const title = `${meta.label} — NYC Housing News`;
+    const title = `${meta.label} — ${cityName} Housing News`;
+    const url = canonicalUrl(cityPath(`/news/${slug}`, city));
     return {
       title,
       description: meta.description,
-      alternates: { canonical: canonicalUrl(`/news/${slug}`) },
+      alternates: { canonical: url },
       openGraph: {
         title,
         description: meta.description,
-        url: canonicalUrl(`/news/${slug}`),
+        url,
         siteName: "Lucid Rents",
         type: "website",
         locale: "en_US",
@@ -50,12 +56,15 @@ export async function generateMetadata({
   const supabase = createCacheClient();
   const { data: article } = await supabase
     .from("news_articles")
-    .select("title, excerpt, source_name, published_at, category")
+    .select("title, excerpt, source_name, published_at, category, metro, image_url")
     .eq("slug", slug)
     .single();
 
   if (!article) return {};
 
+  // Canonicalize to the article's own metro (URL city may be wrong).
+  const articleCity = (isValidCity(article.metro ?? "") ? article.metro : city) as City;
+  const url = canonicalUrl(cityPath(`/news/${slug}`, articleCity));
   const title = article.title;
   const description =
     article.excerpt ||
@@ -64,15 +73,16 @@ export async function generateMetadata({
   return {
     title,
     description,
-    alternates: { canonical: canonicalUrl(`/news/${slug}`) },
+    alternates: { canonical: url },
     openGraph: {
       title,
       description,
-      url: canonicalUrl(`/news/${slug}`),
+      url,
       siteName: "Lucid Rents",
       type: "article",
       locale: "en_US",
       publishedTime: article.published_at,
+      ...(article.image_url ? { images: [article.image_url] } : {}),
     },
   };
 }
@@ -127,8 +137,8 @@ async function CategoryView({
             __html: JSON.stringify(
               breadcrumbJsonLd([
                 { name: "Home", url: "/" },
-                { name: "News", url: "/news" },
-                { name: meta.label, url: `/news/${category}` },
+                { name: "News", url: cityPath("/news", city) },
+                { name: meta.label, url: cityPath(`/news/${category}`, city) },
               ])
             ),
           }}
@@ -157,7 +167,7 @@ async function CategoryView({
           {categories.map(([slug, catMeta]) => (
             <Link
               key={slug}
-              href={`/news/${slug}`}
+              href={cityPath(`/news/${slug}`, city)}
               className={`px-3 py-1.5 text-sm font-medium rounded-full transition-colors ${
                 slug === category
                   ? "bg-[#0F1D2E] text-white"
@@ -170,11 +180,15 @@ async function CategoryView({
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
-          {/* Paginated category list lives in a client island — keeps the
-              parent page static-prerenderable. /api/news?category=X is
-              edge-runtime + CDN-cached. */}
+          {/* Server-rendered so article links + pagination land in the HTML;
+              deep pages live at /news/<category>/page/N. */}
           <div className="min-w-0">
-            <CategoryListClient category={category} basePath={`/news/${category}`} />
+            <NewsListSection
+              city={city}
+              page={1}
+              category={category}
+              basePath={cityPath(`/news/${category}`, city)}
+            />
           </div>
 
           <aside className="hidden lg:block space-y-6">
@@ -186,7 +200,7 @@ async function CategoryView({
                 {categories.map(([slug, catMeta]) => (
                   <Link
                     key={slug}
-                    href={`/news/${slug}`}
+                    href={cityPath(`/news/${slug}`, city)}
                     className={`flex items-start gap-3 px-4 py-3 transition-colors ${
                       slug === category ? "bg-[#EFF6FF]" : "hover:bg-[#f8fafc]"
                     }`}
@@ -257,7 +271,7 @@ async function ArticleView({ slug, city }: { slug: string; city: import("@/lib/c
               "@type": "NewsArticle",
               headline: typedArticle.title,
               description: typedArticle.excerpt,
-              url: canonicalUrl(`/news/${slug}`),
+              url: canonicalUrl(cityPath(`/news/${slug}`, city)),
               datePublished: typedArticle.published_at,
               publisher: {
                 "@type": "Organization",
@@ -278,11 +292,11 @@ async function ArticleView({ slug, city }: { slug: string; city: import("@/lib/c
             __html: JSON.stringify(
               breadcrumbJsonLd([
                 { name: "Home", url: "/" },
-                { name: "News", url: "/news" },
+                { name: "News", url: cityPath("/news", city) },
                 ...(categoryMeta
-                  ? [{ name: categoryMeta.label, url: `/news/${typedArticle.category}` }]
+                  ? [{ name: categoryMeta.label, url: cityPath(`/news/${typedArticle.category}`, city) }]
                   : []),
-                { name: typedArticle.title, url: `/news/${slug}` },
+                { name: typedArticle.title, url: cityPath(`/news/${slug}`, city) },
               ])
             ),
           }}
@@ -301,7 +315,7 @@ async function ArticleView({ slug, city }: { slug: string; city: import("@/lib/c
         <div className="mb-6">
           {categoryMeta && (
             <Link
-              href={`/news/${typedArticle.category}`}
+              href={cityPath(`/news/${typedArticle.category}`, city)}
               className="inline-block text-xs font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full bg-[#EFF6FF] text-[#3B82F6] mb-3 hover:bg-[#DBEAFE] transition-colors"
             >
               {categoryMeta.label}

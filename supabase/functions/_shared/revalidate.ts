@@ -4,8 +4,11 @@
  *
  * Requires the SITE_URL and CRON_SECRET env vars.
  */
-export async function triggerRevalidation(paths: string[]): Promise<void> {
-  if (paths.length === 0) return;
+export async function triggerRevalidation(
+  paths: string[],
+  tags: string[] = [],
+): Promise<void> {
+  if (paths.length === 0 && tags.length === 0) return;
 
   const siteUrl = Deno.env.get("VERCEL_APP_URL");
   const cronSecret = Deno.env.get("CRON_SECRET");
@@ -25,7 +28,7 @@ export async function triggerRevalidation(paths: string[]): Promise<void> {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ paths, secret: cronSecret }),
+      body: JSON.stringify({ paths, tags, secret: cronSecret }),
     });
 
     if (!res.ok) {

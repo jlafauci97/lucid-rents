@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { unstable_cache } from "next/cache";
 import { createCacheClient } from "@/lib/supabase/cache-client";
 import { submarketSlugForZip } from "@/lib/submarkets";
 import {
@@ -14,6 +15,32 @@ function metroToCity(metro: string | null | undefined): City {
   return "nyc";
 }
 
+// Quarterly data shared by every building in the submarket — cache one week
+// per (city, slug) so cold building renders don't re-run the 2-query fetch.
+const loadSubmarketTrends = (city: City, submarketSlug: string) =>
+  unstable_cache(
+    async (): Promise<{ name: string; rows: SubmarketRentRow[] } | null> => {
+      const supabase = createCacheClient();
+      const { data: sub } = await supabase
+        .from("submarkets")
+        .select("id, name")
+        .eq("city", city)
+        .eq("slug", submarketSlug)
+        .maybeSingle();
+      if (!sub) return null;
+
+      const { data: rows } = await supabase
+        .from("submarket_rent_history")
+        .select("quarter, beds, rent_type, rent_per_unit")
+        .eq("submarket_id", sub.id)
+        .order("quarter", { ascending: true });
+      if (!rows || rows.length === 0) return null;
+      return { name: sub.name, rows: rows as SubmarketRentRow[] };
+    },
+    ["submarket-trends", city, submarketSlug],
+    { revalidate: 604800, tags: ["submarket-trends"] },
+  )();
+
 async function Inner({ building }: { building: Building }) {
   const city = metroToCity(building.metro);
   const zip = building.zip_code?.trim().slice(0, 5);
@@ -22,23 +49,9 @@ async function Inner({ building }: { building: Building }) {
   const submarketSlug = submarketSlugForZip(city, zip);
   if (!submarketSlug) return null;
 
-  const supabase = createCacheClient();
-
-  const { data: sub } = await supabase
-    .from("submarkets")
-    .select("id, name")
-    .eq("city", city)
-    .eq("slug", submarketSlug)
-    .maybeSingle();
-  if (!sub) return null;
-
-  const { data: rows } = await supabase
-    .from("submarket_rent_history")
-    .select("quarter, beds, rent_type, rent_per_unit")
-    .eq("submarket_id", sub.id)
-    .order("quarter", { ascending: true });
-
-  if (!rows || rows.length === 0) return null;
+  const trends = await loadSubmarketTrends(city, submarketSlug);
+  if (!trends) return null;
+  const { name, rows } = trends;
 
   const latestQuarter = rows[rows.length - 1].quarter;
 
@@ -53,9 +66,9 @@ async function Inner({ building }: { building: Building }) {
       </div>
       <div className="ri-card">
         <SubmarketTrendsChart
-          submarketName={sub.name}
+          submarketName={name}
           latestQuarter={latestQuarter}
-          rows={rows as SubmarketRentRow[]}
+          rows={rows}
         />
       </div>
     </section>

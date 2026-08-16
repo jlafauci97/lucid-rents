@@ -1,5 +1,5 @@
 import "@/styles/v2-tokens.css";
-import { notFound, redirect } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import type { Metadata } from "next";
 import { createCacheClient } from "@/lib/supabase/cache-client";
 import { unwrap } from "@/lib/supabase/unwrap";
@@ -30,7 +30,7 @@ import { S02IssuesStreamed } from "@/components/building/v2/streaming/S02IssuesS
 import { S03TenantReviewsStreamed } from "@/components/building/v2/streaming/S03TenantReviewsStreamed";
 import { S04AmenitiesStreamed } from "@/components/building/v2/streaming/S04AmenitiesStreamed";
 import { S05LandlordStreamed } from "@/components/building/v2/streaming/S05LandlordStreamed";
-import { AreaSectionsStreamed, AreaSkeletons } from "@/components/building/v2/streaming/AreaSectionsStreamed";
+import { AreaSectionsStreamed } from "@/components/building/v2/streaming/AreaSectionsStreamed";
 import { S07HistoryStreamed } from "@/components/building/v2/streaming/S07HistoryStreamed";
 import { S08SimilarNearbyStreamed } from "@/components/building/v2/streaming/S08SimilarNearbyStreamed";
 import { S09FAQStreamed } from "@/components/building/v2/streaming/S09FAQStreamed";
@@ -39,8 +39,6 @@ import { S10ChicagoInsightsStreamed } from "@/components/building/v2/streaming/S
 import { S10MiamiInsightsStreamed } from "@/components/building/v2/streaming/S10MiamiInsightsStreamed";
 import { S10HoustonInsightsStreamed } from "@/components/building/v2/streaming/S10HoustonInsightsStreamed";
 import { S015NeighborhoodRisksStreamed } from "@/components/building/v2/streaming/S015NeighborhoodRisksStreamed";
-import { LazyOnScroll } from "@/components/building/v2/streaming/LazyOnScroll";
-import { SectionSkeleton } from "@/components/building/v2/streaming/SectionSkeleton";
 import { LastUpdated } from "@/components/building/v2/LastUpdated";
 import { RelatedLinksStreamed } from "@/components/building/v2/streaming/RelatedLinksStreamed";
 import { EmbedSnippet } from "@/components/building/v2/EmbedSnippet";
@@ -147,6 +145,34 @@ function slugCandidates(slug: string): string[] {
   return candidates;
 }
 
+// Explicit rename map, populated by scripts/dedup-buildings.mjs whenever a
+// slug changes or a duplicate is deleted. Checked before the heuristic
+// findBuildingAnywhere fallback so renamed URLs 308 to their successor
+// instead of 404ing (link equity preserved). Single hop by construction —
+// the dedup script chain-collapses on write.
+const findSlugRedirect = cache(async (slug: string) => {
+  const supabase = createCacheClient();
+  const data = unwrap(
+    await supabase
+      .from("building_slug_redirects")
+      .select("new_slug")
+      .eq("old_slug", slug)
+      .limit(1),
+    `findSlugRedirect ${slug}`
+  );
+  const newSlug = data?.[0]?.new_slug;
+  if (!newSlug || newSlug === slug) return null;
+  const target = unwrap(
+    await supabase
+      .from("buildings")
+      .select("borough, slug, metro")
+      .eq("slug", newSlug)
+      .limit(1),
+    `findSlugRedirect target ${newSlug}`
+  );
+  return target?.[0] ?? null;
+});
+
 const findBuildingAnywhere = cache(async (slug: string) => {
   const supabase = createCacheClient();
   const data = unwrap(
@@ -181,13 +207,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const building = await getBuilding(borough, slug, cityParam);
 
   if (!building) {
-    const match = await findBuildingAnywhere(slug);
+    const match = (await findSlugRedirect(slug)) ?? (await findBuildingAnywhere(slug));
     // Guard against redirect-to-self: if the canonical URL we'd redirect to
     // equals the current URL, returning that as the canonical creates a meta
     // refresh loop in Next 16 streaming SSR (Google flags as "Redirect error").
-    if (match && !(metroToCity(match.metro) === (cityParam as City) && regionSlug(match.borough) === borough)) {
+    // (Slug renames additionally compare match.slug !== slug \u2014 same borough
+    // and city but a new slug must still redirect.)
+    if (match && !(metroToCity(match.metro) === (cityParam as City) && regionSlug(match.borough) === borough && match.slug === slug)) {
       const correctCity = metroToCity(match.metro);
       const url = canonicalUrl(buildingUrl(match, correctCity));
+      // Deliberate: canonical-to-target here + permanentRedirect in the page
+      // body. Next 16 coerces the body redirect to a <meta refresh> inside a
+      // 200 (streaming \u2014 verified again Aug 2026, even from generateMetadata),
+      // so the pair meta-refresh + canonical is the strongest consolidation
+      // signal we can emit from this route. Real 30x would need proxy.ts,
+      // which can't afford a DB lookup per request.
       return { title: "Redirecting\u2026", alternates: { canonical: url } };
     }
     // Match the page's notFound() so Next renders the 404 boundary instead
@@ -255,12 +289,19 @@ export default async function BuildingPage({ params }: Props) {
   const building = await getBuilding(borough, slug, typedCity);
 
   if (!building) {
-    const match = await findBuildingAnywhere(slug);
+    const match = (await findSlugRedirect(slug)) ?? (await findBuildingAnywhere(slug));
     // Same redirect-to-self guard as in generateMetadata. Without it, a
     // borough lookup miss for a URL that's already canonical would loop.
-    if (match && !(metroToCity(match.metro) === typedCity && regionSlug(match.borough) === borough)) {
+    // (Slug renames additionally compare match.slug !== slug — same borough
+    // and city but a new slug must still redirect.)
+    if (match && !(metroToCity(match.metro) === typedCity && regionSlug(match.borough) === borough && match.slug === slug)) {
       const correctCity = metroToCity(match.metro);
-      redirect(buildingUrl(match, correctCity));
+      // permanentRedirect (308) so Google consolidates signals onto the
+      // target. CAUTION: in a streaming context Next coerces this to a
+      // <meta refresh> in a 200 body for browsers — bots get the blocking
+      // render with a real 308 (verified on preview; see worst-rated-buildings
+      // page for the history of this footgun).
+      permanentRedirect(buildingUrl(match, correctCity));
     }
     // No match anywhere — the building was deleted (e.g. during dedup) but
     // its URL is still in the cached sitemap. Previously we redirected to
@@ -272,10 +313,11 @@ export default async function BuildingPage({ params }: Props) {
     notFound();
   }
 
-  // Redirect to correct city if metro doesn't match URL
+  // Redirect to correct city if metro doesn't match URL — permanent, so
+  // Google consolidates onto the canonical city URL.
   const buildingCity = metroToCity(building.metro);
   if (buildingCity !== typedCity) {
-    redirect(buildingUrl(building, buildingCity));
+    permanentRedirect(buildingUrl(building, buildingCity));
   }
 
   // NOTE: we no longer `await loadBuildingV2Data(building)` here. Every section
@@ -362,40 +404,16 @@ export default async function BuildingPage({ params }: Props) {
               <S04AmenitiesStreamed building={building} />
               <S05LandlordStreamed building={building} city={typedCity} />
               <InContentAd />
-              <LazyOnScroll fallback={<AreaSkeletons city={typedCity} />}>
-                <AreaSectionsStreamed building={building} city={typedCity} />
-              </LazyOnScroll>
+              <AreaSectionsStreamed building={building} city={typedCity} />
               <InContentAd />
               <S07HistoryStreamed building={building} />
-              <LazyOnScroll fallback={<SectionSkeleton num="10 / 10" title="Frequently asked questions." id="faq" />}>
-                <S09FAQStreamed building={building} />
-              </LazyOnScroll>
+              <S09FAQStreamed building={building} />
               <InContentAd />
-              {typedCity === "los-angeles" && (
-                <LazyOnScroll fallback={<SectionSkeleton num="10 / 10" title="LA-specific insights." id="la-insights" />}>
-                  <S10LAInsightsStreamed building={building} />
-                </LazyOnScroll>
-              )}
-              {typedCity === "chicago" && (
-                <LazyOnScroll fallback={<SectionSkeleton num="10 / 10" title="Chicago-specific insights." id="chicago-insights" />}>
-                  <S10ChicagoInsightsStreamed building={building} />
-                </LazyOnScroll>
-              )}
-              {typedCity === "miami" && (
-                <LazyOnScroll fallback={<SectionSkeleton num="10 / 10" title="Miami-specific insights." id="miami-insights" />}>
-                  <S10MiamiInsightsStreamed building={building} />
-                </LazyOnScroll>
-              )}
-              {typedCity === "houston" && (
-                <LazyOnScroll fallback={<SectionSkeleton num="10 / 10" title="Houston-specific insights." id="houston-insights" />}>
-                  <S10HoustonInsightsStreamed building={building} />
-                </LazyOnScroll>
-              )}
-              {typedCity === "nyc" && (
-                <LazyOnScroll fallback={<SectionSkeleton num="10 / 10" title="NYC-specific insights." id="nyc-insights" />}>
-                  <S10_NYCInsights building={building} />
-                </LazyOnScroll>
-              )}
+              {typedCity === "los-angeles" && <S10LAInsightsStreamed building={building} />}
+              {typedCity === "chicago" && <S10ChicagoInsightsStreamed building={building} />}
+              {typedCity === "miami" && <S10MiamiInsightsStreamed building={building} />}
+              {typedCity === "houston" && <S10HoustonInsightsStreamed building={building} />}
+              {typedCity === "nyc" && <S10_NYCInsights building={building} />}
             </div>
 
             {/* Right rail was cleared in main; reusing the 300px grid track
@@ -408,12 +426,11 @@ export default async function BuildingPage({ params }: Props) {
 
           {/* Similar Buildings — rendered AFTER .main so it sits at the very
               bottom of the page (also where the "Similar buildings" wayfinder
-              entry points). Wrapped in LazyOnScroll since it's always below the
-              fold. */}
+              entry points). Server-rendered (no scroll gating): this is the
+              only building→building link block, so its <a hrefs> must be in
+              the initial HTML for crawlers. */}
           <div className="similar-bottom" style={{ marginTop: 24 }}>
-            <LazyOnScroll fallback={<SectionSkeleton num="08 / 09" title="Similar buildings nearby." id="similar" />}>
-              <S08SimilarNearbyStreamed building={building} city={typedCity} />
-            </LazyOnScroll>
+            <S08SimilarNearbyStreamed building={building} city={typedCity} />
           </div>
 
           <RelatedLinksStreamed building={building} city={typedCity} />

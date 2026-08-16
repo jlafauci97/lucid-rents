@@ -8,6 +8,7 @@
  * skips the templates that depend on them.
  */
 
+import { unstable_cache } from "next/cache";
 import { createCacheClient } from "@/lib/supabase/cache-client";
 import { buildingNeighborhood } from "@/lib/neighborhoods";
 import { normalizeScore } from "@/lib/constants";
@@ -93,14 +94,18 @@ export async function getBuildingTitleData(
     city
   );
 
-  // Phase 2 RPC — graceful fallback to empty arrays.
+  // Phase 2 RPC — graceful fallback to empty arrays. Cached: this runs in
+  // generateMetadata, so on an ISR miss it blocks the first byte — a cold
+  // uncached round trip here taxes every regeneration just for the <title>.
   let topCategories: string[] = [];
   let recentTopCategories: string[] = [];
   let recentIssueCount = 0;
   try {
-    const { data: cats, error } = await supabase.rpc("building_top_categories", {
-      _building_id: building.id,
-    });
+    const { data: cats, error } = await unstable_cache(
+      async () => supabase.rpc("building_top_categories", { _building_id: building.id }),
+      ["building-top-categories", building.id],
+      { revalidate: 604800, tags: [`building-${building.id}`] },
+    )();
     if (!error && Array.isArray(cats)) {
       const rows = cats as Array<{
         category_label: string;

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import type { Metadata } from "next";
 import { ArrowLeft } from "lucide-react";
 import { createCacheClient } from "@/lib/supabase/cache-client";
@@ -86,12 +86,14 @@ export default async function LandlordBuildingsPage({ params }: Props) {
   ]);
 
   if (!ownerName || !cachedStats) {
-    redirect(cityPath("/landlords", city));
+    // Dead landlord URL: 404 (deindexes cleanly) instead of redirecting to
+    // the hub — redirect-to-hub is what GSC flags as "Page with redirect".
+    notFound();
   }
 
   const correctSlug = landlordSlug(ownerName);
   if (correctSlug !== name) {
-    redirect(cityPath(`/landlord/${correctSlug}/buildings`, city));
+    permanentRedirect(cityPath(`/landlord/${correctSlug}/buildings`, city));
   }
 
   const buildings = await loadLandlordBuildingList(correctSlug, city);

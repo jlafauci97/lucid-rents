@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { buildingTag } from "@/app/[city]/building/[borough]/[slug]/_data";
 import { categorizeCrime } from "@/lib/crime-categories";
 import { generateBuildingSlug, buildingUrl, regionSlug } from "@/lib/seo";
 import { notifyIndexNow } from "@/lib/indexnow";
@@ -166,7 +167,7 @@ async function revalidateAffectedBuildingPages(
     const ids = [...buildingIds].slice(0, REVALIDATE_BUILDINGS_CAP);
     const { data } = await supabase
       .from("buildings")
-      .select("metro, borough, slug")
+      .select("id, metro, borough, slug")
       .in("id", ids)
       .not("slug", "is", null);
 
@@ -174,6 +175,10 @@ async function revalidateAffectedBuildingPages(
       const city = (b.metro || "nyc") as City;
       if (CITY_META[city] && b.borough && b.slug) {
         const path = buildingUrl({ borough: b.borough, slug: b.slug }, city);
+        // Tag first: the building page's data caches (_data.ts loaders) hold
+        // for 7 days and only this tag busts them — revalidatePath alone
+        // would re-render the page from stale data caches.
+        revalidateTag(buildingTag(b.id), "max");
         revalidatePath(path);
         revalidatePath(`${path}/violations`);
         revalidated++;

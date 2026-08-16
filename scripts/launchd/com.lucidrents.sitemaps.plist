@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Nightly sitemap regeneration, run on the always-on Mac mini because
+  enumerating ~3.5M URLs exceeds every Vercel function timeout. Writes chunks
+  to Vercel Blob; the site serves them via the /sitemap/* rewrites.
+
+  Install with:
+
+    cp scripts/launchd/com.lucidrents.sitemaps.plist ~/Library/LaunchAgents/
+    launchctl load ~/Library/LaunchAgents/com.lucidrents.sitemaps.plist
+
+  Edit WorkingDirectory and the node path below to match the mini. Requires
+  NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY and BLOB_READ_WRITE_TOKEN
+  in the repo's .env.local (the script loads it itself).
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.lucidrents.sitemaps</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/local/bin/npx</string>
+        <string>tsx</string>
+        <string>scripts/generate-sitemaps-blob.mts</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/jesselafauci/Desktop/lucid-rents</string>
+
+    <!-- 03:30 local, nightly — after the Vercel data-sync cron windows so the
+         night's updated_at changes are reflected in lastmod. -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>3</integer>
+        <key>Minute</key>
+        <integer>30</integer>
+    </dict>
+
+    <!-- Don't fire a catch-up run the moment the mini wakes from sleep. -->
+    <key>RunAtLoad</key>
+    <false/>
+
+    <key>StandardOutPath</key>
+    <string>/tmp/lucidrents-sitemaps.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/lucidrents-sitemaps.error.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin</string>
+    </dict>
+</dict>
+</plist>

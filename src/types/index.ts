@@ -445,6 +445,8 @@ export interface NewsArticle {
   fetched_at: string;
   created_at: string;
   auto_generated: boolean | null;
+  /** Owning metro (nyc | los-angeles | chicago | ...); drives the city prefix in article URLs. */
+  metro: string | null;
 }
 
 export interface SearchResult {

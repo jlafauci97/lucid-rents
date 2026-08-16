@@ -7,12 +7,12 @@ import { type City, CITY_META, VALID_CITIES } from "@/lib/cities";
 import { NEWS_CATEGORIES, type NewsCategory } from "@/lib/news-sources";
 import { CategoryIcon } from "@/components/news/CategoryIcon";
 import { AdSidebar } from "@/components/ui/AdSidebar";
-import { NewsListClient } from "./NewsListClient";
+import { NewsListSection } from "./NewsListSection";
 
 export const revalidate = 1800; // 30 minutes
 
-// Pre-render all 5 cities at build time. Paginated views (?page=2+) are
-// handled client-side by <NewsListClient> against /api/news.
+// Pre-render all 5 cities at build time. Paginated views live at
+// /news/page/N (server-rendered, see ./page/[n]).
 export function generateStaticParams() {
   return VALID_CITIES.map((city) => ({ city }));
 }
@@ -105,11 +105,15 @@ export default async function NewsPage({
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
-          {/* Main content — client island so the page shell stays static.
-              Pagination state lives in the URL; <NewsListClient> fetches
-              from /api/news (edge runtime, CDN-cached). */}
+          {/* Main content — server-rendered so article links + pagination
+              land in the HTML (the client-fetch island left every article
+              sitemap-only). */}
           <div className="min-w-0">
-            <NewsListClient city={cityParam} />
+            <NewsListSection
+              city={cityParam}
+              page={1}
+              basePath={cityPath("/news", cityParam as City)}
+            />
           </div>
 
           {/* Sidebar */}

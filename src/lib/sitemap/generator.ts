@@ -1,12 +1,13 @@
 /**
- * Sitemap chunk generator — TypeScript port of scripts/generate-sitemaps.mjs.
+ * Sitemap chunk generator — the single source of truth for all sitemap XML.
  *
- * Output must remain byte-identical with the legacy script so the cron-driven
- * Blob path can swap in without GSC re-crawl regressions. Inlined constants
- * (CITY_META regions, ZIP maps, etc) are intentionally duplicated from the
- * legacy script — keeping them in sync with src/lib/cities.ts is a manual
- * exercise. The duplication exists because the script was deliberately
- * detached from TS imports to avoid build-time coupling.
+ * Chunks are written to Vercel Blob by regenerateAllToBlob() (invoked nightly
+ * from the Mac Mini via scripts/generate-sitemaps-blob.mts, or manually via
+ * /api/cron/regenerate-sitemaps) and served by src/app/sitemap-v2/[chunk],
+ * which the public /sitemap/* URLs rewrite to. Inlined constants (CITY_META
+ * regions, ZIP maps, etc) are intentionally duplicated from src/lib/cities.ts
+ * to keep this module importable outside the Next build — keeping them in
+ * sync is a manual exercise.
  */
 import { put } from "@vercel/blob";
 
@@ -186,35 +187,45 @@ function metroToCity(metro: string | null | undefined): City {
 
 // ─── Supabase fetch (matches script retry behavior) ─────────────
 
+// Patient retry profile: prod load spikes (Googlebot triggering cold building
+// renders → heavy PostGIS RPCs) can push even small reads past the role's 8s
+// statement_timeout for minutes at a time. The nightly Mini run has no
+// deadline, so wait the spikes out rather than dying: 8 attempts, linear
+// backoff up to ~40s (~3 min worst case per page).
+const FETCH_ATTEMPTS = 8;
+const BACKOFF_UNIT_MS = 5000;
+
 async function supabaseFetch<T = unknown>(path: string): Promise<T> {
   const { url, key } = requireEnv();
-  for (let attempt = 0; attempt < 5; attempt++) {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt < FETCH_ATTEMPTS; attempt++) {
     try {
       const res = await fetch(`${url}/rest/v1/${path}`, {
         headers: { apikey: key },
       });
       if (!res.ok) {
-        if (res.status >= 500 && attempt < 4) {
-          await new Promise((r) => setTimeout(r, 3000 * (attempt + 1)));
-          continue;
-        }
-        throw new Error(`Supabase ${res.status}: ${path}`);
+        // 4xx = our bug, fail fast. 5xx = DB pressure, retry.
+        if (res.status < 500) throw new FatalFetchError(`Supabase ${res.status}: ${path}`);
+        lastErr = new Error(`Supabase ${res.status}: ${path}`);
+      } else {
+        return (await res.json()) as T;
       }
-      return (await res.json()) as T;
     } catch (err) {
-      const e = err as { message?: string; cause?: { code?: string } };
-      if (
-        attempt < 4 &&
-        (e.message?.includes("500") || e.cause?.code === "UND_ERR_SOCKET")
-      ) {
-        await new Promise((r) => setTimeout(r, 3000 * (attempt + 1)));
-        continue;
-      }
-      throw err;
+      if (err instanceof FatalFetchError) throw err;
+      // Everything else — undici "fetch failed", socket resets, DNS blips —
+      // is transient on a nightly job with no deadline. A 2h19m run died to
+      // one unretried "fetch failed" at building chunk 101 (Aug 2026);
+      // never again.
+      lastErr = err;
+    }
+    if (attempt < FETCH_ATTEMPTS - 1) {
+      await new Promise((r) => setTimeout(r, BACKOFF_UNIT_MS * (attempt + 1)));
     }
   }
-  throw new Error("unreachable");
+  throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
 }
+
+class FatalFetchError extends Error {}
 
 // ─── XML builders (must stay byte-identical with the script) ────
 
@@ -259,34 +270,31 @@ export function buildSitemapIndex(files: IndexEntry[]): string {
 
 // ─── Static (0.xml) ────────────────────────────────────────────
 
-interface ZipBuildingRow {
-  zip_code: string | null;
-  metro: string | null;
-  updated_at?: string | null;
-}
-
-async function buildZipLastModMap(): Promise<Map<string, string>> {
-  const zipData = await supabaseFetch<ZipBuildingRow[]>(
-    `buildings?select=zip_code,metro,updated_at&zip_code=not.is.null${ACTIVE_METRO_FILTER}&limit=10000`,
-  );
-  const now = new Date().toISOString();
-  const map = new Map<string, string>();
-  for (const b of zipData) {
-    if (!b.zip_code) continue;
-    const city = metroToCity(b.metro);
-    const key = `${city}:${b.zip_code}`;
-    const d = b.updated_at || now;
-    const existing = map.get(key);
-    if (!existing || d > existing) map.set(key, d);
+/**
+ * Every zip URL we emit, keyed `city:zip`, driven by the curated ZIP_MAPS
+ * constants. This used to sample 10K building rows through PostgREST for
+ * per-zip lastmods, which silently truncated (only zips present in the sample
+ * got sitemap entries, so the URL set varied run to run). The curated maps are
+ * the actual source of truth for which zip pages exist; lastmod is omitted
+ * per the "omit rather than lie" policy.
+ */
+function activeZipKeys(): string[] {
+  const keys: string[] = [];
+  for (const city of VALID_CITIES) {
+    for (const zip of Object.keys(ZIP_MAPS[city])) {
+      keys.push(`${city}:${zip}`);
+    }
   }
-  return map;
+  return keys;
 }
 
 export async function generateStaticSitemap(): Promise<UrlEntry[]> {
   const entries: UrlEntry[] = [];
-  const now = new Date().toISOString();
 
-  entries.push({ url: BASE_URL, lastmod: now, changefreq: "daily", priority: 1.0 });
+  // lastmod policy: only stamped where we have a real content date (zip pages
+  // from buildings.updated_at, news from published_at). Static shells omit it —
+  // a constant "generated now" stamp teaches Google to ignore our lastmods.
+  entries.push({ url: BASE_URL, changefreq: "daily", priority: 1.0 });
 
   for (const p of [
     { path: "/about", freq: "monthly", priority: 0.5 },
@@ -294,17 +302,18 @@ export async function generateStaticSitemap(): Promise<UrlEntry[]> {
     { path: "/privacy", freq: "monthly", priority: 0.3 },
     { path: "/terms", freq: "monthly", priority: 0.3 },
     { path: "/guides/nyc-tenant-rights", freq: "monthly", priority: 0.7 },
-    { path: "/guides/la-tenant-rights", freq: "monthly", priority: 0.7 },
   ]) {
-    entries.push({ url: `${BASE_URL}${p.path}`, lastmod: now, changefreq: p.freq, priority: p.priority });
+    entries.push({ url: `${BASE_URL}${p.path}`, changefreq: p.freq, priority: p.priority });
   }
 
-  const staticPages = ["/buildings", "/landlords", "/worst-rated-buildings", "/feed", "/crime", "/rent-stabilization", "/map", "/search", "/news", "/rent-data", "/scaffolding", "/permits", "/energy", "/transit", "/tenant-rights"];
+  // Only pages that actually render for every active city. City-gated pages
+  // (Chicago-only trackers, LA-only encampments, etc) are added in
+  // generateHubsSitemap with explicit gates.
+  const staticPages = ["/buildings", "/landlords", "/building-rankings", "/feed", "/crime", "/crime/safest", "/rent-stabilization", "/search", "/news", "/rent-data", "/air-quality", "/fire-safety", "/transit", "/tenant-rights"];
   for (const city of VALID_CITIES) {
     for (const page of staticPages) {
       entries.push({
         url: `${BASE_URL}${cityPath(page, city)}`,
-        lastmod: now,
         changefreq: page === "/news" ? "daily" : "weekly",
         priority: 0.8,
       });
@@ -332,12 +341,11 @@ export async function generateStaticSitemap(): Promise<UrlEntry[]> {
   }
 
   // Neighborhoods + crime by zip
-  const zipMap = await buildZipLastModMap();
-  for (const [key, lastmod] of zipMap) {
+  for (const key of activeZipKeys()) {
     const [cityStr, zip] = key.split(":");
     const city = cityStr as City;
-    entries.push({ url: `${BASE_URL}${neighborhoodUrl(zip, city)}`, lastmod, changefreq: "weekly", priority: 0.7 });
-    entries.push({ url: `${BASE_URL}${cityPath(`/crime/${zip}`, city)}`, lastmod, changefreq: "weekly", priority: 0.6 });
+    entries.push({ url: `${BASE_URL}${neighborhoodUrl(zip, city)}`, changefreq: "weekly", priority: 0.7 });
+    entries.push({ url: `${BASE_URL}${cityPath(`/crime/${zip}`, city)}`, changefreq: "weekly", priority: 0.6 });
   }
 
   // News articles (non-fatal). Only OUR own published articles
@@ -366,7 +374,7 @@ export async function generateStaticSitemap(): Promise<UrlEntry[]> {
   }
 
   for (const city of VALID_CITIES) {
-    entries.push({ url: `${BASE_URL}${cityPath("/compare", city)}`, lastmod: now, changefreq: "monthly", priority: 0.4 });
+    entries.push({ url: `${BASE_URL}${cityPath("/compare", city)}`, changefreq: "monthly", priority: 0.4 });
   }
 
   return entries;
@@ -374,19 +382,38 @@ export async function generateStaticSitemap(): Promise<UrlEntry[]> {
 
 // ─── Hubs (hubs.xml) ───────────────────────────────────────────
 
+// City-gated content pages: only emitted for cities where the route renders
+// real content (not a "Coming Soon" shell or notFound). Verified against the
+// page components' city gates — update when a page launches in a new metro.
+const GATED_CITY_PAGES: Array<{ path: string; cities: City[] }> = [
+  { path: "/affordable-housing", cities: ["chicago"] },
+  { path: "/heating-tracker", cities: ["chicago"] },
+  { path: "/lead-safety", cities: ["chicago"] },
+  { path: "/problem-landlords", cities: ["chicago"] },
+  { path: "/encampments", cities: ["los-angeles"] },
+  { path: "/seismic-fire-safety", cities: ["los-angeles"] },
+];
+
 export async function generateHubsSitemap(): Promise<UrlEntry[]> {
   const entries: UrlEntry[] = [];
-  const now = new Date().toISOString();
 
   for (const city of VALID_CITIES) {
-    entries.push({ url: `${BASE_URL}${cityPath("/tenant-tools", city)}`, lastmod: now, changefreq: "monthly", priority: 0.5 });
+    entries.push({ url: `${BASE_URL}${cityPath("/tenant-tools", city)}`, changefreq: "monthly", priority: 0.5 });
+    entries.push({ url: `${BASE_URL}${cityPath("/tenant-tools/checklist", city)}`, changefreq: "monthly", priority: 0.4 });
+    entries.push({ url: `${BASE_URL}${cityPath("/tenant-tools/neighborhood-risks", city)}`, changefreq: "monthly", priority: 0.4 });
+  }
+
+  for (const { path, cities } of GATED_CITY_PAGES) {
+    for (const city of cities) {
+      if (!VALID_CITIES.includes(city)) continue;
+      entries.push({ url: `${BASE_URL}${cityPath(path, city)}`, changefreq: "weekly", priority: 0.6 });
+    }
   }
 
   for (const city of VALID_CITIES) {
     for (const slug of TEMPLATE_SLUGS) {
       entries.push({
         url: `${BASE_URL}${cityPath(`/tenant-tools/templates/${slug}`, city)}`,
-        lastmod: now,
         changefreq: "monthly",
         priority: 0.4,
       });
@@ -398,7 +425,6 @@ export async function generateHubsSitemap(): Promise<UrlEntry[]> {
     for (const slug of topics) {
       entries.push({
         url: `${BASE_URL}${cityPath(`/tenant-rights/${slug}`, city)}`,
-        lastmod: now,
         changefreq: "monthly",
         priority: 0.5,
       });
@@ -406,38 +432,31 @@ export async function generateHubsSitemap(): Promise<UrlEntry[]> {
   }
 
   for (const city of VALID_CITIES) {
-    entries.push({ url: `${BASE_URL}${cityPath("/neighborhoods", city)}`, lastmod: now, changefreq: "weekly", priority: 0.6 });
-    entries.push({ url: `${BASE_URL}${cityPath("/neighborhoods/compare", city)}`, lastmod: now, changefreq: "monthly", priority: 0.4 });
-    entries.push({ url: `${BASE_URL}${cityPath("/neighborhood/compare", city)}`, lastmod: now, changefreq: "monthly", priority: 0.4 });
+    entries.push({ url: `${BASE_URL}${cityPath("/neighborhoods", city)}`, changefreq: "weekly", priority: 0.6 });
+    entries.push({ url: `${BASE_URL}${cityPath("/neighborhoods/compare", city)}`, changefreq: "monthly", priority: 0.4 });
+    entries.push({ url: `${BASE_URL}${cityPath("/neighborhood/compare", city)}`, changefreq: "monthly", priority: 0.4 });
   }
 
-  try {
-    const zipMap = await buildZipLastModMap();
-    for (const [key, lastmod] of zipMap) {
-      const [cityStr, zip] = key.split(":");
-      const city = cityStr as City;
-      const slug = neighborhoodPageSlug(zip, city);
-      entries.push({
-        url: `${BASE_URL}${cityPath(`/rents/${slug}`, city)}`,
-        lastmod,
-        changefreq: "weekly",
-        priority: 0.5,
-      });
-    }
-  } catch (e) {
-    console.warn(`  Skipping rents-by-neighborhood in hubs sitemap: ${(e as Error).message}`);
+  for (const key of activeZipKeys()) {
+    const [cityStr, zip] = key.split(":");
+    const city = cityStr as City;
+    const slug = neighborhoodPageSlug(zip, city);
+    entries.push({
+      url: `${BASE_URL}${cityPath(`/rents/${slug}`, city)}`,
+      changefreq: "weekly",
+      priority: 0.5,
+    });
   }
 
-  entries.push({ url: `${BASE_URL}${cityPath("/ellis-act", "los-angeles")}`, lastmod: now, changefreq: "weekly", priority: 0.5 });
+  entries.push({ url: `${BASE_URL}${cityPath("/ellis-act", "los-angeles")}`, changefreq: "weekly", priority: 0.5 });
 
   for (const city of VALID_CITIES) {
-    entries.push({ url: `${BASE_URL}${cityPath("/building-list", city)}`, lastmod: now, changefreq: "weekly", priority: 0.5 });
+    entries.push({ url: `${BASE_URL}${cityPath("/building-list", city)}`, changefreq: "weekly", priority: 0.5 });
     for (const slug of CHIP_SLUGS) {
       const gate = CHIP_CITY_GATES[slug];
       if (gate && !gate.includes(city)) continue;
       entries.push({
         url: `${BASE_URL}${cityPath(`/building-list/${slug}`, city)}`,
-        lastmod: now,
         changefreq: "weekly",
         priority: 0.4,
       });
@@ -445,18 +464,13 @@ export async function generateHubsSitemap(): Promise<UrlEntry[]> {
   }
 
   for (const path of CALCULATOR_PATHS) {
-    entries.push({ url: `${BASE_URL}${path}`, lastmod: now, changefreq: "monthly", priority: 0.6 });
+    entries.push({ url: `${BASE_URL}${path}`, changefreq: "monthly", priority: 0.6 });
   }
 
   return entries;
 }
 
 // ─── Landlord chunks (l-N.xml) ─────────────────────────────────
-
-// Landlord counterpart to BUILDING_PAGE_VERSION_AT. Stamped on every chunk
-// entry in the dedicated /sitemap-landlords.xml index. Bump on a site-wide
-// landlord page template change to signal Google to re-crawl.
-export const LANDLORD_PAGE_VERSION_AT = "2026-05-30T00:00:00.000Z";
 
 interface LandlordRow {
   id: string;
@@ -466,14 +480,43 @@ interface LandlordRow {
   updated_at: string | null;
 }
 
-export async function* generateLandlordChunks(): AsyncGenerator<string> {
+/** A generated sitemap chunk plus the freshest lastmod among its entries
+ * (used by the index writer) and the id of the last row included (used to
+ * resume the phase from this chunk boundary after a failure). */
+export interface GeneratedChunk {
+  xml: string;
+  lastmod?: string;
+  /** Keyset cursor: id of the last row this chunk includes. Restarting the
+   * generator with this as startCursor regenerates the NEXT chunk. */
+  cursor: string;
+}
+
+const CURSOR_ZERO = "00000000-0000-0000-0000-000000000000";
+
+function maxLastmod(entries: UrlEntry[]): string | undefined {
+  let max: string | undefined;
+  for (const e of entries) {
+    if (e.lastmod && (!max || e.lastmod > max)) max = e.lastmod;
+  }
+  return max;
+}
+
+export async function* generateLandlordChunks(
+  startCursor: string = CURSOR_ZERO,
+): AsyncGenerator<GeneratedChunk> {
+  // 1000 rows/page: the role's 8s statement_timeout cancels reads at ~5-6K
+  // rows on a quiet DB (~1.5ms/row, measured Aug 2026), but under prod load
+  // spikes even 2500 rows exceeds it. 1000 keeps a wide margin; the patient
+  // supabaseFetch retry rides out the spikes. Do not raise without re-measuring.
+  const PAGE_SIZE = 1000;
   const URLS_PER_FILE = 10000;
   let pending: UrlEntry[] = [];
-  let cursor = "00000000-0000-0000-0000-000000000000";
+  let cursor = startCursor;
+  let lastIncludedId = startCursor;
 
   while (true) {
     const rows = await supabaseFetch<LandlordRow[]>(
-      `landlord_stats?select=id,name,slug,metro,updated_at&building_count=gt.0${ACTIVE_METRO_FILTER}&id=gt.${cursor}&order=id.asc&limit=1000`,
+      `landlord_stats?select=id,name,slug,metro,updated_at&building_count=gt.0${ACTIVE_METRO_FILTER}&id=gt.${cursor}&order=id.asc&limit=${PAGE_SIZE}`,
     );
     if (!rows || rows.length === 0) break;
 
@@ -486,17 +529,18 @@ export async function* generateLandlordChunks(): AsyncGenerator<string> {
           changefreq: "monthly",
           priority: 0.5,
         });
+        lastIncludedId = l.id;
       }
       if (pending.length >= URLS_PER_FILE) {
-        yield buildSitemapXml(pending);
+        yield { xml: buildSitemapXml(pending), lastmod: maxLastmod(pending), cursor: lastIncludedId };
         pending = [];
       }
     }
     cursor = rows[rows.length - 1].id;
-    if (rows.length < 1000) break;
+    if (rows.length < PAGE_SIZE) break;
   }
   if (pending.length > 0) {
-    yield buildSitemapXml(pending);
+    yield { xml: buildSitemapXml(pending), lastmod: maxLastmod(pending), cursor: lastIncludedId };
   }
 }
 
@@ -518,17 +562,17 @@ interface BuildingRow {
 // entry (single source of truth for the building-page version date).
 export const BUILDING_PAGE_VERSION_AT = "2026-05-26T00:00:00.000Z";
 
-export async function* generateBuildingChunks(): AsyncGenerator<string> {
-  // 10K rows per Supabase pagination. The buildings table is ~1.8M rows (200
-  // chunks of ~9K URLs each), so PAGE_SIZE=5000 needed ~360 sequential
-  // round-trips — pushing us past the 800s cron maxDuration even with the
-  // streaming + checkpoint patterns. 10K halves the round-trips. Service-role
-  // key bypasses PostgREST's default `db.max_rows` so larger LIMITs are safe.
-  // Cursor pattern preserved (Postgres planner stays on the index at LIMIT 10000).
-  const PAGE_SIZE = 10000;
+export async function* generateBuildingChunks(
+  startCursor: string = CURSOR_ZERO,
+): AsyncGenerator<GeneratedChunk> {
+  // 1000 rows/page — see the landlord generator's sizing note. ~2.5M
+  // active-metro rows ≈ 2500 sequential pages ≈ 1.5-2h wall clock, fine for
+  // the nightly Mac-mini run this generator targets (no Vercel maxDuration).
+  const PAGE_SIZE = 1000;
   const URLS_PER_FILE = 10000;
   let pending: UrlEntry[] = [];
-  let cursor = "00000000-0000-0000-0000-000000000000";
+  let cursor = startCursor;
+  let lastIncludedId = startCursor;
   let done = false;
 
   while (!done) {
@@ -551,9 +595,10 @@ export async function* generateBuildingChunks(): AsyncGenerator<string> {
           changefreq: "weekly",
           priority: 0.6,
         });
+        lastIncludedId = b.id;
       }
       if (pending.length >= URLS_PER_FILE) {
-        yield buildSitemapXml(pending);
+        yield { xml: buildSitemapXml(pending), lastmod: maxLastmod(pending), cursor: lastIncludedId };
         pending = [];
       }
     }
@@ -561,7 +606,7 @@ export async function* generateBuildingChunks(): AsyncGenerator<string> {
     if (rows.length < PAGE_SIZE) done = true;
   }
   if (pending.length > 0) {
-    yield buildSitemapXml(pending);
+    yield { xml: buildSitemapXml(pending), lastmod: maxLastmod(pending), cursor: lastIncludedId };
   }
 }
 
@@ -584,7 +629,7 @@ export async function generateChunk(name: string): Promise<string> {
     const idx = Number(b[1]);
     let i = 0;
     for await (const chunk of generateBuildingChunks()) {
-      if (i === idx) return chunk;
+      if (i === idx) return chunk.xml;
       i++;
     }
     throw new Error(`Chunk ${name} out of range (have ${i})`);
@@ -594,7 +639,7 @@ export async function generateChunk(name: string): Promise<string> {
     const idx = Number(l[1]);
     let i = 0;
     for await (const chunk of generateLandlordChunks()) {
-      if (i === idx) return chunk;
+      if (i === idx) return chunk.xml;
       i++;
     }
     throw new Error(`Chunk ${name} out of range (have ${i})`);
@@ -633,24 +678,33 @@ export async function regenerateAllToBlob(): Promise<RegenerateResult> {
   const t0 = Date.now();
   const errors: string[] = [];
   const now = new Date().toISOString();
-  const written: string[] = [];
+  // name → freshest lastmod among that chunk's entries (undefined for chunks
+  // whose entries are undated; the index falls back to the run timestamp).
+  const written = new Map<string, string | undefined>();
 
   let staticUrls = 0;
   let hubsUrls = 0;
   let landlordChunkCount = 0;
   let buildingChunkCount = 0;
 
+  function indexEntriesFor(names: Iterable<[string, string | undefined]>): IndexEntry[] {
+    const entries: IndexEntry[] = [];
+    for (const [name, lastmod] of names) {
+      entries.push({ name, lastmod: lastmod ?? now });
+    }
+    entries.sort((a, b) => order(a.name).localeCompare(order(b.name)));
+    return entries;
+  }
+
   // Rewrite index.xml referencing whatever's in `written` so far. Called at
   // phase boundaries and every 10 chunks during streaming, so that even if
-  // the function is killed by maxDuration we never lose the index entirely —
-  // it always reflects the most recent successful checkpoint.
+  // the run is killed we never lose the index entirely — it always reflects
+  // the most recent successful checkpoint.
   async function checkpointIndex(): Promise<void> {
     try {
-      const indexEntries: IndexEntry[] = written.map((name) => ({ name, lastmod: now }));
-      indexEntries.sort((a, b) => order(a.name).localeCompare(order(b.name)));
-      await writeChunkToBlob("index.xml", buildSitemapIndex(indexEntries));
+      await writeChunkToBlob("index.xml", buildSitemapIndex(indexEntriesFor(written)));
     } catch (e) {
-      // Swallow — checkpoint failures shouldn't kill the cron. The final
+      // Swallow — checkpoint failures shouldn't kill the run. The final
       // write at the end of this function will retry with the full set.
       console.warn(`[regenerate-sitemaps] checkpoint index failed: ${(e as Error).message}`);
     }
@@ -661,7 +715,7 @@ export async function regenerateAllToBlob(): Promise<RegenerateResult> {
     const staticEntries = await generateStaticSitemap();
     staticUrls = staticEntries.length;
     await writeChunkToBlob("0.xml", buildSitemapXml(staticEntries));
-    written.push("0.xml");
+    written.set("0.xml", maxLastmod(staticEntries));
   } catch (e) {
     errors.push(`0.xml: ${(e as Error).message}`);
   }
@@ -671,66 +725,84 @@ export async function regenerateAllToBlob(): Promise<RegenerateResult> {
     const hubsEntries = await generateHubsSitemap();
     hubsUrls = hubsEntries.length;
     await writeChunkToBlob("hubs.xml", buildSitemapXml(hubsEntries));
-    written.push("hubs.xml");
+    written.set("hubs.xml", maxLastmod(hubsEntries));
   } catch (e) {
     errors.push(`hubs.xml: ${(e as Error).message}`);
   }
   await checkpointIndex();
 
-  // Landlord chunks — stream each chunk straight to Blob as it's generated.
-  // Bounded memory (one chunk at a time) + partial-recovery: if the function
-  // dies mid-stream, every l-N.xml written before the failure stays in
-  // `written` and the most recent checkpoint index.xml references it.
-  try {
-    let i = 0;
-    for await (const chunk of generateLandlordChunks()) {
-      const name = `l-${i}.xml`;
-      await writeChunkToBlob(name, chunk);
-      written.push(name);
-      console.log(`[regenerate-sitemaps] wrote ${name} (${chunk.length} bytes)`);
-      i++;
-      if (i % 10 === 0) await checkpointIndex();
-    }
-    landlordChunkCount = i;
-  } catch (e) {
-    errors.push(`landlord chunks: ${(e as Error).message}`);
-  }
-  await checkpointIndex();
+  // Streaming phases — each chunk goes straight to Blob (bounded memory),
+  // and the phase RESUMES from the last completed chunk's keyset cursor if
+  // the generator dies (DB pressure outlasting supabaseFetch's retries, or
+  // a network drop: a 2h19m run once died to one unretried "fetch failed").
+  // Only an error budget of PHASE_RESTARTS consecutive failed restarts
+  // aborts the phase.
+  const PHASE_RESTARTS = 10;
+  const RESTART_WAIT_MS = 60_000;
 
-  // Building chunks — same streaming pattern. This is the phase that the
-  // accumulate-then-write implementation timed out in: ~60 chunks of ~3MB
-  // each held in memory while ~600 sequential paginations ran. Even with
-  // streaming the buildings phase can exceed maxDuration on the cron tier,
-  // so we re-checkpoint index every 10 chunks to ensure a usable index.xml
-  // always exists after a partial run.
-  try {
+  async function runPhase(
+    label: string,
+    prefix: "l" | "b",
+    makeGenerator: (startCursor?: string) => AsyncGenerator<GeneratedChunk>,
+  ): Promise<number> {
     let i = 0;
-    for await (const chunk of generateBuildingChunks()) {
-      const name = `b-${i}.xml`;
-      await writeChunkToBlob(name, chunk);
-      written.push(name);
-      console.log(`[regenerate-sitemaps] wrote ${name} (${chunk.length} bytes)`);
-      i++;
-      if (i % 10 === 0) await checkpointIndex();
+    let resumeCursor: string | undefined;
+    let restarts = 0;
+    for (;;) {
+      try {
+        for await (const chunk of makeGenerator(resumeCursor)) {
+          const name = `${prefix}-${i}.xml`;
+          await writeChunkToBlob(name, chunk.xml);
+          written.set(name, chunk.lastmod);
+          resumeCursor = chunk.cursor;
+          restarts = 0; // progress resets the error budget
+          console.log(`[regenerate-sitemaps] wrote ${name} (${chunk.xml.length} bytes)`);
+          i++;
+          if (i % 10 === 0) await checkpointIndex();
+        }
+        return i;
+      } catch (e) {
+        restarts++;
+        if (restarts >= PHASE_RESTARTS) {
+          errors.push(`${label}: ${(e as Error).message} (gave up after ${restarts} restarts at chunk ${i})`);
+          return i;
+        }
+        console.warn(
+          `[regenerate-sitemaps] ${label} failed at chunk ${i} (${(e as Error).message}); ` +
+            `restart ${restarts}/${PHASE_RESTARTS} from cursor ${resumeCursor ?? "start"} in ${RESTART_WAIT_MS / 1000}s`,
+        );
+        await new Promise((r) => setTimeout(r, RESTART_WAIT_MS));
+      }
     }
-    buildingChunkCount = i;
+  }
+
+  landlordChunkCount = await runPhase("landlord chunks", "l", (c) => generateLandlordChunks(c));
+  await checkpointIndex();
+  buildingChunkCount = await runPhase("building chunks", "b", (c) => generateBuildingChunks(c));
+
+  // Dedicated sub-indexes: buildings.xml (b-chunks only, served at
+  // /buildings-sitemap.xml and /sitemap-buildings.xml) and landlords.xml
+  // (l-chunks only, served at /sitemap-landlords.xml).
+  try {
+    const bEntries = [...written].filter(([n]) => n.startsWith("b-"));
+    await writeChunkToBlob("buildings.xml", buildSitemapIndex(indexEntriesFor(bEntries)));
+    const lEntries = [...written].filter(([n]) => n.startsWith("l-"));
+    await writeChunkToBlob("landlords.xml", buildSitemapIndex(indexEntriesFor(lEntries)));
   } catch (e) {
-    errors.push(`building chunks: ${(e as Error).message}`);
+    errors.push(`sub-indexes: ${(e as Error).message}`);
   }
 
   // Final index write — covers any partial chunks since the last checkpoint
   // boundary and ensures the index is consistent with the full `written` set.
   try {
-    const indexEntries: IndexEntry[] = written.map((name) => ({ name, lastmod: now }));
-    indexEntries.sort((a, b) => order(a.name).localeCompare(order(b.name)));
-    await writeChunkToBlob("index.xml", buildSitemapIndex(indexEntries));
+    await writeChunkToBlob("index.xml", buildSitemapIndex(indexEntriesFor(written)));
   } catch (e) {
     errors.push(`index.xml: ${(e as Error).message}`);
   }
 
   return {
     ok: errors.length === 0,
-    chunks: written.length + 1, // + index.xml
+    chunks: written.size + 3, // + index.xml, buildings.xml, landlords.xml
     staticUrls,
     hubsUrls,
     landlordChunks: landlordChunkCount,
@@ -752,6 +824,7 @@ function order(n: string): string {
 
 export function isValidChunkName(name: string): boolean {
   if (name === "index.xml" || name === "0.xml" || name === "hubs.xml") return true;
+  if (name === "buildings.xml" || name === "landlords.xml") return true;
   if (/^b-\d+\.xml$/.test(name)) return true;
   if (/^l-\d+\.xml$/.test(name)) return true;
   return false;

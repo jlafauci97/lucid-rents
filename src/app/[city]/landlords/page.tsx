@@ -353,8 +353,11 @@ export default async function LandlordsPage({ params: routeParams }: Props) {
   return (
     <AdSidebar>
       <main style={{ background: PAPER, color: INK, fontFamily: SANS, minHeight: "100vh" }}>
-        {/* Pagination link rels removed — page is now a static shell;
-            <DirectoryClient> handles its own pagination state. */}
+        {/* Crawl entry into the server-rendered /landlords/page/N chain — the
+            interactive <DirectoryClient> pagination is client state and never
+            reaches the HTML, so without this the ~870K-landlord corpus is
+            unreachable by links. */}
+        {totalPages > 1 && <link rel="next" href={canonicalUrl(`${basePath}/page/2`)} />}
 
         {/* Tighter horizontal padding on smallest phones — 16px gives bento cards
             and the hero search bar more breathing room at 360-414px widths. */}
