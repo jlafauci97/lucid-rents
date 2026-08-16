@@ -3148,6 +3148,33 @@ async function syncLAHDEvictions(
       errors.push(`LAHD Evictions linking error: ${String(linkErr)}`);
     }
 
+    // Maintain buildings.ellis_act_filing. LAHD never labels rows "Ellis" —
+    // the dataset's Ellis Act signature is No-Fault + a 120-day notice.
+    try {
+      const { error: ellisErr } = await supabase.rpc("exec_sql", {
+        query: `
+          UPDATE buildings b
+          SET ellis_act_filing = true,
+              ellis_act_date = e.max_date
+          FROM (
+            SELECT building_id, max(coalesce(notice_date, received_date)) AS max_date
+            FROM lahd_evictions
+            WHERE metro = 'los-angeles'
+              AND eviction_category = 'No-Fault'
+              AND notice_type = '120 Day'
+              AND building_id IS NOT NULL
+            GROUP BY building_id
+          ) e
+          WHERE b.id = e.building_id
+            AND (b.ellis_act_filing IS DISTINCT FROM true
+                 OR b.ellis_act_date IS DISTINCT FROM e.max_date)
+        `,
+      });
+      if (ellisErr) errors.push(`Ellis flag update error: ${ellisErr.message}`);
+    } catch (ellisErr) {
+      errors.push(`Ellis flag update error: ${String(ellisErr)}`);
+    }
+
     await finalizeSyncLog(supabase, logId, "completed", totalAdded, totalLinked, errors);
   } catch (err) {
     errors.push(`LAHD Evictions fatal error: ${String(err)}`);
