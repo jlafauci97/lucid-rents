@@ -67,11 +67,12 @@ else
 fi
 
 step "Installing launchd job (nightly 03:30 local)"
-NPX_PATH="$(command -v npx)" || die "npx not on PATH"
+[[ -x "$REPO_DIR/node_modules/.bin/tsx" ]] || die "node_modules/.bin/tsx missing — npm install failed?"
 mkdir -p "$HOME/Library/LaunchAgents"
-# Rewrite the repo-committed plist for this machine: working dir + npx path.
-sed -e "s|<string>/usr/local/bin/npx</string>|<string>${NPX_PATH}</string>|" \
-    -e "s|<string>/Users/jesselafauci/Desktop/lucid-rents</string>|<string>${REPO_DIR}</string>|" \
+# Rewrite the repo-committed plist for this machine's repo path (covers both
+# WorkingDirectory and the tsx binary path — npx hangs under launchd, so the
+# plist invokes node_modules/.bin/tsx directly).
+sed "s|/Users/jesselafauci/Desktop/lucid-rents|${REPO_DIR}|g" \
     "$PLIST_SRC" > "$PLIST_DST"
 launchctl unload "$PLIST_DST" 2>/dev/null || true
 launchctl load "$PLIST_DST"
