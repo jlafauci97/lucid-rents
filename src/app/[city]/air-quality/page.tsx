@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { unstable_cache } from "next/cache";
 import Link from "next/link";
 import { Wind, Search, ShieldCheck } from "lucide-react";
 import { VALID_CITIES, CITY_META, type City } from "@/lib/cities";
@@ -7,6 +8,35 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { createCacheClient } from "@/lib/supabase/cache-client";
 
 export const revalidate = 86400; // 24h ISR
+
+// Build-time data, read through the data cache (persists across deploys on
+// Vercel) so prerenders don't race a busy DB and blow the 60s/page budget.
+// CalEnviroScreen is a static dataset and the building count is header copy —
+// a week of staleness is invisible. `count: "planned"` (planner estimate)
+// instead of `"exact"`: a full COUNT(*) over the >1M-row buildings table
+// statement-times-out under load (same precedent as building-list/query.ts).
+const getAirQualityData = unstable_cache(
+  async (city: City) => {
+    const supabase = createCacheClient();
+    const [{ data: worstZips }, { count: highPollutionBuildings }] =
+      await Promise.all([
+        supabase
+          .from("calenviroscreen")
+          .select("zip_code, ces_percentile, pm25_percentile, ozone_percentile, traffic_percentile")
+          .gte("ces_percentile", 75)
+          .order("ces_percentile", { ascending: false })
+          .limit(10),
+        supabase
+          .from("buildings")
+          .select("id", { count: "planned", head: true })
+          .eq("metro", city)
+          .gte("calenviroscreen_percentile", 75),
+      ]);
+    return { worstZips, highPollutionBuildings };
+  },
+  ["air-quality"],
+  { revalidate: 604800, tags: ["air-quality"] },
+);
 
 export function generateStaticParams() {
   return VALID_CITIES.map((city) => ({ city }));
@@ -29,10 +59,7 @@ export default async function AirQualityPage({ params }: { params: Promise<{ cit
   const city = cityParam as City;
   const meta = CITY_META[city];
   const cityName = meta?.fullName ?? "Los Angeles";
-  const supabase = createCacheClient();
-
-  const { data: worstZips } = await supabase.from("calenviroscreen").select("zip_code, ces_percentile, pm25_percentile, ozone_percentile, traffic_percentile").gte("ces_percentile", 75).order("ces_percentile", { ascending: false }).limit(10);
-  const { count: highPollutionBuildings } = await supabase.from("buildings").select("id", { count: "exact", head: true }).eq("metro", city).gte("calenviroscreen_percentile", 75);
+  const { worstZips, highPollutionBuildings } = await getAirQualityData(city);
 
   return (
     <div className="min-h-screen bg-gray-50">

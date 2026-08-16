@@ -56,13 +56,15 @@ async function loadRelatedContext(building: Building): Promise<RelatedContext> {
 
   const [streetRes, worstRes, eraRes, nbhStats] = await Promise.all([
     // Buildings on same street in same borough/metro (excluding self)
+    // borough uses eq, not ilike — building.borough IS the stored value (it
+    // came from this building's row), and ilike forces a seq scan.
     building.street_name
       ? supabase
           .from("buildings")
           .select("id", { count: "exact", head: true })
           .eq("metro", building.metro)
           .eq("street_name", building.street_name)
-          .ilike("borough", building.borough)
+          .eq("borough", building.borough)
           .neq("id", building.id)
       : Promise.resolve({ count: 0, error: null }),
     // Owner's buildings with low scores (<= 2.5 on 0-5 scale) excluding self
@@ -75,16 +77,24 @@ async function loadRelatedContext(building: Building): Promise<RelatedContext> {
           .lte("overall_score", 2.5)
           .neq("id", building.id)
       : Promise.resolve({ count: 0, error: null }),
-    // Same-era buildings (within ±10 years) in same borough
+    // Same-era buildings (within ±10 years) in same borough. count: "planned"
+    // (planner estimate), NOT exact: a dense NYC borough+era window matches
+    // >100K rows, and counting them exactly needs a scan that hit the anon
+    // role's 8s statement_timeout on EVERY cold render — this one query gated
+    // cold TTFB at ~8.7s site-wide (the count only feeds link copy).
+    // limit(1), not head:true: PostgREST executes HEAD requests WITHOUT the
+    // implicit limit (verified against prod — HEAD here ran the unbounded
+    // select and timed out identically), while GET+limit(1)+planned is ~150ms.
     building.year_built
       ? supabase
           .from("buildings")
-          .select("id", { count: "exact", head: true })
+          .select("id", { count: "planned" })
           .eq("metro", building.metro)
-          .ilike("borough", building.borough)
+          .eq("borough", building.borough)
           .gte("year_built", building.year_built - 10)
           .lte("year_built", building.year_built + 10)
           .neq("id", building.id)
+          .limit(1)
       : Promise.resolve({ count: 0, error: null }),
     nbhStatsPromise,
   ]);
