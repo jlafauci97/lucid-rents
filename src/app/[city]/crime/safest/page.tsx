@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { unstable_cache } from "next/cache";
 import Link from "next/link";
 import { Shield } from "lucide-react";
 import { createCacheClient } from "@/lib/supabase/cache-client";
@@ -50,6 +51,25 @@ export async function generateMetadata({
   };
 }
 
+// The two ranking RPCs aggregate the full crime table; on a busy DB (nightly
+// sitemap window) they queue long enough to blow Vercel's 60s/page prerender
+// budget during deploys. Read them through the data cache — persisted across
+// deploys on Vercel — so builds reuse warm data. `sinceDateStr` is part of
+// the cache key, so it's truncated to the month below to keep the key stable
+// across builds (a ±30-day skew on a 2-year window doesn't change rankings).
+const getSafestCrimeData = unstable_cache(
+  async (city: City, sinceDateStr: string) => {
+    const supabase = createCacheClient();
+    const [zipRes, yoyRes] = await Promise.all([
+      supabase.rpc("crime_by_zip", { since_date: sinceDateStr, metro: city }),
+      supabase.rpc("crime_zip_yoy", { metro: city }),
+    ]);
+    return { zipData: zipRes.data || [], yoyData: yoyRes.data || [] };
+  },
+  ["crime-safest"],
+  { revalidate: 86400, tags: ["crime"] },
+);
+
 interface YoyRow {
   zip_code: string;
   current_year_total: number;
@@ -70,21 +90,16 @@ export default async function SafestNeighborhoodsPage({
   const city = cityParam as City;
   const meta = CITY_META[city];
 
-  const supabase = createCacheClient();
   const sinceDate = new Date();
   sinceDate.setFullYear(sinceDate.getFullYear() - 2);
+  sinceDate.setDate(1); // month granularity — stable cache key across builds
   const sinceDateStr = sinceDate.toISOString().split("T")[0];
 
-  const [zipRes, yoyRes] = await Promise.all([
-    supabase.rpc("crime_by_zip", { since_date: sinceDateStr, metro: city }),
-    supabase.rpc("crime_zip_yoy", { metro: city }),
-  ]);
-
-  const zipData = zipRes.data || [];
+  const { zipData, yoyData } = await getSafestCrimeData(city, sinceDateStr);
 
   // Build YoY map
   const yoyMap = new Map<string, YoyRow>();
-  for (const row of (yoyRes.data || []) as YoyRow[]) {
+  for (const row of yoyData as YoyRow[]) {
     yoyMap.set(row.zip_code, row);
   }
 

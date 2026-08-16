@@ -1,7 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { createCacheClient } from "@/lib/supabase/cache-client";
 import { canonicalUrl, cityPath, buildingUrl } from "@/lib/seo";
 import { isValidCity, CITY_META, VALID_CITIES, type City } from "@/lib/cities";
 import {
@@ -10,7 +9,7 @@ import {
   isValidChipForCity,
   type ChipId,
 } from "@/lib/building-list/chips";
-import { countBuildingsForChip, getChipSummary } from "@/lib/building-list/query";
+import { getChipCountCached, getChipSummaryCached } from "@/lib/building-list/query";
 import { CategoryCard } from "@/components/building-list/CategoryCard";
 import { BuildingsClient } from "./BuildingsClient";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
@@ -83,8 +82,7 @@ export default async function CategoryPage({
   // Static shell only needs the total count for the header copy + related
   // chips. The actual buildings list + sort/pagination is rendered by
   // <BuildingsClient> against /api/building-list/[chip].
-  const supabase = createCacheClient();
-  const count = await countBuildingsForChip(supabase, city, chip);
+  const count = await getChipCountCached(city, chip.id);
 
   const basePath = cityPath(`/building-list/${chip.slug}`, city);
 
@@ -93,7 +91,7 @@ export default async function CategoryPage({
   const relatedSummaries = await Promise.all(
     relatedChips.slice(0, 3).map(async (c) => ({
       chip: c,
-      ...(await getChipSummary(supabase, city, c.id)),
+      ...(await getChipSummaryCached(city, c.id)),
     })),
   );
 

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { unstable_cache } from "next/cache";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Ban, Search, ExternalLink, AlertTriangle } from "lucide-react";
@@ -8,6 +9,37 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { createCacheClient } from "@/lib/supabase/cache-client";
 
 export const revalidate = 86400; // 24h ISR
+
+// Build-time data, read through the data cache (persists across deploys on
+// Vercel) so prerenders don't race a busy DB and blow the 60s/page budget.
+// Ellis Act filings change rarely — a week of staleness is fine. The exact
+// counts stay exact (both filters are selective; the headline stats should
+// not be planner guesses) — the cache is what keeps them off the deploy path.
+const getEllisActData = unstable_cache(
+  async (city: City) => {
+    const supabase = createCacheClient();
+    const [
+      { data: ellisBuildings, count: totalEllis },
+      { count: ellisEvictionCount },
+    ] = await Promise.all([
+      supabase
+        .from("buildings")
+        .select("id, full_address, borough, slug, ellis_act_date, residential_units, year_built", { count: "exact" })
+        .eq("metro", city)
+        .eq("ellis_act_filing", true)
+        .order("ellis_act_date", { ascending: false })
+        .limit(20),
+      supabase
+        .from("lahd_evictions")
+        .select("id", { count: "exact", head: true })
+        .eq("metro", "los-angeles")
+        .ilike("eviction_category", "%Ellis%"),
+    ]);
+    return { ellisBuildings, totalEllis, ellisEvictionCount };
+  },
+  ["ellis-act"],
+  { revalidate: 604800, tags: ["ellis-act"] },
+);
 
 export function generateStaticParams() {
   return VALID_CITIES.map((city) => ({ city }));
@@ -33,10 +65,7 @@ export default async function EllisActPage({ params }: { params: Promise<{ city:
   const city = cityParam as City;
   const meta = CITY_META[city];
   const cityName = meta?.fullName ?? "Los Angeles";
-  const supabase = createCacheClient();
-
-  const { data: ellisBuildings, count: totalEllis } = await supabase.from("buildings").select("id, full_address, borough, slug, ellis_act_date, residential_units, year_built", { count: "exact" }).eq("metro", city).eq("ellis_act_filing", true).order("ellis_act_date", { ascending: false }).limit(20);
-  const { count: ellisEvictionCount } = await supabase.from("lahd_evictions").select("id", { count: "exact", head: true }).eq("metro", "los-angeles").ilike("eviction_category", "%Ellis%");
+  const { ellisBuildings, totalEllis, ellisEvictionCount } = await getEllisActData(city);
 
   return (
     <div className="min-h-screen bg-gray-50">
