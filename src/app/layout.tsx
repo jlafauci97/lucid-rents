@@ -3,7 +3,6 @@ import { Sora } from "next/font/google";
 import { Geist_Mono } from "next/font/google";
 import { Young_Serif } from "next/font/google";
 import { Geist } from "next/font/google";
-import Script from "next/script";
 import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -12,10 +11,9 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { FooterAd } from "@/components/ads/FooterAd";
 import { AnchorAd } from "@/components/ads/AnchorAd";
 import { AdsenseLoader } from "@/components/ads/AdsenseLoader";
+import { AnalyticsLoader } from "@/components/analytics/AnalyticsLoader";
 
-const GA_MEASUREMENT_ID = "G-FS7Q3PF982";
 const ADSENSE_CLIENT_ID = "ca-pub-2908534121884582";
-const CLARITY_PROJECT_ID = "xvce52ac0c";
 
 const sora = Sora({
   variable: "--font-sora",
@@ -130,32 +128,14 @@ export default async function RootLayout({
         <link rel="dns-prefetch" href="https://fundingchoicesmessages.google.com" />
         <link rel="preconnect" href="https://www.clarity.ms" crossOrigin="anonymous" />
       </head>
-      <Script
-        src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
-        strategy="lazyOnload"
-      />
-      <Script id="google-analytics" strategy="lazyOnload">
-        {`
-          window.dataLayer = window.dataLayer || [];
-          function gtag(){dataLayer.push(arguments);}
-          gtag('js', new Date());
-          gtag('config', '${GA_MEASUREMENT_ID}');
-        `}
-      </Script>
-      {/* Microsoft Clarity — click heatmaps + session recordings.
-          afterInteractive (not lazyOnload like GA above) on purpose: lazyOnload
-          waits for window.load, which on our image-heavy pages lands after the
-          first clicks and scrolls, and those are exactly what Clarity exists to
-          record. Drop to lazyOnload if it ever shows up in a Lighthouse trace. */}
-      <Script id="microsoft-clarity" strategy="afterInteractive">
-        {`
-          (function(c,l,a,r,i,t,y){
-            c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-            t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-            y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-          })(window, document, "clarity", "script", "${CLARITY_PROJECT_ID}");
-        `}
-      </Script>
+      {/* GA (gtag.js) + Microsoft Clarity are injected by AnalyticsLoader
+          (in <body> below) on first user interaction or 5s idle — the same
+          gate as AdsenseLoader. They were the largest main-thread cost in
+          the initial load (~166KB gtag + Clarity ≈ most of the measured
+          1.1-1.5s TBT), and crawlers/Lighthouse never interact so they never
+          pay it. Trade-offs (sub-5s no-interaction bounces uncounted;
+          Clarity replay starts at the triggering interaction) are documented
+          in AnalyticsLoader. */}
       {/* adsbygoogle.js is injected by AdsenseLoader (below) on first user
           interaction rather than at lazyOnload. The preconnect to
           pagead2.googlesyndication.com remains in <head> so the TLS handshake
@@ -176,6 +156,7 @@ export default async function RootLayout({
         <FooterAd />
         <AnchorAd />
         <AdsenseLoader />
+        <AnalyticsLoader />
       </body>
     </html>
   );

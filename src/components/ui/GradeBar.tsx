@@ -1,8 +1,7 @@
 "use client";
 
-import { useRef } from "react";
-import { motion, useInView } from "framer-motion";
 import { T, gradeColor } from "@/lib/design-tokens";
+import { useInViewOnce } from "@/lib/useInViewOnce";
 
 interface GradeBarProps {
   label: string;
@@ -15,8 +14,7 @@ interface GradeBarProps {
 export function GradeBar({ label, grade, score, maxScore = 5, delay = 0 }: GradeBarProps) {
   const pct = (score / maxScore) * 100;
   const color = gradeColor(grade);
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: "-50px" });
+  const { ref, inView } = useInViewOnce<HTMLDivElement>("-50px");
 
   return (
     <div ref={ref} className="flex items-center gap-3 sm:gap-4 group">
@@ -33,12 +31,13 @@ export function GradeBar({ label, grade, score, maxScore = 5, delay = 0 }: Grade
         {grade}
       </span>
       <div className="flex-1 h-[6px] rounded-full overflow-hidden" style={{ backgroundColor: T.subtle }}>
-        <motion.div
+        <div
           className="h-full rounded-full"
-          style={{ backgroundColor: color }}
-          initial={{ width: 0 }}
-          animate={inView ? { width: `${pct}%` } : { width: 0 }}
-          transition={{ duration: 0.8, delay, ease: [0.25, 0.46, 0.45, 0.94] }}
+          style={{
+            backgroundColor: color,
+            width: inView ? `${pct}%` : 0,
+            transition: `width 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) ${delay}s`,
+          }}
         />
       </div>
       <span
