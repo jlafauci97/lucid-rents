@@ -158,6 +158,40 @@ export async function proxy(request: NextRequest) {
   const bbResponse = checkBuildingListChip(request, segments, firstSegment);
   if (bbResponse) return withNoindex(bbResponse, request);
 
+  // 0b. Directory pagination canonicalization, shared by both city-prefix
+  // shapes below. Legacy ?page=N URLs (the fake-pagination era: every ?page=N
+  // served page-1 content) 301 to the real path-segment form /page/N, and
+  // /page/1 301s to the bare listing so page 1 has exactly one URL.
+  const paginationRedirect = (externalPrefix: string, rest: string[]): NextResponse | null => {
+    const isBoroughListing = rest[0] === "buildings" && rest.length >= 2;
+    const isLandlords = rest[0] === "landlords";
+    if (!isBoroughListing && !isLandlords) return null;
+
+    const listingDepth = isLandlords ? 1 : 2; // segments that form the listing base
+    const base = `/${externalPrefix}/${rest.slice(0, listingDepth).join("/")}`;
+
+    // /page/1 → base
+    if (rest[listingDepth] === "page" && rest[listingDepth + 1] === "1" && rest.length === listingDepth + 2) {
+      const url = request.nextUrl.clone();
+      url.pathname = base;
+      return NextResponse.redirect(url, 301);
+    }
+
+    // ?page=N on the bare listing → /page/N (N>1) or base (N<=1/invalid).
+    // Only when `page` is the SOLE query param: with sort/search present the
+    // URL is client-side directory state (robots-disallowed ?sort, uncrawled
+    // search), and redirecting would strip that state mid-interaction.
+    const pageParam = request.nextUrl.searchParams.get("page");
+    if (pageParam !== null && request.nextUrl.searchParams.size === 1 && rest.length === listingDepth) {
+      const n = parseInt(pageParam, 10);
+      const url = request.nextUrl.clone();
+      url.searchParams.delete("page");
+      url.pathname = Number.isFinite(n) && n > 1 ? `${base}/page/${n}` : base;
+      return NextResponse.redirect(url, 301);
+    }
+    return null;
+  };
+
   // 1a. Check for multi-segment city prefix: /CA/Los-Angeles/... → rewrite to /los-angeles/...
   const stateMap = STATE_CITY_MAP[firstSegment.toUpperCase()];
   if (stateMap) {
@@ -182,6 +216,11 @@ export async function proxy(request: NextRequest) {
         const rest = segments.slice(4);
         url.pathname = `/${CITY_META[internalCity].urlPrefix}/building-rankings${rest.length ? "/" + rest.join("/") : ""}`;
         return NextResponse.redirect(url, 301);
+      }
+
+      {
+        const pr = paginationRedirect(CITY_META[internalCity].urlPrefix, segments.slice(3));
+        if (pr) return pr;
       }
 
       // Handle neighborhood slug redirects for LA
@@ -217,6 +256,10 @@ export async function proxy(request: NextRequest) {
       const prefix = CITY_META[firstSegment as (typeof VALID_CITIES)[number]].urlPrefix;
       url.pathname = `/${prefix}/building-rankings${segments.slice(3).length ? "/" + segments.slice(3).join("/") : ""}`;
       return NextResponse.redirect(url, 301);
+    }
+    {
+      const pr = paginationRedirect(firstSegment, segments.slice(2));
+      if (pr) return pr;
     }
     // Redirect old-format neighborhood URLs: /nyc/neighborhood/10001 -> /nyc/neighborhood/chelsea-10001
     if (segments[2] === "neighborhood" && segments[3] && /^\d{5}$/.test(segments[3])) {

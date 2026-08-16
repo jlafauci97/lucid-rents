@@ -26,6 +26,10 @@ export default function robots(): MetadataRoute.Robots {
         "/*/review/new",    // city-prefixed review pages (e.g. /nyc/review/new?building=...)
         "/*?ids=",          // compare pages with building IDs
         "/compare",         // non-city-prefixed compare (redirects)
+        "/*?sort=",         // client-side directory sort state — same content,
+                            // different order; real pagination lives at /page/N
+        "/mission-control/", // admin UI
+        "/mock/",           // design prototype pages (placeholder content)
       ],
     },
     sitemap: [

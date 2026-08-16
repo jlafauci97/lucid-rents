@@ -8,7 +8,15 @@ interface NewsListProps {
   page: number;
   totalCount: number;
   perPage: number;
-  basePath: string; // e.g. "/news" or "/news/rental-market"
+  /** City-prefixed listing path, e.g. "/nyc/news" or "/nyc/news/rental-market". */
+  basePath: string;
+}
+
+// Deep pages are path segments (`${basePath}/page/N`) so each is its own
+// ISR-cacheable, self-canonical route; page 1 is the bare basePath. The old
+// `?page=N` hrefs additionally lacked the city prefix and 404'd site-wide.
+function pageHref(basePath: string, page: number): string {
+  return page <= 1 ? basePath : `${basePath}/page/${page}`;
 }
 
 export function NewsList({
@@ -47,7 +55,7 @@ export function NewsList({
           <div className="flex items-center gap-2">
             {hasPrev ? (
               <Link
-                href={`${basePath}?page=${page - 1}`}
+                href={pageHref(basePath, page - 1)}
                 className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-[#3B82F6] hover:bg-[#EFF6FF] rounded-lg transition-colors"
               >
                 <ChevronLeft className="w-4 h-4" />
@@ -61,7 +69,7 @@ export function NewsList({
             )}
             {hasNext ? (
               <Link
-                href={`${basePath}?page=${page + 1}`}
+                href={pageHref(basePath, page + 1)}
                 className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-[#3B82F6] hover:bg-[#EFF6FF] rounded-lg transition-colors"
               >
                 Next

@@ -2,6 +2,8 @@ import Link from "next/link";
 import { Clock } from "lucide-react";
 import type { NewsArticle } from "@/types";
 import { NEWS_CATEGORIES, type NewsCategory } from "@/lib/news-sources";
+import { cityPath } from "@/lib/seo";
+import { isValidCity } from "@/lib/cities";
 
 function timeAgo(dateStr: string): string {
   const now = Date.now();
@@ -29,10 +31,14 @@ export function NewsCard({ article }: { article: NewsArticle }) {
   const categoryMeta = NEWS_CATEGORIES[article.category as NewsCategory];
   const categoryColor =
     CATEGORY_COLORS[article.category] || CATEGORY_COLORS.general;
+  // City-prefix from the article's own metro — the bare /news/... form only
+  // reaches the right page via a proxy 301 (and the wrong city without one).
+  const articleCity = isValidCity(article.metro ?? "") ? article.metro! : "nyc";
+  const href = cityPath(`/news/${article.slug}`, articleCity as import("@/lib/cities").City);
 
   return (
     <article className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm hover:shadow-md transition-shadow overflow-hidden">
-      <Link href={`/news/${article.slug}`} className="flex gap-0 sm:gap-4 p-4 sm:p-5">
+      <Link href={href} className="flex gap-0 sm:gap-4 p-4 sm:p-5">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-2">
             <span
