@@ -39,6 +39,7 @@ Sitemap: https://lucidrents.com/sitemap-landlords.xml
 # AI-readable site overviews:
 # https://lucidrents.com/llms.txt
 # https://lucidrents.com/llms-full.txt
+# MCP server for AI agents (read-only, Streamable HTTP): https://lucidrents.com/api/mcp
 `;
 
 const NON_PRODUCTION_BODY = `User-Agent: *

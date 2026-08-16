@@ -43,6 +43,18 @@ Lucid Rents aggregates public data from city agencies including:
 - Los Angeles: LAHD violations, LADBS permits, LAPD crime data, RSO registry
 - Chicago: City of Chicago building violations, CPD crime data
 
+## MCP Server (for AI agents)
+
+Lucid Rents runs a free, read-only MCP (Model Context Protocol) server at `https://lucidrents.com/api/mcp` (Streamable HTTP, no auth). Connect any MCP-capable client to query building intelligence directly:
+
+- `search_buildings(query, city?)` — resolve an address to building matches
+- `get_building_report(city, slug)` — score, violations, complaints, rents, landlord, similar buildings
+- `get_landlord_record(city, slugOrName)` — portfolio size, total violations, average score
+- `get_neighborhood_stats(city, zip)` — median rents by bedrooms, crime summary
+- `get_review_summary(city, slug)` — tenant review counts, ratings, pull quotes
+
+Every response includes the canonical lucidrents.com page URL for citation.
+
 ## Extended Info
 
 - [Full details for AI systems](https://lucidrents.com/llms-full.txt)
