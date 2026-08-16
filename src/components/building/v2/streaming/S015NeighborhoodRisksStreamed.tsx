@@ -30,6 +30,7 @@ async function Inner({ building }: { building: Building }) {
     lat,
     lng,
     slug: building.slug,
+    metro: building.metro ?? undefined,
   });
 
   return <S015_NeighborhoodRisks result={result} city="nyc" />;
