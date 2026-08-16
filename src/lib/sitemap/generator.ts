@@ -738,10 +738,34 @@ export async function regenerateAllToBlob(): Promise<RegenerateResult> {
   // and the phase RESUMES from the last completed chunk's keyset cursor if
   // the generator dies (DB pressure outlasting supabaseFetch's retries, or
   // a network drop: a 2h19m run once died to one unretried "fetch failed").
-  // Only an error budget of PHASE_RESTARTS consecutive failed restarts
-  // aborts the phase.
-  const PHASE_RESTARTS = 10;
-  const RESTART_WAIT_MS = 60_000;
+  // A phase only aborts after MAX_QUIET_MS with zero progress; the wait
+  // doubles from 1min up to 15min between consecutive failures, so a
+  // multi-hour outage (the 2026-08-16 morning drop outlasted the previous
+  // 10×60s budget) costs retries, not the run. Any successful chunk resets
+  // both the backoff and the quiet clock.
+  const MAX_QUIET_MS = 6 * 60 * 60 * 1000;
+  const BASE_WAIT_MS = 60_000;
+  const MAX_WAIT_MS = 15 * 60_000;
+  const backoffMs = (failures: number): number =>
+    Math.min(MAX_WAIT_MS, BASE_WAIT_MS * 2 ** (failures - 1));
+
+  // Same policy for single writes (final indexes): worth hours of retries,
+  // since index.xml is the entry point crawlers actually fetch.
+  async function retryThroughOutage(label: string, fn: () => Promise<void>): Promise<void> {
+    const startedAt = Date.now();
+    for (let failures = 1; ; failures++) {
+      try {
+        return await fn();
+      } catch (e) {
+        if (Date.now() - startedAt >= MAX_QUIET_MS) throw e;
+        const waitMs = backoffMs(failures);
+        console.warn(
+          `[regenerate-sitemaps] ${label} failed (${(e as Error).message}); retry in ${Math.round(waitMs / 1000)}s`,
+        );
+        await new Promise((r) => setTimeout(r, waitMs));
+      }
+    }
+  }
 
   async function runPhase(
     label: string,
@@ -751,6 +775,7 @@ export async function regenerateAllToBlob(): Promise<RegenerateResult> {
     let i = 0;
     let resumeCursor: string | undefined;
     let restarts = 0;
+    let lastProgressAt = Date.now();
     for (;;) {
       try {
         for await (const chunk of makeGenerator(resumeCursor)) {
@@ -758,22 +783,28 @@ export async function regenerateAllToBlob(): Promise<RegenerateResult> {
           await writeChunkToBlob(name, chunk.xml);
           written.set(name, chunk.lastmod);
           resumeCursor = chunk.cursor;
-          restarts = 0; // progress resets the error budget
+          restarts = 0; // progress resets the backoff and the quiet clock
+          lastProgressAt = Date.now();
           i++;
           if (i % 10 === 0) await checkpointIndex();
         }
         return i;
       } catch (e) {
         restarts++;
-        if (restarts >= PHASE_RESTARTS) {
-          errors.push(`${label}: ${(e as Error).message} (gave up after ${restarts} restarts at chunk ${i})`);
+        const quietMs = Date.now() - lastProgressAt;
+        if (quietMs >= MAX_QUIET_MS) {
+          errors.push(
+            `${label}: ${(e as Error).message} (no progress for ${Math.round(quietMs / 60_000)}m, ${restarts} restarts, at chunk ${i})`,
+          );
           return i;
         }
+        const waitMs = backoffMs(restarts);
         console.warn(
           `[regenerate-sitemaps] ${label} failed at chunk ${i} (${(e as Error).message}); ` +
-            `restart ${restarts}/${PHASE_RESTARTS} from cursor ${resumeCursor ?? "start"} in ${RESTART_WAIT_MS / 1000}s`,
+            `restart ${restarts} from cursor ${resumeCursor ?? "start"} in ${Math.round(waitMs / 1000)}s ` +
+            `(${Math.round((MAX_QUIET_MS - quietMs) / 60_000)}m left in outage budget)`,
         );
-        await new Promise((r) => setTimeout(r, RESTART_WAIT_MS));
+        await new Promise((r) => setTimeout(r, waitMs));
       }
     }
   }
@@ -786,10 +817,12 @@ export async function regenerateAllToBlob(): Promise<RegenerateResult> {
   // /buildings-sitemap.xml and /sitemap-buildings.xml) and landlords.xml
   // (l-chunks only, served at /sitemap-landlords.xml).
   try {
-    const bEntries = [...written].filter(([n]) => n.startsWith("b-"));
-    await writeChunkToBlob("buildings.xml", buildSitemapIndex(indexEntriesFor(bEntries)));
-    const lEntries = [...written].filter(([n]) => n.startsWith("l-"));
-    await writeChunkToBlob("landlords.xml", buildSitemapIndex(indexEntriesFor(lEntries)));
+    await retryThroughOutage("sub-indexes", async () => {
+      const bEntries = [...written].filter(([n]) => n.startsWith("b-"));
+      await writeChunkToBlob("buildings.xml", buildSitemapIndex(indexEntriesFor(bEntries)));
+      const lEntries = [...written].filter(([n]) => n.startsWith("l-"));
+      await writeChunkToBlob("landlords.xml", buildSitemapIndex(indexEntriesFor(lEntries)));
+    });
   } catch (e) {
     errors.push(`sub-indexes: ${(e as Error).message}`);
   }
@@ -797,7 +830,9 @@ export async function regenerateAllToBlob(): Promise<RegenerateResult> {
   // Final index write — covers any partial chunks since the last checkpoint
   // boundary and ensures the index is consistent with the full `written` set.
   try {
-    await writeChunkToBlob("index.xml", buildSitemapIndex(indexEntriesFor(written)));
+    await retryThroughOutage("index.xml", async () => {
+      await writeChunkToBlob("index.xml", buildSitemapIndex(indexEntriesFor(written)));
+    });
   } catch (e) {
     errors.push(`index.xml: ${(e as Error).message}`);
   }
