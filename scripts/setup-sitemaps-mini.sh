@@ -20,6 +20,14 @@ step() { print -P "%F{cyan}==>%f $1"; }
 ok()   { print -P "%F{green}  ✓%f $1"; }
 die()  { print -P "%F{red}  ✗%f $1"; exit 1; }
 
+# macOS TCC denies launchd agents access to Desktop/Documents/Downloads and
+# iCloud Drive with a silent EPERM — no permission prompt ever appears. The
+# nightly job would install fine and then die on its first file read.
+case "$REPO_DIR" in
+  "$HOME/Desktop/"*|"$HOME/Documents/"*|"$HOME/Downloads/"*|*"/Mobile Documents/"*)
+    die "repo is in a TCC-protected folder ($REPO_DIR) — launchd jobs get EPERM there. Clone to e.g. ~/.local/lucid-rents and run this script from that checkout" ;;
+esac
+
 step "Updating repo (branch: main)"
 git checkout -q main && git pull -q --ff-only
 ok "$(git log -1 --format='%h %s' | head -c 70)"
