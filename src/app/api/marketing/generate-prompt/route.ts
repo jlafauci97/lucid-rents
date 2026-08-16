@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { marketingModel } from "@/lib/marketing/ai-model";
 import { isMarketingAuthorized } from "@/lib/marketing/api-auth";
 
 export const maxDuration = 30;
@@ -23,7 +24,7 @@ export async function POST(req: NextRequest) {
     const { generateText } = await import("ai");
 
     const result = await generateText({
-      model: "anthropic/claude-sonnet-4.6" as never,
+      model: marketingModel(),
       system: `You are a social media creative director for LucidRents, a rental intelligence platform. Your job is to take rough inputs and turn them into compelling, detailed content briefs that will be used to generate social media posts.
 
 Write the brief as a single paragraph — direct, specific, and ready to be used as a prompt for content generation. Include the data angle, emotional hook, and suggested framing. Keep it under 200 words.

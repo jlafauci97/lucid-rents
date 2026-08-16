@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { marketingModel } from "@/lib/marketing/ai-model";
 import { isMarketingAuthorized } from "@/lib/marketing/api-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { MarketingContentType, MarketingVideoType } from "@/types/marketing";
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
     const systemPrompt = `${CONTENT_SYSTEM_PROMPT}\n\n${getContentTypePrompt(contentType)}\n\nThe user has provided this creative brief:\n"${prompt}"\n\nGenerate:\n1. A primary caption (the core message)\n2. Platform-specific variants for: Instagram, TikTok, X, LinkedIn, Pinterest, YouTube, Facebook, Threads, Bluesky\n3. Hashtags per platform (following the hashtag rules in the system prompt)\n4. For Pinterest: a search-optimized title, description, and suggested board\n5. For YouTube: a title and tags\n\nRespond in JSON format with this structure:\n{\n  "caption": "primary caption here",\n  "platform_variants": {\n    "instagram": { "caption": "...", "hashtags": ["..."] },\n    "tiktok": { "caption": "...", "hashtags": ["..."] },\n    "x": { "caption": "...", "hashtags": ["..."] },\n    "linkedin": { "caption": "...", "hashtags": ["..."] },\n    "pinterest": { "title": "...", "description": "...", "board": "..." },\n    "youtube": { "title": "...", "caption": "...", "hashtags": ["..."], "tags": ["..."] },\n    "facebook": { "caption": "...", "hashtags": ["..."] },\n    "threads": { "caption": "...", "hashtags": ["..."] },\n    "bluesky": { "caption": "..." }\n  }\n}\n\nOnly respond with valid JSON, no markdown fences.`;
 
     const result = await generateText({
-      model: "anthropic/claude-sonnet-4.6" as never,
+      model: marketingModel(),
       prompt: systemPrompt,
       maxOutputTokens: 4000,
     });

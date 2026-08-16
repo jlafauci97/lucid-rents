@@ -17,6 +17,7 @@
     "test:ui": "vitest --ui"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.111",
     "@anthropic-ai/sdk": "^0.90.0",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.49.1",

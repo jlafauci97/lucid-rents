@@ -33,5 +33,12 @@ jobs:
           BASE_URL: ${{ vars.BASE_URL || 'https://lucidrents.com' }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
           REDDIT_LOOKBACK_HOURS: ${{ github.event.inputs.lookback_hours || '6' }}
+          # Reads go through oauth.reddit.com — the public *.json endpoints
+          # return 403 to unauthenticated clients from any IP. Without these
+          # secrets every subreddit fails and the job now exits non-zero
+          # instead of reporting a green no-op.
+          REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
+          REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
+          REDDIT_USERNAME: ${{ vars.REDDIT_USERNAME }}
         run: |
           node scripts/scan-and-draft-reddit.mjs ${{ github.event.inputs.dry_run == 'true' && '--dry' || '' }}
