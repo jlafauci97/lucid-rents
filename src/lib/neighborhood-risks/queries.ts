@@ -33,6 +33,10 @@ export interface BuildingInput {
   lat: number;
   lng: number;
   slug: string;
+  /** Building's metro (nyc | los-angeles | chicago). The 311/rat/bedbug
+   * counters only have NYC data — passing a non-NYC metro skips those RPCs
+   * entirely instead of scanning NYC in vain for every LA/Chicago render. */
+  metro?: string;
 }
 
 // Match an "Avenue" segment in an NYC address. Conservative: needs the
@@ -209,50 +213,56 @@ async function fetchNeighborhoodRisksUncached(
 
   // 3. Block-level live queries.
   //
-  // The 311 RPCs scan a 15M-row partition; performance varies by neighborhood
-  // density. We hard-cap each RPC at RPC_TIMEOUT_MS so a single slow call
-  // doesn't hang page render. On timeout/error, the block falls back to 0
-  // (the UI shows "0" or "All clear" — better than a 30s spinner).
+  // Block-level counters, one RPC for all four numbers. The previous shape —
+  // four separate radius RPCs, each re-finding nearby buildings with a
+  // PostGIS geography recheck — averaged 4-12s per call in production and
+  // kept burning the database after the app's timeout race abandoned the
+  // wait. neighborhood_risk_counts computes the nearby set once with planar
+  // math (index-only bbox scan) and returns every aggregate.
   //
-  // Long-term fix: pre-aggregate per-building counts into a materialized view
-  // so the radius query becomes a small bbox sum instead of a partition scan.
-  // 2.5s (was 4.5s): results are now cached a week, so a rare timeout only
-  // zeroes one cache fill instead of every render — favor bounding TTFB.
-  const RPC_TIMEOUT_MS = 2500;
+  // NYC-only data: for other metros, return zeros without touching the DB.
+  const RPC_TIMEOUT_MS = 4000;
 
   let degraded = false;
-  const countRpc = async (
-    fn: string,
-    radius: number,
-  ): Promise<number> => {
-    const rpcPromise = (async () => {
+  let noise311 = 0;
+  let noise311Block = 0;
+  let rats = 0;
+  let bedbugs = 0;
+
+  if (!building.metro || building.metro === "nyc") {
+    interface RiskCounts {
+      noise_311: number;
+      noise_311_block: number;
+      rat_failures: number;
+      bedbug_history: number;
+    }
+    const rpcPromise = (async (): Promise<RiskCounts | null> => {
       try {
-        const { data } = await supabase.rpc(fn, {
+        const { data } = await supabase.rpc("neighborhood_risk_counts", {
           p_lat: lat,
           p_lng: lng,
-          p_radius_m: radius,
+          p_radius_m: RADIUS_M,
+          p_block_m: ON_BLOCK_RADIUS_M,
         });
-        return Number(data ?? 0);
+        const row = (Array.isArray(data) ? data[0] : data) as RiskCounts | undefined;
+        return row ?? null;
       } catch {
-        degraded = true;
-        return 0;
+        return null;
       }
     })();
-    const timeout = new Promise<number>((resolve) =>
-      setTimeout(() => {
-        degraded = true;
-        resolve(0);
-      }, RPC_TIMEOUT_MS),
+    const timeout = new Promise<RiskCounts | null>((resolve) =>
+      setTimeout(() => resolve(null), RPC_TIMEOUT_MS),
     );
-    return Promise.race([rpcPromise, timeout]);
-  };
-
-  const [noise311, noise311Block, rats, bedbugs] = await Promise.all([
-    countRpc("count_311_noise_near", RADIUS_M),
-    countRpc("count_311_noise_near", ON_BLOCK_RADIUS_M),
-    countRpc("count_rats_near", RADIUS_M),
-    countRpc("count_bedbugs_near", RADIUS_M),
-  ]);
+    const counts = await Promise.race([rpcPromise, timeout]);
+    if (counts) {
+      noise311 = Number(counts.noise_311) || 0;
+      noise311Block = Number(counts.noise_311_block) || 0;
+      rats = Number(counts.rat_failures) || 0;
+      bedbugs = Number(counts.bedbug_history) || 0;
+    } else {
+      degraded = true;
+    }
+  }
 
   return {
     result: {

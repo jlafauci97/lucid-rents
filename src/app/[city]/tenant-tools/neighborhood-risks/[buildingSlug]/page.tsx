@@ -20,6 +20,7 @@ interface BuildingRow {
   latitude: number | string;
   longitude: number | string;
   slug: string;
+  metro: string | null;
 }
 
 async function getBuilding(slug: string): Promise<BuildingRow | null> {
@@ -35,7 +36,7 @@ async function getBuilding(slug: string): Promise<BuildingRow | null> {
   const data = unwrap(
     await supabase
     .from("buildings")
-    .select("id, name, full_address, borough, latitude, longitude, slug")
+    .select("id, name, full_address, borough, latitude, longitude, slug, metro")
     .eq("metro", "nyc")
     .eq("slug", slug)
     .not("latitude", "is", null)
@@ -88,6 +89,7 @@ export default async function NeighborhoodRisksResultsPage({
     lat: typeof b.latitude === "number" ? b.latitude : Number(b.latitude),
     lng: typeof b.longitude === "number" ? b.longitude : Number(b.longitude),
     slug: b.slug,
+    metro: b.metro ?? undefined,
   });
 
   return (
