@@ -28,25 +28,40 @@ const nextConfig: NextConfig = {
       destination: "/profile",
       permanent: true,
     },
+    // /map was a page-level redirect() to /crime — a temporary 307 that Next
+    // 16 streaming also degrades to <meta refresh>. Static config redirects
+    // give a real 308 with no page involved. One entry per live city prefix
+    // (the [city] prefixes span one and two path segments, so no single
+    // pattern covers them).
+    ...["nyc", "CA/Los-Angeles", "IL/Chicago"].map((prefix) => ({
+      source: `/${prefix}/map`,
+      destination: `/${prefix}/crime`,
+      permanent: true,
+    })),
   ],
   rewrites: async () => ({
     beforeFiles: [
-      // Sitemap index: /sitemap.xml → static pre-generated file
-      { source: "/sitemap.xml", destination: "/sitemap/index.xml" },
-      // Dedicated building index → static pre-generated file (same pattern as
-      // /sitemap.xml). Served as a pure static asset so Googlebot fetches it
-      // identically to the master sitemap, with no route-handler involvement.
-      { source: "/sitemap-buildings.xml", destination: "/sitemap/buildings.xml" },
+      // All sitemap XML is generated nightly into Vercel Blob (see
+      // src/lib/sitemap/generator.ts + scripts/generate-sitemaps-blob.mts) and
+      // served by src/app/sitemap-v2/[chunk]. These rewrites keep every public
+      // sitemap URL Google already knows, now backed by Blob.
+      { source: "/sitemap.xml", destination: "/sitemap-v2/index.xml" },
+      { source: "/sitemap-buildings.xml", destination: "/sitemap-v2/buildings.xml" },
       // Fresh alias for the building index. The original /sitemap-buildings.xml
       // got stuck in Google's per-URL error state after repeated failed fetches
       // during earlier deploys; this clean URL (no failure history) lets Google
       // fetch the identical file without that backoff. Submit this one in GSC.
-      { source: "/buildings-sitemap.xml", destination: "/sitemap/buildings.xml" },
+      { source: "/buildings-sitemap.xml", destination: "/sitemap-v2/buildings.xml" },
+      { source: "/sitemap-landlords.xml", destination: "/sitemap-v2/landlords.xml" },
       // Hubs sitemap is DYNAMIC (ISR) so newly published articles auto-appear
       // within the hour — the index lists /sitemap/hubs.xml, and this rewrite
-      // (beforeFiles, so it wins over the stale static public/sitemap/hubs.xml)
-      // serves it from the dynamic route instead.
+      // MUST stay above the generic /sitemap/:chunk rule so the dynamic route
+      // wins over the nightly Blob copy.
       { source: "/sitemap/hubs.xml", destination: "/sitemap-hubs.xml" },
+      // Chunk URLs (/sitemap/b-N.xml, /sitemap/l-N.xml, /sitemap/0.xml, ...)
+      // — the shape referenced by index.xml and known to Google since the
+      // static-file era.
+      { source: "/sitemap/:chunk", destination: "/sitemap-v2/:chunk" },
     ],
   }),
   headers: async () => [
