@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import type { City } from "@/lib/cities";
 import { CITY_META } from "@/lib/cities";
 import { REGIONS_BY_CITY } from "@/lib/city-home/regions";
@@ -28,9 +29,12 @@ export function RegionGrid({ city }: { city: City }) {
                 r.featured ? "md:row-span-2 md:col-span-1 h-64 md:h-auto" : "h-44"
               }`}
             >
-              <div
-                className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
-                style={{ backgroundImage: `url(${r.bg})` }}
+              <Image
+                src={r.bg}
+                alt=""
+                fill
+                sizes="(max-width: 768px) 100vw, 33vw"
+                className="object-cover transition-transform duration-500 group-hover:scale-105"
               />
               <div
                 className="absolute inset-0"

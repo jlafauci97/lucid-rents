@@ -13,6 +13,7 @@ import {
   Phone,
 } from "lucide-react";
 import { VALID_CITIES, CITY_META, type City } from "@/lib/cities";
+import { canonicalUrl, cityPath } from "@/lib/seo";
 import { HazardMap } from "@/components/hazards/HazardMap";
 
 export const revalidate = 86400; // 24h ISR
@@ -32,6 +33,7 @@ export async function generateMetadata({
   return {
     title: `Seismic & Fire Zones — ${cityName}`,
     description: `Explore earthquake fault zones, liquefaction risk, fire hazard severity zones, and landslide areas on an interactive map for ${cityName} rental buildings.`,
+    alternates: { canonical: canonicalUrl(cityPath("/seismic-fire-safety", city as City)) },
   };
 }
 

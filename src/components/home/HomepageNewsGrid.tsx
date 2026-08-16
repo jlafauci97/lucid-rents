@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { createCacheClient } from "@/lib/supabase/cache-client";
 import type { City } from "@/lib/cities";
 import { CITY_META } from "@/lib/cities";
@@ -94,9 +95,12 @@ function NewsCard({
     >
       <div className={`relative ${lead ? "aspect-[16/10] md:aspect-auto md:h-[55%]" : "aspect-[16/10]"} bg-[#f1f5f9] overflow-hidden`}>
         {article.image_url && (
-          <div
-            className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
-            style={{ backgroundImage: `url(${article.image_url})` }}
+          <Image
+            src={article.image_url}
+            alt=""
+            fill
+            sizes="(max-width: 768px) 100vw, 33vw"
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
           />
         )}
         <div

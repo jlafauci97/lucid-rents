@@ -7,7 +7,13 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com" },
       { protocol: "https", hostname: "loremflickr.com" },
+      // News image pipeline prefers Pexels (lib/news/image-search.ts) — its
+      // absence here is why article heroes were raw <img> tags.
+      { protocol: "https", hostname: "images.pexels.com" },
     ],
+    // Remote originals are effectively immutable (news heroes, stock tiles);
+    // default 60s TTL made the optimizer re-fetch them constantly.
+    minimumCacheTTL: 2678400, // 31 days
   },
   experimental: {
     optimizePackageImports: [

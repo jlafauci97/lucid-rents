@@ -133,7 +133,10 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href={cityPath("/review/new", city)} className="hover:text-white transition-colors">
+                {/* rel=nofollow: /review/new is robots-disallowed (auth-gated
+                    flow); without the hint this is a site-wide link into a
+                    blocked URL — crawl-budget noise on every page. */}
+                <Link href={cityPath("/review/new", city)} rel="nofollow" className="hover:text-white transition-colors">
                   Submit a Review
                 </Link>
               </li>

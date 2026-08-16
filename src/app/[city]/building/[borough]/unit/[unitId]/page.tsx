@@ -9,7 +9,7 @@ import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { ArrowLeft, BedDouble, Bath, Layers, Building2 } from "lucide-react";
 import type { HpdViolation, ReviewWithDetails } from "@/types";
 import type { Metadata } from "next";
-import { buildingUrl } from "@/lib/seo";
+import { buildingUrl, canonicalUrl } from "@/lib/seo";
 import { CITY_META, type City } from "@/lib/cities";
 
 // 7-day ISR — unit rent data changes on monthly sync cadence; see building
@@ -43,6 +43,7 @@ export async function generateMetadata({ params }: UnitPageProps): Promise<Metad
   return {
     title: `Unit ${unit.unit_number} - ${building.full_address.split(",")[0]}`,
     description: `What's it really like living in Unit ${unit.unit_number} at ${building.full_address}? See tenant reviews, violation history, and unit-specific details.`,
+    alternates: { canonical: canonicalUrl(`${buildingUrl(building, city)}/unit/${unitId}`) },
   };
 }
 
