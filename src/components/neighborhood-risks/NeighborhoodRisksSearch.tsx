@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Search, MapPin, Loader2, ArrowRight } from "lucide-react";
-import { createClient } from "@supabase/supabase-js";
 import { useDebounce } from "@/hooks/useDebounce";
 import { cityPath } from "@/lib/seo";
 
@@ -36,17 +35,15 @@ export function NeighborhoodRisksSearch() {
     }
     setLoading(true);
     try {
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      );
-      const { data } = await supabase
-        .from("buildings")
-        .select("id, name, full_address, borough, slug")
-        .eq("metro", "nyc")
-        .or(`name.ilike.%${q}%,full_address.ilike.%${q}%`)
-        .limit(MAX_RESULTS);
-      setResults((data ?? []) as BuildingSuggestion[]);
+      // /api/search (CDN-cached, search_vector-backed) — the previous direct
+      // supabase OR of name/full_address ilikes had no usable index on `name`
+      // (btree only), so Postgres bitmap-matched EVERY named building and the
+      // query took 6.6s: typing looked like it did nothing.
+      const res = await fetch(`/api/search?q=${encodeURIComponent(q.trim())}&city=nyc&limit=${MAX_RESULTS}`);
+      const data = await res.json();
+      setResults((data?.buildings ?? []) as BuildingSuggestion[]);
+    } catch {
+      setResults([]);
     } finally {
       setLoading(false);
     }
