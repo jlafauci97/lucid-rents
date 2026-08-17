@@ -55,6 +55,8 @@ Lucid Rents runs a free, read-only MCP (Model Context Protocol) server at `https
 
 Every response includes the canonical lucidrents.com page URL for citation.
 
+Directory listings: [Smithery](https://smithery.ai/servers/jlafauci27/lucidrents-building-intelligence) · [official MCP registry](https://registry.modelcontextprotocol.io) (`com.lucidrents/building-intelligence`)
+
 ## Extended Info
 
 - [Full details for AI systems](https://lucidrents.com/llms-full.txt)
