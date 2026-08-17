@@ -61,7 +61,9 @@ export function ChecklistSearch({ city }: { city: string }) {
     try {
       const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&city=${city}&limit=5`);
       const data = await res.json();
-      setSearchResults(data?.results || data || []);
+      // /api/search returns { buildings: [...] } — reading `results` (its old
+      // shape) left this dropdown permanently empty.
+      setSearchResults(data?.buildings || data?.results || []);
     } catch {
       setSearchResults([]);
     } finally {

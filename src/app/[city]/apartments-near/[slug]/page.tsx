@@ -171,6 +171,10 @@ export default async function ApartmentsNearPage({
         p_type: dbType,
         p_routes: routeNames,
         p_radius_m: MAX_TRANSIT_DISTANCE_MI * 1609.344,
+        // 80/stop keeps the cold query inside anon's 8s statement_timeout
+        // under load (120 was hitting it on long routes when the DB cache was
+        // cold, and the RPC-level SET can't re-arm PostgREST's timer).
+        p_per_stop: 80,
       }),
       `buildings_near_transit ${city}/${slug}`
     ) as TransitBuilding[] | null;
