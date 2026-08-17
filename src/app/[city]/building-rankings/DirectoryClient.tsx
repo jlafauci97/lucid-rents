@@ -135,6 +135,18 @@ export function DirectoryClient({ city, basePath, regionLabel, cityRegions }: Pr
       });
   }, [apiUrl]);
 
+  // The strip/borough cards higher up the page link here with #directory.
+  // Next fires its native hash scroll against the pre-navigation layout, and
+  // the ad slots above collapse/re-flow during the transition — measured
+  // ~8,700px of drift, landing the viewport well past this section. Re-align
+  // once the new params render. The directory's own chips navigate without a
+  // hash (and with scroll={false}), so this never fires for in-section
+  // clicks.
+  useEffect(() => {
+    if (window.location.hash !== "#directory") return;
+    document.getElementById("directory")?.scrollIntoView({ block: "start" });
+  }, [sortBy, borough, page]);
+
   // URL builder for sort/borough/page links — strips defaults so canonical
   // URLs stay clean.
   function buildHref(overrides: Record<string, string>) {
