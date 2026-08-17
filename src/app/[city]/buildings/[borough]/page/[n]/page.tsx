@@ -7,7 +7,12 @@ import type { Metadata } from "next";
 // a self-canonical — reading searchParams would make the route dynamic and
 // uncacheable, which is why the ?page era served page-1 content everywhere.
 // /page/1 301s to the bare borough URL in proxy.ts.
-export const revalidate = 3600;
+//
+// 7-day ISR, matching building pages. Deep pagination exists for crawler
+// discovery, not freshness — at 1h these thousands of pages went cold every
+// hour and each cold render was the site's slowest crawl response (5–13s),
+// dominating Search Console's average response time.
+export const revalidate = 604800;
 export const dynamicParams = true;
 export function generateStaticParams() {
   return [];
