@@ -387,7 +387,10 @@ export default async function TransitHubPage({ params }: { params: Promise<{ cit
                       {prefix}
                     </h3>
                     <div className="flex flex-wrap gap-2">
-                      {busGroups[prefix].map((route) => (
+                      {/* Composite/express route names ("10/48", "South Bay
+                          Dodger Stadium Express") can't form a valid slug —
+                          the raw "/" and spaces produced 404 links. */}
+                      {busGroups[prefix].filter((route) => !/[\s/]/.test(route)).map((route) => (
                         <Link
                           key={route}
                           href={transitLineUrl(
