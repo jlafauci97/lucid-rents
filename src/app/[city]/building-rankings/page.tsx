@@ -777,7 +777,10 @@ export default async function BuildingRankingsPage({ params: routeParams }: Page
                         </span>
                         <div>
                           <h3 style={{ fontSize: 15, fontWeight: 700, margin: 0, color: INK, lineHeight: 1.2 }}>{strip.label}</h3>
-                          <Link href={buildHref({ sort: strip.sortKey, page: "1" })} style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: accent, fontWeight: 700, textDecoration: "none" }}>
+                          {/* #directory, like every other buildHref link on this page:
+                              without the anchor the nav scrolls to top while the sorted
+                              list updates far below the fold — reads as a dead button. */}
+                          <Link href={`${buildHref({ sort: strip.sortKey, page: "1" })}#directory`} style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: accent, fontWeight: 700, textDecoration: "none" }}>
                             {strip.description} →
                           </Link>
                         </div>
@@ -1030,7 +1033,7 @@ export default async function BuildingRankingsPage({ params: routeParams }: Page
                 const accent = [ACCENT.rose, ACCENT.iris, ACCENT.sky, ACCENT.amber, ACCENT.mint][idx % 5];
                 const span = idx === 0 ? "col-span-12 lg:col-span-7" : idx === 1 ? "col-span-12 sm:col-span-6 lg:col-span-5" : "col-span-12 sm:col-span-6 lg:col-span-4";
                 return (
-                  <Link key={b.name} href={buildHref({ borough: b.name, page: "1" })} className={`${span} p-6 flex flex-col`} style={{ background: palette, borderRadius: 20, textDecoration: "none", color: "inherit", minHeight: 240 }}>
+                  <Link key={b.name} href={`${buildHref({ borough: b.name, page: "1" })}#directory`} className={`${span} p-6 flex flex-col`} style={{ background: palette, borderRadius: 20, textDecoration: "none", color: "inherit", minHeight: 240 }}>
                     <div className="flex items-baseline justify-between mb-4">
                       <div className="flex items-center gap-2">
                         <MapPin size={16} style={{ color: accent }} strokeWidth={2.25} />
