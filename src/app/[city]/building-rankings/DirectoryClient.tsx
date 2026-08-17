@@ -209,6 +209,7 @@ export function DirectoryClient({ city, basePath, regionLabel, cityRegions }: Pr
             <Link
               key={opt.key}
               href={buildHref({ sort: opt.key, page: "1" })}
+              scroll={false}
               className="px-4 py-2 text-sm font-semibold transition-colors"
               style={{
                 background: active ? INK : "#fff",
@@ -230,6 +231,7 @@ export function DirectoryClient({ city, basePath, regionLabel, cityRegions }: Pr
         <div className="flex flex-wrap gap-2 mb-6">
           <Link
             href={buildHref({ borough: "all", page: "1" })}
+            scroll={false}
             className="px-3 py-1.5 text-xs font-semibold"
             style={{
               background: borough === "all" ? INK : "transparent",
@@ -250,6 +252,7 @@ export function DirectoryClient({ city, basePath, regionLabel, cityRegions }: Pr
               <Link
                 key={r}
                 href={buildHref({ borough: r, page: "1" })}
+                scroll={false}
                 className="px-3 py-1.5 text-xs font-semibold"
                 style={{
                   background: active ? INK : "transparent",
@@ -422,6 +425,7 @@ export function DirectoryClient({ city, basePath, regionLabel, cityRegions }: Pr
           {page > 1 ? (
             <Link
               href={buildHref({ page: String(page - 1) })}
+              scroll={false}
               className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold"
               style={{
                 background: "#fff",
@@ -443,6 +447,7 @@ export function DirectoryClient({ city, basePath, regionLabel, cityRegions }: Pr
           {page < totalPages ? (
             <Link
               href={buildHref({ page: String(page + 1) })}
+              scroll={false}
               className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold"
               style={{
                 background: INK,
