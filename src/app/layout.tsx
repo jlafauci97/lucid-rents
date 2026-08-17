@@ -159,6 +159,23 @@ export default async function RootLayout({
         <AnchorAd />
         <AdsenseLoader />
         <AnalyticsLoader />
+        {/* SAFETY NET for a Next 16 streaming/ISR bug (found 2026-08-17):
+            runtime-rendered (ISR-miss / revalidated) pages get cached with
+            their Suspense segment content inside <div hidden id="S:n"> but
+            MISSING one or more of the $RC reveal scripts — e.g. a building
+            page cached 4 hidden segments and only 3 reveals. Result: the
+            body (or the whole page, when the implicit page-level boundary is
+            affected) stays permanently invisible for every visitor, while
+            crawl tools see a healthy 200. Build-time prerendered pages are
+            unaffected, which made it look random. This sweep runs well after
+            React's own throttled reveal window (~2.3s) and performs the same
+            template-swap $RC would have done, only for pairs that are still
+            stuck. Remove once the framework bug is confirmed fixed upstream. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){function reveal(){for(var g=0;g<10;g++){var divs=document.querySelectorAll('div[hidden][id^="S:"]');if(!divs.length)return;for(var i=0;i<divs.length;i++){var s=divs[i];var t=document.getElementById('B:'+s.id.slice(2));if(t&&t.tagName==='TEMPLATE'&&t.parentNode){var p=t.parentNode;while(s.firstChild)p.insertBefore(s.firstChild,t);t.remove();s.remove()}else{s.removeAttribute('hidden')}}}}function arm(){setTimeout(reveal,3500);setTimeout(reveal,8000)}if(document.readyState==='complete'){arm()}else{window.addEventListener('load',arm)}})();`,
+          }}
+        />
       </body>
     </html>
   );
