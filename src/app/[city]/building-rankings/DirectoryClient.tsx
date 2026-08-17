@@ -136,15 +136,30 @@ export function DirectoryClient({ city, basePath, regionLabel, cityRegions }: Pr
   }, [apiUrl]);
 
   // The strip/borough cards higher up the page link here with #directory.
-  // Next fires its native hash scroll against the pre-navigation layout, and
-  // the ad slots above collapse/re-flow during the transition — measured
-  // ~8,700px of drift, landing the viewport well past this section. Re-align
-  // once the new params render. The directory's own chips navigate without a
-  // hash (and with scroll={false}), so this never fires for in-section
-  // clicks.
+  // Both Next's native hash scroll and a naive one-shot effect land ~8,700px
+  // past this section: they fire while the previous page state's AdSense
+  // slots are still expanded, and the slots collapse a beat later without
+  // any re-scroll. Keep the section pinned for a 2s settle window instead,
+  // bailing the moment the user scrolls themselves. The directory's own
+  // chips navigate hash-less (and with scroll={false}), so in-section
+  // clicks never trigger this.
   useEffect(() => {
     if (window.location.hash !== "#directory") return;
-    document.getElementById("directory")?.scrollIntoView({ block: "start" });
+    const el = document.getElementById("directory");
+    if (!el) return;
+    const align = () => el.scrollIntoView({ block: "start" });
+    align();
+    const interval = setInterval(align, 250);
+    const stop = () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+      window.removeEventListener("wheel", stop);
+      window.removeEventListener("touchstart", stop);
+    };
+    const timeout = setTimeout(stop, 2000);
+    window.addEventListener("wheel", stop, { passive: true });
+    window.addEventListener("touchstart", stop, { passive: true });
+    return stop;
   }, [sortBy, borough, page]);
 
   // URL builder for sort/borough/page links — strips defaults so canonical
