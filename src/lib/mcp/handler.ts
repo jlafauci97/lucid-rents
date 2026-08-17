@@ -29,11 +29,50 @@ const cityEnum = z
 
 type ToolResult = {
   content: Array<{ type: "text"; text: string }>;
+  structuredContent?: Record<string, unknown>;
   isError?: boolean;
 };
 
+// Every tool is a read-only lookup over public records; the shared hints let
+// clients cache/retry freely. openWorldHint stays false — tools only reach
+// LucidRents' own database, never arbitrary external systems.
+const READ_ONLY_ANNOTATIONS = {
+  readOnlyHint: true,
+  destructiveHint: false,
+  idempotentHint: true,
+  openWorldHint: false,
+} as const;
+
+// Shared output-schema fragments. Tool payloads are built from live DB rows,
+// so schemas use looseObject + nullable liberally: they document the shape
+// for clients without letting a missing optional field fail SDK validation.
+const urlField = z.string().describe("Canonical lucidrents.com page URL (UTM-tagged)");
+const dataAsOfField = z.string().describe("ISO date of the data snapshot");
+const moreField = z
+  .array(z.string())
+  .describe("What the linked page adds beyond this payload");
+const gradeField = z
+  .string()
+  .nullish()
+  .describe('Letter grade derived from the score ("A+" through "F", "—" when unscored)');
+
+const searchResultSchema = z.looseObject({
+  address: z.string().nullish(),
+  slug: z.string().describe("Building slug — pass to get_building_report / get_review_summary"),
+  city: z.string(),
+  borough: z.string().nullish(),
+  score: z.number().nullish().describe("LucidIQ score, 0-100"),
+  grade: gradeField,
+  violation_count: z.number(),
+  review_count: z.number(),
+  url: urlField,
+});
+
 function jsonResult(payload: unknown): ToolResult {
-  return { content: [{ type: "text", text: JSON.stringify(payload, null, 2) }] };
+  return {
+    content: [{ type: "text", text: JSON.stringify(payload, null, 2) }],
+    structuredContent: payload as Record<string, unknown>,
+  };
 }
 
 function errorResult(message: string): ToolResult {
@@ -100,6 +139,15 @@ const mcpHandler = createMcpHandler(
             .optional()
             .describe("Optional city filter. Omit to search all covered cities."),
         }),
+        outputSchema: z.looseObject({
+          query: z.string(),
+          city: z.string().describe('City searched, or "all"'),
+          result_count: z.number(),
+          results: z.array(searchResultSchema).describe("Up to 10 matches, best first"),
+          data_as_of: dataAsOfField,
+          more: moreField,
+        }),
+        annotations: READ_ONLY_ANNOTATIONS,
       },
       guarded("search_buildings", ({ query, city }) => searchBuildings(query, city))
     );
@@ -123,6 +171,74 @@ const mcpHandler = createMcpHandler(
             .max(200)
             .describe('Building slug from search_buildings results, e.g. "48-04-48th-avenue"'),
         }),
+        outputSchema: z.looseObject({
+          address: z.string().nullish(),
+          city: z.string(),
+          borough: z.string().nullish(),
+          zip: z.string().nullish(),
+          slug: z.string(),
+          score: z.number().nullish().describe("LucidIQ score, 0-100"),
+          grade: gradeField,
+          year_built: z.number().nullish(),
+          total_units: z.number().nullish(),
+          rent_stabilized: z.looseObject({
+            stabilized: z.boolean(),
+            stabilized_units: z.number().nullish(),
+          }),
+          issues: z.looseObject({
+            hpd_violations: z.number().nullish(),
+            dob_violations: z.number().nullish(),
+            complaints_311: z.number().nullish(),
+            litigations: z.number().nullish(),
+            evictions_filed: z.number().nullish(),
+            top_violation_categories: z.array(
+              z.looseObject({ category: z.string(), count: z.number() })
+            ),
+          }),
+          reviews: z.looseObject({
+            count: z.number().nullish(),
+            avg_rating: z.number().nullish(),
+          }),
+          rent_summary: z
+            .array(
+              z.looseObject({
+                bedrooms: z.number().nullish(),
+                min_rent: z.number().nullish(),
+                max_rent: z.number().nullish(),
+                median_rent: z.number().nullish(),
+                listing_count: z.number().nullish(),
+                source: z.string().nullish(),
+              })
+            )
+            .describe("Rent summary by bedroom count"),
+          landlord: z
+            .looseObject({ name: z.string(), url: urlField })
+            .nullish()
+            .describe("Owner/manager with their record URL, when on file"),
+          similar_nearby: z.array(
+            z.looseObject({
+              address: z.string().nullish(),
+              slug: z.string(),
+              score: z.number().nullish(),
+              grade: gradeField,
+              year_built: z.number().nullish(),
+              total_units: z.number().nullish(),
+              url: urlField,
+            })
+          ),
+          url: urlField,
+          sections: z
+            .looseObject({
+              violations: z.string(),
+              reviews: z.string(),
+              rent_intelligence: z.string(),
+              landlord: z.string(),
+            })
+            .describe("Deep links to page sections"),
+          data_as_of: dataAsOfField,
+          more: moreField,
+        }),
+        annotations: READ_ONLY_ANNOTATIONS,
       },
       guarded("get_building_report", ({ city, slug }) => getBuildingReport(city, slug))
     );
@@ -145,6 +261,26 @@ const mcpHandler = createMcpHandler(
             .max(200)
             .describe("Owner name or landlord slug. Building reports include the exact owner name."),
         }),
+        outputSchema: z.looseObject({
+          name: z.string(),
+          city: z.string(),
+          portfolio_size: z.number().describe("Number of buildings on record"),
+          total_violations: z.number(),
+          total_dob_violations: z.number(),
+          total_complaints: z.number(),
+          avg_building_score: z.number().nullish(),
+          avg_building_grade: gradeField,
+          worst_building: z
+            .looseObject({
+              address: z.string().nullish(),
+              violations: z.number().nullish(),
+            })
+            .nullish(),
+          url: urlField,
+          data_as_of: dataAsOfField,
+          more: moreField,
+        }),
+        annotations: READ_ONLY_ANNOTATIONS,
       },
       guarded("get_landlord_record", ({ city, slugOrName }) =>
         getLandlordRecord(city, slugOrName)
@@ -168,6 +304,29 @@ const mcpHandler = createMcpHandler(
             .regex(/^\d{5}$/)
             .describe('5-digit zip code, e.g. "11377"'),
         }),
+        outputSchema: z.looseObject({
+          city: z.string(),
+          zip: z.string(),
+          neighborhood: z.string().nullish().describe("Neighborhood name for the zip, when known"),
+          median_rents_by_bedrooms: z.array(
+            z.looseObject({
+              bedrooms: z.number().nullish(),
+              median_rent: z.number().nullish(),
+            })
+          ),
+          crime: z
+            .looseObject({
+              violent: z.number().nullish(),
+              property: z.number().nullish(),
+              quality_of_life: z.number().nullish(),
+            })
+            .nullish()
+            .describe("12-month crime summary from the local police department"),
+          url: urlField,
+          data_as_of: dataAsOfField,
+          more: moreField,
+        }),
+        annotations: READ_ONLY_ANNOTATIONS,
       },
       guarded("get_neighborhood_stats", ({ city, zip }) => getNeighborhoodStats(city, zip))
     );
@@ -189,6 +348,31 @@ const mcpHandler = createMcpHandler(
             .max(200)
             .describe('Building slug from search_buildings results, e.g. "48-04-48th-avenue"'),
         }),
+        outputSchema: z.looseObject({
+          address: z.string().nullish(),
+          city: z.string(),
+          slug: z.string(),
+          review_count: z.number(),
+          avg_rating: z.number().nullish().describe("Average rating, 1-5"),
+          rating_distribution: z.array(
+            z.looseObject({ stars: z.number(), count: z.number() })
+          ),
+          building_score: z.number().nullish(),
+          building_grade: gradeField,
+          pull_quotes: z
+            .array(
+              z.looseObject({
+                rating: z.number().nullish(),
+                date: z.string().nullish(),
+                excerpt: z.string(),
+              })
+            )
+            .describe("Up to 3 recent review excerpts"),
+          url: urlField,
+          data_as_of: dataAsOfField,
+          more: moreField,
+        }),
+        annotations: READ_ONLY_ANNOTATIONS,
       },
       guarded("get_review_summary", ({ city, slug }) => getReviewSummary(city, slug))
     );
