@@ -86,6 +86,10 @@ const SORT_OPTIONS = [
   { key: "evictions", label: "Evictions", col: "eviction_count" },
   { key: "lawsuits", label: "Lawsuits", col: "litigation_count" },
   { key: "per-unit", label: "Per-unit", col: "violation_count" },
+  // The "Most bedbug reports" strip card links here with ?sort=bedbug (the
+  // API supports it); without this entry the directory showed no active chip
+  // and labeled the list "sorted by violations".
+  { key: "bedbug", label: "Bedbugs", col: "bedbug_report_count" },
 ] as const;
 
 interface ApiResponse {

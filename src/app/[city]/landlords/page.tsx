@@ -347,7 +347,10 @@ export default async function LandlordsPage({ params: routeParams }: Props) {
       }
     });
     const qs = new URLSearchParams(merged).toString();
-    return qs ? `${basePath}?${qs}` : basePath;
+    // #directory: these links live in strip cards far above the directory —
+    // without the anchor the nav scrolls to top while the list updates below
+    // the fold (same dead-button failure as building-rankings, see #342).
+    return `${qs ? `${basePath}?${qs}` : basePath}#directory`;
   }
 
   return (

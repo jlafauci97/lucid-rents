@@ -1,12 +1,10 @@
 import { Metadata } from "next";
-import { Suspense } from "react";
 import { MapPin } from "lucide-react";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { canonicalUrl, cityPath, neighborhoodsUrl, breadcrumbJsonLd } from "@/lib/seo";
 import { VALID_CITIES, CITY_META, type City } from "@/lib/cities";
 import { NeighborhoodsBody } from "./NeighborhoodsBody";
-import { NeighborhoodsBodySkeleton } from "./NeighborhoodsBodySkeleton";
 
 export const revalidate = 3600;
 
@@ -82,10 +80,15 @@ export default async function NeighborhoodsPage({
         </div>
       </div>
 
-      {/* Data-bound body — streamed via Suspense so the breadcrumbs + header paint first. */}
-      <Suspense fallback={<NeighborhoodsBodySkeleton />}>
-        <NeighborhoodsBody city={city} initialRegionSlug={regionSlug} />
-      </Suspense>
+      {/* Rendered directly, NOT inside <Suspense>: on the ISR-cached HTML the
+          React streaming reveal ($RC swap of the hidden S:0 div) never fired
+          in production, leaving every visitor a blank page — header + footer
+          with the entire body stuck in the hidden streaming buffer (found
+          2026-08-17; the flight payload even contained the full rendered
+          data). The body's two RPC fetches are data-cached (revalidate 3600)
+          and take ~1s combined, so a blocking render costs little on this
+          1h-ISR page and emits plain HTML with no swap machinery to break. */}
+      <NeighborhoodsBody city={city} initialRegionSlug={regionSlug} />
     </div>
   );
 }

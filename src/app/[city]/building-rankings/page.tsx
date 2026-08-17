@@ -468,7 +468,10 @@ export default async function BuildingRankingsPage({ params: routeParams }: Page
             </p>
           )}
 
-          <form action={cityPath("/buildings", city)} className="mt-8 max-w-2xl mx-auto">
+          {/* /search, NOT /buildings: the buildings directory is a static ISR
+              page that ignores ?q entirely — submitting there dropped the
+              query and served the generic directory. */}
+          <form action={cityPath("/search", city)} className="mt-8 max-w-2xl mx-auto">
             <div className="flex items-center" style={{ background: "#fff", border: `1px solid ${BORDER}`, borderRadius: 16, padding: 6, boxShadow: SHADOW }}>
               <span style={{ padding: "0 14px", color: INK_MUTE }}>
                 <Search size={20} strokeWidth={2} />

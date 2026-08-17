@@ -148,6 +148,30 @@ export function DirectoryClient({ city, basePath, totalFallback }: Props) {
       });
   }, [apiUrl]);
 
+  // Strip cards above link here with #directory; both Next's native hash
+  // scroll and a one-shot effect can fire against a mid-transition layout.
+  // Pin the section for a 2s settle window, bailing on user scroll input.
+  // In-section links navigate hash-less with scroll={false}, so this never
+  // fires for them. (Same pattern as building-rankings' DirectoryClient.)
+  useEffect(() => {
+    if (window.location.hash !== "#directory") return;
+    const el = document.getElementById("directory");
+    if (!el) return;
+    const align = () => el.scrollIntoView({ block: "start" });
+    align();
+    const interval = setInterval(align, 250);
+    const stop = () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+      window.removeEventListener("wheel", stop);
+      window.removeEventListener("touchstart", stop);
+    };
+    const timeout = setTimeout(stop, 2000);
+    window.addEventListener("wheel", stop, { passive: true });
+    window.addEventListener("touchstart", stop, { passive: true });
+    return stop;
+  }, [sortBy, page, search]);
+
   const rows = data?.landlords ?? [];
   const total = data?.pagination?.total ?? totalFallback;
   const totalPages = data?.pagination?.totalPages ?? Math.max(1, Math.ceil(total / limit));
@@ -180,7 +204,7 @@ export function DirectoryClient({ city, basePath, totalFallback }: Props) {
   const nextHref = page < totalPages ? url({ page: String(page + 1) }) : null;
 
   return (
-    <section className="mb-10 sm:mb-14">
+    <section id="directory" className="mb-10 sm:mb-14 scroll-mt-24">
       <div className="flex items-baseline justify-between mb-6 flex-wrap gap-3">
         <div>
           <MonoLabel color="#3b82f6">Section 03</MonoLabel>
@@ -210,6 +234,7 @@ export function DirectoryClient({ city, basePath, totalFallback }: Props) {
             <Link
               key={opt.key}
               href={url({ sort: opt.key, page: "1" })}
+              scroll={false}
               className="px-4 py-2 text-sm font-semibold transition-colors"
               style={{
                 background: active ? INK : "#fff",
@@ -227,6 +252,7 @@ export function DirectoryClient({ city, basePath, totalFallback }: Props) {
         {search && (
           <Link
             href={basePath}
+            scroll={false}
             className="px-4 py-2 text-sm font-semibold"
             style={{
               background: "#fef2f2",
@@ -377,6 +403,7 @@ export function DirectoryClient({ city, basePath, totalFallback }: Props) {
               {prevHref ? (
                 <Link
                   href={prevHref}
+                  scroll={false}
                   className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold"
                   style={{
                     background: "#fff",
@@ -398,6 +425,7 @@ export function DirectoryClient({ city, basePath, totalFallback }: Props) {
               {nextHref ? (
                 <Link
                   href={nextHref}
+                  scroll={false}
                   className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold"
                   style={{
                     background: INK,
