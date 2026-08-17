@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import Link from "next/link";
 import { createCacheClient } from "@/lib/supabase/cache-client";
+import { unwrap } from "@/lib/supabase/unwrap";
 import { BuildingCard } from "@/components/search/BuildingCard";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -65,39 +66,54 @@ export async function BoroughListing({
   const offset = (page - 1) * PAGE_SIZE;
   const sortColumn = "violation_count";
 
-  let total = 0;
+  const supabase = createCacheClient();
+
+  // Get total count and the page's building ids in parallel.
+  // `count: "planned"` uses the planner's row-estimate instead of running
+  // a real COUNT(*) — instant vs. multi-second on filtered borough queries.
+  // Approximate, but plenty accurate for "N buildings" UI + pagination.
+  //
+  // Two-step page fetch: OFFSET pagination walks every skipped row, and with
+  // `select *` that meant offset+25 heap fetches of ~1.3KB rows — 5s at
+  // page 250, past anon's 8s statement_timeout by page ~1000. Selecting only
+  // `id` stays inside idx_buildings_dir_metro_borough_viol_cover (INCLUDE
+  // (id)) as an index-only scan (~0.5s even at offset 37K), then the 25 full
+  // rows are fetched by primary key.
+  const [countRes, idsRes] = await Promise.all([
+    supabase
+      .from("buildings")
+      .select("id", { count: "planned", head: true })
+      .eq("borough", borough)
+      .eq("metro", cityParam),
+    supabase
+      .from("buildings")
+      .select("id")
+      .eq("borough", borough)
+      .eq("metro", cityParam)
+      .order(sortColumn, { ascending: false, nullsFirst: false })
+      .range(offset, offset + PAGE_SIZE - 1),
+  ]);
+
+  // unwrap(), not try/catch-to-empty: a statement timeout must surface as a
+  // 500 (Google retries those), not fall through to the `notFound()` below —
+  // deep pages were flapping 200↔404 with DB cache warmth.
+  const pageIds = (unwrap(idsRes, `BoroughListing ids ${cityParam}/${boroughSlug} p${page}`) ?? []).map((r) => r.id as string);
+
   let buildingList: Building[] = [];
-
-  try {
-    const supabase = createCacheClient();
-
-    // Get total count and paginated buildings in parallel.
-    // `count: "planned"` uses the planner's row-estimate instead of running
-    // a real COUNT(*) — instant vs. multi-second on filtered borough queries.
-    // Approximate, but plenty accurate for "N buildings" UI + pagination.
-    const [countRes, buildingsRes] = await Promise.all([
-      supabase
-        .from("buildings")
-        .select("id", { count: "planned", head: true })
-        .eq("borough", borough)
-        .eq("metro", cityParam),
-      supabase
-        .from("buildings")
-        .select("*")
-        .eq("borough", borough)
-        .eq("metro", cityParam)
-        .order(sortColumn, { ascending: false, nullsFirst: false })
-        .range(offset, offset + PAGE_SIZE - 1),
-    ]);
-
-    buildingList = (buildingsRes.data || []) as Building[];
-    // Floor the count by (offset + rows returned) so pagination never reports
-    // fewer pages than we've already proven to exist, even if the planner's
-    // row-estimate comes back low.
-    total = Math.max(countRes.count || 0, offset + buildingList.length);
-  } catch (err) {
-    console.error("BoroughListing query error:", err);
+  if (pageIds.length > 0) {
+    const rows = unwrap(
+      await supabase.from("buildings").select("*").in("id", pageIds),
+      `BoroughListing rows ${cityParam}/${boroughSlug} p${page}`
+    ) as Building[];
+    // .in() loses the sort order — restore the index's ordering.
+    const byId = new Map(rows.map((r) => [r.id, r]));
+    buildingList = pageIds.map((id) => byId.get(id)).filter((b): b is Building => !!b);
   }
+
+  // Floor the count by (offset + rows returned) so pagination never reports
+  // fewer pages than we've already proven to exist, even if the planner's
+  // row-estimate comes back low. Count errors are tolerated (cosmetic).
+  const total = Math.max(countRes.count || 0, offset + buildingList.length);
 
   // A deep page past the real end of the list (planner estimates overshoot)
   // must 404, not render an empty self-canonical page.
@@ -108,29 +124,27 @@ export async function BoroughListing({
   let bestApartmentTiers: { label: string; max: number; buildings: { id: string; full_address: string; borough: string; slug: string; overall_score: number | null; median_rent: number; buildingUrl: string }[] }[] = [];
   if (page === 1) {
     try {
-      const supabase = createCacheClient();
       const PRICE_TIERS = [
         { label: "$1.5K", max: 1500 },
         { label: "$2K", max: 2000 },
         { label: "$2.5K", max: 2500 },
         { label: "$3K", max: 3000 },
       ];
+      // borough_cheapest_rents is a nightly-refreshed cache (pg_cron, 07:25
+      // UTC) of the 500 cheapest with-rent buildings per borough, already
+      // deduped and rank-ordered. The live building_rents join it replaced
+      // seq-scanned ~8M rows and hit anon's 8s statement_timeout on every
+      // cold render — this section blocked the ISR render for 8s and then
+      // rendered nothing.
       const { data: rentData } = await supabase
-        .from("building_rents")
+        .from("borough_cheapest_rents")
         .select("building_id, median_rent, buildings!inner(id, full_address, borough, slug, metro, overall_score)")
-        .eq("buildings.borough", borough)
-        .eq("buildings.metro", cityParam)
-        .gt("median_rent", 0)
-        .order("median_rent", { ascending: true })
+        .eq("borough", borough)
+        .eq("metro", cityParam)
+        .order("rank", { ascending: true })
         .limit(500);
 
-      const seen = new Set<string>();
       const allWithRent = ((rentData || []) as unknown as { building_id: string; median_rent: number; buildings: { id: string; full_address: string; borough: string; slug: string; metro: string; overall_score: number | null } }[])
-        .filter((r) => {
-          if (seen.has(r.building_id)) return false;
-          seen.add(r.building_id);
-          return true;
-        })
         .map((r) => ({
           id: r.buildings.id,
           full_address: r.buildings.full_address,
