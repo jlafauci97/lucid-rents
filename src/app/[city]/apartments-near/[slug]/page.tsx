@@ -1,4 +1,5 @@
 import { createCacheClient } from "@/lib/supabase/cache-client";
+import { unwrap } from "@/lib/supabase/unwrap";
 import { MapPin, TrainFront, Bus } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -16,10 +17,12 @@ import {
   busRouteFromSlug,
   laMetroBusFromSlug,
 } from "@/lib/subway-lines";
-import { TransitBuildingList } from "@/components/transit/TransitBuildingList";
+import { TransitBuildingList, type TransitBuilding } from "@/components/transit/TransitBuildingList";
 import { getLandmarkBySlug, getLandmarksByCity } from "@/lib/landmarks";
 
-export const revalidate = 86400;
+// 7-day ISR — transit topology and building sets change slowly, and at 24h
+// every line page (hundreds per metro) went cold daily against heavy queries.
+export const revalidate = 604800;
 export const dynamicParams = true;
 
 // ─── Shared helpers ──────────────────────────────────────────────────────────
@@ -39,7 +42,6 @@ function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
 // ─── Transit line helpers ─────────────────────────────────────────────────────
 
 const MAX_TRANSIT_DISTANCE_MI = 0.35;
-const STOP_CHUNK_SIZE = 10;
 
 interface LineInfo {
   type: "subway" | "bus" | "rail";
@@ -54,7 +56,10 @@ function parseLineSlug(slug: string, city: City): LineInfo | null {
   if (city === "chicago") {
     const ctaLine = getCTALineBySlug(slug);
     if (ctaLine) {
-      return { type: "subway", routeName: ctaLine.routeName, displayName: ctaLine.name, color: ctaLine.color, textColor: ctaLine.textColor };
+      // transit_stops stores CTA routes inconsistently — some stops carry
+      // "Red Line", others bare "Purple". Match both; querying only the bare
+      // routeName left Red/Blue/Yellow with zero stops (empty pages).
+      return { type: "subway", routeName: ctaLine.routeName, altRouteNames: [ctaLine.name], displayName: ctaLine.name, color: ctaLine.color, textColor: ctaLine.textColor };
     }
     return null;
   }
@@ -153,59 +158,28 @@ export default async function ApartmentsNearPage({
   if (lineInfo) {
     const dbType = lineInfo.type === "subway" ? "subway" : lineInfo.type;
     const routeNames = [lineInfo.routeName, ...(lineInfo.altRouteNames || [])];
-    const stopQueries = routeNames.map((rn) =>
-      supabase.from("transit_stops").select("name, latitude, longitude").eq("type", dbType).eq("metro", city).contains("routes", [rn])
-    );
-    const stopResults = await Promise.all(stopQueries);
-    const seenStops = new Set<string>();
-    const stops = stopResults
-      .flatMap((r) => r.data || [])
-      .filter((s) => {
-        const key = `${s.latitude},${s.longitude}`;
-        if (seenStops.has(key)) return false;
-        seenStops.add(key);
-        return true;
-      });
+    // Single RPC: stops lookup + ST_DWithin against the geography gist index,
+    // nearest stop resolved in SQL. The previous approach (an OR of lat/lng
+    // bounding boxes per chunk of 10 stops, one buildings query per chunk)
+    // bitmap-scanned a full latitude band per stop — 4–12s cold on long bus
+    // routes and statement-timeout 500s under crawl load.
+    // unwrap(): a DB error must surface as a 500, not fall through to the
+    // notFound() below (see src/lib/supabase/unwrap.ts).
+    const nearRows = unwrap(
+      await supabase.rpc("buildings_near_transit", {
+        p_metro: city,
+        p_type: dbType,
+        p_routes: routeNames,
+        p_radius_m: MAX_TRANSIT_DISTANCE_MI * 1609.344,
+      }),
+      `buildings_near_transit ${city}/${slug}`
+    ) as TransitBuilding[] | null;
 
-    if (stops.length === 0) notFound();
+    // Empty result = the route has no stops in transit_stops (unknown slug).
+    if (!nearRows || nearRows.length === 0) notFound();
 
-    const columns = "id, full_address, borough, zip_code, slug, year_built, total_units, owner_name, overall_score, review_count, violation_count, complaint_count, is_rent_stabilized, latitude, longitude";
-    const chunks: (typeof stops)[] = [];
-    for (let i = 0; i < stops.length; i += STOP_CHUNK_SIZE) {
-      chunks.push(stops.slice(i, i + STOP_CHUNK_SIZE));
-    }
-
-    const chunkResults = await Promise.all(
-      chunks.map((chunk) => {
-        const orFilter = chunk
-          .map((s) => {
-            const lat = Number(s.latitude);
-            const lng = Number(s.longitude);
-            return `and(latitude.gte.${lat - 0.005},latitude.lte.${lat + 0.005},longitude.gte.${lng - 0.005},longitude.lte.${lng + 0.005})`;
-          })
-          .join(",");
-        return supabase.from("buildings").select(columns).eq("metro", city).or(orFilter).not("latitude", "is", null).not("longitude", "is", null).limit(5000);
-      })
-    );
-
-    const seen = new Set<string>();
-    const allBuildings = chunkResults.flatMap((r) => r.data || []).filter((b) => {
-      if (seen.has(b.id)) return false;
-      seen.add(b.id);
-      return true;
-    });
-
-    const buildingsWithDistance = allBuildings
-      .map((b) => {
-        let nearestStation = "";
-        let minDist = Infinity;
-        for (const stop of stops) {
-          const dist = haversineDistance(Number(b.latitude), Number(b.longitude), Number(stop.latitude), Number(stop.longitude));
-          if (dist < minDist) { minDist = dist; nearestStation = stop.name; }
-        }
-        return { ...b, nearest_station: nearestStation, station_distance_mi: Math.round(minDist * 100) / 100 };
-      })
-      .filter((b) => b.station_distance_mi <= MAX_TRANSIT_DISTANCE_MI)
+    const buildingsWithDistance = nearRows
+      .map((b) => ({ ...b, station_distance_mi: Number(b.station_distance_mi) }))
       .sort((a, b) => a.nearest_station.localeCompare(b.nearest_station) || a.full_address.localeCompare(b.full_address));
 
     const totalCount = buildingsWithDistance.length;
