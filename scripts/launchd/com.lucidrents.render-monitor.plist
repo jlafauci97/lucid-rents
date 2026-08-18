@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Rendered-page monitor, run on the always-on Mac mini 4x daily. Loads a
+  sample of prod pages in headless system Chrome and asserts the RENDERED
+  DOM is actually visible (not the blank-page/stuck-streaming-buffer class
+  that served invisible pages for months while every HTTP check stayed
+  green — see scripts/monitor-rendered-pages.mjs for the full story).
+  Emails ADMIN_EMAIL via Resend on failure.
+
+  Install on the mini:
+
+    cp scripts/launchd/com.lucidrents.render-monitor.plist ~/Library/LaunchAgents/
+    launchctl load ~/Library/LaunchAgents/com.lucidrents.render-monitor.plist
+
+  Requires in the repo's .env.local (script loads it itself):
+    NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY   (page sampling)
+    RESEND_API_KEY, ADMIN_EMAIL, RESEND_FROM_EMAIL            (failure email;
+                                                               degrades to
+                                                               log-only if absent)
+  Requires Google Chrome at /Applications/Google Chrome.app.
+
+  Smoke-test by hand first:
+    node scripts/monitor-rendered-pages.mjs
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.lucidrents.render-monitor</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/local/bin/node</string>
+        <string>scripts/monitor-rendered-pages.mjs</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/jesselafauci/Desktop/lucid-rents</string>
+
+    <!-- 4x daily: 06:15, 12:15, 18:15, 00:15 local. Offset from the hour so
+         it never overlaps the sitemap job (03:30) or the sync windows. -->
+    <key>StartCalendarInterval</key>
+    <array>
+        <dict><key>Hour</key><integer>0</integer><key>Minute</key><integer>15</integer></dict>
+        <dict><key>Hour</key><integer>6</integer><key>Minute</key><integer>15</integer></dict>
+        <dict><key>Hour</key><integer>12</integer><key>Minute</key><integer>15</integer></dict>
+        <dict><key>Hour</key><integer>18</integer><key>Minute</key><integer>15</integer></dict>
+    </array>
+
+    <key>RunAtLoad</key>
+    <false/>
+
+    <key>StandardOutPath</key>
+    <string>/tmp/lucidrents-render-monitor.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/lucidrents-render-monitor.error.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin</string>
+    </dict>
+</dict>
+</plist>
