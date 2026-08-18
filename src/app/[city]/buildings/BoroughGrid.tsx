@@ -1,3 +1,4 @@
+import { fetchWithRetry } from "@/lib/fetch-retry";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Building2, AlertTriangle, MessageSquare } from "lucide-react";
@@ -17,7 +18,7 @@ async function getBoroughStats(city: City): Promise<BoroughStats[]> {
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
   // Single RPC call replaces N sequential fetches of 50K+ rows each
-  const res = await fetch(
+  const res = await fetchWithRetry(
     `${supabaseUrl}/rest/v1/rpc/borough_stats_by_city`,
     {
       method: "POST",
@@ -30,7 +31,9 @@ async function getBoroughStats(city: City): Promise<BoroughStats[]> {
     }
   );
 
-  if (!res.ok) return [];
+  // Throw, never swallow: a failed query must be a retryable 500, not a
+  // silently missing/zeroed section (that's how bugs hid for months).
+  if (!res.ok) throw new Error(`res: HTTP ${res.status}`);
   const data = await res.json();
 
   return (data || []).map((row: { borough: string; building_count: number; total_violations: number; total_complaints: number }) => ({

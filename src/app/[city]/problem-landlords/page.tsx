@@ -1,3 +1,4 @@
+import { fetchWithRetry } from "@/lib/fetch-retry";
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
@@ -58,19 +59,21 @@ interface Scofflaw {
 
 async function fetchScofflaws(offset: number, limit: number): Promise<Scofflaw[]> {
   const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/chicago_scofflaws?select=id,respondent_name,address,unpaid_fines,violation_count,last_violation_date,ward,building:buildings(slug,borough)&order=unpaid_fines.desc&limit=${limit}&offset=${offset}`;
-  const res = await fetch(url, {
+  const res = await fetchWithRetry(url, {
     headers: {
       apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     },
     next: { revalidate: 86400 },
   });
-  if (!res.ok) return [];
+  // Throw, never swallow: a failed query must be a retryable 500, not a
+  // silently missing/zeroed section (that's how bugs hid for months).
+  if (!res.ok) throw new Error(`res: HTTP ${res.status}`);
   return res.json();
 }
 
 async function fetchScofflawCount(): Promise<number> {
   const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/chicago_scofflaws?select=id&limit=1`;
-  const res = await fetch(url, {
+  const res = await fetchWithRetry(url, {
     headers: {
       apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       Prefer: "count=exact",

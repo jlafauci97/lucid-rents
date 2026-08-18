@@ -1,3 +1,4 @@
+import { fetchWithRetry } from "@/lib/fetch-retry";
 import { Metadata } from "next";
 import { ShieldCheck } from "lucide-react";
 import { SearchBar } from "@/components/search/SearchBar";
@@ -156,7 +157,7 @@ export function generateStaticParams() {
 
 async function getBoroughStats(metro: string) {
   const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/rent_stab_borough_stats`;
-  const res = await fetch(url, {
+  const res = await fetchWithRetry(url, {
     method: "POST",
     headers: {
       apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -165,7 +166,9 @@ async function getBoroughStats(metro: string) {
     body: JSON.stringify({ p_metro: metro }),
     next: { revalidate: 3600 },
   });
-  if (!res.ok) return [];
+  // Throw, never swallow: a failed query must be a retryable 500, not a
+  // silently missing/zeroed section (that's how bugs hid for months).
+  if (!res.ok) throw new Error(`res: HTTP ${res.status}`);
   return res.json();
 }
 

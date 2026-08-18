@@ -1,3 +1,4 @@
+import { fetchWithRetry } from "@/lib/fetch-retry";
 import { Metadata } from "next";
 import Link from "next/link";
 import { cache } from "react";
@@ -50,11 +51,13 @@ const getNeighborhoodRents = cache(async function getNeighborhoodRents(
   zip: string
 ): Promise<NeighborhoodRentRow[]> {
   const url = `${SB_URL}/rest/v1/dewey_neighborhood_rents?zip=eq.${zip}&select=month,beds,median_rent,p25_rent,p75_rent,listing_count&order=month.asc`;
-  const res = await fetch(url, {
+  const res = await fetchWithRetry(url, {
     headers: { apikey: SB_KEY },
     next: { revalidate: 3600 },
   });
-  if (!res.ok) return [];
+  // Throw, never swallow: a failed query must be a retryable 500, not a
+  // silently missing/zeroed section (that's how bugs hid for months).
+  if (!res.ok) throw new Error(`res: HTTP ${res.status}`);
   return res.json();
 });
 
@@ -62,11 +65,13 @@ const getSeasonalIndex = cache(async function getSeasonalIndex(
   zip: string
 ): Promise<SeasonalRow[]> {
   const url = `${SB_URL}/rest/v1/dewey_seasonal_index?zip=eq.${zip}&select=month_of_year,beds,rent_index,sample_years&order=month_of_year.asc`;
-  const res = await fetch(url, {
+  const res = await fetchWithRetry(url, {
     headers: { apikey: SB_KEY },
     next: { revalidate: 3600 },
   });
-  if (!res.ok) return [];
+  // Throw, never swallow: a failed query must be a retryable 500, not a
+  // silently missing/zeroed section (that's how bugs hid for months).
+  if (!res.ok) throw new Error(`res: HTTP ${res.status}`);
   return res.json();
 });
 
@@ -74,11 +79,13 @@ const getAmenityPremiums = cache(async function getAmenityPremiums(
   zip: string
 ): Promise<AmenityRow[]> {
   const url = `${SB_URL}/rest/v1/dewey_amenity_premiums?zip=eq.${zip}&period=eq.all_time&select=amenity,beds,premium_dollars,premium_pct,sample_size,median_with,median_without&order=premium_dollars.desc`;
-  const res = await fetch(url, {
+  const res = await fetchWithRetry(url, {
     headers: { apikey: SB_KEY },
     next: { revalidate: 3600 },
   });
-  if (!res.ok) return [];
+  // Throw, never swallow: a failed query must be a retryable 500, not a
+  // silently missing/zeroed section (that's how bugs hid for months).
+  if (!res.ok) throw new Error(`res: HTTP ${res.status}`);
   return res.json();
 });
 
@@ -86,14 +93,16 @@ const getBuildingCount = cache(async function getBuildingCount(
   zip: string
 ): Promise<number> {
   const url = `${SB_URL}/rest/v1/buildings?zip_code=eq.${zip}&select=id&limit=0`;
-  const res = await fetch(url, {
+  const res = await fetchWithRetry(url, {
     headers: {
       apikey: SB_KEY,
       Prefer: "count=exact",
     },
     next: { revalidate: 3600 },
   });
-  if (!res.ok) return 0;
+  // Throw, never swallow: a failed query must be a retryable 500, not a
+  // silently missing/zeroed section (that's how bugs hid for months).
+  if (!res.ok) throw new Error(`res: HTTP ${res.status}`);
   const range = res.headers.get("content-range");
   if (!range) return 0;
   const total = range.split("/")[1];

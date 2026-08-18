@@ -1,3 +1,4 @@
+import { fetchWithRetry } from "@/lib/fetch-retry";
 import { BarChart3 } from "lucide-react";
 
 interface NeighborhoodStats {
@@ -41,11 +42,13 @@ interface ZipAggregate {
 async function fetchZipAggregates(): Promise<ZipAggregate[]> {
   // Use Supabase REST to get per-zip violation totals and avg scores
   const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/buildings?select=zip_code,violation_count,overall_score&zip_code=not.is.null`;
-  const res = await fetch(url, {
+  const res = await fetchWithRetry(url, {
     headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! },
     next: { revalidate: 3600 },
   });
-  if (!res.ok) return [];
+  // Throw, never swallow: a failed query must be a retryable 500, not a
+  // silently missing/zeroed section (that's how bugs hid for months).
+  if (!res.ok) throw new Error(`res: HTTP ${res.status}`);
   const rows: { zip_code: string; violation_count: number; overall_score: number | null }[] = await res.json();
 
   // Aggregate per zip
@@ -69,7 +72,7 @@ async function fetchZipAggregates(): Promise<ZipAggregate[]> {
 
 async function fetchAllCrimeData(): Promise<CrimeZipRow[]> {
   const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/crime_by_zip`;
-  const res = await fetch(url, {
+  const res = await fetchWithRetry(url, {
     method: "POST",
     headers: {
       apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -78,7 +81,9 @@ async function fetchAllCrimeData(): Promise<CrimeZipRow[]> {
     body: JSON.stringify({}),
     next: { revalidate: 3600 },
   });
-  if (!res.ok) return [];
+  // Throw, never swallow: a failed query must be a retryable 500, not a
+  // silently missing/zeroed section (that's how bugs hid for months).
+  if (!res.ok) throw new Error(`res: HTTP ${res.status}`);
   return res.json();
 }
 
