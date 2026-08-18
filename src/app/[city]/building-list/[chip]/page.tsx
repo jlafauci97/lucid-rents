@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { canonicalUrl, cityPath, buildingUrl } from "@/lib/seo";
@@ -142,12 +143,18 @@ export default async function CategoryPage({
             this page can be statically prerendered. The client island reads
             sort / page from useSearchParams and fetches from
             /api/building-list/[chip] (edge runtime, CDN-cached). */}
-        <BuildingsClient
-          chipSlug={chip.slug}
-          city={city}
-          basePath={basePath}
-          countFallback={count}
-        />
+        {/* Local Suspense: BuildingsClient reads useSearchParams (CSR bailout
+            requires a boundary now that the segment loading.tsx is gone). The
+            list is client-fetched either way, so nothing crawler-visible is
+            lost — the page's SEO content (h1, copy, JSON-LD) stays static. */}
+        <Suspense fallback={<div className="h-96 bg-white rounded-xl border border-[#e2e8f0] animate-pulse" />}>
+          <BuildingsClient
+            chipSlug={chip.slug}
+            city={city}
+            basePath={basePath}
+            countFallback={count}
+          />
+        </Suspense>
         {/* Related categories */}
         {relatedSummaries.length > 0 && (
           <section className="mt-16 pt-10 border-t border-[#e2e8f0]">

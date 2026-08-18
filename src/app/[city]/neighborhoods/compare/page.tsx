@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { Suspense } from "react";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { canonicalUrl, cityPath, neighborhoodsUrl, breadcrumbJsonLd } from "@/lib/seo";
 import { VALID_CITIES, CITY_META, type City } from "@/lib/cities";
@@ -57,7 +58,10 @@ export default async function CompareNeighborhoodsPage({
 
       {/* Comparison UI lives in a client island so this page can be
           statically prerendered. The ?a=&b= params are read client-side. */}
-      <NeighborhoodsCompareClient city={city} />
+      {/* Local Suspense: this client island reads useSearchParams (boundary required now that segment loading.tsx is gone; see #351). */}
+      <Suspense fallback={<div className="h-96 bg-white rounded-xl border border-[#e2e8f0] animate-pulse" />}>
+        <NeighborhoodsCompareClient city={city} />
+      </Suspense>
     </div>
   );
 }
