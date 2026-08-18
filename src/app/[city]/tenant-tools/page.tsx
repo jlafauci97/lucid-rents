@@ -39,7 +39,7 @@ export async function generateMetadata({
     description: `Free tenant tools for ${cityName} renters — downloadable letter templates, pre-move-in checklists, rent affordability calculator, and more.`,
     alternates: { canonical },
     openGraph: {
-      title: `${cityName} Tenant Tools | Lucid Rents`,
+      title: `${cityName} Tenant Tools`,
       description: `Everything you need as a ${cityName} renter — for free.`,
       url: canonical,
       siteName: "Lucid Rents",

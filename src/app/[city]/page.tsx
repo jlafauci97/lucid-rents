@@ -37,7 +37,10 @@ export async function generateMetadata({
   return {
     title: `${meta.fullName} Apartment Reviews & Building Reports`,
     description: `Looking for an apartment in ${meta.fullName}? Search any building for violations, tenant reviews, crime data, and rent history — all free.`,
-    alternates: { canonical: canonicalUrl(cityPath("/", city)) },
+    // cityPath("") not cityPath("/"): the latter emitted /nyc/ (trailing
+    // slash), and Next 308-redirects /nyc/ -> /nyc — a canonical pointing at
+    // a redirect on every city homepage.
+    alternates: { canonical: canonicalUrl(cityPath("", city)) },
   };
 }
 
