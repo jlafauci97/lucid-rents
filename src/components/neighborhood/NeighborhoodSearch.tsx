@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { Search } from "lucide-react";
 import { LetterGrade } from "@/components/ui/LetterGrade";
 import { getLetterGrade, getGradeColor, type LetterGrade as LetterGradeType } from "@/lib/constants";
@@ -39,19 +38,27 @@ export function NeighborhoodSearch({
   regionLabel: string;
   initialRegionSlug?: string;
 }) {
-  // Read region from URL searchParams so the parent server component doesn't
-  // have to (lets that page be statically prerendered). Falls back to the
-  // initialRegionSlug prop if URL is empty.
-  const sp = useSearchParams();
-  const urlRegion = sp.get("region") || undefined;
-  const effectiveInitial = urlRegion ?? initialRegionSlug;
-
   const [query, setQuery] = useState("");
   const [selectedRegion, setSelectedRegion] = useState<string>(() => {
-    if (!effectiveInitial) return "all";
-    const target = slugify(effectiveInitial);
+    if (!initialRegionSlug) return "all";
+    const target = slugify(initialRegionSlug);
     return regions.find((r) => slugify(r) === target) ?? "all";
   });
+  // ?region= is read from location.search AFTER mount, not via
+  // useSearchParams(): the hook forces a Suspense boundary around this
+  // component, and during prerender that bails the ENTIRE grid out of the
+  // server HTML (fallback only) — the neighborhoods list would vanish from
+  // what crawlers see. Post-mount enhancement keeps the full grid in static
+  // HTML; the URL filter simply applies a beat later for users who arrive
+  // with one.
+  useEffect(() => {
+    const urlRegion = new URLSearchParams(window.location.search).get("region");
+    if (!urlRegion) return;
+    const target = slugify(urlRegion);
+    const match = regions.find((r) => slugify(r) === target);
+    if (match) setSelectedRegion(match);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [selectedGrade, setSelectedGrade] = useState<string>("all");
   const [sortBy, setSortBy] = useState<SortKey>("name");
 

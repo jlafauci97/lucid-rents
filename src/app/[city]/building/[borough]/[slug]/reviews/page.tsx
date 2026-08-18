@@ -6,7 +6,7 @@ import { unwrap } from "@/lib/supabase/unwrap";
 import { regionFromSlug, boroughIlikePattern, buildingUrl, canonicalUrl } from "@/lib/seo";
 import { CITY_META, VALID_CITIES, type City } from "@/lib/cities";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
-import { cache } from "react";
+import { cache, Suspense } from "react";
 import type { Building } from "@/types";
 import type { Metadata } from "next";
 import { ReviewsClient } from "./ReviewsClient";
@@ -131,13 +131,16 @@ export default async function BuildingReviewsPage({ params }: ReviewsPageProps) 
             parent page becomes static per (city, borough, slug). The
             /api/buildings/[id]/reviews endpoint it hits is edge-runtime and
             CDN-cached via next.config.ts headers. */}
-        <ReviewsClient
-          buildingId={building.id}
-          city={city}
-          shortAddress={shortAddress}
-          reviewsBase={reviewsBase}
-          totalReviewsFallback={totalReviewsFallback}
-        />
+        {/* Local Suspense: this client island reads useSearchParams (boundary required now that segment loading.tsx is gone; see #351). */}
+        <Suspense fallback={<div className="h-96 bg-white rounded-xl border border-[#e2e8f0] animate-pulse" />}>
+          <ReviewsClient
+            buildingId={building.id}
+            city={city}
+            shortAddress={shortAddress}
+            reviewsBase={reviewsBase}
+            totalReviewsFallback={totalReviewsFallback}
+          />
+        </Suspense>
       </div>
     </main>
   );

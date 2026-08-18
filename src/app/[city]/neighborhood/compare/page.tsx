@@ -1,4 +1,5 @@
 import { ArrowLeftRight } from "lucide-react";
+import { Suspense } from "react";
 import { canonicalUrl, cityPath } from "@/lib/seo";
 import { isValidCity, VALID_CITIES, CITY_META, type City } from "@/lib/cities";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
@@ -72,7 +73,10 @@ export default async function NeighborhoodComparePage({ params }: PageProps) {
 
         {/* Comparison UI lives in a client island so this page can be
             statically prerendered. The ?zips=... param is read client-side. */}
-        <NeighborhoodCompareClient city={city} />
+        {/* Local Suspense: this client island reads useSearchParams (boundary required now that segment loading.tsx is gone; see #351). */}
+        <Suspense fallback={<div className="h-96 bg-white rounded-xl border border-[#e2e8f0] animate-pulse" />}>
+          <NeighborhoodCompareClient city={city} />
+        </Suspense>
       </div>
     </AdSidebar>
   );

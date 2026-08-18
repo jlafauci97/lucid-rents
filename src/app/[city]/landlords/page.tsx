@@ -1,4 +1,5 @@
 import { unstable_cache } from "next/cache";
+import { Suspense } from "react";
 import { createClient as createSbClient } from "@supabase/supabase-js";
 import { ArrowRight, ArrowUpRight, Building2, Trophy, Flame, Scale, FileWarning, AlertTriangle, ShieldAlert, Gavel } from "lucide-react";
 import Link from "next/link";
@@ -690,11 +691,16 @@ export default async function LandlordsPage({ params: routeParams }: Props) {
               in the URL and are read by useSearchParams() inside
               DirectoryClient. The /api/landlords endpoint backing it is
               CDN-cached (next.config.ts s-maxage=600, swr=3600). */}
-          <DirectoryClient
-            city={city}
-            basePath={basePath}
-            totalFallback={total}
-          />
+          {/* Local Suspense: DirectoryClient reads useSearchParams (boundary
+              required now that segment loading.tsx is gone; see #351). List
+              is client-fetched either way. */}
+          <Suspense fallback={<div className="h-96 bg-white rounded-xl border border-[#e2e8f0] animate-pulse" />}>
+            <DirectoryClient
+              city={city}
+              basePath={basePath}
+              totalFallback={total}
+            />
+          </Suspense>
 
           {/* Related */}
           <section className="mb-10 sm:mb-14">

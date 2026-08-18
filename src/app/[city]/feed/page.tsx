@@ -52,7 +52,14 @@ export default async function FeedPage({ params }: { params: Promise<{ city: str
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
         {/* Main feed */}
         <div className="min-w-0">
-          <FeedView />
+          {/* Local Suspense: FeedView reads useSearchParams, which requires a
+              boundary. The segment-level loading.tsx used to provide one for
+              the WHOLE page (forcing streamed-200 notFound responses and the
+              hidden-buffer machinery, see #351); a widget-scoped boundary
+              satisfies the CSR bailout with none of that blast radius. */}
+          <Suspense fallback={<div className="h-96 bg-white rounded-xl border border-[#e2e8f0] animate-pulse" />}>
+            <FeedView />
+          </Suspense>
         </div>
 
         {/* Sidebar — sticky. Each card streams independently so the shell paints first. */}

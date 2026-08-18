@@ -1,4 +1,5 @@
 import { AdSidebar } from "@/components/ui/AdSidebar";
+import { Suspense } from "react";
 import { ArrowLeftRight } from "lucide-react";
 import { canonicalUrl, cityPath, cityBreadcrumbs } from "@/lib/seo";
 import { isValidCity, VALID_CITIES, CITY_META, type City } from "@/lib/cities";
@@ -60,7 +61,10 @@ export default async function ComparePage({ params }: ComparePageProps) {
         {/* Comparison UI lives in a client island so this page can be
             statically prerendered. The ?ids=... param is read by
             CompareClient via useSearchParams + the supabase browser client. */}
-        <CompareClient />
+        {/* Local Suspense: this client island reads useSearchParams (boundary required now that segment loading.tsx is gone; see #351). */}
+        <Suspense fallback={<div className="h-96 bg-white rounded-xl border border-[#e2e8f0] animate-pulse" />}>
+          <CompareClient />
+        </Suspense>
       </div>
     </AdSidebar>
   );

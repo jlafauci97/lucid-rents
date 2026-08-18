@@ -1295,12 +1295,17 @@ export default async function BuildingRankingsPage({ params: routeParams }: Page
         {/* Directory — client island. Sort / borough / page state lives
             in the URL and is read by useSearchParams inside DirectoryClient.
             /api/building-rankings is edge-runtime and CDN-cacheable. */}
-        <DirectoryClient
-          city={city}
-          basePath={basePath}
-          regionLabel={meta.regionLabel}
-          cityRegions={cityRegions}
-        />
+        {/* Local Suspense: DirectoryClient reads useSearchParams (boundary
+            required now that segment loading.tsx is gone; see #351). The
+            list is client-fetched either way — nothing crawler-visible lost. */}
+        <Suspense fallback={<div className="h-96 bg-white rounded-xl border border-[#e2e8f0] animate-pulse" />}>
+          <DirectoryClient
+            city={city}
+            basePath={basePath}
+            regionLabel={meta.regionLabel}
+            cityRegions={cityRegions}
+          />
+        </Suspense>
 
         {/* CTA */}
         <section className="p-8 sm:p-12 text-center" style={{ background: G.graphite, borderRadius: 28, color: "#fff" }}>
