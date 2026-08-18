@@ -170,10 +170,16 @@ export default async function RootLayout({
             unaffected, which made it look random. This sweep runs well after
             React's own throttled reveal window (~2.3s) and performs the same
             template-swap $RC would have done, only for pairs that are still
-            stuck. Remove once the framework bug is confirmed fixed upstream. */}
+            stuck. Remove once the framework bug is confirmed fixed upstream.
+
+            When the sweep actually reveals something it reports a GA4 event
+            (stream_reveal_fallback, with the segment count) via the dataLayer
+            queue AnalyticsLoader drains — making this net a TRIPWIRE: any
+            nonzero count in GA means the framework is still caching broken
+            entries, and event page_path says which URLs. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){function reveal(){for(var g=0;g<10;g++){var divs=document.querySelectorAll('div[hidden][id^="S:"]');if(!divs.length)return;for(var i=0;i<divs.length;i++){var s=divs[i];var t=document.getElementById('B:'+s.id.slice(2));if(t&&t.tagName==='TEMPLATE'&&t.parentNode){var p=t.parentNode;while(s.firstChild)p.insertBefore(s.firstChild,t);t.remove();s.remove()}else{s.removeAttribute('hidden')}}}}function arm(){setTimeout(reveal,3500);setTimeout(reveal,8000)}if(document.readyState==='complete'){arm()}else{window.addEventListener('load',arm)}})();`,
+            __html: `(function(){var reported=false;function track(){window.dataLayer=window.dataLayer||[];window.dataLayer.push(arguments)}function reveal(){var n=0;for(var g=0;g<10;g++){var divs=document.querySelectorAll('div[hidden][id^="S:"]');if(!divs.length)break;for(var i=0;i<divs.length;i++){var s=divs[i];var t=document.getElementById('B:'+s.id.slice(2));if(t&&t.tagName==='TEMPLATE'&&t.parentNode){var p=t.parentNode;while(s.firstChild)p.insertBefore(s.firstChild,t);t.remove();s.remove();n++}else{s.removeAttribute('hidden');n++}}}if(n>0&&!reported){reported=true;try{track('event','stream_reveal_fallback',{page_path:location.pathname,segments:n})}catch(e){}}}function arm(){setTimeout(reveal,3500);setTimeout(reveal,8000)}if(document.readyState==='complete'){arm()}else{window.addEventListener('load',arm)}})();`,
           }}
         />
       </body>
