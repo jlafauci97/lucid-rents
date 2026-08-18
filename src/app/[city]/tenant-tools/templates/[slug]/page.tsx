@@ -32,7 +32,7 @@ export async function generateMetadata({
     description: `Free ${template.title.toLowerCase()} template for ${cityName} renters. Fill in your details and download or print your letter instantly.`,
     alternates: { canonical },
     openGraph: {
-      title: `${template.title} — ${cityName} | Lucid Rents`,
+      title: `${template.title} — ${cityName}`,
       description: `Free professional letter template for ${cityName} tenants.`,
       url: canonical,
       siteName: "Lucid Rents",

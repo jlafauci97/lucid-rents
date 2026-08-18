@@ -43,7 +43,7 @@ export async function generateMetadata({
 
   if (q) {
     const scope = cityName ? `${cityName}` : "NYC, LA, and Chicago";
-    const title = `Search: ${q} | Lucid Rents`;
+    const title = `Search: ${q}`;
     const description = `Results for "${q}" across ${scope} — buildings, landlords, and neighborhoods with violations, complaints, and tenant reviews.`;
     const path = cityParam ? `/search?q=${encodeURIComponent(q)}&city=${cityParam}` : `/search?q=${encodeURIComponent(q)}`;
     return {

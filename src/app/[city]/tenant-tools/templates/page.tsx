@@ -26,7 +26,7 @@ export async function generateMetadata({
     description: `Free downloadable tenant letter templates for ${cityName} renters — rent reduction requests, repair notices, security deposit demands, lease negotiations, and more.`,
     alternates: { canonical },
     openGraph: {
-      title: `${cityName} Tenant Letter Templates | Lucid Rents`,
+      title: `${cityName} Tenant Letter Templates`,
       description: `Free professional letter templates for ${cityName} tenants. Know your rights and put them in writing.`,
       url: canonical,
       siteName: "Lucid Rents",

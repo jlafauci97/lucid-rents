@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
     description: `Every apartment building in ${meta.fullName} — searchable by borough, with violations, complaints, and tenant reviews at a glance.`,
     alternates: { canonical: canonicalUrl(cityPath("/buildings", city)) },
     openGraph: {
-      title: `${meta.fullName} Buildings Directory | Lucid Rents`,
+      title: `${meta.fullName} Buildings Directory`,
       description: `Every apartment building in ${meta.fullName} — violations, complaints, and tenant reviews at a glance.`,
       url: canonicalUrl(cityPath("/buildings", city)),
       siteName: "Lucid Rents",

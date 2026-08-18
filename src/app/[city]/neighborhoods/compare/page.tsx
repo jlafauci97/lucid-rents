@@ -20,7 +20,7 @@ export async function generateMetadata({
   const meta = CITY_META[city as City];
   if (!meta) return {};
   return {
-    title: `Compare ${meta.name} Neighborhoods | Lucid Rents`,
+    title: `Compare ${meta.name} Neighborhoods`,
     description: `Compare ${meta.name} neighborhoods side by side. See which area has better grades, fewer violations, and safer streets.`,
     alternates: { canonical: canonicalUrl(cityPath("/neighborhoods/compare", city as City)) },
   };

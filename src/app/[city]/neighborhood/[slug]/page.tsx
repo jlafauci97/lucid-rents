@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Suspense, cache } from "react";
 import { MapPin, Building2, AlertTriangle, MessageSquare, Users, Siren } from "lucide-react";
@@ -95,7 +96,10 @@ const getNeighborhoodStats = cache(async function getNeighborhoodStats(zipCode: 
     body: JSON.stringify({ target_zip: zipCode }),
     next: { revalidate: 3600 },
   });
-  if (!res.ok) return null;
+  // Throw on failure, never `return null`: the page notFound()s on null
+  // stats, so a transient DB error would otherwise render (and ISR-cache!)
+  // a 404 for a real neighborhood. A throw is a retryable 500 instead.
+  if (!res.ok) throw new Error(`neighborhood_stats ${zipCode}: HTTP ${res.status}`);
   const data = await res.json();
   return Array.isArray(data) ? data[0] : data;
 });
@@ -217,6 +221,8 @@ export default async function NeighborhoodPage({
   const { city: cityParam, slug } = await params;
   const city = cityParam as City;
   const zipCode = parseNeighborhoodSlug(slug);
+  // Garbage slugs (no parseable 5-digit zip) 404 without a DB round trip.
+  if (!/^\d{5}$/.test(zipCode ?? "")) notFound();
   const neighborhoodName = getNeighborhoodNameByCity(zipCode, city);
 
   const [stats, crime, buildings, rents, bestBuildings, topLandlords] = await Promise.all([
@@ -228,20 +234,12 @@ export default async function NeighborhoodPage({
     getTopLandlords(zipCode, city),
   ]);
 
-  if (!stats || stats.building_count === 0) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
-        <MapPin className="w-12 h-12 text-[#94a3b8] mx-auto mb-4" />
-        <h1 className="text-2xl font-bold text-[#0F1D2E] mb-2">
-          No Data for {neighborhoodName ? `${neighborhoodName} (${zipCode})` : zipCode}
-        </h1>
-        <p className="text-[#64748b]">We don&apos;t have building data for this zip code yet.</p>
-        <Link href={cityPath("/crime", city)} className="text-[#3B82F6] text-sm mt-4 inline-block">
-          Browse all neighborhoods
-        </Link>
-      </div>
-    );
-  }
+  // notFound(), not an in-page "No Data" card: the card version served an
+  // indexable HTTP-200 thin page for every garbage /neighborhood/<junk> slug
+  // (self-canonical soft-404s in Search Console). Thrown before any Suspense
+  // boundary flushes, this now yields a real 404 status (the segment-level
+  // loading.tsx that forced every response into streaming-200 mode is gone).
+  if (!stats || stats.building_count === 0) notFound();
 
   const buildingCount = Number(stats.building_count);
   const avgScore = stats.avg_score ? normalizeScore(Number(stats.avg_score)) : null;

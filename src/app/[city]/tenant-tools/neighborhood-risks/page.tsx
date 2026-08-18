@@ -22,7 +22,7 @@ export async function generateMetadata({
     description: `Free NYC tool. Search any building address to see homeless shelters, methadone clinics, sirens, brownfields, and other nearby concerns within 0.75 mi.`,
     alternates: { canonical },
     openGraph: {
-      title: `${meta.fullName} Neighborhood Risks | Lucid Rents`,
+      title: `${meta.fullName} Neighborhood Risks`,
       description: `Search any NYC building. See what's nearby that listings won't tell you — within 0.75 mi.`,
       url: canonical,
       siteName: "Lucid Rents",

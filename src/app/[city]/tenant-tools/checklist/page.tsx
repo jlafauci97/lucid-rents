@@ -15,7 +15,7 @@ export async function generateMetadata({
   const meta = CITY_META[city as City];
   const cityName = meta?.fullName ?? "Your City";
   return {
-    title: `Pre-Move-In Checklist | ${cityName} | Lucid Rents`,
+    title: `Pre-Move-In Checklist | ${cityName}`,
     description: `Before you sign a lease in ${cityName}, run a quick due-diligence check. Search any building to see open violations, complaints, pest history, reviews, and more.`,
     alternates: { canonical: canonicalUrl(cityPath("/tenant-tools/checklist", city as City)) },
   };
