@@ -1,3 +1,4 @@
+import { fetchWithRetry } from "@/lib/fetch-retry";
 import { cache } from "react";
 import { unstable_cache } from "next/cache";
 import type { City } from "@/lib/cities";
@@ -24,11 +25,13 @@ const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SB_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 async function sbFetch<T>(path: string): Promise<T | null> {
-  const res = await fetch(`${SB_URL}/rest/v1/${path}`, {
+  const res = await fetchWithRetry(`${SB_URL}/rest/v1/${path}`, {
     headers: { apikey: SB_KEY },
     next: { revalidate: 86400 },
   });
-  if (!res.ok) return null;
+  // Throw, never swallow: a failed query must be a retryable 500, not a
+  // silently missing/zeroed section (that's how bugs hid for months).
+  if (!res.ok) throw new Error(`res: HTTP ${res.status}`);
   return res.json();
 }
 
@@ -164,11 +167,13 @@ export const getCityMonthMedians = unstable_cache(
   async (city: City, month: string): Promise<CityMonthMedians | null> => {
     const zips = getAllNeighborhoodsByCity(city).map((n) => n.zipCode);
     if (zips.length === 0) return null;
-    const res = await fetch(
+    const res = await fetchWithRetry(
       `${SB_URL}/rest/v1/dewey_neighborhood_rents?zip=in.(${zips.join(",")})&month=eq.${month}-01&listing_count=gte.1&select=zip,beds,median_rent&limit=3000`,
       { headers: { apikey: SB_KEY } },
     );
-    if (!res.ok) return null;
+    // Throw, never swallow: a failed query must be a retryable 500, not a
+    // silently missing/zeroed section (that's how bugs hid for months).
+    if (!res.ok) throw new Error(`res: HTTP ${res.status}`);
     const rows = (await res.json()) as { zip: string; beds: number; median_rent: string | number | null }[];
 
     const byBed = new Map<number, number[]>();

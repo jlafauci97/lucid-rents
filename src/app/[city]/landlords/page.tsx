@@ -1,3 +1,4 @@
+import { fetchWithRetry } from "@/lib/fetch-retry";
 import { unstable_cache } from "next/cache";
 import { Suspense } from "react";
 import { createClient as createSbClient } from "@supabase/supabase-js";
@@ -267,13 +268,15 @@ export default async function LandlordsPage({ params: routeParams }: Props) {
 
       const buildingsCountQ = (async (): Promise<number | null> => {
         try {
-          const res = await fetch(
+          const res = await fetchWithRetry(
             `${supabaseUrl}/rest/v1/buildings?select=id&metro=eq.${encodeURIComponent(cityKey)}`,
             {
               headers: { apikey: apiKey, Authorization: `Bearer ${apiKey}`, Prefer: "count=estimated", Range: "0-0" },
             }
           );
-          if (!res.ok) return null;
+          // Throw, never swallow: a failed query must be a retryable 500, not a
+          // silently missing/zeroed section (that's how bugs hid for months).
+          if (!res.ok) throw new Error(`res: HTTP ${res.status}`);
           const range = res.headers.get("content-range") || "";
           const m = range.match(/\/(\d+)/);
           return m ? parseInt(m[1], 10) : null;

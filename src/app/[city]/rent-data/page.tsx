@@ -1,3 +1,4 @@
+import { fetchWithRetry } from "@/lib/fetch-retry";
 import { Metadata } from "next";
 import { BarChart3 } from "lucide-react";
 import { canonicalUrl, cityPath, cityBreadcrumbs } from "@/lib/seo";
@@ -41,7 +42,7 @@ export function generateStaticParams() {
 }
 async function fetchRpc(fnName: string, params: Record<string, string> = {}) {
   const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/${fnName}`;
-  const res = await fetch(url, {
+  const res = await fetchWithRetry(url, {
     method: "POST",
     headers: {
       apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -50,7 +51,9 @@ async function fetchRpc(fnName: string, params: Record<string, string> = {}) {
     body: JSON.stringify(params),
     next: { revalidate: 86400 },
   });
-  if (!res.ok) return [];
+  // Throw, never swallow: a failed query must be a retryable 500, not a
+  // silently missing/zeroed section (that's how bugs hid for months).
+  if (!res.ok) throw new Error(`res: HTTP ${res.status}`);
   return res.json();
 }
 

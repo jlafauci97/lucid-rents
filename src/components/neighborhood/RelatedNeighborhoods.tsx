@@ -1,3 +1,4 @@
+import { fetchWithRetry } from "@/lib/fetch-retry";
 import Link from "next/link";
 import { LetterGrade } from "@/components/ui/LetterGrade";
 import { neighborhoodUrl } from "@/lib/seo";
@@ -14,7 +15,7 @@ interface RelatedStats {
 
 async function fetchNeighborhoodStats(city: City): Promise<RelatedStats[]> {
   const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/neighborhood_index`;
-  const res = await fetch(url, {
+  const res = await fetchWithRetry(url, {
     method: "POST",
     headers: {
       apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -23,7 +24,9 @@ async function fetchNeighborhoodStats(city: City): Promise<RelatedStats[]> {
     body: JSON.stringify({ target_city: city }),
     next: { revalidate: 3600 },
   });
-  if (!res.ok) return [];
+  // Throw, never swallow: a failed query must be a retryable 500, not a
+  // silently missing/zeroed section (that's how bugs hid for months).
+  if (!res.ok) throw new Error(`res: HTTP ${res.status}`);
   return res.json();
 }
 

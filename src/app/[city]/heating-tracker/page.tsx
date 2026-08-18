@@ -1,3 +1,4 @@
+import { fetchWithRetry } from "@/lib/fetch-retry";
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
@@ -14,7 +15,14 @@ import { canonicalUrl, cityPath } from "@/lib/seo";
 import { VALID_CITIES, isValidCity, CITY_META, type City } from "@/lib/cities";
 import { AdSidebar } from "@/components/ui/AdSidebar";
 
-export async function generateMetadata({
+export // NOTE: the or= filter is pre-URL-encoded with the BUILDING/HOUSING and
+// "no heat" values double-quoted: the raw "/" and space made PostgREST
+// return HTTP 400 on every request since this page shipped (the old
+// swallow-and-return-[] hid it; the Chicago tracker always showed zero
+// complaints). The pattern list must stay textually identical to the
+// idx_c311_chicago_heat partial index predicate or the planner falls
+// back to a 6-wildcard scan over the whole Chicago slice (8s timeout).
+async function generateMetadata({
   params,
 }: {
   params: Promise<{ city: string }>;
@@ -57,49 +65,49 @@ interface HeatingComplaint {
 async function fetchHeatingComplaints(offset: number, limit: number): Promise<HeatingComplaint[]> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-  const url = `${supabaseUrl}/rest/v1/complaints_311?select=id,address,created_date,status,complaint_type,descriptor&metro=eq.chicago&or=(complaint_type.ilike.*heat*,complaint_type.ilike.*BUILDING/HOUSING*,descriptor.ilike.*heat*,descriptor.ilike.*no heat*,descriptor.ilike.*furnace*,descriptor.ilike.*boiler*)&order=created_date.desc.nullslast&limit=${limit}&offset=${offset}`;
-  const res = await fetch(url, {
-    headers: {
-      apikey: supabaseKey,
-    },
+  // RPC, not a filtered REST query: the old URL selected a nonexistent
+  // `address` column (it's incident_address in complaints_311) AND its or=
+  // filter had raw "/" and space characters — HTTP 400 on every request
+  // since the page shipped, silently swallowed as an empty list. The RPC's
+  // predicate textually matches idx_c311_chicago_heat so it serves from the
+  // partial index.
+  const res = await fetchWithRetry(`${supabaseUrl}/rest/v1/rpc/chicago_heat_complaints`, {
+    method: "POST",
+    headers: { apikey: supabaseKey, "Content-Type": "application/json" },
+    body: JSON.stringify({ p_limit: limit, p_offset: offset }),
     next: { revalidate: 3600 },
   });
-  if (!res.ok) return [];
+  // Throw, never swallow: a failed query must be a retryable 500, not a
+  // silently missing/zeroed section (that's how bugs hid for months).
+  if (!res.ok) throw new Error(`fetchHeatingComplaints: HTTP ${res.status}`);
   return res.json();
 }
 
 async function fetchHeatingComplaintCount(): Promise<number> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-  const url = `${supabaseUrl}/rest/v1/complaints_311?select=id&metro=eq.chicago&or=(complaint_type.ilike.*heat*,complaint_type.ilike.*BUILDING/HOUSING*,descriptor.ilike.*heat*,descriptor.ilike.*no heat*,descriptor.ilike.*furnace*,descriptor.ilike.*boiler*)&limit=1`;
-  const res = await fetch(url, {
-    headers: {
-      apikey: supabaseKey,
-      Prefer: "count=exact",
-    },
+  const res = await fetchWithRetry(`${supabaseUrl}/rest/v1/rpc/chicago_heat_count`, {
+    method: "POST",
+    headers: { apikey: supabaseKey, "Content-Type": "application/json" },
+    body: JSON.stringify({}),
     next: { revalidate: 3600 },
   });
-  const range = res.headers.get("content-range");
-  return range ? parseInt(range.split("/")[1] || "0") : 0;
+  if (!res.ok) throw new Error(`fetchHeatingComplaintCount: HTTP ${res.status}`);
+  return Number(await res.json());
 }
 
 async function fetchRecentHeatingCount(): Promise<number> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
   const ninetyAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
-  const url = `${supabaseUrl}/rest/v1/complaints_311?select=id&metro=eq.chicago&or=(complaint_type.ilike.*heat*,complaint_type.ilike.*BUILDING/HOUSING*,descriptor.ilike.*heat*,descriptor.ilike.*no heat*,descriptor.ilike.*furnace*,descriptor.ilike.*boiler*)&created_date=gte.${ninetyAgo}&limit=1`;
-  const res = await fetch(url, {
-    headers: {
-      apikey: supabaseKey,
-      Prefer: "count=exact",
-    },
+  const res = await fetchWithRetry(`${supabaseUrl}/rest/v1/rpc/chicago_heat_count`, {
+    method: "POST",
+    headers: { apikey: supabaseKey, "Content-Type": "application/json" },
+    body: JSON.stringify({ p_since: ninetyAgo }),
     next: { revalidate: 3600 },
   });
-  const range = res.headers.get("content-range");
-  return range ? parseInt(range.split("/")[1] || "0") : 0;
+  if (!res.ok) throw new Error(`fetchRecentHeatingCount: HTTP ${res.status}`);
+  return Number(await res.json());
 }
 
 export default async function HeatingTrackerPage({

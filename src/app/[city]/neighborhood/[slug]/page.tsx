@@ -1,3 +1,4 @@
+import { fetchWithRetry } from "@/lib/fetch-retry";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -87,7 +88,7 @@ interface CrimeZipRow {
 // cache() deduplicates calls between generateMetadata and page render
 const getNeighborhoodStats = cache(async function getNeighborhoodStats(zipCode: string): Promise<NeighborhoodStats | null> {
   const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/neighborhood_stats`;
-  const res = await fetch(url, {
+  const res = await fetchWithRetry(url, {
     method: "POST",
     headers: {
       apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -106,7 +107,7 @@ const getNeighborhoodStats = cache(async function getNeighborhoodStats(zipCode: 
 
 const getCrimeData = cache(async function getCrimeData(zipCode: string): Promise<CrimeZipRow | null> {
   const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/crime_by_zip_single`;
-  const res = await fetch(url, {
+  const res = await fetchWithRetry(url, {
     method: "POST",
     headers: {
       apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -122,7 +123,7 @@ const getCrimeData = cache(async function getCrimeData(zipCode: string): Promise
 
 async function getTopBuildings(zipCode: string) {
   const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/buildings?zip_code=eq.${zipCode}&select=id,full_address,borough,slug,overall_score,violation_count,complaint_count,review_count,owner_name&order=violation_count.desc.nullslast&limit=5`;
-  const res = await fetch(url, {
+  const res = await fetchWithRetry(url, {
     headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! },
     next: { revalidate: 3600 },
   });
@@ -134,7 +135,7 @@ const getNeighborhoodRents = cache(async function getNeighborhoodRents(
   zip: string
 ): Promise<NeighborhoodRentRow[]> {
   const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/dewey_neighborhood_rents?zip=eq.${zip}&select=month,beds,median_rent,p25_rent,p75_rent,listing_count&order=month.asc`;
-  const res = await fetch(url, {
+  const res = await fetchWithRetry(url, {
     headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! },
     next: { revalidate: 3600 },
   });
@@ -151,7 +152,7 @@ async function getBestApartments(zipCode: string, city: City) {
   // the anon 8s timeout on dense zips, hence the cache (same pattern as
   // borough_cheapest_rents).
   const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/zip_cheapest_rents?zip=eq.${zipCode}&metro=eq.${city}&select=median_rent,buildings!inner(id,full_address,borough,slug,overall_score)&order=rank.asc&limit=20`;
-  const res = await fetch(url, {
+  const res = await fetchWithRetry(url, {
     headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! },
     next: { revalidate: 3600 },
   });
@@ -167,7 +168,7 @@ async function getTopLandlords(zipCode: string, city: City): Promise<Array<{ slu
   // filter syntax (`not.owner_name=is.null`) was invalid PostgREST anyway,
   // so it 400ed silently on every request.
   const rpcUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/neighborhood_top_landlords`;
-  const rpcRes = await fetch(rpcUrl, {
+  const rpcRes = await fetchWithRetry(rpcUrl, {
     method: "POST",
     headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, "Content-Type": "application/json" },
     body: JSON.stringify({ target_zip: zipCode, max_rows: 10 }),
@@ -190,7 +191,7 @@ async function getTopLandlords(zipCode: string, city: City): Promise<Array<{ slu
   // Look up slugs from landlord_stats
   const inFilter = topOwnerNames.map((n) => `"${n}"`).join(",");
   const statsUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/landlord_stats?select=name,slug&metro=eq.${city}&name=in.(${encodeURIComponent(inFilter)})`;
-  const statsRes = await fetch(statsUrl, {
+  const statsRes = await fetchWithRetry(statsUrl, {
     headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! },
     next: { revalidate: 3600 },
   });

@@ -1,3 +1,4 @@
+import { fetchWithRetry } from "@/lib/fetch-retry";
 import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
@@ -232,24 +233,28 @@ async function fetchHomeData(): Promise<LiveHomeData | null> {
 
   async function rpc<T>(name: string, params: Record<string, unknown>): Promise<T | null> {
     try {
-      const res = await fetch(`${supabaseUrl}/rest/v1/rpc/${name}`, {
+      const res = await fetchWithRetry(`${supabaseUrl}/rest/v1/rpc/${name}`, {
         method: "POST",
         headers: { ...baseHeaders, "Content-Type": "application/json" },
         body: JSON.stringify(params),
         next: { revalidate: 3600 },
       });
-      if (!res.ok) return null;
+      // Throw, never swallow: a failed query must be a retryable 500, not a
+      // silently missing/zeroed section (that's how bugs hid for months).
+      if (!res.ok) throw new Error(`res: HTTP ${res.status}`);
       return (await res.json()) as T;
     } catch { return null; }
   }
 
   async function pgSelect<T>(path: string): Promise<T | null> {
     try {
-      const res = await fetch(`${supabaseUrl}/rest/v1/${path}`, {
+      const res = await fetchWithRetry(`${supabaseUrl}/rest/v1/${path}`, {
         headers: baseHeaders,
         next: { revalidate: 3600 },
       });
-      if (!res.ok) return null;
+      // Throw, never swallow: a failed query must be a retryable 500, not a
+      // silently missing/zeroed section (that's how bugs hid for months).
+      if (!res.ok) throw new Error(`res: HTTP ${res.status}`);
       return (await res.json()) as T;
     } catch { return null; }
   }

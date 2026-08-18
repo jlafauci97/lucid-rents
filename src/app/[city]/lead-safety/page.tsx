@@ -1,3 +1,4 @@
+import { fetchWithRetry } from "@/lib/fetch-retry";
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
@@ -58,19 +59,21 @@ interface LeadInspection {
 
 async function fetchLeadInspections(offset: number, limit: number): Promise<LeadInspection[]> {
   const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/chicago_lead_inspections?select=id,address,inspection_date,result,risk_level,hazard_type,ward,building:buildings(slug,borough)&order=inspection_date.desc.nullslast&limit=${limit}&offset=${offset}`;
-  const res = await fetch(url, {
+  const res = await fetchWithRetry(url, {
     headers: {
       apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     },
     next: { revalidate: 86400 },
   });
-  if (!res.ok) return [];
+  // Throw, never swallow: a failed query must be a retryable 500, not a
+  // silently missing/zeroed section (that's how bugs hid for months).
+  if (!res.ok) throw new Error(`res: HTTP ${res.status}`);
   return res.json();
 }
 
 async function fetchLeadCount(): Promise<number> {
   const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/chicago_lead_inspections?select=id&limit=1`;
-  const res = await fetch(url, {
+  const res = await fetchWithRetry(url, {
     headers: {
       apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       Prefer: "count=exact",
