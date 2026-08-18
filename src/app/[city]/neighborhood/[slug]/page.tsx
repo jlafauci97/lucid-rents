@@ -121,7 +121,7 @@ const getCrimeData = cache(async function getCrimeData(zipCode: string): Promise
 });
 
 async function getTopBuildings(zipCode: string) {
-  const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/buildings?zip_code=eq.${zipCode}&select=id,full_address,borough,slug,overall_score,violation_count,complaint_count,review_count,owner_name&order=violation_count.desc&limit=5`;
+  const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/buildings?zip_code=eq.${zipCode}&select=id,full_address,borough,slug,overall_score,violation_count,complaint_count,review_count,owner_name&order=violation_count.desc.nullslast&limit=5`;
   const res = await fetch(url, {
     headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! },
     next: { revalidate: 3600 },
@@ -143,40 +143,47 @@ const getNeighborhoodRents = cache(async function getNeighborhoodRents(
 });
 
 async function getBestApartments(zipCode: string, city: City) {
-  const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/buildings?zip_code=eq.${zipCode}&metro=eq.${city}&select=id,full_address,borough,slug,overall_score,median_rent&not.median_rent=is.null&order=overall_score.desc.nullslast&limit=20`;
+  // zip_cheapest_rents: nightly cache (pg_cron 07:30 UTC) of the 20 cheapest
+  // rent-tracked buildings per zip. The previous live query was broken twice
+  // over — invalid PostgREST syntax (`not.median_rent=is.null`) AND a
+  // nonexistent buildings.median_rent column — so this section had NEVER
+  // rendered; the fixed live join (building_rents x buildings by zip) blows
+  // the anon 8s timeout on dense zips, hence the cache (same pattern as
+  // borough_cheapest_rents).
+  const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/zip_cheapest_rents?zip=eq.${zipCode}&metro=eq.${city}&select=median_rent,buildings!inner(id,full_address,borough,slug,overall_score)&order=rank.asc&limit=20`;
   const res = await fetch(url, {
     headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! },
     next: { revalidate: 3600 },
   });
   if (!res.ok) return [];
-  return res.json();
+  const rows: Array<{ median_rent: number; buildings: { id: string; full_address: string; borough: string; slug: string; overall_score: number | null } }> = await res.json();
+  return rows.map((r) => ({ ...r.buildings, median_rent: r.median_rent, buildingUrl: "" }));
 }
 
 async function getTopLandlords(zipCode: string, city: City): Promise<Array<{ slug: string; name: string; violationCount: number; buildingCount: number }>> {
-  // Fetch owner_name + violation_count per building in this ZIP so we can
-  // rank by aggregate violations (was previously ranked by building count).
-  const buildingsUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/buildings?zip_code=eq.${zipCode}&metro=eq.${city}&select=owner_name,violation_count&not.owner_name=is.null`;
-  const buildingsRes = await fetch(buildingsUrl, {
-    headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! },
+  // Aggregate server-side via RPC (index-only scan on the zip stats cover
+  // index, ~0.2s). The previous version fetched EVERY building row in the
+  // zip to aggregate in JS — 8s+ statement timeout on dense zips, and its
+  // filter syntax (`not.owner_name=is.null`) was invalid PostgREST anyway,
+  // so it 400ed silently on every request.
+  const rpcUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/neighborhood_top_landlords`;
+  const rpcRes = await fetch(rpcUrl, {
+    method: "POST",
+    headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, "Content-Type": "application/json" },
+    body: JSON.stringify({ target_zip: zipCode, max_rows: 10 }),
     next: { revalidate: 3600 },
   });
-  if (!buildingsRes.ok) return [];
-  const buildingRows: Array<{ owner_name: string; violation_count: number | null }> = await buildingsRes.json();
+  if (!rpcRes.ok) return [];
+  const aggRows: Array<{ owner_name: string; building_count: number; total_violations: number }> = await rpcRes.json();
 
-  // Aggregate violations + building count per owner
   const agg = new Map<string, { violations: number; buildings: number }>();
-  for (const r of buildingRows) {
-    const name = r.owner_name;
-    const v = r.violation_count ?? 0;
-    const prev = agg.get(name) ?? { violations: 0, buildings: 0 };
-    agg.set(name, { violations: prev.violations + v, buildings: prev.buildings + 1 });
+  for (const r of aggRows) {
+    agg.set(r.owner_name, { violations: Number(r.total_violations), buildings: Number(r.building_count) });
   }
 
-  const topOwnerNames = Array.from(agg.entries())
-    .filter(([, stats]) => stats.violations > 0)
-    .sort((a, b) => b[1].violations - a[1].violations)
-    .slice(0, 10)
-    .map(([name]) => name);
+  const topOwnerNames = aggRows
+    .filter((r) => Number(r.total_violations) > 0)
+    .map((r) => r.owner_name);
 
   if (topOwnerNames.length === 0) return [];
 
