@@ -28,9 +28,12 @@
     <key>Label</key>
     <string>com.lucidrents.render-monitor</string>
 
+    <!-- /usr/bin/env + PATH below, not a hardcoded node path: Intel installs
+         put node in /usr/local/bin, Apple Silicon in /opt/homebrew/bin. -->
     <key>ProgramArguments</key>
     <array>
-        <string>/usr/local/bin/node</string>
+        <string>/usr/bin/env</string>
+        <string>node</string>
         <string>scripts/monitor-rendered-pages.mjs</string>
     </array>
 
