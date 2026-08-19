@@ -348,9 +348,13 @@ export async function GET(request: NextRequest) {
     //    but we mustn't flood the pool here either.
     withTimeout(mapLimit(filteredTables, 5, async (t): Promise<DataCheck & { city: City | "all" }> => {
         try {
+          // Planner estimate, not COUNT(*): exact counts over the 3.5M-row
+          // buildings table and 30M-row complaint partitions are a full-scan
+          // I/O burst per health probe (5 tables concurrently) — the row
+          // counts here are informational freshness signals, not invoices.
           const { count } = await supabase
             .from(t.name)
-            .select("*", { count: "exact", head: true });
+            .select("*", { count: "planned", head: true });
 
           let latestRecord: string | null = null;
           let status: "healthy" | "warning" | "error" = "healthy";
