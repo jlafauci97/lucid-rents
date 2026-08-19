@@ -805,15 +805,18 @@ export async function loadBuildingV2Data(building: Building): Promise<BuildingV2
     // Neighborhood stats — buildings tracked + avg score + median 1BR for this zip.
     safe(async () => {
       if (!zipCode) return { buildingsTracked: 0, avgLucidIQ: null, median1BR: null };
-      // Buildings in this zip
-      const { data: nbhBuildings } = await supabase
-        .from("buildings")
-        .select("id, overall_score")
-        .eq("zip_code", zipCode);
-      const rows = (nbhBuildings ?? []) as Array<{ id: string; overall_score: number | null }>;
-      const buildingsTracked = rows.length;
-      const scores = rows.map((b) => b.overall_score).filter((n): n is number => typeof n === "number");
-      const avgLucidIQ = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
+      // Per-zip count + avg from zip_building_stats (nightly batch refresh).
+      // The old shape fetched every building row in the zip (1000+ for dense
+      // zips) on each render just to count and average — a top-2 source of
+      // statement timeouts under crawl load.
+      const { data: nbhStats } = await supabase
+        .from("zip_building_stats")
+        .select("buildings_tracked, avg_score")
+        .eq("zip", zipCode)
+        .limit(1);
+      const stats = nbhStats?.[0] as { buildings_tracked: number; avg_score: number | null } | undefined;
+      const buildingsTracked = stats?.buildings_tracked ?? 0;
+      const avgLucidIQ = stats?.avg_score != null ? Number(stats.avg_score) : null;
 
       // Latest 1BR neighborhood median — try dewey_neighborhood_rents first.
       let median1BR: number | null = null;
@@ -1625,14 +1628,16 @@ const _loadLocationData = async (building: Building): Promise<{
     }, { total12mo: 0, violent: 0, property: 0, qualityOfLife: 0, safetyScore: 50, precinct: null } as BuildingV2Data["crime"]),
     safe(async () => {
       if (!zipCode) return { buildingsTracked: 0, avgLucidIQ: null, median1BR: null };
-      const { data: nbhBuildings } = await supabase
-        .from("buildings")
-        .select("id, overall_score")
-        .eq("zip_code", zipCode);
-      const rows = (nbhBuildings ?? []) as Array<{ id: string; overall_score: number | null }>;
-      const buildingsTracked = rows.length;
-      const scores = rows.map((b) => b.overall_score).filter((n): n is number => typeof n === "number");
-      const avgLucidIQ = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
+      // Per-zip count + avg from zip_building_stats (nightly batch refresh) —
+      // see the identical neighborhood-stats block above.
+      const { data: nbhStats } = await supabase
+        .from("zip_building_stats")
+        .select("buildings_tracked, avg_score")
+        .eq("zip", zipCode)
+        .limit(1);
+      const stats = nbhStats?.[0] as { buildings_tracked: number; avg_score: number | null } | undefined;
+      const buildingsTracked = stats?.buildings_tracked ?? 0;
+      const avgLucidIQ = stats?.avg_score != null ? Number(stats.avg_score) : null;
       let median1BR: number | null = null;
       const { data: deweyRents } = await supabase
         .from("dewey_neighborhood_rents")
