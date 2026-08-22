@@ -35,12 +35,17 @@ Chicago/LA sections, tenant-rights configs, and all DB rows in shared tables.
    `supabase functions deploy sync` and `supabase functions deploy sync-news`.
 2. Hit `/api/cron/regenerate-sitemaps` (with `CRON_SECRET`) so the Blob copies
    served by `/sitemap-v2/[chunk]` match the trimmed static files.
-3. Disable LA/Chicago jobs on the Mac Mini launchd scheduler (same manual step
+3. `POST /api/seo/submit-sitemaps` (with `CRON_SECRET`) to resubmit the
+   trimmed sitemaps to Google Search Console — this is what prompts Google to
+   recrawl, drop the 1.37M removed URLs, and deindex the 404s.
+4. Disable LA/Chicago jobs on the Mac Mini launchd scheduler (same manual step
    as the Miami/Houston removal — the edge-function guard makes them no-ops
    server-side, but the local jobs waste runs).
-4. Optional: Google Search Console removals tool, or let the 404s deindex
+5. Optional: Google Search Console removals tool for any high-visibility
+   LA/Chicago URLs that should disappear from results immediately (temporary
+   ~6-month hide; the 404s make it permanent), or just let them deindex
    naturally.
-5. Optional cost cleanup (separate decision, destructive): dropping
+6. Optional cost cleanup (separate decision, destructive): dropping
    `complaints_311_chicago` (~6.2 GB) and `complaints_311_la` (~2.2 GB) — plus
    LA/Chicago rows in shared tables — mirrors the later Miami/Houston table
    drop. Both are re-importable from public open-data portals via the sync
