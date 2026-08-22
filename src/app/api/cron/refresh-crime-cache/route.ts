@@ -4,8 +4,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export const maxDuration = 300; // 5 minutes
 export const dynamic = "force-dynamic";
 
-// houston removed while that metro is off the public site; re-add to resume.
-const METROS = ["nyc", "chicago", "los-angeles"] as const;
+// houston (July 2026) and chicago/los-angeles (August 2026) removed while
+// those metros are off the public site; re-add to resume.
+const METROS = ["nyc"] as const;
 
 // Set true to resume refreshing the Miami rollup block below.
 const REFRESH_MIAMI = false;

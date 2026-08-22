@@ -5,11 +5,12 @@ export const ALL_CITIES: City[] = ["nyc", "los-angeles", "chicago", "miami", "ho
 
 /**
  * Cities currently visible on the public site. Miami and Houston were pulled
- * from public view in July 2026 (data, DB rows, and code all retained) — to
- * relaunch them, add them back here and re-enable their crons in vercel.json
- * (see docs/miami-houston-removal.md).
+ * from public view in July 2026, and Los Angeles and Chicago in August 2026
+ * to focus growth on NYC (data, DB rows, and code all retained) — to relaunch
+ * a city, add it back here and re-enable its crons in vercel.json (see
+ * docs/miami-houston-removal.md and docs/la-chicago-removal.md).
  */
-export const VALID_CITIES: City[] = ["nyc", "los-angeles", "chicago"];
+export const VALID_CITIES: City[] = ["nyc"];
 
 /** Cities that exist in the data model but are hidden from the public site. */
 export const HIDDEN_CITIES: City[] = ALL_CITIES.filter((c) => !VALID_CITIES.includes(c));

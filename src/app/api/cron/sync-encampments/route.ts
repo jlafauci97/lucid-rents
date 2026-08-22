@@ -99,6 +99,14 @@ async function upsertBatch(records: SodaRecord[]) {
 }
 
 export async function GET() {
+  // Disabled August 2026 while LA is off the public site — returns 200
+  // { skipped: true } so stale callers don't page anyone. Remove this guard
+  // to resume (see docs/la-chicago-removal.md).
+  const DISABLED = true;
+  if (DISABLED) {
+    return NextResponse.json({ skipped: true, reason: "metro off public site" });
+  }
+
   try {
     const lastSync = await getLastSyncDate();
     const whereClause = lastSync

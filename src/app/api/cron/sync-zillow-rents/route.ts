@@ -150,8 +150,12 @@ export async function GET() {
     }
     const csvText = await res.text();
 
-    // 2. Parse and filter to NYC + LA zips
-    const rows = parseZoriCsv(csvText);
+    // 2. Parse and filter to NYC + LA zips. LA rows are dropped while that
+    // metro is off the public site (August 2026) — set true to resume.
+    const SYNC_LA = false;
+    const rows = parseZoriCsv(csvText).filter(
+      (r) => SYNC_LA || r.metro !== "los-angeles",
+    );
 
     if (rows.length === 0) {
       return NextResponse.json({

@@ -35,11 +35,10 @@ function requireEnv(): { url: string; key: string } {
 export type City = "nyc" | "los-angeles" | "chicago" | "miami" | "houston";
 
 // miami/houston removed while those metros are off the public site (July
-// 2026) — add them back here AND in scripts/generate-sitemaps.mjs to relaunch.
+// 2026); los-angeles/chicago removed August 2026 (NYC focus) — add a city
+// back here AND in scripts/generate-sitemaps.mjs to relaunch it.
 export const VALID_CITIES: City[] = [
   "nyc",
-  "los-angeles",
-  "chicago",
 ];
 
 /**
@@ -48,7 +47,7 @@ export const VALID_CITIES: City[] = [
  * `metro` is NOT NULL DEFAULT 'nyc' on buildings, news_articles, and
  * landlord_stats, so there are no null rows to rescue.
  */
-const ACTIVE_METRO_FILTER = "&metro=in.(nyc,los-angeles,chicago)";
+const ACTIVE_METRO_FILTER = "&metro=in.(nyc)";
 
 interface CityMeta {
   urlPrefix: string;
@@ -448,7 +447,9 @@ export async function generateHubsSitemap(): Promise<UrlEntry[]> {
     });
   }
 
-  entries.push({ url: `${BASE_URL}${cityPath("/ellis-act", "los-angeles")}`, changefreq: "weekly", priority: 0.5 });
+  if (VALID_CITIES.includes("los-angeles")) {
+    entries.push({ url: `${BASE_URL}${cityPath("/ellis-act", "los-angeles")}`, changefreq: "weekly", priority: 0.5 });
+  }
 
   for (const city of VALID_CITIES) {
     entries.push({ url: `${BASE_URL}${cityPath("/building-list", city)}`, changefreq: "weekly", priority: 0.5 });

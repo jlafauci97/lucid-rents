@@ -140,12 +140,10 @@ async function scanSubreddits(): Promise<RedditCandidate[]> {
   const t0 = Date.now();
   console.log(JSON.stringify({ step: "scanSubreddits", event: "start" }));
 
+  // Only NYC + general subs are scanned while the other metros are off the
+  // public site (LA/Chicago August 2026, Miami/Houston July 2026).
   const allSubreddits = [
     ...TARGET_SUBREDDITS.nyc,
-    ...TARGET_SUBREDDITS["los-angeles"],
-    ...TARGET_SUBREDDITS.chicago,
-    ...TARGET_SUBREDDITS.miami,
-    ...TARGET_SUBREDDITS.houston,
     ...TARGET_SUBREDDITS.general,
   ];
 
@@ -333,7 +331,7 @@ async function scoreRelevance(
     try {
       const result = await generateText({
         model: "anthropic/claude-sonnet-4.6" as never,
-        system: `You are a relevance scorer for LucidRents, a rental intelligence platform that ONLY covers 5 metros: NYC, Los Angeles, Chicago, Miami, and Houston. Score how relevant a Reddit thread is for a helpful, non-promotional reply that could mention lucidrents.com.
+        system: `You are a relevance scorer for LucidRents, a rental intelligence platform that ONLY covers New York City. Score how relevant a Reddit thread is for a helpful, non-promotional reply that could mention lucidrents.com.
 
 Return ONLY a JSON object with this structure:
 {
@@ -344,16 +342,16 @@ Return ONLY a JSON object with this structure:
 }
 
 HARD RULES — give 0.0 on geoMatch (which kills the post) when:
-- The post is explicitly about a state or city we don't cover (Denver, San Diego, Seattle, Atlanta, Detroit, anywhere outside NYC/LA/Chicago/Miami/Houston).
+- The post is explicitly about a state or city we don't cover (LA, Chicago, Miami, Houston, Denver, San Diego, Seattle, Atlanta, Detroit — anywhere outside NYC).
 - The post is about home buying / mortgages / selling a house — we serve renters, not buyers.
 - The post is an apartment listing, sublease ad, lease takeover, or roommate-search ad — these are ads, not problems we can help with.
 - The post is unrelated to housing entirely (jobs, jury duty, event tickets, dating, car leases).
-- The post is from a national sub (renters / Tenant / realestate / personalfinance) WITHOUT explicitly mentioning NYC/LA/Chicago/Miami/Houston by name.
+- The post is from a national sub (renters / Tenant / realestate / personalfinance) WITHOUT explicitly mentioning NYC by name.
 
 Scoring criteria (only matters if geoMatch > 0):
-- geoMatch (0.4 weight): Is the post about a renter problem in NYC, LA, Chicago, Miami, or Houston? 1.0 = clearly one of our metros. 0.0 = elsewhere or no city mentioned.
+- geoMatch (0.4 weight): Is the post about a renter problem in NYC? 1.0 = clearly NYC. 0.0 = elsewhere or no city mentioned.
 - directRelevance (0.3 weight): Renter problem we have data for — landlord violations, building conditions, tenant rights, rent stabilization, eviction, habitability.
-- valueOpportunity (0.2 weight): Can we add genuine value by referencing specific data (HPD/LAHD/RLTO records, building violation history, rent law)?
+- valueOpportunity (0.2 weight): Can we add genuine value by referencing specific data (HPD/DOB records, building violation history, rent law)?
 - naturalFit (0.1 weight): Can we mention lucidrents.com without feeling forced?`,
         prompt: `Subreddit: r/${candidate.subreddit}
 Title: ${candidate.title}

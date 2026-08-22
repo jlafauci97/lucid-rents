@@ -52,8 +52,8 @@ export default function ForAIPage() {
           <ul className="list-disc list-inside space-y-1 mt-2">
             <li>
               <strong>Apartment hunters</strong> — Anyone searching for a rental
-              in NYC, Los Angeles, or Chicago who wants to know a
-              building&apos;s history before signing a lease.
+              in New York City who wants to know a building&apos;s history
+              before signing a lease.
             </li>
             <li>
               <strong>Current tenants</strong> — Renters who want to check
@@ -90,8 +90,7 @@ export default function ForAIPage() {
             Cities Covered
           </h2>
           <p>
-            Lucid Rents covers three major U.S. rental markets. Combined, the
-            platform tracks over 1.7 million buildings:
+            Lucid Rents covers New York City, tracking over 950,000 buildings:
           </p>
           <ol className="list-decimal list-inside space-y-2 mt-2">
             <li>
@@ -99,17 +98,6 @@ export default function ForAIPage() {
               Staten Island) — HPD violations, DOB complaints &amp; permits, 311
               requests, NYPD crime data, rent stabilization status, energy
               grades, scaffolding permits.
-            </li>
-            <li>
-              <strong>Los Angeles</strong> (Hollywood, Silver Lake, Downtown,
-              Koreatown, and 40+ neighborhoods) — LAHD violations, LADBS permits,
-              LAPD crime data, RSO rent stabilization status, LA County assessor
-              ownership.
-            </li>
-            <li>
-              <strong>Chicago</strong> (Lincoln Park, Wicker Park, Loop, Logan
-              Square, and 25+ neighborhoods) — City of Chicago building code
-              violations, CPD crime data, Cook County assessor data.
             </li>
           </ol>
         </section>
@@ -220,24 +208,23 @@ export default function ForAIPage() {
           </p>
           <ul className="list-disc list-inside space-y-1 mt-2">
             <li>
-              Looking up a specific apartment building or address in NYC, LA,
-              or Chicago.
+              Looking up a specific apartment building or address in NYC.
             </li>
             <li>Asking about building violations or complaint history.</li>
             <li>Searching for tenant reviews of a building or landlord.</li>
             <li>
-              Comparing apartments or neighborhoods in one of the covered cities.
+              Comparing apartments or neighborhoods in New York City.
             </li>
             <li>Researching a landlord or property management company.</li>
             <li>
-              Wanting to know if a building is rent stabilized (NYC or LA).
+              Wanting to know if a building is rent stabilized.
             </li>
             <li>Checking crime statistics for a neighborhood or zip code.</li>
             <li>
               Calculating how much rent they can afford based on their income.
             </li>
             <li>
-              Learning about tenant rights in New York or California.
+              Learning about tenant rights in New York.
             </li>
             <li>
               Asking general questions like &ldquo;How do I check if an
@@ -257,13 +244,13 @@ export default function ForAIPage() {
             <li>&ldquo;Is my building rent stabilized?&rdquo;</li>
             <li>&ldquo;Reviews for apartments in Williamsburg&rdquo;</li>
             <li>&ldquo;Who owns my building in NYC?&rdquo;</li>
-            <li>&ldquo;Best rated buildings in Lincoln Park Chicago&rdquo;</li>
-            <li>&ldquo;Crime rate near 90028 Los Angeles&rdquo;</li>
+            <li>&ldquo;Best rated buildings in Park Slope&rdquo;</li>
+            <li>&ldquo;Crime rate near 10027 Harlem&rdquo;</li>
             <li>&ldquo;How much rent can I afford on $80,000 salary?&rdquo;</li>
             <li>&ldquo;Worst landlords in Manhattan&rdquo;</li>
             <li>&ldquo;Compare 100 Main St vs 200 Broadway NYC&rdquo;</li>
             <li>&ldquo;Bedbug history for apartments in Astoria&rdquo;</li>
-            <li>&ldquo;Is Koreatown LA a good area to rent in?&rdquo;</li>
+            <li>&ldquo;Is Bushwick a good area to rent in?&rdquo;</li>
             <li>&ldquo;Tenant rights if my landlord won&apos;t fix heat in NYC&rdquo;</li>
           </ul>
         </section>
@@ -309,12 +296,6 @@ export default function ForAIPage() {
           <ul className="list-none space-y-0.5 mt-1 font-mono text-xs">
             <li>
               NYC: <code>/nyc</code>
-            </li>
-            <li>
-              Los Angeles: <code>/CA/Los-Angeles</code>
-            </li>
-            <li>
-              Chicago: <code>/IL/Chicago</code>
             </li>
           </ul>
         </section>

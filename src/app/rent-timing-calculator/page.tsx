@@ -7,12 +7,12 @@ import { RelatedGuides } from "@/components/calculators/RelatedGuides";
 export const metadata: Metadata = {
   title: "Best Time to Rent — Seasonal Rent Calculator",
   description:
-    "Find the cheapest month to sign your lease. Based on 12 years of rental data across NYC, LA, and Chicago.",
+    "Find the cheapest month to sign your lease. Based on 12 years of NYC rental data.",
   alternates: { canonical: canonicalUrl("/rent-timing-calculator") },
   openGraph: {
     title: "Best Time to Rent — Seasonal Rent Calculator",
     description:
-      "Find the cheapest month to sign your lease. Based on 12 years of rental data across NYC, LA, and Chicago.",
+      "Find the cheapest month to sign your lease. Based on 12 years of NYC rental data.",
     url: canonicalUrl("/rent-timing-calculator"),
     siteName: "Lucid Rents",
     type: "website",
@@ -32,7 +32,7 @@ export default function RentTimingCalculatorPage() {
         name: "What is the cheapest month to rent an apartment?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "In most major U.S. cities, January and February are the cheapest months to sign a lease. Rental demand is lowest during winter, giving renters more negotiating power and lower prices. Our data across NYC, LA, and Chicago confirms that winter months consistently have rent indices 3-8% below the annual average.",
+          text: "In most major U.S. cities, January and February are the cheapest months to sign a lease. Rental demand is lowest during winter, giving renters more negotiating power and lower prices. Our NYC data confirms that winter months consistently have rent indices 3-8% below the annual average.",
         },
       },
       {
@@ -48,7 +48,7 @@ export default function RentTimingCalculatorPage() {
         name: "How much can I save by timing my lease?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Depending on the city and neighborhood, timing your lease to start in the cheapest month instead of the most expensive month can save $500-$2,000+ per year. The savings are largest in high-cost cities like New York and Los Angeles, where even a small percentage difference translates to significant dollar amounts.",
+          text: "Depending on the city and neighborhood, timing your lease to start in the cheapest month instead of the most expensive month can save $500-$2,000+ per year. The savings are largest in high-cost cities like New York, where even a small percentage difference translates to significant dollar amounts.",
         },
       },
     ],

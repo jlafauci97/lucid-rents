@@ -432,7 +432,7 @@ export function ReviewForm({ preselectedBuildingId, categories }: ReviewFormProp
                         </p>
                         <p className="text-xs text-[#64748b] mt-1 leading-relaxed">
                           Try a different address or check spelling. Buildings
-                          are available in NYC, LA, Chicago, Miami, and Houston.
+                          are available in New York City.
                         </p>
                         <p className="text-xs text-[#94a3b8] mt-2">
                           Tip: include the street number, e.g.{" "}

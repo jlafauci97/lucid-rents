@@ -287,26 +287,30 @@ export async function GET() {
       counts[type] = stops.length;
     }
 
-    // ── Chicago CTA ──
-    try {
-      const [lStops, busStopsCTA] = await Promise.all([
-        fetchCTALStops(),
-        fetchCTABusStops(),
-      ]);
+    // ── Chicago CTA ── (disabled August 2026 while Chicago is off the
+    // public site; set true to resume — see docs/la-chicago-removal.md)
+    const SYNC_CTA = false;
+    if (SYNC_CTA) {
+      try {
+        const [lStops, busStopsCTA] = await Promise.all([
+          fetchCTALStops(),
+          fetchCTABusStops(),
+        ]);
 
-      if (lStops.length > 0) {
-        await upsertBatch(lStops, "chicago");
-      }
-      counts["cta_l"] = lStops.length;
+        if (lStops.length > 0) {
+          await upsertBatch(lStops, "chicago");
+        }
+        counts["cta_l"] = lStops.length;
 
-      if (busStopsCTA.length > 0) {
-        await upsertBatch(busStopsCTA, "chicago");
+        if (busStopsCTA.length > 0) {
+          await upsertBatch(busStopsCTA, "chicago");
+        }
+        counts["cta_bus"] = busStopsCTA.length;
+      } catch (err) {
+        console.error("CTA sync error:", err);
+        counts["cta_l"] = 0;
+        counts["cta_bus"] = 0;
       }
-      counts["cta_bus"] = busStopsCTA.length;
-    } catch (err) {
-      console.error("CTA sync error:", err);
-      counts["cta_l"] = 0;
-      counts["cta_bus"] = 0;
     }
 
     return NextResponse.json({

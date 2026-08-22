@@ -5127,8 +5127,9 @@ const SOURCES: Record<string, (supabase: ReturnType<typeof getSupabaseAdmin>, si
   "houston-crimes": syncHoustonCrimes,
 };
 
-// Miami/Houston were pulled from the public site (July 2026). Their sync
-// handlers are retained but disabled — empty this set to re-enable them.
+// Miami/Houston were pulled from the public site (July 2026), LA/Chicago in
+// August 2026 (NYC focus). Their sync handlers are retained but disabled —
+// remove a metro's sources from this set to re-enable them.
 // Mirrors the same guard in supabase/functions/sync/index.ts.
 const DISABLED_SOURCES = new Set([
   "miami-violations",
@@ -5140,6 +5141,26 @@ const DISABLED_SOURCES = new Set([
   "houston-violations",
   "houston-311",
   "houston-crimes",
+  "lahd",
+  "la-311",
+  "ladbs",
+  "lapd",
+  "la-permits",
+  "la-soft-story",
+  "la-evictions",
+  "la-buyouts",
+  "la-ccris",
+  "la-violation-summary",
+  "la-energy",
+  "la-scep",
+  "chicago-violations",
+  "chicago-311",
+  "chicago-crimes",
+  "chicago-permits",
+  "chicago-rlto",
+  "chicago-lead",
+  "chicago-rodents",
+  "chicago-scofflaws",
 ]);
 
 function skippedResponse(source: string | null, mode: string | null): NextResponse {

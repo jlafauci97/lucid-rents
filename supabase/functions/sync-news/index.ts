@@ -143,9 +143,10 @@ Deno.serve(async (req) => {
   const supabase = getSupabaseAdmin();
   const results: { source: string; added: number; error?: string }[] = [];
 
-  // Miami/Houston feeds are skipped while those metros are off the public
-  // site — feed definitions stay in _shared/news-sources.ts for relaunch.
-  const DISABLED_METROS = new Set(["miami", "houston"]);
+  // Miami/Houston (July 2026) and LA/Chicago (August 2026) feeds are skipped
+  // while those metros are off the public site — feed definitions stay in
+  // _shared/news-sources.ts for relaunch.
+  const DISABLED_METROS = new Set(["miami", "houston", "los-angeles", "chicago"]);
   const activeSources = NEWS_SOURCES.filter((s: NewsSource) => !s.metro || !DISABLED_METROS.has(s.metro));
 
   for (const source of activeSources) {

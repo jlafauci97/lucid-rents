@@ -411,8 +411,10 @@ export async function GET(req: NextRequest) {
     // Denormalize to buildings table (NYC)
     const denormalized = await denormalizeToBuildings(supabase, errors);
 
-    // Derive RSO status for LA buildings
-    const laRsoUpdated = await deriveLARSO(supabase, errors);
+    // Derive RSO status for LA buildings — disabled August 2026 while LA is
+    // off the public site; set true to resume (see docs/la-chicago-removal.md).
+    const SYNC_LA_RSO = false;
+    const laRsoUpdated = SYNC_LA_RSO ? await deriveLARSO(supabase, errors) : 0;
 
     // Finalize sync log
     if (logId) {

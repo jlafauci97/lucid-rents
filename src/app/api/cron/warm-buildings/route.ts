@@ -50,7 +50,8 @@ export async function GET(req: NextRequest) {
   // .trim() guards against the env value's trailing newline (breaks fetch URLs)
   const origin = (process.env.NEXT_PUBLIC_APP_URL || "https://lucidrents.com").trim();
   const startTime = Date.now();
-  const metros: City[] = ["nyc", "los-angeles", "chicago"];
+  // los-angeles/chicago excluded while those metros are off the public site.
+  const metros: City[] = ["nyc"];
 
   const urls: string[] = [];
   const errors: string[] = [];

@@ -42,7 +42,7 @@ export async function generateMetadata({
   const cityName = cityParam ? CITY_META[cityParam].fullName : null;
 
   if (q) {
-    const scope = cityName ? `${cityName}` : "NYC, LA, and Chicago";
+    const scope = cityName ? `${cityName}` : "NYC";
     const title = `Search: ${q}`;
     const description = `Results for "${q}" across ${scope} — buildings, landlords, and neighborhoods with violations, complaints, and tenant reviews.`;
     const path = cityParam ? `/search?q=${encodeURIComponent(q)}&city=${cityParam}` : `/search?q=${encodeURIComponent(q)}`;
@@ -54,9 +54,9 @@ export async function generateMetadata({
     };
   }
 
-  const title = "Search Lucid Rents — NYC, LA, Chicago";
+  const title = "Search Lucid Rents — NYC";
   const description =
-    "Search any apartment building, landlord, or neighborhood across NYC, LA, and Chicago. Violations, complaints, tenant reviews, and rent data.";
+    "Search any apartment building, landlord, or neighborhood across NYC. Violations, complaints, tenant reviews, and rent data.";
   return {
     title,
     description,
@@ -382,7 +382,7 @@ function EmptyState() {
       <div className="lg:col-span-2 bg-white rounded-xl border border-[#e2e8f0] shadow-sm p-10 text-center">
         <SearchIcon className="w-10 h-10 mx-auto text-[#cbd5e1]" />
         <p className="mt-4 text-[#0F1D2E] text-base font-semibold">
-          Search any building in NYC, LA, or Chicago
+          Search any building in NYC
         </p>
         <p className="mt-2 text-sm text-[#64748b] max-w-md mx-auto">
           Look up an address, neighborhood, zip code, or landlord. We&rsquo;ll show violations,
@@ -427,7 +427,7 @@ export default async function GlobalSearchPage({ searchParams }: GlobalSearchPag
         "@type": "SearchResultsPage",
         url: canonicalUrl(canonicalPath),
         name: `Search: ${q}`,
-        description: `Cross-city search results for "${q}" across NYC, LA, and Chicago.`,
+        description: `Search results for "${q}" across NYC.`,
         about: { "@type": "Thing", name: q },
       }
     : {
@@ -436,7 +436,7 @@ export default async function GlobalSearchPage({ searchParams }: GlobalSearchPag
         url: canonicalUrl("/search"),
         name: "Search Lucid Rents",
         description:
-          "Search any apartment building, landlord, or neighborhood across NYC, LA, and Chicago.",
+          "Search any apartment building, landlord, or neighborhood across NYC.",
       };
 
   return (
