@@ -5,14 +5,6 @@
       "path": "/api/cron/generate-news?city=nyc",
       "schedule": "0 11 * * *"
     },
-    {
-      "path": "/api/cron/generate-news?city=chicago",
-      "schedule": "0 12 * * *"
-    },
-    {
-      "path": "/api/cron/generate-news?city=los-angeles",
-      "schedule": "0 14 * * *"
-    },
 
     {
       "path": "/api/cron/refresh-stats",
@@ -85,44 +77,6 @@
     },
 
     {
-      "path": "/api/cron/trigger?source=la-permits",
-      "schedule": "5 11 * * *"
-    },
-    {
-      "path": "/api/cron/trigger?source=ladbs",
-      "schedule": "5 14 * * *"
-    },
-    {
-      "path": "/api/cron/trigger?source=la-soft-story",
-      "schedule": "5 11 1 * *"
-    },
-    {
-      "path": "/api/cron/trigger?source=lapd",
-      "schedule": "5 20 * * *"
-    },
-    {
-      "path": "/api/cron/trigger?source=la-violation-summary",
-      "schedule": "35 20 * * *"
-    },
-
-    {
-      "path": "/api/cron/trigger?source=chicago-crimes",
-      "schedule": "5 17 * * *"
-    },
-    {
-      "path": "/api/cron/trigger?source=chicago-permits",
-      "schedule": "35 17 * * *"
-    },
-    {
-      "path": "/api/cron/trigger?source=chicago-rlto",
-      "schedule": "5 5 * * 3"
-    },
-    {
-      "path": "/api/cron/trigger?source=chicago-lead",
-      "schedule": "35 5 * * 3"
-    },
-
-    {
       "path": "/api/cron/health-check",
       "schedule": "0 22 * * *"
     },
@@ -148,30 +102,6 @@
     {
       "path": "/api/cron/rankings-snapshot?city=nyc&kind=worst_neighborhoods",
       "schedule": "20 5 1 * *"
-    },
-    {
-      "path": "/api/cron/rankings-snapshot?city=los-angeles&kind=worst_buildings",
-      "schedule": "30 5 1 * *"
-    },
-    {
-      "path": "/api/cron/rankings-snapshot?city=los-angeles&kind=worst_landlords",
-      "schedule": "40 5 1 * *"
-    },
-    {
-      "path": "/api/cron/rankings-snapshot?city=los-angeles&kind=worst_neighborhoods",
-      "schedule": "50 5 1 * *"
-    },
-    {
-      "path": "/api/cron/rankings-snapshot?city=chicago&kind=worst_buildings",
-      "schedule": "0 6 1 * *"
-    },
-    {
-      "path": "/api/cron/rankings-snapshot?city=chicago&kind=worst_landlords",
-      "schedule": "10 6 1 * *"
-    },
-    {
-      "path": "/api/cron/rankings-snapshot?city=chicago&kind=worst_neighborhoods",
-      "schedule": "20 6 1 * *"
     },
 
     {

@@ -32,8 +32,8 @@ export default function AboutPage() {
             tenant deserves access to the same information that landlords,
             brokers, and property managers already have. By aggregating public
             records and community reviews into one easy-to-use tool, we aim to
-            level the playing field for millions of renters across NYC, Los
-            Angeles, and Chicago.
+            level the playing field for millions of renters across New York
+            City.
           </p>
         </section>
 
@@ -48,9 +48,9 @@ export default function AboutPage() {
                 Building Profiles
               </h3>
               <p className="text-xs text-[#64748b]">
-                Detailed pages for over 1.7 million buildings across NYC,
-                Los Angeles, and Chicago with violation
-                histories, complaints, and tenant reviews.
+                Detailed pages for over 950,000 buildings across New York
+                City with violation histories, complaints, and tenant
+                reviews.
               </p>
             </div>
             <div className="border border-[#e2e8f0] rounded-lg p-4">
@@ -92,22 +92,14 @@ export default function AboutPage() {
             Our Data Sources
           </h2>
           <p>
-            Lucid Rents aggregates publicly available data from city-specific
-            government agencies across all three cities, including:
+            Lucid Rents aggregates publicly available data from New York
+            City government agencies, including:
           </p>
           <ul className="list-disc list-inside space-y-1 mt-2">
             <li>
               <strong>NYC</strong> — HPD violations, DOB violations, 311
               complaints, NYPD crime data, PLUTO tax lot data, rent
               stabilization (RPIE filings), energy benchmarking, MTA transit
-            </li>
-            <li>
-              <strong>Los Angeles</strong> — LAHD code violations, LADBS
-              permits, LAPD crime data, LA County Assessor records, RSO status
-            </li>
-            <li>
-              <strong>Chicago</strong> — CDPH violations, CDBS permits, CPD
-              crime data, Cook County Assessor records, RLTO protections
             </li>
           </ul>
           <p className="mt-3">

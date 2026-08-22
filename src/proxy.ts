@@ -135,12 +135,18 @@ export async function proxy(request: NextRequest) {
   const firstSegment = segments[1] || "";
 
   // 0. Hidden-city gate. Miami/Houston were pulled from public view (July
-  // 2026); their URLs get a hard 404 at the edge in every form — internal
-  // slug (/miami), state prefix (/FL/Miami), and shorthand (/mia). Done here
-  // rather than via notFound() because runtime notFound() was being coerced
-  // to HTTP 200 soft-404s on this deployment (see chip guard below).
+  // 2026), LA/Chicago in August 2026; their URLs get a hard 404 at the edge
+  // in every form — internal slug (/miami), state prefix (/FL/Miami), and
+  // shorthand (/mia). Done here rather than via notFound() because runtime
+  // notFound() was being coerced to HTTP 200 soft-404s on this deployment
+  // (see chip guard below).
   {
-    const HIDDEN_SHORTHANDS: Record<string, string> = { mia: "miami", hou: "houston" };
+    const HIDDEN_SHORTHANDS: Record<string, string> = {
+      mia: "miami",
+      hou: "houston",
+      la: "los-angeles",
+      chi: "chicago",
+    };
     const stateMapped = STATE_CITY_MAP[firstSegment.toUpperCase()]?.[segments[2] || ""];
     const hiddenHit =
       HIDDEN_CITIES.includes(firstSegment as (typeof HIDDEN_CITIES)[number]) ||

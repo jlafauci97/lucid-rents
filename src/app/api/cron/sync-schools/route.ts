@@ -246,9 +246,12 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // LA schools disabled August 2026 while LA is off the public site; set
+    // true to resume — see docs/la-chicago-removal.md.
+    const SYNC_LA_SCHOOLS = false;
     const [nycSchools, laSchools] = await Promise.all([
       fetchNYCSchools(),
-      fetchLASchools(),
+      SYNC_LA_SCHOOLS ? fetchLASchools() : Promise.resolve([]),
     ]);
 
     const allSchools = [...nycSchools, ...laSchools];

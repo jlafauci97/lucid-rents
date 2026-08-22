@@ -1,19 +1,17 @@
 # Lucid Rents
 
-> Apartment building intelligence platform. Search any building across major U.S. cities to see violations, tenant complaints, 311 reports, crime stats, rent data, and honest tenant reviews — all sourced from public records and real renters.
+> Apartment building intelligence platform. Search any New York City building to see violations, tenant complaints, 311 reports, crime stats, rent data, and honest tenant reviews — all sourced from public records and real renters.
 
 ## Cities Covered
 
 - New York City, New York
-- Los Angeles, California
-- Chicago, Illinois
 
 ## What You Can Find
 
 - **Building Reports**: Violations, complaints, 311 calls, litigation history, and building scores for individual addresses
 - **Landlord Profiles**: Portfolio size, violation history, and tenant ratings for property owners
 - **Tenant Reviews**: First-hand experiences from renters covering noise, pests, management, maintenance, and more
-- **Crime Data**: Neighborhood crime statistics by zip code sourced from local police departments (NYPD, LAPD, CPD)
+- **Crime Data**: Neighborhood crime statistics by zip code sourced from local police departments (NYPD)
 - **Rent Data**: Fair market rents, median rents, and rent stabilization status where available
 - **Neighborhood Pages**: Aggregated building data, scores, and trends by zip code
 - **Building Comparisons**: Side-by-side comparison of multiple buildings
@@ -22,11 +20,8 @@
 
 - [Homepage](https://lucidrents.com): Search any building by address or zip code
 - [NYC Buildings](https://lucidrents.com/nyc/buildings): Browse all New York City buildings
-- [Los Angeles Buildings](https://lucidrents.com/CA/Los-Angeles/buildings): Browse all Los Angeles buildings
-- [Chicago Buildings](https://lucidrents.com/IL/Chicago/buildings): Browse all Chicago buildings
 - [Rent Affordability Calculator](https://lucidrents.com/rent-affordability-calculator): Calculate how much rent you can afford
 - [NYC Tenant Rights Guide](https://lucidrents.com/guides/nyc-tenant-rights): Know your rights as a NYC renter
-- [LA Tenant Rights Guide](https://lucidrents.com/guides/la-tenant-rights): Know your rights as an LA renter
 
 ## Building Page URL Pattern
 
@@ -34,14 +29,11 @@ Building pages follow the pattern: `https://lucidrents.com/[city]/building/[boro
 
 Examples:
 - `https://lucidrents.com/nyc/building/manhattan/123-main-street`
-- `https://lucidrents.com/CA/Los-Angeles/building/hollywood/456-sunset-blvd`
 
 ## Data Sources
 
 Lucid Rents aggregates public data from city agencies including:
 - NYC: HPD violations, DOB complaints & permits, 311 service requests, NYPD crime data
-- Los Angeles: LAHD violations, LADBS permits, LAPD crime data, RSO registry
-- Chicago: City of Chicago building violations, CPD crime data
 
 ## MCP Server (for AI agents)
 

@@ -36,13 +36,14 @@ if (!SUPABASE_URL || !SUPABASE_KEY) {
 // ─── City config (inlined from src/lib/cities.ts) ───────────────
 
 // miami/houston removed while those metros are off the public site (July
-// 2026) — add them back here AND in src/lib/sitemap/generator.ts to relaunch.
-const VALID_CITIES = ["nyc", "los-angeles", "chicago"];
+// 2026); los-angeles/chicago removed August 2026 (NYC focus) — add a city
+// back here AND in src/lib/sitemap/generator.ts to relaunch it.
+const VALID_CITIES = ["nyc"];
 
 // PostgREST filter: active metros only. Plain `in.` (not an `or=` with an
 // is.null branch) so Postgres can use idx_buildings_metro — `metro` is NOT NULL
 // DEFAULT 'nyc' on buildings, news_articles, and landlord_stats.
-const ACTIVE_METRO_FILTER = "&metro=in.(nyc,los-angeles,chicago)";
+const ACTIVE_METRO_FILTER = "&metro=in.(nyc)";
 
 const CITY_META = {
   nyc: { urlPrefix: "nyc", regions: ["Manhattan", "Brooklyn", "Queens", "Bronx", "Staten Island"] },
@@ -77,9 +78,10 @@ const MIAMI_ZIPS = {"33128":"Downtown Miami","33130":"Downtown Miami","33131":"B
 
 const HOUSTON_ZIPS = {"77002":"Downtown","77003":"East End","77004":"Third Ward","77006":"Montrose","77010":"Downtown","77019":"River Oaks","77005":"Rice Village","77030":"Medical Center","77098":"Upper Kirby","77027":"Galleria","77046":"Greenway","77007":"Heights","77008":"Heights","77009":"Near Northside","77022":"Independence Heights","77026":"Northside","77024":"Memorial","77025":"Braeswood","77035":"Meyerland","77096":"Meyerland","77401":"Bellaire","77018":"Oak Forest","77043":"Spring Branch","77055":"Spring Branch","77080":"Spring Branch","77079":"Memorial","77042":"Westchase","77057":"Galleria","77063":"Sharpstown","77036":"Gulfton","77074":"Sharpstown","77077":"Energy Corridor","77082":"Westchase","77084":"Cypress","77011":"East End","77012":"Second Ward","77020":"East End","77021":"Third Ward","77023":"EaDo","77031":"South Main","77033":"South Park","77045":"South Main","77047":"Sunnyside","77048":"South Houston","77051":"South Park","77053":"Fort Bend","77054":"Medical Center","77071":"Sharpstown","77081":"Sharpstown","77085":"South Main","77099":"Westchase","77014":"Greenspoint","77015":"Channelview","77016":"Homestead","77028":"Kashmere Gardens","77029":"Channelview","77032":"Greenspoint","77037":"Aldine","77038":"Aldine","77039":"Aldine","77040":"Northwest Houston","77041":"Northwest Houston","77060":"Greenspoint","77064":"Cypress","77065":"Cypress","77066":"Champions","77067":"Greenspoint","77068":"Champions","77069":"Champions","77070":"Northwest Houston","77086":"Greenspoint","77088":"Acres Home","77091":"Acres Home","77092":"Garden Oaks","77093":"Aldine","77013":"Homestead","77044":"Lake Houston","77049":"Lake Houston","77050":"Humble","77058":"Clear Lake","77059":"Clear Lake","77062":"Clear Lake","77089":"South Belt","77017":"South Houston","77034":"South Belt","77075":"Glenbrook Valley","77087":"Park Place","77478":"Sugar Land","77479":"Sugar Land","77498":"Sugar Land","77581":"Pearland","77584":"Pearland","77588":"Pearland","77449":"Katy","77450":"Katy","77493":"Katy","77494":"Katy","77339":"Kingwood","77345":"Kingwood","77346":"Humble","77338":"Humble","77396":"Humble","77380":"The Woodlands","77381":"The Woodlands","77382":"The Woodlands","77384":"The Woodlands","77385":"The Woodlands","77386":"Spring","77388":"Spring","77389":"Spring","77502":"Pasadena","77503":"Pasadena","77504":"Pasadena","77505":"Pasadena","77506":"Pasadena","77536":"Deer Park"};
 
-// MIAMI_ZIPS / HOUSTON_ZIPS intentionally excluded while those metros are off
-// the public site — ZIP_MAPS is iterated directly with Object.entries below.
-const ZIP_MAPS = { nyc: NYC_ZIPS, "los-angeles": LA_ZIPS, chicago: CHICAGO_ZIPS };
+// LA_ZIPS / CHICAGO_ZIPS / MIAMI_ZIPS / HOUSTON_ZIPS intentionally excluded
+// while those metros are off the public site — ZIP_MAPS is iterated directly
+// with Object.entries below.
+const ZIP_MAPS = { nyc: NYC_ZIPS };
 
 // ─── Hub sitemap slug arrays ────────────────────────────────────
 // Mirror src/lib/tenant-templates-data.ts → TEMPLATES[].slug
@@ -364,7 +366,9 @@ async function generateHubsSitemap() {
 
   // Ellis Act tracker — LA only. Route is /[city]/ellis-act (lowercase).
   // cityPath("/ellis-act", "los-angeles") yields /CA/Los-Angeles/ellis-act
-  entries.push({ url: `${BASE_URL}${cityPath("/ellis-act", "los-angeles")}`, lastmod: now, changefreq: "weekly", priority: 0.5 });
+  if (VALID_CITIES.includes("los-angeles")) {
+    entries.push({ url: `${BASE_URL}${cityPath("/ellis-act", "los-angeles")}`, lastmod: now, changefreq: "weekly", priority: 0.5 });
+  }
 
   // Building list hubs (5) + chip pages (~22, gated per chip availability)
   for (const city of VALID_CITIES) {
@@ -405,13 +409,17 @@ async function generateHubsSitemap() {
   }
 
   // LA-only hub pages (route calls notFound() for other cities)
-  for (const path of ["/encampments", "/seismic-fire-safety"]) {
-    entries.push({ url: `${BASE_URL}${cityPath(path, "los-angeles")}`, lastmod: now, changefreq: "weekly", priority: 0.7 });
+  if (VALID_CITIES.includes("los-angeles")) {
+    for (const path of ["/encampments", "/seismic-fire-safety"]) {
+      entries.push({ url: `${BASE_URL}${cityPath(path, "los-angeles")}`, lastmod: now, changefreq: "weekly", priority: 0.7 });
+    }
   }
 
   // Chicago-only hub pages
-  for (const path of ["/heating-tracker", "/lead-safety", "/problem-landlords", "/affordable-housing"]) {
-    entries.push({ url: `${BASE_URL}${cityPath(path, "chicago")}`, lastmod: now, changefreq: "weekly", priority: 0.7 });
+  if (VALID_CITIES.includes("chicago")) {
+    for (const path of ["/heating-tracker", "/lead-safety", "/problem-landlords", "/affordable-housing"]) {
+      entries.push({ url: `${BASE_URL}${cityPath(path, "chicago")}`, lastmod: now, changefreq: "weekly", priority: 0.7 });
+    }
   }
 
   return entries;

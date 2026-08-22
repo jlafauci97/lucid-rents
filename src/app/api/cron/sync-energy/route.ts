@@ -397,27 +397,34 @@ export async function GET() {
       dateFilterField: ":updated_at",
     });
 
-    // --- LA sync ---
-    const laUpserted = await syncSodaDataset({
-      sodaBase: LA_SODA_BASE,
-      dataset: LA_DATASET,
-      filter: "building_id IS NOT NULL",
-      transform: transformLaRecord,
-      sourceKey: "energy-la",
-      startTime,
-      lastSync: laLastSync,
-    });
+    // --- LA sync --- (disabled August 2026 while LA is off the public site;
+    // set true to resume — see docs/la-chicago-removal.md)
+    const SYNC_LA = false;
+    const laUpserted = !SYNC_LA
+      ? 0
+      : await syncSodaDataset({
+          sodaBase: LA_SODA_BASE,
+          dataset: LA_DATASET,
+          filter: "building_id IS NOT NULL",
+          transform: transformLaRecord,
+          sourceKey: "energy-la",
+          startTime,
+          lastSync: laLastSync,
+        });
 
-    // --- Chicago sync ---
-    const chicagoUpserted = await syncSodaDataset({
-      sodaBase: CHICAGO_SODA_BASE,
-      dataset: CHICAGO_ENERGY_DATASET,
-      filter: "id IS NOT NULL",
-      transform: transformChicagoRecord,
-      sourceKey: "energy-chicago",
-      startTime,
-      lastSync: chicagoLastSync,
-    });
+    // --- Chicago sync --- (disabled August 2026, same as LA above)
+    const SYNC_CHICAGO = false;
+    const chicagoUpserted = !SYNC_CHICAGO
+      ? 0
+      : await syncSodaDataset({
+          sodaBase: CHICAGO_SODA_BASE,
+          dataset: CHICAGO_ENERGY_DATASET,
+          filter: "id IS NOT NULL",
+          transform: transformChicagoRecord,
+          sourceKey: "energy-chicago",
+          startTime,
+          lastSync: chicagoLastSync,
+        });
 
     // Link + update
     const totalUpserted = nycUpserted + laUpserted + chicagoUpserted;

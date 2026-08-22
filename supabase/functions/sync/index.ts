@@ -4134,8 +4134,9 @@ const SOURCES: Record<string, (supabase: SupabaseClient, sinceOverride?: string)
   "houston-crimes": syncHoustonCrimes,
 };
 
-// Miami/Houston were pulled from the public site (July 2026). Their sync
-// handlers are retained but disabled — empty this set to re-enable them.
+// Miami/Houston were pulled from the public site (July 2026), LA/Chicago in
+// August 2026 (NYC focus). Their sync handlers are retained but disabled —
+// remove a metro's sources from this set to re-enable them.
 // Disabled sources return 200 { skipped: true } (not 400) so stale callers
 // don't page anyone.
 const DISABLED_SOURCES = new Set([
@@ -4148,6 +4149,22 @@ const DISABLED_SOURCES = new Set([
   "houston-violations",
   "houston-311",
   "houston-crimes",
+  "lahd",
+  "la-311",
+  "ladbs",
+  "lapd",
+  "la-permits",
+  "la-soft-story",
+  "la-evictions",
+  "la-buyouts",
+  "la-ccris",
+  "la-violation-summary",
+  "chicago-violations",
+  "chicago-311",
+  "chicago-crimes",
+  "chicago-permits",
+  "chicago-rlto",
+  "chicago-lead",
 ]);
 
 function skippedResponse(source: string | null, mode: string | null): Response {
