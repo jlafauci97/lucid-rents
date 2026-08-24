@@ -45,8 +45,11 @@ function CityTag({ city }: { city: string }) {
 
 // LA/Chicago panels removed August 2026 while those metros are off the
 // public site (see docs/la-chicago-removal.md).
+// The full-bleed hero needs a wide panorama: nyc-empire-skyline.webp is a
+// 360×800 portrait crop from the old 3-panel layout and turns into a blurry
+// stretched tower at full width. next/image optimizes the jpg at serve time.
 const panels: { key: City; image?: string; stats: { label: string; value: string }[] }[] = [
-  { key: "nyc", image: "/nyc-empire-skyline.webp", stats: [
+  { key: "nyc", image: "/nyc-skyline.jpg", stats: [
     { label: "Buildings", value: "954K" },
     { label: "Open viol.", value: "4.4M" },
     { label: "Landlords", value: "629K" },
@@ -557,19 +560,20 @@ export default async function Home() {
                 aria-label={`Explore ${meta.fullName}`}
                 className="city-panel group shrink-0 w-full relative h-full will-change-transform block focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-inset"
               >
+                {/* The hero panel is the LCP element — preload it from the
+                    <head> (Next 16 replacement for the deprecated `priority`;
+                    must not be combined with `fetchPriority`). */}
                 <Image
                   src={image ?? meta.heroImage}
                   alt={`${meta.fullName} skyline`}
                   fill
                   className="object-cover"
                   sizes="100vw"
-                  {...(key === "nyc"
-                    ? { priority: true, fetchPriority: "high" as const }
-                    : // All three panels sit above the fold on desktop, so any
-                      // of them can be the LCP element — never lazy-load them.
-                      { priority: true })}
+                  preload
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0F1D2E]/90 via-[#0F1D2E]/10 to-[#0F1D2E]/35" />
+                {/* Heavier top stop than before: the daytime panorama's bright sky
+                    sits behind the white headline overlay. */}
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0F1D2E]/90 via-[#0F1D2E]/25 to-[#0F1D2E]/60" />
 
                 <div className="absolute inset-x-0 bottom-0 p-5 sm:p-5 lg:p-7 text-white">
                   <p className="text-[10px] uppercase tracking-[0.2em] text-amber-300 font-bold mb-1">
@@ -578,7 +582,9 @@ export default async function Home() {
                   <h2 className="text-2xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold tracking-tight mb-4 leading-[1.05]">
                     {meta.fullName}
                   </h2>
-                  <dl className="grid grid-cols-3 gap-2.5 mb-4">
+                  {/* max-w keeps the stats clustered under the city name now
+                      that the single NYC panel spans the full page width. */}
+                  <dl className="grid grid-cols-3 gap-2.5 mb-4 max-w-sm">
                     {stats.map((s) => (
                       <div key={s.label}>
                         <dd className="text-sm sm:text-base lg:text-lg font-bold tabular-nums leading-none">

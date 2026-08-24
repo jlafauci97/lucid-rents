@@ -29,3 +29,4 @@ scripts/progress/*.json
 
 # Supabase CLI local state
 supabase/.temp/
+.swc/
