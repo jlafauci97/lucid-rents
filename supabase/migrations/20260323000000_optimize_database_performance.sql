@@ -108,9 +108,9 @@ CREATE INDEX IF NOT EXISTS idx_zillow_rents_metro
   ON zillow_rents (metro);
 
 -- landlord name search: trigram index for ILIKE
-CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA extensions;
 CREATE INDEX IF NOT EXISTS idx_landlord_stats_name_trgm
-  ON landlord_stats USING gin (name gin_trgm_ops);
+  ON landlord_stats USING gin (name extensions.gin_trgm_ops);
 
 -- ---------------------------------------------------------------------------
 -- 3. DROP UNUSED INDEXES (~300MB wasted write IO)
