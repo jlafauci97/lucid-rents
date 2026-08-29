@@ -1,9 +1,12 @@
 name: Marketing Reddit Scanner
 
+# Reddit blocks GitHub Actions egress IPs — see logs from any run on/after
+# Apr 23, 2026 where every subreddit returned HTTP 403. The scanner now runs
+# locally on Jesse's Mac via launchd (com.lucidrents.reddit-scan) sourcing
+# scripts/reddit-scan-local.sh. The /reddit-scan skill is the manual override.
+# Keeping workflow_dispatch in case GitHub egress ever unblocks.
+
 on:
-  # Every 6 hours at minute 5 (stagger from existing hourly crons)
-  schedule:
-    - cron: "5 */6 * * *"
   workflow_dispatch:
     inputs:
       lookback_hours:
