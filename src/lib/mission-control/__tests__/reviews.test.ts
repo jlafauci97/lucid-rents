@@ -18,7 +18,7 @@ import { listRecentReviews, moderateReview } from "../reviews";
  */
 function chainable(result: { data?: unknown; count?: number | null; error?: unknown }) {
   const chain: Record<string, unknown> = {};
-  for (const method of ["select", "eq", "gte", "is", "in", "order", "limit", "head", "maybeSingle", "update", "upsert"]) {
+  for (const method of ["select", "eq", "gte", "is", "in", "order", "limit", "head", "maybeSingle", "single", "update", "upsert"]) {
     chain[method] = vi.fn(() => chain);
   }
   chain.then = (resolve: (value: typeof result) => unknown) => resolve(result);

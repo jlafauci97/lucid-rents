@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { revalidateBuildingPages } from "@/lib/revalidate-building";
 import { createReviewSchema } from "@/lib/validators";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -203,6 +204,10 @@ export async function POST(req: NextRequest) {
       }
     }
   }
+
+  // New review is live immediately — bust the building's ISR pages so it
+  // shows up without waiting out the 7-day TTL.
+  await revalidateBuildingPages(data.building_id);
 
   return NextResponse.json({ review }, { status: 201 });
 }

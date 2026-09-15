@@ -11,7 +11,7 @@ import type { Building } from "@/types";
 import type { Metadata } from "next";
 import { ReviewsClient } from "./ReviewsClient";
 
-export const revalidate = 3600; // 1h ISR — review pages are SEO-traffic dominated
+export const revalidate = 604800; // 7d ISR — review content renders client-side via the reviews API; new reviews revalidate this path on-demand (see api/reviews + mission-control moderation)
 
 // Enable on-demand ISR for unbounded dynamic params (city × borough × slug).
 // Without this Next.js 16 treats the route as fully dynamic and ignores

@@ -6,7 +6,7 @@ import { CITY_META, HIDDEN_CITIES, VALID_CITIES, type City } from "@/lib/cities"
 import { buildingUrl } from "@/lib/seo";
 import type { Building } from "@/types";
 
-export const revalidate = 3600;
+export const revalidate = 604800; // 7d ISR — embeds change when the building record does; syncs revalidate touched buildings
 
 export async function generateMetadata({
   params,

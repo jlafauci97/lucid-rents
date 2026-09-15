@@ -1,4 +1,5 @@
 import { unstable_cache } from "next/cache";
+import { renderDataCacheBypassed } from "@/lib/building-render-policy";
 import { createCacheClient } from "@/lib/supabase/cache-client";
 import type { Building, EnergyBenchmark } from "@/types";
 import { normalizeTimelineEvents, type TimelineEvent } from "@/lib/timeline";
@@ -26,11 +27,16 @@ function cachedPerBuilding<A extends unknown[], R>(
   keyBase: string,
   idOf: (...args: A) => string,
 ): (...args: A) => Promise<R> {
-  return (...args: A) =>
-    unstable_cache(fn, [keyBase], {
+  return (...args: A) => {
+    // Long-tail renders are dynamic (see building-render-policy.ts) — an
+    // unstable_cache write here would outlive the response and bill as an
+    // ISR write nothing ever reads back.
+    if (renderDataCacheBypassed()) return fn(...args);
+    return unstable_cache(fn, [keyBase], {
       revalidate: BUILDING_DATA_TTL,
       tags: ["building-data", buildingTag(idOf(...args))],
     })(...args);
+  };
 }
 
 // ──────────────────────────────────────────────────────────────
