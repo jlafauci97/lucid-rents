@@ -4,23 +4,6 @@ interface Props {
   updatedAt: string | null | undefined;
 }
 
-const DAY_MS = 86_400_000;
-const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
-
-function relativeFromNow(iso: string): string {
-  const then = new Date(iso).getTime();
-  if (!Number.isFinite(then)) return "";
-  const diffDays = Math.round((then - Date.now()) / DAY_MS);
-  if (Math.abs(diffDays) >= 30) {
-    const months = Math.round(diffDays / 30);
-    return rtf.format(months, "month");
-  }
-  if (Math.abs(diffDays) >= 1) return rtf.format(diffDays, "day");
-  const diffHours = Math.round((then - Date.now()) / 3_600_000);
-  if (Math.abs(diffHours) >= 1) return rtf.format(diffHours, "hour");
-  return rtf.format(0, "day");
-}
-
 function absoluteDate(iso: string): string {
   const d = new Date(iso);
   if (!Number.isFinite(d.getTime())) return "";
@@ -38,15 +21,16 @@ const wrapStyle: CSSProperties = {
 
 export function LastUpdated({ updatedAt }: Props) {
   if (!updatedAt) return null;
-  const rel = relativeFromNow(updatedAt);
   const abs = absoluteDate(updatedAt);
   if (!abs) return null;
+  // Absolute date only — a "3 days ago" relative stamp computed from
+  // Date.now() made every ISR regeneration a *changed* output, and Vercel
+  // bills an ISR write only when the stored output changed. With the page
+  // otherwise deterministic, unchanged buildings regenerate for free.
   return (
     <div className="building-last-updated" style={wrapStyle}>
       Building record last updated{" "}
-      <time dateTime={updatedAt} title={abs}>
-        {rel || abs}
-      </time>
+      <time dateTime={updatedAt}>{abs}</time>
       . Sourced from HPD, DOB, 311, and Lucid Rents data syncs.
     </div>
   );

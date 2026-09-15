@@ -1,4 +1,5 @@
 import { unstable_cache } from "next/cache";
+import { renderDataCacheBypassed } from "@/lib/building-render-policy";
 import type { City } from "@/lib/cities";
 import { createCacheClient } from "@/lib/supabase/cache-client";
 import { unwrap } from "@/lib/supabase/unwrap";
@@ -13,11 +14,17 @@ import { getNeighborhoodNameByCity, neighborhoodPageSlugByCity } from "@/lib/nei
 const cached = <Args extends unknown[], Result>(
   name: string,
   fn: (...args: Args) => Promise<Result>,
-): ((...args: Args) => Promise<Result>) =>
-  unstable_cache(fn, [name], {
+): ((...args: Args) => Promise<Result>) => {
+  const cachedFn = unstable_cache(fn, [name], {
     revalidate: 86400,
     tags: ["landlord-data"],
   });
+  // Long-tail landlords skip the data cache (see building-render-policy.ts) —
+  // getLandlordStats flips the per-request flag before any loader runs, and
+  // an unstable_cache write here would expire unread between bot crawls.
+  return (...args: Args) =>
+    renderDataCacheBypassed() ? fn(...args) : cachedFn(...args);
+};
 
 // ──────────────────────────────────────────────────────────────
 // LandlordV2Data — full type shape for landlord page v2

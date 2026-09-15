@@ -13,7 +13,7 @@ import { normalizeTimelineEvents } from "@/lib/timeline";
 import { cache } from "react";
 import type { Building, HpdViolation, Complaint311, HpdLitigation, DobViolation, BedBugReport, Eviction, DobPermit } from "@/types";
 
-export const revalidate = 86400;
+export const revalidate = 604800; // 7d ISR — matches the building main page; syncs revalidate touched buildings on-demand
 
 
 // Enable on-demand ISR for unbounded dynamic params. Without this Next.js 16

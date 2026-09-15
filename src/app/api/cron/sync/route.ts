@@ -164,12 +164,19 @@ async function revalidateAffectedBuildingPages(
   if (buildingIds.size === 0) return 0;
   let revalidated = 0;
   try {
-    const ids = [...buildingIds].slice(0, REVALIDATE_BUILDINGS_CAP);
+    // Spend the capped slots on the buildings people actually revisit:
+    // order candidates hot-first (reviews, then violations) instead of
+    // taking an arbitrary slice — long-tail pages can wait out the ISR TTL.
+    // Candidate set stays bounded so the .in() filter fits in a request.
+    const ids = [...buildingIds].slice(0, 500);
     const { data } = await supabase
       .from("buildings")
       .select("id, metro, borough, slug")
       .in("id", ids)
-      .not("slug", "is", null);
+      .not("slug", "is", null)
+      .order("review_count", { ascending: false })
+      .order("violation_count", { ascending: false })
+      .limit(REVALIDATE_BUILDINGS_CAP);
 
     for (const b of data ?? []) {
       const city = (b.metro || "nyc") as City;

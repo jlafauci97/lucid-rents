@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { isLongTailLandlord, bypassRenderDataCache } from "@/lib/building-render-policy";
 import { createCacheClient } from "@/lib/supabase/cache-client";
 import { unwrap } from "@/lib/supabase/unwrap";
 import type { City } from "@/lib/cities";
@@ -71,6 +72,14 @@ export const getLandlordStats = cache(async (
   }
 
   if (!row) return null;
+
+  // Long-tail landlords (~85% of the ~1.1M landlord URLs) skip the per-
+  // landlord unstable_cache loaders — those writes expire unread between bot
+  // crawls. Setting the flag here covers every landlord page and subpage,
+  // since they all resolve stats before calling loaders (see
+  // building-render-policy.ts; loaders decide at call time, so never run one
+  // in the same Promise.all as this).
+  if (isLongTailLandlord(row)) bypassRenderDataCache();
 
   const isAltMetro = city === "chicago" || city === "miami" || city === "houston";
   const totalViolations = (isAltMetro ? row.total_dob_violations : row.total_violations) ?? 0;

@@ -6,6 +6,7 @@ import { VALID_CITIES, HIDDEN_CITIES, STATE_CITY_MAP, CITY_META } from "@/lib/ci
 import { neighborhoodPageSlug } from "@/lib/nyc-neighborhoods";
 import { neighborhoodPageSlugByCity } from "@/lib/neighborhoods";
 import { MC_COOKIE, verifyCookieValue } from "@/lib/mission-control/auth";
+import { isHotBuildingSlug, isHotLandlordSlug } from "@/lib/hot-slugs";
 
 /** Route prefixes that are city-specific and should be under /[city]/ */
 const CITY_ROUTES = new Set([
@@ -36,6 +37,42 @@ const CITY_ROUTES = new Set([
 ]);
 
 const PRODUCTION_HOST = "lucidrents.com";
+
+// ── Long-tail ISR/dynamic route split ─────────────────────────
+const BUILDING_SUBPAGES = new Set(["violations", "reviews", "timeline"]);
+const LANDLORD_SUBPAGES = new Set(["buildings", "record", "reviews"]);
+
+/**
+ * Long-tail building/landlord URLs rewrite to their force-dynamic twin
+ * routes (building-dyn / landlord-dyn) so crawler renders never write to the
+ * ISR cache — the single biggest line on the Vercel bill. Hot slugs (Bloom
+ * filter, in-memory bit check, no I/O) stay on the ISR routes untouched.
+ * Regenerate the filter with `npm run generate-hot-filter`.
+ *
+ * `rest` is the path AFTER the internal city segment. Returns the rewritten
+ * segments, or null when the path is not a long-tail building/landlord page
+ * (including /building/[borough]/unit/* and any unknown subpage).
+ */
+function longTailRewrite(rest: string[]): string[] | null {
+  if (
+    rest[0] === "building" &&
+    rest[1] &&
+    rest[2] &&
+    (rest.length === 3 || (rest.length === 4 && BUILDING_SUBPAGES.has(rest[3])))
+  ) {
+    if (!isHotBuildingSlug(rest[2])) return ["building-dyn", ...rest.slice(1)];
+    return null;
+  }
+  if (
+    rest[0] === "landlord" &&
+    rest[1] &&
+    (rest.length === 2 || (rest.length === 3 && LANDLORD_SUBPAGES.has(rest[2])))
+  ) {
+    if (!isHotLandlordSlug(rest[1])) return ["landlord-dyn", ...rest.slice(1)];
+    return null;
+  }
+  return null;
+}
 
 function isProduction(request: NextRequest): boolean {
   return request.headers.get("host")?.replace(/:\d+$/, "") === PRODUCTION_HOST;
@@ -223,8 +260,11 @@ export async function proxy(request: NextRequest) {
     const citySlugSegment = segments[2] || "";
     const internalCity = stateMap[citySlugSegment];
     if (internalCity) {
-      // Rewrite the URL internally while preserving the external URL
-      const remainingPath = segments.slice(3).join("/");
+      // Rewrite the URL internally while preserving the external URL.
+      // Long-tail building/landlord pages additionally swap in their
+      // force-dynamic twin segment (see longTailRewrite above).
+      const restSegments = longTailRewrite(segments.slice(3)) ?? segments.slice(3);
+      const remainingPath = restSegments.join("/");
       const internalPath = `/${internalCity}${remainingPath ? `/${remainingPath}` : ""}`;
 
       // Old /rankings and /worst-rated-buildings paths must 301 HERE, before
@@ -294,6 +334,14 @@ export async function proxy(request: NextRequest) {
         url.pathname = `/${firstSegment}/neighborhood/${newSlug}`;
         return NextResponse.redirect(url, 301);
       }
+    }
+    // Long-tail building/landlord pages rewrite to their force-dynamic twin
+    // segment (see longTailRewrite above); everything else passes through.
+    const longTail = longTailRewrite(segments.slice(2));
+    if (longTail) {
+      const url = request.nextUrl.clone();
+      url.pathname = `/${firstSegment}/${longTail.join("/")}`;
+      return withNoindex(NextResponse.rewrite(url), request);
     }
     // Pass through without mutating request headers (see note above).
     return withNoindex(NextResponse.next(), request);

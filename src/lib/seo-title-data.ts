@@ -9,6 +9,7 @@
  */
 
 import { unstable_cache } from "next/cache";
+import { renderDataCacheBypassed } from "@/lib/building-render-policy";
 import { createCacheClient } from "@/lib/supabase/cache-client";
 import { buildingNeighborhood } from "@/lib/neighborhoods";
 import { normalizeScore } from "@/lib/constants";
@@ -101,11 +102,16 @@ export async function getBuildingTitleData(
   let recentTopCategories: string[] = [];
   let recentIssueCount = 0;
   try {
-    const { data: cats, error } = await unstable_cache(
-      async () => supabase.rpc("building_top_categories", { _building_id: building.id }),
-      ["building-top-categories", building.id],
-      { revalidate: 604800, tags: [`building-${building.id}`] },
-    )();
+    const runCats = async () => supabase.rpc("building_top_categories", { _building_id: building.id });
+    // Long-tail renders skip the data cache entirely (see
+    // building-render-policy.ts) — the write would never be read back.
+    const { data: cats, error } = renderDataCacheBypassed()
+      ? await runCats()
+      : await unstable_cache(
+          runCats,
+          ["building-top-categories", building.id],
+          { revalidate: 604800, tags: [`building-${building.id}`] },
+        )();
     if (!error && Array.isArray(cats)) {
       const rows = cats as Array<{
         category_label: string;

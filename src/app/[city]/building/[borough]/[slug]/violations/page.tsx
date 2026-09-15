@@ -17,7 +17,7 @@ import type { Metadata } from "next";
 // 24h ISR — violations land via the daily syncs, which also revalidate the
 // /violations subpage of every building they touch, so a 1h TTL only bought
 // bot-crawl cache rewrites.
-export const revalidate = 86400;
+export const revalidate = 604800; // 7d ISR — matches the building main page; syncs revalidate touched buildings on-demand
 
 
 // Enable on-demand ISR for unbounded dynamic params. Without this Next.js 16

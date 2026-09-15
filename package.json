@@ -6,6 +6,7 @@
     "dev": "mkdir -p .next && (uname | grep -q Darwin && xattr -w com.apple.fileprovider.ignore#P 1 .next 2>/dev/null || true) && next dev --turbopack",
     "build": "next build",
     "generate-sitemaps": "tsx scripts/generate-sitemaps-blob.mts",
+    "generate-hot-filter": "tsx scripts/generate-hot-slugs-filter.mts",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",

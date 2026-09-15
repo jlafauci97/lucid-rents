@@ -1,5 +1,6 @@
 import "@/styles/v2-tokens.css";
 import { notFound, permanentRedirect } from "next/navigation";
+import { isLongTailBuilding, bypassRenderDataCache } from "@/lib/building-render-policy";
 import type { Metadata } from "next";
 import { createCacheClient } from "@/lib/supabase/cache-client";
 import { unwrap } from "@/lib/supabase/unwrap";
@@ -229,6 +230,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     notFound();
   }
 
+  // Long-tail: keep getBuildingTitleData's per-building unstable_cache from
+  // writing on a dynamic render (the page body opts out via connection()).
+  if (isLongTailBuilding(building)) bypassRenderDataCache();
+
   const addressFirstLine = building.full_address.split(",")[0]?.trim() ?? building.full_address;
   const shortAddress = addressFirstLine || building.full_address;
 
@@ -319,6 +324,16 @@ export default async function BuildingPage({ params }: Props) {
   if (buildingCity !== typedCity) {
     permanentRedirect(buildingUrl(building, buildingCity));
   }
+
+  // Long-tail buildings (~97% of the ~3.5M building URLs) are fetched by
+  // crawlers about once per ISR window and read by nobody in between — their
+  // ~14 per-building unstable_cache entries were pure ISR-write cost with
+  // zero cache hits. Skip the data cache for them; the queries just run on
+  // the (rare) render instead. NOTE: a true dynamic opt-out (connection())
+  // 500s here — Next 16 throws DYNAMIC_SERVER_USAGE with no dynamic-retry
+  // when a request-time API runs inside a route with an explicit segment
+  // `revalidate`. See src/lib/building-render-policy.ts.
+  if (isLongTailBuilding(building)) bypassRenderDataCache();
 
   // NOTE: we no longer `await loadBuildingV2Data(building)` here. Every section
   // below renders via a streaming wrapper that fetches its own slice inside a

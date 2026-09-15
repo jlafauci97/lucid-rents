@@ -46,7 +46,7 @@ import { LandlordLeadParagraph } from "@/components/landlord/LandlordLeadParagra
 import { InContentAd } from "@/components/ads/InContentAd";
 import { FloatingAdRail } from "@/components/ads/FloatingAdRail";
 
-export const revalidate = 86400; // 24h ISR — matches building v2
+export const revalidate = 604800; // 7d ISR — matches building v2; landlord_stats churn only bills a write when output changes
 
 // Enable on-demand ISR for unbounded dynamic params. Without this Next.js 16
 // treats the route as fully dynamic and ignores `revalidate`.
@@ -156,10 +156,10 @@ export async function generateMetadata({
 }: LandlordPageProps): Promise<Metadata> {
   const { city: cityParam, name } = await params;
   const city = (cityParam || "nyc") as City;
-  const [stats, tenantVoice] = await Promise.all([
-    getLandlordStats(name, city),
-    loadLandlordTenantVoice(name, city),
-  ]);
+  // Stats first, NOT in parallel with loaders: getLandlordStats sets the
+  // per-request long-tail cache-bypass flag, and loaders read it at call time.
+  const stats = await getLandlordStats(name, city);
+  const tenantVoice = await loadLandlordTenantVoice(name, city);
 
   // Treat zero-building stats rows the same as missing — these are junk
   // rows and we redirect the page render below; the metadata must agree
@@ -215,14 +215,17 @@ export default async function LandlordDetailPage({
   const city = (cityParam || "nyc") as City;
   const supabase = createCacheClient();
 
-  const [ownerName, cachedStats, neighborhoods, tenantVoice, faqItems] =
-    await Promise.all([
-      resolveOwnerName(supabase, name, city),
-      getLandlordStats(name, city),
-      loadLandlordNeighborhoods(name, city),
-      loadLandlordTenantVoice(name, city),
-      loadLandlordFAQ(name, city),
-    ]);
+  // Stats resolves before any loader runs: getLandlordStats sets the
+  // per-request long-tail cache-bypass flag, and loaders read it at call time.
+  const [ownerName, cachedStats] = await Promise.all([
+    resolveOwnerName(supabase, name, city),
+    getLandlordStats(name, city),
+  ]);
+  const [neighborhoods, tenantVoice, faqItems] = await Promise.all([
+    loadLandlordNeighborhoods(name, city),
+    loadLandlordTenantVoice(name, city),
+    loadLandlordFAQ(name, city),
+  ]);
 
   // No renderable landlord in THIS city (missing, or a junk zero-building row).
   if (!ownerName || !cachedStats || cachedStats.buildingCount === 0) {

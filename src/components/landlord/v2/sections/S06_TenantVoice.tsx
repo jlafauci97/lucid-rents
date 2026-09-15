@@ -19,14 +19,13 @@ function stars(rating: number): React.ReactNode {
   );
 }
 
+// Absolute month/year, not "3w ago" — a Date.now()-relative stamp made every
+// ISR regeneration a *changed* output, and Vercel only bills an ISR write
+// when the stored output changed.
 function relative(iso: string): string {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return "";
-  const days = Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24));
-  if (days < 7) return `${days}d ago`;
-  if (days < 60) return `${Math.floor(days / 7)}w ago`;
-  if (days < 365) return `${Math.floor(days / 30)}mo ago`;
-  return `${Math.floor(days / 365)}y ago`;
+  return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
 }
 
 export function S06_TenantVoice({ voice, city, slug }: Props) {

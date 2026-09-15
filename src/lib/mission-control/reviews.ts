@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { revalidateBuildingPages } from "@/lib/revalidate-building";
 
 // DB accepts: draft | published | approved | flagged | removed
 // 'approved' is a legacy value (119 rows) — treat as display-equivalent to 'published'.
@@ -102,9 +103,14 @@ export async function listRecentReviews({
 
 export async function moderateReview(id: string, status: ReviewStatus): Promise<void> {
   const sb = admin();
-  const { error } = await sb
+  const { data, error } = await sb
     .from("reviews")
     .update({ status, updated_at: new Date().toISOString() })
-    .eq("id", id);
+    .eq("id", id)
+    .select("building_id")
+    .single();
   if (error) throw error;
+  // Removing/restoring a review changes the building's public pages — bust
+  // their ISR entries so moderation takes effect before the 7-day TTL.
+  if (data?.building_id) await revalidateBuildingPages(data.building_id);
 }
