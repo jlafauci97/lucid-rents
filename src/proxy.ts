@@ -149,8 +149,63 @@ function checkBuildingListChip(
   return null;
 }
 
+// ── Maintenance mode (Nov 2026) ───────────────────────────────
+// The site is offline to cut Vercel + Supabase spend. Every request (pages,
+// /api, sitemaps, image optimization) gets a tiny static 503 straight from
+// this proxy, so no route renders, no ISR writes, and no Supabase queries run.
+// 503 + Retry-After (no noindex) tells Google the outage is temporary, so
+// indexed pages are kept for a while instead of being dropped.
+// Mission Control still works, and a valid Mission Control login cookie
+// bypasses the gate so the site can be checked while it is down.
+// To bring the site back: revert the commit that added this block (it also
+// widened the matcher at the bottom of this file and emptied the crons in
+// vercel.json).
+const MAINTENANCE_MODE = true;
+
+const MAINTENANCE_HTML = `<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lucid Rents is temporarily unavailable</title>
+<style>
+body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
+font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#f8fafc;color:#0f172a;padding:16px;box-sizing:border-box}
+main{max-width:480px;text-align:center}
+h1{font-size:1.75rem;margin:0 0 .75rem}
+p{color:#475569;line-height:1.6;margin:0}
+</style></head>
+<body><main><h1>Lucid Rents</h1>
+<p>We're temporarily offline while we make some changes. Please check back soon.</p>
+</main></body></html>`;
+
+/** Paths that keep working in maintenance mode without a login. */
+function maintenanceAllowed(pathname: string): boolean {
+  return (
+    pathname === "/robots.txt" ||
+    pathname.startsWith("/mission-control") ||
+    pathname.startsWith("/api/mission-control")
+  );
+}
+
+async function maintenanceGate(request: NextRequest): Promise<NextResponse | null> {
+  if (!MAINTENANCE_MODE) return null;
+  if (maintenanceAllowed(request.nextUrl.pathname)) return null;
+  const cookie = request.cookies.get(MC_COOKIE);
+  if (cookie && (await verifyCookieValue(cookie.value).catch(() => false))) return null;
+  return new NextResponse(MAINTENANCE_HTML, {
+    status: 503,
+    headers: {
+      "Content-Type": "text/html; charset=utf-8",
+      "Retry-After": "86400",
+      "Cache-Control": "no-store",
+    },
+  });
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  const gated = await maintenanceGate(request);
+  if (gated) return gated;
 
   // 0. Mission Control password gate (runs before any city routing).
   if (
@@ -401,5 +456,8 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next|api|\\.well-known/workflow|favicon|.*\\..*).*)"],
+  // Maintenance mode: run on everything except build assets and icons so
+  // /api, sitemaps and /_next/image are gated too. Pre-maintenance value:
+  // ["/((?!_next|api|\\.well-known/workflow|favicon|.*\\..*).*)"]
+  matcher: ["/((?!_next/static|favicon|icon\\.svg|apple-icon\\.png).*)"],
 };
